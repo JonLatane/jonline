@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package bookstore;
+
+// The book store service definition.
+service Bookstore {
+  // Retrieve a book
+  rpc GetBook(GetBookRequest) returns (GetBookResponse) {}
+}
+
+// The request with a id of the book
+message GetBookRequest {
+  string id = 1;
+}
+
+// The response details of a book
+message GetBookResponse {
+  string id = 1;
+  string name = 2;
+  string author = 3;
+  int32 year = 4;
+}
