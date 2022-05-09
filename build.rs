@@ -1,7 +1,7 @@
 use std::{env, path::PathBuf};
 
 fn main() {
-    let proto_file = "./proto/book_store.proto";
+    let proto_file = "./proto/bookstore.proto";
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     tonic_build::configure()
