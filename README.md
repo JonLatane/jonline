@@ -1,3 +1,3 @@
-# Rust gRPC Demo
+# Jonline
 
-A Demo for GRPC Server With Rust.
+Federated gRPC social network implemented with Rust/Tonic.
