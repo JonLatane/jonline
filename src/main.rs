@@ -5,7 +5,7 @@ use bookstore::{GetBookRequest, GetBookResponse};
 
 
 mod bookstore {
-    include!("bookstore.rs");
+    include!("../compiled_protos/bookstore.rs");
 
     // Add this
     pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
