@@ -1,13 +1,14 @@
-use std::{env, path::PathBuf};
+use std::{env, fs, path::PathBuf};
 
 fn main() {
     let proto_file = "./protos/bookstore.proto";
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-
+    let _ = fs::create_dir("./target");
+    let _ = fs::create_dir("./target/compiled_protos");
     tonic_build::configure()
         .build_server(true)
         .file_descriptor_set_path(out_dir.join("greeter_descriptor.bin"))
-        .out_dir("./compiled_protos")
+        .out_dir("./target/compiled_protos")
         .compile(&[proto_file], &["."])
         .unwrap_or_else(|e| panic!("protobuf compile error: {}", e));
 

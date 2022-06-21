@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  labels:
+    app: grpc
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: grpc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+  labels:
+    app: grpc
+spec:
+  ports:
+    - port: 50051
+  selector:
+    app: grpc
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: grpc
+  labels:
+    app: grpc
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: grpc
+    spec:
+      containers:
+        - image: postgres:11.4-alpine
+          name: db
+          env:
+            - name: POSTGRES_USER
+              value: admin
+            - name: POSTGRES_DB
+              value: books
+            - name: POSTGRES_PASSWORD
+              value: password
+          ports:
+            - containerPort: 5432
+              name: db
+        - image: kubernetes.docker.internal:5000/server
+          name: server
+          env:
+            - name: DATABASE_URL
+              value: postgres://admin:password@db/books
+          ports:
+            - containerPort: 50051
+              name: server
+        - image: kubernetes.docker.internal:5000/cli
+          name: client

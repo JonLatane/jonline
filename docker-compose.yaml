@@ -1,0 +1,24 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres:11.4-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_DB: books
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+
+  client:
+    image: kubernetes.docker.internal:5000/cli
+    restart: always
+
+  server:
+    image: kubernetes.docker.internal:5000/server
+    restart: always
+    environment:
+      DATABASE_URL: postgres://admin:password@db/books
+    ports:
+      - "50051:50051"
