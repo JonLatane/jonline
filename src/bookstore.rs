@@ -1,10 +1,6 @@
 use tonic::{Request, Response, Status};
 use bookstore_server::{Bookstore};
-
 include!("../target/compiled_protos/bookstore.rs");
-
-pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
-    tonic::include_file_descriptor_set!("greeter_descriptor");
 
 
 #[derive(Default)]

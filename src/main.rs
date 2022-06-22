@@ -1,6 +1,9 @@
 mod bookstore;
 use bookstore::bookstore_server::{BookstoreServer};
 
+const FILE_DESCRIPTOR_SET: &[u8] =
+    tonic::include_file_descriptor_set!("greeter_descriptor");
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse().unwrap();
@@ -8,7 +11,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Add this
     let reflection_service = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(bookstore::FILE_DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
         .build()
         .unwrap();
 
