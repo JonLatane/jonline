@@ -23,13 +23,13 @@ start:
 stop:
 	docker-compose down
 
-release: build_release server_docker
+release: build_release server_docker_local
 
 create_pod:
-	kubectl create -f kubernetes.yaml
+	REPOSITORY=$(CLOUD_REGISTRY) kubectl create -f kubernetes.yaml
 
 delete_pod:
-	kubectl delete -f kubernetes.yaml
+	REPOSITORY=$(CLOUD_REGISTRY) kubectl delete -f kubernetes.yaml
 
 build_jonline_build:
 	docker build . -t $(LOCAL_REGISTRY)/jonline-build  -f dockers/build/Dockerfile
@@ -38,6 +38,10 @@ build_jonline_build:
 build_release:
 	docker run -v $$(pwd):/opt -w /opt/src $(LOCAL_REGISTRY)/jonline-build:latest /bin/bash -c "cargo build --release"
 
-server_docker:
+server_docker_local:
 	docker build . -t $(LOCAL_REGISTRY)/jonline-tonic -f dockers/server/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline-tonic
+
+server_docker_cloud: release
+	docker build . -t $(CLOUD_REGISTRY)/jonline-tonic -f dockers/server/Dockerfile
+	docker push $(CLOUD_REGISTRY)/jonline-tonic

@@ -16,7 +16,7 @@ services:
     restart: always
 
   server:
-    image: kubernetes.docker.internal:5000/server
+    image: ${REPOSITORY:kubernetes.docker.internal:5000}/jonline-tonic
     restart: always
     environment:
       DATABASE_URL: postgres://admin:password@db/books
