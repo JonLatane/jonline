@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package jonline;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "users.proto";
+
+message GetPostRequest {
+  string id = 1;
+}
+
+message Post {
+  string id = 1;
+  Author author = 2;
+  google.protobuf.Timestamp created_at = 3;
+  optional google.protobuf.Timestamp updated_at = 4;
+  string title = 5;
+  string content = 6;
+  repeated string links = 7;
+
+  message Author {
+    string user_id = 1;
+    string username = 2;
+  }
+}

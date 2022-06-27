@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package jonline;
+
+import "google/protobuf/timestamp.proto";
+
+message FederatedAccount {
+  string id = 1;
+  string server_url = 2;
+  string auth_token = 3;
+}
+
+message FederatedAccounts {
+ repeated FederatedAccount federated_accounts = 1;
+}
+
