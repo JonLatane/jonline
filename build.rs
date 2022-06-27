@@ -9,7 +9,7 @@ fn main() {
         .build_server(true)
         .file_descriptor_set_path(out_dir.join("greeter_descriptor.bin"))
         .out_dir("./target/compiled_protos")
-        .compile(&[proto_file], &["."])
+        .compile(&[proto_file], &["./protos"])
         .unwrap_or_else(|e| panic!("protobuf compile error: {}", e));
 
     println!("cargo:rerun-if-changed={}", proto_file);

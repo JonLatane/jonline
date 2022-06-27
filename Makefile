@@ -46,7 +46,7 @@ build_jonline_build:
 	docker push $(LOCAL_REGISTRY)/jonline-build
 
 build_release:
-	docker run -v $$(pwd):/opt -w /opt/src $(LOCAL_REGISTRY)/jonline-build:latest /bin/bash -c "cargo build --release"
+	docker run --rm -v $$(pwd):/opt -w /opt/src $(LOCAL_REGISTRY)/jonline-build:latest /bin/bash -c "cargo build --release"
 
 server_docker_local:
 	docker build . -t $(LOCAL_REGISTRY)/jonline-tonic -f dockers/server/Dockerfile
