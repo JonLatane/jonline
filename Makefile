@@ -3,8 +3,9 @@
 LOCAL_REGISTRY := kubernetes.docker.internal:5000
 LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
 CLOUD_REGISTRY := registry.digitalocean.com/jonline
+VERSION := $$(cat Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
 
-local: 
+local:
 	cargo build
 
 create_local_registry:
@@ -17,19 +18,28 @@ stop_local_registry:
 destroy_local_registry: stop_local_registry
 	rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
 
-start:
-	docker-compose up -d
+# start:
+# 	docker-compose up -d
 
-stop:
-	docker-compose down
+# stop:
+# 	docker-compose down
 
 release: build_release server_docker_local
 
-create_pod:
-	REPOSITORY=$(CLOUD_REGISTRY) kubectl create -f kubernetes.yaml
+create_deployment:
+	kubectl create -f kubernetes.yaml --save-config
 
-delete_pod:
-	REPOSITORY=$(CLOUD_REGISTRY) kubectl delete -f kubernetes.yaml
+update_deployment:
+	kubectl apply -f kubernetes.yaml
+
+delete_deployment:
+	kubectl delete -f kubernetes.yaml
+
+restart_deployment:
+	kubectl rollout restart deployment jonline-tonic
+
+get_deployment_pods:
+	kubectl get pods --selector=app=jonline-tonic
 
 build_jonline_build:
 	docker build . -t $(LOCAL_REGISTRY)/jonline-build  -f dockers/build/Dockerfile
@@ -43,5 +53,5 @@ server_docker_local:
 	docker push $(LOCAL_REGISTRY)/jonline-tonic
 
 server_docker_cloud: release
-	docker build . -t $(CLOUD_REGISTRY)/jonline-tonic -f dockers/server/Dockerfile
-	docker push $(CLOUD_REGISTRY)/jonline-tonic
+	docker build . -t $(CLOUD_REGISTRY)/jonline-tonic:$(VERSION) -f dockers/server/Dockerfile
+	docker push $(CLOUD_REGISTRY)/jonline-tonic:$(VERSION)

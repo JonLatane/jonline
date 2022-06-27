@@ -29,7 +29,7 @@ spec:
         app: jonline-tonic
     spec:
       containers:
-        - image: ${REPOSITORY:kubernetes.docker.internal:5000}/jonline-tonic
+        - image: registry.digitalocean.com/jonline/jonline-tonic:0.1.0
           name: jonline-tonic
           env:
             - name: DATABASE_URL

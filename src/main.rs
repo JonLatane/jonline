@@ -1,5 +1,5 @@
-mod bookstore;
-use bookstore::bookstore_server::{BookstoreServer};
+mod jonline;
+use jonline::jonline_server::{JonlineServer};
 
 const FILE_DESCRIPTOR_SET: &[u8] =
     tonic::include_file_descriptor_set!("greeter_descriptor");
@@ -7,7 +7,7 @@ const FILE_DESCRIPTOR_SET: &[u8] =
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse().unwrap();
-    let bookstore = bookstore::BookStoreImpl::default();
+    let jonline = jonline::JonLineImpl::default();
 
     // Add this
     let reflection_service = tonic_reflection::server::Builder::configure()
@@ -15,10 +15,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()
         .unwrap();
 
-    println!("Bookstore server listening on {}", addr);
+    println!("Jonline server listening on {}", addr);
 
     tonic::transport::Server::builder()
-        .add_service(BookstoreServer::new(bookstore))
+        .add_service(JonlineServer::new(jonline))
         .add_service(reflection_service) // Add this
         .serve(addr)
         .await?;

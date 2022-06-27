@@ -1,7 +1,7 @@
 use std::{env, fs, path::PathBuf};
 
 fn main() {
-    let proto_file = "./protos/bookstore.proto";
+    let proto_file = "./protos/jonline.proto";
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let _ = fs::create_dir("./target");
     let _ = fs::create_dir("./target/compiled_protos");
