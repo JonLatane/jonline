@@ -2,7 +2,7 @@
 
 Federated, GPLv3 gRPC social network implemented with Rust/Tonic.
 
-The goal of Jonline is to provide an open-source server+client for maintaining a small, localized social network. A central goal is to make Jonline dogshit easy for anyone else to fork and deploy to their own server. Assuming you can get a few boring, standard, inexpensive prerequisites set, you should be able to clone this repo and have Jonline up and running in a matter of minutes.
+The goal of Jonline is to provide an open-source server+client for maintaining a small, localized social network. A central goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to their own server (and to fork and modify). Assuming you can get a few boring, standard, inexpensive prerequisites set, you should be able to clone this repo and have Jonline up and running in a matter of minutes.
 
 For the prerequisites, you only need setup on your end:
 
