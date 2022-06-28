@@ -8,8 +8,12 @@ For the prerequisites, you only need setup on your end:
 
 * A Kubernetes (k8s) cluster
 * An empty PostgreSQL database
-* (Optional) memcached instance (you can use one on k8s)
-* (Optional for development) A Docker registry you can push images to
+
+Optionally, Jonline will also integrate with:
+* A `memcached` instance (you can use one on k8s)
+
+And to use a fork, you might also want:
+* A Docker registry you can push images to (your DockerHub account is fine)
 
 Why this goal for this project? See [Scaling via Federation](#scaling-via-federation).
 
