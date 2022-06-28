@@ -29,7 +29,7 @@ spec:
         app: jonline-tonic
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline-tonic:0.1.0
+        - image: docker.io/jonlatane/jonline-tonic:0.1.1
           name: jonline-tonic
           env:
             - name: DATABASE_URL
