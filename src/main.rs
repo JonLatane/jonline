@@ -1,4 +1,5 @@
 mod jonline;
+use jonline::JonLineImpl;
 use jonline::jonline_server::{JonlineServer};
 
 const FILE_DESCRIPTOR_SET: &[u8] =
@@ -7,7 +8,7 @@ const FILE_DESCRIPTOR_SET: &[u8] =
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse().unwrap();
-    let jonline = jonline::JonLineImpl::default();
+    let jonline = JonLineImpl::default();
 
     // Add this
     let reflection_service = tonic_reflection::server::Builder::configure()

@@ -2,7 +2,7 @@
 
 LOCAL_REGISTRY := kubernetes.docker.internal:5000
 LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
-CLOUD_REGISTRY := docker.io/jonlatane#registry.digitalocean.com/jonline
+CLOUD_REGISTRY := docker.io/jonlatane
 VERSION := $$(cat Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
 
 local:
@@ -51,8 +51,12 @@ push_release_local: target/release/jonline_tonic
 	docker push $(LOCAL_REGISTRY)/jonline-tonic
 
 push_release_cloud: target/release/jonline_tonic
+	$(info "WARNING: Ensure you generated your release with 'make release' rather than 'cargo build --release'.")
 	docker build . -t $(CLOUD_REGISTRY)/jonline-tonic:$(VERSION) -f dockers/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline-tonic:$(VERSION)
 
 target/release/jonline_tonic:
-	$(error "Please run 'make release' first")
+	$(error "Please run 'make release' first.")
+
+lines_of_code:
+	git ls-files | xargs cloc

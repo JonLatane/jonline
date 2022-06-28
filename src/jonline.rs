@@ -1,3 +1,4 @@
+use std::time;
 use jonline_server::Jonline;
 use tonic::{Request, Response, Status};
 include!("../target/compiled_protos/jonline.rs");
@@ -24,8 +25,8 @@ impl Jonline for JonLineImpl {
         request: Request<GetPostRequest>,
     ) -> Result<Response<Post>, Status> {
         println!("Request from {:?}", request.remote_addr());
-        let now_as_secs = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
+        let now_as_secs = time::SystemTime::now()
+            .duration_since(time::UNIX_EPOCH)
             .expect("Time went backwards")
             .as_secs() as i64;
     

@@ -1,6 +1,6 @@
 # Jonline
 
-Federated gRPC social network implemented with Rust/Tonic.
+Federated, GPLv3 gRPC social network implemented with Rust/Tonic.
 
 The goal of Jonline is to provide an open-source server+client for maintaining a small, localized social network. A central goal is to make Jonline dogshit easy for anyone else to fork and deploy to their own server. Assuming you can get a few boring, standard, inexpensive prerequisites set, you should be able to clone this repo and have Jonline up and running in a matter of minutes.
 
@@ -12,6 +12,16 @@ For the prerequisites, you only need setup on your end:
 * (Optional for development) A Docker registry you can push images to
 
 Why this goal for this project? See [Scaling via Federation](#scaling-via-federation).
+
+## Motivations
+Current social media and messaging solutions all kind of suck. In many ways, and in spite of his character issues, Richard Stallman was generally right about many of the problems social computing presents today. If we trust applications with closed source run on private Alphabet, Meta, Apple, etc. servers, *of course we're going to get the disinformation and effective-advertising-driven consumerism that plague the world today*. But of course, these models are great for building a profitable company that can return value to shareholders.
+
+At the same time as the closed source/private server model has grown due to its profitability, software complexity has grown immensely, but largely unnecessarily, to handle scaling modern applications. MapReduce across a huge privately-owned cluster is absolutely useful for making the entire Internet searchable. But for communicating with a network of friends you know in real life, I don't really think it's necessary. Jonline is an attempt to prove this.
+
+## Scaling via Federation
+
+I (Jon 😊👋) run the Jonline server at https://jonline.io, but 
+
 
 ## Building and running locally
 Use `cargo build` and `cargo run` to run against your local database and memcached.
@@ -45,7 +55,3 @@ If you're interested in building your own version of Jonline, you must fork this
 
 #### Deploying your image
 Make sure to update `kubernetes.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make create_deployment` to launch your forked Jonline.
-
-## Scaling via Federation
-
-I (Jon 😊👋) run the Jonline server at https://jonline.io, but 
