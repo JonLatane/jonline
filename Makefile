@@ -2,7 +2,7 @@
 
 LOCAL_REGISTRY := kubernetes.docker.internal:5000
 LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
-CLOUD_REGISTRY := registry.digitalocean.com/jonline
+CLOUD_REGISTRY := docker.io/jonlatane#registry.digitalocean.com/jonline
 VERSION := $$(cat Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
 
 local:
@@ -18,13 +18,7 @@ stop_local_registry:
 destroy_local_registry: stop_local_registry
 	rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
 
-# start:
-# 	docker-compose up -d
-
-# stop:
-# 	docker-compose down
-
-release: build_release server_docker_local
+release: build_release push_release_local
 
 create_deployment:
 	kubectl create -f kubernetes.yaml --save-config
@@ -41,17 +35,24 @@ restart_deployment:
 get_deployment_pods:
 	kubectl get pods --selector=app=jonline-tonic
 
-build_jonline_build:
-	docker build . -t $(LOCAL_REGISTRY)/jonline-build  -f dockers/build/Dockerfile
+push_builder_local:
+	docker build . -t $(LOCAL_REGISTRY)/jonline-build -f dockers/build/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline-build
+
+push_builder_cloud:
+	docker build . -t $(CLOUD_REGISTRY)/jonline-build -f dockers/build/Dockerfile
+	docker push $(CLOUD_REGISTRY)/jonline-build
 
 build_release:
 	docker run --rm -v $$(pwd):/opt -w /opt/src $(LOCAL_REGISTRY)/jonline-build:latest /bin/bash -c "cargo build --release"
 
-server_docker_local:
+push_release_local: target/release/jonline_tonic
 	docker build . -t $(LOCAL_REGISTRY)/jonline-tonic -f dockers/server/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline-tonic
 
-server_docker_cloud: release
+push_release_cloud: target/release/jonline_tonic
 	docker build . -t $(CLOUD_REGISTRY)/jonline-tonic:$(VERSION) -f dockers/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline-tonic:$(VERSION)
+
+target/release/jonline_tonic:
+	$(error "Please run 'make release' first")

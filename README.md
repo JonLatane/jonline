@@ -4,7 +4,7 @@ Federated gRPC social network implemented with Rust/Tonic.
 
 The goal of Jonline is to provide an open-source server+client for maintaining a small, localized social network. A central goal is to make Jonline dogshit easy for anyone else to fork and deploy to their own server. Assuming you can get a few boring, standard, inexpensive prerequisites set, you should be able to clone this repo and have Jonline up and running in a matter of minutes.
 
-For the prerequisites, you should have setup on your end:
+For the prerequisites, you only need setup on your end:
 
 * A Kubernetes (k8s) cluster
 * An empty PostgreSQL database
@@ -20,29 +20,31 @@ Use `cargo build` and `cargo run` to run against your local database and memcach
 A Dockerfile for a build server (to build for Linux server images) lives in `dockers/build`. You don't really need to know the technical details though. The `Makefile` may contain additional targets, though this list should be comprehensive for general usage.
 
 ### Deploying the Pre-Built Image
-Pre-built images are available to deploy from `registry.digitalocean.com/jonline`. Once you've cloned this repo, even without Rust, you can simply `make create_deployment` to deploy a pre-built image. Other useful deployment commands include:
+Pre-built images are available to deploy from `docker.io/jonlatane`. Once you've cloned this repo, even without Rust, you can simply `make create_deployment` to deploy a pre-built image. Other useful deployment commands include:
 * `make update_deployment` to update to the latest version.
 * `make delete_deployment` to remove your deployment.
 * `make restart_deployment` to restart your deployment.
 * `make get_deployment_pods` to get the pods from your deployment.
 
 ### Building and Deploying Your Own Image
-If you're interested in doing this, you should fork this repo. You must update `kubernetes.yaml` and the `Makefile` to point at your own Docker registry rather than
+If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update `kubernetes.yaml` and the `Makefile` to point at your registry.
 
 #### Create a Local Registry to host Build Image
-`make create_local_registry` will setup a local container registry, named `local-registry`. You only need to set it up once, or if `dockers/build/Dockerfile` has been updated. Other local registry management commands include:
+`make create_local_registry` will setup a local container registry, named `local-registry`. You only need to do this once, or if you delete the registry. Other local registry management commands include:
 * `make stop_local_registry` to stop the registry container
 * `make destroy_local_registry` to delete the registry container.
 
-#### Build an Image to Deploy
+#### Build the `jonline-build` Image
+`make build_jonline_build` will build the `jonline-build` image and upload it to your, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `dockers/build/Dockerfile` has been updated.
 
-1. First, update `CLOUD_REGISTRY` in the `Makefile` to point to your registry. You will not be able to push to `registry.digitalocean.com/jonline` 🚫.
-2. `make server_docker_cloud` to build the image and upload it to your tag registry. The version will match that in the `Cargo.toml`.
+#### Build an Image to Deploy
+1. First, update `CLOUD_REGISTRY` in the `Makefile` to point to your registry. You will not be able to push to `docker.io/jonlatane` 🚫.
+2. `make release` will build your release (essentially, `target/release/jonline_tonic`).
+3. `make push_release_cloud` will build the image and upload it to your Docker registry. The version will match that in the `Cargo.toml`.
+    * Be careful! If you built with `cargo build --release` and not `make release`, you could end up creating a useless Linux Docker image with a macOS or Windows `jonline-tonic` binary.
 
 #### Deploying your image
-Make sure to update `kubernetes.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make create_deployment`
-
-### Deploy your imae
+Make sure to update `kubernetes.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make create_deployment` to launch your forked Jonline.
 
 ## Scaling via Federation
 
