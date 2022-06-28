@@ -66,17 +66,19 @@ If you're interested in building your own version of Jonline, you must fork this
 
 #### Create a Local Registry to host Build Image
 `make create_local_registry` will setup a local container registry, named `local-registry`. You only need to do this once, or if you delete the registry. Other local registry management commands include:
-* `make stop_local_registry` to stop the registry container
+* `make stop_local_registry` to stop the registry container.
 * `make destroy_local_registry` to delete the registry container.
 
 #### Build the `jonline-build` Image
-`make build_jonline_build` will build the `jonline-build` image and upload it to your, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `dockers/build/Dockerfile` has been updated.
+`make push_builder_local` will build the `jonline-build` image and upload it to your local registry, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `dockers/build/Dockerfile` has been updated.
+* If you want to modify `jonline-build` and use/share it, `make push_builder_cloud` will push it to your remote `CLOUD_REGISTRY` you set in the `Makefile`.
 
 #### Build an Image to Deploy
 1. First, update `CLOUD_REGISTRY` in the `Makefile` to point to your registry. You will not be able to push to `docker.io/jonlatane` 🚫.
 2. `make release` will build your release (essentially, `target/release/jonline_tonic`).
 3. `make push_release_cloud` will build the image and upload it to your Docker registry. The version will match that in the `Cargo.toml`.
     * Be careful! If you built with `cargo build --release` and not `make release`, you could end up creating a useless Linux Docker image with a macOS or Windows `jonline-tonic` binary.
+    * You can also `make push_release_local` and test running the image from your local repo before pushing it to your cloud repo.
 
 #### Deploying your image
 Make sure to update `kubernetes.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make create_deployment` to launch your forked Jonline.
