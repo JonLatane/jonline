@@ -62,7 +62,7 @@ Pre-built images are available to deploy from `docker.io/jonlatane`. Once you've
 * `make get_deployment_pods` to get the pods from your deployment.
 
 ### Building and Deploying Your Own Image
-If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the `image` in `kubernetes.yaml` and the `CLOUD_REGISTRY` in `Makefile` to point at your registry.
+If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the [`image` in `kubernetes.yaml`](https://github.com/JonLatane/jonline_tonic/blob/main/kubernetes.yaml#L32-L33) and the [`CLOUD_REGISTRY` in `Makefile`](https://github.com/JonLatane/jonline_tonic/blob/main/Makefile#L5) to point at your registry.
 
 #### Create a Local Registry to host Build Image
 `make create_local_registry` will setup a local container registry, named `local-registry`. You only need to do this once, or if you delete the registry. Other local registry management commands include:
