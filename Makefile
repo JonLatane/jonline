@@ -60,3 +60,9 @@ target/release/jonline_tonic:
 
 lines_of_code:
 	git ls-files | xargs cloc
+
+setup_diesel_cli_macos_homebrew: export LDFLAGS := $(value LDFLAGS) -L/usr/local/opt/mysql-client/lib
+setup_diesel_cli_macos_homebrew: export CPPFLAGS := $(value CPPFLAGS) -I/usr/local/opt/mysql-client/include
+setup_diesel_cli_macos_homebrew:
+	brew install sqlite3 mysql-connector-c
+	cargo install diesel_cli

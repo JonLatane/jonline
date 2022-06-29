@@ -11,6 +11,8 @@ tonic-reflection = "0.4.0"
 tokio = { version = "1.18.0", features = ["macros", "rt-multi-thread"] }
 prost = "0.10.1"
 prost-types = "0.10.1"
+diesel = { version = "1.4.8", features = ["postgres"] }
+dotenv = "0.15.0"
 
 [build-dependencies]
 tonic-build = "0.7.2"
