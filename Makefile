@@ -18,51 +18,58 @@ stop_local_registry:
 destroy_local_registry: stop_local_registry
 	rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
 
-release: build_release push_release_local
+release: build_backend_release push_release_local
 
 create_deployment:
-	kubectl create -f kubernetes.yaml --save-config
+	kubectl create -f backend/k8s/jonline.yaml --save-config
 
 update_deployment:
-	kubectl apply -f kubernetes.yaml
+	kubectl apply -f backend/k8s/jonline.yaml
 
 delete_deployment:
-	kubectl delete -f kubernetes.yaml
+	kubectl delete -f backend/k8s/jonline.yaml
 
 restart_deployment:
-	kubectl rollout restart deployment jonline-tonic
+	kubectl rollout restart deployment jonline
+
+
+create_db_deployment:
+	kubectl create -f backend/k8s/k8s-postgres.yaml --save-config
+
+update_db_deployment:
+	kubectl apply -f backend/k8s/k8s-postgres.yaml
+
+delete_db_deployment:
+	kubectl delete -f backend/k8s/k8s-postgres.yaml
+
+restart_db_deployment:
+	kubectl rollout restart deployment jonline-postgres
 
 get_deployment_pods:
-	kubectl get pods --selector=app=jonline-tonic
+	kubectl get pods --selector=app=jonline
 
 push_builder_local:
-	docker build . -t $(LOCAL_REGISTRY)/jonline-build -f dockers/build/Dockerfile
+	docker build . -t $(LOCAL_REGISTRY)/jonline-build -f backend/docker/build/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline-build
 
 push_builder_cloud:
-	docker build . -t $(CLOUD_REGISTRY)/jonline-build -f dockers/build/Dockerfile
+	docker build . -t $(CLOUD_REGISTRY)/jonline-build -f backend/docker/build/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline-build
 
-build_release:
-	docker run --rm -v $$(pwd):/opt -w /opt/src $(LOCAL_REGISTRY)/jonline-build:latest /bin/bash -c "cargo build --release"
+build_backend_release:
+	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-build:latest /bin/bash -c "cargo build --release"
 
-push_release_local: target/release/jonline_tonic
-	docker build . -t $(LOCAL_REGISTRY)/jonline-tonic -f dockers/server/Dockerfile
-	docker push $(LOCAL_REGISTRY)/jonline-tonic
+push_release_local: backend/target/release/jonline
+	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
+	docker push $(LOCAL_REGISTRY)/jonline
 
-push_release_cloud: target/release/jonline_tonic
+push_release_cloud: backend/target/release/jonline
 	$(info "WARNING: Ensure you generated your release with 'make release' rather than 'cargo build --release'.")
-	docker build . -t $(CLOUD_REGISTRY)/jonline-tonic:$(VERSION) -f dockers/server/Dockerfile
-	docker push $(CLOUD_REGISTRY)/jonline-tonic:$(VERSION)
+	docker build . -t $(CLOUD_REGISTRY)/jonline:$(VERSION) -f backend/docker/server/Dockerfile
+	docker push $(CLOUD_REGISTRY)/jonline:$(VERSION)
 
-target/release/jonline_tonic:
+backend/target/release/jonline:
 	$(error "Please run 'make release' first.")
 
 lines_of_code:
 	git ls-files | xargs cloc
-
-setup_diesel_cli_macos_homebrew: export LDFLAGS := $(value LDFLAGS) -L/usr/local/opt/mysql-client/lib
-setup_diesel_cli_macos_homebrew: export CPPFLAGS := $(value CPPFLAGS) -I/usr/local/opt/mysql-client/include
-setup_diesel_cli_macos_homebrew:
-	brew install sqlite3 mysql-connector-c
-	cargo install diesel_cli

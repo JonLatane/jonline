@@ -1,21 +1,10 @@
 # Jonline
 
-*Note: though you can [build](#building-and-running-locally) and [deploy](#deploying) the skeleton service documented here, Jonline is nowhere near fully implemented as documented here.*
+*Note: though you can [build](https://github.com/JonLatane/jonline/tree/main/backend#building-and-running-locally) and [deploy](https://github.com/JonLatane/jonline/tree/main/backend#deploying) the skeleton service documented here, Jonline is nowhere near fully implemented as documented here.*
 
-Federated GPLv3 gRPC social network implemented with Rust/Tonic.
+Jonline is an open-source server+client for maintaining a small, localized social network. A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to any Kubernetes provider of their choosing (and to fork and modify). Assuming you can get a few boring, standard, inexpensive prerequisites set, you should be able to clone this repo and have Jonline up and running in a matter of minutes.
 
-The goal of Jonline is to provide an open-source server+client for maintaining a small, localized social network. A central goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to their own server (and to fork and modify). Assuming you can get a few boring, standard, inexpensive prerequisites set, you should be able to clone this repo and have Jonline up and running in a matter of minutes.
-
-For the prerequisites, you only need setup on your end:
-
-* A Kubernetes (k8s) cluster
-* An empty PostgreSQL database
-
-Optionally, Jonline will also integrate with:
-* A `memcached` instance (you can use one on k8s)
-
-And to use a fork, you might also want:
-* A Docker registry you can push images to (your DockerHub account is fine)
+In terms of prerequisites, all you need is a Kubernetes (k8s) cluster with the names `jonline` and `jonline-postgres` available! Assuming `kubectl` works, you can just `make create_db_deployment && make create_deployment` and you should have the backend up and running! Optionally, Jonline will also integrate with a non-k8s PostgreSQL DB (so you can skip the `make create_db_deployment`).
 
 Why this goal for this project? See [Scaling Social Software via Federation](#scaling-social-software-via-federation).
 
@@ -47,38 +36,3 @@ Once a client is implemented, it should be fairly straightforward to add E2E to 
 
 ### Multi-server usage
 Suppose you have two accounts with friends, say, on `jonline.io` and `bobline.com`. To federate your accounts, you may simply pass an `auth_token` from your `bobline.com` account that you use to talk to Bob (who I don't know) into `jonline.io`. The general idea is that users can choose to keep their primary account with the person they trust the most. Maybe it's not me 😭 But that's fine; I won't even know!
-
-## Building and running locally
-Use `cargo build` and `cargo run` to run against your local database and memcached.
-
-## Deploying
-A Dockerfile for a build server (to build for Linux server images) lives in `dockers/build`. You don't really need to know the technical details though. The `Makefile` may contain additional targets, though this list should be comprehensive for general usage.
-
-### Deploying the Pre-Built Image
-Pre-built images are available to deploy from `docker.io/jonlatane`. Once you've cloned this repo, even without Rust, you can simply `make create_deployment` to deploy a pre-built image. Other useful deployment commands include:
-* `make update_deployment` to update to the latest version.
-* `make delete_deployment` to remove your deployment.
-* `make restart_deployment` to restart your deployment.
-* `make get_deployment_pods` to get the pods from your deployment.
-
-### Building and Deploying Your Own Image
-If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the [`image` in `kubernetes.yaml`](https://github.com/JonLatane/jonline_tonic/blob/main/kubernetes.yaml#L32) and the [`CLOUD_REGISTRY` in `Makefile`](https://github.com/JonLatane/jonline_tonic/blob/main/Makefile#L5) to point at your registry.
-
-#### Create a Local Registry to host Build Image
-`make create_local_registry` will setup a local container registry, named `local-registry`. You only need to do this once, or if you delete the registry. Other local registry management commands include:
-* `make stop_local_registry` to stop the registry container.
-* `make destroy_local_registry` to delete the registry container.
-
-#### Build the `jonline-build` Image
-`make push_builder_local` will build the `jonline-build` image and upload it to your local registry, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `dockers/build/Dockerfile` has been updated.
-* If you want to modify `jonline-build` and use/share it, `make push_builder_cloud` will push it to your remote `CLOUD_REGISTRY` you set in the `Makefile`.
-
-#### Build an Image to Deploy
-1. First, update `CLOUD_REGISTRY` in the `Makefile` to point to your registry. You will not be able to push to `docker.io/jonlatane` 🚫.
-2. `make release` will build your release (essentially, `target/release/jonline_tonic`).
-3. `make push_release_cloud` will build the image and upload it to your Docker registry. The version will match that in the `Cargo.toml`.
-    * Be careful! If you built with `cargo build --release` and not `make release`, you could end up creating a useless Linux Docker image with a macOS or Windows `jonline-tonic` binary.
-    * You can also `make push_release_local` and test running the image from your local repo before pushing it to your cloud repo.
-
-#### Deploying your image
-Make sure to update `kubernetes.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make create_deployment` to launch your forked Jonline.

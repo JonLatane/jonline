@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package jonline;
+
+import "google/protobuf/timestamp.proto";
+
+message UpdateResponse {
+  enum Result {
+    OK = 0;
+    ERROR = 1;
+  }
+  Result result = 1;
+  repeated UpdateMessage messages = 2;
+}
+
+message UpdateMessage {
+  enum Level {
+    INFO = 0;
+    WARNING = 1;
+    ERROR = 2;
+  }
+  Level level = 1;
+  string message = 2;
+}

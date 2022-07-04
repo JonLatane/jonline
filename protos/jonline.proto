@@ -9,6 +9,7 @@ import "authentication.proto";
 import "posts.proto";
 import "users.proto";
 import "federation.proto";
+import "common.proto";
 
 service Jonline {
   // Get the version (from Cargo) of the Jonline service.

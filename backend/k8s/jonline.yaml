@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jonline
+  labels:
+    app: jonline
+spec:
+  ports:
+    - port: 50051
+      targetPort: 50051
+  selector:
+    app: jonline
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jonline
+  labels:
+    app: jonline
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: jonline
+  template:
+    metadata:
+      labels:
+        app: jonline
+    spec:
+      containers:
+        - image: docker.io/jonlatane/jonline:0.1.2
+          name: jonline
+          env:
+            - name: DATABASE_URL
+              value: postgres://admin:secure_password1@jonline-postgres/jonline
+          ports:
+            - containerPort: 50051
+              name: jonline

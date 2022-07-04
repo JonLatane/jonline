@@ -4,7 +4,7 @@ package jonline;
 
 message User {
   string id = 1;
-  optional string username = 2;
+  string username = 2;
   optional string email = 3;
   optional string phone = 4;
 }

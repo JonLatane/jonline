@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jonline-postgres
+  labels:
+    app: jonline-postgres
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: jonline-postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jonline-postgres
+  labels:
+    app: jonline-postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: jonline-postgres
+  template:
+    metadata:
+      labels:
+        app: jonline-postgres
+    spec:
+      containers:
+        - image: postgres:11.4-alpine
+          name: db
+          env:
+            - name: POSTGRES_USER
+              value: admin
+            - name: POSTGRES_DB
+              value: jonline
+            - name: POSTGRES_PASSWORD
+              value: secure_password1
+          ports:
+            - containerPort: 5432
+              name: db
