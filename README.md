@@ -2,9 +2,9 @@
 
 *Note: though you can [build](https://github.com/JonLatane/jonline/tree/main/backend#building-and-running-locally) and [deploy](https://github.com/JonLatane/jonline/tree/main/backend#deploying) the skeleton service documented here, Jonline is nowhere near fully implemented as documented here.*
 
-Jonline is an open-source server+client for maintaining a small, localized social network. A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to any Kubernetes provider of their choosing (and to fork and modify). Assuming you can get a few boring, standard, inexpensive prerequisites set, you should be able to clone this repo and have Jonline up and running in a matter of minutes.
+Jonline is an open-source server+client for maintaining a small, localized social network. A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to any Kubernetes provider of their choosing (and to fork and modify). It's also (optimistically) simple and straightforward enough to serve as a starter for many projects, so long as they retain the [GPLv3 license Jonline is released under](https://github.com/JonLatane/jonline/blob/main/LICENSE.md).
 
-In terms of prerequisites, all you need is a Kubernetes (k8s) cluster with the names `jonline` and `jonline-postgres` available! Assuming `kubectl` works, you can just `make create_db_deployment && make create_deployment` and you should have the backend up and running! Optionally, Jonline will also integrate with a non-k8s PostgreSQL DB (so you can skip the `make create_db_deployment`).
+All you need is a Kubernetes (k8s) cluster with the names `jonline` and `jonline-postgres` available to have your own backend up in minutes. Assuming `kubectl` works, you can just `make create_db_deployment && make create_deployment` and you should have the backend up and running! Optionally, Jonline will also integrate with an external PostgreSQL DB (so you can skip the `make create_db_deployment`).
 
 Why this goal for this project? See [Scaling Social Software via Federation](#scaling-social-software-via-federation).
 
