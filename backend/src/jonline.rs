@@ -26,6 +26,17 @@ impl Jonline for JonLineImpl {
         rpcs::get_service_version(&self.pool, request)
     }
 
+    async fn create_account(
+        &self,
+        request: Request<CreateAccountRequest>,
+    ) -> Result<Response<User>, Status> {
+        let conn = match get_connection(&self.pool) {
+            Err(e) => return Err(e),
+            Ok(conn)  => conn
+        };
+        rpcs::create_account(&conn, request)
+    }
+
     async fn get_post(
         &self,
         request: Request<GetPostRequest>,

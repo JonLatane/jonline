@@ -22,3 +22,7 @@ message UpdateMessage {
   Level level = 1;
   string message = 2;
 }
+
+message GetServiceVersionResponse {
+  string version = 1;
+}

@@ -14,9 +14,6 @@ import "common.proto";
 service Jonline {
   // Get the version (from Cargo) of the Jonline service.
   rpc GetServiceVersion(google.protobuf.Empty) returns (GetServiceVersionResponse) {}
+  rpc CreateAccount(CreateAccountRequest) returns (User) {}
   rpc GetPost(GetPostRequest) returns (Post) {}
-}
-
-message GetServiceVersionResponse {
-  string version = 1;
 }
