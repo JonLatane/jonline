@@ -14,6 +14,13 @@ service Jonline {
   // Get the version (from Cargo) of the Jonline service.
   rpc GetServiceVersion(google.protobuf.Empty) returns (GetServiceVersionResponse) {}
   // Creates a user account and provides an auth token.
-  rpc CreateAccount(CreateAccountRequest) returns (LoginResponse) {}
+  rpc CreateAccount(CreateAccountRequest) returns (AuthTokenResponse) {}
+  // Logs in a user and provides an Auth Token (along with a Refresh Token).
+  rpc Login(LoginRequest) returns (AuthTokenResponse) {}
+  // Gets a new Refresh Token (given an Auth Token).
+  rpc RefreshToken(RefreshTokenRequest) returns (ExpirableToken) {}
+
+  // Gets the current user. Requires a Refresh Token in request metadata.
+  rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
   rpc GetPost(GetPostRequest) returns (Post) {}
 }

@@ -25,9 +25,9 @@ A Dockerfile for a build server (to build `jonline` Linux x86 server images on w
 * `make stop_local_registry` to stop the registry container.
 * `make destroy_local_registry` to delete the registry container.
 
-#### Build the `jonline-build` Image
-`make push_builder_local` will build the `jonline-build` image and upload it to your local registry, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `docker/build/Dockerfile` has been updated.
-* If you want to modify `jonline-build` and use/share it, `make push_builder_cloud` will push it to your remote `CLOUD_REGISTRY` you set in the `Makefile`.
+#### Build the `jonline-be-build` Image
+`make push_builder_local` will build the `jonline-be-build` image and upload it to your local registry, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `docker/build/Dockerfile` has been updated.
+* If you want to modify `jonline-be-build` and use/share it, `make push_builder_cloud` will push it to your remote `CLOUD_REGISTRY` you set in the `Makefile`.
 
 #### Build an Image to Deploy
 1. First, update `CLOUD_REGISTRY` in the `Makefile` to point to your registry. You will not be able to push to `docker.io/jonlatane` 🚫.

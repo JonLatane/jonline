@@ -5,8 +5,8 @@ use tonic::{Request, Response, Status};
 use std::time;
 
 pub fn get_post(
-    _conn: &PgPooledConnection,
     request: Request<GetPostRequest>,
+    _conn: &PgPooledConnection,
 ) -> Result<Response<Post>, Status> {
     println!("Request from {:?}", request.remote_addr());
     let now_as_secs = time::SystemTime::now()

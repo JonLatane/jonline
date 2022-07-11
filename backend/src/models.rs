@@ -1,27 +1,24 @@
-
 use crate::schema::users;
-use crate::schema::user_auth_tokens;
-use crate::schema::user_refresh_tokens;
 use crate::schema::posts;
 
-#[derive(Queryable,Insertable)]
-#[table_name="users"]
-pub struct User<'a> {
+#[derive(Queryable, Insertable)]
+#[table_name = "users"]
+pub struct User {
     pub id: i32,
-    pub username: &'a str,
-    pub password_salted_hash: &'a str,
-    pub email: Option<&'a str>,
-    pub phone: Option<&'a str>
+    pub username: String,
+    pub password_salted_hash: String,
+    pub email: Option<String>,
+    pub phone: Option<String>,
 }
 
-#[derive(Queryable,Insertable)]
-#[table_name="posts"]
-pub struct Post<'a> {
+#[derive(Queryable, Insertable)]
+#[table_name = "posts"]
+pub struct Post {
     pub id: i32,
-    pub title: &'a str,
-    pub body: &'a str,
+    pub title: String,
+    pub body: String,
     pub user_id: Option<i32>,
     pub parent_post_id: Option<i32>,
-    pub shortcode: Option<&'a str>,
+    pub shortcode: Option<String>,
     pub published: bool,
 }

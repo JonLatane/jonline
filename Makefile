@@ -1,19 +1,13 @@
-.DEFAULT_GOAL := release
+.DEFAULT_GOAL := release_local_be
 
-LOCAL_REGISTRY := kubernetes.docker.internal:5000
 LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
+LOCAL_REGISTRY := kubernetes.docker.internal:5000
 CLOUD_REGISTRY := docker.io/jonlatane
-VERSION := $$(cat Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
+BE_VERSION := $$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
 
-# Local BE dev targets
-build_local_be:
-	cd backend && cargo build
-
-rebuild_local_protos:
-	cd backend && cargo clean -p prost-build
-	cd backend && cargo build
-
-release: build_backend_release push_release_local
+# Core release targets
+release_local_be: build_backend_release push_release_local
+release_cloud_be: build_backend_release push_release_cloud
 
 # K8s server deployment targets
 create_be_deployment:
@@ -55,20 +49,20 @@ stop_local_registry:
 destroy_local_registry: stop_local_registry
 	rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
 
-# jonline-build image targets
+# jonline-be-build image targets
 push_builder_local: create_local_registry
-	docker build . -t $(LOCAL_REGISTRY)/jonline-build -f backend/docker/build/Dockerfile
-	docker push $(LOCAL_REGISTRY)/jonline-build
+	docker build . -t $(LOCAL_REGISTRY)/jonline-be-build -f backend/docker/build/Dockerfile
+	docker push $(LOCAL_REGISTRY)/jonline-be-build
 
 push_builder_cloud:
-	docker build . -t $(CLOUD_REGISTRY)/jonline-build -f backend/docker/build/Dockerfile
-	docker push $(CLOUD_REGISTRY)/jonline-build
+	docker build . -t $(CLOUD_REGISTRY)/jonline-be-build -f backend/docker/build/Dockerfile
+	docker push $(CLOUD_REGISTRY)/jonline-be-build
 
 # Server image build targets
 build_backend_release: backend/target/release/jonline-server-release
 
 backend/target/release/jonline-server-release: push_builder_local
-	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-build:latest /bin/bash -c "cargo build --release"
+	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-be-build:latest /bin/bash -c "cargo build --release"
 	mv backend/target/release/jonline backend/target/release/jonline-server-release
 
 push_release_local: create_local_registry build_backend_release
@@ -76,8 +70,18 @@ push_release_local: create_local_registry build_backend_release
 	docker push $(LOCAL_REGISTRY)/jonline
 
 push_release_cloud: build_backend_release
-	docker build . -t $(CLOUD_REGISTRY)/jonline:$(VERSION) -f backend/docker/server/Dockerfile
-	docker push $(CLOUD_REGISTRY)/jonline:$(VERSION)
+	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
+	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
+
+# Full-Stack dev targets
+clean:
+	cd backend && $(MAKE) clean
+
+clean_protos:
+	cd backend && $(MAKE) clean_protos
+
+build_local:
+	cd backend && $(MAKE) build
 
 lines_of_code:
 	git ls-files | xargs cloc

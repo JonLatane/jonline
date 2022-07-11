@@ -14,7 +14,7 @@ table! {
     user_auth_tokens (id) {
         id -> Int4,
         user_id -> Int4,
-        token -> Text,
+        token -> Varchar,
         created_at -> Timestamp,
         expires_at -> Timestamp,
     }
@@ -24,7 +24,7 @@ table! {
     user_refresh_tokens (id) {
         id -> Int4,
         auth_token_id -> Int4,
-        token -> Text,
+        token -> Varchar,
         created_at -> Timestamp,
         expires_at -> Timestamp,
     }
@@ -34,7 +34,7 @@ table! {
     users (id) {
         id -> Int4,
         username -> Varchar,
-        password_salted_hash -> Text,
+        password_salted_hash -> Varchar,
         email -> Nullable<Varchar>,
         phone -> Nullable<Varchar>,
     }

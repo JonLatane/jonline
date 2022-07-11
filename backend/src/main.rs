@@ -9,18 +9,18 @@ extern crate ring;
 
 use std::env;
 
+pub mod db_connection;
+pub mod models;
+pub mod protos;
+pub mod auth;
+pub mod rpcs;
 pub mod schema;
-mod protos;
-mod db_connection;
-mod rpcs;
-mod models;
+pub mod jonline;
 
-mod jonline;
-use jonline::JonLineImpl;
-use protos::jonline_server::{JonlineServer};
+use crate::jonline::JonLineImpl;
+use protos::jonline_server::JonlineServer;
 
-const FILE_DESCRIPTOR_SET: &[u8] =
-    tonic::include_file_descriptor_set!("greeter_descriptor");
+const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = "[::1]:50051".parse().unwrap();
     let jonline = JonLineImpl {
-        pool: db_connection::establish_pool()
+        pool: db_connection::establish_pool(),
     };
 
     let reflection_service = tonic_reflection::server::Builder::configure()

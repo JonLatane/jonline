@@ -1,19 +1,19 @@
-use crate::db_connection::*;
-use crate::protos::*;
+use crate::db_connection::PgPooledConnection;
+use crate::protos::{AuthTokenResponse, CreateAccountRequest};
+use crate::auth;
 use crate::schema::users::dsl::*;
-use crate::rpcs::auth;
 use bcrypt::{hash, DEFAULT_COST};
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
 
 pub fn create_account(
+  request: Request<CreateAccountRequest>,
     conn: &PgPooledConnection,
-    request: Request<CreateAccountRequest>,
-) -> Result<Response<LoginResponse>, Status> {
+) -> Result<Response<AuthTokenResponse>, Status> {
     let req = request.into_inner();
     let hashed_password = hash(req.password, DEFAULT_COST).unwrap();
 
-    let inserted_ids: Result<Vec<i32>, _> = insert_into(users)
+    let insert_result: Result<i32, _> = insert_into(users)
         .values((
             username.eq(req.username.to_owned()),
             password_salted_hash.eq(hashed_password),
@@ -21,17 +21,17 @@ pub fn create_account(
             phone.eq(req.phone.to_owned()),
         ))
         .returning(id)
-        .get_results(conn);
+        .get_result(conn);
 
-    let user: User = match inserted_ids {
+    let user_id: i32 = match insert_result {
         Err(_) => return Err(Status::new(Code::AlreadyExists, "username_already_exists")),
-        Ok(ids) => User {
-            id: bs58::encode(ids.first().unwrap().to_string()).into_string(),
-            username: req.username,
-            email: req.email,
-            phone: req.phone,
-        },
+        Ok(user_id) => user_id,
     };
 
-    return Ok(Response::new(auth::generate_auth_and_refresh_token(user)));
+    let tokens = auth::generate_auth_and_refresh_token(user_id, conn);
+    return Ok(Response::new(AuthTokenResponse {
+        auth_token: tokens.auth_token,
+        refresh_token: tokens.refresh_token,
+        user: Some(auth::user_response(user_id, req.username, req.email, req.phone)),
+    }));
 }

@@ -1,9 +1,17 @@
 [package]
 name = "jonline"
-version = "0.1.2"
+version = "0.1.4"
 edition = "2021"
 
+authors = ["Jon Latané <jonlatane@gmail.com>"]
+
+license = "GPL-3.0"
+repository = "https://github.com/jonlatane/jonline"
+description = "Backend of Jonline"
+default-run = "jonline"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# [workspace]
 
 [dependencies]
 tonic = "0.7.1"

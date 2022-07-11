@@ -31,7 +31,7 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.1.2
+        - image: docker.io/jonlatane/jonline:0.1.4
           name: jonline
           env:
             - name: DATABASE_URL
@@ -39,3 +39,24 @@ spec:
           ports:
             - containerPort: 50051
               name: jonline
+--
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: jonline-refresh-token-cleanup
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: jonline-refresh-token-cleanup
+            image: docker.io/jonlatane/jonline:0.1.4
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: DATABASE_URL
+                value: postgres://admin:secure_password1@jonline-postgres/jonline
+            command:
+            - jonline_refresh_token_cleanup
+          restartPolicy: OnFailure

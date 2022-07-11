@@ -1,45 +1,35 @@
-use crate::db_connection::*;
-use crate::protos::*;
+use crate::db_connection::PgPooledConnection;
+use crate::models;
+use crate::protos::{LoginRequest, AuthTokenResponse};
+use crate::auth;
 use crate::schema::users::dsl::*;
+use bcrypt::verify;
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
-use bcrypt::{DEFAULT_COST, hash};
-
 
 pub fn login(
+    request: Request<LoginRequest>,
     conn: &PgPooledConnection,
-    request: Request<LoginRequestRequest>,
-) -> Result<Response<LoginResponse>, Status> {
-    // let req = request.into_inner();
-    // let hashed_password = hash(req.password, DEFAULT_COST).unwrap();
+) -> Result<Response<AuthTokenResponse>, Status> {
+    let req = request.into_inner();
+    let permission_denied = Status::new(Code::PermissionDenied, "invalid_username_or_password");
+    let user_result = users
+        .filter(username.eq(req.username))
+        .first::<models::User>(conn);
+    let user: models::User = match user_result {
+        Err(_) => return Err(permission_denied),
+        Ok(user) => user,
+    };
 
-    // let inserted_ids: Result<Vec<i32>, _> = insert_into(users)
-    //     .values((
-    //         username.eq(req.username.to_owned()),
-    //         password_salted_hash.eq(hashed_password),
-    //         email.eq(req.email.to_owned()),
-    //         phone.eq(req.phone.to_owned()),
-    //     ))
-    //     .returning(id)
-    //     .get_results(conn);
+    let tokens = match verify(req.password, &user.password_salted_hash) {
+        Err(_) => return Err(permission_denied),
+        Ok(false) => return Err(permission_denied),
+        Ok(true) => auth::generate_auth_and_refresh_token(user.id, conn),
+    };
 
-    // match inserted_ids {
-        /*Ok(ids) => */Ok(Response::new(LoginResponse {
-            auth_token: Some(ExpirableToken {
-                token: "".to_owned(),
-                expires_at: None,
-            }),
-            refresh_token: Some(ExpirableToken {
-                token: "".to_owned(),
-                expires_at: None,
-            }),
-            user: User {
-                id: "".to_owned(),
-                username: req.username,
-                email: None,
-                phone: None,
-            },
-        }))//,
-    //     Err(_) => Err(Status::new(Code::AlreadyExists, "User already exists")),
-    // }
+    Ok(Response::new(AuthTokenResponse {
+        auth_token: tokens.auth_token,
+        refresh_token: tokens.refresh_token,
+        user: Some(auth::user_response(user.id, user.username, user.email, user.phone)),
+    }))
 }
