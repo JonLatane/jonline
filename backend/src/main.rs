@@ -5,6 +5,7 @@ extern crate dotenv;
 extern crate diesel_migrations;
 extern crate bcrypt;
 extern crate bs58;
+extern crate ring;
 
 use std::env;
 

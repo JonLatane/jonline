@@ -3,31 +3,40 @@ syntax = "proto3";
 package jonline;
 
 import "google/protobuf/timestamp.proto";
+import "users.proto";
 
 message CreateAccountRequest {
   string username = 1;
   string password = 2;
   optional string email = 3;
   optional string phone = 4;
+  optional google.protobuf.Timestamp expires_at = 5;
 }
 
 message LoginRequest {
   string username = 1;
   string password = 2;
+  optional google.protobuf.Timestamp expires_at = 3;
 }
 
 message LoginResponse {
-  bool successful = 1;
-  optional string auth_token= 2;
+  ExpirableToken auth_token = 1;
+  ExpirableToken refresh_token = 2;
+  User user = 3;
+}
+
+message ExpirableToken {
+  string token = 1;
+  optional google.protobuf.Timestamp expires_at = 2;
 }
 
 message RefreshTokenRequest {
   string auth_token = 1;
-  optional google.protobuf.Timestamp expiration = 3;
+  optional google.protobuf.Timestamp expires_at = 3;
 }
 
 message RefreshTokenResponse {
   bool successful = 1;
   optional string refresh_token = 2;
-  optional google.protobuf.Timestamp expiration = 3;
+  optional google.protobuf.Timestamp expires_at = 3;
 }

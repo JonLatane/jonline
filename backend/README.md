@@ -6,14 +6,14 @@ The backend of Jonline is built with Rust, Tonic, Diesel, PostreSQL and Memcache
 Use `cargo build` and `cargo run` to run against your local database and memcached.
 
 ## Deploying
-The quickest way to deploy is to simply run `make create_db_deployment && make create_deployment`. This will create a database and two `jonline` service replicas in your Kubernetes cluster.
+The quickest way to deploy is to simply run `make create_db_deployment create_be_deployment`. This will create a database and two `jonline` service replicas in your Kubernetes cluster.
 
 ### Deploying the Pre-Built Image
-Pre-built images are available to deploy from `docker.io/jonlatane`. Once you've cloned this repo, even without Rust, you can simply `make create_deployment` to deploy a pre-built image. Other useful deployment commands include:
-* `make update_deployment` to update to the latest version.
-* `make delete_deployment` to remove your deployment.
-* `make restart_deployment` to restart your deployment.
-* `make get_deployment_pods` to get the pods from your deployment.
+Pre-built images are available to deploy from `docker.io/jonlatane`. Once you've cloned this repo, even without Rust, you can simply `make create_be_deployment` to deploy a pre-built image. Other useful deployment commands include:
+* `make update_be_deployment` to update to the latest version.
+* `make delete_be_deployment` to remove your deployment.
+* `make restart_be_deployment` to restart your deployment.
+* `make get_be_deployment_pods` to get the pods from your deployment.
 
 ### Building and Deploying Your Own Image
 If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the [`image` in `k8s/jonline.yaml`](https://github.com/JonLatane/jonline/blob/main/backend/k8s/jonline.yaml#L32) and the [`CLOUD_REGISTRY` in `Makefile`](https://github.com/JonLatane/jonline/blob/main/Makefile#L5) to point at your registry.
@@ -37,4 +37,4 @@ A Dockerfile for a build server (to build `jonline` Linux x86 server images on w
     * You can also `make push_release_local` and test running the image from your local repo before pushing it to your cloud repo.
 
 #### Deploying your image
-Make sure to update `k8s/jonline.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make create_deployment` to launch your forked Jonline.
+Make sure to update `k8s/jonline.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make create_be_deployment` to launch your forked Jonline.

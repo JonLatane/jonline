@@ -4,6 +4,10 @@ package jonline;
 
 import "google/protobuf/timestamp.proto";
 
+message GetServiceVersionResponse {
+  string version = 1;
+}
+
 message FederatedAccount {
   string id = 1;
   string server_url = 2;

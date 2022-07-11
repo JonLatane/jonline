@@ -4,7 +4,7 @@
 
 Jonline is an open-source server+client for maintaining a small, localized social network. A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to any Kubernetes provider of their choosing (and to fork and modify). It's also (optimistically) simple and straightforward enough to serve as a starter for many projects, so long as they retain the [GPLv3 license Jonline is released under](https://github.com/JonLatane/jonline/blob/main/LICENSE.md).
 
-All you need is a Kubernetes (k8s) cluster with the names `jonline` and `jonline-postgres` available to have your own backend up in minutes. Assuming `kubectl` works, you can just `make create_db_deployment && make create_deployment` and you should have the backend up and running! Optionally, Jonline will also integrate with an external PostgreSQL DB (so you can skip the `make create_db_deployment`).
+All you need is a Kubernetes (k8s) cluster with the names `jonline` and `jonline-postgres` available to have your own backend up in minutes.  your `kubectl` works, simply `make create_db_deployment create_be_deployment` from the root if this repo, and you'll have a backend up and running from the [prebuilt images](https://hub.docker.com/repository/docker/jonlatane/jonline). Optionally, Jonline will also integrate with an external PostgreSQL DB (so you can skip the `create_db_deployment`).
 
 Why this goal for this project? See [Scaling Social Software via Federation](#scaling-social-software-via-federation).
 

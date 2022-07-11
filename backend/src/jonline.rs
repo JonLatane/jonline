@@ -29,7 +29,7 @@ impl Jonline for JonLineImpl {
     async fn create_account(
         &self,
         request: Request<CreateAccountRequest>,
-    ) -> Result<Response<User>, Status> {
+    ) -> Result<Response<LoginResponse>, Status> {
         let conn = match get_connection(&self.pool) {
             Err(e) => return Err(e),
             Ok(conn)  => conn
@@ -51,7 +51,7 @@ impl Jonline for JonLineImpl {
 
 fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {
     match pool.get() {
-        Err(_) => Err(Status::new(Code::DataLoss, "DB connection error")),
+        Err(_) => Err(Status::new(Code::DataLoss, "database_connection_failure")),
         Ok(conn) => Ok(conn)
     }
 }
