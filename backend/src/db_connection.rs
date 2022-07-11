@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use diesel_migrations::embed_migrations;
 
 embed_migrations!("./migrations");
-use diesel::r2d2::{ConnectionManager, Pool, PoolError, PooledConnection};
+use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use dotenv::dotenv;
 use std::env;
 

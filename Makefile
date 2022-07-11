@@ -59,11 +59,12 @@ push_builder_cloud:
 	docker push $(CLOUD_REGISTRY)/jonline-be-build
 
 # Server image build targets
-build_backend_release: backend/target/release/jonline-server-release
+build_backend_release: backend/target/release/jonline__server_release
 
-backend/target/release/jonline-server-release: push_builder_local
+backend/target/release/jonline__server_release: push_builder_local
 	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-be-build:latest /bin/bash -c "cargo build --release"
-	mv backend/target/release/jonline backend/target/release/jonline-server-release
+	mv backend/target/release/jonline backend/target/release/jonline__server_release
+	mv backend/target/release/expired_token_cleanup backend/target/release/expired_token_cleanup__server_release
 
 push_release_local: create_local_registry build_backend_release
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
