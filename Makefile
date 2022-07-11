@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := local_be_build
+.DEFAULT_GOAL := release
 
 LOCAL_REGISTRY := kubernetes.docker.internal:5000
 LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
@@ -12,8 +12,6 @@ build_local_be:
 rebuild_local_protos:
 	cd backend && cargo clean -p prost-build
 	cd backend && cargo build
-
-
 
 release: build_backend_release push_release_local
 
@@ -69,7 +67,7 @@ push_builder_cloud:
 # Server image build targets
 build_backend_release: backend/target/release/jonline-server-release
 
-backend/target/release/jonline-server-release:
+backend/target/release/jonline-server-release: push_builder_local
 	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-build:latest /bin/bash -c "cargo build --release"
 	mv backend/target/release/jonline backend/target/release/jonline-server-release
 

@@ -1,9 +1,9 @@
 # Jonline Backend
 
-The backend of Jonline is built with Rust, Tonic, Diesel, PostreSQL and Memcached.
+The backend of Jonline is built with Rust, Tonic, Diesel, and PostreSQL.
 
 ## Building and running locally
-Use `cargo build` and `cargo run` to run against your local database and memcached.
+Use `cargo build` and `cargo run` to run against your local database.
 
 ## Deploying
 The quickest way to deploy is to simply run `make create_db_deployment create_be_deployment`. This will create a database and two `jonline` service replicas in your Kubernetes cluster.

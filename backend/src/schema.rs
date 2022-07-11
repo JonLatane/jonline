@@ -5,7 +5,7 @@ table! {
         title -> Varchar,
         body -> Text,
         published -> Bool,
-        user_id -> Int4,
+        user_id -> Nullable<Int4>,
         parent_post_id -> Nullable<Int4>,
     }
 }

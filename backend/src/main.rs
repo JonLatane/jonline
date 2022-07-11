@@ -13,6 +13,7 @@ pub mod schema;
 mod protos;
 mod db_connection;
 mod rpcs;
+mod models;
 
 mod jonline;
 use jonline::JonLineImpl;

@@ -34,11 +34,4 @@ pub fn create_account(
     };
 
     return Ok(Response::new(auth::generate_auth_and_refresh_token(user)));
-    // let tokens = auth::generate_auth_and_refresh_token(user);
-
-    // return Ok(Response::new(LoginResponse {
-    //     auth_token: tokens.auth_token,
-    //     refresh_token: tokens.refresh_token,
-    //     user: Some(user),
-    // }));
 }
