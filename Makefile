@@ -84,5 +84,12 @@ clean_protos:
 build_local:
 	cd backend && $(MAKE) build
 
+generate_certs:
+	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout grpc.jonline.io.key -out grpc.jonline.io.crt -subj "/CN=grpc.jonline.io"
+
+store_secrets: generate_certs
+	kubectl create secret tls grpc-jonline-io-tls --cert=grpc.jonline.io.crt --key=grpc.jonline.io.key
+	rm grpc.jonline.io.key grpc.jonline.io.crt
+
 lines_of_code:
 	git ls-files | xargs cloc

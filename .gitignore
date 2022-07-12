@@ -1,3 +1,5 @@
 /backend/target
 .vscode
 .env
+*.key
+*.crt
