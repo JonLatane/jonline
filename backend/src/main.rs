@@ -18,6 +18,7 @@ pub mod schema;
 pub mod jonline;
 
 use crate::jonline::JonLineImpl;
+use std::net::SocketAddr;
 use protos::jonline_server::JonlineServer;
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
@@ -26,7 +27,8 @@ const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db_connection::migrate_database();
 
-    let addr = "[::1]:50051".parse().unwrap();
+    let addr = SocketAddr::from(([0, 0, 0, 0], 27707));
+
     let jonline = JonLineImpl {
         pool: db_connection::establish_pool(),
     };

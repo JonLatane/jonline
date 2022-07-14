@@ -27,16 +27,23 @@ prepare_integration_test: stop_local_instances
 	sleep 3
 
 test_list_services: prepare_integration_test
-	grpc_cli ls localhost:50051
+	grpc_cli ls localhost:27707
 	$(MAKE) stop_local_instances
 
 test_authentication: reset_local_db prepare_integration_test
-	grpc_cli call localhost:50051 CreateAccount 'username: "test", password: "test"'
-	! grpc_cli call localhost:50051 CreateAccount 'username: "test", password: "expect_error_dup_username"'
-	grpc_cli call localhost:50051 Login 'username: "test", password: "test"'
-	! grpc_cli call localhost:50051 Login 'username: "test", password: "expect_error_wrong_password"'
+	grpc_cli call localhost:27707 CreateAccount 'username: "test", password: "test"'
+	! grpc_cli call localhost:27707 CreateAccount 'username: "test", password: "expect_error_dup_username"'
+	grpc_cli call localhost:27707 Login 'username: "test", password: "test"'
+	! grpc_cli call localhost:27707 Login 'username: "test", password: "expect_error_wrong_password"'
 	echo 'Authentication test successful.'
 	$(MAKE) stop_local_instances
+
+test_authentication_remote:
+	grpc_cli call be.jonline.io:27707 CreateAccount 'username: "test", password: "test"'
+	! grpc_cli call be.jonline.io:27707 CreateAccount 'username: "test", password: "expect_error_dup_username"'
+	grpc_cli call be.jonline.io:27707 Login 'username: "test", password: "test"'
+	! grpc_cli call be.jonline.io:27707 Login 'username: "test", password: "expect_error_wrong_password"'
+	echo 'Authentication test successful.'
 
 # Makes general-purpose dev Makefile targets (from parent dir) accessible.
 # all:

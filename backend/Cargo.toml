@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.4"
+version = "0.1.7"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -11,7 +11,6 @@ description = "Backend of Jonline"
 default-run = "jonline"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-# [workspace]
 
 [dependencies]
 tonic = { version = "0.7.1", features = ["tls"] }

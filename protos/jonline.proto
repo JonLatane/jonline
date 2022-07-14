@@ -22,5 +22,4 @@ service Jonline {
 
   // Gets the current user. Requires a Refresh Token in request metadata.
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
-  rpc GetPost(GetPostRequest) returns (Post) {}
 }

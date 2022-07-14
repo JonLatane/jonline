@@ -5,12 +5,14 @@ metadata:
   labels:
     app: jonline
 spec:
-  ports:
-    - port: 50051
-      targetPort: 50051
+  type: LoadBalancer
   selector:
     app: jonline
-  type: LoadBalancer
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 27707
+      targetPort: 27707
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -20,8 +22,6 @@ metadata:
     app: jonline
 spec:
   replicas: 2
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: jonline
@@ -31,13 +31,28 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.1.4
+        - image: docker.io/jonlatane/jonline:0.1.7
           name: jonline
           env:
             - name: DATABASE_URL
               value: postgres://admin:secure_password1@jonline-postgres/jonline
+            - name: SECRET_TLS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: username
+                  optional: false # same as default; "mysecret" must exist
+                                  # and include a key named "username"
+            - name: SECRET_TLS_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: password
+                  optional: false # same as default; "mysecret" must exist
+                                  # and include a key named "password"
           ports:
-            - containerPort: 50051
+            - containerPort: 27707
+              protocol: TCP
               name: jonline
 ---
 apiVersion: batch/v1
@@ -52,11 +67,11 @@ spec:
         spec:
           containers:
           - name: jonline-expired-token-cleanup
-            image: docker.io/jonlatane/jonline:0.1.4
+            image: docker.io/jonlatane/jonline:0.1.7
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL
                 value: postgres://admin:secure_password1@jonline-postgres/jonline
             command:
             - /opt/jonline_refresh_token_cleanup
-          restartPolicy: OnFailure
+          restartPolicy: Never

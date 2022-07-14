@@ -11,18 +11,18 @@ TBD. Should be a matter of doing a `cargo test`. Ideally there shoouldn't be so 
 ### Local integration testing
 Some really dumb integration tests are provided in `backend/Makefile`. You need `grpc_cli` installed (`brew install grpc_cli`). `make test_list_services` and `make test_authentication` will test Jonline's gRPC reflection and the actual authentication locally with `grpc_cli`.
 
-### Remote integration testing
-Idk dude, I haven't got this working yet. I do this:
+## Testing against a remote Jonline instance (yours, mine, whatever)
+Once you've deployed, get the EXTERNAL-IP of your instance:
 
 ```sh
 $ kubectl get services     
 NAME               TYPE           CLUSTER-IP       EXTERNAL-IP       PORT(S)           AGE
-jonline            LoadBalancer   10.245.181.122   178.128.143.154   50051:31509/TCP   5d7h
+jonline            LoadBalancer   10.245.181.122   178.128.143.154   27707:31509/TCP   5d7h
 jonline-postgres   ClusterIP      10.245.56.115    <none>            5432/TCP          38m
 kubernetes         ClusterIP      10.245.0.1       <none>            443/TCP           106d
 ```
 
-And so I `grpc_cli ls 178.128.143.154:31509` and get a bunch of nothing. :( PRs welcome!! This should literally be up now!
+You should be able to `grpc_cli ls 178.128.143.154:27707` and see both Jonline and the gRPC reflection service (that lets you list services)! You can test against my instance with `grpc_cli ls be.jonline.io:27707`.
 
 ## Deploying
 The quickest way to deploy is to simply run `make create_db_deployment create_be_deployment`. This will create a database and two `jonline` service replicas in your Kubernetes cluster.

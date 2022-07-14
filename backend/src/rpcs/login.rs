@@ -1,17 +1,22 @@
-use crate::db_connection::PgPooledConnection;
-use crate::models;
-use crate::protos::{LoginRequest, AuthTokenResponse};
-use crate::auth;
-use crate::schema::users::dsl::*;
 use bcrypt::verify;
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
+
+use crate::auth;
+use crate::db_connection::PgPooledConnection;
+use crate::models;
+use crate::protos::{AuthTokenResponse, LoginRequest};
+use crate::schema::users::dsl::*;
+
+use super::validate_length;
 
 pub fn login(
     request: Request<LoginRequest>,
     conn: &PgPooledConnection,
 ) -> Result<Response<AuthTokenResponse>, Status> {
     let req = request.into_inner();
+    validate_length(&req.password, "password", 8, 128)?;
+
     let permission_denied = Status::new(Code::PermissionDenied, "invalid_username_or_password");
     let user_result = users
         .filter(username.eq(req.username))
@@ -30,6 +35,11 @@ pub fn login(
     Ok(Response::new(AuthTokenResponse {
         auth_token: tokens.auth_token,
         refresh_token: tokens.refresh_token,
-        user: Some(auth::user_response(user.id, user.username, user.email, user.phone)),
+        user: Some(auth::user_response(
+            user.id,
+            user.username,
+            user.email,
+            user.phone,
+        )),
     }))
 }

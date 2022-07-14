@@ -1,16 +1,22 @@
-use crate::db_connection::PgPooledConnection;
-use crate::protos::{AuthTokenResponse, CreateAccountRequest};
-use crate::auth;
-use crate::schema::users::dsl::*;
 use bcrypt::{hash, DEFAULT_COST};
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
 
+use crate::auth;
+use crate::db_connection::PgPooledConnection;
+use crate::protos::{AuthTokenResponse, CreateAccountRequest};
+use crate::schema::users::dsl::*;
+
+use super::validate_length;
+
 pub fn create_account(
-  request: Request<CreateAccountRequest>,
+    request: Request<CreateAccountRequest>,
     conn: &PgPooledConnection,
 ) -> Result<Response<AuthTokenResponse>, Status> {
     let req = request.into_inner();
+    validate_length(&req.username, "username", 1, 47)?;
+    validate_length(&req.password, "password", 8, 128)?;
+
     let hashed_password = hash(req.password, DEFAULT_COST).unwrap();
 
     let insert_result: Result<i32, _> = insert_into(users)
@@ -32,6 +38,11 @@ pub fn create_account(
     return Ok(Response::new(AuthTokenResponse {
         auth_token: tokens.auth_token,
         refresh_token: tokens.refresh_token,
-        user: Some(auth::user_response(user_id, req.username, req.email, req.phone)),
+        user: Some(auth::user_response(
+            user_id,
+            req.username,
+            req.email,
+            req.phone,
+        )),
     }));
 }

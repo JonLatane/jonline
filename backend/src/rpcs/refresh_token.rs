@@ -1,6 +1,7 @@
+use tonic::{Request, Response, Status};
+
 use crate::db_connection::*;
 use crate::protos::*;
-use tonic::{Request, Response, Status};
 
 pub fn refresh_token(
     _request: Request<RefreshTokenRequest>,

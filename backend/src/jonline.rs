@@ -67,18 +67,6 @@ impl Jonline for JonLineImpl {
             Ok(user) => rpcs::get_current_user(user),
         }
     }
-
-    async fn get_post(&self, request: Request<GetPostRequest>) -> Result<Response<Post>, Status> {
-        let conn = match get_connection(&self.pool) {
-            Err(e) => return Err(e),
-            Ok(conn) => conn,
-        };
-        match auth::get_current_user(&request, &conn) {
-            Err(e) => Err(e),
-            Ok(_user) => rpcs::get_post(request, &conn),
-        }
-       
-    }
 }
 
 fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {

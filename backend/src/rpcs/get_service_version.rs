@@ -1,5 +1,6 @@
-use crate::protos::*;
 use tonic::{Response, Status};
+
+use crate::protos::*;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
