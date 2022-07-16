@@ -31,25 +31,29 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.1.7
+        - image: docker.io/jonlatane/jonline:0.1.12
           name: jonline
           env:
             - name: DATABASE_URL
               value: postgres://admin:secure_password1@jonline-postgres/jonline
-            - name: SECRET_TLS_KEY
+            - name: TLS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: username
-                  optional: false # same as default; "mysecret" must exist
-                                  # and include a key named "username"
-            - name: SECRET_TLS_CERT
+                  name: jonline-generated-tls
+                  key: tls.key
+                  optional: true
+            - name: TLS_CERT
               valueFrom:
                 secretKeyRef:
-                  name: mysecret
-                  key: password
-                  optional: false # same as default; "mysecret" must exist
-                                  # and include a key named "password"
+                  name: jonline-generated-tls
+                  key: tls.crt
+                  optional: true
+            - name: CA_CERT
+              valueFrom:
+                configMapKeyRef:
+                  name: jonline-generated-ca
+                  key: ca.crt
+                  optional: true
           ports:
             - containerPort: 27707
               protocol: TCP
@@ -60,14 +64,14 @@ kind: CronJob
 metadata:
   name: jonline-expired-token-cleanup
 spec:
-  schedule: "*/30 * * * *"
+  schedule: "0 0 * * *"
   jobTemplate:
     spec:
       template:
         spec:
           containers:
           - name: jonline-expired-token-cleanup
-            image: docker.io/jonlatane/jonline:0.1.7
+            image: docker.io/jonlatane/jonline:0.1.12
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL

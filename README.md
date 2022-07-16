@@ -8,6 +8,9 @@ All you need is a Kubernetes (k8s) cluster with the names `jonline` and `jonline
 
 Why this goal for this project? See [Scaling Social Software via Federation](#scaling-social-software-via-federation).
 
+### Quick deploy to your own cluster (for developers)
+If you have `kubectl`, you can be setup in a few minutes. See [`backend/README.md`](https://github.com/JonLatane/jonline/tree/main/backend) for [more detailed deploy instructions including TLS setup](https://github.com/JonLatane/jonline/tree/main/backend#deploying).
+
 ## Motivations
 Current social media and messaging solutions all kind of suck. The early open source software (OSS) movement, dating to the 80s, was generally right about many of the problems that have arisen mixing a market(ing)-based economy with social computing. If we entrust our social interactions to applications with closed source run on private Alphabet, Meta, Apple, etc. servers, *of course we're going to see the disinformation and effective-advertising-driven consumerism that plague the world today*. These models are very profitable.
 

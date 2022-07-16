@@ -7,6 +7,7 @@ pub fn refresh_token(
     _request: Request<RefreshTokenRequest>,
     _conn: &PgPooledConnection,
 ) -> Result<Response<ExpirableToken>, Status> {
+    println!("RefreshToken called.");
     Ok(Response::new(ExpirableToken {
         token: "example".to_owned(),
         expires_at: None,

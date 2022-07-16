@@ -15,10 +15,9 @@ pub struct User {
 #[table_name = "posts"]
 pub struct Post {
     pub id: i32,
-    pub title: String,
-    pub body: String,
     pub user_id: Option<i32>,
     pub parent_post_id: Option<i32>,
-    pub shortcode: Option<String>,
+    pub title: String,
+    pub body: String,
     pub published: bool,
 }

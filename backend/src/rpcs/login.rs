@@ -19,7 +19,7 @@ pub fn login(
 
     let permission_denied = Status::new(Code::PermissionDenied, "invalid_username_or_password");
     let user_result = users
-        .filter(username.eq(req.username))
+        .filter(username.eq(&req.username))
         .first::<models::User>(conn);
     let user: models::User = match user_result {
         Err(_) => return Err(permission_denied),
@@ -31,6 +31,8 @@ pub fn login(
         Ok(false) => return Err(permission_denied),
         Ok(true) => auth::generate_auth_and_refresh_token(user.id, conn),
     };
+
+    println!("Logged in user {}, user_id={}", &req.username, user.id);
 
     Ok(Response::new(AuthTokenResponse {
         auth_token: tokens.auth_token,

@@ -4,6 +4,10 @@ LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
 LOCAL_REGISTRY := kubernetes.docker.internal:5000
 CLOUD_REGISTRY := docker.io/jonlatane
 BE_VERSION := $$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
+FE_VERSION := $$(cat frontend/pubspec.yaml | grep 'version:' | sed -n 1p | awk '{print $$2;}' | sed 's/"//g')
+
+show_fe_version:
+	echo $(FE_VERSION)
 
 # Core release targets
 release_local_be: build_backend_release push_release_local
@@ -84,15 +88,54 @@ clean_protos:
 build_local:
 	cd backend && $(MAKE) build
 
+# Certificate Generation targets
+generate_certs: generate_ca_certs generate_server_certs generate_client_certs
 
-store_certs_in_kubernetes:
-	cd generated_certs && kubectl create secret tls jonline-generated-tls --cert=jonline-generated.crt --key=jonline-generated.key
-
-generate_certs:
+generate_ca_certs:
 	mkdir -p generated_certs
-	cd generated_certs && openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout jonline-generated.key -out jonline-generated.crt
+	cd generated_certs && openssl genrsa -des3 -out ca.key 2048
+	cd generated_certs && openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 -out ca.pem
 
-# generate_certs:
-# 	openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout jonline-generated.key -out jonline-generated.crt
+generate_server_certs:
+	mkdir -p generated_certs
+	echo "authorityKeyIdentifier=keyid,issuer\n\
+	basicConstraints=CA:FALSE\n\
+	keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment\n\
+	subjectAltName = @alt_names\n\
+	\n\
+	[alt_names]\n\
+	DNS.1 = localhost\n\
+	IP.1 = 0.0.0.0" > generated_certs/server.ext
+
+	cd generated_certs && openssl genrsa -out server.key 2048
+	cd generated_certs && openssl req -new -sha256 -key server.key -out server.csr
+	cd generated_certs && openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out server.pem -days 1825 -sha256 -extfile server.ext
+
+generate_client_certs:
+	mkdir -p generated_certs
+	echo "authorityKeyIdentifier=keyid,issuer\n\
+	basicConstraints=CA:FALSE\n\
+	keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment\n\
+	subjectAltName = @alt_names\n\
+	\n\
+	[alt_names]\n\
+	DNS.1 = localhost\n\
+	IP.1 = 0.0.0.0" > generated_certs/client.ext
+
+	cd generated_certs && openssl genrsa -out client.key 2048
+	cd generated_certs && openssl req -new -sha256 -key client.key -out client.csr
+	cd generated_certs && openssl x509 -req -in client.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out client.pem -days 1825 -sha256 -extfile client.ext
+
+store_certs_in_kubernetes: store_server_certs_in_kubernetes store_ca_certs_in_kubernetes
+
+store_server_certs_in_kubernetes:
+	cd generated_certs && kubectl create secret tls jonline-generated-tls --cert=server.pem --key=server.key
+delete_server_certs_from_kubernetes:
+	kubectl delete secret jonline-generated-tls
+store_ca_certs_in_kubernetes:
+	cd generated_certs && kubectl create configmap jonline-generated-ca --from-file ca.crt=ca.pem
+delete_ca_certs_from_kubernetes:
+	kubectl delete configmap jonline-generated-ca
+
 lines_of_code:
 	git ls-files | xargs cloc

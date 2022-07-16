@@ -11,7 +11,28 @@ TBD. Should be a matter of doing a `cargo test`. Ideally there shoouldn't be so 
 ### Local integration testing
 Some really dumb integration tests are provided in `backend/Makefile`. You need `grpc_cli` installed (`brew install grpc_cli`). `make test_list_services` and `make test_authentication` will test Jonline's gRPC reflection and the actual authentication locally with `grpc_cli`.
 
-## Testing against a remote Jonline instance (yours, mine, whatever)
+## Deploying
+The quickest way to deploy is to simply run `make create_db_deployment create_be_deployment` from the root of this repo. This will create a database and two `jonline` service replicas in your Kubernetes cluster. No compilation required. Note that by default, Jonline will run without TLS, so passwords, tokens, and everything goes back and forth as plain text!
+
+### Deploying with TLS support
+1. Initial TLS Setup
+    1. Generate a 100-char CA Cert password and two 20-char Challenge Passwords. Save these.
+    2. `make generate_certs`
+        * You need to answer at least one question; really, you should just answer everything fully here. But you do you.
+        * Use the cert password and challenge passwords you saved above when prompted.
+    3. `make store_certs_in_kubernetes`
+        * The certs you generated will be stored in `secret tls jonline-generated-tls` and `configmap jonline-generated-ca` in your k8s.
+2. `make create_db_deployment` to create a Postgres instance named `jonline-postgres` with credentials `admin:secure_password1`.
+    * `make [update,restart,delete]_db_deployment` are all valid targets, too.
+3. `make create_be_deployment` to deploy the Jonline backend.
+    * `make [update,restart,delete]_be_deployment` and `make get_be_deployment_pods` are all valid targets, too.
+4. Optional: Validate TLS setup
+    1. `kubectl get pods` and get the ID of your first pod, say `jonline-646c9f8699-kthkr`.
+        * Make sure the pods are freshly created from your deploy and Running.
+    2. `kubectl logs <pod-id>` to view the logs. You should see the text `TLS successfully configured.`. If not, um... figure it out and make a PR! 😉
+        * You can also [install `kail`](https://github.com/boz/kail#installing) and just `kail -d jonline` 🚀
+
+### Testing your (or any) deployment
 Once you've deployed, get the EXTERNAL-IP of your instance:
 
 ```sh
@@ -24,17 +45,7 @@ kubernetes         ClusterIP      10.245.0.1       <none>            443/TCP    
 
 You should be able to `grpc_cli ls 178.128.143.154:27707` and see both Jonline and the gRPC reflection service (that lets you list services)! You can test against my instance with `grpc_cli ls be.jonline.io:27707`.
 
-## Deploying
-The quickest way to deploy is to simply run `make create_db_deployment create_be_deployment`. This will create a database and two `jonline` service replicas in your Kubernetes cluster.
-
-### Deploying the Pre-Built Image
-Pre-built images are available to deploy from `docker.io/jonlatane`. Once you've cloned this repo, even without Rust, you can simply `make create_be_deployment` to deploy a pre-built image. Other useful deployment commands include:
-* `make update_be_deployment` to update to the latest version.
-* `make delete_be_deployment` to remove your deployment.
-* `make restart_be_deployment` to restart your deployment.
-* `make get_be_deployment_pods` to get the pods from your deployment.
-
-### Building and Deploying Your Own Image
+## Building and Deploying Your Own Image
 If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the [`image` in `k8s/jonline.yaml`](https://github.com/JonLatane/jonline/blob/main/backend/k8s/jonline.yaml#L32) and the [`CLOUD_REGISTRY` in `Makefile`](https://github.com/JonLatane/jonline/blob/main/Makefile#L5) to point at your registry.
 
 A Dockerfile for a build server (to build `jonline` Linux x86 server images on whatever desktop you use) lives in `docker/build`. We will use it throughout the following build steps.

@@ -40,6 +40,7 @@ pub fn generate_auth_and_refresh_token(
     };
     let refresh_token_result = generate_refresh_token(auth_token_id, conn);
 
+    println!("Generated auth tokens for user_id={}", user_id);
     AuthTokenResponse {
         auth_token: Some(auth_token_result),
         refresh_token: Some(refresh_token_result),

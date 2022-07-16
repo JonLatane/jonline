@@ -7,15 +7,17 @@ use crate::db_connection::PgPooledConnection;
 use crate::protos::{AuthTokenResponse, CreateAccountRequest};
 use crate::schema::users::dsl::*;
 
-use super::validate_length;
+use super::validations::*;
 
 pub fn create_account(
     request: Request<CreateAccountRequest>,
     conn: &PgPooledConnection,
 ) -> Result<Response<AuthTokenResponse>, Status> {
     let req = request.into_inner();
-    validate_length(&req.username, "username", 1, 47)?;
-    validate_length(&req.password, "password", 8, 128)?;
+    validate_username(&req.username)?;
+    validate_password(&req.password)?;
+    validate_email(&req.email)?;
+    validate_phone(&req.phone)?;
 
     let hashed_password = hash(req.password, DEFAULT_COST).unwrap();
 
@@ -23,8 +25,8 @@ pub fn create_account(
         .values((
             username.eq(req.username.to_owned()),
             password_salted_hash.eq(hashed_password),
-            email.eq(req.email.to_owned()),
-            phone.eq(req.phone.to_owned()),
+            email.eq(&req.email.to_owned()),
+            phone.eq(&req.phone.to_owned()),
         ))
         .returning(id)
         .get_result(conn);
@@ -33,6 +35,8 @@ pub fn create_account(
         Err(_) => return Err(Status::new(Code::AlreadyExists, "username_already_exists")),
         Ok(user_id) => user_id,
     };
+
+    println!("Created user {}, user_id={}", req.username, user_id);
 
     let tokens = auth::generate_auth_and_refresh_token(user_id, conn);
     return Ok(Response::new(AuthTokenResponse {
