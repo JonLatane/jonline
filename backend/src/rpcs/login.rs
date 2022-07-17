@@ -29,7 +29,7 @@ pub fn login(
     let tokens = match verify(req.password, &user.password_salted_hash) {
         Err(_) => return Err(permission_denied),
         Ok(false) => return Err(permission_denied),
-        Ok(true) => auth::generate_auth_and_refresh_token(user.id, conn),
+        Ok(true) => auth::generate_auth_and_refresh_token(user.id, conn, req.expires_at),
     };
 
     println!("Logged in user {}, user_id={}", &req.username, user.id);

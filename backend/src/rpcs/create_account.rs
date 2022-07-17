@@ -38,7 +38,7 @@ pub fn create_account(
 
     println!("Created user {}, user_id={}", req.username, user_id);
 
-    let tokens = auth::generate_auth_and_refresh_token(user_id, conn);
+    let tokens = auth::generate_auth_and_refresh_token(user_id, conn, req.expires_at);
     return Ok(Response::new(AuthTokenResponse {
         auth_token: tokens.auth_token,
         refresh_token: tokens.refresh_token,

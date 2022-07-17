@@ -1,7 +1,9 @@
-use diesel::*;
-use prost_types::Timestamp;
-use ring::rand::*;
+use std::option::Option;
 use std::time::SystemTime;
+
+use diesel::*;
+use prost_types::*;
+use ring::rand::*;
 
 use crate::db_connection::*;
 use crate::protos::*;
@@ -24,21 +26,27 @@ macro_rules! generate_token {
 pub fn generate_auth_and_refresh_token(
     user_id: i32,
     conn: &PgPooledConnection,
+    expires_at: Option<Timestamp>,
 ) -> AuthTokenResponse {
     let auth_token = generate_token!(512);
 
-    let (auth_token_id, expires_at): (i32, Option<SystemTime>) =
+    let requested_expiration: Option<SystemTime> = expires_at
+        .map(SystemTime::try_from)
+        .map(|x| x.ok())
+        .flatten();
+    let (auth_token_id, expiration_result): (i32, Option<SystemTime>) =
         insert_into(user_auth_tokens::user_auth_tokens)
             .values((
                 user_auth_tokens::user_id.eq(user_id),
                 user_auth_tokens::token.eq(auth_token.to_owned()),
+                user_auth_tokens::expires_at.eq(requested_expiration),
             ))
             .returning((user_auth_tokens::id, user_auth_tokens::expires_at))
             .get_result::<(i32, Option<SystemTime>)>(conn)
             .unwrap();
     let auth_token_result = ExpirableToken {
         token: auth_token.to_owned(),
-        expires_at: expires_at.map(Timestamp::from),
+        expires_at: expiration_result.map(Timestamp::from),
     };
     println!("Generated auth token for user_id={}", user_id);
 

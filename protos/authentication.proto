@@ -10,18 +10,14 @@ message CreateAccountRequest {
   string password = 2;
   optional string email = 3;
   optional string phone = 4;
-  // Request an expiration time for the Auth Token returned.
-  // May not be respected.
+  // Request an expiration time for the Auth Token returned. By default it will not expire.
   optional google.protobuf.Timestamp expires_at = 5;
 }
 
 message LoginRequest {
   string username = 1;
   string password = 2;
-  // Request an expiration time for the Auth Token returned.
-  // May not be respected by the implementation.
-  // (Note: this is problematic for federation. Set stored_credentials=AUTH_TOKEN_AND_PASSWORD
-  // when federating to work around.)
+  // Request an expiration time for the Auth Token returned. By default it will not expire.
   optional google.protobuf.Timestamp expires_at = 3;
 }
 
