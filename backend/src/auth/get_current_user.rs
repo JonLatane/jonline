@@ -1,13 +1,12 @@
+use diesel::*;
 use tonic::{Code, Request, Status};
 
 use crate::db_connection::*;
 use crate::models;
 use crate::schema;
-use crate::schema::users::dsl as users;
 use crate::schema::user_auth_tokens::dsl as user_auth_tokens;
 use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
-
-use diesel::*;
+use crate::schema::users::dsl as users;
 
 pub fn get_current_user_id<T>(
     request: &Request<T>,

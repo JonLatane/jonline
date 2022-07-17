@@ -1,8 +1,18 @@
 table! {
+    federated_accounts (id) {
+        id -> Int4,
+        federated_server_id -> Nullable<Int4>,
+        federated_user_id -> Varchar,
+        user_id -> Nullable<Int4>,
+    }
+}
+
+table! {
     federated_servers (id) {
         id -> Int4,
         server_location -> Varchar,
         ca_cert -> Nullable<Varchar>,
+        tls_key -> Nullable<Varchar>,
     }
 }
 
@@ -11,8 +21,7 @@ table! {
         id -> Int4,
         user_id -> Int4,
         local_user_id -> Nullable<Int4>,
-        federated_server_id -> Nullable<Int4>,
-        federated_user_id -> Varchar,
+        federated_account_id -> Nullable<Int4>,
     }
 }
 
@@ -24,6 +33,7 @@ table! {
         title -> Varchar,
         body -> Text,
         published -> Bool,
+        created_at -> Timestamp,
     }
 }
 
@@ -33,7 +43,7 @@ table! {
         user_id -> Int4,
         token -> Varchar,
         created_at -> Timestamp,
-        expires_at -> Timestamp,
+        expires_at -> Nullable<Timestamp>,
     }
 }
 
@@ -54,14 +64,18 @@ table! {
         password_salted_hash -> Varchar,
         email -> Nullable<Varchar>,
         phone -> Nullable<Varchar>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
-joinable!(follows -> federated_servers (federated_server_id));
+joinable!(federated_accounts -> federated_servers (federated_server_id));
+joinable!(federated_accounts -> users (user_id));
 joinable!(user_auth_tokens -> users (user_id));
 joinable!(user_refresh_tokens -> user_auth_tokens (auth_token_id));
 
 allow_tables_to_appear_in_same_query!(
+    federated_accounts,
     federated_servers,
     follows,
     posts,

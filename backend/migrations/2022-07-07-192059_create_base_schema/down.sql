@@ -2,6 +2,7 @@
 
 DROP TABLE follows;
 DROP TABLE posts;
+DROP TABLE federated_accounts;
 DROP TABLE user_refresh_tokens;
 DROP TABLE user_auth_tokens;
 DROP TABLE users;

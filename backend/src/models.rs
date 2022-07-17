@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use crate::schema::users;
 use crate::schema::posts;
 
@@ -9,6 +11,8 @@ pub struct User {
     pub password_salted_hash: String,
     pub email: Option<String>,
     pub phone: Option<String>,
+    pub created_at: SystemTime,
+    pub updated_at: SystemTime,
 }
 
 #[derive(Queryable, Insertable)]
@@ -20,4 +24,5 @@ pub struct Post {
     pub title: String,
     pub body: String,
     pub published: bool,
+    pub created_at: SystemTime,
 }

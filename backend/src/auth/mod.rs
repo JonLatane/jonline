@@ -1,5 +1,6 @@
 mod token_generation;
 pub use token_generation::generate_auth_and_refresh_token;
+pub use token_generation::generate_refresh_token;
 
 mod user_response;
 pub use user_response::user_response;

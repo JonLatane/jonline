@@ -6,6 +6,7 @@ extern crate diesel_migrations;
 extern crate bcrypt;
 extern crate bs58;
 extern crate ring;
+extern crate prost_types;
 
 use std::env;
 
