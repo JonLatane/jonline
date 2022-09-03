@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.16"
+version = "0.1.17"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -14,10 +14,10 @@ default-run = "jonline"
 
 [dependencies]
 tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
-tonic = { version = "0.7.1", features = ["tls", "tls-roots", "tls-webpki-roots"] }
-tonic-reflection = "0.4.0"
-prost = "0.10.1"
-prost-types = { version = "0.10.1", features = ["std"] }
+tonic = { version = "0.8.0", features = ["tls", "tls-roots", "tls-webpki-roots"] }
+tonic-reflection = "0.5.0"
+prost = "0.11.0"
+prost-types = { version = "0.11.1", features = ["std"] }
 diesel = { version = "1.4.8", features = ["postgres", "r2d2"] }
 diesel_migrations = "1.4.0"
 dotenv = "0.15.0"
@@ -29,4 +29,4 @@ ring = "0.16.20"
 # serde = { version = "1.0.138", features = ["derive"] }
 
 [build-dependencies]
-tonic-build = "0.7.2"
+tonic-build = "0.8.0"

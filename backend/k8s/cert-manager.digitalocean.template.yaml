@@ -1,0 +1,33 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: ${CERT_MANAGER_EMAIL}
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - selector:
+        dnsZones:
+          - "${TOP_LEVEL_CERT_DOMAIN}"
+      dns01:
+        digitalocean:
+          tokenSecretRef:
+            name: digitalocean-dns
+            key: access-token
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: le-crt
+spec:
+  secretName: jonline-generated-tls
+  issuerRef: 
+    kind: Issuer
+    name: letsencrypt-prod
+  commonName: "${GENERATED_CERT_DOMAIN}"
+  dnsNames:
+    - "${GENERATED_CERT_DOMAIN}"

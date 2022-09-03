@@ -8,8 +8,30 @@ All you need is a Kubernetes (k8s) cluster with the names `jonline` and `jonline
 
 Why this goal for this project? See [Scaling Social Software via Federation](#scaling-social-software-via-federation).
 
-### Quick deploy to your own cluster (for developers)
-If you have `kubectl`, you can be setup in a few minutes. See [`backend/README.md`](https://github.com/JonLatane/jonline/tree/main/backend) for [more detailed deploy instructions including TLS setup](https://github.com/JonLatane/jonline/tree/main/backend#deploying).
+### Quick deploy to your own cluster
+If you have `kubectl` and `make`, you can be setup in a few minutes. To first setup an *unsecured instance* where *passwords and auth tokens **will be sent in plain text**,* simply clone this repo:
+
+```
+git clone https://github.com/JonLatane/jonline.git
+cd jonline
+```
+
+From your repo root, to create a DB and two load-balanced servers, run:
+
+```
+make create_db_deployment create_be_deployment
+```
+
+#### Securing your deployment
+As opposed to blockchain tomfoolery, Jonline uses some dogshit simple TLS certificate management to negotiate trust around its decentralized social network. The tl;dr copypasta to secure your instance with your own CA is:
+
+```
+make generate_certs store_certs_in_kubernetes
+```
+But you should see [`generated_certs/README.md`](https://github.com/JonLatane/jonline/tree/main/generated_certs) for quick TLS setup instructions.
+
+####
+See [`backend/README.md`](https://github.com/JonLatane/jonline/tree/main/backend) for [more detailed descriptions of how the deployment and TLS system works](https://github.com/JonLatane/jonline/tree/main/backend#deploying).
 
 ## Motivations
 Current social media and messaging solutions all kind of suck. The early open source software (OSS) movement, dating to the 80s, was generally right about many of the problems that have arisen mixing a market(ing)-based economy with social computing. If we entrust our social interactions to applications with closed source run on private Alphabet, Meta, Apple, etc. servers, *of course we're going to see the disinformation and effective-advertising-driven consumerism that plague the world today*. These models are very profitable.
@@ -30,16 +52,6 @@ To keep things straightforward, all Posts in Jonline have global visibility. Twi
 
 #### Events
 Events may be public, private, or private with friend invitations.
-
-#### Messages
-Messages are understood to be private between individuals and not visible to other users. Private messaging is, of course, where the federated approach to Jonline does have some limitations.
-
-##### Caveats
-Crucially, with this model, *all my friends have to trust that I won't abuse being able to read their communications with each other*. A top priority after initial development of Jonline is to add an optional E2E encryption layer.
-
-Why is E2E not the first priority? First, we must implement our client. To have E2E, we need a client to store decryption keys. And generally, the user must be responsible for storing their encryption keys themselves.
-
-Once a client is implemented, it should be fairly straightforward to add E2E to the Messages feature in Jonline. But at the same time, it could be that this isn't something that needs solving, say, if support for linking into SMS/iMessage/WhatsApp is really a better solution for P2P messaging.
 
 ### Multi-server usage
 Suppose you have two accounts with friends, say, on `jonline.io` and `bobline.com`. To federate your accounts, you may simply pass an `auth_token` from your `bobline.com` account that you use to talk to Bob (who I don't know) into `jonline.io`. The general idea is that users can choose to keep their primary account with the person they trust the most. Maybe it's not me 😭 But that's fine; I won't even know!

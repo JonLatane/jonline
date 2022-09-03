@@ -84,12 +84,16 @@ fn get_tls_config() -> Option<ServerTlsConfig> {
     // println!("TLS Debug: CA_CERT = {}", debug_format(&ca_cert));
 
     match (cert, key, ca_cert) {
-        (Some(cert), Some(key), Some(ca_cert)) => Some(
-            ServerTlsConfig::new()
-                .identity(Identity::from_pem(cert, key))
-                .client_ca_root(Certificate::from_pem(ca_cert)),
-        ),
+        (Some(cert), Some(key), Some(ca_cert)) => {
+            println!("Configuring TLS with custom CA...");
+            Some(
+                ServerTlsConfig::new()
+                    .identity(Identity::from_pem(cert, key))
+                    .client_ca_root(Certificate::from_pem(ca_cert)),
+            )
+        }
         (Some(cert), Some(key), None) => {
+            println!("Configuring TLS with official CAs...");
             Some(ServerTlsConfig::new().identity(Identity::from_pem(cert, key)))
         }
         _ => None,

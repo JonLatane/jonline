@@ -5,3 +5,4 @@
 *.ext
 *.srl
 *.csr
+*.generated.yaml
