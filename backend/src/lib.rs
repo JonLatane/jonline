@@ -1,3 +1,5 @@
+use std::env;
+
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
@@ -29,3 +31,25 @@ where
         }
     }
 }
+
+pub fn env_var(name: &str) -> Option<String> {
+    env::var(name)
+        .ok()
+        .filter(|s| !s.is_empty())
+}
+
+// fn debug_format(cert: &Option<String>) -> String {
+//     cert.to_owned().unwrap_or("".to_string())
+// }
+
+// fn trim_cert(str: &str) -> String {
+//     let re1 = Regex::new(r"-----[A-Z ]+-----").unwrap();
+//     let re2 = Regex::new(r"\n").unwrap();
+//     let re3 = Regex::new(r"^\n").unwrap();
+//     let re4 = Regex::new(r"\n$").unwrap();
+//     re4.replace_all(
+//         &re3.replace_all(&re2.replace_all(&re1.replace_all(&str, ""), ""), ""),
+//         "",
+//     )
+//     .to_string()
+// }

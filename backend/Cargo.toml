@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.13"
+version = "0.1.16"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -13,9 +13,9 @@ default-run = "jonline"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tonic = { version = "0.7.1", features = ["tls"] }
+tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
+tonic = { version = "0.7.1", features = ["tls", "tls-roots", "tls-webpki-roots"] }
 tonic-reflection = "0.4.0"
-tokio = { version = "1.18.0", features = ["macros", "rt-multi-thread"] }
 prost = "0.10.1"
 prost-types = { version = "0.10.1", features = ["std"] }
 diesel = { version = "1.4.8", features = ["postgres", "r2d2"] }
@@ -24,6 +24,8 @@ dotenv = "0.15.0"
 bcrypt = "0.13.0"
 bs58 = "0.4.0"
 ring = "0.16.20"
+# regex = "1.6.0"
+# futures = "0.3.21"
 # serde = { version = "1.0.138", features = ["derive"] }
 
 [build-dependencies]

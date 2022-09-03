@@ -1,8 +1,19 @@
+.NOTPARALLEL:
 .DEFAULT_GOAL := release_local_be
 
-LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
-LOCAL_REGISTRY := kubernetes.docker.internal:5000
+# Configure these variables to deploy/test the official Jonline images on your own cluster.
+GENERATED_CERT_DOMAIN := *.jonline.io
+TEST_GRPC_TARGET := be.jonline.io:27707
+
+# Configure these when building your own Jonline images. Note that you must update backend/k8s/jonline.yaml to
+# point to your cloud registry rather than docker.io/jonlatane.
 CLOUD_REGISTRY := docker.io/jonlatane
+LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
+
+# You likely don't need to update this, but it's used when creating the local builder image.
+LOCAL_REGISTRY := kubernetes.docker.internal:5000
+
+# Versions are derived from TOML/YAML files, and should not be changed here.
 BE_VERSION := $$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
 FE_VERSION := $$(cat frontend/pubspec.yaml | grep 'version:' | sed -n 1p | awk '{print $$2;}' | sed 's/"//g')
 
@@ -28,6 +39,16 @@ restart_be_deployment:
 
 get_be_deployment_pods:
 	kubectl get pods --selector=app=jonline
+
+# K8s server deployment test targets
+test_be_deployment_no_tls:
+	grpc_cli ls $(TEST_GRPC_TARGET)
+
+test_be_deployment_tls:
+	GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=generated_certs/ca.pem grpc_cli ls $(TEST_GRPC_TARGET) --channel_creds_type=ssl
+
+test_be_deployment_tls_openssl:
+	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem
 
 # K8s DB deployment targets (optional if using managed DB)
 create_db_deployment:
@@ -88,30 +109,40 @@ clean_protos:
 build_local:
 	cd backend && $(MAKE) build
 
+# K8s Cert-manager targets
+install_k8s_nginx_ingress:
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.1.1/deploy/static/provider/do/deploy.yaml
+install_k8s_cert_manager:
+	kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml
+show_k8s_ingress_details:
+	kubectl get svc --namespace=ingress-nginx
+
 # Certificate Generation targets
 generate_certs: generate_ca_certs generate_server_certs
 
+validate_certs:
+	openssl verify -CAfile generated_certs/ca.pem generated_certs/server.pem
+
 generate_ca_certs:
 	mkdir -p generated_certs
-#	cd generated_certs && openssl genrsa -out ca.key 2048
-	cd generated_certs && openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ca.key
-	cd generated_certs && openssl req -x509 -new -nodes -key ca.key -sha256 -days 1825 -out ca.pem
+	openssl req -x509 \
+	          -sha256 -days 365 \
+	          -nodes \
+	          -newkey rsa:2048 \
+	          -subj '/CN=$(GENERATED_CERT_DOMAIN)/C=US/L=Durham' \
+	          -keyout generated_certs/ca.key -out generated_certs/ca.pem 
 
 generate_server_certs:
 	mkdir -p generated_certs
-	echo "authorityKeyIdentifier=keyid,issuer\n\
-	basicConstraints=CA:FALSE\n\
-	keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment\n\
-	subjectAltName = @alt_names\n\
-	\n\
-	[alt_names]\n\
-	DNS.1 = localhost\n\
-	IP.1 = 0.0.0.0" > generated_certs/server.ext
-
-#	cd generated_certs && openssl genrsa -out server.key 2048
-	cd generated_certs && openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out server.key
-	cd generated_certs && openssl req -new -sha256 -key server.key -out server.csr
-	cd generated_certs && openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 1825 -sha256 -extfile server.ext -out server.pem
+	openssl genpkey -out server.key -algorithm RSA -pkeyopt rsa_keygen_bits:2048
+#	openssl genrsa -out generated_certs/server.key 2048
+	openssl req -new -key generated_certs/server.key -config generated_certs/server.csr.conf -out generated_certs/server.csr
+	openssl x509 -req \
+	  -in generated_certs/server.csr \
+	  -CA generated_certs/ca.pem -CAkey generated_certs/ca.key \
+	  -CAcreateserial -out generated_certs/server.pem \
+	  -days 365 \
+	  -sha256 -extfile generated_certs/server.extfile.conf
 
 store_certs_in_kubernetes: store_server_certs_in_kubernetes store_ca_certs_in_kubernetes
 delete_certs_from_kubernetes: delete_server_certs_from_kubernetes delete_ca_certs_from_kubernetes

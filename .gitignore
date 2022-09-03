@@ -2,6 +2,6 @@
 .vscode
 .env
 *.key
-*.crt
-*.pem
-/generated_certs
+*.ext
+*.srl
+*.csr
