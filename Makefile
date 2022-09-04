@@ -2,10 +2,10 @@
 .DEFAULT_GOAL := release_local_be
 
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
-DEPLOYMENT_NAMESPACE ?= jonline
+NAMESPACE ?= jonline
 TOP_LEVEL_CERT_DOMAIN ?= jonline.io
 GENERATED_CERT_DOMAIN ?= *.$(TOP_LEVEL_CERT_DOMAIN)
-TEST_GRPC_TARGET ?= be.$(TOP_LEVEL_CERT_DOMAIN):27707
+TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_ip):27707
 CERT_MANAGER_EMAIL ?= invalid_email
 
 # Set these variables when setting up cert generation
@@ -30,47 +30,54 @@ release_local_be: build_backend_release push_release_local
 release_cloud_be: build_backend_release push_release_cloud
 
 # K8s server deployment targets
-create_be_deployment: ensure_namespace
-	kubectl create -f backend/k8s/jonline.yaml --save-config -n $(DEPLOYMENT_NAMESPACE)
+deploy_be_create: ensure_namespace
+	kubectl create -f backend/k8s/jonline.yaml --save-config -n $(NAMESPACE)
 
-update_be_deployment:
-	kubectl apply -f backend/k8s/jonline.yaml -n $(DEPLOYMENT_NAMESPACE)
+deploy_be_update:
+	kubectl apply -f backend/k8s/jonline.yaml -n $(NAMESPACE)
 
-delete_be_deployment:
-	kubectl delete -f backend/k8s/jonline.yaml -n $(DEPLOYMENT_NAMESPACE)
+deploy_be_delete:
+	kubectl delete -f backend/k8s/jonline.yaml -n $(NAMESPACE)
 
-restart_be_deployment:
-	kubectl rollout restart deployment jonline -n $(DEPLOYMENT_NAMESPACE)
+deploy_be_restart:
+	kubectl rollout restart deployment jonline -n $(NAMESPACE)
 
-get_be_deployment_pods:
-	kubectl get pods --selector=app=jonline -n $(DEPLOYMENT_NAMESPACE)
+deploy_be_get_ip:
+# Suppress echoing this so 'make deploy_be_get_ip` is easily composable. 
+	@kubectl get service jonline -n jonline | sed -n 2p | awk '{print $$4}'
+
+deploy_be_get_namespace:
+	kubectl get all -n $(NAMESPACE)
+
+deploy_be_get_pods:
+	kubectl get pods --selector=app=jonline -n $(NAMESPACE)
 
 # K8s server deployment test targets
-test_be_deployment_no_tls:
+test_deploy_be_no_tls:
 	grpc_cli ls $(TEST_GRPC_TARGET)
 
-test_be_deployment_tls:
-	GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=generated_certs/ca.pem grpc_cli ls $(TEST_GRPC_TARGET) --channel_creds_type=ssl
+test_deploy_be_tls:
+	grpc_cli ls $(TEST_GRPC_TARGET) --channel_creds_type=ssl
 
-test_be_deployment_tls_openssl:
+test_deploy_be_tls_openssl:
 	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem
 
 # K8s DB deployment targets (optional if using managed DB)
-create_db_deployment: ensure_namespace
-	kubectl create -f backend/k8s/k8s-postgres.yaml --save-config -n $(DEPLOYMENT_NAMESPACE)
+deploy_db_create: ensure_namespace
+	kubectl create -f backend/k8s/k8s-postgres.yaml --save-config -n $(NAMESPACE)
 
-update_db_deployment:
-	kubectl apply -f backend/k8s/k8s-postgres.yaml -n $(DEPLOYMENT_NAMESPACE)
+deploy_db_update:
+	kubectl apply -f backend/k8s/k8s-postgres.yaml -n $(NAMESPACE)
 
-delete_db_deployment:
-	kubectl delete -f backend/k8s/k8s-postgres.yaml -n $(DEPLOYMENT_NAMESPACE)
+deploy_db_delete:
+	kubectl delete -f backend/k8s/k8s-postgres.yaml -n $(NAMESPACE)
 
-restart_db_deployment:
-	kubectl rollout restart deployment jonline-postgres -n $(DEPLOYMENT_NAMESPACE)
+deploy_db_restart:
+	kubectl rollout restart deployment jonline-postgres -n $(NAMESPACE)
 
 # Useful things
 ensure_namespace:
-	- kubectl create namespace $(DEPLOYMENT_NAMESPACE)
+	- kubectl create namespace $(NAMESPACE)
 
 # Local registry targets for build
 start_local_registry:
@@ -123,7 +130,7 @@ build_local:
 
 # Cert-Manager targets
 create_certmanager_deployment_digitalocean: ensure_namespace
-	kubectl create -f backend/k8s/cert-manager.digitalocean.generated.yaml --save-config -n $(DEPLOYMENT_NAMESPACE)
+	kubectl create -f backend/k8s/cert-manager.digitalocean.generated.yaml --save-config -n $(NAMESPACE)
 
 generate_cert_manager_digitalocean: backend/k8s/cert-manager.digitalocean.generated.yaml
 backend/k8s/cert-manager.digitalocean.generated.yaml:
@@ -167,13 +174,13 @@ delete_certs_from_kubernetes:
 	- $(MAKE) delete_ca_certs_from_kubernetes
 
 store_server_certs_in_kubernetes:
-	cd generated_certs && kubectl create secret tls jonline-generated-tls --cert=server.pem --key=server.key -n $(DEPLOYMENT_NAMESPACE)
+	cd generated_certs && kubectl create secret tls jonline-generated-tls --cert=server.pem --key=server.key -n $(NAMESPACE)
 delete_server_certs_from_kubernetes:
-	kubectl delete secret jonline-generated-tls -n $(DEPLOYMENT_NAMESPACE)
+	kubectl delete secret jonline-generated-tls -n $(NAMESPACE)
 store_ca_certs_in_kubernetes:
-	cd generated_certs && kubectl create configmap jonline-generated-ca --from-file ca.crt=ca.pem -n $(DEPLOYMENT_NAMESPACE)
+	cd generated_certs && kubectl create configmap jonline-generated-ca --from-file ca.crt=ca.pem -n $(NAMESPACE)
 delete_ca_certs_from_kubernetes:
-	kubectl delete configmap jonline-generated-ca -n $(DEPLOYMENT_NAMESPACE)
+	kubectl delete configmap jonline-generated-ca -n $(NAMESPACE)
 
 lines_of_code:
 	git ls-files | xargs cloc

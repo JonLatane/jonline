@@ -4,33 +4,45 @@
 
 Jonline is an open-source server+client for maintaining a small, localized social network. A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to any Kubernetes provider of their choosing (and to fork and modify). It's also (optimistically) simple and straightforward enough to serve as a starter for many projects, so long as they retain the [GPLv3 license Jonline is released under](https://github.com/JonLatane/jonline/blob/main/LICENSE.md).
 
-All you need is a Kubernetes (k8s) cluster with the names `jonline` and `jonline-postgres` available to have your own backend up in minutes.  your `kubectl` works, simply `make create_db_deployment create_be_deployment` from the root if this repo, and you'll have a backend up and running from the [prebuilt images](https://hub.docker.com/repository/docker/jonlatane/jonline). Optionally, Jonline will also integrate with an external PostgreSQL DB (so you can skip the `create_db_deployment`).
+All you need is a Kubernetes (k8s) cluster, `git`, `kubectl`, `make`, and a few minutes to get the [prebuilt images](https://hub.docker.com/repository/docker/jonlatane/jonline) up and running.
 
 Why this goal for this project? See [Scaling Social Software via Federation](#scaling-social-software-via-federation).
 
 ### Quick deploy to your own cluster
 If you have `kubectl` and `make`, you can be setup in a few minutes. To first setup an *unsecured instance* where *passwords and auth tokens **will be sent in plain text**,* simply clone this repo:
 
-```
+```bash
 git clone https://github.com/JonLatane/jonline.git
 cd jonline
 ```
 
-From your repo root, to create a DB and two load-balanced servers, run:
+From the repo root, to create a DB and two load-balanced servers in the namespace `jonline` (which will be auto-created), run:
 
+```bash
+make deploy_db_create deploy_be_create
 ```
-make create_db_deployment create_be_deployment
+
+To view your whole deployment, use `make deploy_be_get_namespace`. Your Kubenetes provider may take some time to assign you an IP. Once it's been assigned, `make deploy_be_get_ip` will return it (until then it will return `<pending>`).
+
+```bash
+$ make deploy_be_get_ip
+188.166.203.133
+```
+
+Finally, to validate you're up and running, use `make test_deploy_be_no_tls`:
+
+```bash
+$ make test_deploy_be_no_tls
+grpc_cli ls 167.99.16.24:27707
+jonline.Jonline
+grpc.reflection.v1alpha.ServerReflection
 ```
 
 #### Securing your deployment
-As opposed to blockchain tomfoolery, Jonline uses some dogshit simple TLS certificate management to negotiate trust around its decentralized social network. The tl;dr copypasta to secure your instance with your own CA is:
+As opposed to blockchain tomfoolery, Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network.
 
-```
-make generate_certs store_certs_in_kubernetes
-```
-But you should see [`generated_certs/README.md`](https://github.com/JonLatane/jonline/tree/main/generated_certs) for quick TLS setup instructions.
+See [`generated_certs/README.md`](https://github.com/JonLatane/jonline/tree/main/generated_certs) for quick TLS setup instructions, either [using Cert-Manager (recommended)](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-cert-manager-recommended), [some other CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-certs-from-another-ca) or [your own custom CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-your-own-custom-ca).
 
-####
 See [`backend/README.md`](https://github.com/JonLatane/jonline/tree/main/backend) for [more detailed descriptions of how the deployment and TLS system works](https://github.com/JonLatane/jonline/tree/main/backend#deploying).
 
 ## Motivations
