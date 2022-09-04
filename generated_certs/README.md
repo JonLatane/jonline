@@ -27,7 +27,7 @@ These instructions should at least get you a lazy wildcard setup for a domain ma
 Perhaps you have a `server.pem` and `server.key` from your own CA. Make sure to specify the domain name you want the certs for (it can be a wildcard).
 
 1. Ensure this directory has a `server.key` and your updated `server.pem` from your CA.
-2. From the root of the repo, `make certs_server_store_in_k8s deploy_be_restart` to use my certs.
+2. From the root of the repo, `make certs_server_store_in_k8s deploy_be_restart` to use your certs.
     * You can `make certs_delete_from_k8s deploy_be_restart` to switch back to non-TLS mode.
 
 ## Use your own custom CA
