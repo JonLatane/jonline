@@ -3,7 +3,7 @@ This folder contains the CA cert (`ca.pem`) and server cert (`server.pem`) for J
 
 (Note that `*.key` files are `.gitignore`d in this repo.)
 
-# Using a legit CA (recommended)
+# Using Cert-Manager (recommended)
 These instructions should at least get you a lazy wildcard setup for a domain managed by DigitalOcean.
 
 1. Point your DNS host (for instance, I use `be.jonline.io`), at the IP for your deployed `jonline` LoadBalancer instance. For the default Quick Start deploy, get it with: `kubectl describe service jonline -n jonline | grep 'LoadBalancer Ingress'`.
@@ -22,7 +22,7 @@ These instructions should at least get you a lazy wildcard setup for a domain ma
 6. `make restart_be_deployment` to use the cert-manager certificates.
 
 
-## Use certs from a "legit" CA or my own CA
+## Use certs from an arbitrary "legit" CA or my own CA
 If you contact me ([Jon Latané](mailto:jonlatane@gmail.com)) I'm happy to generate you a `server.pem` and `server.key` with my CA. You can also use LetsEncrypt, various ACME services, or whatever to generate your own cert/key pair (wildcard certs would be easiest to work with). Make sure to specify the domain name you want the certs for (it can be a wildcard). With a cert from me, the Jonline app (for Android and iOS) will work, secured, for your instance with no extra configuration.
 
 1. Ensure this directory has a `server.key` and your updated `server.pem` from your CA.
