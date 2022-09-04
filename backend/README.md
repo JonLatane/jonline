@@ -17,10 +17,10 @@ The quickest way to deploy is to simply run `make deploy_db_create deploy_be_cre
 ### Deploying with TLS support
 1. Initial TLS Setup
     1. Generate a 100-char CA Cert password and two 20-char Challenge Passwords. Save these.
-    2. `make generate_certs`
+    2. `make certs_generate`
         * You need to answer at least one question; really, you should just answer everything fully here. But you do you.
         * Use the cert password and challenge passwords you saved above when prompted.
-    3. `make store_certs_in_kubernetes`
+    3. `make certs_store_in_k8s`
         * The certs you generated will be stored in `secret tls jonline-generated-tls` and `configmap jonline-generated-ca` in your k8s.
 2. `make deploy_db_create` to create a Postgres instance named `jonline-postgres` with credentials `admin:secure_password1`.
     * `make [update,restart,delete]_db_deployment` are all valid targets, too.
@@ -51,9 +51,9 @@ If you're interested in building your own version of Jonline, you must fork this
 A Dockerfile for a build server (to build `jonline` Linux x86 server images on whatever desktop you use) lives in `docker/build`. We will use it throughout the following build steps.
 
 #### Create a Local Registry to host Build Image
-`make create_local_registry` will setup a local container registry, named `local-registry`. You only need to do this once, or if you delete the registry. Other local registry management commands include:
-* `make stop_local_registry` to stop the registry container.
-* `make destroy_local_registry` to delete the registry container.
+`make local_registry_create` will setup a local container registry, named `local-registry`. You only need to do this once, or if you delete the registry. Other local registry management commands include:
+* `make local_registry_stop` to stop the registry container.
+* `make local_registry_destroy` to delete the registry container.
 
 #### Build the `jonline-be-build` Image
 `make push_builder_local` will build the `jonline-be-build` image and upload it to your local registry, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `docker/build/Dockerfile` has been updated.

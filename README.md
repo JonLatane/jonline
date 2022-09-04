@@ -9,14 +9,14 @@ All you need is a Kubernetes (k8s) cluster, `git`, `kubectl`, `make`, and a few 
 Why this goal for this project? See [Scaling Social Software via Federation](#scaling-social-software-via-federation).
 
 ### Quick deploy to your own cluster
-If you have `kubectl` and `make`, you can be setup in a few minutes. To first setup an *unsecured instance* where *passwords and auth tokens **will be sent in plain text**,* simply clone this repo:
+If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) To first setup an *unsecured instance* where *passwords and auth tokens **will be sent in plain text**,* first clone this repo:
 
 ```bash
 git clone https://github.com/JonLatane/jonline.git
 cd jonline
 ```
 
-From the repo root, to create a DB and two load-balanced servers in the namespace `jonline` (which will be auto-created), run:
+Next, from the repo root, to create a DB and two load-balanced servers in the namespace `jonline` (which will be auto-created), run:
 
 ```bash
 make deploy_db_create deploy_be_create

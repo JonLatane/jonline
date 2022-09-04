@@ -1,5 +1,5 @@
 .NOTPARALLEL:
-.DEFAULT_GOAL := release_local_be
+.DEFAULT_GOAL := release_be_local
 
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
@@ -22,15 +22,17 @@ LOCAL_REGISTRY := kubernetes.docker.internal:5000
 BE_VERSION := $$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
 FE_VERSION := $$(cat frontend/pubspec.yaml | grep 'version:' | sed -n 1p | awk '{print $$2;}' | sed 's/"//g')
 
+show_be_version:
+	@echo $(BE_VERSION)
 show_fe_version:
-	echo $(FE_VERSION)
+	@echo $(FE_VERSION)
 
 # Core release targets
-release_local_be: build_backend_release push_release_local
-release_cloud_be: build_backend_release push_release_cloud
+release_be_local: build_backend_release push_release_local
+release_be_cloud: build_backend_release push_release_cloud
 
 # K8s server deployment targets
-deploy_be_create: ensure_namespace
+deploy_be_create: deploy_ensure_namespace
 	kubectl create -f backend/k8s/jonline.yaml --save-config -n $(NAMESPACE)
 
 deploy_be_update:
@@ -63,7 +65,7 @@ test_deploy_be_tls_openssl:
 	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem
 
 # K8s DB deployment targets (optional if using managed DB)
-deploy_db_create: ensure_namespace
+deploy_db_create: deploy_ensure_namespace
 	kubectl create -f backend/k8s/k8s-postgres.yaml --save-config -n $(NAMESPACE)
 
 deploy_db_update:
@@ -76,25 +78,86 @@ deploy_db_restart:
 	kubectl rollout restart deployment jonline-postgres -n $(NAMESPACE)
 
 # Useful things
-ensure_namespace:
+deploy_ensure_namespace:
 	- kubectl create namespace $(NAMESPACE)
 
+# Certificate-related targets
+deploy_be_get_certs:
+	kubectl get secret jonline-generated-tls -n $(NAMESPACE)
+deploy_be_get_ca_certs:
+	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
+
+# Cert-Manager targets
+deploy_certmanager_digitalocean_prepare: backend/k8s/cert-manager.digitalocean.generated.yaml
+backend/k8s/cert-manager.digitalocean.generated.yaml:
+	cat backend/k8s/cert-manager.digitalocean.template.yaml | \
+	  sed 's/$${CERT_MANAGER_EMAIL}/$(CERT_MANAGER_EMAIL)/g' | \
+	  sed 's/$${TOP_LEVEL_CERT_DOMAIN}/$(TOP_LEVEL_CERT_DOMAIN)/g' | \
+	  sed 's/$${GENERATED_CERT_DOMAIN}/$(GENERATED_CERT_DOMAIN)/g' \
+	  > backend/k8s/cert-manager.digitalocean.generated.yaml
+
+deploy_certmanager_digitalocean_create: deploy_ensure_namespace
+	kubectl create -f backend/k8s/cert-manager.digitalocean.generated.yaml --save-config -n $(NAMESPACE)
+
+# Custom CA certificate generation targets
+certs_generate: certs_ca_generate certs_server_generate
+
+certs_ca_generate:
+	mkdir -p generated_certs
+	openssl req -x509 \
+	          -sha256 -days 365 \
+	          -nodes \
+	          -newkey rsa:2048 \
+	          -subj '/CN=$(GENERATED_CERT_DOMAIN)/C=US/L=Durham' \
+	          -keyout generated_certs/ca.key -out generated_certs/ca.pem 
+
+certs_server_generate:
+	mkdir -p generated_certs
+	openssl genpkey -out server.key -algorithm RSA -pkeyopt rsa_keygen_bits:2048
+	openssl req -new -key generated_certs/server.key -config generated_certs/server.csr.conf -out generated_certs/server.csr
+	openssl x509 -req \
+	  -in generated_certs/server.csr \
+	  -CA generated_certs/ca.pem -CAkey generated_certs/ca.key \
+	  -CAcreateserial -out generated_certs/server.pem \
+	  -days 365 \
+	  -sha256 -extfile generated_certs/server.extfile.conf
+
+certs_store_in_k8s: certs_server_store_in_k8s certs_ca_store_in_k8s
+certs_delete_from_k8s:
+	- $(MAKE) certs_server_delete_from_k8s
+	- $(MAKE) certs_ca_delete_from_k8s
+
+certs_server_store_in_k8s:
+	cd generated_certs && kubectl create secret tls jonline-generated-tls --cert=server.pem --key=server.key -n $(NAMESPACE)
+certs_server_delete_from_k8s:
+	kubectl delete secret jonline-generated-tls -n $(NAMESPACE)
+certs_ca_store_in_k8s:
+	cd generated_certs && kubectl create configmap jonline-generated-ca --from-file ca.crt=ca.pem -n $(NAMESPACE)
+certs_ca_delete_from_k8s:
+	kubectl delete configmap jonline-generated-ca -n $(NAMESPACE)
+
+# Custom CA cert testing targets
+certs_gen_test: certs_gen_test_pass_openssl_verify
+certs_gen_test_pass_openssl_verify:
+	openssl verify -CAfile generated_certs/ca.pem generated_certs/server.pem
+
+# DEVELOPMENT-RELATED TARGETS
 # Local registry targets for build
-start_local_registry:
+local_registry_start:
 	docker start local-registry
 
-stop_local_registry:
+local_registry_stop:
 	docker stop local-registry
 	docker rm local-registry
 
-create_local_registry:
-	$(MAKE) start_local_registry || docker run -d -p 5000:5000 --restart=always --name local-registry -v $(LOCAL_REGISTRY_DIRECTORY):/var/lib/registry registry:2
+local_registry_create:
+	$(MAKE) local_registry_start || docker run -d -p 5000:5000 --restart=always --name local-registry -v $(LOCAL_REGISTRY_DIRECTORY):/var/lib/registry registry:2
 
-destroy_local_registry:
-	$(MAKE) stop_local_registry; rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
+local_registry_destroy:
+	$(MAKE) local_registry_stop; rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
 
 # jonline-be-build image targets
-push_builder_local: create_local_registry
+push_builder_local: local_registry_create
 	docker build . -t $(LOCAL_REGISTRY)/jonline-be-build -f backend/docker/build/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline-be-build
 
@@ -110,7 +173,7 @@ backend/target/release/jonline__server_release: push_builder_local
 	mv backend/target/release/jonline backend/target/release/jonline__server_release
 	mv backend/target/release/expired_token_cleanup backend/target/release/expired_token_cleanup__server_release
 
-push_release_local: create_local_registry build_backend_release
+push_release_local: local_registry_create build_backend_release
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline
 
@@ -127,60 +190,6 @@ clean_protos:
 
 build_local:
 	cd backend && $(MAKE) build
-
-# Cert-Manager targets
-create_certmanager_deployment_digitalocean: ensure_namespace
-	kubectl create -f backend/k8s/cert-manager.digitalocean.generated.yaml --save-config -n $(NAMESPACE)
-
-generate_cert_manager_digitalocean: backend/k8s/cert-manager.digitalocean.generated.yaml
-backend/k8s/cert-manager.digitalocean.generated.yaml:
-	cat backend/k8s/cert-manager.digitalocean.template.yaml | \
-	  sed 's/$${CERT_MANAGER_EMAIL}/$(CERT_MANAGER_EMAIL)/g' | \
-	  sed 's/$${TOP_LEVEL_CERT_DOMAIN}/$(TOP_LEVEL_CERT_DOMAIN)/g' | \
-	  sed 's/$${GENERATED_CERT_DOMAIN}/$(GENERATED_CERT_DOMAIN)/g' \
-	  > backend/k8s/cert-manager.digitalocean.generated.yaml
-
-# Custom CA certificate generation targets
-generate_certs: generate_ca_certs generate_server_certs
-
-test_certs: test_certs_pass_openssl_verify
-
-test_certs_pass_openssl_verify:
-	openssl verify -CAfile generated_certs/ca.pem generated_certs/server.pem
-
-generate_ca_certs:
-	mkdir -p generated_certs
-	openssl req -x509 \
-	          -sha256 -days 365 \
-	          -nodes \
-	          -newkey rsa:2048 \
-	          -subj '/CN=$(GENERATED_CERT_DOMAIN)/C=US/L=Durham' \
-	          -keyout generated_certs/ca.key -out generated_certs/ca.pem 
-
-generate_server_certs:
-	mkdir -p generated_certs
-	openssl genpkey -out server.key -algorithm RSA -pkeyopt rsa_keygen_bits:2048
-	openssl req -new -key generated_certs/server.key -config generated_certs/server.csr.conf -out generated_certs/server.csr
-	openssl x509 -req \
-	  -in generated_certs/server.csr \
-	  -CA generated_certs/ca.pem -CAkey generated_certs/ca.key \
-	  -CAcreateserial -out generated_certs/server.pem \
-	  -days 365 \
-	  -sha256 -extfile generated_certs/server.extfile.conf
-
-store_certs_in_kubernetes: store_server_certs_in_kubernetes store_ca_certs_in_kubernetes
-delete_certs_from_kubernetes:
-	- $(MAKE) delete_server_certs_from_kubernetes
-	- $(MAKE) delete_ca_certs_from_kubernetes
-
-store_server_certs_in_kubernetes:
-	cd generated_certs && kubectl create secret tls jonline-generated-tls --cert=server.pem --key=server.key -n $(NAMESPACE)
-delete_server_certs_from_kubernetes:
-	kubectl delete secret jonline-generated-tls -n $(NAMESPACE)
-store_ca_certs_in_kubernetes:
-	cd generated_certs && kubectl create configmap jonline-generated-ca --from-file ca.crt=ca.pem -n $(NAMESPACE)
-delete_ca_certs_from_kubernetes:
-	kubectl delete configmap jonline-generated-ca -n $(NAMESPACE)
 
 lines_of_code:
 	git ls-files | xargs cloc
