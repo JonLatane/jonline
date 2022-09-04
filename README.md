@@ -4,7 +4,7 @@
 
 Jonline is an open-source server+client for maintaining a small, localized social network. A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to any Kubernetes provider of their choosing (and to fork and modify). It's also (optimistically) simple and straightforward enough to serve as a starter for many projects, so long as they retain the [GPLv3 license Jonline is released under](https://github.com/JonLatane/jonline/blob/main/LICENSE.md).
 
-All you need is a Kubernetes (k8s) cluster, `git`, `kubectl`, `make`, and a few minutes to get the [prebuilt images](https://hub.docker.com/repository/docker/jonlatane/jonline) up and running.
+All you need is a Kubernetes (k8s) cluster, `git`, `kubectl`, `make`, and a few minutes to get the [prebuilt image](https://hub.docker.com/repository/docker/jonlatane/jonline) up and running.
 
 Why this goal for this project? See [Scaling Social Software via Federation](#scaling-social-software-via-federation).
 
@@ -22,21 +22,23 @@ From the repo root, to create a DB and two load-balanced servers in the namespac
 make deploy_db_create deploy_be_create
 ```
 
-To view your whole deployment, use `make deploy_be_get_namespace`. Your Kubenetes provider may take some time to assign you an IP. Once it's been assigned, `make deploy_be_get_ip` will return it (until then it will return `<pending>`).
+That's it! Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though. To view your whole deployment, use `make deploy_be_get_all`. Use `make deploy_be_get_external_ip` to see what your service's external IP is (until set, it will return `<pending>`).
 
 ```bash
-$ make deploy_be_get_ip
+$ make deploy_be_get_external_ip
 188.166.203.133
 ```
 
-Finally, to validate you're up and running, use `make test_deploy_be_no_tls`:
+Finally, once the IP is set, to test the service from your own computer, use `make test_deploy_be_no_tls`:
 
 ```bash
 $ make test_deploy_be_no_tls
-grpc_cli ls 167.99.16.24:27707
+grpc_cli ls 188.166.203.133:27707
 jonline.Jonline
 grpc.reflection.v1alpha.ServerReflection
 ```
+
+That's it! You're up and running, albeit unsecured.
 
 #### Securing your deployment
 As opposed to blockchain tomfoolery, Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network.

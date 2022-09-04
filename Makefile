@@ -5,7 +5,7 @@
 NAMESPACE ?= jonline
 TOP_LEVEL_CERT_DOMAIN ?= jonline.io
 GENERATED_CERT_DOMAIN ?= *.$(TOP_LEVEL_CERT_DOMAIN)
-TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_ip):27707
+TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
 CERT_MANAGER_EMAIL ?= invalid_email
 
 # Set these variables when setting up cert generation
@@ -42,11 +42,11 @@ deploy_be_delete:
 deploy_be_restart:
 	kubectl rollout restart deployment jonline -n $(NAMESPACE)
 
-deploy_be_get_ip:
-# Suppress echoing this so 'make deploy_be_get_ip` is easily composable. 
+deploy_be_get_external_ip:
+# Suppress echoing this so 'make deploy_be_get_external_ip` is easily composable. 
 	@kubectl get service jonline -n jonline | sed -n 2p | awk '{print $$4}'
 
-deploy_be_get_namespace:
+deploy_be_get_all:
 	kubectl get all -n $(NAMESPACE)
 
 deploy_be_get_pods:
