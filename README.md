@@ -41,7 +41,7 @@ grpc.reflection.v1alpha.ServerReflection
 That's it! You're up and running, albeit unsecured.
 
 #### Securing your deployment
-As opposed to blockchain tomfoolery, Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network.
+Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network.
 
 See [`generated_certs/README.md`](https://github.com/JonLatane/jonline/tree/main/generated_certs) for quick TLS setup instructions, either [using Cert-Manager (recommended)](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-cert-manager-recommended), [some other CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-certs-from-another-ca) or [your own custom CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-your-own-custom-ca).
 
