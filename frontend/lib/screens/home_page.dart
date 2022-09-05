@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/foundation.dart';
@@ -44,7 +46,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     const RouteDestination(
       route: ProfileTab(),
       icon: Icons.person,
-      label: 'Profile',
+      label: 'Me',
     ),
     RouteDestination(
       route: SettingsTab(tab: 'tab'),
@@ -53,11 +55,14 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     ),
   ];
 
-  void toggleSettingsTab() => setState(() {
-        _showSettingsTab = !_showSettingsTab;
-      });
-
   bool _showSettingsTab = true;
+
+  bool get showSettingsTab => _showSettingsTab;
+  set showSettingsTab(bool value) {
+    setState(() {
+      _showSettingsTab = value;
+    });
+  }
 
   @override
   Widget build(context) {
@@ -98,11 +103,12 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             );
           })
         : AutoTabsRouter.pageView(
-            routes: const [
-              PostsTab(),
-              EventsTab(),
-              ProfileTab(),
-              // if (_showSettingsTab) SettingsTab(tab: 'tab'),
+            routes: [
+              const PostsTab(),
+              const EventsTab(),
+              const ProfileTab(),
+              // if (showSettingsTab)
+              SettingsTab(tab: 'tab'),
             ],
             builder: (context, child, animation) {
               return Scaffold(
@@ -122,32 +128,34 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget buildBottomNav(BuildContext context, TabsRouter tabsRouter) {
     final hideBottomNav = tabsRouter.topMatch.meta['hideBottomNav'] == true;
+    final items = [
+      const BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble), label: 'Posts'
+          // icon: Icon(Icons.source),
+          // label: 'Books',
+          ),
+      const BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_month), label: 'Events'
+          // icon: Icon(Icons.source),
+          // label: 'Books',
+          ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.person),
+        label: 'Me',
+      ),
+      if (showSettingsTab)
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.settings),
+          label: 'Settings',
+        ),
+    ];
     return hideBottomNav
         ? const SizedBox.shrink()
         : BottomNavigationBar(
-            currentIndex: tabsRouter.activeIndex,
+            type: BottomNavigationBarType.fixed,
+            currentIndex: min(items.length - 1, tabsRouter.activeIndex),
             onTap: tabsRouter.setActiveIndex,
-            items: const [
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.chat_bubble), label: 'Posts'
-                  // icon: Icon(Icons.source),
-                  // label: 'Books',
-                  ),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.calendar_month), label: 'Events'
-                  // icon: Icon(Icons.source),
-                  // label: 'Books',
-                  ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-              // if (_showSettingsTab)
-              //   const BottomNavigationBarItem(
-              //     icon: Icon(Icons.settings),
-              //     label: 'Settings',
-              //   ),
-            ],
+            items: items,
           );
   }
 }

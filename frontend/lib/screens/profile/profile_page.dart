@@ -31,31 +31,51 @@ class ProfilePageState extends State<ProfilePage> {
               onPressed: () {
                 context.router.push(MyBooksRoute());
               },
-              child: const Text('My Books'),
+              child: const Text('My Activity'),
             ),
+
+            if (context
+                    .findRootAncestorStateOfType<HomePageState>()
+                    ?.showSettingsTab ==
+                false)
+              Column(children: [
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      context
+                          .findRootAncestorStateOfType<HomePageState>()
+                          ?.showSettingsTab = true;
+                    });
+                    context.navigateNamedTo('settings/main');
+                  },
+                  child: const Text('Open Settings'),
+                )
+              ]),
+            if (context
+                    .findRootAncestorStateOfType<HomePageState>()
+                    ?.showSettingsTab ==
+                true)
+              Column(children: [
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      context
+                          .findRootAncestorStateOfType<HomePageState>()
+                          ?.showSettingsTab = false;
+                    });
+                  },
+                  child: const Text('Close Settings'),
+                )
+              ]),
             // const SizedBox(height: 32),
             // ElevatedButton(
             //   onPressed: () {
-            //     context
-            //         .findRootAncestorStateOfType<HomePageState>()
-            //         ?.toggleSettingsTab();
+            //     context.navigateBack();
             //   },
-            //   child: const Text('Toggle Settings Tab'),
+            //   child: const Text('Navigate Back'),
             // ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                context.navigateBack();
-              },
-              child: const Text('Navigate Back'),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                context.navigateNamedTo('settings/хиты');
-              },
-              child: const Text('Navigate to settings/tab1'),
-            ),
             const SizedBox(height: 32),
             userData == null
                 ? ElevatedButton(

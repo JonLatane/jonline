@@ -7,6 +7,7 @@ extern crate bcrypt;
 extern crate bs58;
 extern crate prost_types;
 extern crate ring;
+extern crate regex;
 
 use std::env;
 
