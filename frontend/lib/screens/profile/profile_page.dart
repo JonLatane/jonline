@@ -38,7 +38,7 @@ class ProfilePageState extends State<ProfilePage> {
               onPressed: () {
                 context
                     .findRootAncestorStateOfType<HomePageState>()
-                    ?.toggleSettingsTap();
+                    ?.toggleSettingsTab();
               },
               child: const Text('Toggle Settings Tab'),
             ),

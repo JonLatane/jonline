@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   grpc: ^3.0.2
   auto_route: ^5.0.1
+  build_runner:
   provider: ^6.0.3
 
 dev_dependencies:

@@ -18,8 +18,8 @@ class _MyAppState extends State<MyApp> {
   final authService = AuthService();
 
   final _rootRouter = RootRouter(
-      // authGuard: AuthGuard(),
-      );
+    authGuard: AuthGuard(),
+  );
 
   @override
   Widget build(BuildContext context) {

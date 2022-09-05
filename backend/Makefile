@@ -1,3 +1,4 @@
+.NOTPARALLEL:
 # Local BE dev targets
 run:
 	cargo run
@@ -12,43 +13,37 @@ clean_protos:
 
 rebuild_protos: clean_protos build
 
-create_local_db:
+local_db_create:
 	createdb jonline_dev
-drop_local_db:
+local_db_drop:
 	dropdb jonline_dev
-reset_local_db: stop_local_instances drop_local_db create_local_db
+local_db_reset: local_instances_stop local_db_drop local_db_create
 
-stop_local_instances:
+local_instances_stop:
 	-killall jonline
 
-prepare_integration_test: stop_local_instances
+prepare_integration_test: local_instances_stop
 	cargo build
 	(cargo run &)
 	sleep 3
 
 test_list_services: prepare_integration_test
-	grpcurl localhost:27707 list
+	grpcurl $(TEST_GRPC_TARGET) list
 	grpcurl $(TEST_GRPC_TARGET) list jonline.Jonline
 	grpcurl $(TEST_GRPC_TARGET) jonline.Jonline/GetServiceVersion
-	$(MAKE) stop_local_instances
+	$(MAKE) local_instances_stop
 
-test_authentication: reset_local_db prepare_integration_test
-	grpc_cli call localhost:27707 CreateAccount 'username: "test", password: "test"'
-	! grpc_cli call localhost:27707 CreateAccount 'username: "test", password: "expect_error_dup_username"'
-	grpc_cli call localhost:27707 Login 'username: "test", password: "test"'
-	! grpc_cli call localhost:27707 Login 'username: "test", password: "expect_error_wrong_password"'
+test_authentication_local: local_db_reset prepare_integration_test
+	grpcurl -d '{"username": "test", "password": "testpass"}' localhost:27707 jonline.Jonline/CreateAccount
+	! grpcurl -d '{"username": "test", "password": "expect_error_dup_username"}' localhost:27707 jonline.Jonline/CreateAccount
+	grpcurl -d '{"username": "test", "password": "testpass"}' localhost:27707 jonline.Jonline/Login
+	! grpcurl -d '{"username": "test", "password": "expect_error_wrong_password"}' localhost:27707 jonline.Jonline/Login
 	echo 'Authentication test successful.'
-	$(MAKE) stop_local_instances
+	$(MAKE) local_instances_stop
 
 test_authentication_remote:
-	grpc_cli call be.jonline.io:27707 CreateAccount 'username: "test", password: "test"'
-	! grpc_cli call be.jonline.io:27707 CreateAccount 'username: "test", password: "expect_error_dup_username"'
-	grpc_cli call be.jonline.io:27707 Login 'username: "test", password: "test"'
-	! grpc_cli call be.jonline.io:27707 Login 'username: "test", password: "expect_error_wrong_password"'
+	grpcurl -d '{"username": "test", "password": "testpass"}' $(TEST_GRPC_TARGET) jonline.Jonline/CreateAccount
+	! grpcurl -d '{"username": "test", "password": "expect_error_dup_username"}' $(TEST_GRPC_TARGET) jonline.Jonline/CreateAccount
+	grpcurl -d '{"username": "test", "password": "testpass"}' $(TEST_GRPC_TARGET) jonline.Jonline/Login
+	! grpcurl -d '{"username": "test", "password": "expect_error_wrong_password"}' $(TEST_GRPC_TARGET) jonline.Jonline/Login
 	echo 'Authentication test successful.'
-
-# Makes general-purpose dev Makefile targets (from parent dir) accessible.
-# all:
-# 	$(MAKE) -C .. $@
-# %:
-# 	$(MAKE) -C .. $@

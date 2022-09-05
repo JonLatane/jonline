@@ -48,11 +48,11 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     ),
   ];
 
-  void toggleSettingsTap() => setState(() {
-        _showSettingsTap = !_showSettingsTap;
+  void toggleSettingsTab() => setState(() {
+        _showSettingsTab = !_showSettingsTab;
       });
 
-  bool _showSettingsTap = true;
+  bool _showSettingsTab = true;
 
   @override
   Widget build(context) {
@@ -96,7 +96,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             routes: [
               const BooksTab(),
               const ProfileTab(),
-              if (_showSettingsTap) SettingsTab(tab: 'tab'),
+              if (_showSettingsTab) SettingsTab(tab: 'tab'),
             ],
             builder: (context, child, animation) {
               return Scaffold(
@@ -130,7 +130,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 icon: Icon(Icons.person),
                 label: 'Profile',
               ),
-              if (_showSettingsTap)
+              if (_showSettingsTab)
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.settings),
                   label: 'Settings',
