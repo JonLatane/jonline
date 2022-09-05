@@ -16,7 +16,7 @@ $ kubectl get namespace jonline
 Error from server (NotFound): namespaces "jonline" not found
 ```
 
-To begin setup an *unsecured instance* where *passwords and auth tokens **will be sent in plain text**,* first clone this repo:
+To begin setup an *unsecured instance* where ***passwords and auth tokens will be sent in plain text***, first clone this repo:
 
 ```bash
 git clone https://github.com/JonLatane/jonline.git
@@ -45,7 +45,7 @@ jonline.Jonline
 grpc.reflection.v1alpha.ServerReflection
 ```
 
-That's it! You're up and running, although again, *it's an unsecured instance* where *passwords and auth tokens **will be sent in plain text**.*
+That's it! You're up and running, although again, *it's an unsecured instance* where ***passwords and auth tokens will be sent in plain text***.
 
 #### Securing your deployment
 Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network.
