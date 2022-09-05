@@ -6,7 +6,9 @@ use super::matching::validate_all_word_chars;
 pub fn validate_username(value: &str) -> Result<(), Status> {
   validate_length(&value, "username", 1, 47)?;
   validate_all_word_chars(&value, "username")?;
-  validate_reserved_values(&value, "username", &["events", "posts", "e", "p"])
+  // A "standard" way to represent a federated Jonline user is federatedserver.com/username. But we also want
+  // federatedserver.com/events and federatedserver.com/post/asdf123, etc. to be able to point to valid things.
+  validate_reserved_values(&value, "username", &["events", "event", "e", "posts", "post", "p"])
 }
 
 pub fn validate_password(value: &str) -> Result<(), Status> {

@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+
+SCRIPT_DIR=$(dirname "$0")
+cd "$SCRIPT_DIR"
+SCRIPT_DIR=`pwd`
+
+APP_STORE_USERNAME=jonlatane@gmail.com
+
+cd ~/Library/Developer/Xcode/Archives
+
+echo "Finding latest xcarchive file..."
+XCARCHIVE_PATH=`find . -name '*.xcarchive' -print0 \
+| xargs -0 stat -f "%m %N" \
+| sort -rn | head -1 | cut -f2- -d" "`
+cd "$XCARCHIVE_PATH"
+XCARCHIVE_PATH=`pwd`
+
+
+# Paths assume pwd is directory of build script.
+cd "$SCRIPT_DIR"
+echo "Uploading $XCARCHIVE_PATH to the App Store..."
+# xcrun altool --upload-app -f $XCARCHIVE_PATH -u $APP_STORE_USERNAME -p '@keychain:BeatScratch App Store Uploads'
+xcodebuild -exportArchive \
+            -archivePath "$XCARCHIVE_PATH" \
+            -exportPath build-upload-macos-export-out \
+            -exportOptionsPlist `pwd`/macos/exportOptions.plist
+# rm build-upload-ios-export-out
+# xcrun altool --validate-app --file "$IPA_PATH" --username "$APP_STORE_USERNAME" --password @keychain:"Application Loader: $APP_STORE_USERNAME"
+# xcrun altool --upload-app --file "$IPA_PATH" --username "$APP_STORE_USERNAME" --password @keychain:"Application Loader: $APP_STORE_USERNAME"

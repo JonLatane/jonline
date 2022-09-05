@@ -1,5 +1,7 @@
 .NOTPARALLEL:
 # Local FE dev targets
+routes_gen_watch:
+	flutter packages pub run build_runner watch
 routes_gen_regenerate: routes_gen_delete routes_gen_generate
 routes_gen_delete:
 	- rm lib/router/router.gr.dart

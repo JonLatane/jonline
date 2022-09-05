@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+
+# Paths assume pwd is directory of build script.
+cd "$(dirname "$0")"
+
+echo "#-----------------------------------------------------------------------" && \
+echo "# Building for Android" && \
+echo "#-----------------------------------------------------------------------" && \
+flutter build appbundle --no-shrink | sed 's/.*/\[Android\] &/' && \
+echo "Manually upload appbundle to Google Play!" && \
+open "build/app/outputs/bundle/release/" && \
+open 'https://play.google.com/console/developers/8301034569696927852/app/4974878702686446069/tracks/internal-testing'

@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+
+# Paths assume pwd is directory of build script.
+cd "$(dirname "$0")"
+
+PLATFORMS=("android"
+  "ios"
+  "web"
+  "macos")
+
+PLATFORM_FLUTTER_CHANNELS=("android:stable"
+  "ios:stable"
+  "web:stable"
+  "macos:stable")
+
+for arg; do
+  if [[ " ${PLATFORMS[@]} " =~ " ${arg} " ]]; then
+    platform=$arg
+    echo "Preparing to build for $platform"
+    flutterChannel="init"
+    for platformFlutterChannel in "${PLATFORM_FLUTTER_CHANNELS[@]}"; do
+      if [ "$platform" == "${platformFlutterChannel%%:*}" ]; then
+        flutterChannel=${platformFlutterChannel#*:}
+      fi
+    done
+    # echo "Switching to Flutter Channel: $flutterChannel"
+    # flutter channel "$flutterChannel"
+    # if [[ "${platform}" == "ios" ]]; then
+    #   echo "Cleaning iOS build for stable"
+    #   ./build-fix-stable
+    # fi
+    # echo "Upgrading Flutter"
+    # flutter upgrade
+    echo "Building for $platform"
+    ./build-release-${platform}
+  else
+    echo "Invalid platform: $arg. Stopping."
+    exit
+  fi
+done

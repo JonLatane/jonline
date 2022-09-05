@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+# Paths assume pwd is directory of build script.
+cd "$(dirname "$0")"
+
+echo "#-----------------------------------------------------------------------" && \
+echo "# Building, Archiving, and Uploading for iOS" && \
+echo "#-----------------------------------------------------------------------" && \
+flutter build ios | sed 's/.*/\[iOS\] &/' && \
+echo "Archiving iOS app..." && \
+xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration release archive | sed 's/.*/\[iOS: Archive\] &/' && \
+echo "iOS app built! Uploading to the App Store..." && \
+./build-upload-ios | sed 's/.*/\[iOS: App Store Upload\] &/'

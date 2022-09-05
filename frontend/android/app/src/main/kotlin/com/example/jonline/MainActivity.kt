@@ -1,4 +1,4 @@
-package com.example.jonline
+package io.jonline.jonline
 
 import io.flutter.embedding.android.FlutterActivity
 

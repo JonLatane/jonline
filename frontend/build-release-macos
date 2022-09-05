@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+# Paths assume pwd is directory of build script.
+cd "$(dirname "$0")"
+
+echo "" && \
+echo "#-----------------------------------------------------------------------" && \
+echo "# Building for macOS and archiving app" && \
+echo "#-----------------------------------------------------------------------" && \
+flutter build macos | sed 's/.*/\[macOS\] &/' && \
+cd build/macos/Build/Products/Release && \
+echo "Signing macOS app with certificate EC73E3C309C841E94640BBA80B3FE67508A10A95" && \
+codesign --deep --force --verbose --sign "EC73E3C309C841E94640BBA80B3FE67508A10A95" BeatScratch.app | sed 's/.*/\[macOS: Codesign\] &/' && \
+echo "BZ2-compressing macOS app" && \
+tar -cavf BeatFlutter.tar.bz2 BeatScratch.app | sed 's/.*/\[macOS: BZ2-Compress\] &/' && \
+open . && cd - && \
+echo "macOS app standalone built! Manually upload to Dropbox" && \
+open "https://www.dropbox.com/home"
+# && \
+# echo "Archiving macOS app..." && \
+# xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner -configuration release archive | sed 's/.*/\[macOS: Archive\] &/' && \
+# echo "macOS app archive built! Uploading to the App Store..." && \
+# ./build-upload-macos | sed 's/.*/\[macOS: App Store Upload\] &/'

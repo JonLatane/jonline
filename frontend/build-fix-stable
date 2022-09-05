@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+# Paths assume pwd is directory of build script.
+cd "$(dirname "$0")"
+
+rm ios/Flutter/Flutter.podspec
+flutter clean
