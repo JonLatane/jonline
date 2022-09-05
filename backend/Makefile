@@ -27,7 +27,9 @@ prepare_integration_test: stop_local_instances
 	sleep 3
 
 test_list_services: prepare_integration_test
-	grpc_cli ls localhost:27707
+	grpcurl localhost:27707 list
+	grpcurl $(TEST_GRPC_TARGET) list jonline.Jonline
+	grpcurl $(TEST_GRPC_TARGET) jonline.Jonline/GetServiceVersion
 	$(MAKE) stop_local_instances
 
 test_authentication: reset_local_db prepare_integration_test

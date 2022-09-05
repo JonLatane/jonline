@@ -21,7 +21,7 @@ These instructions should at least get you a lazy wildcard setup for a domain ma
 5. Wait for your cert secret to be generated. In the default setup, it will appear in `get secret jonline-generated-tls -n jonline` once it's generated.
     * If something goes wrong, `kubectl describe certificate jonline-letsencrypt-cert -n jonline` to see details on what's going on with certificate generation.
 6. `make deploy_be_restart` to use the cert-manager certificates.
-
+7. You can validate your install with `make test_deploy_be`, just as with an unsecured deployment. But now you must specify the domain. (By default, it targets your deployed external IP, and your domain cert isn't valid except against the domain it's for.) So, simply do `TEST_GRPC_TARGET=be.jonline.io:27707 make test_deploy_be`.
 
 ## Use certs from another CA
 Perhaps you have a `server.pem` and `server.key` from your own CA. Make sure to specify the domain name you want the certs for (it can be a wildcard).

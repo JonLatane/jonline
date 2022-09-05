@@ -29,11 +29,11 @@ $ make deploy_be_get_external_ip
 188.166.203.133
 ```
 
-Finally, once the IP is set, to test the service from your own computer, use `make test_deploy_be_no_tls`:
+Finally, once the IP is set, to test the service from your own computer, use `make test_deploy_be` (you need `grpcurl` for this; `brew install grpcurl` work for macOS):
 
 ```bash
-$ make test_deploy_be_no_tls
-grpc_cli ls 188.166.203.133:27707
+$ make test_deploy_be
+grpcurl 188.166.203.133:27707 list
 jonline.Jonline
 grpc.reflection.v1alpha.ServerReflection
 ```

@@ -55,11 +55,10 @@ deploy_be_get_pods:
 	kubectl get pods --selector=app=jonline -n $(NAMESPACE)
 
 # K8s server deployment test targets
-test_deploy_be_no_tls:
-	grpc_cli ls $(TEST_GRPC_TARGET)
-
-test_deploy_be_tls:
-	grpc_cli ls $(TEST_GRPC_TARGET) --channel_creds_type=ssl
+test_deploy_be:
+	grpcurl $(TEST_GRPC_TARGET) list
+	grpcurl $(TEST_GRPC_TARGET) list jonline.Jonline
+	grpcurl $(TEST_GRPC_TARGET) jonline.Jonline/GetServiceVersion
 
 test_deploy_be_tls_openssl:
 	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem

@@ -483,7 +483,7 @@ checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 
 [[package]]
 name = "jonline"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "bcrypt",
  "bs58",
