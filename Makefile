@@ -63,6 +63,14 @@ test_deploy_be:
 	@echo "\nGetting available Jonline RPCs..."
 	grpcurl $(TEST_GRPC_TARGET) list jonline.Jonline
 
+test_deploy_be_unsecured:
+	@echo 'Getting services on target server...'
+	grpcurl -plaintext $(TEST_GRPC_TARGET) list
+	@echo "\nGetting Jonline service version..."
+	grpcurl -plaintext $(TEST_GRPC_TARGET) jonline.Jonline/GetServiceVersion
+	@echo "\nGetting available Jonline RPCs..."
+	grpcurl -plaintext $(TEST_GRPC_TARGET) list jonline.Jonline
+
 test_deploy_be_tls_openssl:
 	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem
 

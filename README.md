@@ -40,23 +40,23 @@ $ make deploy_be_get_external_ip
 188.166.203.133
 ```
 
-Finally, once the IP is set, to test the service from your own computer, use `make test_deploy_be` to run tests against that external IP (you need `grpcurl` for this; `brew install grpcurl` works for macOS):
+Finally, once the IP is set, to test the service from your own computer, use `make test_deploy_be_unsecured` to run tests against that external IP (you need `grpcurl` for this; `brew install grpcurl` works for macOS):
 
 ```bash
 $ make test_deploy_be
 Getting services on target server...
-grpcurl 188.166.203.133:27707 list
+grpcurl -plaintext 188.166.203.133:27707 list
 grpc.reflection.v1alpha.ServerReflection
 jonline.Jonline
 
 Getting Jonline service version...
-grpcurl 188.166.203.133:27707 jonline.Jonline/GetServiceVersion
+grpcurl -plaintext 188.166.203.133:27707 jonline.Jonline/GetServiceVersion
 {
   "version": "0.1.18"
 }
 
 Getting available Jonline RPCs...
-grpcurl 188.166.203.133:27707 list jonline.Jonline
+grpcurl -plaintext 188.166.203.133:27707 list jonline.Jonline
 jonline.Jonline.CreateAccount
 jonline.Jonline.GetCurrentUser
 jonline.Jonline.GetServiceVersion
