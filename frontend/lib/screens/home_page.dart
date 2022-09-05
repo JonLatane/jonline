@@ -36,7 +36,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       icon: Icons.chat_bubble,
       label: 'Posts',
     ),
-    RouteDestination(
+    const RouteDestination(
       route: EventsTab(),
       icon: Icons.calendar_month,
       label: 'Events',
@@ -98,11 +98,11 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             );
           })
         : AutoTabsRouter.pageView(
-            routes: [
-              const PostsTab(),
-              const EventsTab(),
-              const ProfileTab(),
-              if (_showSettingsTab) SettingsTab(tab: 'tab'),
+            routes: const [
+              PostsTab(),
+              EventsTab(),
+              ProfileTab(),
+              // if (_showSettingsTab) SettingsTab(tab: 'tab'),
             ],
             builder: (context, child, animation) {
               return Scaffold(
@@ -127,26 +127,26 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         : BottomNavigationBar(
             currentIndex: tabsRouter.activeIndex,
             onTap: tabsRouter.setActiveIndex,
-            items: [
-              const BottomNavigationBarItem(
+            items: const [
+              BottomNavigationBarItem(
                   icon: Icon(Icons.chat_bubble), label: 'Posts'
                   // icon: Icon(Icons.source),
                   // label: 'Books',
                   ),
-              const BottomNavigationBarItem(
+              BottomNavigationBarItem(
                   icon: Icon(Icons.calendar_month), label: 'Events'
                   // icon: Icon(Icons.source),
                   // label: 'Books',
                   ),
-              const BottomNavigationBarItem(
+              BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'Profile',
               ),
-              if (_showSettingsTab)
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.settings),
-                  label: 'Settings',
-                ),
+              // if (_showSettingsTab)
+              //   const BottomNavigationBarItem(
+              //     icon: Icon(Icons.settings),
+              //     label: 'Settings',
+              //   ),
             ],
           );
   }

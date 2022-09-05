@@ -33,15 +33,15 @@ class ProfilePageState extends State<ProfilePage> {
               },
               child: const Text('My Books'),
             ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                context
-                    .findRootAncestorStateOfType<HomePageState>()
-                    ?.toggleSettingsTab();
-              },
-              child: const Text('Toggle Settings Tab'),
-            ),
+            // const SizedBox(height: 32),
+            // ElevatedButton(
+            //   onPressed: () {
+            //     context
+            //         .findRootAncestorStateOfType<HomePageState>()
+            //         ?.toggleSettingsTab();
+            //   },
+            //   child: const Text('Toggle Settings Tab'),
+            // ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
