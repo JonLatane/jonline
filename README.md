@@ -26,7 +26,7 @@ $ make deploy_be_get_external_ip
 188.166.203.133
 ```
 
-Finally, once the IP is set, to test the service from your own computer, use `make test_deploy_be` (you need `grpcurl` for this; `brew install grpcurl` work for macOS):
+Finally, once the IP is set, to test the service from your own computer, use `make test_deploy_be` (you need `grpcurl` for this; `brew install grpcurl` works for macOS):
 
 ```bash
 $ make test_deploy_be
