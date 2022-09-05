@@ -56,9 +56,12 @@ deploy_be_get_pods:
 
 # K8s server deployment test targets
 test_deploy_be:
+	@echo 'Getting services on target server...'
 	grpcurl $(TEST_GRPC_TARGET) list
-	grpcurl $(TEST_GRPC_TARGET) list jonline.Jonline
+	@echo "\nGetting Jonline service version..."
 	grpcurl $(TEST_GRPC_TARGET) jonline.Jonline/GetServiceVersion
+	@echo "\nGetting available Jonline RPCs..."
+	grpcurl $(TEST_GRPC_TARGET) list jonline.Jonline
 
 test_deploy_be_tls_openssl:
 	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem
