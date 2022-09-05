@@ -11,7 +11,7 @@ These instructions should at least get you a lazy wildcard setup for a domain ma
     * Currently their page says: `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml`.
 3. Securely store your DNS provider's credentials.
     1. ***Disable history in your shell***.
-        * For ZSH, simply `unset HISTFILE`.
+        * For ZSH or Bash, simply `unset HISTFILE`.
     2. Generate and store your Cert-Manager-supported DNS provider's credentials.
         * DigitalOcean: [Get an access token here](https://cloud.digitalocean.com/account/api/tokens), then `kubectl create secret generic digitalocean-dns --from-literal=access-token=<your access token here> -n jonline`.
         * Other DNS providers: TBD. Search the web for "`<your provider> cert-manager dns01 wildcard`" for a start!
