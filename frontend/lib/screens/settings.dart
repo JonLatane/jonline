@@ -42,8 +42,8 @@ class _SettingsPageState extends State<SettingsPage>
                 child: Text('Update Query $queryUpdateCont')),
             ElevatedButton(
                 onPressed: () {
-                  context.navigateTo(BooksTab(
-                    children: [BookDetailsRoute(id: 2)],
+                  context.navigateTo(PostsTab(
+                    children: [PostDetailsRoute(id: 2)],
                   ));
                 },
                 child: const Text('Navigate to book details/1'))

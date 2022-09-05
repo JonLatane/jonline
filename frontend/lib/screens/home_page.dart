@@ -32,9 +32,14 @@ class RouteDestination {
 class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final destinations = [
     const RouteDestination(
-      route: BooksTab(),
-      icon: Icons.source,
-      label: 'Books',
+      route: PostsTab(),
+      icon: Icons.chat_bubble,
+      label: 'Posts',
+    ),
+    RouteDestination(
+      route: EventsTab(),
+      icon: Icons.calendar_month,
+      label: 'Events',
     ),
     const RouteDestination(
       route: ProfileTab(),
@@ -94,7 +99,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           })
         : AutoTabsRouter.pageView(
             routes: [
-              const BooksTab(),
+              const PostsTab(),
+              const EventsTab(),
               const ProfileTab(),
               if (_showSettingsTab) SettingsTab(tab: 'tab'),
             ],
@@ -123,9 +129,15 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             onTap: tabsRouter.setActiveIndex,
             items: [
               const BottomNavigationBarItem(
-                icon: Icon(Icons.source),
-                label: 'Books',
-              ),
+                  icon: Icon(Icons.chat_bubble), label: 'Posts'
+                  // icon: Icon(Icons.source),
+                  // label: 'Books',
+                  ),
+              const BottomNavigationBarItem(
+                  icon: Icon(Icons.calendar_month), label: 'Events'
+                  // icon: Icon(Icons.source),
+                  // label: 'Books',
+                  ),
               const BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'Profile',
