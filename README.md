@@ -16,7 +16,7 @@ $ kubectl get namespace jonline
 Error from server (NotFound): namespaces "jonline" not found
 ```
 
-To begin setup an *unsecured instance* where ***passwords and auth tokens will be sent in plain text***, first clone this repo:
+To begin setup, first clone this repo:
 
 ```bash
 git clone https://github.com/JonLatane/jonline.git
@@ -29,7 +29,7 @@ Next, from the repo root, to create a DB and two load-balanced servers in the na
 make deploy_db_create deploy_be_create
 ```
 
-That's it! Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though. To view your whole deployment, use `make deploy_be_get_all`. Use `make deploy_be_get_external_ip` to see what your service's external IP is (until set, it will return `<pending>`).
+That's it! You've created an *unsecured instance* where ***passwords and auth tokens will be sent in plain text***. Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though. To view your whole deployment, use `make deploy_be_get_all`. Use `make deploy_be_get_external_ip` to see what your service's external IP is (until set, it will return `<pending>`).
 
 ```bash
 $ make deploy_be_get_external_ip
@@ -48,7 +48,7 @@ grpc.reflection.v1alpha.ServerReflection
 That's it! You're up and running, although again, *it's an unsecured instance* where ***passwords and auth tokens will be sent in plain text***.
 
 #### Securing your deployment
-Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network.
+Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network. If you're using DigitalOcean DNS you can be setup in a few minutes.
 
 See [`generated_certs/README.md`](https://github.com/JonLatane/jonline/tree/main/generated_certs) for quick TLS setup instructions, either [using Cert-Manager (recommended)](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-cert-manager-recommended), [some other CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-certs-from-another-ca) or [your own custom CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-your-own-custom-ca).
 
