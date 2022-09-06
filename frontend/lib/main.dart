@@ -1,8 +1,11 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:grpc/grpc.dart';
 import 'package:jonline/db.dart';
+import 'package:jonline/generated/jonline.pbgrpc.dart';
 import 'package:jonline/router/auth_guard.dart';
 import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/material.dart';
+import 'package:overlay_support/overlay_support.dart';
 import 'package:provider/provider.dart';
 
 void main() => runApp(const MyApp());
@@ -11,10 +14,10 @@ class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<MyApp> createState() => AppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class AppState extends State<MyApp> {
   final authService = AuthService();
 
   final _rootRouter = RootRouter(
@@ -22,8 +25,14 @@ class _MyAppState extends State<MyApp> {
   );
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
+    return OverlaySupport.global(
+        child: MaterialApp.router(
       theme: ThemeData.dark().copyWith(
         pageTransitionsTheme: const PageTransitionsTheme(builders: {
           TargetPlatform.macOS: NoShadowCupertinoPageTransitionsBuilder(),
@@ -44,6 +53,6 @@ class _MyAppState extends State<MyApp> {
           ),
         );
       },
-    );
+    ));
   }
 }

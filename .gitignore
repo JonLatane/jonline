@@ -6,3 +6,7 @@
 *.srl
 *.csr
 *.generated.yaml
+*.pb.dart
+*.pbenum.dart
+*.pbjson.dart
+*.pbserver.dart

@@ -9,6 +9,6 @@ const profileTab = AutoRoute(
   page: EmptyRouterPage,
   children: [
     AutoRoute(path: '', page: ProfilePage),
-    AutoRoute(path: 'my-books', page: MyBooksPage),
+    AutoRoute(path: 'activity', page: MyActivityPage),
   ],
 );

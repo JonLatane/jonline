@@ -2,10 +2,10 @@ import 'package:auto_route/auto_route.dart';
 import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/material.dart';
 
-class MyBooksPage extends StatelessWidget {
+class MyActivityPage extends StatelessWidget {
   final String? filter;
 
-  const MyBooksPage({Key? key, @queryParam this.filter = 'none'})
+  const MyActivityPage({Key? key, @queryParam this.filter = 'none'})
       : super(key: key);
 
   @override

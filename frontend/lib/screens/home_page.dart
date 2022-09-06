@@ -69,6 +69,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     // builder will rebuild everytime this router's stack
     // updates
     // we need it to indicate which NavigationRailDestination is active
+    if (context.topRoute.name == 'SettingsTab') {
+      _showSettingsTab = true;
+    }
     return kIsWeb
         ? AutoRouter(builder: (context, child) {
             // we check for active route index by using
@@ -113,7 +116,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             builder: (context, child, animation) {
               return Scaffold(
                 appBar: AppBar(
-                  title: Text(context.topRoute.name),
+                  title: Text(title),
                   leading: const AutoLeadingButton(
                     ignorePagelessRoutes: true,
                   ),
@@ -124,6 +127,18 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
               );
             },
           );
+  }
+
+  String get title {
+    switch (context.topRoute.name) {
+      case "PostListRoute":
+        return "Posts";
+      case "EventListRoute":
+        return "Events";
+      case "ProfileRoute":
+        return "Accounts & Profiles";
+    }
+    return context.topRoute.name;
   }
 
   Widget buildBottomNav(BuildContext context, TabsRouter tabsRouter) {

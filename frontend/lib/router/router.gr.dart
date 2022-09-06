@@ -133,7 +133,7 @@ class RootRouter extends _i14.RootStackRouter {
               filter: queryParams.optString('filter', 'none')));
       return _i14.MaterialPageX<dynamic>(
           routeData: routeData,
-          child: _i11.MyBooksPage(key: args.key, filter: args.filter));
+          child: _i11.MyActivityPage(key: args.key, filter: args.filter));
     },
     NameFieldRoute.name: (routeData) {
       final args = routeData.argsAs<NameFieldRouteArgs>(
@@ -207,7 +207,7 @@ class RootRouter extends _i14.RootStackRouter {
                     _i14.RouteConfig(ProfileRoute.name,
                         path: '', parent: ProfileTab.name),
                     _i14.RouteConfig(MyBooksRoute.name,
-                        path: 'my-books', parent: ProfileTab.name)
+                        path: 'activity', parent: ProfileTab.name)
                   ]),
               _i14.RouteConfig(SettingsTab.name,
                   path: 'settings/:tab', parent: HomeRoute.name)
@@ -429,11 +429,11 @@ class ProfileRoute extends _i14.PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [_i11.MyBooksPage]
+/// [_i11.MyActivityPage]
 class MyBooksRoute extends _i14.PageRouteInfo<MyBooksRouteArgs> {
   MyBooksRoute({_i18.Key? key, String? filter = 'none'})
       : super(MyBooksRoute.name,
-            path: 'my-books',
+            path: 'activity',
             args: MyBooksRouteArgs(key: key, filter: filter),
             rawQueryParams: {'filter': filter});
 

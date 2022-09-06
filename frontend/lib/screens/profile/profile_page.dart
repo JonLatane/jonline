@@ -23,13 +23,21 @@ class ProfilePageState extends State<ProfilePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Profile page',
+              'No Accounts Created',
               style: Theme.of(context).textTheme.headline5,
             ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
-                context.router.push(MyBooksRoute());
+                context.navigateNamedTo('/login');
+              },
+              child: const Text('Login to a server...'),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                context.navigateNamedTo('/profile/activity');
+                // context.router.push(MyBooksRoute());
               },
               child: const Text('My Activity'),
             ),
