@@ -34,11 +34,13 @@ test_list_services: prepare_integration_test
 	$(MAKE) local_instances_stop
 
 test_authentication_local: local_db_reset prepare_integration_test
-	grpcurl -d '{"username": "test", "password": "testpass"}' localhost:27707 jonline.Jonline/CreateAccount
-	! grpcurl -d '{"username": "test", "password": "expect_error_dup_username"}' localhost:27707 jonline.Jonline/CreateAccount
-	grpcurl -d '{"username": "test", "password": "testpass"}' localhost:27707 jonline.Jonline/Login
-	! grpcurl -d '{"username": "test", "password": "expect_error_wrong_password"}' localhost:27707 jonline.Jonline/Login
-	echo 'Authentication test successful.'
+	grpcurl -plaintext -d '{"username": "test", "password": "testpass"}' localhost:27707 jonline.Jonline/CreateAccount
+	! grpcurl -plaintext -d '{"username": "test", "password": "expect_error_dup_username"}' localhost:27707 jonline.Jonline/CreateAccount
+	grpcurl -plaintext -d '{"username": "test", "password": "testpass"}' localhost:27707 jonline.Jonline/Login
+	! grpcurl -plaintext -d '{"username": "test", "password": "expect_error_wrong_password"}' localhost:27707 jonline.Jonline/Login
+	@echo ''
+	@echo 'Authentication test successful.'
+	@echo ''
 	$(MAKE) local_instances_stop
 
 test_authentication_remote:
@@ -46,4 +48,6 @@ test_authentication_remote:
 	! grpcurl -d '{"username": "test", "password": "expect_error_dup_username"}' $(TEST_GRPC_TARGET) jonline.Jonline/CreateAccount
 	grpcurl -d '{"username": "test", "password": "testpass"}' $(TEST_GRPC_TARGET) jonline.Jonline/Login
 	! grpcurl -d '{"username": "test", "password": "expect_error_wrong_password"}' $(TEST_GRPC_TARGET) jonline.Jonline/Login
-	echo 'Authentication test successful.'
+	@echo ''
+	@echo 'Authentication test successful.'
+	@echo ''

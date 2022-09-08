@@ -1,13 +1,13 @@
-import 'package:another_flushbar/flushbar.dart';
 import 'package:grpc/grpc.dart';
 import 'package:jonline/generated/authentication.pb.dart';
 import 'package:jonline/generated/jonline.pbgrpc.dart';
+import 'package:jonline/app_state.dart';
 import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/router/auth_guard.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/screens/profile/profile_page.dart';
 import 'package:provider/provider.dart';
 import 'package:auto_route/auto_route.dart';
-import 'package:overlay_support/overlay_support.dart';
 
 import '../generated/google/protobuf/empty.pb.dart';
 
@@ -22,33 +22,36 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // final FocusNode serverFocus = FocusNode();
-  // final TextEditingController serverController = TextEditingController();
+  AppState get appState => context.findRootAncestorStateOfType<AppState>()!;
+
+  bool doingStuff = false;
   final FocusNode usernameFocus = FocusNode();
   final TextEditingController usernameController = TextEditingController();
   final FocusNode passwordFocus = FocusNode();
   final TextEditingController passwordController = TextEditingController();
+  bool allowInsecure = false;
 
   String get serverAndUser => usernameController.value.text;
   String get server =>
       serverAndUser.contains('/') ? serverAndUser.split('/')[0] : 'jonline.io';
   String get username =>
       serverAndUser.contains('/') ? serverAndUser.split('/')[1] : serverAndUser;
+  String get friendlyUsername => username == "" ? "no one" : username;
   String get password => passwordController.value.text;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     usernameController.addListener(() {
+      setState(() {});
+    });
+    passwordController.addListener(() {
       setState(() {});
     });
   }
 
   @override
   dispose() {
-    // serverFocus.dispose();
-    // serverController.dispose();
     usernameFocus.dispose();
     usernameController.dispose();
     passwordFocus.dispose();
@@ -60,9 +63,9 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          // automaticallyImplyLeading: showBackButton,
-          // title: Text('Login to continue'),
-          ),
+        // automaticallyImplyLeading: showBackButton,
+        title: const Text('Login/Create Account'),
+      ),
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 300),
@@ -71,28 +74,6 @@ class _LoginPageState extends State<LoginPage> {
               const Expanded(
                 child: SizedBox(),
               ),
-              // TextField(
-              //   focusNode: serverFocus,
-              //   controller: serverController,
-              //   enableSuggestions: false,
-              //   autocorrect: false,
-              //   maxLines: 1,
-              //   cursorColor: Colors.white,
-              //   style: const TextStyle(
-              //       color: Colors.white,
-              //       fontWeight: FontWeight.w400,
-              //       fontSize: 14),
-              //   enabled: true,
-              //   decoration: const InputDecoration(
-              //       border: InputBorder.none,
-              //       hintText: "Server (default: jonline.io)",
-              //       isDense: true),
-              //   onChanged: (value) {
-              //     // widget.melody.name = value;
-              //     //                          BeatScratchPlugin.updateMelody(widget.melody);
-              //     // BeatScratchPlugin.onSynthesizerStatusChange();
-              //   },
-              // ),
               TextField(
                 focusNode: usernameFocus,
                 controller: usernameController,
@@ -104,43 +85,33 @@ class _LoginPageState extends State<LoginPage> {
                     color: Colors.white,
                     fontWeight: FontWeight.w400,
                     fontSize: 14),
-                enabled: true,
+                enabled: !doingStuff,
                 decoration: const InputDecoration(
                     border: InputBorder.none,
                     hintText: "Username",
                     isDense: true),
-                onChanged: (value) {
-                  // widget.melody.name = value;
-                  //                          BeatScratchPlugin.updateMelody(widget.melody);
-                  // BeatScratchPlugin.onSynthesizerStatusChange();
-                },
+                onChanged: (value) {},
               ),
-              // Row(
-              //   children: [
-              //     const Expanded(child: SizedBox()),
-              Text(
-                "Specify a custom server with \"/\". e.g. jonline.io/jon, bobline.io/jon, ${server == 'jonline.io' || server == 'bobline.io' ? '' : "$server/bob, "}etc.",
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w400,
-                    fontSize: 11),
-              ),
-              //   ],
-              // ),
-              // Row(
-              //   children: [
-              //     const Expanded(child: SizedBox()),
-              Text(
-                "This user should exist on $server.",
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w400,
-                    fontSize: 11),
-              ),
-              //   ],
-              // ),
+              const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    "Specify server in username with \"/\".",
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 11),
+                  )),
+              Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    "e.g. jonline.io/jon, bobline.io/jon, ${server == 'jonline.io' || server == 'bobline.io' ? '' : "$server/bob, "}etc.",
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 11),
+                  )),
               const SizedBox(height: 16),
               TextField(
                 focusNode: passwordFocus,
@@ -154,7 +125,7 @@ class _LoginPageState extends State<LoginPage> {
                     color: Colors.white,
                     fontWeight: FontWeight.w400,
                     fontSize: 14),
-                enabled: true,
+                enabled: !doingStuff,
                 decoration: const InputDecoration(
                     border: InputBorder.none,
                     hintText: "Password",
@@ -165,29 +136,143 @@ class _LoginPageState extends State<LoginPage> {
                   // BeatScratchPlugin.onSynthesizerStatusChange();
                 },
               ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () async {
-                  final account = await JonlineAccount.loginToAccount(
-                      server, username, password, context, showSnackBar);
-                  if (!mounted) return;
-                  if (account != null) {
-                    context.navigateBack();
-                  }
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                title: const Text("Allow insecure connections",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 12)),
+                value: allowInsecure,
+                onChanged: (newValue) {
+                  setState(() {
+                    allowInsecure = newValue!;
+                  });
                 },
-                child: const Text('Login'),
               ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () async {
-                  final account = await JonlineAccount.createAccount(
-                      server, username, password, context, showSnackBar);
-                  if (!mounted) return;
-                  if (account != null) {
-                    context.navigateBack();
-                  }
-                },
-                child: const Text('Create Account'),
+              if (allowInsecure)
+                const Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      "Passwords and auth tokens may be sent in plain text.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11),
+                    )),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: ElevatedButton(
+                      onPressed:
+                          doingStuff || username.isEmpty || password.isEmpty
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    doingStuff = true;
+                                  });
+                                  final account =
+                                      await JonlineAccount.loginToAccount(
+                                          server,
+                                          username,
+                                          password,
+                                          context,
+                                          showSnackBar,
+                                          allowInsecure: allowInsecure);
+                                  setState(() {
+                                    doingStuff = false;
+                                  });
+                                  if (!mounted) return;
+                                  if (account != null) {
+                                    appState.updateAccountList();
+                                    if (!mounted) return;
+                                    context.navigateBack();
+                                  }
+                                },
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Column(
+                          children: [
+                            const Text('Login'),
+                            Text(
+                              "as $friendlyUsername",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  // color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 11),
+                            ),
+                            Text(
+                              "to $server",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  // color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Expanded(
+                    flex: 1,
+                    child: SizedBox(),
+                  ),
+                  Expanded(
+                    flex: 6,
+                    child: ElevatedButton(
+                      onPressed:
+                          doingStuff || username.isEmpty || password.isEmpty
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    doingStuff = true;
+                                  });
+                                  final account =
+                                      await JonlineAccount.createAccount(
+                                          server,
+                                          username,
+                                          password,
+                                          context,
+                                          showSnackBar,
+                                          allowInsecure: allowInsecure);
+                                  setState(() {
+                                    doingStuff = false;
+                                  });
+                                  if (!mounted) return;
+                                  if (account != null) {
+                                    appState.updateAccountList();
+                                    if (!mounted) return;
+                                    context.navigateBack();
+                                  }
+                                },
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Column(
+                          children: [
+                            const Text('Create Account'),
+                            Text(
+                              friendlyUsername,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w400, fontSize: 11),
+                            ),
+                            Text(
+                              "on $server",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w400, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const Expanded(
                 child: SizedBox(),
@@ -200,25 +285,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   showSnackBar(String message) {
-    showSimpleNotification(
-        Text(message, style: const TextStyle(color: Colors.white)),
-        position: NotificationPosition.bottom,
-        background: Colors.black);
-
-    // MultiSnackBarInterface.setMaxListLength(maxLength: 4);
-    // MultiSnackBarInterface.show(
-    //     context: context,
-    //     snackBar: SnackBar(
-    //       content: Text(message),
-    //     ));
-    // Flushbar(
-    //   // title:  "Hey Ninja",
-    //   message: message,
-    //   isDismissible: false,
-    //   duration: const Duration(seconds: 3),
-    // ).show(context);
-    // ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    //   content: Text(message),
-    // ));
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
   }
 }

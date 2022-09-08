@@ -126,10 +126,10 @@ class RootRouter extends _i14.RootStackRouter {
       return _i14.MaterialPageX<dynamic>(
           routeData: routeData, child: const _i10.ProfilePage());
     },
-    MyBooksRoute.name: (routeData) {
+    MyActivityRoute.name: (routeData) {
       final queryParams = routeData.queryParams;
-      final args = routeData.argsAs<MyBooksRouteArgs>(
-          orElse: () => MyBooksRouteArgs(
+      final args = routeData.argsAs<MyActivityRouteArgs>(
+          orElse: () => MyActivityRouteArgs(
               filter: queryParams.optString('filter', 'none')));
       return _i14.MaterialPageX<dynamic>(
           routeData: routeData,
@@ -206,7 +206,7 @@ class RootRouter extends _i14.RootStackRouter {
                   children: [
                     _i14.RouteConfig(ProfileRoute.name,
                         path: '', parent: ProfileTab.name),
-                    _i14.RouteConfig(MyBooksRoute.name,
+                    _i14.RouteConfig(MyActivityRoute.name,
                         path: 'activity', parent: ProfileTab.name)
                   ]),
               _i14.RouteConfig(SettingsTab.name,
@@ -430,18 +430,18 @@ class ProfileRoute extends _i14.PageRouteInfo<void> {
 
 /// generated route for
 /// [_i11.MyActivityPage]
-class MyBooksRoute extends _i14.PageRouteInfo<MyBooksRouteArgs> {
-  MyBooksRoute({_i18.Key? key, String? filter = 'none'})
-      : super(MyBooksRoute.name,
+class MyActivityRoute extends _i14.PageRouteInfo<MyActivityRouteArgs> {
+  MyActivityRoute({_i18.Key? key, String? filter = 'none'})
+      : super(MyActivityRoute.name,
             path: 'activity',
-            args: MyBooksRouteArgs(key: key, filter: filter),
+            args: MyActivityRouteArgs(key: key, filter: filter),
             rawQueryParams: {'filter': filter});
 
-  static const String name = 'MyBooksRoute';
+  static const String name = 'MyActivityRoute';
 }
 
-class MyBooksRouteArgs {
-  const MyBooksRouteArgs({this.key, this.filter = 'none'});
+class MyActivityRouteArgs {
+  const MyActivityRouteArgs({this.key, this.filter = 'none'});
 
   final _i18.Key? key;
 
@@ -449,7 +449,7 @@ class MyBooksRouteArgs {
 
   @override
   String toString() {
-    return 'MyBooksRouteArgs{key: $key, filter: $filter}';
+    return 'MyActivityRouteArgs{key: $key, filter: $filter}';
   }
 }
 

@@ -31,7 +31,9 @@ class EventListScreenState extends State<EventListScreen>
                               horizontal: 16, vertical: 8),
                           child: ListTile(
                             title: Text(book.name),
-                            subtitle: Text(book.genre),
+                            subtitle:
+                                SizedBox(height: 200, child: Text(book.genre)),
+                            // trailing: SizedBox(width: 20, height: 200),
                             onTap: () {
                               context.pushRoute(EventDetailsRoute(id: book.id));
                             },

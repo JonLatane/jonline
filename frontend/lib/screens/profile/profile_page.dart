@@ -1,8 +1,15 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
+import 'package:jonline/app_state.dart';
+import 'package:jonline/generated/authentication.pb.dart';
+import 'package:jonline/models/jonline_account.dart';
+import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:flutter/material.dart';
+import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:collection/collection.dart';
 
-import '../../router/router.gr.dart';
+import 'package:jonline/router/router.gr.dart';
 import '../user-data/data_collector.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -14,103 +21,296 @@ class ProfilePage extends StatefulWidget {
 
 class ProfilePageState extends State<ProfilePage> {
   UserData? userData;
+  List<JonlineAccount> accounts = [];
+  AppState get appState => context.findRootAncestorStateOfType<AppState>()!;
+  HomePageState get homePage =>
+      context.findRootAncestorStateOfType<HomePageState>()!;
+
+  @override
+  void initState() {
+    super.initState();
+    homePage.showSettingsTabListener.addListener(onSettingsTabChanged);
+    appState.accounts.addListener(onAccountsChanged);
+  }
+
+  @override
+  dispose() {
+    homePage.showSettingsTabListener.removeListener(onSettingsTabChanged);
+    appState.accounts.removeListener(onAccountsChanged);
+    super.dispose();
+  }
+
+  onSettingsTabChanged() {
+    setState(() {});
+  }
+
+  onAccountsChanged() async {
+    // await Future.delayed(const Duration(seconds: 1));
+    print("onAccountsChanged");
+    setState(() {
+      accounts = appState.accounts.value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Text(
-              'No Accounts Created',
-              style: Theme.of(context).textTheme.headline5,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                context.navigateNamedTo('/login');
-              },
-              child: const Text('Login to a server...'),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                context.navigateNamedTo('/profile/activity');
-                // context.router.push(MyBooksRoute());
-              },
-              child: const Text('My Activity'),
-            ),
-
-            if (context
-                    .findRootAncestorStateOfType<HomePageState>()
-                    ?.showSettingsTab ==
-                false)
-              Column(children: [
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      context
-                          .findRootAncestorStateOfType<HomePageState>()
-                          ?.showSettingsTab = true;
-                    });
-                    context.navigateNamedTo('settings/main');
-                  },
-                  child: const Text('Open Settings'),
-                )
-              ]),
-            if (context
-                    .findRootAncestorStateOfType<HomePageState>()
-                    ?.showSettingsTab ==
-                true)
-              Column(children: [
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      context
-                          .findRootAncestorStateOfType<HomePageState>()
-                          ?.showSettingsTab = false;
-                    });
-                  },
-                  child: const Text('Close Settings'),
-                )
-              ]),
-            // const SizedBox(height: 32),
-            // ElevatedButton(
-            //   onPressed: () {
-            //     context.navigateBack();
-            //   },
-            //   child: const Text('Navigate Back'),
-            // ),
-            const SizedBox(height: 32),
-            userData == null
-                ? ElevatedButton(
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 6,
+                  child: ElevatedButton(
                     onPressed: () {
-                      context.pushRoute(
-                        UserDataCollectorRoute(onResult: (data) {
-                          setState(() {
-                            userData = data;
-                          });
-                        }),
-                      );
+                      context.navigateNamedTo('/login');
                     },
-                    child: const Text('Collect user data'),
+                    child: const Text(
+                      'Login/Create Account…',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                // const SizedBox(width: 8),
+                Expanded(
+                    flex: 2,
+                    child: TextButton(
+                      onPressed: () {
+                        appState.updateAccountList();
+                      },
+                      child: const Icon(Icons.refresh),
+                    )),
+                // const SizedBox(width: 8),
+                Expanded(
+                    flex: 2,
+                    child: TextButton(
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: const Text('Really delete all accoounts?'),
+                            action: SnackBarAction(
+                              label:
+                                  'Delete all', // or some operation you would like
+                              onPressed: () async {
+                                await JonlineAccount.updateAccountList([]);
+                                appState.updateAccountList();
+                              },
+                            )));
+                      },
+                      child: const Icon(Icons.delete_forever),
+                    )),
+                // const SizedBox(width: 8),
+                Expanded(
+                    flex: 2,
+                    child: TextButton(
+                      onPressed: () {
+                        if (!homePage.showSettingsTab) {
+                          setState(() {
+                            homePage.showSettingsTab = true;
+                          });
+                          Future.delayed(const Duration(milliseconds: 100), () {
+                            context.navigateNamedTo('settings/main');
+                          });
+                        } else {
+                          setState(() {
+                            homePage.showSettingsTab = false;
+                          });
+                        }
+                      },
+                      child: Stack(
+                        children: [
+                          const Icon(Icons.settings),
+                          Transform.translate(
+                            offset: const Offset(20, 0),
+                            child: Icon(homePage.showSettingsTab
+                                ? Icons.close
+                                : Icons.arrow_right),
+                          ),
+                        ],
+                      ),
+                    )),
+                // const SizedBox(width: 8)
+              ],
+            ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: Stack(
+                children: [
+                  buildList(),
+                  AnimatedOpacity(
+                    opacity: accounts.isEmpty ? 1.0 : 0.0,
+                    duration: animationDuration,
+                    child: IgnorePointer(
+                      child: Center(
+                        child: Text(
+                          'No Accounts Created',
+                          style: Theme.of(context).textTheme.headline5,
+                        ),
+                      ),
+                    ),
                   )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Your Data is complete'),
-                      const SizedBox(height: 24),
-                      Text('Name: ${userData!.name}'),
-                      const SizedBox(height: 24),
-                      Text('Favorite book: ${userData!.favoriteBook}'),
-                    ],
-                  )
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  buildList() {
+    return ImplicitlyAnimatedReorderableList<JonlineAccount>(
+      items: accounts,
+      areItemsTheSame: (a, b) => a.id == b.id,
+      onReorderFinished: (item, from, to, newItems) {
+        JonlineAccount.updateAccountList(newItems);
+      },
+      itemBuilder: (context, animation, account, index) {
+        return Reorderable(
+          key: ValueKey(account.id),
+          builder: (context, dragAnimation, inDrag) => SizeFadeTransition(
+              sizeFraction: 0.7,
+              curve: Curves.easeInOut,
+              animation: animation,
+              child: SizedBox(
+                height: 88,
+                child: Card(
+                  child: ListTile(
+                    title: Text(
+                      account.username,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Text('Server: ${account.server}',
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                            ),
+                            Expanded(
+                              flex: 4,
+                              child: Row(
+                                children: [
+                                  const Text('Refresh Token: ',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                  Expanded(
+                                    child: Text(account.refreshToken,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 32,
+                                child: TextButton(
+                                    style: ButtonStyle(
+                                        padding: MaterialStateProperty.all(
+                                            const EdgeInsets.all(0))),
+                                    // padding: const EdgeInsets.all(0),
+                                    onPressed: null, //() {},
+                                    child: const Icon(Icons.info)),
+                              ),
+                            ),
+                            Expanded(
+                              child: SizedBox(
+                                height: 32,
+                                child: TextButton(
+                                    style: ButtonStyle(
+                                        padding: MaterialStateProperty.all(
+                                            const EdgeInsets.all(0))),
+                                    // padding: const EdgeInsets.all(0),
+                                    onPressed: () async {
+                                      final client = await account.getClient(
+                                          showMessage: showSnackBar);
+                                      if (client != null) {
+                                        ExpirableToken newRefreshToken;
+                                        try {
+                                          newRefreshToken = await client
+                                              .refreshToken(RefreshTokenRequest(
+                                                  authToken: account
+                                                      .authorizationToken));
+                                        } catch (e) {
+                                          showSnackBar(formatServerError(e));
+                                          return;
+                                        }
+                                        account.refreshToken =
+                                            newRefreshToken.token;
+                                        await account.save();
+                                        showSnackBar('Refresh token updated.');
+                                        appState.updateAccountList();
+                                      }
+                                    },
+                                    child: const Icon(Icons.refresh)),
+                              ),
+                            ),
+                            Expanded(
+                                child: SizedBox(
+                                    height: 32,
+                                    child: TextButton(
+                                        style: ButtonStyle(
+                                            padding: MaterialStateProperty.all(
+                                                const EdgeInsets.all(0))),
+                                        // padding: const EdgeInsets.all(0),
+                                        onPressed: () {
+                                          ScaffoldMessenger.of(context)
+                                              .hideCurrentSnackBar();
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                      'Really delete ${account.server}/${account.username}?'),
+                                                  action: SnackBarAction(
+                                                    label:
+                                                        'Delete', // or some operation you would like
+                                                    onPressed: () async {
+                                                      await account.delete();
+                                                      setState(() {
+                                                        appState
+                                                            .updateAccountList();
+                                                      });
+                                                    },
+                                                  )));
+                                        },
+                                        child: const Icon(Icons.delete))))
+                          ],
+                        )
+                      ],
+                    ),
+                    trailing: const Handle(
+                      delay: Duration(milliseconds: 100),
+                      child: Icon(
+                        Icons.menu,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+              )),
+        );
+      },
+    );
+  }
+
+  showSnackBar(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
   }
 }

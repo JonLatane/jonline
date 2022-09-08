@@ -6,16 +6,16 @@ use crate::auth;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::{AuthTokenResponse, LoginRequest};
+use crate::rpcs::{validate_password, validate_username};
 use crate::schema::users::dsl::*;
-
-use super::validate_length;
 
 pub fn login(
     request: Request<LoginRequest>,
     conn: &PgPooledConnection,
 ) -> Result<Response<AuthTokenResponse>, Status> {
     let req = request.into_inner();
-    validate_length(&req.password, "password", 8, 128)?;
+    validate_username(&req.username)?;
+    validate_password(&req.password)?;
 
     let permission_denied = Status::new(Code::PermissionDenied, "invalid_username_or_password");
     let user_result = users

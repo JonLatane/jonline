@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -32,35 +33,36 @@ class RouteDestination {
 }
 
 class HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  final destinations = [
-    const RouteDestination(
-      route: PostsTab(),
-      icon: Icons.chat_bubble,
-      label: 'Posts',
-    ),
-    const RouteDestination(
-      route: EventsTab(),
-      icon: Icons.calendar_month,
-      label: 'Events',
-    ),
-    const RouteDestination(
-      route: ProfileTab(),
-      icon: Icons.person,
-      label: 'Me',
-    ),
-    RouteDestination(
-      route: SettingsTab(tab: 'tab'),
-      icon: Icons.settings,
-      label: 'Settings',
-    ),
-  ];
+  get destinations => [
+        const RouteDestination(
+          route: PostsTab(),
+          icon: Icons.chat_bubble,
+          label: 'Posts',
+        ),
+        const RouteDestination(
+          route: EventsTab(),
+          icon: Icons.calendar_month,
+          label: 'Events',
+        ),
+        const RouteDestination(
+          route: ProfileTab(),
+          icon: Icons.person,
+          label: 'Me',
+        ),
+        // if (showSettingsTab)
+        RouteDestination(
+          route: SettingsTab(tab: 'tab'),
+          icon: Icons.settings,
+          label: 'Settings',
+        ),
+      ];
 
-  bool _showSettingsTab = true;
-
-  bool get showSettingsTab => _showSettingsTab;
+  // bool _showSettingsTab = false;
+  ValueNotifier<bool> showSettingsTabListener = ValueNotifier(false);
+  bool get showSettingsTab => showSettingsTabListener.value;
   set showSettingsTab(bool value) {
     setState(() {
-      _showSettingsTab = value;
+      showSettingsTabListener.value = value;
     });
   }
 
@@ -69,8 +71,10 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     // builder will rebuild everytime this router's stack
     // updates
     // we need it to indicate which NavigationRailDestination is active
-    if (context.topRoute.name == 'SettingsTab') {
-      _showSettingsTab = true;
+    if (context.topRoute.name == 'SettingsTab' && !showSettingsTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showSettingsTab = true;
+      });
     }
     return kIsWeb
         ? AutoRouter(builder: (context, child) {
@@ -110,7 +114,6 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
               const PostsTab(),
               const EventsTab(),
               const ProfileTab(),
-              // if (showSettingsTab)
               SettingsTab(tab: 'tab'),
             ],
             builder: (context, child, animation) {
@@ -131,12 +134,18 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   String get title {
     switch (context.topRoute.name) {
-      case "PostListRoute":
-        return "Posts";
-      case "EventListRoute":
-        return "Events";
-      case "ProfileRoute":
-        return "Accounts & Profiles";
+      case 'PostListRoute':
+      case 'PostsTab':
+        return 'Posts';
+      case 'EventListRoute':
+      case 'EventsTab':
+        return 'Events';
+      case 'ProfileRoute':
+      case 'ProfileTab':
+        return 'Accounts & Profiles';
+      case 'SettingsRoute':
+      case 'SettingsTab':
+        return 'Settings';
     }
     return context.topRoute.name;
   }
@@ -145,15 +154,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final hideBottomNav = tabsRouter.topMatch.meta['hideBottomNav'] == true;
     final items = [
       const BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble), label: 'Posts'
-          // icon: Icon(Icons.source),
-          // label: 'Books',
-          ),
+          icon: Icon(Icons.chat_bubble), label: 'Posts'),
       const BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month), label: 'Events'
-          // icon: Icon(Icons.source),
-          // label: 'Books',
-          ),
+          icon: Icon(Icons.calendar_month), label: 'Events'),
       const BottomNavigationBarItem(
         icon: Icon(Icons.person),
         label: 'Me',
@@ -167,6 +170,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return hideBottomNav
         ? const SizedBox.shrink()
         : BottomNavigationBar(
+            selectedItemColor: const Color(0xFFA23B72),
             type: BottomNavigationBarType.fixed,
             currentIndex: min(items.length - 1, tabsRouter.activeIndex),
             onTap: tabsRouter.setActiveIndex,

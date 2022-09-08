@@ -5,13 +5,13 @@ pub fn validate_all_word_chars(
     value: &str,
     entity_name: &str
 ) -> Result<(), Status> {
-    let re = Regex::new(r"^[w]+$").unwrap();
+    let re = Regex::new(r"^[\w]+$").unwrap();
     if re.is_match(value) {
         return Ok(());
     }
     Err(Status::new(
         Code::InvalidArgument,
-        format!("{}_contains_non_word_chars", entity_name),
+        format!("{}_contains_non_word_characters", entity_name),
     ))
 }
 

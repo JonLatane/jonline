@@ -46,7 +46,7 @@ message GetFederatedAccountsResponse {
 
 message FederatedAccount {
   string id = 1;
-  string server_url = 2;
+  string server = 2;
   string username = 3;
   optional string password = 4;
   optional string auth_token = 5;
