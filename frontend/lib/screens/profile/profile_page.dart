@@ -7,7 +7,6 @@ import 'package:jonline/generated/authentication.pb.dart';
 import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/screens/home_page.dart';
-
 import 'package:jonline/screens/user-data/data_collector.dart';
 
 class ProfilePage extends StatefulWidget {
