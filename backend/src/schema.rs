@@ -31,9 +31,11 @@ table! {
         user_id -> Nullable<Int4>,
         parent_post_id -> Nullable<Int4>,
         title -> Varchar,
-        body -> Text,
+        link -> Nullable<Varchar>,
+        content -> Text,
         published -> Bool,
         created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
