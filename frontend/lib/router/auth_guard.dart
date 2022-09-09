@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:jonline/router/router.gr.dart';
+// import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:jonline/screens/home_page.dart';
+// import 'package:jonline/screens/home_page.dart';
 
 // mock auth state
 

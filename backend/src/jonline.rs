@@ -62,7 +62,7 @@ impl Jonline for JonLineImpl {
             Err(e) => return Err(e),
             Ok(conn) => conn,
         };
-        match auth::get_current_user(&request, &conn) {
+        match auth::get_auth_user(&request, &conn) {
             Err(e) => Err(e),
             Ok(user) => rpcs::get_current_user(user),
         }

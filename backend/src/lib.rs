@@ -16,6 +16,7 @@ pub mod models;
 pub mod protos;
 pub mod rpcs;
 pub mod schema;
+pub mod conversions;
 
 pub fn report_error<E: 'static>(err: E)
 where

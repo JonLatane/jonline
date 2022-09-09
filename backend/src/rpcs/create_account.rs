@@ -3,6 +3,7 @@ use diesel::*;
 use tonic::{Code, Request, Response, Status};
 
 use crate::auth;
+use crate::conversions;
 use crate::db_connection::PgPooledConnection;
 use crate::protos::{AuthTokenResponse, CreateAccountRequest};
 use crate::schema::users::dsl::*;
@@ -42,7 +43,7 @@ pub fn create_account(
     return Ok(Response::new(AuthTokenResponse {
         auth_token: tokens.auth_token,
         refresh_token: tokens.refresh_token,
-        user: Some(auth::user_response(
+        user: Some(conversions::proto_user(
             user_id,
             req.username,
             req.email,

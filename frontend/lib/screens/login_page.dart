@@ -1,15 +1,7 @@
-import 'package:grpc/grpc.dart';
-import 'package:jonline/generated/authentication.pb.dart';
-import 'package:jonline/generated/jonline.pbgrpc.dart';
+import 'package:auto_route/auto_route.dart';
+import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
 import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/router/auth_guard.dart';
-import 'package:flutter/material.dart';
-import 'package:jonline/screens/profile/profile_page.dart';
-import 'package:provider/provider.dart';
-import 'package:auto_route/auto_route.dart';
-
-import '../generated/google/protobuf/empty.pb.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function(bool isLoggedIn)? onLoginResult;
@@ -102,6 +94,7 @@ class _LoginPageState extends State<LoginPage> {
                         fontWeight: FontWeight.w400,
                         fontSize: 11),
                   )),
+              const SizedBox(height: 2),
               Align(
                   alignment: Alignment.centerRight,
                   child: Text(
@@ -150,18 +143,21 @@ class _LoginPageState extends State<LoginPage> {
                   });
                 },
               ),
-              if (allowInsecure)
-                const Align(
-                    alignment: Alignment.center,
-                    child: Text(
-                      "Passwords and auth tokens may be sent in plain text.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11),
-                    )),
-              const SizedBox(height: 16),
+              SizedBox(
+                  height: 16,
+                  child: allowInsecure
+                      ? const Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            "Passwords may be sent in plain text.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 11),
+                          ))
+                      : null),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(

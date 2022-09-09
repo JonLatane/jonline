@@ -2,7 +2,7 @@ use bcrypt::verify;
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
 
-use crate::auth;
+use crate::{auth, conversions};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::{AuthTokenResponse, LoginRequest};
@@ -37,7 +37,7 @@ pub fn login(
     Ok(Response::new(AuthTokenResponse {
         auth_token: tokens.auth_token,
         refresh_token: tokens.refresh_token,
-        user: Some(auth::user_response(
+        user: Some(conversions::proto_user(
             user.id,
             user.username,
             user.email,

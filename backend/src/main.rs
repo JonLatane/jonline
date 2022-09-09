@@ -18,6 +18,7 @@ pub mod models;
 pub mod protos;
 pub mod rpcs;
 pub mod schema;
+pub mod conversions;
 
 use crate::jonline::JonLineImpl;
 use ::jonline::{env_var, report_error};

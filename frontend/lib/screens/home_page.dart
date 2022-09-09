@@ -1,10 +1,9 @@
 import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/router/router.gr.dart';
 
 class HomePage extends StatefulWidget implements AutoRouteWrapper {
   const HomePage({

@@ -1,16 +1,14 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/material.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
+import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/authentication.pb.dart';
 import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/screens/home_page.dart';
-import 'package:flutter/material.dart';
-import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
-import 'package:collection/collection.dart';
 
-import 'package:jonline/router/router.gr.dart';
-import '../user-data/data_collector.dart';
+import 'package:jonline/screens/user-data/data_collector.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -179,126 +177,138 @@ class ProfilePageState extends State<ProfilePage> {
               curve: Curves.easeInOut,
               animation: animation,
               child: SizedBox(
-                height: 88,
+                height: 100,
                 child: Card(
-                  child: ListTile(
-                    title: Text(
-                      account.username,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Column(
-                      children: [
-                        Row(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ListTile(
+                        title: Text(
+                          account.username,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Column(
                           children: [
-                            Expanded(
-                              flex: 3,
-                              child: Text('Server: ${account.server}',
-                                  maxLines: 1, overflow: TextOverflow.ellipsis),
-                            ),
-                            Expanded(
-                              flex: 4,
-                              child: Row(
-                                children: [
-                                  const Text('Refresh Token: ',
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Text('Server: ${account.server}',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis),
-                                  Expanded(
-                                    child: Text(account.refreshToken,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis),
+                                ),
+                                Expanded(
+                                  flex: 4,
+                                  child: Row(
+                                    children: [
+                                      const Text('Refresh Token: ',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      Expanded(
+                                        child: Text(account.refreshToken,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 32,
-                                child: TextButton(
-                                    style: ButtonStyle(
-                                        padding: MaterialStateProperty.all(
-                                            const EdgeInsets.all(0))),
-                                    // padding: const EdgeInsets.all(0),
-                                    onPressed: null, //() {},
-                                    child: const Icon(Icons.info)),
-                              ),
-                            ),
-                            Expanded(
-                              child: SizedBox(
-                                height: 32,
-                                child: TextButton(
-                                    style: ButtonStyle(
-                                        padding: MaterialStateProperty.all(
-                                            const EdgeInsets.all(0))),
-                                    // padding: const EdgeInsets.all(0),
-                                    onPressed: () async {
-                                      final client = await account.getClient(
-                                          showMessage: showSnackBar);
-                                      if (client != null) {
-                                        ExpirableToken newRefreshToken;
-                                        try {
-                                          newRefreshToken = await client
-                                              .refreshToken(RefreshTokenRequest(
-                                                  authToken: account
-                                                      .authorizationToken));
-                                        } catch (e) {
-                                          showSnackBar(formatServerError(e));
-                                          return;
-                                        }
-                                        account.refreshToken =
-                                            newRefreshToken.token;
-                                        await account.save();
-                                        showSnackBar('Refresh token updated.');
-                                        appState.updateAccountList();
-                                      }
-                                    },
-                                    child: const Icon(Icons.refresh)),
-                              ),
-                            ),
-                            Expanded(
-                                child: SizedBox(
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
                                     height: 32,
                                     child: TextButton(
                                         style: ButtonStyle(
                                             padding: MaterialStateProperty.all(
                                                 const EdgeInsets.all(0))),
                                         // padding: const EdgeInsets.all(0),
-                                        onPressed: () {
-                                          ScaffoldMessenger.of(context)
-                                              .hideCurrentSnackBar();
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(SnackBar(
-                                                  content: Text(
-                                                      'Really delete ${account.server}/${account.username}?'),
-                                                  action: SnackBarAction(
-                                                    label:
-                                                        'Delete', // or some operation you would like
-                                                    onPressed: () async {
-                                                      await account.delete();
-                                                      setState(() {
-                                                        appState
-                                                            .updateAccountList();
-                                                      });
-                                                    },
-                                                  )));
+                                        onPressed: null, //() {},
+                                        child: const Icon(Icons.info)),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 32,
+                                    child: TextButton(
+                                        style: ButtonStyle(
+                                            padding: MaterialStateProperty.all(
+                                                const EdgeInsets.all(0))),
+                                        // padding: const EdgeInsets.all(0),
+                                        onPressed: () async {
+                                          final client =
+                                              await account.getClient(
+                                                  showMessage: showSnackBar);
+                                          if (client != null) {
+                                            ExpirableToken newRefreshToken;
+                                            try {
+                                              newRefreshToken = await client
+                                                  .refreshToken(RefreshTokenRequest(
+                                                      authToken: account
+                                                          .authorizationToken));
+                                            } catch (e) {
+                                              showSnackBar(
+                                                  formatServerError(e));
+                                              return;
+                                            }
+                                            account.refreshToken =
+                                                newRefreshToken.token;
+                                            await account.save();
+                                            showSnackBar(
+                                                'Refresh token updated.');
+                                            appState.updateAccountList();
+                                          }
                                         },
-                                        child: const Icon(Icons.delete))))
+                                        child: const Icon(Icons.refresh)),
+                                  ),
+                                ),
+                                Expanded(
+                                    child: SizedBox(
+                                        height: 32,
+                                        child: TextButton(
+                                            style: ButtonStyle(
+                                                padding:
+                                                    MaterialStateProperty.all(
+                                                        const EdgeInsets.all(
+                                                            0))),
+                                            // padding: const EdgeInsets.all(0),
+                                            onPressed: () {
+                                              ScaffoldMessenger.of(context)
+                                                  .hideCurrentSnackBar();
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(SnackBar(
+                                                      content: Text(
+                                                          'Really delete ${account.server}/${account.username}?'),
+                                                      action: SnackBarAction(
+                                                        label:
+                                                            'Delete', // or some operation you would like
+                                                        onPressed: () async {
+                                                          await account
+                                                              .delete();
+                                                          setState(() {
+                                                            appState
+                                                                .updateAccountList();
+                                                          });
+                                                        },
+                                                      )));
+                                            },
+                                            child: const Icon(Icons.delete))))
+                              ],
+                            )
                           ],
-                        )
-                      ],
-                    ),
-                    trailing: const Handle(
-                      delay: Duration(milliseconds: 100),
-                      child: Icon(
-                        Icons.menu,
-                        color: Colors.grey,
-                      ),
-                    ),
+                        ),
+                        trailing: Transform.translate(
+                          offset: const Offset(0, -13),
+                          child: const Handle(
+                            delay: Duration(milliseconds: 100),
+                            child: Icon(
+                              Icons.menu,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        )),
                   ),
                 ),
               )),
