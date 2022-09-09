@@ -14,6 +14,7 @@ import 'google/protobuf/empty.pb.dart' as $0;
 import 'federation.pb.dart' as $1;
 import 'authentication.pb.dart' as $2;
 import 'users.pb.dart' as $3;
+import 'posts.pb.dart' as $4;
 export 'jonline.pb.dart';
 
 class JonlineClient extends $grpc.Client {
@@ -44,6 +45,14 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/GetCurrentUser',
       ($0.Empty value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $3.User.fromBuffer(value));
+  static final _$createPost = $grpc.ClientMethod<$4.CreatePostRequest, $4.Post>(
+      '/jonline.Jonline/CreatePost',
+      ($4.CreatePostRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $4.Post.fromBuffer(value));
+  static final _$getPosts = $grpc.ClientMethod<$4.GetPostsRequest, $4.Posts>(
+      '/jonline.Jonline/GetPosts',
+      ($4.GetPostsRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $4.Posts.fromBuffer(value));
 
   JonlineClient($grpc.ClientChannel channel,
       {$grpc.CallOptions? options,
@@ -76,6 +85,16 @@ class JonlineClient extends $grpc.Client {
   $grpc.ResponseFuture<$3.User> getCurrentUser($0.Empty request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getCurrentUser, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$4.Post> createPost($4.CreatePostRequest request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createPost, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$4.Posts> getPosts($4.GetPostsRequest request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getPosts, request, options: options);
   }
 }
 
@@ -121,6 +140,20 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.Empty.fromBuffer(value),
         ($3.User value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.CreatePostRequest, $4.Post>(
+        'CreatePost',
+        createPost_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.CreatePostRequest.fromBuffer(value),
+        ($4.Post value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.GetPostsRequest, $4.Posts>(
+        'GetPosts',
+        getPosts_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.GetPostsRequest.fromBuffer(value),
+        ($4.Posts value) => value.writeToBuffer()));
   }
 
   $async.Future<$1.GetServiceVersionResponse> getServiceVersion_Pre(
@@ -148,6 +181,16 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getCurrentUser(call, await request);
   }
 
+  $async.Future<$4.Post> createPost_Pre($grpc.ServiceCall call,
+      $async.Future<$4.CreatePostRequest> request) async {
+    return createPost(call, await request);
+  }
+
+  $async.Future<$4.Posts> getPosts_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.GetPostsRequest> request) async {
+    return getPosts(call, await request);
+  }
+
   $async.Future<$1.GetServiceVersionResponse> getServiceVersion(
       $grpc.ServiceCall call, $0.Empty request);
   $async.Future<$2.AuthTokenResponse> createAccount(
@@ -158,4 +201,8 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $2.RefreshTokenRequest request);
   $async.Future<$3.User> getCurrentUser(
       $grpc.ServiceCall call, $0.Empty request);
+  $async.Future<$4.Post> createPost(
+      $grpc.ServiceCall call, $4.CreatePostRequest request);
+  $async.Future<$4.Posts> getPosts(
+      $grpc.ServiceCall call, $4.GetPostsRequest request);
 }

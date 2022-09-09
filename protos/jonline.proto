@@ -3,7 +3,7 @@ syntax = "proto3";
 package jonline;
 
 import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
+// import "google/protobuf/timestamp.proto";
 
 import "authentication.proto";
 import "posts.proto";
@@ -22,4 +22,9 @@ service Jonline {
 
   // Gets the current user. Requires a Refresh Token in request metadata.
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
+
+  // Creates a Post. Requires a Refresh Token in request metadata.
+  rpc CreatePost(CreatePostRequest) returns (Post) {}
+  // Gets Posts.
+  rpc GetPosts(GetPostsRequest) returns (Posts) {}
 }

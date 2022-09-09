@@ -181,10 +181,23 @@ class ProfilePageState extends State<ProfilePage> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: ListTile(
-                        title: Text(
-                          account.username,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                account.username,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              "User ID: ${account.user_id}",
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.grey),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                         subtitle: Column(
                           children: [
@@ -237,28 +250,14 @@ class ProfilePageState extends State<ProfilePage> {
                                                 const EdgeInsets.all(0))),
                                         // padding: const EdgeInsets.all(0),
                                         onPressed: () async {
-                                          final client =
-                                              await account.getClient(
-                                                  showMessage: showSnackBar);
-                                          if (client != null) {
-                                            ExpirableToken newRefreshToken;
-                                            try {
-                                              newRefreshToken = await client
-                                                  .refreshToken(RefreshTokenRequest(
-                                                      authToken: account
-                                                          .authorizationToken));
-                                            } catch (e) {
-                                              showSnackBar(
-                                                  formatServerError(e));
-                                              return;
-                                            }
-                                            account.refreshToken =
-                                                newRefreshToken.token;
-                                            await account.save();
-                                            showSnackBar(
-                                                'Refresh token updated.');
-                                            appState.updateAccountList();
-                                          }
+                                          await account.updateRefreshToken(
+                                              showMessage: showSnackBar);
+                                          showSnackBar(
+                                              'Refresh token updated.');
+                                          await account.updateUserData(
+                                              showMessage: showSnackBar);
+                                          showSnackBar('User details updated.');
+                                          appState.updateAccountList();
                                         },
                                         child: const Icon(Icons.refresh)),
                                   ),

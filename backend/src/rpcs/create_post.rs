@@ -1,56 +1,44 @@
-use bcrypt::{hash, DEFAULT_COST};
 use diesel::*;
-use tonic::{Code, Request, Response, Status};
+use tonic::{Request, Response, Status, Code};
 
-use crate::auth;
-use crate::conversions;
+use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
-use crate::protos::{AuthTokenResponse, CreateAccountRequest};
-use crate::schema::users::dsl::*;
+use crate::models;
+use crate::protos::{CreatePostRequest, Post};
+use crate::schema::posts::dsl::*;
 
 use super::validations::*;
 
-// pub fn create_post
-//TODO all this
-
-pub fn create_account(
-    request: Request<CreateAccountRequest>,
+pub fn create_post(
+    request: Request<CreatePostRequest>,
+    user: models::User,
     conn: &PgPooledConnection,
-) -> Result<Response<AuthTokenResponse>, Status> {
+) -> Result<Response<Post>, Status> {
     let req = request.into_inner();
-    validate_username(&req.username)?;
-    validate_password(&req.password)?;
-    validate_email(&req.email)?;
-    validate_phone(&req.phone)?;
-
-    let hashed_password = hash(req.password, DEFAULT_COST).unwrap();
-
-    let insert_result: Result<i32, _> = insert_into(users)
-        .values((
-            username.eq(req.username.to_owned()),
-            password_salted_hash.eq(hashed_password),
-            email.eq(&req.email.to_owned()),
-            phone.eq(&req.phone.to_owned()),
-        ))
-        .returning(id)
-        .get_result(conn);
-
-    let user_id: i32 = match insert_result {
-        Err(_) => return Err(Status::new(Code::AlreadyExists, "username_already_exists")),
-        Ok(user_id) => user_id,
+    validate_length(&req.title, "title", 4, 255)?;
+    let parent_post_db_id: Option<i32> = match req.reply_to_post_id {
+        None => None,
+        Some(proto_id) => {
+            match proto_id.to_db_id() {
+                Ok(db_id) => Some(db_id),
+                Err(_) => return Err(Status::new(Code::InvalidArgument, "invalid_reply_to_post_id")),
+            }
+        }
     };
 
-    println!("Created user {}, user_id={}", req.username, user_id);
+    let new_posts = vec![models::NewPost {
+        user_id: Some(user.id),
+        parent_post_id: parent_post_db_id,
+        title: req.title.to_owned(),
+        link: req.link.to_owned(),
+        content: req.content.to_owned(),
+        published: true,
+    }];
 
-    let tokens = auth::generate_auth_and_refresh_token(user_id, conn, req.expires_at);
-    return Ok(Response::new(AuthTokenResponse {
-        auth_token: tokens.auth_token,
-        refresh_token: tokens.refresh_token,
-        user: Some(conversions::proto_user(
-            user_id,
-            req.username,
-            req.email,
-            req.phone,
-        )),
-    }));
+    let inserted_posts = insert_into(posts)
+        .values(&new_posts)
+        .get_results::<models::Post>(conn)
+        .unwrap();
+
+    return Ok(Response::new(inserted_posts[0].to_proto(Some(user.username))));
 }

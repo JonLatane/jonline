@@ -1,3 +1,4 @@
+use crate::models;
 use crate::protos::*;
 use jonline_server::Jonline;
 use tonic::{Code, Request, Response, Status};
@@ -66,6 +67,30 @@ impl Jonline for JonLineImpl {
             Err(e) => Err(e),
             Ok(user) => rpcs::get_current_user(user),
         }
+    }
+    async fn create_post(
+        &self,
+        request: Request<CreatePostRequest>,
+    ) -> Result<Response<Post>, Status> {
+        let conn = match get_connection(&self.pool) {
+            Err(e) => return Err(e),
+            Ok(conn) => conn,
+        };
+        match auth::get_auth_user(&request, &conn) {
+            Err(e) => Err(e),
+            Ok(user) => rpcs::create_post(request, user, &conn),
+        }
+    }
+    async fn get_posts(
+        &self,
+        request: Request<GetPostsRequest>,
+    ) -> Result<Response<Posts>, Status> {
+        let conn = match get_connection(&self.pool) {
+            Err(e) => return Err(e),
+            Ok(conn) => conn,
+        };
+        let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
+        rpcs::get_posts(request, user, &conn)
     }
 }
 

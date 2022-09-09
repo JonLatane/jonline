@@ -15,3 +15,9 @@ pub use refresh_token::refresh_token;
 
 mod get_current_user;
 pub use get_current_user::get_current_user;
+
+mod create_post;
+pub use create_post::create_post;
+
+mod get_posts;
+pub use get_posts::get_posts;

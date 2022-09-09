@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.20"
+version = "0.1.21"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -9,8 +9,6 @@ license = "GPL-3.0"
 repository = "https://github.com/jonlatane/jonline"
 description = "Backend of Jonline"
 default-run = "jonline"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
@@ -25,8 +23,6 @@ bcrypt = "0.13.0"
 bs58 = "0.4.0"
 ring = "0.16.20"
 regex = "1.6.0"
-# futures = "0.3.21"
-# serde = { version = "1.0.138", features = ["derive"] }
 
 [build-dependencies]
 tonic-build = "0.8.0"

@@ -5,6 +5,7 @@ import 'package:grpc/grpc.dart';
 import 'package:jonline/generated/authentication.pb.dart';
 import 'package:jonline/generated/google/protobuf/empty.pb.dart';
 import 'package:jonline/generated/jonline.pbgrpc.dart';
+import 'package:jonline/generated/users.pb.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,7 @@ import 'package:uuid/uuid.dart';
 const uuid = Uuid();
 
 class JonlineAccount {
+  static Map<String, JonlineClient> _clients = {};
   static SharedPreferences? _storage;
   static Future<SharedPreferences> getStorage() async {
     if (_storage == null) {
@@ -24,6 +26,7 @@ class JonlineAccount {
   final String id;
   final String server;
   final String authorizationToken;
+  String user_id;
   String refreshToken;
   String username;
   bool allowInsecure;
@@ -31,11 +34,13 @@ class JonlineAccount {
   JonlineAccount(
       this.server, this.authorizationToken, this.refreshToken, this.username,
       {this.allowInsecure = false})
-      : id = uuid.v4();
+      : id = uuid.v4(),
+        user_id = "";
 
   JonlineAccount.fromJson(Map<String, dynamic> json)
       : id = json['id'],
-        username = json['username'] ?? 'unknown',
+        username = json['username'] ?? '',
+        user_id = json['user_id'] ?? '',
         server = json['server'],
         authorizationToken = json['authorizationToken'],
         refreshToken = json['refreshToken'],
@@ -44,11 +49,48 @@ class JonlineAccount {
   Map<String, dynamic> toJson() => {
         'id': id,
         'username': username,
+        'user_id': user_id,
         'server': server,
         'authorizationToken': authorizationToken,
         'refreshToken': refreshToken,
         'allowInsecure': allowInsecure,
       };
+
+  Future<void> updateUserData({Function(String)? showMessage}) async {
+    User? user;
+    try {
+      user = await (await getClient())?.getCurrentUser(Empty(),
+          options: CallOptions(metadata: {'authorization': refreshToken}));
+    } catch (e) {
+      showMessage?.call(formatServerError(e));
+      return;
+    }
+    if (user == null) {
+      showMessage?.call('No user data received.');
+      return;
+    }
+    username = user.username;
+    user_id = user.id;
+    await save();
+  }
+
+  Future<void> updateRefreshToken({Function(String)? showMessage}) async {
+    ExpirableToken? newRefreshToken;
+    try {
+      newRefreshToken = await (await getClient())
+          ?.refreshToken(RefreshTokenRequest(authToken: authorizationToken));
+    } catch (e) {
+      showMessage?.call(formatServerError(e));
+      return;
+    }
+    if (newRefreshToken == null) {
+      showMessage?.call('No refresh token received.');
+      return;
+    }
+    refreshToken = newRefreshToken.token;
+    await save();
+  }
+
   Future<void> save() async {
     List<JonlineAccount> jsonArray = await accounts;
     final index = jsonArray.indexWhere((element) => element.id == id);
@@ -69,6 +111,22 @@ class JonlineAccount {
   }
 
   Future<JonlineClient?> getClient(
+      {Function(String)? showMessage, bool allowInsecure = false}) async {
+    if (_clients.containsKey(id)) {
+      return _clients[id];
+    } else {
+      try {
+        _clients[id] = (await _createClient(
+            showMessage: showMessage, allowInsecure: allowInsecure))!;
+        return _clients[id];
+      } catch (e) {
+        showMessage?.call(formatServerError(e));
+        return null;
+      }
+    }
+  }
+
+  Future<JonlineClient?> _createClient(
       {Function(String)? showMessage, bool allowInsecure = false}) async {
     return await createAndTestClient(server, showMessage ?? (m) => print(m),
         allowInsecure: allowInsecure);

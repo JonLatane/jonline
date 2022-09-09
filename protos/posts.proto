@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package jonline;
 
-import "google/protobuf/empty.proto";
+// import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 // import "users.proto";
 
@@ -10,17 +10,39 @@ message GetPostRequest {
   string id = 1;
 }
 
+message GetPostsRequest {
+
+}
+
+message CreatePostRequest {
+  string title = 1;
+  optional string link = 2;
+  optional string content = 3;
+  optional string reply_to_post_id = 4;
+}
+
+message UpdatePostRequest {
+  string id = 1;
+  string title = 2;
+  optional string link = 3;
+  optional string content = 4;
+}
+
 message Post {
   string id = 1;
-  Author author = 2;
+  optional Author author = 2;
   google.protobuf.Timestamp created_at = 3;
   optional google.protobuf.Timestamp updated_at = 4;
   string title = 5;
   optional string link = 6;
-  string content = 7;
+  optional string content = 7;
 
   message Author {
     string user_id = 1;
-    string username = 2;
+    optional string username = 2;
   }
+}
+
+message Posts {
+  repeated Post posts = 1;
 }

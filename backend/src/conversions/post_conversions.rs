@@ -1,47 +1,30 @@
+use super::id_conversions::ToProtoId;
 use crate::models;
 use crate::protos::*;
 
-//TODO all this
-// pub fn proto_post(
-    
-// ) -> Post {
-//     let id_bytes = (user_id + 10000).to_ne_bytes();
-//     User {
-//         id: bs58::encode(id_bytes).into_string(),
-//         username: username,
-//         email: email,
-//         phone: phone,
-//     }
-// }
-
-// // Converts a Protobuf User's id
-// pub fn proto_user_db_id(
-//     user: &User
-// ) -> Result<i32, bs58::decode::Error> {
-//     proto_user_id_to_db_id(&user.id)
-// }
-
-// pub fn proto_user_id_to_db_id(
-//     id: &str
-// ) -> Result<i32, bs58::decode::Error> {
-//     let id_bytes = bs58::decode(id).into_vec()?;
-//     let id = i32::from_ne_bytes(id_bytes.as_slice().try_into().unwrap_or([0; 4]));
-//     if id == 0 {
-//         return Err(bs58::decode::Error::InvalidCharacter { character: '0', index: 0 });
-//     }
-//     Ok(id - 10000)
-// }
-
-// pub trait ToProtoUser {
-//     fn to_proto_user(&self) -> User;
-// }
-// impl ToProtoUser for models::User {
-//     fn to_proto_user(&self) -> User {
-//         proto_user(
-//             self.id,
-//             self.username.to_owned(),
-//             self.email.to_owned(),
-//             self.phone.to_owned(),
-//         )
-//     }
-// }
+pub trait ToProtoPost {
+    fn to_proto(&self, username: Option<String>) -> Post;
+    fn proto_author(&self, username: Option<String>) -> Option<post::Author>;
+}
+impl ToProtoPost for models::Post {
+    fn to_proto(&self, username: Option<String>) -> Post {
+        Post {
+            id: self.id.to_proto_id(),
+            title: self.title.to_owned(),
+            link: self.link.to_owned(),
+            content: self.content.to_owned(),
+            created_at: Some(::prost_types::Timestamp {
+                seconds: 1,
+                nanos: 1,
+            }),
+            updated_at: None,
+            author: self.proto_author(username),
+        }
+    }
+    fn proto_author(&self, username: Option<String>) -> Option<post::Author> {
+        self.user_id.map(|user_id| post::Author {
+            user_id: user_id.to_proto_id(),
+            username: username,
+        })
+    }
+}
