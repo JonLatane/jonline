@@ -4,7 +4,7 @@ package jonline;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-import "users.proto";
+// import "users.proto";
 
 message GetPostRequest {
   string id = 1;
@@ -16,8 +16,8 @@ message Post {
   google.protobuf.Timestamp created_at = 3;
   optional google.protobuf.Timestamp updated_at = 4;
   string title = 5;
-  string content = 6;
-  repeated string links = 7;
+  optional string link = 6;
+  string content = 7;
 
   message Author {
     string user_id = 1;

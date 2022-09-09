@@ -22,7 +22,8 @@ pub struct Post {
     pub user_id: Option<i32>,
     pub parent_post_id: Option<i32>,
     pub title: String,
-    pub body: String,
+    pub link: Option<String>,
+    pub content: String,
     pub published: bool,
     pub created_at: SystemTime,
 }
