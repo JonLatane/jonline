@@ -36,6 +36,7 @@ table! {
         published -> Bool,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
+        reply_count -> Int4,
     }
 }
 

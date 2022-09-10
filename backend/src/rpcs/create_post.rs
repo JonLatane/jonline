@@ -1,5 +1,5 @@
 use diesel::*;
-use tonic::{Request, Response, Status, Code};
+use tonic::{Code, Request, Response, Status};
 
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
@@ -16,29 +16,50 @@ pub fn create_post(
 ) -> Result<Response<Post>, Status> {
     let req = request.into_inner();
     validate_length(&req.title, "title", 4, 255)?;
+
     let parent_post_db_id: Option<i32> = match req.reply_to_post_id {
         None => None,
-        Some(proto_id) => {
-            match proto_id.to_db_id() {
-                Ok(db_id) => Some(db_id),
-                Err(_) => return Err(Status::new(Code::InvalidArgument, "invalid_reply_to_post_id")),
+        Some(proto_id) => match proto_id.to_db_id() {
+            Ok(db_id) => Some(db_id),
+            Err(_) => {
+                return Err(Status::new(
+                    Code::InvalidArgument,
+                    "replying_to_nonexistent_post",
+                ))
             }
-        }
+        },
     };
 
-    let new_posts = vec![models::NewPost {
-        user_id: Some(user.id),
-        parent_post_id: parent_post_db_id,
-        title: req.title.to_owned(),
-        link: req.link.to_owned(),
-        content: req.content.to_owned(),
-        published: true,
-    }];
+    let result = conn.transaction::<Response<Post>, diesel::result::Error, _>(|| {
+        let inserted_post = insert_into(posts)
+            .values(&models::NewPost {
+                user_id: Some(user.id),
+                parent_post_id: parent_post_db_id,
+                title: req.title.to_owned(),
+                link: req.link.to_owned(),
+                content: req.content.to_owned(),
+                published: true,
+            })
+            .get_results::<models::Post>(conn)?[0]
+            .to_proto(Some(user.username));
+        match parent_post_db_id {
+            Some(parent_post_db_id) => match update(posts)
+                .filter(parent_post_id.eq(Some(parent_post_db_id)))
+                .set(reply_count.eq(reply_count + 1))
+                .execute(conn)?
+            {
+                // This error should be impossible given that the
+                // above insert would hit a foreign key constraint.
+                0 => Err(diesel::result::Error::NotFound),
+                _ => Ok(()),
+            }?,
+            None => (),
+        }
+        Ok(Response::new(inserted_post))
+    });
 
-    let inserted_posts = insert_into(posts)
-        .values(&new_posts)
-        .get_results::<models::Post>(conn)
-        .unwrap();
-
-    return Ok(Response::new(inserted_posts[0].to_proto(Some(user.username))));
+    match result {
+        Ok(response) => Ok(response),
+        Err(_) => Err(Status::new(Code::Internal, "internal_error")),
+    }
 }
