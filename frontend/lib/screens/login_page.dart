@@ -51,12 +51,55 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  createAccount() async {
+    authenticate(
+        "create account",
+        JonlineAccount.createAccount(
+            server, username, password, context, showSnackBar,
+            allowInsecure: allowInsecure));
+  }
+
+  login() async {
+    authenticate(
+        "login",
+        JonlineAccount.loginToAccount(
+            server, username, password, context, showSnackBar,
+            allowInsecure: allowInsecure));
+  }
+
+  authenticate(String action, Future<JonlineAccount?> generator) async {
+    setState(() {
+      doingStuff = true;
+    });
+    final account = await generator;
+    if (account == null) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      showSnackBar("Failed to $action.");
+      setState(() {
+        doingStuff = false;
+      });
+      return;
+    }
+    await Future.delayed(const Duration(milliseconds: 500));
+    await account.updateUserData(showMessage: showSnackBar);
+    setState(() {
+      doingStuff = false;
+    });
+    if (!mounted) return;
+
+    appState.updateAccountList();
+    if (!mounted) return;
+    context.navigateBack();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // automaticallyImplyLeading: showBackButton,
-        title: const Text('Login/Create Account'),
+        title: const Text("Login/Create Account"),
+        leading: const AutoLeadingButton(
+          ignorePagelessRoutes: true,
+        ),
       ),
       body: Center(
         child: Container(
@@ -92,7 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w400,
-                        fontSize: 11),
+                        fontSize: 12),
                   )),
               const SizedBox(height: 2),
               Align(
@@ -103,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w400,
-                        fontSize: 11),
+                        fontSize: 12),
                   )),
               const SizedBox(height: 16),
               TextField(
@@ -154,7 +197,7 @@ class _LoginPageState extends State<LoginPage> {
                             style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
-                                fontSize: 11),
+                                fontSize: 12),
                           ))
                       : null),
               const SizedBox(height: 8),
@@ -166,28 +209,7 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed:
                           doingStuff || username.isEmpty || password.isEmpty
                               ? null
-                              : () async {
-                                  setState(() {
-                                    doingStuff = true;
-                                  });
-                                  final account =
-                                      await JonlineAccount.loginToAccount(
-                                          server,
-                                          username,
-                                          password,
-                                          context,
-                                          showSnackBar,
-                                          allowInsecure: allowInsecure);
-                                  setState(() {
-                                    doingStuff = false;
-                                  });
-                                  if (!mounted) return;
-                                  if (account != null) {
-                                    appState.updateAccountList();
-                                    if (!mounted) return;
-                                    context.navigateBack();
-                                  }
-                                },
+                              : login,
                       child: Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: Column(
@@ -199,7 +221,7 @@ class _LoginPageState extends State<LoginPage> {
                               style: const TextStyle(
                                   // color: Colors.white,
                                   fontWeight: FontWeight.w400,
-                                  fontSize: 11),
+                                  fontSize: 12),
                             ),
                             Text(
                               "to $server",
@@ -207,7 +229,7 @@ class _LoginPageState extends State<LoginPage> {
                               style: const TextStyle(
                                   // color: Colors.white,
                                   fontWeight: FontWeight.w400,
-                                  fontSize: 11),
+                                  fontSize: 12),
                             ),
                           ],
                         ),
@@ -224,28 +246,7 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed:
                           doingStuff || username.isEmpty || password.isEmpty
                               ? null
-                              : () async {
-                                  setState(() {
-                                    doingStuff = true;
-                                  });
-                                  final account =
-                                      await JonlineAccount.createAccount(
-                                          server,
-                                          username,
-                                          password,
-                                          context,
-                                          showSnackBar,
-                                          allowInsecure: allowInsecure);
-                                  setState(() {
-                                    doingStuff = false;
-                                  });
-                                  if (!mounted) return;
-                                  if (account != null) {
-                                    appState.updateAccountList();
-                                    if (!mounted) return;
-                                    context.navigateBack();
-                                  }
-                                },
+                              : createAccount,
                       child: Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: Column(
@@ -255,13 +256,13 @@ class _LoginPageState extends State<LoginPage> {
                               friendlyUsername,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w400, fontSize: 11),
+                                  fontWeight: FontWeight.w400, fontSize: 12),
                             ),
                             Text(
                               "on $server",
                               textAlign: TextAlign.center,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w400, fontSize: 11),
+                                  fontWeight: FontWeight.w400, fontSize: 12),
                             ),
                           ],
                         ),

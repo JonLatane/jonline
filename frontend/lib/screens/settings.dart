@@ -23,6 +23,12 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Settings"),
+        leading: const AutoLeadingButton(
+          ignorePagelessRoutes: true,
+        ),
+      ),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

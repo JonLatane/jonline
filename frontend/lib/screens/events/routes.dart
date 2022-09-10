@@ -12,7 +12,7 @@ const eventsTab = AutoRoute(
   children: [
     AutoRoute(path: '', page: EventListScreen),
     AutoRoute(
-      path: ':id',
+      path: 'event/:id',
       usesPathAsKey: true,
       page: EventDetailsPage,
       guards: [AuthGuard],

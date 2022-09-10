@@ -26,8 +26,7 @@ class AppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    // JonlineAccount.setupStorage(callback: updateAccountList);
-    Future.microtask(updateAccountList);
+    WidgetsBinding.instance.addPostFrameCallback((_) => updateAccountList());
   }
 
   @override

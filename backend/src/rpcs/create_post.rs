@@ -16,6 +16,8 @@ pub fn create_post(
 ) -> Result<Response<Post>, Status> {
     let req = request.into_inner();
     validate_length(&req.title, "title", 4, 255)?;
+    validate_max_length(req.link.to_owned(), "link", 10000)?;
+    validate_max_length(req.content.to_owned(), "content", 10000)?;
 
     let parent_post_db_id: Option<i32> = match req.reply_to_post_id {
         None => None,

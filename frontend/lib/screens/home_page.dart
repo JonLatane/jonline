@@ -117,12 +117,12 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ],
             builder: (context, child, animation) {
               return Scaffold(
-                appBar: AppBar(
-                  title: Text(title),
-                  leading: const AutoLeadingButton(
-                    ignorePagelessRoutes: true,
-                  ),
-                ),
+                // appBar: AppBar(
+                //   title: Text(title),
+                //   leading: const AutoLeadingButton(
+                //     ignorePagelessRoutes: true,
+                //   ),
+                // ),
                 body: child,
                 bottomNavigationBar:
                     buildBottomNav(context, context.tabsRouter),

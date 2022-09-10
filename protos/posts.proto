@@ -36,6 +36,7 @@ message Post {
   string title = 5;
   optional string link = 6;
   optional string content = 7;
+  int32 reply_count = 8;
 
   message Author {
     string user_id = 1;

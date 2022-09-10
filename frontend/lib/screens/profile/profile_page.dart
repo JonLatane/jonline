@@ -18,7 +18,7 @@ class ProfilePage extends StatefulWidget {
 
 class ProfilePageState extends State<ProfilePage> {
   UserData? userData;
-  List<JonlineAccount> accounts = [];
+  List<JonlineAccount> get accounts => appState.accounts.value;
   AppState get appState => context.findRootAncestorStateOfType<AppState>()!;
   HomePageState get homePage =>
       context.findRootAncestorStateOfType<HomePageState>()!;
@@ -28,6 +28,8 @@ class ProfilePageState extends State<ProfilePage> {
     super.initState();
     homePage.showSettingsTabListener.addListener(onSettingsTabChanged);
     appState.accounts.addListener(onAccountsChanged);
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => appState.updateAccountList());
   }
 
   @override
@@ -42,16 +44,19 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   onAccountsChanged() async {
-    // await Future.delayed(const Duration(seconds: 1));
     print("onAccountsChanged");
-    setState(() {
-      accounts = appState.accounts.value;
-    });
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Accounts & Profiles"),
+        leading: const AutoLeadingButton(
+          ignorePagelessRoutes: true,
+        ),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -75,14 +80,14 @@ class ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 // const SizedBox(width: 8),
-                Expanded(
-                    flex: 2,
-                    child: TextButton(
-                      onPressed: () {
-                        appState.updateAccountList();
-                      },
-                      child: const Icon(Icons.refresh),
-                    )),
+                // Expanded(
+                //     flex: 2,
+                //     child: TextButton(
+                //       onPressed: () {
+                //         appState.updateAccountList();
+                //       },
+                //       child: const Icon(Icons.refresh),
+                //     )),
                 // const SizedBox(width: 8),
                 Expanded(
                     flex: 2,
@@ -177,6 +182,7 @@ class ProfilePageState extends State<ProfilePage> {
   refreshAccount(JonlineAccount account) async {
     await account.updateRefreshToken(showMessage: showSnackBar);
     showSnackBar('Refresh token updated.');
+    await Future.delayed(const Duration(milliseconds: 500));
     await account.updateUserData(showMessage: showSnackBar);
     showSnackBar('User details updated.');
     appState.updateAccountList();
@@ -209,7 +215,7 @@ class ProfilePageState extends State<ProfilePage> {
 
   Widget buildAccountItem(JonlineAccount account) {
     return SizedBox(
-      height: 100,
+      height: 50.0 + (50.0 * MediaQuery.of(context).textScaleFactor),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -258,18 +264,18 @@ class ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 32,
-                          child: TextButton(
-                              style: ButtonStyle(
-                                  padding: MaterialStateProperty.all(
-                                      const EdgeInsets.all(0))),
-                              // padding: const EdgeInsets.all(0),
-                              onPressed: null, //() {},
-                              child: const Icon(Icons.info)),
-                        ),
-                      ),
+                      // Expanded(
+                      //   child: SizedBox(
+                      //     height: 32,
+                      //     child: TextButton(
+                      //         style: ButtonStyle(
+                      //             padding: MaterialStateProperty.all(
+                      //                 const EdgeInsets.all(0))),
+                      //         // padding: const EdgeInsets.all(0),
+                      //         onPressed: null, //() {},
+                      //         child: const Icon(Icons.info)),
+                      //   ),
+                      // ),
                       Expanded(
                         child: SizedBox(
                           height: 32,

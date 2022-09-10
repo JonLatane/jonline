@@ -14,13 +14,30 @@ class Book {
 
 class BooksDB {
   List<Book> books = const [
-    Book(id: 1, genre: 'Fiction', name: 'Anna Karenina'),
-    Book(id: 2, genre: 'Fiction', name: 'The Great Gatsby'),
-    Book(id: 3, genre: 'Comic', name: 'Amazing Spider-Man'),
-    Book(id: 4, genre: 'Comic', name: 'Batman'),
-    Book(id: 5, genre: 'Comic', name: 'The Incredible Hulk'),
-    Book(id: 6, genre: 'Fiction', name: 'The Big Sleep'),
-    Book(id: 7, genre: 'Fiction', name: 'Woman in White'),
+    Book(
+        id: 1,
+        genre: 'jonline.io/bill',
+        name:
+            'You can create personal posts and stuff like this and share them with friends!'),
+    Book(
+        id: 2,
+        genre: 'jonline.io/bill',
+        name:
+            'There will probably also be some visibility type stuff to be done here'),
+    Book(
+        id: 3,
+        genre: 'work.com/jeff',
+        name:
+            'You see things for work-related accounts (i.e. work.com) while browsing on a personal server (i.e. jonline.io) *only if you\'ve federated your work and personal accounts*.'),
+    Book(
+        id: 4,
+        genre: 'work.com/jeff',
+        name:
+            'So you could only see work Posts (i.e. from work.com) when you choose the work account from the top-right picker.'),
+    Book(id: 5, genre: 'work.com/jeff', name: 'Yay work-life balance!'),
+    Book(
+        id: 6, genre: 'jonline.io/bill', name: 'Also capitalism sucks n stuff'),
+    Book(id: 7, genre: 'jonline.io/bill', name: 'Corn'),
   ];
 
   Book findBookById(int id) {
@@ -52,14 +69,29 @@ class BooksDBProvider extends InheritedWidget {
 class UsersDB {
   final List<User> users = [
     User(id: 1, name: 'User one', email: 'userone@email.com', books: [
-      const Book(id: 1, genre: 'Fiction', name: 'Anna Karenina'),
-      const Book(id: 2, genre: 'Fiction', name: 'The Great Gatsby'),
-      const Book(id: 3, genre: 'Comic', name: 'Amazing Spider-Man'),
+      const Book(
+          id: 1,
+          genre: 'jonline.io/bill',
+          name:
+              'You can create personal posts and stuff like this and share them with friends!'),
+      const Book(
+          id: 2,
+          genre: 'jonline.io/bill',
+          name:
+              'There will probably also be some visibility type stuff to be done here'),
+      const Book(
+          id: 3,
+          genre: 'work.com/jeff',
+          name:
+              'You see things for work-related accounts (i.e. from work.com) while browsing on a personal server (i.e. jonline.io) *only if you\'ve federated work and personal modes*.'),
     ]),
     User(id: 2, name: 'User two', email: 'usertwo@email.com', books: [
-      const Book(id: 5, genre: 'Comic', name: 'The Incredible Hulk'),
-      const Book(id: 6, genre: 'Fiction', name: 'The Big Sleep'),
-      const Book(id: 7, genre: 'Fiction', name: 'Woman in White'),
+      const Book(id: 5, genre: 'work.com/jeff', name: 'Yay work-life balance!'),
+      const Book(
+          id: 6,
+          genre: 'jonline.io/bill',
+          name: 'Also capitalism sucks n stuff'),
+      const Book(id: 7, genre: 'jonline.io/bill', name: 'Corn'),
     ])
   ];
 

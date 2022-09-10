@@ -27,6 +27,12 @@ class PostDetailsPageState extends State<PostDetailsPage> {
     return book == null
         ? const Text('Book null')
         : Scaffold(
+            appBar: AppBar(
+              title: const Text("Post Details"),
+              leading: const AutoLeadingButton(
+                ignorePagelessRoutes: true,
+              ),
+            ),
             body: SizedBox(
               width: double.infinity,
               child: Hero(

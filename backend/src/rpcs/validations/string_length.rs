@@ -20,3 +20,13 @@ pub fn validate_length(
     }
     Ok(())
 }
+pub fn validate_max_length(
+    value: Option<String>,
+    entity_name: &str,
+    max_length: usize,
+) -> Result<(), Status> {
+    match value {
+        None => Ok(()),
+        Some(value) => validate_length(&value, entity_name, 0, max_length),
+    }
+}
