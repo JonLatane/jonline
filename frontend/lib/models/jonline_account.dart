@@ -13,7 +13,7 @@ import 'package:uuid/uuid.dart';
 const uuid = Uuid();
 
 class JonlineAccount {
-  static Map<String, JonlineClient> _clients = {};
+  static final Map<String, JonlineClient> _clients = {};
   static SharedPreferences? _storage;
   static Future<SharedPreferences> getStorage() async {
     if (_storage == null) {
@@ -26,7 +26,7 @@ class JonlineAccount {
   final String id;
   final String server;
   final String authorizationToken;
-  String user_id;
+  String userId;
   String refreshToken;
   String username;
   bool allowInsecure;
@@ -35,12 +35,12 @@ class JonlineAccount {
       this.server, this.authorizationToken, this.refreshToken, this.username,
       {this.allowInsecure = false})
       : id = uuid.v4(),
-        user_id = "";
+        userId = "";
 
   JonlineAccount.fromJson(Map<String, dynamic> json)
       : id = json['id'],
         username = json['username'] ?? '',
-        user_id = json['user_id'] ?? '',
+        userId = json['userId'] ?? '',
         server = json['server'],
         authorizationToken = json['authorizationToken'],
         refreshToken = json['refreshToken'],
@@ -49,7 +49,7 @@ class JonlineAccount {
   Map<String, dynamic> toJson() => {
         'id': id,
         'username': username,
-        'user_id': user_id,
+        'userId': userId,
         'server': server,
         'authorizationToken': authorizationToken,
         'refreshToken': refreshToken,
@@ -70,7 +70,7 @@ class JonlineAccount {
       return;
     }
     username = user.username;
-    user_id = user.id;
+    userId = user.id;
     await save();
   }
 
