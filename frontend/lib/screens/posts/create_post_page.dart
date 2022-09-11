@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/posts.pb.dart';
+import 'package:jonline/screens/accounts/account_chooser.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
 
 // import 'package:jonline/db.dart';
@@ -89,29 +90,7 @@ class CreatePostPageState extends State<CreatePostPage> {
               ),
             ),
           ),
-          SizedBox(
-            width: 72,
-            child: TextButton(
-              style: ButtonStyle(
-                  padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-                  foregroundColor:
-                      MaterialStateProperty.all(Colors.white.withAlpha(100)),
-                  overlayColor:
-                      MaterialStateProperty.all(Colors.white.withAlpha(100)),
-                  splashFactory: InkSparkle.splashFactory),
-              onPressed: () {
-                // context.router.pop();
-              },
-              child: Column(
-                children: const [
-                  Expanded(child: SizedBox()),
-                  Text('jonline.io/', style: TextStyle(fontSize: 11)),
-                  Text('jon', style: TextStyle(fontSize: 12)),
-                  Expanded(child: SizedBox()),
-                ],
-              ),
-            ),
-          ),
+          const AccountChooser(),
         ],
       ),
       body: Center(
@@ -246,6 +225,8 @@ class CreatePostPageState extends State<CreatePostPage> {
       TextField(
         focusNode: titleFocus,
         controller: titleController,
+        keyboardType: TextInputType.text,
+        textCapitalization: TextCapitalization.words,
         enableSuggestions: true,
         autocorrect: true,
         maxLines: 1,
@@ -260,6 +241,7 @@ class CreatePostPageState extends State<CreatePostPage> {
       TextField(
         focusNode: linkFocus,
         controller: linkController,
+        keyboardType: TextInputType.url,
         enableSuggestions: false,
         autocorrect: false,
         maxLines: 1,
@@ -276,7 +258,8 @@ class CreatePostPageState extends State<CreatePostPage> {
         child: TextField(
           focusNode: contentFocus,
           controller: contentController,
-          // obscureText: true,
+          keyboardType: TextInputType.multiline,
+          textCapitalization: TextCapitalization.sentences,
           enableSuggestions: true,
           autocorrect: true,
           maxLines: null,

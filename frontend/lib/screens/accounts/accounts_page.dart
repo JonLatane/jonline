@@ -7,23 +7,25 @@ import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/user-data/data_collector.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+class AccountsPage extends StatefulWidget {
+  const AccountsPage({Key? key}) : super(key: key);
 
   @override
-  ProfilePageState createState() => ProfilePageState();
+  AccountsPageState createState() => AccountsPageState();
 }
 
-class ProfilePageState extends State<ProfilePage> {
+class AccountsPageState extends State<AccountsPage> {
   UserData? userData;
   List<JonlineAccount> get accounts => appState.accounts.value;
-  AppState get appState => context.findRootAncestorStateOfType<AppState>()!;
-  HomePageState get homePage =>
-      context.findRootAncestorStateOfType<HomePageState>()!;
+  late AppState appState;
+  late HomePageState homePage;
+  TextTheme get textTheme => Theme.of(context).textTheme;
 
   @override
   void initState() {
     super.initState();
+    appState = context.findRootAncestorStateOfType<AppState>()!;
+    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.showSettingsTabListener.addListener(onSettingsTabChanged);
     appState.accounts.addListener(onAccountsChanged);
     WidgetsBinding.instance
@@ -42,7 +44,6 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   onAccountsChanged() async {
-    print("onAccountsChanged");
     setState(() {});
   }
 
@@ -212,103 +213,157 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   Widget buildAccountItem(JonlineAccount account) {
-    return SizedBox(
-      height: 50.0 + (50.0 * MediaQuery.of(context).textScaleFactor),
+    return AnimatedContainer(
+      duration: animationDuration,
+      height: 50.0 + (76.0 * MediaQuery.of(context).textScaleFactor),
       child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ListTile(
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      account.username,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+        color: appState.selectedAccount?.id == account.id ? bottomColor : null,
+        child: InkWell(
+          onTap: () {
+            if (appState.selectedAccount?.id == account.id) {
+              showSnackBar("Browsing anonymously on ${account.server}.");
+              appState.selectedAccount = null;
+            } else {
+              showSnackBar(
+                  "Browsing ${account.server} as ${account.username}.");
+              appState.selectedAccount = account;
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    SizedBox(
+                      height: 48,
+                      child: TextButton(
+                        onPressed: () {
+                          context.navigateNamedTo(
+                              'account/${account.id}/activity');
+                        },
+                        child: const Icon(Icons.account_circle,
+                            size: 32, color: Colors.white),
+                      ),
                     ),
-                  ),
-                  Text(
-                    "User ID: ${account.userId}",
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-              subtitle: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Text('Server: ${account.server}',
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Text('${account.server}/',
+                                  style: textTheme.caption,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis),
+                              const Expanded(child: SizedBox()),
+                              Transform.translate(
+                                offset: const Offset(0, 0),
+                                child: const Handle(
+                                  delay: Duration(milliseconds: 100),
+                                  child: Icon(
+                                    Icons.menu,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  account.username,
+                                  style: textTheme.headline6,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      Expanded(
-                        flex: 4,
-                        child: Row(
-                          children: [
-                            const Text('Refresh Token: ',
-                                maxLines: 1, overflow: TextOverflow.ellipsis),
-                            Expanded(
-                              child: Text(account.refreshToken,
-                                  maxLines: 1, overflow: TextOverflow.ellipsis),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      // Expanded(
-                      //   child: SizedBox(
-                      //     height: 32,
-                      //     child: TextButton(
-                      //         style: ButtonStyle(
-                      //             padding: MaterialStateProperty.all(
-                      //                 const EdgeInsets.all(0))),
-                      //         // padding: const EdgeInsets.all(0),
-                      //         onPressed: null, //() {},
-                      //         child: const Icon(Icons.info)),
-                      //   ),
-                      // ),
-                      Expanded(
-                        child: SizedBox(
-                          height: 32,
-                          child: TextButton(
-                              style: ButtonStyle(
-                                  padding: MaterialStateProperty.all(
-                                      const EdgeInsets.all(0))),
-                              // padding: const EdgeInsets.all(0),
-                              onPressed: () => refreshAccount(account),
-                              child: const Icon(Icons.refresh)),
-                        ),
-                      ),
-                      Expanded(
-                          child: SizedBox(
-                              height: 32,
-                              child: TextButton(
-                                  style: ButtonStyle(
-                                      padding: MaterialStateProperty.all(
-                                          const EdgeInsets.all(0))),
-                                  onPressed: () => deleteAccount(account),
-                                  child: const Icon(Icons.delete))))
-                    ],
-                  )
-                ],
-              ),
-              trailing: Transform.translate(
-                offset: const Offset(0, -13),
-                child: const Handle(
-                  delay: Duration(milliseconds: 100),
-                  child: Icon(
-                    Icons.menu,
-                    color: Colors.grey,
-                  ),
+                    ),
+                  ],
                 ),
-              )),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Row(
+                        children: [
+                          Text(
+                            "User ID: ",
+                            style: textTheme.caption,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Expanded(
+                            child: Text(
+                              account.userId,
+                              style: textTheme.caption,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text('Refresh Token: ',
+                        style: textTheme.caption,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    Expanded(
+                      flex: 1,
+                      child: Text(account.refreshToken,
+                          style: textTheme.caption,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    // Expanded(
+                    //   child: SizedBox(
+                    //     height: 32,
+                    //     child: TextButton(
+                    //         style: ButtonStyle(
+                    //             padding: MaterialStateProperty.all(
+                    //                 const EdgeInsets.all(0))),
+                    //         // padding: const EdgeInsets.all(0),
+                    //         onPressed: null, //() {},
+                    //         child: const Icon(Icons.info)),
+                    //   ),
+                    // ),
+                    Expanded(
+                      child: SizedBox(
+                        height: 32,
+                        child: TextButton(
+                            style: ButtonStyle(
+                                padding: MaterialStateProperty.all(
+                                    const EdgeInsets.all(0))),
+                            // padding: const EdgeInsets.all(0),
+                            onPressed: () => refreshAccount(account),
+                            child: const Icon(Icons.refresh)),
+                      ),
+                    ),
+                    Expanded(
+                        child: SizedBox(
+                            height: 32,
+                            child: TextButton(
+                                style: ButtonStyle(
+                                    padding: MaterialStateProperty.all(
+                                        const EdgeInsets.all(0))),
+                                onPressed: () => deleteAccount(account),
+                                child: const Icon(Icons.delete))))
+                  ],
+                )
+              ],
+            ),
+          ),
         ),
       ),
     );

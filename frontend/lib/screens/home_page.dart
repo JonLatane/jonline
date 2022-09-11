@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/app_state.dart';
 import 'package:jonline/router/router.gr.dart';
 
 class HomePage extends StatefulWidget implements AutoRouteWrapper {
@@ -58,6 +59,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   // bool _showSettingsTab = false;
   ValueNotifier<bool> showSettingsTabListener = ValueNotifier(false);
+  bool _showedSettingsFromSwipe = false;
   bool get showSettingsTab => showSettingsTabListener.value;
   set showSettingsTab(bool value) {
     setState(() {
@@ -72,8 +74,13 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     // we need it to indicate which NavigationRailDestination is active
     if (context.topRoute.name == 'SettingsTab' && !showSettingsTab) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showedSettingsFromSwipe = true;
         showSettingsTab = true;
       });
+    } else if (_showedSettingsFromSwipe &&
+        context.topRoute.name != 'SettingsTab') {
+      _showedSettingsFromSwipe = false;
+      showSettingsTab = false;
     }
     return kIsWeb
         ? AutoRouter(builder: (context, child) {
@@ -169,7 +176,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return hideBottomNav
         ? const SizedBox.shrink()
         : BottomNavigationBar(
-            selectedItemColor: const Color(0xFFA23B72),
+            selectedItemColor: bottomColor,
             type: BottomNavigationBarType.fixed,
             currentIndex: min(items.length - 1, tabsRouter.activeIndex),
             onTap: tabsRouter.setActiveIndex,

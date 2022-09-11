@@ -1,9 +1,12 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/posts.pb.dart';
+import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/material.dart';
 
 import 'package:jonline/db.dart';
+import 'package:jonline/screens/accounts/account_chooser.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
 
 class PostListScreen extends StatefulWidget {
@@ -15,9 +18,32 @@ class PostListScreen extends StatefulWidget {
 
 class PostListScreenState extends State<PostListScreen>
     with AutoRouteAwareStateMixin<PostListScreen> {
+  late AppState appState;
   @override
   void didPushNext() {
     print('didPushNext');
+  }
+
+  @override
+  void initState() {
+    // print("PostListPage.initState");
+    super.initState();
+    appState = context.findRootAncestorStateOfType<AppState>()!;
+    appState.accounts.addListener(onAccountsChanged);
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => appState.updateAccountList());
+  }
+
+  @override
+  dispose() {
+    // print("PostListPage.dispose");
+    appState.accounts.removeListener(onAccountsChanged);
+    super.dispose();
+  }
+
+  onAccountsChanged() {
+    // print("PostListPage.onAccountsChanged");
+    setState(() {});
   }
 
   @override
@@ -31,39 +57,18 @@ class PostListScreenState extends State<PostListScreen>
         ),
         // leading:
         actions: [
-          TextButton(
-            child: const Icon(
-              Icons.add,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              context.navigateNamedTo('/posts/create');
-              // context.router.pop();
-            },
-          ),
-          SizedBox(
-            width: 72,
-            child: TextButton(
-              style: ButtonStyle(
-                  padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-                  foregroundColor:
-                      MaterialStateProperty.all(Colors.white.withAlpha(100)),
-                  overlayColor:
-                      MaterialStateProperty.all(Colors.white.withAlpha(100)),
-                  splashFactory: InkSparkle.splashFactory),
+          if (JonlineAccount.selectedAccount != null)
+            TextButton(
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
               onPressed: () {
+                context.navigateNamedTo('/posts/create');
                 // context.router.pop();
               },
-              child: Column(
-                children: const [
-                  Expanded(child: SizedBox()),
-                  Text('jonline.io/', style: TextStyle(fontSize: 11)),
-                  Text('jon', style: TextStyle(fontSize: 12)),
-                  Expanded(child: SizedBox()),
-                ],
-              ),
             ),
-          ),
+          const AccountChooser(),
         ],
       ),
       body: ListView(

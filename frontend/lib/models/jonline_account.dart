@@ -13,12 +13,36 @@ import 'package:uuid/uuid.dart';
 const uuid = Uuid();
 
 class JonlineAccount {
+  static JonlineAccount? get selectedAccount => _selectedAccount;
+  static set selectedAccount(JonlineAccount? account) {
+    _selectedAccount = account;
+    getStorage().then((storage) {
+      if (account != null) {
+        storage.setString('selected_account', account.id);
+      } else {
+        storage.remove('selected_account');
+      }
+    });
+  }
+
+  static String get selectedServer =>
+      selectedAccount?.server ?? _selectedServer;
+
+  static JonlineAccount? _selectedAccount;
+  static const String _selectedServer = 'jonline.io';
   static final Map<String, JonlineClient> _clients = {};
   static SharedPreferences? _storage;
   static Future<SharedPreferences> getStorage() async {
     if (_storage == null) {
       print("setting up storage");
       _storage = await SharedPreferences.getInstance();
+      if (_storage!.containsKey('selected_account')) {
+        selectedAccount = (await accounts)
+            // ignore: unnecessary_cast
+            .map((e) => e as JonlineAccount?)
+            .firstWhere((a) => a?.id == _storage!.getString('selected_account'),
+                orElse: () => null);
+      }
     }
     return _storage!;
   }
@@ -145,7 +169,14 @@ class JonlineAccount {
         .map((e) => jsonDecode(e) as Map<String, dynamic>)
         .toList();
     // List<Map<String, dynamic>> jsonArray = await accountsJson;
-    return accountsJson.map((e) => JonlineAccount.fromJson(e)).toList();
+    final accounts =
+        accountsJson.map((e) => JonlineAccount.fromJson(e)).toList();
+
+    if (selectedAccount != null) {
+      selectedAccount = accounts.firstWhere((a) => a.id == selectedAccount?.id,
+          orElse: () => selectedAccount!);
+    }
+    return accounts;
   }
 
   static JonlineClient createClient(

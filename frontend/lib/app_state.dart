@@ -9,6 +9,8 @@ import 'main.dart';
 import 'models/jonline_account.dart';
 
 const animationDuration = Duration(milliseconds: 300);
+Color topColor = const Color(0xFF2E86AB);
+Color bottomColor = const Color(0xFFA23B72);
 
 class AppState extends State<MyApp> {
   final authService = AuthService();
@@ -17,6 +19,12 @@ class AppState extends State<MyApp> {
   final _rootRouter = RootRouter(
     authGuard: AuthGuard(),
   );
+
+  JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
+  set selectedAccount(JonlineAccount? account) {
+    JonlineAccount.selectedAccount = account;
+    updateAccountList();
+  }
 
   updateAccountList() async {
     print("updateAccountList");
@@ -36,7 +44,7 @@ class AppState extends State<MyApp> {
         // bottomAppBarColor: const Color(0xFF884DF2),
         // splashColor: const Color(0xFFFFC145),
         // buttonColor: const Color(0xFF884DF2),
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E86AB)),
+        colorScheme: ColorScheme.fromSeed(seedColor: topColor),
         pageTransitionsTheme: const PageTransitionsTheme(builders: {
           TargetPlatform.macOS: NoShadowCupertinoPageTransitionsBuilder(),
           TargetPlatform.iOS: NoShadowCupertinoPageTransitionsBuilder(),

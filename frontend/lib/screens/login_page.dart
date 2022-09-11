@@ -112,6 +112,7 @@ class _LoginPageState extends State<LoginPage> {
               TextField(
                 focusNode: usernameFocus,
                 controller: usernameController,
+                keyboardType: TextInputType.url,
                 enableSuggestions: false,
                 autocorrect: false,
                 maxLines: 1,

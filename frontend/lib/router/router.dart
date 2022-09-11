@@ -4,7 +4,7 @@ import 'package:jonline/screens/events/routes.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/login_page.dart';
 import 'package:jonline/screens/posts/routes.dart';
-import 'package:jonline/screens/profile/routes.dart';
+import 'package:jonline/screens/accounts/routes.dart';
 import 'package:jonline/screens/settings.dart';
 import 'package:jonline/screens/user-data/routes.dart';
 
@@ -58,7 +58,7 @@ import 'package:jonline/screens/user-data/routes.dart';
         //     ),
         //   ],
         // ),
-        profileTab,
+        accountsTab,
         AutoRoute(
           path: 'settings/:tab',
           page: SettingsPage,
