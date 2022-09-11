@@ -1,17 +1,12 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:jonline/router/auth_guard.dart';
-import 'package:jonline/screens/events/event_details_page.dart';
-import 'package:jonline/screens/events/event_list_page.dart';
 import 'package:jonline/screens/events/routes.dart';
-import 'package:jonline/screens/posts/post_details_page.dart';
-import 'package:jonline/screens/posts/post_list_page.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/login_page.dart';
 import 'package:jonline/screens/posts/routes.dart';
 import 'package:jonline/screens/profile/routes.dart';
 import 'package:jonline/screens/settings.dart';
 import 'package:jonline/screens/user-data/routes.dart';
-import 'package:auto_route/empty_router_widgets.dart';
 
 @MaterialAutoRouter(
   replaceInRouteName: 'Page|Screen,Route',

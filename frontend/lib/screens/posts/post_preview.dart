@@ -1,15 +1,15 @@
-import 'package:any_link_preview/any_link_preview.dart';
-import 'package:auto_route/annotations.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:jonline/generated/posts.pb.dart';
+import 'package:link_preview_generator/link_preview_generator.dart';
 
 // import 'package:jonline/db.dart';
 
 class PostPreview extends StatefulWidget {
   final Post post;
-  const PostPreview({Key? key, required this.post}) : super(key: key);
+  final double maxContentHeight;
+  const PostPreview({Key? key, required this.post, this.maxContentHeight = 300})
+      : super(key: key);
 
   @override
   PostPreviewState createState() => PostPreviewState();
@@ -17,12 +17,19 @@ class PostPreview extends StatefulWidget {
 
 class PostPreviewState extends State<PostPreview> {
   String get title => widget.post.title;
-  String? get link => widget.post.link.isEmpty ? null : widget.post.link;
+  String? get link => widget.post.link.isEmpty
+      ? null
+      : widget.post.link.startsWith(RegExp(r'https?://'))
+          ? widget.post.link
+          : 'http://${widget.post.link}';
   String? get content =>
       widget.post.content.isEmpty ? null : widget.post.content;
   String? get username =>
       widget.post.author.username.isEmpty ? null : widget.post.author.username;
   int get replyCount => widget.post.replyCount;
+
+  // String? _lastGeneratedLink;
+  // var _previewData;
 
   @override
   void initState() {
@@ -36,6 +43,11 @@ class PostPreviewState extends State<PostPreview> {
 
   @override
   Widget build(BuildContext context) {
+    // if (_previewData == null && link != null) {
+    //   _lastGeneratedLink = link;
+    // } else if (_previewData != null && link != _lastGeneratedLink) {
+    //   _previewData = null;
+    // }
     return Card(
       child: Container(
         padding: const EdgeInsets.all(8.0), //child: Text('hi')
@@ -61,35 +73,50 @@ class PostPreviewState extends State<PostPreview> {
                 ),
               ],
             ),
-            if (link != null)
+            if (content != null || link != null)
               Container(
-                height: 8,
-              ),
-            if (link != null)
-              AnyLinkPreview(
-                link: link!,
-              ),
-            if (content != null)
-              Container(
-                height: 8,
-              ),
-            if (content != null)
-              Container(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: SingleChildScrollView(
-                              child: MarkdownBody(data: content!)))
-                      // child: Text(
-                      //   content!,
-                      //   style: const TextStyle(
-                      //       fontSize: 13, fontWeight: FontWeight.w400),
-                      //   textAlign: TextAlign.left,
-                      // ),
-                      ,
-                    ],
-                  )),
+                  constraints:
+                      BoxConstraints(maxHeight: widget.maxContentHeight),
+                  child: Row(children: [
+                    Expanded(
+                        child: SingleChildScrollView(
+                            child: Column(
+                      children: [
+                        if (link != null)
+                          Container(
+                            height: 8,
+                          ),
+                        if (link != null)
+                          LinkPreviewGenerator(
+                            key: ValueKey(link),
+                            bodyMaxLines: 3,
+                            link: link!,
+                            linkPreviewStyle: content != null
+                                ? LinkPreviewStyle.small
+                                : LinkPreviewStyle.large,
+                            errorBody: '',
+                            showGraphic: true,
+                          ),
+                        // LinkPreview(
+                        //   key: ValueKey(link!),
+                        //   enableAnimation: true,
+                        //   onPreviewDataFetched: (data) {
+                        //     setState(() {
+                        //       _previewData = data;
+                        //     });
+                        //   },
+                        //   previewData: _previewData,
+                        //   text: link!,
+                        //   width: MediaQuery.of(context).size.width,
+                        // ),
+                        if (content != null)
+                          Container(
+                            height: 8,
+                          ),
+                        if (content != null) MarkdownBody(data: content!),
+                      ],
+                    )))
+                  ])),
             const SizedBox(
               height: 8,
             ),

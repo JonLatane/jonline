@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/authentication.pb.dart';
 import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/user-data/data_collector.dart';
 
