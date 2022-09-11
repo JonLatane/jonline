@@ -63,6 +63,34 @@ class CreatePostPageState extends State<CreatePostPage> {
         actions: [
           SizedBox(
             width: 72,
+            child: ElevatedButton(
+              style: ButtonStyle(
+                  padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
+                  foregroundColor: MaterialStateProperty.all(
+                      Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
+                  overlayColor:
+                      MaterialStateProperty.all(Colors.white.withAlpha(100)),
+                  splashFactory: InkSparkle.splashFactory),
+              onPressed: title.isEmpty ? null : () {},
+              // doingStuff || username.isEmpty || password.isEmpty
+              //     ? null
+              //     : createAccount,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Column(
+                  children: const [
+                    Expanded(child: SizedBox()),
+                    Icon(Icons.add),
+                    // Text('jonline.io/', style: TextStyle(fontSize: 11)),
+                    Text('CREATE', style: TextStyle(fontSize: 12)),
+                    Expanded(child: SizedBox()),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 72,
             child: TextButton(
               style: ButtonStyle(
                   padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
@@ -180,8 +208,23 @@ class CreatePostPageState extends State<CreatePostPage> {
     String? content, link;
     if (this.content.isNotEmpty) content = this.content;
     if (this.link.isNotEmpty) link = this.link;
-    return Column(
-      children: [
+    if (MediaQuery.of(context).size.height < 552) {
+      return Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: PostPreview(
+                  post: Post(
+                      title: title,
+                      content: content,
+                      link: link,
+                      author: Post_Author(username: "jonline.io/jon"))),
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Column(children: [
         const Expanded(
           child: SizedBox(),
         ),
@@ -194,8 +237,8 @@ class CreatePostPageState extends State<CreatePostPage> {
         const Expanded(
           child: SizedBox(),
         ),
-      ],
-    );
+      ]);
+    }
   }
 
   Widget buildEditor(BuildContext context) {
@@ -258,36 +301,36 @@ class CreatePostPageState extends State<CreatePostPage> {
             style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12),
           )),
-      const SizedBox(height: 8),
-      Row(
-        children: [
-          const Expanded(
-            flex: 1,
-            child: SizedBox(),
-          ),
-          Expanded(
-            flex: 6,
-            child: ElevatedButton(
-              onPressed: title.isEmpty ? null : () {},
-              // doingStuff || username.isEmpty || password.isEmpty
-              //     ? null
-              //     : createAccount,
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Column(
-                  children: const [
-                    Text('Create Post'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const Expanded(
-            flex: 1,
-            child: SizedBox(),
-          ),
-        ],
-      ),
+      // const SizedBox(height: 8),
+      // Row(
+      //   children: [
+      //     const Expanded(
+      //       flex: 1,
+      //       child: SizedBox(),
+      //     ),
+      //     Expanded(
+      //       flex: 6,
+      //       child: ElevatedButton(
+      //         onPressed: title.isEmpty ? null : () {},
+      //         // doingStuff || username.isEmpty || password.isEmpty
+      //         //     ? null
+      //         //     : createAccount,
+      //         child: Padding(
+      //           padding: const EdgeInsets.all(4.0),
+      //           child: Column(
+      //             children: const [
+      //               Text('Create Post'),
+      //             ],
+      //           ),
+      //         ),
+      //       ),
+      //     ),
+      //     const Expanded(
+      //       flex: 1,
+      //       child: SizedBox(),
+      //     ),
+      //   ],
+      // ),
       // const Expanded(
       //   child: SizedBox(),
       // ),
