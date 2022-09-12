@@ -15,7 +15,7 @@ pub fn get_auth_user_id<T>(
     let refresh_token = request
         .metadata()
         .get("authorization")
-        .unwrap()
+        .ok_or(Status::new(Code::Unauthenticated, "No authentication header."))?
         .to_str()
         .unwrap()
         .to_owned();

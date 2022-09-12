@@ -1,14 +1,17 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/app_state.dart';
 
-import 'package:jonline/db.dart';
+import 'package:jonline/generated/posts.pb.dart';
+import 'package:jonline/screens/home_page.dart';
+import 'package:jonline/screens/posts/post_preview.dart';
 
 class PostDetailsPage extends StatefulWidget {
-  final int id;
+  final String id;
 
   const PostDetailsPage({
     Key? key,
-    @PathParam('id') this.id = -1,
+    @PathParam('id') this.id = "INVALID",
   }) : super(key: key);
 
   @override
@@ -16,54 +19,56 @@ class PostDetailsPage extends StatefulWidget {
 }
 
 class PostDetailsPageState extends State<PostDetailsPage> {
-  int counter = 1;
+  late AppState appState;
+  late HomePageState homePage;
+  TextTheme get textTheme => Theme.of(context).textTheme;
+  Post? post;
+
+  @override
+  void initState() {
+    super.initState();
+    appState = context.findRootAncestorStateOfType<AppState>()!;
+    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
+    try {
+      final post =
+          appState.posts.value.posts.firstWhere((p) => p.id == widget.id);
+      this.post = post;
+    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showSnackBar("Failed to load cached post data 😔 for ${widget.id}");
+      });
+    }
+  }
+
+  @override
+  dispose() {
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final booksDb = BooksDBProvider.of(context);
-    final book = booksDb?.findBookById(widget.id);
-
-    return book == null
-        ? const Text('Book null')
-        : Scaffold(
-            appBar: AppBar(
-              title: const Text("Post Details"),
-              leading: const AutoLeadingButton(
-                ignorePagelessRoutes: true,
-              ),
-            ),
-            body: SizedBox(
-              width: double.infinity,
-              child: Hero(
-                tag: 'Hero${book.id}',
-                child: Card(
-                  margin: const EdgeInsets.all(48),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Book Details/${book.id}'),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 24),
-                        child: Text(
-                          'Reads  $counter',
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      FloatingActionButton(
-                        heroTag: null,
-                        onPressed: () {
-                          setState(() {
-                            counter++;
-                          });
-                        },
-                        child: const Icon(Icons.add),
-                      ),
-                    ],
-                  ),
+    return Scaffold(
+        body: post != null
+            ? SingleChildScrollView(
+                child: Center(
+                    child: PostPreview(
+                post: post!,
+                maxContentHeight: null,
+              )))
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Text("Loading post data..."),
+                  ],
                 ),
-              ),
-            ),
-          );
+              ));
+  }
+
+  showSnackBar(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
   }
 }

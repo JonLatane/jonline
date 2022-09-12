@@ -20,44 +20,6 @@ import 'package:jonline/screens/user-data/routes.dart';
       children: [
         postsTab,
         eventsTab,
-        // AutoRoute(
-        //   deferredLoading: true,
-        //   path: 'posts',
-        //   page: EmptyRouterPage,
-        //   name: 'PostsTab',
-        //   initial: true,
-        //   maintainState: true,
-        //   children: [
-        //     AutoRoute(
-        //       path: '',
-        //       page: PostListScreen,
-        //     ),
-        //     AutoRoute(
-        //       path: 'post/:id',
-        //       page: PostDetailsPage,
-        //       fullscreenDialog: true,
-        //     ),
-        //   ],
-        // ),
-        // AutoRoute(
-        //   deferredLoading: true,
-        //   path: 'events',
-        //   page: EmptyRouterPage,
-        //   name: 'EventsTab',
-        //   initial: true,
-        //   maintainState: true,
-        //   children: [
-        //     AutoRoute(
-        //       path: '',
-        //       page: EventListScreen,
-        //     ),
-        //     AutoRoute(
-        //       path: ':id',
-        //       page: EventDetailsPage,
-        //       fullscreenDialog: true,
-        //     ),
-        //   ],
-        // ),
         accountsTab,
         AutoRoute(
           path: 'settings/:tab',

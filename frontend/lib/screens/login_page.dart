@@ -28,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
       serverAndUser.contains('/') ? serverAndUser.split('/')[0] : 'jonline.io';
   String get username =>
       serverAndUser.contains('/') ? serverAndUser.split('/')[1] : serverAndUser;
-  String get friendlyUsername => username == "" ? "no one" : username;
+  String get friendlyUsername => username == "" ? noOne : username;
   String get password => passwordController.value.text;
 
   @override
@@ -73,14 +73,14 @@ class _LoginPageState extends State<LoginPage> {
     });
     final account = await generator;
     if (account == null) {
-      await Future.delayed(const Duration(milliseconds: 500));
+      await communicationDelay;
       showSnackBar("Failed to $action.");
       setState(() {
         doingStuff = false;
       });
       return;
     }
-    await Future.delayed(const Duration(milliseconds: 500));
+    await communicationDelay;
     await account.updateUserData(showMessage: showSnackBar);
     setState(() {
       doingStuff = false;
@@ -219,6 +219,8 @@ class _LoginPageState extends State<LoginPage> {
                             Text(
                               "as $friendlyUsername",
                               textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   // color: Colors.white,
                                   fontWeight: FontWeight.w400,
@@ -227,6 +229,8 @@ class _LoginPageState extends State<LoginPage> {
                             Text(
                               "to $server",
                               textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   // color: Colors.white,
                                   fontWeight: FontWeight.w400,
@@ -252,16 +256,23 @@ class _LoginPageState extends State<LoginPage> {
                         padding: const EdgeInsets.all(4.0),
                         child: Column(
                           children: [
-                            const Text('Create Account'),
+                            const Text(
+                              'Create Account',
+                              textAlign: TextAlign.center,
+                            ),
                             Text(
                               friendlyUsername,
                               textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w400, fontSize: 12),
                             ),
                             Text(
                               "on $server",
                               textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w400, fontSize: 12),
                             ),

@@ -14,30 +14,13 @@ class Book {
 
 class BooksDB {
   List<Book> books = const [
-    Book(
-        id: 1,
-        genre: 'jonline.io/bill',
-        name:
-            'You can create personal posts and stuff like this and share them with friends!'),
-    Book(
-        id: 2,
-        genre: 'jonline.io/bill',
-        name:
-            'There will probably also be some visibility type stuff to be done here'),
-    Book(
-        id: 3,
-        genre: 'work.com/jeff',
-        name:
-            'You see things for work-related accounts (i.e. work.com) while browsing on a personal server (i.e. jonline.io) *only if you\'ve federated your work and personal accounts*.'),
-    Book(
-        id: 4,
-        genre: 'work.com/jeff',
-        name:
-            'So you could only see work Posts (i.e. from work.com) when you choose the work account from the top-right picker.'),
+    Book(id: 1, genre: 'jonline.io/bill', name: 'Super Secret Dance Party!'),
+    Book(id: 2, genre: 'jonline.io/bill', name: 'Cory Wong at Lincoln Theater'),
+    Book(id: 3, genre: 'work.com/jeff', name: 'Boring work conference'),
+    Book(id: 4, genre: 'work.com/jeff', name: 'Another thing that is boring'),
     Book(id: 5, genre: 'work.com/jeff', name: 'Yay work-life balance!'),
-    Book(
-        id: 6, genre: 'jonline.io/bill', name: 'Also capitalism sucks n stuff'),
-    Book(id: 7, genre: 'jonline.io/bill', name: 'Corn'),
+    Book(id: 6, genre: 'jonline.io/bill', name: 'DSA Member interest meeting'),
+    Book(id: 7, genre: 'jonline.io/bill', name: 'An event about corn'),
   ];
 
   Book findBookById(int id) {
@@ -70,15 +53,11 @@ class UsersDB {
   final List<User> users = [
     User(id: 1, name: 'User one', email: 'userone@email.com', books: [
       const Book(
-          id: 1,
-          genre: 'jonline.io/bill',
-          name:
-              'You can create personal posts and stuff like this and share them with friends!'),
+          id: 1, genre: 'jonline.io/bill', name: 'Super Secret Dance Party!'),
       const Book(
           id: 2,
           genre: 'jonline.io/bill',
-          name:
-              'There will probably also be some visibility type stuff to be done here'),
+          name: 'Cory Wong at Lincoln Theater'),
       const Book(
           id: 3,
           genre: 'work.com/jeff',
@@ -88,10 +67,8 @@ class UsersDB {
     User(id: 2, name: 'User two', email: 'usertwo@email.com', books: [
       const Book(id: 5, genre: 'work.com/jeff', name: 'Yay work-life balance!'),
       const Book(
-          id: 6,
-          genre: 'jonline.io/bill',
-          name: 'Also capitalism sucks n stuff'),
-      const Book(id: 7, genre: 'jonline.io/bill', name: 'Corn'),
+          id: 6, genre: 'jonline.io/bill', name: 'DSA Member interest meeting'),
+      const Book(id: 7, genre: 'jonline.io/bill', name: 'An event about corn'),
     ])
   ];
 

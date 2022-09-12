@@ -23,12 +23,6 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Settings"),
-        leading: const AutoLeadingButton(
-          ignorePagelessRoutes: true,
-        ),
-      ),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -49,7 +43,7 @@ class _SettingsPageState extends State<SettingsPage>
             ElevatedButton(
                 onPressed: () {
                   context.navigateTo(PostsTab(
-                    children: [PostDetailsRoute(id: 2)],
+                    children: [PostDetailsRoute(id: "some id")],
                   ));
                 },
                 child: const Text('Navigate to book details/1'))

@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:jonline/db.dart';
 import 'package:jonline/screens/accounts/account_chooser.dart';
 
+import '../home_page.dart';
+
 class EventListScreen extends StatefulWidget {
   const EventListScreen({Key? key}) : super(key: key);
 
@@ -17,6 +19,7 @@ class EventListScreen extends StatefulWidget {
 class EventListScreenState extends State<EventListScreen>
     with AutoRouteAwareStateMixin<EventListScreen> {
   late AppState appState;
+  late HomePageState homePage;
   @override
   void didPushNext() {
     print('didPushNext');
@@ -27,6 +30,7 @@ class EventListScreenState extends State<EventListScreen>
     // print("PostListPage.initState");
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
+    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(onAccountsChanged);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => appState.updateAccountList());
@@ -48,22 +52,6 @@ class EventListScreenState extends State<EventListScreen>
   Widget build(BuildContext context) {
     var booksDb = BooksDBProvider.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Events"),
-        actions: [
-          if (JonlineAccount.selectedAccount != null)
-            TextButton(
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                // context.router.pop();
-              },
-            ),
-          const AccountChooser(),
-        ],
-      ),
       body: ListView(
         children: booksDb?.books
                 .map((book) => Column(

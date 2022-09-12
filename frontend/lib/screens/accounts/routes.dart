@@ -5,7 +5,7 @@ import 'accounts_page.dart';
 
 const accountsTab = AutoRoute(
   path: 'accounts',
-  name: 'ProfileTab',
+  name: 'AccountsTab',
   page: EmptyRouterPage,
   children: [
     AutoRoute(path: '', page: AccountsPage),

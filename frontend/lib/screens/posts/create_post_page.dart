@@ -1,8 +1,12 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
+import 'package:jonline/generated/jonline.pbgrpc.dart';
 import 'package:jonline/generated/posts.pb.dart';
+import 'package:jonline/models/jonline_account.dart';
+import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/screens/accounts/account_chooser.dart';
+import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
 
 // import 'package:jonline/db.dart';
@@ -15,6 +19,8 @@ class CreatePostPage extends StatefulWidget {
 }
 
 class CreatePostPageState extends State<CreatePostPage> {
+  late AppState appState;
+  late HomePageState homePage;
   bool _showPreview = false;
   // int counter = 1;
   final FocusNode titleFocus = FocusNode();
@@ -31,6 +37,9 @@ class CreatePostPageState extends State<CreatePostPage> {
   @override
   void initState() {
     super.initState();
+    appState = context.findRootAncestorStateOfType<AppState>()!;
+    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
+    homePage.postsCreated.addListener(doCreate);
     titleController.addListener(() {
       setState(() {});
     });
@@ -44,6 +53,7 @@ class CreatePostPageState extends State<CreatePostPage> {
 
   @override
   dispose() {
+    homePage.postsCreated.removeListener(doCreate);
     titleFocus.dispose();
     titleController.dispose();
     contentFocus.dispose();
@@ -53,46 +63,85 @@ class CreatePostPageState extends State<CreatePostPage> {
     super.dispose();
   }
 
+  doCreate() async {
+    if (JonlineAccount.selectedAccount == null) {
+      showSnackBar("No account selected.");
+      return;
+    }
+    final account = JonlineAccount.selectedAccount!;
+
+    showSnackBar("Updating refresh token...");
+    await account.updateRefreshToken(showMessage: showSnackBar);
+    await communicationDelay;
+    final JonlineClient? client =
+        await (account.getClient(showMessage: showSnackBar));
+    if (client == null) {
+      showSnackBar("Account not ready.");
+    }
+    showSnackBar("Creating post...");
+    final Post post;
+    try {
+      post = await client!.createPost(
+          CreatePostRequest(title: title, link: link, content: content),
+          options: account.authenticatedCallOptions);
+    } catch (e) {
+      await communicationDelay;
+      showSnackBar("Error creating post 😔");
+      await communicationDelay;
+      showSnackBar(formatServerError(e));
+      return;
+    }
+    await communicationDelay;
+    showSnackBar("Post created! 🎉");
+    if (!mounted) return;
+    context.navigateBack();
+    final appState = context.findRootAncestorStateOfType<AppState>();
+    if (appState == null) return;
+    appState.posts.value = Posts(posts: [post] + appState.posts.value.posts);
+    Future.delayed(const Duration(seconds: 3),
+        () => appState.updatePosts(showMessage: showSnackBar));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Create Post"),
-        leading: const AutoLeadingButton(
-          ignorePagelessRoutes: true,
-        ),
-        actions: [
-          SizedBox(
-            width: 72,
-            child: ElevatedButton(
-              style: ButtonStyle(
-                  padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-                  foregroundColor: MaterialStateProperty.all(
-                      Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
-                  overlayColor:
-                      MaterialStateProperty.all(Colors.white.withAlpha(100)),
-                  splashFactory: InkSparkle.splashFactory),
-              onPressed: title.isEmpty ? null : () {},
-              // doingStuff || username.isEmpty || password.isEmpty
-              //     ? null
-              //     : createAccount,
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Column(
-                  children: const [
-                    Expanded(child: SizedBox()),
-                    Icon(Icons.add),
-                    // Text('jonline.io/', style: TextStyle(fontSize: 11)),
-                    Text('CREATE', style: TextStyle(fontSize: 12)),
-                    Expanded(child: SizedBox()),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const AccountChooser(),
-        ],
-      ),
+      // appBar: AppBar(
+      //   title: const Text("Create Post"),
+      //   leading: const AutoLeadingButton(
+      //     ignorePagelessRoutes: true,
+      //   ),
+      //   actions: [
+      //     SizedBox(
+      //       width: 72,
+      //       child: ElevatedButton(
+      //         style: ButtonStyle(
+      //             padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
+      //             foregroundColor: MaterialStateProperty.all(
+      //                 Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
+      //             overlayColor:
+      //                 MaterialStateProperty.all(Colors.white.withAlpha(100)),
+      //             splashFactory: InkSparkle.splashFactory),
+      //         onPressed: title.isEmpty ? null : doCreate,
+      //         // doingStuff || username.isEmpty || password.isEmpty
+      //         //     ? null
+      //         //     : createAccount,
+      //         child: Padding(
+      //           padding: const EdgeInsets.all(4.0),
+      //           child: Column(
+      //             children: const [
+      //               Expanded(child: SizedBox()),
+      //               Icon(Icons.add),
+      //               // Text('jonline.io/', style: TextStyle(fontSize: 11)),
+      //               Text('CREATE', style: TextStyle(fontSize: 12)),
+      //               Expanded(child: SizedBox()),
+      //             ],
+      //           ),
+      //         ),
+      //       ),
+      //     ),
+      //     const AccountChooser(),
+      //   ],
+      // ),
       body: Center(
         child: Container(
           padding: const EdgeInsets.all(8),
@@ -193,6 +242,7 @@ class CreatePostPageState extends State<CreatePostPage> {
           Expanded(
             child: SingleChildScrollView(
               child: PostPreview(
+                  allowScrollingContent: true,
                   post: Post(
                       title: title,
                       content: content,
@@ -318,5 +368,12 @@ class CreatePostPageState extends State<CreatePostPage> {
       //   child: SizedBox(),
       // ),
     ]);
+  }
+
+  showSnackBar(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
   }
 }

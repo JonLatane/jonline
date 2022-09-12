@@ -50,99 +50,97 @@ class AccountsPageState extends State<AccountsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Accounts & Profiles"),
-        leading: const AutoLeadingButton(
-          ignorePagelessRoutes: true,
-        ),
-      ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 6,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.navigateNamedTo('/login');
-                    },
-                    child: const Text(
-                      'Login/Create Account…',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 6,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.navigateNamedTo('/login');
+                      },
+                      child: const Text(
+                        'Login/Create Account…',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
-                ),
-                // const SizedBox(width: 8),
-                // Expanded(
-                //     flex: 2,
-                //     child: TextButton(
-                //       onPressed: () {
-                //         appState.updateAccountList();
-                //       },
-                //       child: const Icon(Icons.refresh),
-                //     )),
-                // const SizedBox(width: 8),
-                Expanded(
-                    flex: 2,
-                    child: TextButton(
-                      onPressed: () async {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: const Text('Really delete all accounts?'),
-                            action: SnackBarAction(
-                              label:
-                                  'Delete all', // or some operation you would like
-                              onPressed: deleteAllAccounts,
-                            )));
-                      },
-                      child: const Icon(Icons.delete_forever),
-                    )),
-                Expanded(
-                    flex: 2,
-                    child: TextButton(
-                      onPressed: toggleSettingsTab,
-                      child: Stack(
-                        children: [
-                          const Icon(Icons.settings),
-                          Transform.translate(
-                            offset: const Offset(20, 0),
-                            child: Icon(homePage.showSettingsTab
-                                ? Icons.close
-                                : Icons.arrow_right),
-                          ),
-                        ],
-                      ),
-                    )),
-                // const SizedBox(width: 8)
-              ],
-            ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: Stack(
-                children: [
-                  buildList(),
-                  AnimatedOpacity(
-                    opacity: accounts.isEmpty ? 1.0 : 0.0,
-                    duration: animationDuration,
-                    child: IgnorePointer(
-                      child: Center(
-                        child: Text(
-                          'No Accounts Created',
-                          style: Theme.of(context).textTheme.headline5,
+                  // const SizedBox(width: 8),
+                  // Expanded(
+                  //     flex: 2,
+                  //     child: TextButton(
+                  //       onPressed: () {
+                  //         appState.updateAccountList();
+                  //       },
+                  //       child: const Icon(Icons.refresh),
+                  //     )),
+                  // const SizedBox(width: 8),
+                  Expanded(
+                      flex: 2,
+                      child: TextButton(
+                        onPressed: () async {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content:
+                                  const Text('Really delete all accounts?'),
+                              action: SnackBarAction(
+                                label:
+                                    'Delete all', // or some operation you would like
+                                onPressed: deleteAllAccounts,
+                              )));
+                        },
+                        child: const Icon(Icons.delete_forever),
+                      )),
+                  Expanded(
+                      flex: 2,
+                      child: TextButton(
+                        onPressed: toggleSettingsTab,
+                        child: Stack(
+                          children: [
+                            const Icon(Icons.settings),
+                            Transform.translate(
+                              offset: const Offset(20, 0),
+                              child: Icon(homePage.showSettingsTab
+                                  ? Icons.close
+                                  : Icons.arrow_right),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  )
+                      )),
+                  // const SizedBox(width: 8)
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Expanded(
+                child: Stack(
+                  children: [
+                    buildList(),
+                    AnimatedOpacity(
+                      opacity: accounts.isEmpty ? 1.0 : 0.0,
+                      duration: animationDuration,
+                      child: IgnorePointer(
+                        child: Center(
+                          child: Text(
+                            'No Accounts Created',
+                            style: Theme.of(context).textTheme.headline5,
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -181,7 +179,7 @@ class AccountsPageState extends State<AccountsPage> {
   refreshAccount(JonlineAccount account) async {
     await account.updateRefreshToken(showMessage: showSnackBar);
     showSnackBar('Refresh token updated.');
-    await Future.delayed(const Duration(milliseconds: 500));
+    await communicationDelay;
     await account.updateUserData(showMessage: showSnackBar);
     showSnackBar('User details updated.');
     appState.updateAccountList();
@@ -215,7 +213,7 @@ class AccountsPageState extends State<AccountsPage> {
   Widget buildAccountItem(JonlineAccount account) {
     return AnimatedContainer(
       duration: animationDuration,
-      height: 50.0 + (76.0 * MediaQuery.of(context).textScaleFactor),
+      height: 103.0 + (23.0 * MediaQuery.of(context).textScaleFactor),
       child: Card(
         color: appState.selectedAccount?.id == account.id ? bottomColor : null,
         child: InkWell(
@@ -231,135 +229,144 @@ class AccountsPageState extends State<AccountsPage> {
           },
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Column(
+            child: Stack(
               children: [
-                Row(
+                Column(
                   children: [
-                    SizedBox(
-                      height: 48,
-                      child: TextButton(
-                        onPressed: () {
-                          context.navigateNamedTo(
-                              'account/${account.id}/activity');
-                        },
-                        child: const Icon(Icons.account_circle,
-                            size: 32, color: Colors.white),
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Row(
+                    Row(
+                      children: [
+                        SizedBox(
+                          height: 48,
+                          child: TextButton(
+                            onPressed: () {
+                              context.navigateNamedTo(
+                                  'account/${account.id}/activity');
+                            },
+                            child: const Icon(Icons.account_circle,
+                                size: 32, color: Colors.white),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
                             children: [
-                              Text('${account.server}/',
-                                  style: textTheme.caption,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis),
-                              const Expanded(child: SizedBox()),
-                              Transform.translate(
-                                offset: const Offset(0, 0),
-                                child: const Handle(
-                                  delay: Duration(milliseconds: 100),
-                                  child: Icon(
-                                    Icons.menu,
-                                    color: Colors.grey,
+                              Row(
+                                children: [
+                                  Text('${account.server}/',
+                                      style: textTheme.caption,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      account.username,
+                                      style: textTheme.headline6,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              )
+                                ],
+                              ),
                             ],
                           ),
-                          Row(
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Row(
                             children: [
+                              Text(
+                                "User ID: ",
+                                style: textTheme.caption,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               Expanded(
                                 child: Text(
-                                  account.username,
-                                  style: textTheme.headline6,
+                                  account.userId,
+                                  style: textTheme.caption,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Row(
-                        children: [
-                          Text(
-                            "User ID: ",
+                        ),
+                        const SizedBox(width: 4),
+                        Text('Refresh Token: ',
                             style: textTheme.caption,
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Expanded(
-                            child: Text(
-                              account.userId,
+                            overflow: TextOverflow.ellipsis),
+                        Expanded(
+                          flex: 1,
+                          child: Text(account.refreshToken,
                               style: textTheme.caption,
                               maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Text('Refresh Token: ',
-                        style: textTheme.caption,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    Expanded(
-                      flex: 1,
-                      child: Text(account.refreshToken,
-                          style: textTheme.caption,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    // Expanded(
-                    //   child: SizedBox(
-                    //     height: 32,
-                    //     child: TextButton(
-                    //         style: ButtonStyle(
-                    //             padding: MaterialStateProperty.all(
-                    //                 const EdgeInsets.all(0))),
-                    //         // padding: const EdgeInsets.all(0),
-                    //         onPressed: null, //() {},
-                    //         child: const Icon(Icons.info)),
-                    //   ),
-                    // ),
-                    Expanded(
-                      child: SizedBox(
-                        height: 32,
-                        child: TextButton(
-                            style: ButtonStyle(
-                                padding: MaterialStateProperty.all(
-                                    const EdgeInsets.all(0))),
-                            // padding: const EdgeInsets.all(0),
-                            onPressed: () => refreshAccount(account),
-                            child: const Icon(Icons.refresh)),
-                      ),
-                    ),
-                    Expanded(
-                        child: SizedBox(
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        // Expanded(
+                        //   child: SizedBox(
+                        //     height: 32,
+                        //     child: TextButton(
+                        //         style: ButtonStyle(
+                        //             padding: MaterialStateProperty.all(
+                        //                 const EdgeInsets.all(0))),
+                        //         // padding: const EdgeInsets.all(0),
+                        //         onPressed: null, //() {},
+                        //         child: const Icon(Icons.info)),
+                        //   ),
+                        // ),
+                        Expanded(
+                          child: SizedBox(
                             height: 32,
                             child: TextButton(
                                 style: ButtonStyle(
                                     padding: MaterialStateProperty.all(
                                         const EdgeInsets.all(0))),
-                                onPressed: () => deleteAccount(account),
-                                child: const Icon(Icons.delete))))
+                                // padding: const EdgeInsets.all(0),
+                                onPressed: () => refreshAccount(account),
+                                child: const Icon(Icons.refresh)),
+                          ),
+                        ),
+                        Expanded(
+                            child: SizedBox(
+                                height: 32,
+                                child: TextButton(
+                                    style: ButtonStyle(
+                                        padding: MaterialStateProperty.all(
+                                            const EdgeInsets.all(0))),
+                                    onPressed: () => deleteAccount(account),
+                                    child: const Icon(Icons.delete))))
+                      ],
+                    )
                   ],
+                ),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Transform.translate(
+                    offset: const Offset(0, 0),
+                    child: const Handle(
+                      delay: Duration(milliseconds: 100),
+                      child: SizedBox(
+                        child: Icon(
+                          Icons.menu,
+                          color: Colors.grey,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                  ),
                 )
               ],
             ),

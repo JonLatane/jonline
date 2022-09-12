@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/posts.pb.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 
@@ -7,10 +8,15 @@ import 'package:link_preview_generator/link_preview_generator.dart';
 
 class PostPreview extends StatefulWidget {
   final Post post;
-  final double maxContentHeight;
+  final bool allowScrollingContent;
+  final double? maxContentHeight;
   final VoidCallback? onTap;
   const PostPreview(
-      {Key? key, required this.post, this.maxContentHeight = 300, this.onTap})
+      {Key? key,
+      required this.post,
+      this.maxContentHeight = 300,
+      this.onTap,
+      this.allowScrollingContent = false})
       : super(key: key);
 
   @override
@@ -76,68 +82,92 @@ class PostPreviewState extends State<PostPreview> {
           ),
           if (content != null || link != null)
             Container(
-                constraints: BoxConstraints(maxHeight: widget.maxContentHeight),
+                constraints: widget.maxContentHeight != null
+                    ? BoxConstraints(maxHeight: widget.maxContentHeight!)
+                    : null,
                 child: Row(children: [
                   Expanded(
                       child: SingleChildScrollView(
+                          physics: widget.allowScrollingContent
+                              ? null
+                              : const NeverScrollableScrollPhysics(),
                           child: Column(
-                    children: [
-                      if (link != null)
-                        Container(
-                          height: 8,
-                        ),
-                      if (link != null)
-                        LinkPreviewGenerator(
-                          key: ValueKey(link),
-                          bodyMaxLines: 3,
-                          link: link!,
-                          linkPreviewStyle: content != null
-                              ? LinkPreviewStyle.small
-                              : LinkPreviewStyle.large,
-                          errorBody: '',
-                          showGraphic: true,
-                        ),
-                      // LinkPreview(
-                      //   key: ValueKey(link!),
-                      //   enableAnimation: true,
-                      //   onPreviewDataFetched: (data) {
-                      //     setState(() {
-                      //       _previewData = data;
-                      //     });
-                      //   },
-                      //   previewData: _previewData,
-                      //   text: link!,
-                      //   width: MediaQuery.of(context).size.width,
-                      // ),
-                      if (content != null)
-                        Container(
-                          height: 8,
-                        ),
-                      if (content != null) MarkdownBody(data: content!),
-                    ],
-                  )))
+                            children: [
+                              if (link != null)
+                                Container(
+                                  height: 8,
+                                ),
+                              if (link != null)
+                                LinkPreviewGenerator(
+                                  key: ValueKey(link),
+                                  bodyMaxLines: 3,
+                                  link: link!,
+                                  linkPreviewStyle: content != null
+                                      ? LinkPreviewStyle.small
+                                      : LinkPreviewStyle.large,
+                                  errorBody: '',
+                                  showGraphic: true,
+                                ),
+                              // LinkPreview(
+                              //   key: ValueKey(link!),
+                              //   enableAnimation: true,
+                              //   onPreviewDataFetched: (data) {
+                              //     setState(() {
+                              //       _previewData = data;
+                              //     });
+                              //   },
+                              //   previewData: _previewData,
+                              //   text: link!,
+                              //   width: MediaQuery.of(context).size.width,
+                              // ),
+                              if (content != null)
+                                Container(
+                                  height: 8,
+                                ),
+                              if (content != null) MarkdownBody(data: content!),
+                            ],
+                          )))
                 ])),
           const SizedBox(
             height: 8,
           ),
           Row(
             children: [
-              Text(
-                "by ${username ?? 'someone forgotten'}",
-                style: const TextStyle(
+              const Text(
+                "by ",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w300,
                     color: Colors.grey),
+              ),
+              Expanded(
+                child: Text(
+                  username ?? noOne,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w300,
+                      color: Colors.grey),
+                ),
               ),
               const Expanded(child: SizedBox()),
               const Icon(
                 Icons.reply,
                 color: Colors.white,
               ),
-              const SizedBox(
-                width: 4,
+              Text(
+                replyCount.toString(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              Text("$replyCount replies"),
+              const Text(
+                " replies",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ],

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:grpc/grpc.dart';
+import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/authentication.pb.dart';
 import 'package:jonline/generated/google/protobuf/empty.pb.dart';
 import 'package:jonline/generated/jonline.pbgrpc.dart';
@@ -13,6 +14,20 @@ import 'package:uuid/uuid.dart';
 const uuid = Uuid();
 
 class JonlineAccount {
+  static Future<JonlineClient?> getSelectedOrDefaultClient(
+      {Function(String)? showMessage}) async {
+    if (selectedAccount == null) {
+      return createAndTestClient(defaultServer, showMessage: showMessage);
+    }
+    return getSelectedClient(showMessage: showMessage);
+  }
+
+  static Future<JonlineClient?> getSelectedClient(
+      {Function(String)? showMessage}) async {
+    if (selectedAccount == null) return null;
+    return await selectedAccount!.getClient(showMessage: showMessage);
+  }
+
   static JonlineAccount? get selectedAccount => _selectedAccount;
   static set selectedAccount(JonlineAccount? account) {
     _selectedAccount = account;
@@ -29,7 +44,7 @@ class JonlineAccount {
       selectedAccount?.server ?? _selectedServer;
 
   static JonlineAccount? _selectedAccount;
-  static const String _selectedServer = 'jonline.io';
+  static const String _selectedServer = defaultServer;
   static final Map<String, JonlineClient> _clients = {};
   static SharedPreferences? _storage;
   static Future<SharedPreferences> getStorage() async {
@@ -54,6 +69,8 @@ class JonlineAccount {
   String refreshToken;
   String username;
   bool allowInsecure;
+  CallOptions get authenticatedCallOptions =>
+      CallOptions(metadata: {'authorization': refreshToken});
 
   JonlineAccount(
       this.server, this.authorizationToken, this.refreshToken, this.username,
@@ -83,8 +100,8 @@ class JonlineAccount {
   Future<void> updateUserData({Function(String)? showMessage}) async {
     User? user;
     try {
-      user = await (await getClient())?.getCurrentUser(Empty(),
-          options: CallOptions(metadata: {'authorization': refreshToken}));
+      user = await (await getClient())
+          ?.getCurrentUser(Empty(), options: authenticatedCallOptions);
     } catch (e) {
       showMessage?.call(formatServerError(e));
       return;
@@ -152,11 +169,15 @@ class JonlineAccount {
 
   Future<JonlineClient?> _createClient(
       {Function(String)? showMessage, bool allowInsecure = false}) async {
-    return await createAndTestClient(server, showMessage ?? (m) => print(m),
-        allowInsecure: allowInsecure);
+    return await createAndTestClient(server,
+        showMessage: showMessage, allowInsecure: allowInsecure);
   }
 
   static Future<bool?> updateAccountList(List<JonlineAccount> accounts) async {
+    if (!accounts.any((a) => a.id == selectedAccount?.id)) {
+      (await getStorage()).remove('selected_account');
+      selectedAccount = null;
+    }
     return (await getStorage()).setStringList(
         'jonline_accounts', accounts.map((e) => jsonEncode(e)).toList());
   }
@@ -189,31 +210,31 @@ class JonlineAccount {
     return JonlineClient(channel);
   }
 
-  static Future<JonlineClient?> createAndTestClient(
-      String server, Function(String) showMessage,
-      {bool allowInsecure = false}) async {
+  static Future<JonlineClient?> createAndTestClient(String server,
+      {Function(String)? showMessage, bool allowInsecure = false}) async {
     JonlineClient? client;
     String? serviceVersion;
     try {
       client = createClient(server, const ChannelCredentials.secure());
       serviceVersion = (await client.getServiceVersion(Empty())).version;
     } catch (e) {
-      showMessage("Failed to connect to \"$server\" securely!");
+      showMessage?.call("Failed to connect to \"$server\" securely!");
     }
 
     if (allowInsecure && serviceVersion == null) {
       try {
-        showMessage("Trying to connect to \"$server\" insecurely...");
+        showMessage?.call("Trying to connect to \"$server\" insecurely...");
         client = createClient(server, const ChannelCredentials.insecure());
         serviceVersion = (await client.getServiceVersion(Empty())).version;
-        showMessage("Connected to \"$server\" insecurely 🤨");
+        showMessage?.call("Connected to \"$server\" insecurely 🤨");
       } catch (e) {
-        showMessage("Failed to connect to \"$server\" insecurely!");
+        showMessage?.call("Failed to connect to \"$server\" insecurely!");
         return null;
       }
     }
     if (client != null) {
-      showMessage("Connected to $server running Jonline $serviceVersion!");
+      showMessage
+          ?.call("Connected to $server running Jonline $serviceVersion!");
     }
     return client;
   }
@@ -221,8 +242,8 @@ class JonlineAccount {
   static Future<JonlineAccount?> loginToAccount(String server, String username,
       String password, BuildContext context, Function(String) showMessage,
       {bool allowInsecure = false}) async {
-    JonlineClient? client = await createAndTestClient(server, showMessage,
-        allowInsecure: allowInsecure);
+    JonlineClient? client = await createAndTestClient(server,
+        showMessage: showMessage, allowInsecure: allowInsecure);
     if (client == null) return null;
     await Future.delayed(const Duration(seconds: 1));
     showMessage("Connected to $server! Logging in...");
@@ -232,27 +253,28 @@ class JonlineAccount {
       authResponse = await client
           .login(LoginRequest(username: username, password: password));
     } catch (e) {
-      await Future.delayed(const Duration(milliseconds: 500));
+      await communicationDelay;
       showMessage("Failed to login to $server as \"$username\"!");
       final formattedError = formatServerError(e);
       showMessage(formattedError);
       return null;
     }
-    await Future.delayed(const Duration(milliseconds: 500));
+    await communicationDelay;
     showMessage("Logged in to $server as $username!");
 
     final account = JonlineAccount(server, authResponse.authToken.token,
         authResponse.refreshToken.token, username,
         allowInsecure: allowInsecure);
     await account.saveNew();
+    selectedAccount = account;
     return account;
   }
 
   static Future<JonlineAccount?> createAccount(String server, String username,
       String password, BuildContext context, Function(String) showMessage,
       {bool allowInsecure = false}) async {
-    JonlineClient? client = await createAndTestClient(server, showMessage,
-        allowInsecure: allowInsecure);
+    JonlineClient? client = await createAndTestClient(server,
+        showMessage: showMessage, allowInsecure: allowInsecure);
     if (client == null) return null;
     await Future.delayed(const Duration(seconds: 1));
     showMessage("Connected to $server! Creating account...");
@@ -261,19 +283,20 @@ class JonlineAccount {
       authResponse = await client.createAccount(
           CreateAccountRequest(username: username, password: password));
     } catch (e) {
-      await Future.delayed(const Duration(milliseconds: 500));
+      await communicationDelay;
       showMessage("Failed to create account $username on $server!");
       final formattedError = formatServerError(e);
       showMessage(formattedError);
       return null;
     }
-    await Future.delayed(const Duration(milliseconds: 500));
+    await communicationDelay;
     showMessage("Created account $username on $server!");
 
     final account = JonlineAccount(server, authResponse.authToken.token,
         authResponse.refreshToken.token, username,
         allowInsecure: allowInsecure);
     await account.saveNew();
+    selectedAccount = account;
     return account;
   }
 }
