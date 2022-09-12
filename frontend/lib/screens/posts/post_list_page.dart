@@ -13,7 +13,6 @@ import 'package:jonline/router/router.gr.dart';
 import 'package:jonline/screens/accounts/account_chooser.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
-import 'package:jonline/screens/stateful_app_bar_widget.dart';
 
 class PostListScreen extends StatefulWidget {
   const PostListScreen({Key? key}) : super(key: key);
@@ -136,8 +135,10 @@ class PostListScreenState extends State<PostListScreen>
                     // },
                   )
                 : MasonryGridView.count(
-                    crossAxisCount: min(
-                        6, (MediaQuery.of(context).size.width / 200).floor()),
+                    crossAxisCount: max(
+                        2,
+                        min(6, (MediaQuery.of(context).size.width) / 250)
+                            .floor()),
                     mainAxisSpacing: 4,
                     crossAxisSpacing: 4,
                     itemCount: postList.length,

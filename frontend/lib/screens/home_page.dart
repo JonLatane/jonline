@@ -4,11 +4,9 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
-import 'package:jonline/models/jonline_account.dart';
+import 'package:jonline/my_platform.dart';
 import 'package:jonline/router/router.gr.dart';
-import 'package:jonline/screens/accounts/account_chooser.dart';
-import 'package:jonline/screens/stateful_app_bar_widget.dart';
-import 'package:side_navigation/side_navigation.dart';
+import 'package:jonline/screens/home_page_title.dart';
 
 class HomePage extends StatefulWidget implements AutoRouteWrapper {
   const HomePage({
@@ -37,6 +35,13 @@ class RouteDestination {
 }
 
 class HomePageState extends State<HomePage> with TickerProviderStateMixin {
+  String? titleServer;
+  String? titleUsername;
+  ValueNotifier<bool> canCreatePost = ValueNotifier(false);
+  ValueNotifier<int> postsCreated = ValueNotifier(0);
+  bool get sideNavExpanded => _sideNavExpanded;
+  bool _sideNavExpanded = false;
+
   get useSideNav => MediaQuery.of(context).size.width > 600;
   TextTheme get textTheme => Theme.of(context).textTheme;
   get destinations => [
@@ -72,6 +77,20 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       showSettingsTabListener.value = value;
     });
   }
+
+  @override
+  initState() {
+    super.initState();
+    canCreatePost.addListener(updateState);
+  }
+
+  @override
+  dispose() {
+    canCreatePost.removeListener(updateState);
+    super.dispose();
+  }
+
+  updateState() => setState(() {});
 
   @override
   Widget build(context) {
@@ -144,8 +163,16 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
                 body: Row(
                   children: [
+                    AnimatedContainer(
+                      duration: animationDuration,
+                      width: MediaQuery.of(context).padding.left *
+                          (sideNavExpanded ? 0.6 : 0.8),
+                    ),
                     if (useSideNav) buildSideNav(context),
                     Expanded(child: child),
+                    SizedBox(
+                      width: MediaQuery.of(context).padding.right,
+                    )
                   ],
                 ),
                 bottomNavigationBar: useSideNav
@@ -156,164 +183,24 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           );
   }
 
-  String? _titleServer;
-  String? _titleUsername;
-  Widget? get titleWidget {
-    switch (context.topRoute.name) {
-      case 'MyActivityRoute':
-        // context.topRoute.args[0] as String;
-        if (_titleServer == null || _titleUsername == null) {
-          // final Object? accountId = context.topRoute.args;
-          final String accountId =
-              context.topRoute.pathParams.get('account_id');
-          Future.microtask(() async {
-            final account = (await JonlineAccount.accounts).firstWhere(
-              (account) => account.id == accountId,
-            );
-            setState(() {
-              _titleServer = account.server;
-              _titleUsername = account.username;
-            });
-          });
-        }
-        return Row(
-          children: [
-            Text("${_titleServer ?? '...'}/", style: textTheme.caption),
-            Text(_titleUsername ?? '...', style: textTheme.subtitle2),
-          ],
-        );
-      default:
-        _titleServer = null;
-        _titleUsername = null;
-    }
-  }
-
-  String get title {
-    switch (context.topRoute.name) {
-      case 'PostListRoute':
-      case 'PostsTab':
-        return 'Posts';
-      case 'PostDetailsRoute':
-        return 'Post Details';
-      case 'EventListRoute':
-      case 'EventsTab':
-        return 'Events';
-      case 'EventDetailsRoute':
-        return 'Event Details';
-      case 'ProfileRoute':
-      case 'AccountsRoute':
-      case 'AccountsTab':
-        return 'Accounts & Profiles';
-      case 'CreatePostRoute':
-        return 'Create Post';
-      case 'SettingsRoute':
-      case 'SettingsTab':
-        return 'Settings';
-    }
-    return context.topRoute.name;
-  }
-
-  bool get showLeadingNav {
-    switch (context.topRoute.name) {
-      case 'PostListRoute':
-      case 'PostsTab':
-      case 'EventListRoute':
-      case 'EventsTab':
-        return false;
-    }
-    return true;
-  }
-
-  ValueNotifier<int> postsCreated = ValueNotifier(0);
-  List<Widget>? get actions {
-    switch (context.topRoute.name) {
-      case 'PostListRoute':
-      case 'PostsTab':
-        return [
-          if (JonlineAccount.selectedAccount != null)
-            TextButton(
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                context.navigateNamedTo('/posts/create');
-              },
-            ),
-          const AccountChooser(),
-        ];
-      case 'EventListRoute':
-      case 'EventsTab':
-        return [
-          if (JonlineAccount.selectedAccount != null)
-            const TextButton(
-              onPressed: null,
-              child: Icon(
-                Icons.add,
-                // color: Colors.white,
-              ),
-            ),
-          const AccountChooser(),
-        ];
-      case 'CreatePostRoute':
-        return [
-          if (JonlineAccount.selectedAccount != null)
-            SizedBox(
-              width: 72,
-              child: ElevatedButton(
-                style: ButtonStyle(
-                    padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-                    foregroundColor: MaterialStateProperty.all(
-                        Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
-                    overlayColor:
-                        MaterialStateProperty.all(Colors.white.withAlpha(100)),
-                    splashFactory: InkSparkle.splashFactory),
-                onPressed: title.isEmpty ? null : () => postsCreated.value += 1,
-                // doingStuff || username.isEmpty || password.isEmpty
-                //     ? null
-                //     : createAccount,
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Column(
-                    children: const [
-                      Expanded(child: SizedBox()),
-                      Icon(Icons.add),
-                      // Text('jonline.io/', style: TextStyle(fontSize: 11)),
-                      Text('CREATE', style: TextStyle(fontSize: 12)),
-                      Expanded(child: SizedBox()),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          const AccountChooser(),
-        ];
-      case 'ProfileRoute':
-      case 'AccountsTab':
-        return null;
-      case 'SettingsRoute':
-      case 'SettingsTab':
-        return null;
-    }
-  }
-
+  List<BottomNavigationBarItem> get navigationItems => [
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble), label: 'Posts'),
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month), label: 'Events'),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Me',
+        ),
+        if (showSettingsTab)
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+      ];
   Widget buildBottomNav(BuildContext context, TabsRouter tabsRouter) {
     final hideBottomNav = tabsRouter.topMatch.meta['hideBottomNav'] == true;
-    final items = [
-      const BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble), label: 'Posts'),
-      const BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month), label: 'Events'),
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.person),
-        label: 'Me',
-      ),
-      if (showSettingsTab)
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.settings),
-          label: 'Settings',
-        ),
-    ];
+    final items = navigationItems;
     return hideBottomNav
         ? const SizedBox.shrink()
         : BottomNavigationBar(
@@ -327,48 +214,114 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget buildSideNav(BuildContext context) {
     final tabsRouter = context.tabsRouter;
-    final items = [
-      const SideNavigationBarItem(
-        icon: Icons.chat_bubble,
-        label: 'Posts',
+    final items = navigationItems;
+    return AnimatedContainer(
+      duration: animationDuration,
+      width: _sideNavExpanded
+          ? (MediaQuery.of(context).size.width > 600 ? 150 : 110) *
+              MediaQuery.of(context).textScaleFactor
+          : 40,
+      child: Column(
+        children: [
+          ...items
+              .asMap()
+              .map(
+                (index, item) {
+                  final active = index == tabsRouter.activeIndex;
+                  return MapEntry(
+                      index,
+                      Tooltip(
+                        message: item.label!,
+                        child: InkWell(
+                            onTap: () {
+                              tabsRouter.setActiveIndex(index);
+                              if (MediaQuery.of(context).size.width < 600) {
+                                setState(() {
+                                  _sideNavExpanded = false;
+                                });
+                              }
+                            },
+                            child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 8),
+                                child: Row(
+                                  children: [
+                                    Icon((item.icon as Icon).icon,
+                                        color:
+                                            active ? bottomColor : Colors.grey),
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          AnimatedContainer(
+                                            duration: animationDuration,
+                                            width: _sideNavExpanded ? 8 : 0,
+                                          ),
+                                          Expanded(
+                                            child: AnimatedOpacity(
+                                              opacity: _sideNavExpanded ? 1 : 0,
+                                              duration: animationDuration,
+                                              child: Text(item.label!,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.clip,
+                                                  style: TextStyle(
+                                                      color: active
+                                                          ? bottomColor
+                                                          : Colors.grey)),
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ))),
+                      ));
+                },
+              )
+              .values
+              .toList(),
+          const Expanded(
+            child: SizedBox(),
+          ),
+
+          InkWell(
+              onTap: () {
+                setState(() {
+                  _sideNavExpanded = !_sideNavExpanded;
+                });
+              },
+              child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                          _sideNavExpanded
+                              ? Icons.arrow_left
+                              : Icons.arrow_right,
+                          color: Colors.grey),
+                    ],
+                  )))
+          // Expanded(
+          //   child: SideNavigationBar(
+          //       // expandable: false,
+          //       onTap: tabsRouter.setActiveIndex,
+          //       // expandable: false,
+          //       initiallyExpanded: true,
+          //       selectedIndex: min(items.length - 1, tabsRouter.activeIndex),
+          //       theme: SideNavigationBarTheme(
+          //           dividerTheme: const SideNavigationBarDividerTheme(
+          //               showFooterDivider: false,
+          //               showHeaderDivider: false,
+          //               showMainDivider: false),
+          //           itemTheme: SideNavigationBarItemTheme(
+          //               labelTextStyle: textTheme.caption,
+          //               selectedItemColor: bottomColor),
+          //           togglerTheme: const SideNavigationBarTogglerTheme()),
+          //       items: items),
+          // ),
+        ],
       ),
-      const SideNavigationBarItem(
-        icon: Icons.calendar_month,
-        label: 'Events',
-      ),
-      const SideNavigationBarItem(
-        icon: Icons.person,
-        label: 'Me',
-      ),
-      if (showSettingsTab)
-        const SideNavigationBarItem(
-          icon: Icons.settings,
-          label: 'Settings',
-        ),
-    ];
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 150),
-      // width: 150,
-      child: SideNavigationBar(
-          // expandable: false,
-          onTap: tabsRouter.setActiveIndex,
-          // header: const SideNavigationBarHeader(
-          //     image: CircleAvatar(
-          //       child: Icon(Icons.account_balance),
-          //     ),
-          //     title: Text('Jonline'),
-          //     subtitle: Text('Subtitle widget')),
-          // footer: SideNavigationBarFooter(label: Text('Footer label')),
-          selectedIndex: min(items.length - 1, tabsRouter.activeIndex),
-          theme: SideNavigationBarTheme(
-              dividerTheme: const SideNavigationBarDividerTheme(
-                  showFooterDivider: false,
-                  showHeaderDivider: false,
-                  showMainDivider: false),
-              itemTheme:
-                  SideNavigationBarItemTheme(selectedItemColor: bottomColor),
-              togglerTheme: const SideNavigationBarTogglerTheme()),
-          items: items),
     );
   }
 }

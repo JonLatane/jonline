@@ -5,7 +5,6 @@ import 'package:jonline/generated/jonline.pbgrpc.dart';
 import 'package:jonline/generated/posts.pb.dart';
 import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/models/server_errors.dart';
-import 'package:jonline/screens/accounts/account_chooser.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
 
@@ -42,6 +41,7 @@ class CreatePostPageState extends State<CreatePostPage> {
     homePage.postsCreated.addListener(doCreate);
     titleController.addListener(() {
       setState(() {});
+      homePage.canCreatePost.value = title.isNotEmpty;
     });
     contentController.addListener(() {
       setState(() {});

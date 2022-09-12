@@ -124,7 +124,13 @@ class PostPreviewState extends State<PostPreview> {
                                 Container(
                                   height: 8,
                                 ),
-                              if (content != null) MarkdownBody(data: content!),
+                              if (content != null)
+                                Row(
+                                  children: [
+                                    Expanded(
+                                        child: MarkdownBody(data: content!)),
+                                  ],
+                                ),
                             ],
                           )))
                 ])),

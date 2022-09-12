@@ -15,13 +15,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.7.0"
-  any_link_preview:
-    dependency: "direct main"
-    description:
-      path: "../../any_link_preview"
-      relative: true
-    source: path
-    version: "2.0.9"
   archive:
     dependency: transitive
     description:
@@ -618,13 +611,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.2"
-  side_navigation:
-    dependency: "direct main"
-    description:
-      name: side_navigation
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.2"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -672,13 +658,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.0"
-  string_validator:
-    dependency: transitive
-    description:
-      name: string_validator
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.3.0"
   term_glyph:
     dependency: transitive
     description:
