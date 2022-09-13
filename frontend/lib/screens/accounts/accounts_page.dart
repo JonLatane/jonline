@@ -219,7 +219,8 @@ class AccountsPageState extends State<AccountsPage> {
         child: InkWell(
           onTap: () {
             if (appState.selectedAccount?.id == account.id) {
-              showSnackBar("Browsing anonymously on ${account.server}.");
+              showSnackBar(
+                  "Browsing anonymously on ${JonlineAccount.selectedServer}.");
               appState.selectedAccount = null;
             } else {
               showSnackBar(

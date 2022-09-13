@@ -8,11 +8,10 @@ import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reord
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/router/router.gr.dart';
-import 'package:jonline/screens/accounts/account_chooser.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
+import 'package:native_device_orientation/native_device_orientation.dart';
 
 class PostListScreen extends StatefulWidget {
   const PostListScreen({Key? key}) : super(key: key);
@@ -25,6 +24,8 @@ class PostListScreenState extends State<PostListScreen>
     with AutoRouteAwareStateMixin<PostListScreen> {
   late AppState appState;
   late HomePageState homePage;
+  ScrollController listScrollController = ScrollController();
+  ScrollController gridScrollController = ScrollController();
 
   @override
   void didPushNext() {
@@ -39,6 +40,7 @@ class PostListScreenState extends State<PostListScreen>
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(onAccountsChanged);
     appState.posts.addListener(onPostsUpdated);
+    homePage.scrolledToTop.addListener(scrollToTop);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => appState.updateAccountList());
   }
@@ -48,6 +50,9 @@ class PostListScreenState extends State<PostListScreen>
     // print("PostListPage.dispose");
     appState.accounts.removeListener(onAccountsChanged);
     appState.posts.removeListener(onPostsUpdated);
+    homePage.scrolledToTop.removeListener(scrollToTop);
+    listScrollController.dispose();
+    gridScrollController.dispose();
     super.dispose();
   }
 
@@ -59,29 +64,17 @@ class PostListScreenState extends State<PostListScreen>
     setState(() {});
   }
 
-  appBar() {
-    return AppBar(
-      // automaticallyImplyLeading: false,
-      title: const Text(
-        "Posts",
-      ),
-      // leading:
-      actions: [
-        if (JonlineAccount.selectedAccount != null)
-          TextButton(
-            child: const Icon(
-              Icons.add,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              context.navigateNamedTo('/posts/create');
-            },
-          ),
-        const AccountChooser(),
-      ],
-    );
+  scrollToTop() {
+    if (context.topRoute.name == 'PostListRoute') {
+      showSnackBar("Scrolling posts to top");
+      listScrollController.animateTo(0,
+          duration: animationDuration, curve: Curves.easeInOut);
+      // gridScrollController.animateTo(0,
+      //     duration: animationDuration, curve: Curves.easeInOut);
+    }
   }
 
+  bool get useList => MediaQuery.of(context).size.width < 400;
   @override
   Widget build(BuildContext context) {
     final List<Post> postList = appState.posts.value.posts;
@@ -95,13 +88,13 @@ class PostListScreenState extends State<PostListScreen>
                 PointerDeviceKind.touch,
                 PointerDeviceKind.mouse,
                 PointerDeviceKind.trackpad,
-                PointerDeviceKind.mouse,
+                PointerDeviceKind.stylus,
               },
             ),
-            child: (MediaQuery.of(context).size.width < 400)
-                ?
-                //Another
-                ImplicitlyAnimatedList<Post>(
+            child: useList
+                ? ImplicitlyAnimatedList<Post>(
+                    controller: listScrollController,
+                    // controller: PrimaryScrollController.of(context),
                     // The current items in the list.
                     items: postList,
                     // Called by the DiffUtil to decide whether two object represent the same item.
@@ -124,17 +117,9 @@ class PostListScreenState extends State<PostListScreen>
                         ),
                       );
                     },
-                    // An optional builder when an item was removed from the list.
-                    // If not specified, the List uses the itemBuilder with
-                    // the animation reversed.
-                    // removeItemBuilder: (context, animation, oldItem) {
-                    //   return FadeTransition(
-                    //     opacity: animation,
-                    //     child: Text(oldItem.name),
-                    //   );
-                    // },
                   )
                 : MasonryGridView.count(
+                    controller: listScrollController,
                     crossAxisCount: max(
                         2,
                         min(6, (MediaQuery.of(context).size.width) / 250)
@@ -152,31 +137,7 @@ class PostListScreenState extends State<PostListScreen>
                         post: post,
                       );
                     },
-                  )
-
-            // GridView.builder(
-            //     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            //         maxCrossAxisExtent: 200,
-            //         childAspectRatio: 12 / 16,
-            //         crossAxisSpacing: 0,
-            //         mainAxisSpacing: 0),
-            //     itemCount: postList.length,
-            //     itemBuilder: (BuildContext ctx, index) {
-            //       final post = postList[index];
-            //       return Column(
-            //         mainAxisAlignment: MainAxisAlignment.center,
-            //         children: [
-            //           PostPreview(
-            //             maxContentHeight: 100,
-            //             onTap: () {
-            //               context.pushRoute(PostDetailsRoute(id: post.id));
-            //             },
-            //             post: post,
-            //           ),
-            //         ],
-            //       );
-            //     }),
-            ),
+                  )),
       ),
     );
   }

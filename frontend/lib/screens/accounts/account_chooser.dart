@@ -132,8 +132,20 @@ Future<Object> showAccountsMenu(
                             context.findRootAncestorStateOfType<AppState>()!;
                         if (selected) {
                           appState.selectedAccount = null;
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    "Browsing anonymously on ${JonlineAccount.selectedServer}.")),
+                          );
                         } else {
                           appState.selectedAccount = a;
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    "Browsing ${a.server} as ${a.username}.")),
+                          );
                         }
                         // onSelected(part);
                       },

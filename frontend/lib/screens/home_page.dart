@@ -7,6 +7,8 @@ import 'package:jonline/app_state.dart';
 import 'package:jonline/my_platform.dart';
 import 'package:jonline/router/router.gr.dart';
 import 'package:jonline/screens/home_page_title.dart';
+import 'package:native_device_orientation/native_device_orientation.dart';
+import 'package:scrolls_to_top/scrolls_to_top.dart';
 
 class HomePage extends StatefulWidget implements AutoRouteWrapper {
   const HomePage({
@@ -39,8 +41,10 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   String? titleUsername;
   ValueNotifier<bool> canCreatePost = ValueNotifier(false);
   ValueNotifier<int> postsCreated = ValueNotifier(0);
+  ValueNotifier<bool> scrolledToTop = ValueNotifier(false);
   bool get sideNavExpanded => _sideNavExpanded;
   bool _sideNavExpanded = false;
+  NativeDeviceOrientation orientation = NativeDeviceOrientation.unknown;
 
   get useSideNav => MediaQuery.of(context).size.width > 600;
   TextTheme get textTheme => Theme.of(context).textTheme;
@@ -82,6 +86,13 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   initState() {
     super.initState();
     canCreatePost.addListener(updateState);
+    NativeDeviceOrientationCommunicator()
+        .onOrientationChanged()
+        .listen((NativeDeviceOrientation o) {
+      setState(() {
+        orientation = o;
+      });
+    });
   }
 
   @override
@@ -148,37 +159,49 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
               SettingsTab(tab: 'tab'),
             ],
             builder: (context, child, animation) {
-              return Scaffold(
-                appBar: AppBar(
-                  title: titleWidget ?? Text(title),
-                  leading: showLeadingNav
-                      ? const AutoLeadingButton(
-                          // showIfChildCanPop: false,
-                          showIfParentCanPop: false,
-                          ignorePagelessRoutes: true,
-                        )
-                      : null,
-                  automaticallyImplyLeading: false,
-                  actions: actions,
-                ),
-                body: Row(
-                  children: [
-                    AnimatedContainer(
-                      duration: animationDuration,
-                      width: MediaQuery.of(context).padding.left *
-                          (sideNavExpanded ? 0.6 : 0.8),
+              return ScrollsToTop(
+                  onScrollsToTop: (ScrollsToTopEvent event) async {
+                    scrolledToTop.value = true;
+                  },
+                  child: Scaffold(
+                    appBar: AppBar(
+                      title: titleWidget ?? Text(title),
+                      leading: showLeadingNav
+                          ? const AutoLeadingButton(
+                              // showIfChildCanPop: false,
+                              showIfParentCanPop: false,
+                              ignorePagelessRoutes: true,
+                            )
+                          : null,
+                      automaticallyImplyLeading: false,
+                      actions: actions,
                     ),
-                    if (useSideNav) buildSideNav(context),
-                    Expanded(child: child),
-                    SizedBox(
-                      width: MediaQuery.of(context).padding.right,
-                    )
-                  ],
-                ),
-                bottomNavigationBar: useSideNav
-                    ? null
-                    : buildBottomNav(context, context.tabsRouter),
-              );
+                    body: Row(
+                      children: [
+                        AnimatedContainer(
+                          duration: animationDuration,
+                          width: (orientation ==
+                                  NativeDeviceOrientation.landscapeLeft)
+                              ? MediaQuery.of(context).padding.left *
+                                      (useSideNav && sideNavExpanded
+                                          ? 0.6
+                                          : 0.7) +
+                                  (useSideNav ? 4 : 0)
+                              : 0,
+                        ),
+                        if (useSideNav) buildSideNav(context),
+                        Expanded(child: child),
+                        SizedBox(
+                          width: (orientation ==
+                                  NativeDeviceOrientation.landscapeRight)
+                              ? MediaQuery.of(context).padding.right * 0.7
+                              : 0,
+                        )
+                      ],
+                    ),
+                    bottomNavigationBar:
+                        useSideNav ? null : buildBottomNav(context),
+                  ));
             },
           );
   }
@@ -198,7 +221,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             label: 'Settings',
           ),
       ];
-  Widget buildBottomNav(BuildContext context, TabsRouter tabsRouter) {
+  Widget buildBottomNav(BuildContext context) {
+    final tabsRouter = context.tabsRouter;
     final hideBottomNav = tabsRouter.topMatch.meta['hideBottomNav'] == true;
     final items = navigationItems;
     return hideBottomNav
@@ -220,69 +244,75 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       width: _sideNavExpanded
           ? (MediaQuery.of(context).size.width > 600 ? 150 : 110) *
               MediaQuery.of(context).textScaleFactor
-          : 40,
+          : 48,
       child: Column(
         children: [
-          ...items
-              .asMap()
-              .map(
-                (index, item) {
-                  final active = index == tabsRouter.activeIndex;
-                  return MapEntry(
-                      index,
-                      Tooltip(
-                        message: item.label!,
-                        child: InkWell(
-                            onTap: () {
-                              tabsRouter.setActiveIndex(index);
-                              if (MediaQuery.of(context).size.width < 600) {
-                                setState(() {
-                                  _sideNavExpanded = false;
-                                });
-                              }
-                            },
-                            child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 8),
-                                child: Row(
-                                  children: [
-                                    Icon((item.icon as Icon).icon,
-                                        color:
-                                            active ? bottomColor : Colors.grey),
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          AnimatedContainer(
-                                            duration: animationDuration,
-                                            width: _sideNavExpanded ? 8 : 0,
+          Expanded(
+              child: SingleChildScrollView(
+            child: Column(children: [
+              ...items
+                  .asMap()
+                  .map(
+                    (index, item) {
+                      final active = index == tabsRouter.activeIndex;
+                      return MapEntry(
+                          index,
+                          Tooltip(
+                            message: item.label!,
+                            child: InkWell(
+                                onTap: () {
+                                  tabsRouter.setActiveIndex(index);
+                                  if (MediaQuery.of(context).size.width < 700) {
+                                    setState(() {
+                                      _sideNavExpanded = false;
+                                    });
+                                  }
+                                },
+                                child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8, horizontal: 8),
+                                    child: Row(
+                                      children: [
+                                        Icon((item.icon as Icon).icon,
+                                            size: 32,
+                                            color: active
+                                                ? bottomColor
+                                                : Colors.grey),
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              AnimatedContainer(
+                                                duration: animationDuration,
+                                                width:
+                                                    _sideNavExpanded ? 12 : 0,
+                                              ),
+                                              Expanded(
+                                                child: AnimatedOpacity(
+                                                  opacity:
+                                                      _sideNavExpanded ? 1 : 0,
+                                                  duration: animationDuration,
+                                                  child: Text(item.label!,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.clip,
+                                                      style: TextStyle(
+                                                          color: active
+                                                              ? bottomColor
+                                                              : Colors.grey)),
+                                                ),
+                                              )
+                                            ],
                                           ),
-                                          Expanded(
-                                            child: AnimatedOpacity(
-                                              opacity: _sideNavExpanded ? 1 : 0,
-                                              duration: animationDuration,
-                                              child: Text(item.label!,
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.clip,
-                                                  style: TextStyle(
-                                                      color: active
-                                                          ? bottomColor
-                                                          : Colors.grey)),
-                                            ),
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ))),
-                      ));
-                },
-              )
-              .values
-              .toList(),
-          const Expanded(
-            child: SizedBox(),
-          ),
-
+                                        ),
+                                      ],
+                                    ))),
+                          ));
+                    },
+                  )
+                  .values
+                  .toList(),
+            ]),
+          )),
           InkWell(
               onTap: () {
                 setState(() {
@@ -302,26 +332,15 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           color: Colors.grey),
                     ],
                   )))
-          // Expanded(
-          //   child: SideNavigationBar(
-          //       // expandable: false,
-          //       onTap: tabsRouter.setActiveIndex,
-          //       // expandable: false,
-          //       initiallyExpanded: true,
-          //       selectedIndex: min(items.length - 1, tabsRouter.activeIndex),
-          //       theme: SideNavigationBarTheme(
-          //           dividerTheme: const SideNavigationBarDividerTheme(
-          //               showFooterDivider: false,
-          //               showHeaderDivider: false,
-          //               showMainDivider: false),
-          //           itemTheme: SideNavigationBarItemTheme(
-          //               labelTextStyle: textTheme.caption,
-          //               selectedItemColor: bottomColor),
-          //           togglerTheme: const SideNavigationBarTogglerTheme()),
-          //       items: items),
-          // ),
         ],
       ),
     );
+  }
+
+  showSnackBar(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
   }
 }
