@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
 
 import 'package:jonline/generated/posts.pb.dart';
+import 'package:jonline/models/jonline_account_operations.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
 
@@ -23,6 +24,19 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   late HomePageState homePage;
   TextTheme get textTheme => Theme.of(context).textTheme;
   Post? post;
+  Posts replies = Posts();
+
+  updateReplies() async {
+    final Posts? posts = await JonlineAccountOperations.getSelectedPosts(
+        request: GetPostsRequest(repliesToPostId: widget.id),
+        showMessage: showSnackBar);
+    if (posts == null) return;
+
+    showSnackBar("Replies loaded! 🎉");
+    setState(() {
+      replies = posts;
+    });
+  }
 
   @override
   void initState() {
@@ -38,6 +52,9 @@ class PostDetailsPageState extends State<PostDetailsPage> {
         showSnackBar("Failed to load cached post data 😔 for ${widget.id}");
       });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      updateReplies();
+    });
   }
 
   @override
@@ -51,9 +68,13 @@ class PostDetailsPageState extends State<PostDetailsPage> {
         body: post != null
             ? SingleChildScrollView(
                 child: Center(
-                    child: PostPreview(
-                post: post!,
-                maxContentHeight: null,
+                    child: Column(
+                children: [
+                  PostPreview(
+                    post: post!,
+                    maxContentHeight: null,
+                  ),
+                ],
               )))
             : Center(
                 child: Column(
@@ -63,6 +84,10 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                   ],
                 ),
               ));
+  }
+
+  Widget buildReplies(BuildContext context) {
+    return Container();
   }
 
   showSnackBar(String message) {

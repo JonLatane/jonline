@@ -63,6 +63,8 @@ CREATE TABLE posts (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NULL REFERENCES users ON DELETE SET NULL,
   parent_post_id INTEGER NULL DEFAULT NULL REFERENCES users ON DELETE SET NULL,
+  -- In the APIs title is treated as optional. However, for ease of loading,
+  -- the replying-to Post's title will always be duplicated in child posts/replies.
   title VARCHAR NOT NULL,
   link VARCHAR NULL DEFAULT NULL,
   content TEXT NULL DEFAULT NULL,

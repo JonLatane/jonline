@@ -1,9 +1,12 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/jonline.pbgrpc.dart';
 import 'package:jonline/generated/posts.pb.dart';
 import 'package:jonline/models/jonline_account.dart';
+import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
@@ -21,6 +24,40 @@ class CreatePostPageState extends State<CreatePostPage> {
   late AppState appState;
   late HomePageState homePage;
   bool _showPreview = false;
+  List<bool> focuses = [false, false, false];
+  bool get showPreview => _showPreview;
+  set showPreview(bool value) {
+    if (value != _showPreview) {
+      final focusSources = [titleFocus, linkFocus, contentFocus];
+      if (value == true) {
+        print("saving focus");
+        focuses = focusSources.map((e) => e.hasFocus).toList();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          print("restoring focus");
+          focuses.asMap().forEach((index, hasFocus) {
+            if (hasFocus) {
+              focusSources[index].requestFocus();
+            }
+          });
+        });
+      }
+
+      setState(() {
+        _disableQuickPaste = true;
+        _showPreview = value;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _disableQuickPaste = false;
+        });
+      });
+    }
+  }
+
+  String? quickPasteLink;
+  bool get enableQuickPaste => quickPasteLink != null && quickPasteLink != link;
+
   // int counter = 1;
   final FocusNode titleFocus = FocusNode();
   final TextEditingController titleController = TextEditingController();
@@ -32,6 +69,7 @@ class CreatePostPageState extends State<CreatePostPage> {
   String get title => titleController.value.text;
   String get link => linkController.value.text;
   String get content => contentController.value.text;
+  bool _disableQuickPaste = false;
 
   @override
   void initState() {
@@ -41,7 +79,7 @@ class CreatePostPageState extends State<CreatePostPage> {
     homePage.postsCreated.addListener(doCreate);
     titleController.addListener(() {
       setState(() {});
-      homePage.canCreatePost.value = title.isNotEmpty;
+      homePage.canCreatePost.value = title.isNotEmpty && !doingCreate;
     });
     contentController.addListener(() {
       setState(() {});
@@ -49,6 +87,13 @@ class CreatePostPageState extends State<CreatePostPage> {
     linkController.addListener(() {
       setState(() {});
     });
+    linkFocus.addListener(() {
+      if (linkFocus.hasFocus && !_disableQuickPaste) {
+        updateQuickPasteLink();
+      }
+    });
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) async => updateQuickPasteLink());
   }
 
   @override
@@ -63,7 +108,30 @@ class CreatePostPageState extends State<CreatePostPage> {
     super.dispose();
   }
 
+  bool _doingCreate = false;
+  bool get doingCreate => _doingCreate;
+  set doingCreate(bool value) {
+    setState(() {
+      _doingCreate = value;
+    });
+    homePage.canCreatePost.value = title.isNotEmpty && !value;
+  }
+
+  updateQuickPasteLink() async {
+    final String? text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    if (text == null || !text.startsWith("http")) {
+      setState(() {
+        quickPasteLink = null;
+      });
+    } else {
+      setState(() {
+        quickPasteLink = text;
+      });
+    }
+  }
+
   doCreate() async {
+    doingCreate = true;
     if (JonlineAccount.selectedAccount == null) {
       showSnackBar("No account selected.");
       return;
@@ -79,6 +147,7 @@ class CreatePostPageState extends State<CreatePostPage> {
       showSnackBar("Account not ready.");
     }
     showSnackBar("Creating post...");
+    final startTime = DateTime.now();
     final Post post;
     try {
       post = await client!.createPost(
@@ -89,17 +158,31 @@ class CreatePostPageState extends State<CreatePostPage> {
       showSnackBar("Error creating post 😔");
       await communicationDelay;
       showSnackBar(formatServerError(e));
+      doingCreate = false;
       return;
     }
-    await communicationDelay;
+    if (DateTime.now().millisecondsSinceEpoch -
+            startTime.millisecondsSinceEpoch <
+        500) {
+      await communicationDelay;
+    }
     showSnackBar("Post created! 🎉");
-    if (!mounted) return;
+    if (!mounted) {
+      doingCreate = false;
+      return;
+    }
     context.navigateBack();
     final appState = context.findRootAncestorStateOfType<AppState>();
-    if (appState == null) return;
+    if (appState == null) {
+      doingCreate = false;
+
+      return;
+    }
     appState.posts.value = Posts(posts: [post] + appState.posts.value.posts);
     Future.delayed(const Duration(seconds: 3),
         () => appState.updatePosts(showMessage: showSnackBar));
+
+    doingCreate = false;
   }
 
   @override
@@ -154,17 +237,17 @@ class CreatePostPageState extends State<CreatePostPage> {
                   child: Stack(
                 children: [
                   IgnorePointer(
-                    ignoring: _showPreview,
+                    ignoring: showPreview,
                     child: AnimatedOpacity(
                         duration: animationDuration,
-                        opacity: _showPreview ? 0.03 : 1,
+                        opacity: showPreview ? 0.03 : 1,
                         child: buildEditor(context)),
                   ),
                   IgnorePointer(
-                    ignoring: !_showPreview,
+                    ignoring: !showPreview,
                     child: AnimatedOpacity(
                         duration: animationDuration,
-                        opacity: !_showPreview ? 0 : 1,
+                        opacity: !showPreview ? 0 : 1,
                         child: buildPreview(context)),
                   )
                 ],
@@ -184,13 +267,11 @@ class CreatePostPageState extends State<CreatePostPage> {
             flex: 6,
             child: TextButton(
               onPressed: () {
-                setState(() {
-                  _showPreview = false;
-                });
+                showPreview = false;
               },
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(
-                      !_showPreview ? Colors.white : Colors.transparent)),
+                      !showPreview ? Colors.white : Colors.transparent)),
               // doingStuff || username.isEmpty || password.isEmpty
               //     ? null
               //     : createAccount,
@@ -210,13 +291,11 @@ class CreatePostPageState extends State<CreatePostPage> {
               onPressed: title.isEmpty
                   ? null
                   : () {
-                      setState(() {
-                        _showPreview = true;
-                      });
+                      showPreview = true;
                     },
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(
-                      _showPreview ? Colors.white : Colors.transparent)),
+                      showPreview ? Colors.white : Colors.transparent)),
               child: Padding(
                 padding: const EdgeInsets.all(4.0),
                 child: Column(
@@ -283,25 +362,64 @@ class CreatePostPageState extends State<CreatePostPage> {
         cursorColor: Colors.white,
         style: const TextStyle(
             color: Colors.white, fontWeight: FontWeight.w400, fontSize: 14),
-        // enabled: !doingStuff,
+        enabled: !doingCreate && !showPreview,
         decoration: const InputDecoration(
             border: InputBorder.none, hintText: "Title", isDense: true),
         onChanged: (value) {},
       ),
-      TextField(
-        focusNode: linkFocus,
-        controller: linkController,
-        keyboardType: TextInputType.url,
-        enableSuggestions: false,
-        autocorrect: false,
-        maxLines: 1,
-        cursorColor: Colors.white,
-        style: const TextStyle(
-            color: Colors.white, fontWeight: FontWeight.w400, fontSize: 14),
-        // enabled: !doingStuff,
-        decoration: const InputDecoration(
-            border: InputBorder.none, hintText: "Link", isDense: true),
-        onChanged: (value) {},
+      Row(
+        children: [
+          Expanded(
+            child: TextField(
+              focusNode: linkFocus,
+              controller: linkController,
+              keyboardType: TextInputType.url,
+              enableSuggestions: false,
+              autocorrect: false,
+              maxLines: 1,
+              cursorColor: Colors.white,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 14),
+              enabled: !doingCreate && !showPreview,
+              decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: "Link (optional)",
+                  isDense: true),
+              onChanged: (value) {},
+            ),
+          ),
+          AnimatedContainer(
+              duration: animationDuration,
+              // height: 10,
+              width: quickPasteLink != null ? 72 : 0,
+              child: TextButton(
+                onPressed: enableQuickPaste
+                    ? () {
+                        setState(() {
+                          linkController.text =
+                              quickPasteLink ?? linkController.text;
+                          quickPasteLink = null;
+                          linkFocus.unfocus();
+                        });
+                      }
+                    : null,
+                child: Stack(
+                  children: [
+                    AnimatedOpacity(
+                        opacity: enableQuickPaste ? 1 : 0.5,
+                        duration: animationDuration,
+                        child: Icon(Icons.paste,
+                            color: enableQuickPaste ? topColor : Colors.white)),
+                    AnimatedOpacity(
+                        opacity: quickPasteLink == link ? 0.5 : 0,
+                        duration: animationDuration,
+                        child: Icon(Icons.check, color: bottomColor)),
+                  ],
+                ),
+              ))
+        ],
       ),
       const SizedBox(height: 8),
       Expanded(
@@ -316,14 +434,12 @@ class CreatePostPageState extends State<CreatePostPage> {
           cursorColor: Colors.white,
           style: const TextStyle(
               color: Colors.white, fontWeight: FontWeight.w400, fontSize: 14),
-          // enabled: !doingStuff,
+          enabled: !doingCreate && !showPreview,
           decoration: const InputDecoration(
-              border: InputBorder.none, hintText: "Content", isDense: true),
-          onChanged: (value) {
-            // widget.melody.name = value;
-            //                          BeatScratchPlugin.updateMelody(widget.melody);
-            // BeatScratchPlugin.onSynthesizerStatusChange();
-          },
+              border: InputBorder.none,
+              hintText: "Content (optional)",
+              isDense: true),
+          onChanged: (value) {},
         ),
       ),
       const Align(

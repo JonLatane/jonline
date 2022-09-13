@@ -6,7 +6,33 @@ import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/screens/accounts/account_chooser.dart';
 import 'package:jonline/screens/home_page.dart';
 
-extension TitleManagement on HomePageState {
+extension AppBarManagement on HomePageState {
+  AppBar get appBar {
+    return AppBar(
+      title: titleWidget ?? Text(title),
+      leading: showLeadingNav
+          ? const AutoLeadingButton(
+              // showIfChildCanPop: false,
+              showIfParentCanPop: false,
+              ignorePagelessRoutes: true,
+            )
+          : null,
+      automaticallyImplyLeading: false,
+      actions: actions,
+    );
+  }
+
+  bool get showLeadingNav {
+    switch (context.topRoute.name) {
+      case 'PostListRoute':
+      case 'PostsTab':
+      case 'EventListRoute':
+      case 'EventsTab':
+        return false;
+    }
+    return true;
+  }
+
   Widget? get titleWidget {
     switch (context.topRoute.name) {
       case 'MyActivityRoute':
@@ -63,17 +89,6 @@ extension TitleManagement on HomePageState {
     return context.topRoute.name;
   }
 
-  bool get showLeadingNav {
-    switch (context.topRoute.name) {
-      case 'PostListRoute':
-      case 'PostsTab':
-      case 'EventListRoute':
-      case 'EventsTab':
-        return false;
-    }
-    return true;
-  }
-
   List<Widget>? get actions {
     switch (context.topRoute.name) {
       case 'PostListRoute':
@@ -118,20 +133,23 @@ extension TitleManagement on HomePageState {
                         MaterialStateProperty.all(Colors.white.withAlpha(100)),
                     splashFactory: InkSparkle.splashFactory),
                 onPressed:
-                    canCreatePost.value ? null : () => postsCreated.value += 1,
+                    canCreatePost.value ? () => postsCreated.value += 1 : null,
                 // doingStuff || username.isEmpty || password.isEmpty
                 //     ? null
                 //     : createAccount,
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
-                  child: Column(
-                    children: const [
-                      Expanded(child: SizedBox()),
-                      Icon(Icons.add),
-                      // Text('jonline.io/', style: TextStyle(fontSize: 11)),
-                      Text('CREATE', style: TextStyle(fontSize: 12)),
-                      Expanded(child: SizedBox()),
-                    ],
+                  child: Opacity(
+                    opacity: canCreatePost.value ? 1 : 0.5,
+                    child: Column(
+                      children: const [
+                        Expanded(child: SizedBox()),
+                        Icon(Icons.add),
+                        // Text('jonline.io/', style: TextStyle(fontSize: 11)),
+                        Text('CREATE', style: TextStyle(fontSize: 12)),
+                        Expanded(child: SizedBox()),
+                      ],
+                    ),
                   ),
                 ),
               ),

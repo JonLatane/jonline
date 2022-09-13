@@ -2,6 +2,8 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
 import 'package:jonline/models/jonline_account.dart';
+import 'package:jonline/models/jonline_account_factories.dart';
+import 'package:jonline/models/jonline_account_operations.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function(bool isLoggedIn)? onLoginResult;
@@ -54,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
   createAccount() async {
     authenticate(
         "create account",
-        JonlineAccount.createAccount(
+        JonlineAccountFactories.createAccount(
             server, username, password, context, showSnackBar,
             allowInsecure: allowInsecure));
   }
@@ -62,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
   login() async {
     authenticate(
         "login",
-        JonlineAccount.loginToAccount(
+        JonlineAccountFactories.loginToAccount(
             server, username, password, context, showSnackBar,
             allowInsecure: allowInsecure));
   }

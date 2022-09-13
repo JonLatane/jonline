@@ -4,9 +4,10 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
+import 'package:jonline/jonotifier.dart';
 import 'package:jonline/my_platform.dart';
 import 'package:jonline/router/router.gr.dart';
-import 'package:jonline/screens/home_page_title.dart';
+import 'package:jonline/screens/home_page_app_bar.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:scrolls_to_top/scrolls_to_top.dart';
 
@@ -37,11 +38,13 @@ class RouteDestination {
 }
 
 class HomePageState extends State<HomePage> with TickerProviderStateMixin {
+  late AppState appState;
+
   String? titleServer;
   String? titleUsername;
   ValueNotifier<bool> canCreatePost = ValueNotifier(false);
   ValueNotifier<int> postsCreated = ValueNotifier(0);
-  ValueNotifier<bool> scrolledToTop = ValueNotifier(false);
+  Jonotifier scrollToTop = Jonotifier();
   bool get sideNavExpanded => _sideNavExpanded;
   bool _sideNavExpanded = false;
   NativeDeviceOrientation orientation = NativeDeviceOrientation.unknown;
@@ -85,7 +88,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   initState() {
     super.initState();
+    appState = context.findRootAncestorStateOfType<AppState>()!;
     canCreatePost.addListener(updateState);
+    appState.accounts.addListener(updateState);
     NativeDeviceOrientationCommunicator()
         .onOrientationChanged()
         .listen((NativeDeviceOrientation o) {
@@ -97,6 +102,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   dispose() {
+    appState.accounts.removeListener(updateState);
     canCreatePost.removeListener(updateState);
     super.dispose();
   }
@@ -161,21 +167,10 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             builder: (context, child, animation) {
               return ScrollsToTop(
                   onScrollsToTop: (ScrollsToTopEvent event) async {
-                    scrolledToTop.value = true;
+                    scrollToTop();
                   },
                   child: Scaffold(
-                    appBar: AppBar(
-                      title: titleWidget ?? Text(title),
-                      leading: showLeadingNav
-                          ? const AutoLeadingButton(
-                              // showIfChildCanPop: false,
-                              showIfParentCanPop: false,
-                              ignorePagelessRoutes: true,
-                            )
-                          : null,
-                      automaticallyImplyLeading: false,
-                      actions: actions,
-                    ),
+                    appBar: appBar,
                     body: Row(
                       children: [
                         AnimatedContainer(
@@ -231,7 +226,12 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             selectedItemColor: bottomColor,
             type: BottomNavigationBarType.fixed,
             currentIndex: min(items.length - 1, tabsRouter.activeIndex),
-            onTap: tabsRouter.setActiveIndex,
+            onTap: (index) {
+              if (index == tabsRouter.activeIndex) {
+                scrollToTop();
+              }
+              tabsRouter.setActiveIndex(index);
+            },
             items: items,
           );
   }
@@ -261,6 +261,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             message: item.label!,
                             child: InkWell(
                                 onTap: () {
+                                  if (index == tabsRouter.activeIndex) {
+                                    scrollToTop();
+                                  }
                                   tabsRouter.setActiveIndex(index);
                                   if (MediaQuery.of(context).size.width < 700) {
                                     setState(() {
@@ -295,10 +298,13 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                       maxLines: 1,
                                                       overflow:
                                                           TextOverflow.clip,
-                                                      style: TextStyle(
-                                                          color: active
-                                                              ? bottomColor
-                                                              : Colors.grey)),
+                                                      style: textTheme
+                                                          .subtitle1!
+                                                          .copyWith(
+                                                              color: active
+                                                                  ? bottomColor
+                                                                  : Colors
+                                                                      .grey)),
                                                 ),
                                               )
                                             ],
@@ -329,6 +335,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           _sideNavExpanded
                               ? Icons.arrow_left
                               : Icons.arrow_right,
+                          size: 32,
                           color: Colors.grey),
                     ],
                   )))

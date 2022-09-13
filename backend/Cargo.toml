@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.23"
+version = "0.1.24"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -12,7 +12,7 @@ default-run = "jonline"
 
 [dependencies]
 tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
-tonic = { version = "0.8.0", features = ["tls", "tls-roots", "tls-webpki-roots"] }
+tonic = { version = "0.8.1", features = ["tls", "tls-roots", "tls-webpki-roots", "gzip"] }
 tonic-reflection = "0.5.0"
 prost = "0.11.0"
 prost-types = { version = "0.11.1", features = ["std"] }

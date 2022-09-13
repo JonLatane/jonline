@@ -15,7 +15,11 @@ pub fn create_post(
     conn: &PgPooledConnection,
 ) -> Result<Response<Post>, Status> {
     let req = request.into_inner();
-    validate_length(&req.title, "title", 4, 255)?;
+    match req.title.to_owned() {
+        None => (),
+        Some(other_title) => validate_length(&other_title, "title", 4, 255)?,
+    }
+    // validate_length(&req.title, "title", 4, 255)?;
     validate_max_length(req.link.to_owned(), "link", 10000)?;
     validate_max_length(req.content.to_owned(), "content", 10000)?;
 
@@ -32,33 +36,44 @@ pub fn create_post(
         },
     };
 
-    let result = conn.transaction::<Response<Post>, diesel::result::Error, _>(|| {
-        let inserted_post = insert_into(posts)
-            .values(&models::NewPost {
-                user_id: Some(user.id),
-                parent_post_id: parent_post_db_id,
-                title: req.title.to_owned(),
-                link: req.link.to_owned(),
-                content: req.content.to_owned(),
-                published: true,
-            })
-            .get_results::<models::Post>(conn)?[0]
-            .to_proto(Some(user.username));
-        match parent_post_db_id {
-            Some(parent_post_db_id) => match update(posts)
-                .filter(parent_post_id.eq(Some(parent_post_db_id)))
-                .set(reply_count.eq(reply_count + 1))
-                .execute(conn)?
-            {
-                // This error should be impossible given that the
-                // above insert would hit a foreign key constraint.
-                0 => Err(diesel::result::Error::NotFound),
-                _ => Ok(()),
-            }?,
-            None => (),
-        }
-        Ok(Response::new(inserted_post))
-    });
+    let parent_post_title: Option<String> = match parent_post_db_id {
+        None => None,
+        Some(parent_id) => posts.select(title).find(parent_id).first(conn).ok(),
+    };
+
+    let post_title: String = parent_post_title.or(req.title.to_owned()).ok_or(
+        Status::new(Code::Internal, "title_or_reply_to_post_id_required"
+    ))?;
+
+    let result =
+        conn.transaction::<Response<Post>, diesel::result::Error, _>(|| {
+            let inserted_post =
+                insert_into(posts)
+                    .values(&models::NewPost {
+                        user_id: Some(user.id),
+                        parent_post_id: parent_post_db_id,
+                        title: post_title,
+                        link: req.link.to_owned(),
+                        content: req.content.to_owned(),
+                        published: true,
+                    })
+                    .get_results::<models::Post>(conn)?[0]
+                    .to_proto(Some(user.username));
+            match parent_post_db_id {
+                Some(parent_post_db_id) => match update(posts)
+                    .filter(parent_post_id.eq(Some(parent_post_db_id)))
+                    .set(reply_count.eq(reply_count + 1))
+                    .execute(conn)?
+                {
+                    // This error should be impossible given that the
+                    // above insert would hit a foreign key constraint.
+                    0 => Err(diesel::result::Error::NotFound),
+                    _ => Ok(()),
+                }?,
+                None => (),
+            }
+            Ok(Response::new(inserted_post))
+        });
 
     match result {
         Ok(response) => Ok(response),

@@ -2,6 +2,8 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/db.dart';
 import 'package:jonline/generated/posts.pb.dart';
+import 'package:jonline/models/jonline_clients.dart';
+import 'package:jonline/models/jonline_account_operations.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/router/auth_guard.dart';
 import 'package:jonline/router/router.gr.dart';
@@ -28,25 +30,9 @@ class AppState extends State<MyApp> {
   );
 
   Future<void> updatePosts({Function(String)? showMessage}) async {
-    final client = await JonlineAccount.getSelectedOrDefaultClient(
-        showMessage: showMessage);
-    if (client == null) {
-      showMessage?.call("Error: No client");
-      return;
-    }
-    showMessage?.call("Loading posts...");
-    final Posts posts;
-    try {
-      posts = await client.getPosts(GetPostsRequest(),
-          options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
-    } catch (e) {
-      showMessage?.call("Error loading posts.");
-      await communicationDelay;
-      showMessage?.call(formatServerError(e));
-      return;
-    }
-    await communicationDelay;
-    showMessage?.call("Updating posts...");
+    final Posts? posts = await JonlineAccountOperations.getSelectedPosts();
+    if (posts == null) return;
+
     setState(() {
       this.posts.value = posts;
     });

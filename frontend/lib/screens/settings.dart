@@ -18,38 +18,48 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage>
     with AutoRouteAwareStateMixin<SettingsPage> {
-  var queryUpdateCont = 0;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.tab),
-            Text(widget.query),
-            ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    queryUpdateCont++;
-                  });
-                  context.navigateTo(SettingsTab(
-                    tab: 'Updated Path param $queryUpdateCont',
-                    query: 'updated Query $queryUpdateCont',
-                  ));
-                },
-                child: Text('Update Query $queryUpdateCont')),
-            ElevatedButton(
-                onPressed: () {
-                  context.navigateTo(PostsTab(
-                    children: [PostDetailsRoute(id: "some id")],
-                  ));
-                },
-                child: const Text('Navigate to book details/1'))
-          ],
-        ),
-      ),
+      body: SingleChildScrollView(
+          child: Center(
+              child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text("Developer Mode")),
+              Switch(value: true, onChanged: (v) {}),
+            ],
+          )
+        ],
+      ))),
+      // Center(
+      //   child: Column(
+      //     mainAxisSize: MainAxisSize.min,
+      //     children: [
+      //       Text(widget.tab),
+      //       Text(widget.query),
+      //       ElevatedButton(
+      //           onPressed: () {
+      //             setState(() {
+      //               queryUpdateCont++;
+      //             });
+      //             context.navigateTo(SettingsTab(
+      //               tab: 'Updated Path param $queryUpdateCont',
+      //               query: 'updated Query $queryUpdateCont',
+      //             ));
+      //           },
+      //           child: Text('Update Query $queryUpdateCont')),
+      //       ElevatedButton(
+      //           onPressed: () {
+      //             context.navigateTo(PostsTab(
+      //               children: [PostDetailsRoute(id: "some id")],
+      //             ));
+      //           },
+      //           child: const Text('Navigate to book details/1'))
+      //     ],
+      //   ),
+      // ),
     );
   }
 

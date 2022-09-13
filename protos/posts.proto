@@ -11,11 +11,16 @@ message GetPostRequest {
 }
 
 message GetPostsRequest {
-
+  // If specified, returns the single post with the given ID.
+  optional string post_id = 1;
+  // If specified, limits results to replies to the given post.
+  optional string replies_to_post_id = 2;
+  // If specified, limits results to those by the given author user ID.
+  optional string author_user_id = 3;
 }
 
 message CreatePostRequest {
-  string title = 1;
+  optional string title = 1;
   optional string link = 2;
   optional string content = 3;
   optional string reply_to_post_id = 4;
@@ -37,6 +42,7 @@ message Post {
   optional string link = 6;
   optional string content = 7;
   int32 reply_count = 8;
+  optional string reply_to_post_id = 9;
 
   message Author {
     string user_id = 1;

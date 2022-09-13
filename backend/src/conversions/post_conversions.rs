@@ -10,6 +10,7 @@ impl ToProtoPost for models::Post {
     fn to_proto(&self, username: Option<String>) -> Post {
         Post {
             id: self.id.to_proto_id(),
+            reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
             title: self.title.to_owned(),
             link: self.link.to_owned(),
             content: self.content.to_owned(),

@@ -2,6 +2,8 @@ import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/jonline.pbgrpc.dart';
 import 'package:jonline/generated/posts.pb.dart';
 import 'package:jonline/models/jonline_account.dart';
+import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:jonline/models/jonline_clients.dart';
 
 postDemoData(JonlineAccount account, Function(String) showSnackBar) async {
   final JonlineClient? client =

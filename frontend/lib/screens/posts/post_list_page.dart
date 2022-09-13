@@ -11,7 +11,6 @@ import 'package:jonline/generated/posts.pb.dart';
 import 'package:jonline/router/router.gr.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
-import 'package:native_device_orientation/native_device_orientation.dart';
 
 class PostListScreen extends StatefulWidget {
   const PostListScreen({Key? key}) : super(key: key);
@@ -24,12 +23,11 @@ class PostListScreenState extends State<PostListScreen>
     with AutoRouteAwareStateMixin<PostListScreen> {
   late AppState appState;
   late HomePageState homePage;
-  ScrollController listScrollController = ScrollController();
-  ScrollController gridScrollController = ScrollController();
+  ScrollController scrollController = ScrollController();
 
   @override
   void didPushNext() {
-    print('didPushNext');
+    // print('didPushNext');
   }
 
   @override
@@ -40,7 +38,7 @@ class PostListScreenState extends State<PostListScreen>
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(onAccountsChanged);
     appState.posts.addListener(onPostsUpdated);
-    homePage.scrolledToTop.addListener(scrollToTop);
+    homePage.scrollToTop.addListener(scrollToTop);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => appState.updateAccountList());
   }
@@ -50,9 +48,8 @@ class PostListScreenState extends State<PostListScreen>
     // print("PostListPage.dispose");
     appState.accounts.removeListener(onAccountsChanged);
     appState.posts.removeListener(onPostsUpdated);
-    homePage.scrolledToTop.removeListener(scrollToTop);
-    listScrollController.dispose();
-    gridScrollController.dispose();
+    homePage.scrollToTop.removeListener(scrollToTop);
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -66,8 +63,7 @@ class PostListScreenState extends State<PostListScreen>
 
   scrollToTop() {
     if (context.topRoute.name == 'PostListRoute') {
-      showSnackBar("Scrolling posts to top");
-      listScrollController.animateTo(0,
+      scrollController.animateTo(0,
           duration: animationDuration, curve: Curves.easeInOut);
       // gridScrollController.animateTo(0,
       //     duration: animationDuration, curve: Curves.easeInOut);
@@ -81,7 +77,8 @@ class PostListScreenState extends State<PostListScreen>
     return Scaffold(
       // appBar: ,
       body: RefreshIndicator(
-        onRefresh: () => appState.updatePosts(showMessage: showSnackBar),
+        onRefresh: () async =>
+            await appState.updatePosts(showMessage: showSnackBar),
         child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(context).copyWith(
               dragDevices: {
@@ -93,7 +90,7 @@ class PostListScreenState extends State<PostListScreen>
             ),
             child: useList
                 ? ImplicitlyAnimatedList<Post>(
-                    controller: listScrollController,
+                    controller: scrollController,
                     // controller: PrimaryScrollController.of(context),
                     // The current items in the list.
                     items: postList,
@@ -119,7 +116,7 @@ class PostListScreenState extends State<PostListScreen>
                     },
                   )
                 : MasonryGridView.count(
-                    controller: listScrollController,
+                    controller: scrollController,
                     crossAxisCount: max(
                         2,
                         min(6, (MediaQuery.of(context).size.width) / 250)
