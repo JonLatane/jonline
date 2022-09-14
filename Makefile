@@ -28,8 +28,8 @@ show_fe_version:
 	@echo $(FE_VERSION)
 
 # Core release targets
-release_be_local: build_be_release push_be_release_local
-release_be_cloud: build_be_release push_be_release_cloud
+release_be_local: build_be_release_binary push_be_release_local
+release_be_cloud: build_be_release_binary push_be_release_cloud
 
 # K8s server deployment targets
 deploy_be_create: deploy_ensure_namespace
@@ -176,18 +176,18 @@ push_builder_cloud:
 	docker push $(CLOUD_REGISTRY)/jonline-be-build
 
 # Server image build targets
-build_be_release: backend/target/release/jonline__server_release
+build_be_release_binary: backend/target/release/jonline__server_release
 
 backend/target/release/jonline__server_release: push_builder_local
 	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-be-build:latest /bin/bash -c "cargo build --release"
 	mv backend/target/release/jonline backend/target/release/jonline__server_release
 	mv backend/target/release/expired_token_cleanup backend/target/release/expired_token_cleanup__server_release
 
-push_be_release_local: local_registry_create build_be_release
+push_be_release_local: local_registry_create build_be_release_binary build_web_release
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline
 
-push_be_release_cloud: build_be_release
+push_be_release_cloud: #build_be_release_binary build_web_release
 	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
 
@@ -198,6 +198,8 @@ push_web_release_local: build_web_release
 	docker build . -t $(LOCAL_REGISTRY)/jonline-web -f frontend/docker/web/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline-web
 
+push_ios_release:
+	cd frontend && ./build-release ios
 
 # Full-Stack dev targets
 clean:

@@ -9,6 +9,7 @@ extern crate bcrypt;
 extern crate bs58;
 extern crate ring;
 extern crate tonic_web;
+extern crate futures;
 
 pub mod auth;
 pub mod db_connection;

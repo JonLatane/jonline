@@ -13,6 +13,18 @@ spec:
       protocol: TCP
       port: 27707
       targetPort: 27707
+    - name: web-secure
+      protocol: TCP
+      port: 443
+      targetPort: 443
+    - name: web-insecure-1
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: web-insecure-2
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -31,7 +43,7 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.1.25
+        - image: docker.io/jonlatane/jonline:0.1.33
           name: jonline
           env:
             - name: DATABASE_URL
@@ -58,6 +70,15 @@ spec:
             - containerPort: 27707
               protocol: TCP
               name: jonline
+            - containerPort: 443
+              protocol: TCP
+              name: jonline-web-s
+            - containerPort: 80
+              protocol: TCP
+              name: jonline-web-i1
+            - containerPort: 8000
+              protocol: TCP
+              name: jonline-web-i2
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -71,7 +92,7 @@ spec:
         spec:
           containers:
           - name: jonline-expired-token-cleanup
-            image: docker.io/jonlatane/jonline:0.1.25
+            image: docker.io/jonlatane/jonline:0.1.33
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL

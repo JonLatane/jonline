@@ -1,17 +1,23 @@
 import 'package:grpc/grpc.dart';
+import 'package:grpc/grpc_connection_interface.dart';
+import 'package:grpc/grpc_web.dart';
 import 'package:jonline/generated/google/protobuf/empty.pb.dart';
 import 'package:jonline/generated/jonline.pbgrpc.dart';
 import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/models/server_errors.dart';
+import 'package:jonline/my_platform.dart';
 
 extension JonlineClients on JonlineAccount {
   static JonlineClient createClient(
       String server, ChannelCredentials credentials) {
-    final channel = ClientChannel(
-      "jonline.$server",
-      port: 27707,
-      options: ChannelOptions(credentials: credentials),
-    );
+    final ClientChannelBase channel = MyPlatform.isWeb
+        ? GrpcWebClientChannel.xhr(Uri.parse(
+            "http${credentials.isSecure ? 's' : ''}://jonline.$server:27707"))
+        : ClientChannel(
+            "jonline.$server",
+            port: 27707,
+            options: ChannelOptions(credentials: credentials),
+          );
     return JonlineClient(channel);
   }
 
