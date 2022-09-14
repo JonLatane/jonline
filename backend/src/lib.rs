@@ -8,6 +8,7 @@ extern crate diesel_migrations;
 extern crate bcrypt;
 extern crate bs58;
 extern crate ring;
+extern crate tonic_web;
 
 pub mod auth;
 pub mod db_connection;

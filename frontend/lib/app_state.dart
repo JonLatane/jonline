@@ -2,15 +2,14 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/db.dart';
 import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/models/jonline_account_operations.dart';
-import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/router/auth_guard.dart';
 import 'package:jonline/router/router.gr.dart';
 import 'package:provider/provider.dart';
 
 import 'main.dart';
 import 'models/jonline_account.dart';
+import 'models/jonline_operations.dart';
+import 'models/settings.dart';
 
 const defaultServer = 'jonline.io';
 const noOne = 'no one';
@@ -30,7 +29,7 @@ class AppState extends State<MyApp> {
   );
 
   Future<void> updatePosts({Function(String)? showMessage}) async {
-    final Posts? posts = await JonlineAccountOperations.getSelectedPosts();
+    final Posts? posts = await JonlineOperations.getSelectedPosts();
     if (posts == null) return;
 
     setState(() {
@@ -51,6 +50,11 @@ class AppState extends State<MyApp> {
     accounts.value = await JonlineAccount.accounts;
   }
 
+  updateAccountDependents() {
+    print("updateAccountDependents");
+    accounts.value = accounts.value;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +63,7 @@ class AppState extends State<MyApp> {
       updatePosts();
     });
     accounts.addListener(updatePosts);
+    Settings.initialize(updateAccountDependents);
   }
 
   @override

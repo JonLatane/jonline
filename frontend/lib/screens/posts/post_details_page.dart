@@ -1,9 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
-
 import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:jonline/models/jonline_operations.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
 
@@ -27,7 +26,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   Posts replies = Posts();
 
   updateReplies() async {
-    final Posts? posts = await JonlineAccountOperations.getSelectedPosts(
+    final Posts? posts = await JonlineOperations.getSelectedPosts(
         request: GetPostsRequest(repliesToPostId: widget.id),
         showMessage: showSnackBar);
     if (posts == null) return;

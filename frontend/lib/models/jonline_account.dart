@@ -1,16 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
-import 'package:grpc/grpc.dart';
 import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/authentication.pb.dart';
-import 'package:jonline/generated/google/protobuf/empty.pb.dart';
-import 'package:jonline/generated/jonline.pbgrpc.dart';
-import 'package:jonline/generated/users.pb.dart';
-import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/models/storage.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 const uuid = Uuid();

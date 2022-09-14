@@ -132,8 +132,7 @@ extension AppBarManagement on HomePageState {
                     overlayColor:
                         MaterialStateProperty.all(Colors.white.withAlpha(100)),
                     splashFactory: InkSparkle.splashFactory),
-                onPressed:
-                    canCreatePost.value ? () => postsCreated.value += 1 : null,
+                onPressed: canCreatePost.value ? () => createPost() : null,
                 // doingStuff || username.isEmpty || password.isEmpty
                 //     ? null
                 //     : createAccount,

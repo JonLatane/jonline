@@ -5,7 +5,7 @@ import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/login_page.dart';
 import 'package:jonline/screens/posts/routes.dart';
 import 'package:jonline/screens/accounts/routes.dart';
-import 'package:jonline/screens/settings.dart';
+import 'package:jonline/screens/settings_page.dart';
 import 'package:jonline/screens/user-data/routes.dart';
 
 @MaterialAutoRouter(

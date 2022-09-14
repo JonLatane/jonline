@@ -9,30 +9,6 @@ import 'package:jonline/models/server_errors.dart';
 import '../generated/posts.pb.dart';
 
 extension JonlineAccountOperations on JonlineAccount {
-  static Future<Posts?> getSelectedPosts(
-      {GetPostsRequest? request,
-      Function(String)? showMessage,
-      bool forReplies = false}) async {
-    final client = await JonlineClients.getSelectedOrDefaultClient(
-        showMessage: showMessage);
-    if (client == null) {
-      showMessage?.call("Error: No client");
-      return null;
-    }
-    // showMessage?.call("Loading posts...");
-    final Posts posts;
-    try {
-      posts = await client.getPosts(GetPostsRequest(),
-          options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
-    } catch (e) {
-      showMessage?.call('Error loading ${forReplies ? "replies" : "posts"}.');
-      if (showMessage != null) await communicationDelay;
-      showMessage?.call(formatServerError(e));
-      return null;
-    }
-    return posts;
-  }
-
   Future<Posts?> getPosts(
       {GetPostsRequest? request, Function(String)? showMessage}) async {
     final client = await getClient(showMessage: showMessage);

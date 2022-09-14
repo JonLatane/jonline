@@ -40,11 +40,14 @@ class RouteDestination {
 class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AppState appState;
 
+  // Notifiers to let the App Bar communicate with pages
+  Jonotifier createPost = Jonotifier();
+  ValueNotifier<bool> canCreatePost = ValueNotifier(false);
+  Jonotifier scrollToTop = Jonotifier();
+  Map<String, Function(BuildContext)> appBarBuilders = {};
+
   String? titleServer;
   String? titleUsername;
-  ValueNotifier<bool> canCreatePost = ValueNotifier(false);
-  ValueNotifier<int> postsCreated = ValueNotifier(0);
-  Jonotifier scrollToTop = Jonotifier();
   bool get sideNavExpanded => _sideNavExpanded;
   bool _sideNavExpanded = false;
   NativeDeviceOrientation orientation = NativeDeviceOrientation.unknown;
@@ -91,13 +94,15 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     appState = context.findRootAncestorStateOfType<AppState>()!;
     canCreatePost.addListener(updateState);
     appState.accounts.addListener(updateState);
-    NativeDeviceOrientationCommunicator()
-        .onOrientationChanged()
-        .listen((NativeDeviceOrientation o) {
-      setState(() {
-        orientation = o;
+    if (!MyPlatform.isWeb) {
+      NativeDeviceOrientationCommunicator()
+          .onOrientationChanged()
+          .listen((NativeDeviceOrientation o) {
+        setState(() {
+          orientation = o;
+        });
       });
-    });
+    }
   }
 
   @override
@@ -124,7 +129,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       _showedSettingsFromSwipe = false;
       showSettingsTab = false;
     }
-    return kIsWeb
+    return /*kIsWeb
         ? AutoRouter(builder: (context, child) {
             // we check for active route index by using
             // router.isRouteActive method
@@ -157,48 +162,46 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ],
             );
           })
-        : AutoTabsRouter.pageView(
-            routes: [
-              const PostsTab(),
-              const EventsTab(),
-              const AccountsTab(),
-              SettingsTab(tab: 'tab'),
-            ],
-            builder: (context, child, animation) {
-              return ScrollsToTop(
-                  onScrollsToTop: (ScrollsToTopEvent event) async {
-                    scrollToTop();
-                  },
-                  child: Scaffold(
-                    appBar: appBar,
-                    body: Row(
-                      children: [
-                        AnimatedContainer(
-                          duration: animationDuration,
-                          width: (orientation ==
-                                  NativeDeviceOrientation.landscapeLeft)
-                              ? MediaQuery.of(context).padding.left *
-                                      (useSideNav && sideNavExpanded
-                                          ? 0.6
-                                          : 0.7) +
-                                  (useSideNav ? 4 : 0)
-                              : 0,
-                        ),
-                        if (useSideNav) buildSideNav(context),
-                        Expanded(child: child),
-                        SizedBox(
-                          width: (orientation ==
-                                  NativeDeviceOrientation.landscapeRight)
-                              ? MediaQuery.of(context).padding.right * 0.7
-                              : 0,
-                        )
-                      ],
-                    ),
-                    bottomNavigationBar:
-                        useSideNav ? null : buildBottomNav(context),
-                  ));
+        :*/
+        AutoTabsRouter.pageView(
+      routes: [
+        const PostsTab(),
+        const EventsTab(),
+        const AccountsTab(),
+        SettingsTab(tab: 'tab'),
+      ],
+      builder: (context, child, animation) {
+        return ScrollsToTop(
+            onScrollsToTop: (ScrollsToTopEvent event) async {
+              scrollToTop();
             },
-          );
+            child: Scaffold(
+              appBar: appBar,
+              body: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: animationDuration,
+                    width: (orientation ==
+                            NativeDeviceOrientation.landscapeLeft)
+                        ? MediaQuery.of(context).padding.left *
+                                (useSideNav && sideNavExpanded ? 0.6 : 0.7) +
+                            (useSideNav ? 4 : 0)
+                        : 0,
+                  ),
+                  if (useSideNav) buildSideNav(context),
+                  Expanded(child: child),
+                  SizedBox(
+                    width:
+                        (orientation == NativeDeviceOrientation.landscapeRight)
+                            ? MediaQuery.of(context).padding.right * 0.7
+                            : 0,
+                  )
+                ],
+              ),
+              bottomNavigationBar: useSideNav ? null : buildBottomNav(context),
+            ));
+      },
+    );
   }
 
   List<BottomNavigationBarItem> get navigationItems => [

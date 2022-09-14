@@ -5,6 +5,7 @@ import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/app_state.dart';
 import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:jonline/models/settings.dart';
 import 'package:jonline/screens/home_page.dart';
 import 'package:jonline/screens/user-data/data_collector.dart';
 
@@ -212,165 +213,176 @@ class AccountsPageState extends State<AccountsPage> {
   }
 
   Widget buildAccountItem(JonlineAccount account) {
-    return AnimatedContainer(
-      duration: animationDuration,
-      height: 103.0 + (23.0 * MediaQuery.of(context).textScaleFactor),
-      child: Card(
-        color: appState.selectedAccount?.id == account.id ? bottomColor : null,
-        child: InkWell(
-          onTap: () {
-            if (appState.selectedAccount?.id == account.id) {
-              showSnackBar(
-                  "Browsing anonymously on ${JonlineAccount.selectedServer}.");
-              appState.selectedAccount = null;
-            } else {
-              showSnackBar(
-                  "Browsing ${account.server} as ${account.username}.");
-              appState.selectedAccount = account;
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        SizedBox(
-                          height: 48,
-                          child: TextButton(
-                            onPressed: () {
-                              context.navigateNamedTo(
-                                  'account/${account.id}/activity');
-                            },
-                            child: const Icon(Icons.account_circle,
-                                size: 32, color: Colors.white),
+    return Center(
+      child: AnimatedContainer(
+        constraints: const BoxConstraints(maxWidth: 600),
+        duration: animationDuration,
+        height: 103.0 + (23.0 * MediaQuery.of(context).textScaleFactor),
+        child: Card(
+          color:
+              appState.selectedAccount?.id == account.id ? bottomColor : null,
+          child: InkWell(
+            onTap: () {
+              if (appState.selectedAccount?.id == account.id) {
+                showSnackBar(
+                    "Browsing anonymously on ${JonlineAccount.selectedServer}.");
+                appState.selectedAccount = null;
+              } else {
+                showSnackBar(
+                    "Browsing ${account.server} as ${account.username}.");
+                appState.selectedAccount = account;
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Stack(
+                children: [
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          SizedBox(
+                            height: 48,
+                            child: TextButton(
+                              onPressed: () {
+                                context.navigateNamedTo(
+                                    'account/${account.id}/activity');
+                              },
+                              child: const Icon(Icons.account_circle,
+                                  size: 32, color: Colors.white),
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Row(
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Text('${account.server}/',
+                                        style: textTheme.caption,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        account.username,
+                                        style: textTheme.headline6,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Row(
                                 children: [
-                                  Text('${account.server}/',
-                                      style: textTheme.caption,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis),
-                                ],
-                              ),
-                              Row(
-                                children: [
+                                  Text(
+                                    "User ID: ",
+                                    style: textTheme.caption,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                   Expanded(
                                     child: Text(
-                                      account.username,
-                                      style: textTheme.headline6,
+                                      account.userId,
+                                      style: textTheme.caption,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Row(
-                            children: [
-                              Text(
-                                "User ID: ",
-                                style: textTheme.caption,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  account.userId,
+                            ),
+                            if (Settings.developerMode)
+                              const SizedBox(width: 4),
+                            if (Settings.developerMode)
+                              Text('Refresh Token: ',
                                   style: textTheme.caption,
                                   maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                  overflow: TextOverflow.ellipsis),
+                            if (Settings.developerMode)
+                              Expanded(
+                                flex: 1,
+                                child: Text(account.refreshToken,
+                                    style: textTheme.caption,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text('Refresh Token: ',
-                            style: textTheme.caption,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                        Expanded(
-                          flex: 1,
-                          child: Text(account.refreshToken,
-                              style: textTheme.caption,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        // Expanded(
-                        //   child: SizedBox(
-                        //     height: 32,
-                        //     child: TextButton(
-                        //         style: ButtonStyle(
-                        //             padding: MaterialStateProperty.all(
-                        //                 const EdgeInsets.all(0))),
-                        //         // padding: const EdgeInsets.all(0),
-                        //         onPressed: null, //() {},
-                        //         child: const Icon(Icons.info)),
-                        //   ),
-                        // ),
-                        Expanded(
-                          child: SizedBox(
-                            height: 32,
-                            child: TextButton(
-                                style: ButtonStyle(
-                                    padding: MaterialStateProperty.all(
-                                        const EdgeInsets.all(0))),
-                                // padding: const EdgeInsets.all(0),
-                                onPressed: () => refreshAccount(account),
-                                child: const Icon(Icons.refresh)),
-                          ),
-                        ),
-                        Expanded(
-                            child: SizedBox(
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          // Expanded(
+                          //   child: SizedBox(
+                          //     height: 32,
+                          //     child: TextButton(
+                          //         style: ButtonStyle(
+                          //             padding: MaterialStateProperty.all(
+                          //                 const EdgeInsets.all(0))),
+                          //         // padding: const EdgeInsets.all(0),
+                          //         onPressed: null, //() {},
+                          //         child: const Icon(Icons.info)),
+                          //   ),
+                          // ),
+                          if (Settings.developerMode)
+                            Expanded(
+                              child: SizedBox(
                                 height: 32,
                                 child: TextButton(
                                     style: ButtonStyle(
                                         padding: MaterialStateProperty.all(
                                             const EdgeInsets.all(0))),
-                                    onPressed: () => deleteAccount(account),
-                                    child: const Icon(Icons.delete))))
-                      ],
-                    )
-                  ],
-                ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Transform.translate(
-                    offset: const Offset(0, 0),
-                    child: const Handle(
-                      delay: Duration(milliseconds: 100),
-                      child: SizedBox(
-                        child: Icon(
-                          Icons.menu,
-                          color: Colors.grey,
-                          size: 32,
+                                    // padding: const EdgeInsets.all(0),
+                                    onPressed: () => refreshAccount(account),
+                                    child: const Icon(Icons.refresh)),
+                              ),
+                            ),
+                          Expanded(
+                              child: SizedBox(
+                                  height: 32,
+                                  child: TextButton(
+                                      style: ButtonStyle(
+                                          padding: MaterialStateProperty.all(
+                                              const EdgeInsets.all(0))),
+                                      onPressed: () => deleteAccount(account),
+                                      child: const Icon(Icons.delete))))
+                        ],
+                      )
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Transform.translate(
+                      offset: const Offset(0, 0),
+                      child: const Handle(
+                        delay: Duration(milliseconds: 100),
+                        child: SizedBox(
+                          child: Icon(
+                            Icons.menu,
+                            color: Colors.grey,
+                            size: 32,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                )
-              ],
+                  )
+                ],
+              ),
             ),
           ),
         ),

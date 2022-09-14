@@ -4,9 +4,9 @@
 cd "$(dirname "$0")"
 
 echo "#-----------------------------------------------------------------------" && \
-echo "# Building for Web and copying to ../beatscratch-page/app-staging" && \
+echo "# Building for Web" && \
 echo "#-----------------------------------------------------------------------" && \
-flutter build web --web-renderer canvaskit --release | sed 's/.*/\[Web\] &/' && \
+flutter build web --web-renderer canvaskit --release | sed 's/.*/\[Web\] &/'
 # echo "Copying build..." && \
 # cp -r build/web/* ../beatscratch-page/app-staging && \
 # echo "Web app built to app-staging! Manually copy to prod app and/or deploy to beatscratch.io"

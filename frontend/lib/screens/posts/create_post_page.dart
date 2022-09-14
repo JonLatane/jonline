@@ -44,19 +44,12 @@ class CreatePostPageState extends State<CreatePostPage> {
       }
 
       setState(() {
-        _disableQuickPaste = true;
         _showPreview = value;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        Future.delayed(const Duration(milliseconds: 100), () {
-          _disableQuickPaste = false;
-        });
       });
     }
   }
 
-  String? quickPasteLink;
-  bool get enableQuickPaste => quickPasteLink != null && quickPasteLink != link;
+  bool quickPasteDone = false;
 
   // int counter = 1;
   final FocusNode titleFocus = FocusNode();
@@ -69,14 +62,13 @@ class CreatePostPageState extends State<CreatePostPage> {
   String get title => titleController.value.text;
   String get link => linkController.value.text;
   String get content => contentController.value.text;
-  bool _disableQuickPaste = false;
 
   @override
   void initState() {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
-    homePage.postsCreated.addListener(doCreate);
+    homePage.createPost.addListener(doCreate);
     titleController.addListener(() {
       setState(() {});
       homePage.canCreatePost.value = title.isNotEmpty && !doingCreate;
@@ -87,18 +79,11 @@ class CreatePostPageState extends State<CreatePostPage> {
     linkController.addListener(() {
       setState(() {});
     });
-    linkFocus.addListener(() {
-      if (linkFocus.hasFocus && !_disableQuickPaste) {
-        updateQuickPasteLink();
-      }
-    });
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) async => updateQuickPasteLink());
   }
 
   @override
   dispose() {
-    homePage.postsCreated.removeListener(doCreate);
+    homePage.createPost.removeListener(doCreate);
     titleFocus.dispose();
     titleController.dispose();
     contentFocus.dispose();
@@ -115,19 +100,6 @@ class CreatePostPageState extends State<CreatePostPage> {
       _doingCreate = value;
     });
     homePage.canCreatePost.value = title.isNotEmpty && !value;
-  }
-
-  updateQuickPasteLink() async {
-    final String? text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
-    if (text == null || !text.startsWith("http")) {
-      setState(() {
-        quickPasteLink = null;
-      });
-    } else {
-      setState(() {
-        quickPasteLink = text;
-      });
-    }
   }
 
   doCreate() async {
@@ -392,28 +364,36 @@ class CreatePostPageState extends State<CreatePostPage> {
           ),
           AnimatedContainer(
               duration: animationDuration,
-              // height: 10,
-              width: quickPasteLink != null ? 72 : 0,
+              width: 72,
               child: TextButton(
-                onPressed: enableQuickPaste
-                    ? () {
-                        setState(() {
-                          linkController.text =
-                              quickPasteLink ?? linkController.text;
-                          quickPasteLink = null;
-                          linkFocus.unfocus();
-                        });
-                      }
-                    : null,
+                onPressed: quickPasteDone
+                    ? null
+                    : () async {
+                        final String? text =
+                            (await Clipboard.getData(Clipboard.kTextPlain))
+                                ?.text;
+                        if (text == null || !text.startsWith("http")) {
+                          showSnackBar('No link found in clipboard');
+                        } else {
+                          setState(() {
+                            linkController.text = text;
+                            quickPasteDone = true;
+                          });
+                          Future.delayed(const Duration(seconds: 1), () {
+                            setState(() {
+                              quickPasteDone = false;
+                            });
+                          });
+                        }
+                      },
                 child: Stack(
                   children: [
                     AnimatedOpacity(
-                        opacity: enableQuickPaste ? 1 : 0.5,
+                        opacity: quickPasteDone ? 0.8 : 1,
                         duration: animationDuration,
-                        child: Icon(Icons.paste,
-                            color: enableQuickPaste ? topColor : Colors.white)),
+                        child: Icon(Icons.paste, color: topColor)),
                     AnimatedOpacity(
-                        opacity: quickPasteLink == link ? 0.5 : 0,
+                        opacity: quickPasteDone ? 1 : 0,
                         duration: animationDuration,
                         child: Icon(Icons.check, color: bottomColor)),
                   ],
