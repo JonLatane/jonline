@@ -187,7 +187,7 @@ push_be_release_local: local_registry_create build_be_release_binary build_web_r
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline
 
-push_be_release_cloud: #build_be_release_binary build_web_release
+push_be_release_cloud: build_be_release_binary build_web_release
 	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
 

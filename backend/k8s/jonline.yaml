@@ -43,7 +43,7 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.1.33
+        - image: docker.io/jonlatane/jonline:0.1.34
           name: jonline
           env:
             - name: DATABASE_URL
@@ -92,7 +92,7 @@ spec:
         spec:
           containers:
           - name: jonline-expired-token-cleanup
-            image: docker.io/jonlatane/jonline:0.1.33
+            image: docker.io/jonlatane/jonline:0.1.34
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL
