@@ -152,6 +152,11 @@ pub async fn index() -> std::io::Result<NamedFile> {
         },
     }
 }
+// #[get("/<path..>")]
+// fn redirect(file: PathBuf) -> &'static str {
+//     "Hey, you're here."
+// }
+
 
 fn create_tonic_router(pool: PgPool) -> tonic::transport::server::Router {
     let jonline = JonLineImpl { pool };

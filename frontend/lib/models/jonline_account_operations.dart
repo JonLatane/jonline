@@ -70,4 +70,22 @@ extension JonlineAccountOperations on JonlineAccount {
     refreshToken = newRefreshToken.token;
     await save();
   }
+
+  Future<void> updateServiceVersion({Function(String)? showMessage}) async {
+    String? serviceVersion;
+    try {
+      serviceVersion = (await (await getClient(showMessage: showMessage))
+              ?.getServiceVersion(Empty()))
+          ?.version;
+    } catch (e) {
+      showMessage?.call(formatServerError(e));
+      return;
+    }
+    if (serviceVersion == null) {
+      showMessage?.call('No refresh token received.');
+      return;
+    }
+    this.serviceVersion = serviceVersion;
+    await save();
+  }
 }

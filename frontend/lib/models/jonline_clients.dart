@@ -84,7 +84,7 @@ extension JonlineClients on JonlineAccount {
       } catch (e) {
         showMessage?.call(formatServerError(e));
         print("Failed to connect to $server, allowInsecure=$allowInsecure");
-        throw e;
+        // rethrow;
         return null;
       }
     }

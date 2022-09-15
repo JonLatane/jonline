@@ -179,6 +179,9 @@ class AccountsPageState extends State<AccountsPage> {
   }
 
   refreshAccount(JonlineAccount account) async {
+    await account.updateServiceVersion(showMessage: showSnackBar);
+    showSnackBar('Service version updated.');
+    await communicationDelay;
     await account.updateRefreshToken(showMessage: showSnackBar);
     showSnackBar('Refresh token updated.');
     await communicationDelay;
@@ -263,12 +266,23 @@ class AccountsPageState extends State<AccountsPage> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis),
                                     ),
+                                    if (Settings.powerUserMode)
+                                      if (account.serviceVersion != "")
+                                        Transform.translate(
+                                            offset: const Offset(0, 3),
+                                            child: Text(
+                                              "v${account.serviceVersion}",
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: textTheme.caption,
+                                            )),
                                     if (account.allowInsecure)
                                       Padding(
                                         padding: const EdgeInsets.only(
-                                            left: 8.0, right: 36),
+                                          left: 8.0,
+                                        ),
                                         child: Transform.translate(
-                                            offset: const Offset(0, 5),
+                                            offset: const Offset(0, 4),
                                             child: const Tooltip(
                                               message:
                                                   "The connection is insecure.",
@@ -276,6 +290,7 @@ class AccountsPageState extends State<AccountsPage> {
                                                   Icon(Icons.warning, size: 16),
                                             )),
                                       ),
+                                    const SizedBox(width: 36)
                                   ],
                                 ),
                                 Row(

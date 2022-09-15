@@ -35,6 +35,19 @@ class _SettingsPageState extends State<SettingsPage>
             children: [
               Row(
                 children: [
+                  const Expanded(child: Text("Power User Mode")),
+                  Switch(
+                      value: Settings.powerUserMode,
+                      onChanged: (v) {
+                        setState(() => Settings.powerUserMode = v);
+                        context
+                            .findRootAncestorStateOfType<AppState>()!
+                            .updateAccountDependents();
+                      }),
+                ],
+              ),
+              Row(
+                children: [
                   const Expanded(child: Text("Developer Mode")),
                   Switch(
                       value: Settings.developerMode,

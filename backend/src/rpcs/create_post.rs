@@ -1,6 +1,5 @@
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
-use webscreenshotlib::{screenshot_tab, OutputFormat};
 
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
@@ -15,7 +14,10 @@ pub fn create_post(
     user: models::User,
     conn: &PgPooledConnection,
 ) -> Result<Response<Post>, Status> {
-    println!("CreatePost called for user {}, user_id={}", &user.username, user.id);
+    println!(
+        "CreatePost called for user {}, user_id={}",
+        &user.username, user.id
+    );
     let req = request.into_inner();
     match req.title.to_owned() {
         None => (),
@@ -43,64 +45,46 @@ pub fn create_post(
         Some(parent_id) => posts.select(title).find(parent_id).first(conn).ok(),
     };
 
-    let post_title: String = parent_post_title.or(req.title.to_owned()).ok_or(
-        Status::new(Code::Internal, "title_or_reply_to_post_id_required"
-    ))?;
+    let post_title: String = parent_post_title
+        .or(req.title.to_owned())
+        .ok_or(Status::new(
+            Code::Internal,
+            "title_or_reply_to_post_id_required",
+        ))?;
 
+    let post = conn.transaction::<models::Post, diesel::result::Error, _>(|| {
+        let inserted_post = insert_into(posts)
+            .values(&models::NewPost {
+                user_id: Some(user.id),
+                parent_post_id: parent_post_db_id,
+                title: post_title,
+                link: req.link.to_owned(),
+                content: req.content.to_owned(),
+                published: true,
+                preview: None,
+            })
+            .get_result::<models::Post>(conn)?;
+        match parent_post_db_id {
+            Some(parent_post_db_id) => match update(posts)
+                .filter(parent_post_id.eq(Some(parent_post_db_id)))
+                .set(reply_count.eq(reply_count + 1))
+                .execute(conn)?
+            {
+                // This error should be impossible given that the
+                // above insert would hit a foreign key constraint.
+                0 => Err(diesel::result::Error::NotFound),
+                _ => Ok(()),
+            }?,
+            None => (),
+        }
+        Ok(inserted_post)
+    });
 
-    let generated_preview = match req.link.to_owned() {
-        Some(req_link) => {
-            println!("Generating screenshot for link {}", req_link);
-            match screenshot_tab(&req_link, OutputFormat::PNG, 100, true, 350, 350, ""){
-                Ok(screenshot) => {
-                    println!("Generated screenshot for link {}! {} bytes", req_link, screenshot.len());
-                    Some(screenshot)
-                },
-                Err(e) => {
-                    println!("Failed to generate screenshot for link {}: {}", req_link, e);
-                    None
-                }
-            }
-        },
-        None => None,
-    };
-
-    let result =
-        conn.transaction::<Response<Post>, diesel::result::Error, _>(|| {
-            let inserted_post =
-                insert_into(posts)
-                    .values(&models::NewPost {
-                        user_id: Some(user.id),
-                        parent_post_id: parent_post_db_id,
-                        title: post_title,
-                        link: req.link.to_owned(),
-                        content: req.content.to_owned(),
-                        published: true,
-                        preview: generated_preview,
-                    })
-                    .get_results::<models::Post>(conn)?[0]
-                    .to_proto(Some(user.username));
-            match parent_post_db_id {
-                Some(parent_post_db_id) => match update(posts)
-                    .filter(parent_post_id.eq(Some(parent_post_db_id)))
-                    .set(reply_count.eq(reply_count + 1))
-                    .execute(conn)?
-                {
-                    // This error should be impossible given that the
-                    // above insert would hit a foreign key constraint.
-                    0 => Err(diesel::result::Error::NotFound),
-                    _ => Ok(()),
-                }?,
-                None => (),
-            }
-            Ok(Response::new(inserted_post))
-        });
-
-    match result {
-        Ok(response) => {
-            println!("Post created!");
-            Ok(response)
-        },
+    match post {
+        Ok(post) => {
+            println!("Post created! Result: {:?}", post);
+            Ok(Response::new(post.to_proto(Some(user.username))))
+        }
         Err(_) => Err(Status::new(Code::Internal, "internal_error")),
     }
 }

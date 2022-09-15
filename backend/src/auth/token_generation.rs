@@ -34,7 +34,7 @@ pub fn generate_auth_and_refresh_token(
         .map(SystemTime::try_from)
         .map(|x| x.ok())
         .flatten();
-    let (auth_token_id, expiration_result): (i32, Option<SystemTime>) =
+    let (auth_token_id, expires_at): (i32, Option<SystemTime>) =
         insert_into(user_auth_tokens::user_auth_tokens)
             .values((
                 user_auth_tokens::user_id.eq(user_id),
@@ -44,16 +44,16 @@ pub fn generate_auth_and_refresh_token(
             .returning((user_auth_tokens::id, user_auth_tokens::expires_at))
             .get_result::<(i32, Option<SystemTime>)>(conn)
             .unwrap();
-    let auth_token_result = ExpirableToken {
+    let auth_exp_token = ExpirableToken {
         token: auth_token.to_owned(),
-        expires_at: expiration_result.map(Timestamp::from),
+        expires_at: expires_at.map(Timestamp::from),
     };
     println!("Generated auth token for user_id={}", user_id);
 
-    let refresh_token_result = generate_refresh_token(auth_token_id, conn);
+    let refresh_exp_token = generate_refresh_token(auth_token_id, conn);
     AuthTokenResponse {
-        auth_token: Some(auth_token_result),
-        refresh_token: Some(refresh_token_result),
+        auth_token: Some(auth_exp_token),
+        refresh_token: Some(refresh_exp_token),
         user: None,
     }
 }
@@ -68,7 +68,7 @@ pub fn generate_refresh_token(auth_token_id: i32, conn: &PgPooledConnection) -> 
         .returning(user_refresh_tokens::expires_at)
         .get_result::<SystemTime>(conn)
         .unwrap();
-    println!("Generated ref token for auth_token_id={}", auth_token_id);
+    println!("Generated refresh token for auth_token_id={}", auth_token_id);
     ExpirableToken {
         token: refresh_token.to_owned(),
         expires_at: Some(Timestamp::from(expires_at)),

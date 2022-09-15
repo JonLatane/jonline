@@ -28,6 +28,7 @@ class JonlineAccount {
   final String id;
   final String server;
   final String authorizationToken;
+  String serviceVersion;
   String userId;
   String refreshToken;
   String username;
@@ -37,7 +38,8 @@ class JonlineAccount {
       this.server, this.authorizationToken, this.refreshToken, this.username,
       {this.allowInsecure = false})
       : id = uuid.v4(),
-        userId = "";
+        userId = "",
+        serviceVersion = "";
 
   JonlineAccount.fromJson(Map<String, dynamic> json)
       : id = json['id'],
@@ -46,7 +48,8 @@ class JonlineAccount {
         server = json['server'],
         authorizationToken = json['authorizationToken'],
         refreshToken = json['refreshToken'],
-        allowInsecure = json['allowInsecure'];
+        allowInsecure = json['allowInsecure'],
+        serviceVersion = json['serviceVersion'] ?? "";
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -56,6 +59,7 @@ class JonlineAccount {
         'authorizationToken': authorizationToken,
         'refreshToken': refreshToken,
         'allowInsecure': allowInsecure,
+        'serviceVersion': serviceVersion,
       };
 
   Future<void> save() async {

@@ -181,7 +181,9 @@ build_be_release_binary: backend/target/release/jonline__server_release
 backend/target/release/jonline__server_release: push_builder_local
 	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-be-build:latest /bin/bash -c "cargo build --release"
 	mv backend/target/release/jonline backend/target/release/jonline__server_release
-	mv backend/target/release/expired_token_cleanup backend/target/release/expired_token_cleanup__server_release
+	mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release
+	mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release
+	mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release
 
 push_be_release_local: local_registry_create build_be_release_binary build_web_release
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile

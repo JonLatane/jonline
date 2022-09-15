@@ -10,10 +10,11 @@ use crate::schema;
 // use super::validations::*;
 
 pub fn get_posts(
-    _request: Request<GetPostsRequest>,
+    request: Request<GetPostsRequest>,
     _user: Option<models::User>,
     conn: &PgPooledConnection,
 ) -> Result<Response<Posts>, Status> {
+    println!("GetPosts called");
     let db_posts: Vec<(models::Post, Option<String>)> = schema::posts::table
         .left_join(schema::users::table.on(schema::posts::user_id.eq(schema::users::id.nullable())))
         .select((
@@ -29,5 +30,6 @@ pub fn get_posts(
         .iter()
         .map(|(post, username)| post.to_proto(username.to_owned()))
         .collect();
+    println!("GetPosts::request: {:?}, result: {:?}", request.into_inner(), proto_posts);
     Ok(Response::new(Posts { posts: proto_posts }))
 }

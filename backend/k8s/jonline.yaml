@@ -43,11 +43,13 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.1.38
+        - image: docker.io/jonlatane/jonline:0.1.58
           name: jonline
           env:
             - name: DATABASE_URL
               value: postgres://admin:secure_password1@jonline-postgres/jonline
+            - name: RUST_BACKTRACE
+              value: full
             - name: TLS_KEY
               valueFrom:
                 secretKeyRef:
@@ -83,20 +85,48 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: jonline-expired-token-cleanup
+  name: delete-expired-tokens
 spec:
-  schedule: "0 0 * * *"
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
         spec:
           containers:
-          - name: jonline-expired-token-cleanup
-            image: docker.io/jonlatane/jonline:0.1.38
+          - name: delete-expired-tokens
+            image: docker.io/jonlatane/jonline:0.1.58
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL
                 value: postgres://admin:secure_password1@jonline-postgres/jonline
             command:
-            - /opt/jonline_refresh_token_cleanup
+            - /opt/delete_expired_tokens
+          restartPolicy: Never
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: generate-preview-images
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: generate-preview-images
+            image: docker.io/jonlatane/jonline:0.1.58
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: DATABASE_URL
+                value: postgres://admin:secure_password1@jonline-postgres/jonline
+              - name: RUST_BACKTRACE
+                value: full
+              - name: RUST_LOG
+                value: headless_chrome=trace
+            command:
+            - /opt/generate_preview_images
           restartPolicy: Never

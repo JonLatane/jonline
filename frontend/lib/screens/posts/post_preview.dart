@@ -1,4 +1,5 @@
 import 'package:any_link_preview/any_link_preview.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:jonline/app_state.dart';
@@ -32,6 +33,7 @@ class PostPreviewState extends State<PostPreview> {
       : widget.post.link.startsWith(RegExp(r'https?://'))
           ? widget.post.link
           : 'http://${widget.post.link}';
+  List<int>? get previewImage => widget.post.previewImage;
   String? get content =>
       widget.post.content.isEmpty ? null : widget.post.content;
   String? get username =>
@@ -99,11 +101,83 @@ class PostPreviewState extends State<PostPreview> {
                                 Container(
                                   height: 8,
                                 ),
-                              if (link != null)
+                              if (previewImage != null &&
+                                  previewImage!.isNotEmpty &&
+                                  link != null)
+                                Tooltip(
+                                  message: link!,
+                                  child: SizedBox(
+                                    height: 250,
+                                    child: Stack(
+                                      children: [
+                                        Opacity(
+                                          opacity: 0.8,
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Image.memory(
+                                                    Uint8List.fromList(
+                                                      previewImage!,
+                                                    ),
+                                                    fit: BoxFit.fitWidth,
+                                                    alignment:
+                                                        Alignment.topLeft),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        InkWell(
+                                            onTap: () =>
+                                                launchUrl(Uri.parse(link!)),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                    .symmetric(
+                                                                vertical: 4,
+                                                                horizontal: 8),
+                                                        color: Colors.black
+                                                            .withOpacity(0.8),
+                                                        child: Text(
+                                                          link!,
+                                                          maxLines: 2,
+                                                          textAlign:
+                                                              TextAlign.end,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style: Theme.of(
+                                                                  context)
+                                                              .textTheme
+                                                              .caption!
+                                                              .copyWith(
+                                                                  color:
+                                                                      topColor),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ))
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              if (link != null &&
+                                  previewImage?.isNotEmpty != true)
                                 // Column(
                                 //   children: [
                                 //     if (widget.post.previewImage.isNotEmpty)
-                                //       const Text("Previw available"),
+                                //       const Text(
+                                //           "Post preview image available [todo for devs]!"),
                                 //     Tooltip(
                                 //       message: link!,
                                 //       child: AnyLinkPreview(
@@ -192,6 +266,7 @@ class PostPreviewState extends State<PostPreview> {
                                     showGraphic: true,
                                   ),
                                 ),
+
                               // LinkPreview(
                               //   key: ValueKey(link!),
                               //   enableAnimation: true,
