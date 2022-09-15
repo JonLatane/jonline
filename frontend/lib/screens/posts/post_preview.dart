@@ -100,95 +100,98 @@ class PostPreviewState extends State<PostPreview> {
                                   height: 8,
                                 ),
                               if (link != null)
-                                Column(
-                                  children: [
-                                    if (widget.post.previewImage.isNotEmpty)
-                                      const Text("Previw available"),
-                                    Tooltip(
-                                      message: link!,
-                                      child: AnyLinkPreview(
-                                        link: link!,
-                                        displayDirection:
-                                            UIDirection.uiDirectionHorizontal,
-                                        showMultimedia: true,
-                                        bodyMaxLines: 5,
-                                        bodyTextOverflow: TextOverflow.ellipsis,
-                                        titleStyle: const TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                        ),
-                                        bodyStyle: const TextStyle(
-                                            color: Colors.grey, fontSize: 12),
-                                        errorWidget: Container(
-                                          // color: Colors.transparent,
-                                          child: InkWell(
-                                            onTap: () {
-                                              try {
-                                                launchUrl(Uri.parse(link!));
-                                              } catch (e) {}
-                                            },
-                                            child: Container(
-                                              color:
-                                                  bottomColor.withOpacity(0.5),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 32,
-                                                      horizontal: 16),
-                                              child: Column(
-                                                children: [
-                                                  Row(
-                                                    children: const [
-                                                      Expanded(
-                                                          child: Text(
-                                                              'Preview unavailable 😔')),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Row(
-                                                    children: [
-                                                      Expanded(
-                                                          child: Text(
-                                                        link!,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .labelLarge!
-                                                            .copyWith(
-                                                                color:
-                                                                    topColor),
-                                                      )),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        // errorImage: "https://google.com/",
-                                        cache: const Duration(days: 7),
-                                        backgroundColor: Colors.grey[300],
-                                        borderRadius: 12,
-                                        removeElevation: false,
-                                        boxShadow: const [
-                                          BoxShadow(
-                                              blurRadius: 3, color: Colors.grey)
-                                        ],
-                                        // onTap: () {}, // This disables tap event
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                // Column(
+                                //   children: [
+                                //     if (widget.post.previewImage.isNotEmpty)
+                                //       const Text("Previw available"),
+                                //     Tooltip(
+                                //       message: link!,
+                                //       child: AnyLinkPreview(
+                                //         link: link!,
+                                //         displayDirection:
+                                //             UIDirection.uiDirectionHorizontal,
+                                //         showMultimedia: true,
+                                //         bodyMaxLines: 5,
+                                //         bodyTextOverflow: TextOverflow.ellipsis,
+                                //         titleStyle: const TextStyle(
+                                //           color: Colors.black,
+                                //           fontWeight: FontWeight.bold,
+                                //           fontSize: 15,
+                                //         ),
+                                //         bodyStyle: const TextStyle(
+                                //             color: Colors.grey, fontSize: 12),
+                                //         errorWidget: Container(
+                                //           // color: Colors.transparent,
+                                //           child: InkWell(
+                                //             onTap: () {
+                                //               try {
+                                //                 launchUrl(Uri.parse(link!));
+                                //               } catch (e) {}
+                                //             },
+                                //             child: Container(
+                                //               color:
+                                //                   bottomColor.withOpacity(0.5),
+                                //               padding:
+                                //                   const EdgeInsets.symmetric(
+                                //                       vertical: 32,
+                                //                       horizontal: 16),
+                                //               child: Column(
+                                //                 children: [
+                                //                   Row(
+                                //                     children: const [
+                                //                       Expanded(
+                                //                           child: Text(
+                                //                               'Preview unavailable 😔')),
+                                //                     ],
+                                //                   ),
+                                //                   const SizedBox(height: 8),
+                                //                   Row(
+                                //                     children: [
+                                //                       Expanded(
+                                //                           child: Text(
+                                //                         link!,
+                                //                         style: Theme.of(context)
+                                //                             .textTheme
+                                //                             .labelLarge!
+                                //                             .copyWith(
+                                //                                 color:
+                                //                                     topColor),
+                                //                       )),
+                                //                     ],
+                                //                   ),
+                                //                 ],
+                                //               ),
+                                //             ),
+                                //           ),
+                                //         ),
+                                //         // errorImage: "https://google.com/",
+                                //         cache: const Duration(days: 7),
+                                //         backgroundColor: Colors.grey[300],
+                                //         borderRadius: 12,
+                                //         removeElevation: false,
+                                //         boxShadow: const [
+                                //           BoxShadow(
+                                //               blurRadius: 3, color: Colors.grey)
+                                //         ],
+                                //         // onTap: () {}, // This disables tap event
+                                //       ),
+                                //     ),
+                                //   ],
+                                // ),
 
-                              // LinkPreviewGenerator(
-                              //   key: ValueKey(link),
-                              //   bodyMaxLines: 3,
-                              //   link: link!,
-                              //   linkPreviewStyle: content != null
-                              //       ? LinkPreviewStyle.small
-                              //       : LinkPreviewStyle.large,
-                              //   errorBody: '',
-                              //   showGraphic: true,
-                              // ),
+                                Tooltip(
+                                  message: link!,
+                                  child: LinkPreviewGenerator(
+                                    key: ValueKey(link),
+                                    bodyMaxLines: 3,
+                                    link: link!,
+                                    linkPreviewStyle: content != null
+                                        ? LinkPreviewStyle.small
+                                        : LinkPreviewStyle.large,
+                                    errorBody: '',
+                                    showGraphic: true,
+                                  ),
+                                ),
                               // LinkPreview(
                               //   key: ValueKey(link!),
                               //   enableAnimation: true,

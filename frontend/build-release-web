@@ -14,4 +14,3 @@ flutter build web --web-renderer html --release | sed 's/.*/\[Web\] &/'
 # echo "Copying build..." && \
 # cp -r build/web/* ../beatscratch-page/app-staging-skia && \
 # echo "Web app built to app-staging with FLUTTER_WEB_USE_SKIA=true! Manually copy to prod app and/or deploy to beatscratch.io"
-

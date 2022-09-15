@@ -15,6 +15,7 @@ pub fn create_post(
     user: models::User,
     conn: &PgPooledConnection,
 ) -> Result<Response<Post>, Status> {
+    println!("CreatePost called for user {}, user_id={}", &user.username, user.id);
     let req = request.into_inner();
     match req.title.to_owned() {
         None => (),
@@ -48,15 +49,18 @@ pub fn create_post(
 
 
     let generated_preview = match req.link.to_owned() {
-        Some(req_link) => match screenshot_tab(&req_link, OutputFormat::PNG, 100, true, 350, 350, ""){
-            Ok(screenshot) => {
-                println!("Generated screenshot, {} bytes", screenshot.len());
-                Some(screenshot)
-            },
-            Err(e) => {
-                println!("Failed to generate screensho: {}", e);
-                None
-            },
+        Some(req_link) => {
+            println!("Generating screenshot for link {}", req_link);
+            match screenshot_tab(&req_link, OutputFormat::PNG, 100, true, 350, 350, ""){
+                Ok(screenshot) => {
+                    println!("Generated screenshot for link {}! {} bytes", req_link, screenshot.len());
+                    Some(screenshot)
+                },
+                Err(e) => {
+                    println!("Failed to generate screenshot for link {}: {}", req_link, e);
+                    None
+                }
+            }
         },
         None => None,
     };
@@ -93,7 +97,10 @@ pub fn create_post(
         });
 
     match result {
-        Ok(response) => Ok(response),
+        Ok(response) => {
+            println!("Post created!");
+            Ok(response)
+        },
         Err(_) => Err(Status::new(Code::Internal, "internal_error")),
     }
 }
