@@ -4,6 +4,6 @@ import 'package:grpc/grpc_web.dart';
 
 ClientChannelBase createJonlineChannel(
     String server, ChannelCredentials credentials) {
-  return GrpcWebClientChannel.xhr(Uri.parse(
-      "http${credentials.isSecure ? 's' : ''}://jonline.$server:27707"));
+  return GrpcWebClientChannel.xhr(
+      Uri.parse("http${credentials.isSecure ? 's' : ''}://$server:27707"));
 }

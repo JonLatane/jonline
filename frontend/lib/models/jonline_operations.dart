@@ -19,6 +19,7 @@ extension JonlineOperations on JonlineAccount {
       showMessage?.call("Error: No client");
       return null;
     }
+    await communicationDelay;
     // showMessage?.call("Loading posts...");
     final Posts posts;
     try {

@@ -43,6 +43,7 @@ message Post {
   optional string content = 7;
   int32 reply_count = 8;
   optional string reply_to_post_id = 9;
+  optional bytes preview_image = 10;
 
   message Author {
     string user_id = 1;

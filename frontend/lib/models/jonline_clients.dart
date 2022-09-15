@@ -1,5 +1,6 @@
 import 'package:grpc/grpc.dart';
 import 'package:grpc/grpc_connection_interface.dart';
+import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/google/protobuf/empty.pb.dart';
 import 'package:jonline/generated/jonline.pbgrpc.dart';
 import 'package:jonline/models/jonline_account.dart';
@@ -24,9 +25,11 @@ extension JonlineClients on JonlineAccount {
       serviceVersion = (await client.getServiceVersion(Empty())).version;
     } catch (e) {
       showMessage?.call("Failed to connect to \"$server\" securely!");
+      client = null;
     }
 
     if (allowInsecure && serviceVersion == null) {
+      await communicationDelay;
       try {
         showMessage?.call("Trying to connect to \"$server\" insecurely...");
         client = createClient(server, const ChannelCredentials.insecure());
@@ -61,33 +64,30 @@ extension JonlineClients on JonlineAccount {
   static Future<JonlineClient?> getSelectedClient(
       {Function(String)? showMessage}) async {
     if (JonlineAccount.selectedAccount == null) return null;
-    return await JonlineAccount.selectedAccount!
-        .getClient(showMessage: showMessage);
+    return await JonlineAccount.selectedAccount
+        ?.getClient(showMessage: showMessage);
   }
 
+  // Gets authenticated call headers for this account.
   CallOptions get authenticatedCallOptions =>
       CallOptions(metadata: {'authorization': refreshToken});
 
-  Future<JonlineClient?> getClient(
-      {Function(String)? showMessage, bool allowInsecure = false}) async {
+  // Gets a JonlineClient for the server for this account.
+  Future<JonlineClient?> getClient({Function(String)? showMessage}) async {
     if (_clients.containsKey(id)) {
       return _clients[id];
     } else {
       try {
-        _clients[id] = (await _createClient(
+        _clients[id] = (await createAndTestClient(server,
             showMessage: showMessage, allowInsecure: allowInsecure))!;
         return _clients[id];
       } catch (e) {
         showMessage?.call(formatServerError(e));
+        print("Failed to connect to $server, allowInsecure=$allowInsecure");
+        throw e;
         return null;
       }
     }
-  }
-
-  Future<JonlineClient?> _createClient(
-      {Function(String)? showMessage, bool allowInsecure = false}) async {
-    return await createAndTestClient(server,
-        showMessage: showMessage, allowInsecure: allowInsecure);
   }
 }
 

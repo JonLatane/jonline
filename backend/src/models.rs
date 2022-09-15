@@ -27,7 +27,8 @@ pub struct Post {
     pub published: bool,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
-    pub reply_count: i32
+    pub reply_count: i32,
+    pub preview: Option<Vec<u8>>
 }
 
 #[derive(Debug, Insertable)]
@@ -38,5 +39,6 @@ pub struct NewPost {
     pub title: String,
     pub link: Option<String>,
     pub content: Option<String>,
-    pub published: bool
+    pub published: bool,
+    pub preview: Option<Vec<u8>>
 }

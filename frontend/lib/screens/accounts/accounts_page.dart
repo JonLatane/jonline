@@ -257,10 +257,25 @@ class AccountsPageState extends State<AccountsPage> {
                               children: [
                                 Row(
                                   children: [
-                                    Text('${account.server}/',
-                                        style: textTheme.caption,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis),
+                                    Expanded(
+                                      child: Text('${account.server}/',
+                                          style: textTheme.caption,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                    ),
+                                    if (account.allowInsecure)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: 8.0, right: 36),
+                                        child: Transform.translate(
+                                            offset: const Offset(0, 5),
+                                            child: const Tooltip(
+                                              message:
+                                                  "The connection is insecure.",
+                                              child:
+                                                  Icon(Icons.warning, size: 16),
+                                            )),
+                                      ),
                                   ],
                                 ),
                                 Row(

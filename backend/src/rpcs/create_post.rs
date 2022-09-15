@@ -1,5 +1,6 @@
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
+use webscreenshotlib::{screenshot_tab, OutputFormat};
 
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
@@ -45,6 +46,21 @@ pub fn create_post(
         Status::new(Code::Internal, "title_or_reply_to_post_id_required"
     ))?;
 
+
+    let generated_preview = match req.link.to_owned() {
+        Some(req_link) => match screenshot_tab(&req_link, OutputFormat::PNG, 100, true, 350, 350, ""){
+            Ok(screenshot) => {
+                println!("Generated screenshot, {} bytes", screenshot.len());
+                Some(screenshot)
+            },
+            Err(e) => {
+                println!("Failed to generate screensho: {}", e);
+                None
+            },
+        },
+        None => None,
+    };
+
     let result =
         conn.transaction::<Response<Post>, diesel::result::Error, _>(|| {
             let inserted_post =
@@ -56,6 +72,7 @@ pub fn create_post(
                         link: req.link.to_owned(),
                         content: req.content.to_owned(),
                         published: true,
+                        preview: generated_preview,
                     })
                     .get_results::<models::Post>(conn)?[0]
                     .to_proto(Some(user.username));

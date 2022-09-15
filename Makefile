@@ -3,8 +3,7 @@
 
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
-TOP_LEVEL_CERT_DOMAIN ?= jonline.io
-GENERATED_CERT_DOMAIN ?= *.$(TOP_LEVEL_CERT_DOMAIN)
+CERT_MANAGER_DOMAIN ?= jonline.io
 TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
 CERT_MANAGER_EMAIL ?= invalid_email
 
@@ -97,17 +96,18 @@ deploy_be_get_certs:
 deploy_be_get_ca_certs:
 	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
 
-# Cert-Manager targets
+# Cert-Manager targets: These all require the K8s YAML 
+deploy_certmanager_digitalocean_clean:
+	rm backend/k8s/cert-manager.digitalocean.generated.yaml
 deploy_certmanager_digitalocean_prepare: backend/k8s/cert-manager.digitalocean.generated.yaml
 backend/k8s/cert-manager.digitalocean.generated.yaml:
 	cat backend/k8s/cert-manager.digitalocean.template.yaml | \
 	  sed 's/$${CERT_MANAGER_EMAIL}/$(CERT_MANAGER_EMAIL)/g' | \
-	  sed 's/$${TOP_LEVEL_CERT_DOMAIN}/$(TOP_LEVEL_CERT_DOMAIN)/g' | \
-	  sed 's/$${GENERATED_CERT_DOMAIN}/$(GENERATED_CERT_DOMAIN)/g' \
+	  sed 's/$${CERT_MANAGER_DOMAIN}/$(CERT_MANAGER_DOMAIN)/g' \
 	  > backend/k8s/cert-manager.digitalocean.generated.yaml
 
-deploy_certmanager_digitalocean_create: deploy_ensure_namespace
-	kubectl create -f backend/k8s/cert-manager.digitalocean.generated.yaml --save-config -n $(NAMESPACE)
+deploy_certmanager_digitalocean_apply: deploy_ensure_namespace
+	kubectl apply -f backend/k8s/cert-manager.digitalocean.generated.yaml -n $(NAMESPACE)
 
 # Custom CA certificate generation targets
 certs_generate: certs_ca_generate certs_server_generate
@@ -118,7 +118,7 @@ certs_ca_generate:
 	          -sha256 -days 365 \
 	          -nodes \
 	          -newkey rsa:2048 \
-	          -subj '/CN=$(GENERATED_CERT_DOMAIN)/C=US/L=Durham' \
+	          -subj '/CN=$(CERT_MANAGER_DOMAIN)/C=US/L=Durham' \
 	          -keyout generated_certs/ca.key -out generated_certs/ca.pem 
 
 certs_server_generate:

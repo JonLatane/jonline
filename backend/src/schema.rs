@@ -37,6 +37,7 @@ table! {
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
         reply_count -> Int4,
+        preview -> Nullable<Bytea>,
     }
 }
 

@@ -13,8 +13,7 @@ extension JonlineAccountFactories on JonlineAccount {
     JonlineClient? client = await JonlineClients.createAndTestClient(server,
         showMessage: showMessage, allowInsecure: allowInsecure);
     if (client == null) return null;
-    await Future.delayed(const Duration(seconds: 1));
-    showMessage("Connected to $server! Logging in...");
+    await communicationDelay;
 
     AuthTokenResponse authResponse;
     try {
@@ -44,7 +43,7 @@ extension JonlineAccountFactories on JonlineAccount {
     JonlineClient? client = await JonlineClients.createAndTestClient(server,
         showMessage: showMessage, allowInsecure: allowInsecure);
     if (client == null) return null;
-    await Future.delayed(const Duration(seconds: 1));
+    await communicationDelay;
     showMessage("Connected to $server! Creating account...");
     AuthTokenResponse authResponse;
     try {

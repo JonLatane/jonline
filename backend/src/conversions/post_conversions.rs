@@ -20,7 +20,8 @@ impl ToProtoPost for models::Post {
             }),
             updated_at: None,
             author: self.proto_author(username),
-            reply_count: self.reply_count
+            reply_count: self.reply_count,
+            preview_image: self.preview.to_owned(),
         }
     }
     fn proto_author(&self, username: Option<String>) -> Option<post::Author> {

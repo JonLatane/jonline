@@ -11,7 +11,7 @@ spec:
     solvers:
     - selector:
         dnsZones:
-          - "${TOP_LEVEL_CERT_DOMAIN}"
+          - "${CERT_MANAGER_DOMAIN}"
       dns01:
         digitalocean:
           tokenSecretRef:
@@ -27,6 +27,7 @@ spec:
   issuerRef: 
     kind: Issuer
     name: letsencrypt-prod
-  commonName: "${GENERATED_CERT_DOMAIN}"
+  commonName: "${CERT_MANAGER_DOMAIN}"
   dnsNames:
-    - "${GENERATED_CERT_DOMAIN}"
+    - "${CERT_MANAGER_DOMAIN}"
+    - "*.${CERT_MANAGER_DOMAIN}"

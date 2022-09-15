@@ -40,7 +40,7 @@ extension JonlineAccountOperations on JonlineAccount {
       return null;
     }
     if (user == null) {
-      showMessage?.call('No user data received.');
+      // showMessage?.call('No user data received.');
     }
     return user;
   }

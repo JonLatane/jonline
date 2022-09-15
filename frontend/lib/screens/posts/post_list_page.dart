@@ -90,6 +90,7 @@ class PostListScreenState extends State<PostListScreen>
             ),
             child: useList
                 ? ImplicitlyAnimatedList<Post>(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     controller: scrollController,
                     // controller: PrimaryScrollController.of(context),
                     // The current items in the list.
@@ -116,6 +117,7 @@ class PostListScreenState extends State<PostListScreen>
                     },
                   )
                 : MasonryGridView.count(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     controller: scrollController,
                     crossAxisCount: max(
                         2,

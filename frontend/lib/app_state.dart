@@ -14,8 +14,8 @@ import 'models/settings.dart';
 const defaultServer = 'jonline.io';
 const noOne = 'no one';
 const animationDuration = Duration(milliseconds: 300);
-const communicationDuration = Duration(milliseconds: 500);
-final communicationDelay = Future.delayed(communicationDuration);
+const communicationDuration = Duration(milliseconds: 1000);
+get communicationDelay => Future.delayed(communicationDuration);
 Color topColor = const Color(0xFF2E86AB);
 Color bottomColor = const Color(0xFFA23B72);
 

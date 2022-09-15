@@ -4,7 +4,7 @@ import 'package:grpc/grpc_connection_interface.dart';
 ClientChannelBase createJonlineChannel(
     String server, ChannelCredentials credentials) {
   return ClientChannel(
-    "jonline.$server",
+    server,
     port: 27707,
     options: ChannelOptions(credentials: credentials),
   );

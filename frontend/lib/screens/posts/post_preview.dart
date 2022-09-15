@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:jonline/app_state.dart';
 import 'package:jonline/generated/posts.pb.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -99,35 +100,83 @@ class PostPreviewState extends State<PostPreview> {
                                   height: 8,
                                 ),
                               if (link != null)
-                                AnyLinkPreview(
-                                  link: link!,
-                                  displayDirection:
-                                      UIDirection.uiDirectionHorizontal,
-                                  showMultimedia: true,
-                                  bodyMaxLines: 5,
-                                  bodyTextOverflow: TextOverflow.ellipsis,
-                                  titleStyle: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                  bodyStyle: const TextStyle(
-                                      color: Colors.grey, fontSize: 12),
-                                  errorBody: 'Show my custom error body',
-                                  errorTitle: 'Show my custom error title',
-                                  errorWidget: Container(
-                                    color: Colors.grey[300],
-                                    child: const Text('Oops!'),
-                                  ),
-                                  // errorImage: "https://google.com/",
-                                  cache: const Duration(days: 7),
-                                  backgroundColor: Colors.grey[300],
-                                  borderRadius: 12,
-                                  removeElevation: false,
-                                  boxShadow: const [
-                                    BoxShadow(blurRadius: 3, color: Colors.grey)
+                                Column(
+                                  children: [
+                                    if (widget.post.previewImage.isNotEmpty)
+                                      const Text("Previw available"),
+                                    Tooltip(
+                                      message: link!,
+                                      child: AnyLinkPreview(
+                                        link: link!,
+                                        displayDirection:
+                                            UIDirection.uiDirectionHorizontal,
+                                        showMultimedia: true,
+                                        bodyMaxLines: 5,
+                                        bodyTextOverflow: TextOverflow.ellipsis,
+                                        titleStyle: const TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                        bodyStyle: const TextStyle(
+                                            color: Colors.grey, fontSize: 12),
+                                        errorWidget: Container(
+                                          // color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () {
+                                              try {
+                                                launchUrl(Uri.parse(link!));
+                                              } catch (e) {}
+                                            },
+                                            child: Container(
+                                              color:
+                                                  bottomColor.withOpacity(0.5),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 32,
+                                                      horizontal: 16),
+                                              child: Column(
+                                                children: [
+                                                  Row(
+                                                    children: const [
+                                                      Expanded(
+                                                          child: Text(
+                                                              'Preview unavailable 😔')),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                          child: Text(
+                                                        link!,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .labelLarge!
+                                                            .copyWith(
+                                                                color:
+                                                                    topColor),
+                                                      )),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        // errorImage: "https://google.com/",
+                                        cache: const Duration(days: 7),
+                                        backgroundColor: Colors.grey[300],
+                                        borderRadius: 12,
+                                        removeElevation: false,
+                                        boxShadow: const [
+                                          BoxShadow(
+                                              blurRadius: 3, color: Colors.grey)
+                                        ],
+                                        // onTap: () {}, // This disables tap event
+                                      ),
+                                    ),
                                   ],
-                                  // onTap: (){}, // This disables tap event
                                 ),
 
                               // LinkPreviewGenerator(
