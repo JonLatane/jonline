@@ -1,6 +1,9 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:jonline/models/jonline_operations.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -36,7 +39,7 @@ class PostPreviewState extends State<PostPreview> {
       : widget.post.link.startsWith(RegExp(r'https?://'))
           ? widget.post.link
           : 'http://${widget.post.link}';
-  List<int>? get previewImage => widget.post.previewImage;
+  List<int>? previewImage;
   String? get content =>
       widget.post.content.isEmpty ? null : widget.post.content;
   String? get username =>
@@ -58,15 +61,21 @@ class PostPreviewState extends State<PostPreview> {
 
   fetchServerPreview() async {
     if (_hasFetchedServerPreview) return;
-    // _hasFetchedServerPreview = true;
-    // LinkPreviewGenerator.generatePreview(link!).then((preview) {
-    //   if (preview == null) return;
-    //   setState(() {
-    //     widget.post.title = preview.title;
-    //     widget.post.previewImage = preview.image;
-    //     widget.post.content = preview.description;
-    //   });
-    // });
+
+    final previewData = (await JonlineOperations.getSelectedPosts(
+            request: GetPostsRequest(postId: widget.post.id),
+            showMessage: showSnackBar))
+        ?.posts
+        .firstOrNull
+        ?.previewImage;
+    if (previewData != null && previewData.isNotEmpty) {
+      setState(() {
+        previewImage = previewData;
+      });
+    }
+    setState(() {
+      _hasFetchedServerPreview = true;
+    });
   }
 
   @override
@@ -115,10 +124,10 @@ class PostPreviewState extends State<PostPreview> {
                                 ),
                               if (link != null &&
                                   (!Settings.preferServerPreviews ||
-                                      previewImage?.isNotEmpty != true))
+                                      previewImage == null))
                                 buildLocallyGeneratedPreview(context),
                               if (Settings.preferServerPreviews &&
-                                  previewImage?.isNotEmpty == true)
+                                  previewImage != null)
                                 buildProvidedPreview(context),
                               if (content != null)
                                 Container(
@@ -343,5 +352,12 @@ class PostPreviewState extends State<PostPreview> {
         ),
       ),
     );
+  }
+
+  showSnackBar(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
   }
 }

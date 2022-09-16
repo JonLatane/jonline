@@ -23,8 +23,9 @@ COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_ex
 COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
 
-# Ublock Origin adblocker for screenshots
+# Ad/cookie blockers for screenshot generator
 COPY backend/docker/server/ublock /opt/ublock/
+COPY backend/docker/server/nocookies /opt/nocookies/
 
 EXPOSE 27707 8000 80 443 8001-9000
 

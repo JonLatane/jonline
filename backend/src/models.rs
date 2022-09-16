@@ -30,6 +30,20 @@ pub struct Post {
     pub reply_count: i32,
     pub preview: Option<Vec<u8>>
 }
+#[derive(Debug, Queryable, AsChangeset, Identifiable)]
+#[table_name = "posts"]
+pub struct MinimalPost {
+    pub id: i32,
+    pub user_id: Option<i32>,
+    pub parent_post_id: Option<i32>,
+    pub title: String,
+    pub link: Option<String>,
+    pub content: Option<String>,
+    pub published: bool,
+    pub created_at: SystemTime,
+    pub updated_at: Option<SystemTime>,
+    pub reply_count: i32,
+}
 
 #[derive(Debug, Insertable)]
 #[table_name = "posts"]

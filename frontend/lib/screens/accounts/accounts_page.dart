@@ -358,18 +358,6 @@ class AccountsPageState extends State<AccountsPage> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          // Expanded(
-                          //   child: SizedBox(
-                          //     height: 32,
-                          //     child: TextButton(
-                          //         style: ButtonStyle(
-                          //             padding: MaterialStateProperty.all(
-                          //                 const EdgeInsets.all(0))),
-                          //         // padding: const EdgeInsets.all(0),
-                          //         onPressed: null, //() {},
-                          //         child: const Icon(Icons.info)),
-                          //   ),
-                          // ),
                           if (Settings.developerMode)
                             Expanded(
                               child: SizedBox(

@@ -55,9 +55,16 @@ fn generate_preview(url: &str) -> Result<Vec<u8>, anyhow::Error> {
                 std::ffi::OsStr::new("--hide-scrollbars"),
                 std::ffi::OsStr::new("--lang=en_US"),
                 std::ffi::OsStr::new("--headless=chrome"),
-            ].to_vec(),
+            ]
+            .to_vec(),
         )
-        .extensions([std::ffi::OsStr::new("/opt/ublock")].to_vec())
+        .extensions(
+            [
+                std::ffi::OsStr::new("/opt/ublock"),
+                std::ffi::OsStr::new("/opt/nocookies"),
+            ]
+            .to_vec(),
+        )
         .window_size(Some((400, 400)))
         .build()
         .unwrap();
