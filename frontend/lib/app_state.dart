@@ -1,15 +1,15 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/db.dart';
-import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/router/auth_guard.dart';
-import 'package:jonline/router/router.gr.dart';
 import 'package:provider/provider.dart';
 
+import 'db.dart';
+import 'generated/posts.pb.dart';
 import 'main.dart';
 import 'models/jonline_account.dart';
 import 'models/jonline_operations.dart';
 import 'models/settings.dart';
+import 'router/auth_guard.dart';
+import 'router/router.gr.dart';
 
 const defaultServer = 'jonline.io';
 const noOne = 'no one';

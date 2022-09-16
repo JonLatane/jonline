@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/screens/posts/post_preview.dart';
-import 'package:link_preview_generator/link_preview_generator.dart';
+
+import '../../generated/posts.pb.dart';
+import '../../models/jonline_account.dart';
+import 'post_preview.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -58,6 +57,7 @@ class ThreadNodeState extends State<ThreadNode> {
     //   _previewData = null;
     // }
     final Widget view = PostPreview(
+      server: JonlineAccount.selectedServer,
       post: widget.post,
       maxContentHeight: null,
     );

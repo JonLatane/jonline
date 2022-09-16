@@ -1,7 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/models/jonline_account.dart';
+
+import '../../app_state.dart';
+import '../../models/jonline_account.dart';
 
 // import 'package:jonline/db.dart';
 

@@ -29,8 +29,20 @@ class Settings {
     }
   }
 
+  static bool _preferServerPreviews = false;
+  static bool get preferServerPreviews => _preferServerPreviews;
+  static set preferServerPreviews(bool v) {
+    {
+      _preferServerPreviews = v;
+      Future.microtask(() async =>
+          (await getStorage()).setBool("prefer_server_previews", v));
+    }
+  }
+
   static initialize(VoidCallback onComplete) async {
     _powerUserMode = (await getStorage()).getBool("power_user_mode") ?? false;
     _developerMode = (await getStorage()).getBool("developer_mode") ?? false;
+    _preferServerPreviews =
+        (await getStorage()).getBool("prefer_server_previews") ?? false;
   }
 }

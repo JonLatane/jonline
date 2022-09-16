@@ -1,9 +1,7 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/models/storage.dart';
-import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/material.dart';
 
+import '../app_state.dart';
 import '../models/settings.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -35,6 +33,19 @@ class _SettingsPageState extends State<SettingsPage>
             children: [
               Row(
                 children: [
+                  const Expanded(child: Text("Prefer Server Previews")),
+                  Switch(
+                      value: Settings.preferServerPreviews,
+                      onChanged: (v) {
+                        setState(() => Settings.preferServerPreviews = v);
+                        context.findRootAncestorStateOfType<AppState>()!
+                          ..updatePosts()
+                          ..updateAccountDependents();
+                      }),
+                ],
+              ),
+              Row(
+                children: [
                   const Expanded(child: Text("Power User Mode")),
                   Switch(
                       value: Settings.powerUserMode,
@@ -58,7 +69,7 @@ class _SettingsPageState extends State<SettingsPage>
                             .updateAccountDependents();
                       }),
                 ],
-              )
+              ),
             ],
           ),
         )),

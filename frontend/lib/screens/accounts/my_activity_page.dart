@@ -1,7 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/models/demo_data.dart';
-import 'package:jonline/models/jonline_account.dart';
+
+import '../../models/demo_data.dart';
+import '../../models/jonline_account.dart';
 
 class MyActivityPage extends StatefulWidget {
   final String? filter;

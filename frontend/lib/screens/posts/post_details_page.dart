@@ -1,17 +1,20 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/models/jonline_operations.dart';
-import 'package:jonline/screens/home_page.dart';
-import 'package:jonline/screens/posts/post_preview.dart';
+
+import '../../app_state.dart';
+import '../../generated/posts.pb.dart';
+import '../../models/jonline_operations.dart';
+import '../home_page.dart';
+import 'post_preview.dart';
 
 class PostDetailsPage extends StatefulWidget {
   final String id;
+  final String server;
 
   const PostDetailsPage({
     Key? key,
     @PathParam('id') this.id = "INVALID",
+    @PathParam('server') this.server = "INVALID",
   }) : super(key: key);
 
   @override
@@ -70,6 +73,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                     child: Column(
                 children: [
                   PostPreview(
+                    server: widget.server,
                     post: post!,
                     maxContentHeight: null,
                   ),

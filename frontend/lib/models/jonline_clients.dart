@@ -1,13 +1,13 @@
 import 'package:grpc/grpc.dart';
 import 'package:grpc/grpc_connection_interface.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/google/protobuf/empty.pb.dart';
-import 'package:jonline/generated/jonline.pbgrpc.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/models/server_errors.dart';
 
+import '../app_state.dart';
+import '../generated/google/protobuf/empty.pb.dart';
+import '../generated/jonline.pbgrpc.dart';
+import 'jonline_account.dart';
 import 'jonline_channels_native.dart'
     if (dart.library.html) 'jonline_channels_web.dart';
+import 'server_errors.dart';
 
 extension JonlineClients on JonlineAccount {
   static JonlineClient createClient(

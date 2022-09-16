@@ -1,15 +1,17 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/jonline.pbgrpc.dart';
-import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/models/jonline_account_operations.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/models/server_errors.dart';
-import 'package:jonline/screens/home_page.dart';
-import 'package:jonline/screens/posts/post_preview.dart';
+
+import '../../app_state.dart';
+import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/posts.pb.dart';
+import '../../models/jonline_account.dart';
+import '../../models/jonline_account_operations.dart';
+import '../../models/jonline_clients.dart';
+import '../../models/server_errors.dart';
+import '../../router/router.gr.dart';
+import '../home_page.dart';
+import 'post_preview.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -143,7 +145,9 @@ class CreatePostPageState extends State<CreatePostPage> {
       doingCreate = false;
       return;
     }
-    context.navigateBack();
+    // context.navigateBack();
+    context.replaceRoute(
+        PostDetailsRoute(id: post.id, server: JonlineAccount.selectedServer));
     final appState = context.findRootAncestorStateOfType<AppState>();
     if (appState == null) {
       doingCreate = false;
@@ -294,6 +298,7 @@ class CreatePostPageState extends State<CreatePostPage> {
             child: SingleChildScrollView(
               child: PostPreview(
                   allowScrollingContent: true,
+                  server: JonlineAccount.selectedServer,
                   post: Post(
                       title: title,
                       content: content,
@@ -309,6 +314,7 @@ class CreatePostPageState extends State<CreatePostPage> {
           child: SizedBox(),
         ),
         PostPreview(
+            server: JonlineAccount.selectedServer,
             post: Post(
                 title: title,
                 content: content,

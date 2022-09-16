@@ -1,12 +1,9 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/router/router.gr.dart';
 import 'package:flutter/material.dart';
 
-import 'package:jonline/db.dart';
-import 'package:jonline/screens/accounts/account_chooser.dart';
-
+import '../../app_state.dart';
+import '../../db.dart';
+import '../../router/router.gr.dart';
 import '../home_page.dart';
 
 class EventListScreen extends StatefulWidget {

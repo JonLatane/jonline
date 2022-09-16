@@ -1,5 +1,6 @@
-import 'package:jonline/models/jonline_account.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'jonline_account.dart';
 
 SharedPreferences? _storage;
 Future<SharedPreferences> getStorage() async {

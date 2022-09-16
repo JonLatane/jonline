@@ -1,8 +1,9 @@
 import 'dart:convert';
 
-import 'package:jonline/app_state.dart';
-import 'package:jonline/models/storage.dart';
 import 'package:uuid/uuid.dart';
+
+import '../app_state.dart';
+import 'storage.dart';
 
 const uuid = Uuid();
 

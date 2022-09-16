@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/router/router.gr.dart';
-import 'package:jonline/screens/home_page.dart';
-import 'package:jonline/screens/posts/post_preview.dart';
+
+import '../../app_state.dart';
+import '../../generated/posts.pb.dart';
+import '../../models/jonline_account.dart';
+import '../../router/router.gr.dart';
+import '../home_page.dart';
+import 'post_preview.dart';
 
 class PostListScreen extends StatefulWidget {
   const PostListScreen({Key? key}) : super(key: key);
@@ -108,8 +110,11 @@ class PostListScreenState extends State<PostListScreen>
                         curve: Curves.easeInOut,
                         animation: animation,
                         child: PostPreview(
+                          server: JonlineAccount.selectedServer,
                           onTap: () {
-                            context.pushRoute(PostDetailsRoute(id: post.id));
+                            context.pushRoute(PostDetailsRoute(
+                                id: post.id,
+                                server: JonlineAccount.selectedServer));
                           },
                           post: post,
                         ),
@@ -129,9 +134,12 @@ class PostListScreenState extends State<PostListScreen>
                     itemBuilder: (context, index) {
                       final post = postList[index];
                       return PostPreview(
+                        server: JonlineAccount.selectedServer,
                         maxContentHeight: 400,
                         onTap: () {
-                          context.pushRoute(PostDetailsRoute(id: post.id));
+                          context.pushRoute(PostDetailsRoute(
+                              id: post.id,
+                              server: JonlineAccount.selectedServer));
                         },
                         post: post,
                       );

@@ -2,9 +2,10 @@
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/screens/accounts/account_chooser.dart';
-import 'package:jonline/screens/home_page.dart';
+
+import '../models/jonline_account.dart';
+import '../screens/accounts/account_chooser.dart';
+import '../screens/home_page.dart';
 
 extension AppBarManagement on HomePageState {
   AppBar get appBar {

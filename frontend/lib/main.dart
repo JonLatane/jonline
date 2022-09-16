@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:jonline/app_state.dart';
+
+import 'app_state.dart';
 
 void main() => runApp(const MyApp());
 

@@ -1,7 +1,8 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:jonline/screens/accounts/my_activity_page.dart';
 import 'package:auto_route/empty_router_widgets.dart';
+
 import 'accounts_page.dart';
+import 'my_activity_page.dart';
 
 const accountsTab = AutoRoute(
   path: 'accounts',

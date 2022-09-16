@@ -2,12 +2,13 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/models/jonline_account_operations.dart';
-import 'package:jonline/models/settings.dart';
-import 'package:jonline/screens/home_page.dart';
-import 'package:jonline/screens/user-data/data_collector.dart';
+
+import '../../app_state.dart';
+import '../../models/jonline_account.dart';
+import '../../models/jonline_account_operations.dart';
+import '../../models/settings.dart';
+import '../home_page.dart';
+import '../user-data/data_collector.dart';
 
 class AccountsPage extends StatefulWidget {
   const AccountsPage({Key? key}) : super(key: key);

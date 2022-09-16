@@ -48,15 +48,16 @@ pub fn main() {
 }
 
 fn generate_preview(url: &str) -> Result<Vec<u8>, anyhow::Error> {
-    // let width = jonline::env_var("PREVIEW_WIDTH").unwrap_or("400")
     let options = headless_chrome::LaunchOptionsBuilder::default()
         .sandbox(false)
         .args(
             [
                 std::ffi::OsStr::new("--hide-scrollbars"),
                 std::ffi::OsStr::new("--lang=en_US"),
+                std::ffi::OsStr::new("--headless=chrome"),
             ].to_vec(),
         )
+        .extensions([std::ffi::OsStr::new("/opt/ublock")].to_vec())
         .window_size(Some((400, 400)))
         .build()
         .unwrap();

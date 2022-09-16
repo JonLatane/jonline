@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/db.dart';
+
+import '../../db.dart';
 
 class EventDetailsPage extends StatefulWidget {
   final int id;

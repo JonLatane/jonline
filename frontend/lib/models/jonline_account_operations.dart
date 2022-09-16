@@ -1,12 +1,11 @@
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/authentication.pb.dart';
-import 'package:jonline/generated/google/protobuf/empty.pb.dart';
-import 'package:jonline/generated/users.pb.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/models/server_errors.dart';
-
+import '../app_state.dart';
+import '../generated/authentication.pb.dart';
+import '../generated/google/protobuf/empty.pb.dart';
 import '../generated/posts.pb.dart';
+import '../generated/users.pb.dart';
+import 'jonline_account.dart';
+import 'jonline_clients.dart';
+import 'server_errors.dart';
 
 extension JonlineAccountOperations on JonlineAccount {
   Future<Posts?> getPosts(

@@ -1,15 +1,15 @@
 import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/jonotifier.dart';
-import 'package:jonline/my_platform.dart';
-import 'package:jonline/router/router.gr.dart';
-import 'package:jonline/screens/home_page_app_bar.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:scrolls_to_top/scrolls_to_top.dart';
+
+import '../app_state.dart';
+import '../jonotifier.dart';
+import '../my_platform.dart';
+import '../router/router.gr.dart';
+import 'home_page_app_bar.dart';
 
 class HomePage extends StatefulWidget implements AutoRouteWrapper {
   const HomePage({

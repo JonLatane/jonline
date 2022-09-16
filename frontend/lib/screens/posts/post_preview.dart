@@ -1,21 +1,24 @@
-import 'package:any_link_preview/any_link_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/posts.pb.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../app_state.dart';
+import '../../generated/posts.pb.dart';
+import '../../models/settings.dart';
 
 // import 'package:jonline/db.dart';
 
 class PostPreview extends StatefulWidget {
+  final String server;
   final Post post;
   final bool allowScrollingContent;
   final double? maxContentHeight;
   final VoidCallback? onTap;
   const PostPreview(
       {Key? key,
+      required this.server,
       required this.post,
       this.maxContentHeight = 300,
       this.onTap,
@@ -40,12 +43,12 @@ class PostPreviewState extends State<PostPreview> {
       widget.post.author.username.isEmpty ? null : widget.post.author.username;
   int get replyCount => widget.post.replyCount;
 
-  // String? _lastGeneratedLink;
-  // var _previewData;
+  bool _hasFetchedServerPreview = false;
 
   @override
   void initState() {
     super.initState();
+    fetchServerPreview();
   }
 
   @override
@@ -53,14 +56,23 @@ class PostPreviewState extends State<PostPreview> {
     super.dispose();
   }
 
+  fetchServerPreview() async {
+    if (_hasFetchedServerPreview) return;
+    // _hasFetchedServerPreview = true;
+    // LinkPreviewGenerator.generatePreview(link!).then((preview) {
+    //   if (preview == null) return;
+    //   setState(() {
+    //     widget.post.title = preview.title;
+    //     widget.post.previewImage = preview.image;
+    //     widget.post.content = preview.description;
+    //   });
+    // });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // if (_previewData == null && link != null) {
-    //   _lastGeneratedLink = link;
-    // } else if (_previewData != null && link != _lastGeneratedLink) {
-    //   _previewData = null;
-    // }
-    final Widget view = Container(
+    final Widget view = AnimatedContainer(
+      duration: animationDuration,
       padding: const EdgeInsets.all(8.0), //child: Text('hi')
       child: Column(
         children: [
@@ -101,184 +113,13 @@ class PostPreviewState extends State<PostPreview> {
                                 Container(
                                   height: 8,
                                 ),
-                              if (previewImage != null &&
-                                  previewImage!.isNotEmpty &&
-                                  link != null)
-                                Tooltip(
-                                  message: link!,
-                                  child: SizedBox(
-                                    height: 250,
-                                    child: Stack(
-                                      children: [
-                                        Opacity(
-                                          opacity: 0.8,
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: Image.memory(
-                                                    Uint8List.fromList(
-                                                      previewImage!,
-                                                    ),
-                                                    fit: BoxFit.fitWidth,
-                                                    alignment:
-                                                        Alignment.topLeft),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        InkWell(
-                                            onTap: () =>
-                                                launchUrl(Uri.parse(link!)),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              children: [
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.end,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                    .symmetric(
-                                                                vertical: 4,
-                                                                horizontal: 8),
-                                                        color: Colors.black
-                                                            .withOpacity(0.8),
-                                                        child: Text(
-                                                          link!,
-                                                          maxLines: 2,
-                                                          textAlign:
-                                                              TextAlign.end,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style: Theme.of(
-                                                                  context)
-                                                              .textTheme
-                                                              .caption!
-                                                              .copyWith(
-                                                                  color:
-                                                                      topColor),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ))
-                                      ],
-                                    ),
-                                  ),
-                                ),
                               if (link != null &&
-                                  previewImage?.isNotEmpty != true)
-                                // Column(
-                                //   children: [
-                                //     if (widget.post.previewImage.isNotEmpty)
-                                //       const Text(
-                                //           "Post preview image available [todo for devs]!"),
-                                //     Tooltip(
-                                //       message: link!,
-                                //       child: AnyLinkPreview(
-                                //         link: link!,
-                                //         displayDirection:
-                                //             UIDirection.uiDirectionHorizontal,
-                                //         showMultimedia: true,
-                                //         bodyMaxLines: 5,
-                                //         bodyTextOverflow: TextOverflow.ellipsis,
-                                //         titleStyle: const TextStyle(
-                                //           color: Colors.black,
-                                //           fontWeight: FontWeight.bold,
-                                //           fontSize: 15,
-                                //         ),
-                                //         bodyStyle: const TextStyle(
-                                //             color: Colors.grey, fontSize: 12),
-                                //         errorWidget: Container(
-                                //           // color: Colors.transparent,
-                                //           child: InkWell(
-                                //             onTap: () {
-                                //               try {
-                                //                 launchUrl(Uri.parse(link!));
-                                //               } catch (e) {}
-                                //             },
-                                //             child: Container(
-                                //               color:
-                                //                   bottomColor.withOpacity(0.5),
-                                //               padding:
-                                //                   const EdgeInsets.symmetric(
-                                //                       vertical: 32,
-                                //                       horizontal: 16),
-                                //               child: Column(
-                                //                 children: [
-                                //                   Row(
-                                //                     children: const [
-                                //                       Expanded(
-                                //                           child: Text(
-                                //                               'Preview unavailable 😔')),
-                                //                     ],
-                                //                   ),
-                                //                   const SizedBox(height: 8),
-                                //                   Row(
-                                //                     children: [
-                                //                       Expanded(
-                                //                           child: Text(
-                                //                         link!,
-                                //                         style: Theme.of(context)
-                                //                             .textTheme
-                                //                             .labelLarge!
-                                //                             .copyWith(
-                                //                                 color:
-                                //                                     topColor),
-                                //                       )),
-                                //                     ],
-                                //                   ),
-                                //                 ],
-                                //               ),
-                                //             ),
-                                //           ),
-                                //         ),
-                                //         // errorImage: "https://google.com/",
-                                //         cache: const Duration(days: 7),
-                                //         backgroundColor: Colors.grey[300],
-                                //         borderRadius: 12,
-                                //         removeElevation: false,
-                                //         boxShadow: const [
-                                //           BoxShadow(
-                                //               blurRadius: 3, color: Colors.grey)
-                                //         ],
-                                //         // onTap: () {}, // This disables tap event
-                                //       ),
-                                //     ),
-                                //   ],
-                                // ),
-
-                                Tooltip(
-                                  message: link!,
-                                  child: LinkPreviewGenerator(
-                                    key: ValueKey(link),
-                                    bodyMaxLines: 3,
-                                    link: link!,
-                                    linkPreviewStyle: content != null
-                                        ? LinkPreviewStyle.small
-                                        : LinkPreviewStyle.large,
-                                    errorBody: '',
-                                    showGraphic: true,
-                                  ),
-                                ),
-
-                              // LinkPreview(
-                              //   key: ValueKey(link!),
-                              //   enableAnimation: true,
-                              //   onPreviewDataFetched: (data) {
-                              //     setState(() {
-                              //       _previewData = data;
-                              //     });
-                              //   },
-                              //   previewData: _previewData,
-                              //   text: link!,
-                              //   width: MediaQuery.of(context).size.width,
-                              // ),
+                                  (!Settings.preferServerPreviews ||
+                                      previewImage?.isNotEmpty != true))
+                                buildLocallyGeneratedPreview(context),
+                              if (Settings.preferServerPreviews &&
+                                  previewImage?.isNotEmpty == true)
+                                buildProvidedPreview(context),
                               if (content != null)
                                 Container(
                                   height: 8,
@@ -344,5 +185,163 @@ class PostPreviewState extends State<PostPreview> {
             ? view
             : InkWell(onTap: widget.onTap, child: view));
     return card;
+  }
+
+  Widget buildProvidedPreview(BuildContext context) {
+    return Tooltip(
+      message: link!,
+      child: SizedBox(
+        height: 250,
+        child: Stack(
+          children: [
+            Opacity(
+              opacity: 0.8,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Image.memory(
+                        Uint8List.fromList(
+                          previewImage!,
+                        ),
+                        fit: BoxFit.fitWidth,
+                        alignment: Alignment.topLeft),
+                  ),
+                ],
+              ),
+            ),
+            InkWell(
+                onTap: () => launchUrl(Uri.parse(link!)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 8),
+                            color: Colors.black.withOpacity(0.8),
+                            child: Text(
+                              link!,
+                              maxLines: 2,
+                              textAlign: TextAlign.end,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .caption!
+                                  .copyWith(color: topColor),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ))
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildLocallyGeneratedPreview(BuildContext context) {
+    // return Tooltip(
+    //   message: link!,
+    //   child: AnyLinkPreview(
+    //     link: link!,
+    //     displayDirection: UIDirection.uiDirectionHorizontal,
+    //     showMultimedia: true,
+    //     bodyMaxLines: 5,
+    //     bodyTextOverflow: TextOverflow.ellipsis,
+    //     titleStyle: const TextStyle(
+    //       color: Colors.black,
+    //       fontWeight: FontWeight.bold,
+    //       fontSize: 15,
+    //     ),
+    //     bodyStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+    //     errorWidget: (previewImage != null && previewImage!.isNotEmpty)
+    //         ? buildProvidedPreview(context)
+    //         : buildPreviewUnavailable(context),
+    //     // errorImage: "https://google.com/",
+    //     cache: const Duration(days: 7),
+    //     backgroundColor: Colors.grey[300],
+    //     borderRadius: 12,
+    //     removeElevation: false,
+    //     boxShadow: const [BoxShadow(blurRadius: 3, color: Colors.grey)],
+    //     // onTap: () {}, // This disables tap event
+    //   ),
+    // );
+
+    // return LinkPreviewGenerator(
+    //   bodyMaxLines: 3,
+    //   link: link!,
+    //   linkPreviewStyle: LinkPreviewStyle.large,
+    //   showGraphic: true,
+    // );
+
+    return Tooltip(
+      message: link!,
+      child: LinkPreviewGenerator(
+        key: ValueKey(link),
+        bodyMaxLines: 3,
+        link: link!,
+        linkPreviewStyle:
+            content != null ? LinkPreviewStyle.small : LinkPreviewStyle.large,
+        // errorBody: '',
+        errorWidget: (previewImage != null && previewImage!.isNotEmpty)
+            ? buildProvidedPreview(context)
+            : buildPreviewUnavailable(context),
+        showGraphic: true,
+      ),
+    );
+
+    // LinkPreview(
+    //   key: ValueKey(link!),
+    //   enableAnimation: true,
+    //   onPreviewDataFetched: (data) {
+    //     setState(() {
+    //       _previewData = data;
+    //     });
+    //   },
+    //   previewData: _previewData,
+    //   text: link!,
+    //   width: MediaQuery.of(context).size.width,
+    // ),
+  }
+
+  Widget buildPreviewUnavailable(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        try {
+          launchUrl(Uri.parse(link!));
+        } catch (e) {}
+      },
+      child: Container(
+        color: bottomColor.withOpacity(0.5),
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+        child: Column(
+          children: [
+            Row(
+              children: const [
+                Expanded(child: Text('Preview unavailable 😔')),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                    child: Text(
+                  link!,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelLarge!
+                      .copyWith(color: topColor),
+                )),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

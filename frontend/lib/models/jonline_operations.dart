@@ -1,7 +1,6 @@
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/posts.pb.dart';
-import 'package:jonline/models/jonline_account.dart';
-
+import '../app_state.dart';
+import '../generated/posts.pb.dart';
+import 'jonline_account.dart';
 import 'jonline_clients.dart';
 import 'server_errors.dart';
 

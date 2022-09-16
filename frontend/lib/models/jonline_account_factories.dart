@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:jonline/app_state.dart';
-import 'package:jonline/generated/authentication.pb.dart';
-import 'package:jonline/generated/jonline.pbgrpc.dart';
-import 'package:jonline/models/jonline_account.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/models/server_errors.dart';
+
+import '../app_state.dart';
+import '../generated/authentication.pb.dart';
+import '../generated/jonline.pbgrpc.dart';
+import 'jonline_account.dart';
+import 'jonline_clients.dart';
+import 'server_errors.dart';
 
 extension JonlineAccountFactories on JonlineAccount {
   static Future<JonlineAccount?> loginToAccount(String server, String username,
