@@ -1,3 +1,4 @@
+use super::ToLink;
 use super::id_conversions::ToProtoId;
 use crate::models;
 use crate::protos::*;
@@ -12,7 +13,7 @@ impl ToProtoPost for models::MinimalPost {
             id: self.id.to_proto_id(),
             reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
             title: self.title.to_owned(),
-            link: self.link.to_owned(),
+            link: self.link.to_link(),
             content: self.content.to_owned(),
             created_at: Some(::prost_types::Timestamp {
                 seconds: 1,
@@ -38,7 +39,7 @@ impl ToProtoPost for models::Post {
             id: self.id.to_proto_id(),
             reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
             title: self.title.to_owned(),
-            link: self.link.to_owned(),
+            link: self.link.to_link(),
             content: self.content.to_owned(),
             created_at: Some(::prost_types::Timestamp {
                 seconds: 1,

@@ -94,7 +94,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     appState = context.findRootAncestorStateOfType<AppState>()!;
     canCreatePost.addListener(updateState);
     appState.accounts.addListener(updateState);
-    if (!MyPlatform.isWeb) {
+    if (MyPlatform.isMobile) {
       NativeDeviceOrientationCommunicator()
           .onOrientationChanged()
           .listen((NativeDeviceOrientation o) {

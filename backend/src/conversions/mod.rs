@@ -6,3 +6,6 @@ pub use user_conversions::ToProtoUser;
 
 mod post_conversions;
 pub use post_conversions::ToProtoPost;
+
+mod link_conversions;
+pub use link_conversions::ToLink;

@@ -8,6 +8,7 @@ use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
 use jonline::db_connection;
 use jonline::schema::posts::dsl::*;
+use jonline::conversions::ToLink;
 
 pub fn main() {
     println!("Generating preview images...");
@@ -23,26 +24,30 @@ pub fn main() {
 
     for post in posts_to_update {
         println!("Generating preview image for post: {}", post.id);
-        let url = post.link.unwrap().to_owned();
-        match generate_preview(&url) {
-            Ok(screenshot) => {
-                println!(
-                    "Generated screenshot for link {}, post {}! {} bytes",
-                    url,
-                    post.id,
-                    screenshot.len()
-                );
-                update(posts)
-                    .filter(id.eq(post.id))
-                    .set(preview.eq(screenshot))
-                    .execute(&crate::db_connection::establish_connection())
-                    .unwrap();
+        match post.link.to_link() {
+            None => println!("Invalid link: {:?}", post.link),
+            Some(url) => {
+                match generate_preview(&url) {
+                    Ok(screenshot) => {
+                        println!(
+                            "Generated screenshot for link {}, post {}! {} bytes",
+                            url,
+                            post.id,
+                            screenshot.len()
+                        );
+                        update(posts)
+                            .filter(id.eq(post.id))
+                            .set(preview.eq(screenshot))
+                            .execute(&crate::db_connection::establish_connection())
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        println!("Failed to generate screenshot for link {}: {}", url, e);
+                    }
+                };
             }
-            Err(e) => {
-                println!("Failed to generate screenshot for link {}: {}", url, e);
-            }
-        };
-    }
+        }
+    };
 
     println!("Done generating preview images.");
 }
@@ -78,7 +83,7 @@ fn generate_preview(url: &str) -> Result<Vec<u8>, anyhow::Error> {
         browser_context_id: None,
         enable_begin_frame_control: None,
     })?;
-    tab.navigate_to(url)?;
+    tab.navigate_to(&url)?;
     tab.wait_until_navigated()?;
     return Ok(tab.capture_screenshot(Png, None, None, false)?);
 }

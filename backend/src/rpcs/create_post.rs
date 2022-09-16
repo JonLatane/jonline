@@ -58,7 +58,7 @@ pub fn create_post(
                 user_id: Some(user.id),
                 parent_post_id: parent_post_db_id,
                 title: post_title,
-                link: req.link.to_owned(),
+                link: req.link.to_link(),
                 content: req.content.to_owned(),
                 published: true,
                 preview: None,
