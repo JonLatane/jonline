@@ -30,6 +30,7 @@ pub struct Post {
     pub reply_count: i32,
     pub preview: Option<Vec<u8>>
 }
+
 #[derive(Debug, Queryable, AsChangeset, Identifiable)]
 #[table_name = "posts"]
 pub struct MinimalPost {
@@ -44,6 +45,30 @@ pub struct MinimalPost {
     pub updated_at: Option<SystemTime>,
     pub reply_count: i32,
 }
+
+pub static MINIMAL_POST_COLUMNS: (
+    posts::id,
+    posts::user_id,
+    posts::parent_post_id,
+    posts::title,
+    posts::link,
+    posts::content,
+    posts::published,
+    posts::created_at,
+    posts::updated_at,
+    posts::reply_count,
+) = (
+    posts::id,
+    posts::user_id,
+    posts::parent_post_id,
+    posts::title,
+    posts::link,
+    posts::content,
+    posts::published,
+    posts::created_at,
+    posts::updated_at,
+    posts::reply_count,
+);
 
 #[derive(Debug, Insertable)]
 #[table_name = "posts"]

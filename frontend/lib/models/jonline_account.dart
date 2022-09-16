@@ -11,13 +11,11 @@ class JonlineAccount {
   static JonlineAccount? get selectedAccount => _selectedAccount;
   static set selectedAccount(JonlineAccount? account) {
     _selectedAccount = account;
-    getStorage().then((storage) {
-      if (account != null) {
-        storage.setString('selected_account', account.id);
-      } else {
-        storage.remove('selected_account');
-      }
-    });
+    if (account != null) {
+      appStorage.setString('selected_account', account.id);
+    } else {
+      appStorage.remove('selected_account');
+    }
   }
 
   static String get selectedServer =>
@@ -84,17 +82,16 @@ class JonlineAccount {
 
   static Future<bool?> updateAccountList(List<JonlineAccount> accounts) async {
     if (!accounts.any((a) => a.id == selectedAccount?.id)) {
-      (await getStorage()).remove('selected_account');
+      appStorage.remove('selected_account');
       selectedAccount = null;
     }
-    return (await getStorage()).setStringList(
+    return appStorage.setStringList(
         'jonline_accounts', accounts.map((e) => jsonEncode(e)).toList());
   }
 
   static Future<List<JonlineAccount>> get accounts async {
-    final storage = await getStorage();
     List<String> jsonArrayString =
-        storage.getStringList('jonline_accounts') ?? [];
+        appStorage.getStringList('jonline_accounts') ?? [];
     final accountsJson = jsonArrayString
         .map((e) => jsonDecode(e) as Map<String, dynamic>)
         .toList();

@@ -2,7 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:jonline/models/jonline_account_operations.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:jonline/models/jonline_operations.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +12,7 @@ import '../../generated/posts.pb.dart';
 import '../../models/settings.dart';
 
 // import 'package:jonline/db.dart';
+final previewStorage = GetStorage('preview');
 
 class PostPreview extends StatefulWidget {
   final String server;
@@ -46,12 +47,14 @@ class PostPreviewState extends State<PostPreview> {
       widget.post.author.username.isEmpty ? null : widget.post.author.username;
   int get replyCount => widget.post.replyCount;
 
-  bool _hasFetchedServerPreview = false;
+  bool _hasLoadedServerPreview = false;
 
   @override
   void initState() {
     super.initState();
-    fetchServerPreview();
+    if (widget.post.link.isNotEmpty) {
+      loadServerPreview();
+    }
   }
 
   @override
@@ -59,22 +62,33 @@ class PostPreviewState extends State<PostPreview> {
     super.dispose();
   }
 
-  fetchServerPreview() async {
-    if (_hasFetchedServerPreview) return;
-
-    final previewData = (await JonlineOperations.getSelectedPosts(
-            request: GetPostsRequest(postId: widget.post.id),
-            showMessage: showSnackBar))
-        ?.posts
-        .firstOrNull
-        ?.previewImage;
+  loadServerPreview() async {
+    if (_hasLoadedServerPreview) return;
+    final key = "${widget.server}:${widget.post.id}";
+    List<int>? previewData;
+    if (previewStorage.hasData(key)) {
+      previewData = previewStorage.read(key).cast<int>();
+      print(
+          "Got cached preview for ${widget.post.id}, length ${previewData?.length}");
+    }
+    if (previewData == null) {
+      previewData = (await JonlineOperations.getSelectedPosts(
+              request: GetPostsRequest(postId: widget.post.id),
+              showMessage: showSnackBar))
+          ?.posts
+          .firstOrNull
+          ?.previewImage;
+      previewStorage.write(key, previewData);
+      print(
+          "Fetched preview for ${widget.post.id}, length ${previewData?.length}");
+    }
     if (previewData != null && previewData.isNotEmpty) {
       setState(() {
         previewImage = previewData;
       });
     }
     setState(() {
-      _hasFetchedServerPreview = true;
+      _hasLoadedServerPreview = true;
     });
   }
 
@@ -123,12 +137,22 @@ class PostPreviewState extends State<PostPreview> {
                                   height: 8,
                                 ),
                               if (link != null &&
-                                  (!Settings.preferServerPreviews ||
-                                      previewImage == null))
-                                buildLocallyGeneratedPreview(context),
-                              if (Settings.preferServerPreviews &&
-                                  previewImage != null)
-                                buildProvidedPreview(context),
+                                  !Settings.preferServerPreviews)
+                                buildLocalPreview(context),
+                              if (link != null &&
+                                  (Settings.preferServerPreviews &&
+                                      (_hasLoadedServerPreview &&
+                                          previewImage == null)))
+                                SizedBox(
+                                    height: previewHeight,
+                                    child: buildLocalPreview(context)),
+                              if (previewImage != null &&
+                                  Settings.preferServerPreviews)
+                                buildServerPreview(context),
+                              if (link != null &&
+                                  Settings.preferServerPreviews &&
+                                  !_hasLoadedServerPreview)
+                                buildLoadingServerPreview(context),
                               if (content != null)
                                 Container(
                                   height: 8,
@@ -196,11 +220,11 @@ class PostPreviewState extends State<PostPreview> {
     return card;
   }
 
-  Widget buildProvidedPreview(BuildContext context) {
+  Widget buildServerPreview(BuildContext context) {
     return Tooltip(
       message: link!,
       child: SizedBox(
-        height: 250,
+        height: previewHeight,
         child: Stack(
           children: [
             Opacity(
@@ -253,7 +277,9 @@ class PostPreviewState extends State<PostPreview> {
     );
   }
 
-  Widget buildLocallyGeneratedPreview(BuildContext context) {
+  static const double previewHeight = 250;
+
+  Widget buildLocalPreview(BuildContext context) {
     // return Tooltip(
     //   message: link!,
     //   child: AnyLinkPreview(
@@ -269,7 +295,7 @@ class PostPreviewState extends State<PostPreview> {
     //     ),
     //     bodyStyle: const TextStyle(color: Colors.grey, fontSize: 12),
     //     errorWidget: (previewImage != null && previewImage!.isNotEmpty)
-    //         ? buildProvidedPreview(context)
+    //         ? buildServerPreview(context)
     //         : buildPreviewUnavailable(context),
     //     // errorImage: "https://google.com/",
     //     cache: const Duration(days: 7),
@@ -298,7 +324,7 @@ class PostPreviewState extends State<PostPreview> {
             content != null ? LinkPreviewStyle.small : LinkPreviewStyle.large,
         // errorBody: '',
         errorWidget: (previewImage != null && previewImage!.isNotEmpty)
-            ? buildProvidedPreview(context)
+            ? buildServerPreview(context)
             : buildPreviewUnavailable(context),
         showGraphic: true,
       ),
@@ -333,6 +359,43 @@ class PostPreviewState extends State<PostPreview> {
             Row(
               children: const [
                 Expanded(child: Text('Preview unavailable 😔')),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                    child: Text(
+                  link!,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelLarge!
+                      .copyWith(color: topColor),
+                )),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildLoadingServerPreview(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        try {
+          launchUrl(Uri.parse(link!));
+        } catch (e) {}
+      },
+      child: Container(
+        height: previewHeight,
+        color: Colors.white.withOpacity(0.5),
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+        child: Column(
+          children: [
+            Row(
+              children: const [
+                Expanded(child: Text('Preview loading...')),
               ],
             ),
             const SizedBox(height: 8),

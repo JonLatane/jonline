@@ -29,7 +29,7 @@ class AccountsPageState extends State<AccountsPage> {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
-    homePage.showSettingsTabListener.addListener(onSettingsTabChanged);
+    Settings.showSettingsTabListener.addListener(onSettingsTabChanged);
     appState.accounts.addListener(onAccountsChanged);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => appState.updateAccountList());
@@ -37,7 +37,7 @@ class AccountsPageState extends State<AccountsPage> {
 
   @override
   dispose() {
-    homePage.showSettingsTabListener.removeListener(onSettingsTabChanged);
+    Settings.showSettingsTabListener.removeListener(onSettingsTabChanged);
     appState.accounts.removeListener(onAccountsChanged);
     super.dispose();
   }
@@ -112,7 +112,7 @@ class AccountsPageState extends State<AccountsPage> {
                             const Icon(Icons.settings),
                             Transform.translate(
                               offset: const Offset(20, 0),
-                              child: Icon(homePage.showSettingsTab
+                              child: Icon(Settings.showSettingsTab
                                   ? Icons.close
                                   : Icons.arrow_right),
                             ),
@@ -150,16 +150,16 @@ class AccountsPageState extends State<AccountsPage> {
   }
 
   void toggleSettingsTab() {
-    if (!homePage.showSettingsTab) {
+    if (!Settings.showSettingsTab) {
       setState(() {
-        homePage.showSettingsTab = true;
+        Settings.showSettingsTab = true;
       });
       Future.delayed(const Duration(milliseconds: 100), () {
         context.navigateNamedTo('settings/main');
       });
     } else {
       setState(() {
-        homePage.showSettingsTab = false;
+        Settings.showSettingsTab = false;
       });
     }
   }

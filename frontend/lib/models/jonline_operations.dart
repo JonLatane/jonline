@@ -22,7 +22,7 @@ extension JonlineOperations on JonlineAccount {
     // showMessage?.call("Loading posts...");
     final Posts posts;
     try {
-      posts = await client.getPosts(GetPostsRequest(),
+      posts = await client.getPosts(request ?? GetPostsRequest(),
           options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
     } catch (e) {
       showMessage?.call('Error loading ${forReplies ? "replies" : "posts"}.');

@@ -3,7 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'jonline_account.dart';
 
 SharedPreferences? _storage;
-Future<SharedPreferences> getStorage() async {
+SharedPreferences get appStorage => _storage!;
+Future<SharedPreferences> initStorage() async {
   if (_storage == null) {
     print("setting up storage");
     _storage = await SharedPreferences.getInstance();

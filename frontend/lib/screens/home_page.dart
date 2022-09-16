@@ -7,6 +7,7 @@ import 'package:scrolls_to_top/scrolls_to_top.dart';
 
 import '../app_state.dart';
 import '../jonotifier.dart';
+import '../models/settings.dart';
 import '../my_platform.dart';
 import '../router/router.gr.dart';
 import 'home_page_app_bar.dart';
@@ -70,7 +71,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           icon: Icons.person,
           label: 'Me',
         ),
-        // if (showSettingsTab)
+        // if (showSettingsTab) // Making this dynamic screws up auto_route :(
         RouteDestination(
           route: SettingsTab(tab: 'tab'),
           icon: Icons.settings,
@@ -78,22 +79,13 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
       ];
 
-  // bool _showSettingsTab = false;
-  ValueNotifier<bool> showSettingsTabListener = ValueNotifier(false);
-  bool _showedSettingsFromSwipe = false;
-  bool get showSettingsTab => showSettingsTabListener.value;
-  set showSettingsTab(bool value) {
-    setState(() {
-      showSettingsTabListener.value = value;
-    });
-  }
-
   @override
   initState() {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
     canCreatePost.addListener(updateState);
     appState.accounts.addListener(updateState);
+    Settings.showSettingsTabListener.addListener(updateState);
     if (MyPlatform.isMobile) {
       NativeDeviceOrientationCommunicator()
           .onOrientationChanged()
@@ -119,16 +111,6 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     // builder will rebuild everytime this router's stack
     // updates
     // we need it to indicate which NavigationRailDestination is active
-    if (context.topRoute.name == 'SettingsTab' && !showSettingsTab) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showedSettingsFromSwipe = true;
-        showSettingsTab = true;
-      });
-    } else if (_showedSettingsFromSwipe &&
-        context.topRoute.name != 'SettingsTab') {
-      _showedSettingsFromSwipe = false;
-      showSettingsTab = false;
-    }
     return /*kIsWeb
         ? AutoRouter(builder: (context, child) {
             // we check for active route index by using
@@ -213,7 +195,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           icon: Icon(Icons.person),
           label: 'Me',
         ),
-        if (showSettingsTab)
+        if (Settings.showSettingsTab || context.topRoute.name == 'SettingsTab')
           const BottomNavigationBarItem(
             icon: Icon(Icons.settings),
             label: 'Settings',
