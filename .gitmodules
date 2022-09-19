@@ -1,0 +1,3 @@
+[submodule "backend/docker/preview_generator/preview_generator_extensions"]
+	path = backend/docker/preview_generator/preview_generator_extensions
+	url = git@github.com:JonLatane/jonline_preview_generator_extensions.git

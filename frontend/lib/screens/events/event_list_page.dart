@@ -17,10 +17,6 @@ class EventListScreenState extends State<EventListScreen>
     with AutoRouteAwareStateMixin<EventListScreen> {
   late AppState appState;
   late HomePageState homePage;
-  @override
-  void didPushNext() {
-    print('didPushNext');
-  }
 
   @override
   void initState() {

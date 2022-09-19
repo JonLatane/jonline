@@ -85,6 +85,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     await communicationDelay;
     await account.updateUserData(showMessage: showSnackBar);
+    await account.updateServiceVersion(showMessage: showSnackBar);
     setState(() {
       doingStuff = false;
     });

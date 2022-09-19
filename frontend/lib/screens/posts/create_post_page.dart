@@ -32,11 +32,9 @@ class CreatePostPageState extends State<CreatePostPage> {
     if (value != _showPreview) {
       final focusSources = [titleFocus, linkFocus, contentFocus];
       if (value == true) {
-        print("saving focus");
         focuses = focusSources.map((e) => e.hasFocus).toList();
       } else {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-          print("restoring focus");
           focuses.asMap().forEach((index, hasFocus) {
             if (hasFocus) {
               focusSources[index].requestFocus();

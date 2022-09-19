@@ -65,8 +65,8 @@ fn generate_preview(url: &str) -> Result<Vec<u8>, anyhow::Error> {
         )
         .extensions(
             [
-                std::ffi::OsStr::new("/opt/ublock"),
-                std::ffi::OsStr::new("/opt/nocookies"),
+                std::ffi::OsStr::new("/opt/preview_generator_extensions/ublock"),
+                std::ffi::OsStr::new("/opt/preview_generator_extensions/nocookies"),
             ]
             .to_vec(),
         )

@@ -55,12 +55,6 @@ extension JonlineClients on JonlineAccount {
     return getSelectedClient(showMessage: showMessage);
   }
 
-  static Future<JonlineClient?> getDefaultClient(
-      {Function(String)? showMessage}) async {
-    return createAndTestClient(JonlineAccount.selectedServer,
-        showMessage: showMessage);
-  }
-
   static Future<JonlineClient?> getSelectedClient(
       {Function(String)? showMessage}) async {
     if (JonlineAccount.selectedAccount == null) return null;
@@ -68,27 +62,45 @@ extension JonlineClients on JonlineAccount {
         ?.getClient(showMessage: showMessage);
   }
 
-  // Gets authenticated call headers for this account.
-  CallOptions get authenticatedCallOptions =>
-      CallOptions(metadata: {'authorization': refreshToken});
-
-  // Gets a JonlineClient for the server for this account.
-  Future<JonlineClient?> getClient({Function(String)? showMessage}) async {
-    if (_clients.containsKey(id)) {
-      return _clients[id];
+  static Future<JonlineClient?> getDefaultClient(
+      {Function(String)? showMessage}) async {
+    final server = JonlineAccount.selectedServer;
+    final clients = _secureClients;
+    if (clients.containsKey(server)) {
+      return clients[server];
     } else {
       try {
-        _clients[id] = (await createAndTestClient(server,
-            showMessage: showMessage, allowInsecure: allowInsecure))!;
-        return _clients[id];
+        clients[server] = (await createAndTestClient(server,
+            showMessage: showMessage, allowInsecure: false))!;
+        return clients[server];
       } catch (e) {
         showMessage?.call(formatServerError(e));
-        print("Failed to connect to $server, allowInsecure=$allowInsecure");
-        // rethrow;
         return null;
       }
     }
   }
+
+  // Gets a JonlineClient for the server for this account.
+  Future<JonlineClient?> getClient({Function(String)? showMessage}) async {
+    final clients = allowInsecure ? _insecureClients : _secureClients;
+    if (clients.containsKey(server)) {
+      return clients[server];
+    } else {
+      try {
+        clients[server] = (await createAndTestClient(server,
+            showMessage: showMessage, allowInsecure: allowInsecure))!;
+        return clients[server];
+      } catch (e) {
+        showMessage?.call(formatServerError(e));
+        return null;
+      }
+    }
+  }
+
+  // Gets authenticated call headers for this account.
+  CallOptions get authenticatedCallOptions =>
+      CallOptions(metadata: {'authorization': refreshToken});
 }
 
-final Map<String, JonlineClient> _clients = {};
+final Map<String, JonlineClient> _secureClients = {};
+final Map<String, JonlineClient> _insecureClients = {};

@@ -6,7 +6,6 @@ SharedPreferences? _storage;
 SharedPreferences get appStorage => _storage!;
 Future<SharedPreferences> initStorage() async {
   if (_storage == null) {
-    print("setting up storage");
     _storage = await SharedPreferences.getInstance();
     if (_storage!.containsKey('selected_account')) {
       JonlineAccount.selectedAccount = (await JonlineAccount.accounts)

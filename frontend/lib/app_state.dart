@@ -46,12 +46,10 @@ class AppState extends State<MyApp> {
   }
 
   updateAccountList() async {
-    print("updateAccountList");
     accounts.value = await JonlineAccount.accounts;
   }
 
   updateAccountDependents() {
-    print("updateAccountDependents");
     accounts.value = accounts.value;
   }
 

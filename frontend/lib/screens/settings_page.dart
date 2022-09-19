@@ -74,43 +74,16 @@ class _SettingsPageState extends State<SettingsPage>
           ),
         )),
       )),
-      // Center(
-      //   child: Column(
-      //     mainAxisSize: MainAxisSize.min,
-      //     children: [
-      //       Text(widget.tab),
-      //       Text(widget.query),
-      //       ElevatedButton(
-      //           onPressed: () {
-      //             setState(() {
-      //               queryUpdateCont++;
-      //             });
-      //             context.navigateTo(SettingsTab(
-      //               tab: 'Updated Path param $queryUpdateCont',
-      //               query: 'updated Query $queryUpdateCont',
-      //             ));
-      //           },
-      //           child: Text('Update Query $queryUpdateCont')),
-      //       ElevatedButton(
-      //           onPressed: () {
-      //             context.navigateTo(PostsTab(
-      //               children: [PostDetailsRoute(id: "some id")],
-      //             ));
-      //           },
-      //           child: const Text('Navigate to book details/1'))
-      //     ],
-      //   ),
-      // ),
     );
   }
 
   @override
   void didInitTabRoute(TabPageRoute? previousRoute) {
-    print('init tab route from ${previousRoute?.name}');
+    // print('init tab route from ${previousRoute?.name}');
   }
 
   @override
   void didChangeTabRoute(TabPageRoute previousRoute) {
-    print('did change tab route from ${previousRoute.name}');
+    // print('did change tab route from ${previousRoute.name}');
   }
 }

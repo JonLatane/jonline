@@ -188,10 +188,14 @@ backend/target/release/jonline__server_release: push_builder_local
 push_be_release_local: local_registry_create build_be_release_binary build_web_release
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline
+	docker build . -t $(LOCAL_REGISTRY)/jonline_preview_generator -f backend/docker/preview_generator/Dockerfile
+	docker push $(LOCAL_REGISTRY)/jonline_preview_generator
 
 push_be_release_cloud: build_be_release_binary build_web_release
 	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
+	docker build . -t $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION) -f backend/docker/preview_generator/Dockerfile
+	docker push $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION)
 
 build_web_release:
 	cd frontend && ./build-release web

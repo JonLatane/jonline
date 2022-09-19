@@ -68,8 +68,6 @@ class PostPreviewState extends State<PostPreview> {
     List<int>? previewData;
     if (previewStorage.hasData(key)) {
       previewData = previewStorage.read(key).cast<int>();
-      print(
-          "Got cached preview for ${widget.post.id}, length ${previewData?.length}");
     }
     if (previewData == null) {
       previewData = (await JonlineOperations.getSelectedPosts(
@@ -79,8 +77,6 @@ class PostPreviewState extends State<PostPreview> {
           .firstOrNull
           ?.previewImage;
       previewStorage.write(key, previewData);
-      print(
-          "Fetched preview for ${widget.post.id}, length ${previewData?.length}");
     }
     if (previewData != null && previewData.isNotEmpty) {
       setState(() {
@@ -349,7 +345,9 @@ class PostPreviewState extends State<PostPreview> {
       onTap: () {
         try {
           launchUrl(Uri.parse(link!));
-        } catch (e) {}
+        } catch (e) {
+          showSnackBar("Failed to open link");
+        }
       },
       child: Container(
         color: bottomColor.withOpacity(0.5),
@@ -385,7 +383,9 @@ class PostPreviewState extends State<PostPreview> {
       onTap: () {
         try {
           launchUrl(Uri.parse(link!));
-        } catch (e) {}
+        } catch (e) {
+          showSnackBar("Failed to open link");
+        }
       },
       child: Container(
         height: previewHeight,
