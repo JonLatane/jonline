@@ -8,7 +8,7 @@ class EventDetailsPage extends StatefulWidget {
 
   const EventDetailsPage({
     Key? key,
-    @PathParam('id') this.id = -1,
+    @pathParam this.id = -1,
   }) : super(key: key);
 
   @override

@@ -66,7 +66,7 @@ pub fn create_post(
             .get_result::<models::Post>(conn)?;
         match parent_post_db_id {
             Some(parent_post_db_id) => match update(posts)
-                .filter(parent_post_id.eq(Some(parent_post_db_id)))
+                .filter(id.eq(parent_post_db_id))
                 .set(reply_count.eq(reply_count + 1))
                 .execute(conn)?
             {
@@ -85,6 +85,8 @@ pub fn create_post(
             println!("Post created! Result: {:?}", post);
             Ok(Response::new(post.to_proto(Some(user.username))))
         }
-        Err(_) => Err(Status::new(Code::Internal, "internal_error")),
+        Err(e) => {
+            println!("Error creating post! {:?}", e);
+            Err(Status::new(Code::Internal, "internal_error"))        },
     }
 }

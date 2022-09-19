@@ -11,7 +11,7 @@ const accountsTab = AutoRoute(
   children: [
     AutoRoute(path: '', page: AccountsPage),
     AutoRoute(
-        path: 'account/:account_id/activity',
+        path: 'account/:accountId/activity',
         usesPathAsKey: true,
         page: MyActivityPage),
   ],

@@ -62,7 +62,7 @@ CREATE TABLE follows (
 CREATE TABLE posts (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NULL REFERENCES users ON DELETE SET NULL,
-  parent_post_id INTEGER NULL DEFAULT NULL REFERENCES users ON DELETE SET NULL,
+  parent_post_id INTEGER NULL DEFAULT NULL REFERENCES posts ON DELETE SET NULL,
   -- In the APIs title is treated as optional. However, for ease of loading,
   -- the replying-to Post's title will always be duplicated in child posts/replies.
   title VARCHAR NOT NULL,
@@ -71,5 +71,6 @@ CREATE TABLE posts (
   published BOOLEAN NOT NULL DEFAULT 'f',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL,
-  reply_count INTEGER NOT NULL DEFAULT 0
+  reply_count INTEGER NOT NULL DEFAULT 0,
+  preview BYTEA NULL DEFAULT NULL
 );

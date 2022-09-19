@@ -20,12 +20,14 @@ class PostPreview extends StatefulWidget {
   final bool allowScrollingContent;
   final double? maxContentHeight;
   final VoidCallback? onTap;
+  final bool isReply;
   const PostPreview(
       {Key? key,
       required this.server,
       required this.post,
       this.maxContentHeight = 300,
       this.onTap,
+      this.isReply = false,
       this.allowScrollingContent = false})
       : super(key: key);
 
@@ -34,7 +36,7 @@ class PostPreview extends StatefulWidget {
 }
 
 class PostPreviewState extends State<PostPreview> {
-  String get title => widget.post.title;
+  String? get title => widget.post.title;
   String? get link => widget.post.link.isEmpty
       ? null
       : widget.post.link.startsWith(RegExp(r'https?://'))
@@ -96,25 +98,26 @@ class PostPreviewState extends State<PostPreview> {
       child: Column(
         children: [
           // Text("hi"),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: content != null
-                      ? Theme.of(context).textTheme.titleLarge
-                      : title.length < 20
-                          ? Theme.of(context).textTheme.titleLarge
-                          : title.length < 255
-                              ? Theme.of(context).textTheme.titleMedium
-                              : Theme.of(context).textTheme.titleSmall,
-                  // const TextStyle(
-                  //     fontSize: 16, fontWeight: FontWeight.w500),
-                  textAlign: TextAlign.left,
+          if (title?.isNotEmpty == true && !widget.isReply)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title!,
+                    style: content != null
+                        ? Theme.of(context).textTheme.titleLarge
+                        : title!.length < 20
+                            ? Theme.of(context).textTheme.titleLarge
+                            : title!.length < 255
+                                ? Theme.of(context).textTheme.titleMedium
+                                : Theme.of(context).textTheme.titleSmall,
+                    // const TextStyle(
+                    //     fontSize: 16, fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.left,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           if (content != null || link != null)
             Container(
                 constraints: widget.maxContentHeight != null
@@ -198,8 +201,8 @@ class PostPreviewState extends State<PostPreview> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const Text(
-                " replies",
+              Text(
+                " repl${replyCount == 1 ? "y" : "ies"}",
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

@@ -43,7 +43,11 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   // Notifiers to let the App Bar communicate with pages
   Jonotifier createPost = Jonotifier();
+  Jonotifier createReply = Jonotifier();
+  Jonotifier updatePost = Jonotifier();
+  Jonotifier updateReply = Jonotifier();
   ValueNotifier<bool> canCreatePost = ValueNotifier(false);
+  ValueNotifier<bool> canCreateReply = ValueNotifier(false);
   Jonotifier scrollToTop = Jonotifier();
   Map<String, Function(BuildContext)> appBarBuilders = {};
 
@@ -84,6 +88,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
     canCreatePost.addListener(updateState);
+    canCreateReply.addListener(updateState);
     appState.accounts.addListener(updateState);
     Settings.showSettingsTabListener.addListener(updateState);
     if (MyPlatform.isMobile) {
@@ -101,6 +106,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   dispose() {
     appState.accounts.removeListener(updateState);
     canCreatePost.removeListener(updateState);
+    canCreateReply.removeListener(updateState);
     super.dispose();
   }
 

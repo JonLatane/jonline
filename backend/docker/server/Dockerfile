@@ -11,14 +11,11 @@ COPY frontend/build/web/ /opt/web
 # Jonline server binary (runs Rocket/FE/Web and Tonic/BE/gRPC services, all in one)
 COPY backend/target/release/jonline__server_release /opt/jonline
 
-# Background job binary
+# Background job binaries
 COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_expired_tokens
-COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
-
-# Ad/cookie blockers for screenshot generator
-COPY backend/docker/server/ublock /opt/ublock/
-COPY backend/docker/server/nocookies /opt/nocookies/
+# No need for the preview generator tho
+# COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 
 EXPOSE 27707 8000 80 443 8001-9000
 

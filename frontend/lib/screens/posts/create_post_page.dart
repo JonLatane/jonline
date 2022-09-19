@@ -1,6 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:jonline/screens/posts/editor_with_preview.dart';
 
 import '../../app_state.dart';
 import '../../generated/jonline.pbgrpc.dart';
@@ -11,7 +11,6 @@ import '../../models/jonline_clients.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../home_page.dart';
-import 'post_preview.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -25,39 +24,11 @@ class CreatePostPage extends StatefulWidget {
 class CreatePostPageState extends State<CreatePostPage> {
   late AppState appState;
   late HomePageState homePage;
-  bool _showPreview = false;
-  List<bool> focuses = [false, false, false];
-  bool get showPreview => _showPreview;
-  set showPreview(bool value) {
-    if (value != _showPreview) {
-      final focusSources = [titleFocus, linkFocus, contentFocus];
-      if (value == true) {
-        focuses = focusSources.map((e) => e.hasFocus).toList();
-      } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          focuses.asMap().forEach((index, hasFocus) {
-            if (hasFocus) {
-              focusSources[index].requestFocus();
-            }
-          });
-        });
-      }
 
-      setState(() {
-        _showPreview = value;
-      });
-    }
-  }
-
-  bool quickPasteDone = false;
-
-  // int counter = 1;
-  final FocusNode titleFocus = FocusNode();
   final TextEditingController titleController = TextEditingController();
-  final FocusNode linkFocus = FocusNode();
   final TextEditingController linkController = TextEditingController();
-  final FocusNode contentFocus = FocusNode();
   final TextEditingController contentController = TextEditingController();
+  final ValueNotifier<bool> enabled = ValueNotifier<bool>(true);
 
   String get title => titleController.value.text;
   String get link => linkController.value.text;
@@ -84,11 +55,8 @@ class CreatePostPageState extends State<CreatePostPage> {
   @override
   dispose() {
     homePage.createPost.removeListener(doCreate);
-    titleFocus.dispose();
     titleController.dispose();
-    contentFocus.dispose();
     contentController.dispose();
-    linkFocus.dispose();
     linkController.dispose();
     super.dispose();
   }
@@ -97,6 +65,7 @@ class CreatePostPageState extends State<CreatePostPage> {
   bool get doingCreate => _doingCreate;
   set doingCreate(bool value) {
     setState(() {
+      enabled.value = !value;
       _doingCreate = value;
     });
     homePage.canCreatePost.value = title.isNotEmpty && !value;
@@ -144,8 +113,8 @@ class CreatePostPageState extends State<CreatePostPage> {
       return;
     }
     // context.navigateBack();
-    context.replaceRoute(
-        PostDetailsRoute(id: post.id, server: JonlineAccount.selectedServer));
+    context.replaceRoute(PostDetailsRoute(
+        postId: post.id, server: JonlineAccount.selectedServer));
     final appState = context.findRootAncestorStateOfType<AppState>();
     if (appState == null) {
       doingCreate = false;
@@ -162,312 +131,24 @@ class CreatePostPageState extends State<CreatePostPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text("Create Post"),
-      //   leading: const AutoLeadingButton(
-      //     ignorePagelessRoutes: true,
-      //   ),
-      //   actions: [
-      //     SizedBox(
-      //       width: 72,
-      //       child: ElevatedButton(
-      //         style: ButtonStyle(
-      //             padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-      //             foregroundColor: MaterialStateProperty.all(
-      //                 Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
-      //             overlayColor:
-      //                 MaterialStateProperty.all(Colors.white.withAlpha(100)),
-      //             splashFactory: InkSparkle.splashFactory),
-      //         onPressed: title.isEmpty ? null : doCreate,
-      //         // doingStuff || username.isEmpty || password.isEmpty
-      //         //     ? null
-      //         //     : createAccount,
-      //         child: Padding(
-      //           padding: const EdgeInsets.all(4.0),
-      //           child: Column(
-      //             children: const [
-      //               Expanded(child: SizedBox()),
-      //               Icon(Icons.add),
-      //               // Text('jonline.io/', style: TextStyle(fontSize: 11)),
-      //               Text('CREATE', style: TextStyle(fontSize: 12)),
-      //               Expanded(child: SizedBox()),
-      //             ],
-      //           ),
-      //         ),
-      //       ),
-      //     ),
-      //     const AccountChooser(),
-      //   ],
-      // ),
-      body: Center(
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: Column(
+        body: Column(
+      children: [
+        Expanded(
+          child: Row(
             children: [
-              buildModeSwitch(context),
-              const SizedBox(height: 8),
               Expanded(
-                  child: Stack(
-                children: [
-                  IgnorePointer(
-                    ignoring: showPreview,
-                    child: AnimatedOpacity(
-                        duration: animationDuration,
-                        opacity: showPreview ? 0.03 : 1,
-                        child: buildEditor(context)),
-                  ),
-                  IgnorePointer(
-                    ignoring: !showPreview,
-                    child: AnimatedOpacity(
-                        duration: animationDuration,
-                        opacity: !showPreview ? 0 : 1,
-                        child: buildPreview(context)),
-                  )
-                ],
-              )),
+                child: EditorWithPreview(
+                  titleController: titleController,
+                  linkController: linkController,
+                  contentController: contentController,
+                  enabled: enabled,
+                ),
+              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget buildModeSwitch(BuildContext context) {
-    return Card(
-      child: Row(
-        children: [
-          Expanded(
-            flex: 6,
-            child: TextButton(
-              onPressed: () {
-                showPreview = false;
-              },
-              style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(
-                      !showPreview ? Colors.white : Colors.transparent)),
-              // doingStuff || username.isEmpty || password.isEmpty
-              //     ? null
-              //     : createAccount,
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Column(
-                  children: const [
-                    Text('EDIT'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 6,
-            child: TextButton(
-              onPressed: title.isEmpty
-                  ? null
-                  : () {
-                      showPreview = true;
-                    },
-              style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(
-                      showPreview ? Colors.white : Colors.transparent)),
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Column(
-                  children: const [
-                    Text('PREVIEW'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildPreview(BuildContext context) {
-    String? content, link;
-    if (this.content.isNotEmpty) content = this.content;
-    if (this.link.isNotEmpty) link = this.link;
-    if (MediaQuery.of(context).size.height < 552) {
-      return Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: PostPreview(
-                  allowScrollingContent: true,
-                  server: JonlineAccount.selectedServer,
-                  post: Post(
-                      title: title,
-                      content: content,
-                      link: link,
-                      author: Post_Author(username: "jonline.io/jon"))),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return Column(children: [
-        const Expanded(
-          child: SizedBox(),
-        ),
-        PostPreview(
-            server: JonlineAccount.selectedServer,
-            post: Post(
-                title: title,
-                content: content,
-                link: link,
-                author: Post_Author(username: "jonline.io/jon"))),
-        const Expanded(
-          child: SizedBox(),
-        ),
-      ]);
-    }
-  }
-
-  Widget buildEditor(BuildContext context) {
-    return Column(children: [
-      TextField(
-        focusNode: titleFocus,
-        controller: titleController,
-        keyboardType: TextInputType.text,
-        textCapitalization: TextCapitalization.words,
-        enableSuggestions: true,
-        autocorrect: true,
-        maxLines: 1,
-        cursorColor: Colors.white,
-        style: const TextStyle(
-            color: Colors.white, fontWeight: FontWeight.w400, fontSize: 14),
-        enabled: !doingCreate && !showPreview,
-        decoration: const InputDecoration(
-            border: InputBorder.none, hintText: "Title", isDense: true),
-        onChanged: (value) {},
-      ),
-      Row(
-        children: [
-          Expanded(
-            child: TextField(
-              focusNode: linkFocus,
-              controller: linkController,
-              keyboardType: TextInputType.url,
-              enableSuggestions: false,
-              autocorrect: false,
-              maxLines: 1,
-              cursorColor: Colors.white,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w400,
-                  fontSize: 14),
-              enabled: !doingCreate && !showPreview,
-              decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: "Link (optional)",
-                  isDense: true),
-              onChanged: (value) {},
-            ),
-          ),
-          AnimatedContainer(
-              duration: animationDuration,
-              width: 72,
-              child: TextButton(
-                onPressed: quickPasteDone
-                    ? null
-                    : () async {
-                        final String? text =
-                            (await Clipboard.getData(Clipboard.kTextPlain))
-                                ?.text;
-                        if (text == null || !text.startsWith("http")) {
-                          showSnackBar('No link found in clipboard');
-                        } else {
-                          setState(() {
-                            linkController.text = text;
-                            quickPasteDone = true;
-                          });
-                          Future.delayed(const Duration(seconds: 1), () {
-                            setState(() {
-                              quickPasteDone = false;
-                            });
-                          });
-                        }
-                      },
-                child: Stack(
-                  children: [
-                    AnimatedOpacity(
-                        opacity: quickPasteDone ? 0.8 : 1,
-                        duration: animationDuration,
-                        child: Icon(Icons.paste, color: topColor)),
-                    AnimatedOpacity(
-                        opacity: quickPasteDone ? 1 : 0,
-                        duration: animationDuration,
-                        child: Icon(Icons.check, color: bottomColor)),
-                  ],
-                ),
-              ))
-        ],
-      ),
-      const SizedBox(height: 8),
-      Expanded(
-        child: TextField(
-          focusNode: contentFocus,
-          controller: contentController,
-          keyboardType: TextInputType.multiline,
-          textCapitalization: TextCapitalization.sentences,
-          enableSuggestions: true,
-          autocorrect: true,
-          maxLines: null,
-          cursorColor: Colors.white,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w400, fontSize: 14),
-          enabled: !doingCreate && !showPreview,
-          decoration: const InputDecoration(
-              border: InputBorder.none,
-              hintText: "Content (optional)",
-              isDense: true),
-          onChanged: (value) {},
-        ),
-      ),
-      const Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            "Markdown is supported.",
-            textAlign: TextAlign.right,
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12),
-          )),
-      // const SizedBox(height: 8),
-      // Row(
-      //   children: [
-      //     const Expanded(
-      //       flex: 1,
-      //       child: SizedBox(),
-      //     ),
-      //     Expanded(
-      //       flex: 6,
-      //       child: ElevatedButton(
-      //         onPressed: title.isEmpty ? null : () {},
-      //         // doingStuff || username.isEmpty || password.isEmpty
-      //         //     ? null
-      //         //     : createAccount,
-      //         child: Padding(
-      //           padding: const EdgeInsets.all(4.0),
-      //           child: Column(
-      //             children: const [
-      //               Text('Create Post'),
-      //             ],
-      //           ),
-      //         ),
-      //       ),
-      //     ),
-      //     const Expanded(
-      //       flex: 1,
-      //       child: SizedBox(),
-      //     ),
-      //   ],
-      // ),
-      // const Expanded(
-      //   child: SizedBox(),
-      // ),
-    ]);
+      ],
+    ));
   }
 
   showSnackBar(String message) {

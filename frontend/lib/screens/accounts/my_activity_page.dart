@@ -11,7 +11,7 @@ class MyActivityPage extends StatefulWidget {
   const MyActivityPage({
     Key? key,
     @queryParam this.filter = 'none',
-    @PathParam('account_id') this.accountId = '',
+    @pathParam this.accountId = '',
   }) : super(key: key);
 
   @override

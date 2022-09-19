@@ -11,6 +11,7 @@ extern crate ring;
 extern crate tonic_web;
 extern crate futures;
 
+
 pub mod auth;
 pub mod db_connection;
 pub mod jonline;
@@ -19,6 +20,16 @@ pub mod protos;
 pub mod rpcs;
 pub mod schema;
 pub mod conversions;
+#[cfg(test)]
+mod tests {
+    use crate::conversions::ToProtoId;
+    use crate::conversions::ToDbId;
+
+    #[test]
+    fn id_conversions_work() {
+        assert_eq!(10, 10.to_proto_id().to_db_id().unwrap());
+    }
+}
 
 pub fn report_error<E: 'static>(err: E)
 where

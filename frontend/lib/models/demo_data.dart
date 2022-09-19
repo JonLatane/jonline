@@ -55,7 +55,76 @@ string'''),
   try {
     await client.createPost(
         CreatePostRequest(
-            title: "This is a post with a title - no link or content"),
+            title: "BeatScratch Legacy (formerly Topologica) on the Play Store",
+            link:
+                "https://play.google.com/store/apps/details?id=com.jonlatane.beatpad.free&hl=en_US&gl=US",
+            content: "Not maintained, but still available on the Play Store."),
+        options: account.authenticatedCallOptions);
+  } catch (e) {
+    showSnackBar("Error posting demo data: $e");
+    return;
+  }
+  await communicationDelay;
+  showSnackBar("Posting demo data 3...");
+  try {
+    await client.createPost(
+        CreatePostRequest(
+            title: "Yay socialism!",
+            link: "https://www.dsanc.org",
+            content: "I should go to more meetings but eh I pay my dues."),
+        options: account.authenticatedCallOptions);
+  } catch (e) {
+    showSnackBar("Error posting demo data: $e");
+    return;
+  }
+  await communicationDelay;
+  showSnackBar("Posting demo data 4...");
+  try {
+    await client.createPost(
+        CreatePostRequest(
+            title: "BeatScratch on the App Store",
+            link: "https://apps.apple.com/us/app/beatscratch/id1509788448",
+            content: "The freshest, slickest way to scratch your beat!"),
+        options: account.authenticatedCallOptions);
+  } catch (e) {
+    showSnackBar("Error posting demo data: $e");
+    return;
+  }
+  await communicationDelay;
+  showSnackBar("Posting demo data 5...");
+  try {
+    await client.createPost(
+        CreatePostRequest(
+            title: "These burgers look soooo good 😋",
+            link: "https://www.eatqueenburger.com"),
+        options: account.authenticatedCallOptions);
+  } catch (e) {
+    showSnackBar("Error posting demo data: $e");
+    return;
+  }
+  await communicationDelay;
+  await communicationDelay;
+  showSnackBar("Posting demo data 6...");
+  try {
+    await client.createPost(
+        CreatePostRequest(
+            title: "BeatScratch on the Play Store",
+            link:
+                "https://play.google.com/store/apps/details?id=io.beatscratch.beatscratch_flutter_redux&hl=en_US&gl=US",
+            content:
+                "Android version of BeatScratch! FluidSynth doesn't quite keep up with AudioKit but still among the best you can get on Android."),
+        options: account.authenticatedCallOptions);
+  } catch (e) {
+    showSnackBar("Error posting demo data: $e");
+    return;
+  }
+  await communicationDelay;
+  showSnackBar("Posting demo data 7...");
+  try {
+    await client.createPost(
+        CreatePostRequest(
+            title: "These are cool! I want one",
+            link: "https://www.fuell.us/products/fuell-fllow-e-motorcycle"),
         options: account.authenticatedCallOptions);
   } catch (e) {
     showSnackBar("Error posting demo data: $e");
@@ -63,11 +132,12 @@ string'''),
   }
   await communicationDelay;
 
-  showSnackBar("Posting demo data 3...");
+  showSnackBar("Posting demo data 8...");
   try {
     await client.createPost(
         CreatePostRequest(
-            title: "This is a post with a title and link only",
+            title:
+                "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness.",
             link: "https://instagram.com/jon_luvs_ya"),
         options: account.authenticatedCallOptions);
   } catch (e) {

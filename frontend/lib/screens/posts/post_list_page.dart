@@ -113,7 +113,7 @@ class PostListScreenState extends State<PostListScreen>
                           server: JonlineAccount.selectedServer,
                           onTap: () {
                             context.pushRoute(PostDetailsRoute(
-                                id: post.id,
+                                postId: post.id,
                                 server: JonlineAccount.selectedServer));
                           },
                           post: post,
@@ -138,7 +138,7 @@ class PostListScreenState extends State<PostListScreen>
                         maxContentHeight: 400,
                         onTap: () {
                           context.pushRoute(PostDetailsRoute(
-                              id: post.id,
+                              postId: post.id,
                               server: JonlineAccount.selectedServer));
                         },
                         post: post,

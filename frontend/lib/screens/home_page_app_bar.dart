@@ -40,8 +40,7 @@ extension AppBarManagement on HomePageState {
         // context.topRoute.args[0] as String;
         if (titleServer == null || titleUsername == null) {
           // final Object? accountId = context.topRoute.args;
-          final String accountId =
-              context.topRoute.pathParams.get('account_id');
+          final String accountId = context.topRoute.pathParams.get('accountId');
           Future.microtask(() async {
             final account = (await JonlineAccount.accounts).firstWhere(
               (account) => account.id == accountId,
@@ -83,6 +82,9 @@ extension AppBarManagement on HomePageState {
         return 'Accounts & Profiles';
       case 'CreatePostRoute':
         return 'Create Post';
+      case 'CreateReplyRoute':
+      case 'CreateDeepReplyRoute':
+        return 'Create Reply';
       case 'SettingsRoute':
       case 'SettingsTab':
         return 'Settings';
@@ -147,6 +149,43 @@ extension AppBarManagement on HomePageState {
                         Icon(Icons.add),
                         // Text('jonline.io/', style: TextStyle(fontSize: 11)),
                         Text('CREATE', style: TextStyle(fontSize: 12)),
+                        Expanded(child: SizedBox()),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          const AccountChooser(),
+        ];
+      case 'CreateDeepReplyRoute':
+      case 'CreateReplyRoute':
+        return [
+          if (JonlineAccount.selectedAccount != null)
+            SizedBox(
+              width: 72,
+              child: ElevatedButton(
+                style: ButtonStyle(
+                    padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
+                    foregroundColor: MaterialStateProperty.all(
+                        Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
+                    overlayColor:
+                        MaterialStateProperty.all(Colors.white.withAlpha(100)),
+                    splashFactory: InkSparkle.splashFactory),
+                onPressed: canCreateReply.value ? () => createReply() : null,
+                // doingStuff || username.isEmpty || password.isEmpty
+                //     ? null
+                //     : createAccount,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Opacity(
+                    opacity: canCreateReply.value ? 1 : 0.5,
+                    child: Column(
+                      children: const [
+                        Expanded(child: SizedBox()),
+                        Icon(Icons.reply),
+                        // Text('jonline.io/', style: TextStyle(fontSize: 11)),
+                        Text('REPLY', style: TextStyle(fontSize: 12)),
                         Expanded(child: SizedBox()),
                       ],
                     ),

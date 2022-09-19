@@ -75,6 +75,7 @@ table! {
 
 joinable!(federated_accounts -> federated_servers (federated_server_id));
 joinable!(federated_accounts -> users (user_id));
+joinable!(posts -> users (user_id));
 joinable!(user_auth_tokens -> users (user_id));
 joinable!(user_refresh_tokens -> user_auth_tokens (auth_token_id));
 
