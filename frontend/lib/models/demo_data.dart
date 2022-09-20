@@ -4,7 +4,6 @@ import '../generated/posts.pb.dart';
 import 'jonline_account.dart';
 import 'jonline_account_operations.dart';
 import 'jonline_clients.dart';
-import 'package:protobuf/protobuf.dart';
 
 postDemoData(JonlineAccount account, Function(String) showSnackBar) async {
   final JonlineClient? client =
@@ -109,17 +108,18 @@ Jonline takes large-scale social media and downsizes it. It's just Posts and Eve
 and a single server is meant for a community smaller than 100M users - typically, though,
 a handful or a few dozen people. A Jonline instance is much like a ListServ, 
 Slack/Discord server, Reddit community, IRC server if 
-you're old, or a Facebook group if you're *really* old. It keeps things *very*
+you're old, or a Facebook group if you're *really* old. It keeps things
 simple: just Posts and Events, with replies/comment threads on both. And it's
-trustworthy as fuck, because you can literally look at the 
+trustworthy, because you can literally look at the 
 [code where we store](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L24) 
-and [validate your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30).
+and [validate your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
+even [the code that was used to generate *this post you're reading right now*](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/frontend/lib/models/demo_data.dart#L105) 🤯🙃
 
 Importantly, to "run" a community like this one at [jonline.io](https://jonline.io), 
-*you have to run your own Jonline server*. (This is unlike Slack/Discord/Reddit/Facebook,
-but more like IRC, ListServ, or email.) You can (and should!) sign up here at 
-[jonline.io](https://jonline.io) to post/comment; just remember I'll likely 
-delete all your (and my) data as I continue developing here. 
+you have to (or really, *get to*) run your own Jonline server. 
+(This is unlike Slack/Discord/Reddit/Facebook, but more like IRC, ListServ, or email.) 
+You can (and should!) sign up here at [jonline.io](https://jonline.io) to post/comment; 
+just remember I'll likely delete all your (and my) data as I continue developing here. 
 The upside: nothing you do here at [jonline.io](https://jonline.io) matters! ✨🔮✨ 
 So just button-mash a password (your account will stay logged-in/available until 
 data is reset) and you can post/comment away in a few seconds! Create lots of 
@@ -136,5 +136,16 @@ DIY Docker person, images are at https://hub.docker.com/r/jonlatane/jonline.
 
 If you feel *really* brave, and wanna contribute to a Flutter/Rust full-stack
 app, info on that stuff is *also* at https://github.com/jonlatane/jonline.
+The tl;dr: [Jonline BE](https://hub.docker.com/r/jonlatane/jonline) is a monolithic Rust server that runs 
+[a gRPC server via Tonic on port 27707](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/backend/src/main.rs#L45)
+along with web servers via Rocket on ports 
+[443 (if TLS is enabled)](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/backend/src/main.rs#L78), 
+[80](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/backend/src/main.rs#L68) and 
+[8000](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/backend/src/main.rs#L58). 
+Jonline FE is a Flutter app that uses the gRPC server; versions can be built for 
+iOS, Android, macOS, Windows, Linux, or any other platform Flutter supports. 
+Jonline FE's Flutter Web build is also copied to the Jonline BE docker image, 
+and served by Rocket on the ports listed. So the [single `jonline` Docker image](https://hub.docker.com/r/jonlatane/jonline) 
+is a full-stack app that can be run wherever!
 '''),
 ];

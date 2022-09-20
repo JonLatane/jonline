@@ -1,6 +1,6 @@
 FROM debian:11.5
 
-RUN apt-get update && apt-get -y install libpq5 curl 
+RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 
 # Install headless Chrome and stuff needed for it
 RUN apt-get -y install chromium gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \

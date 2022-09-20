@@ -27,10 +27,22 @@ pub fn create_post(
     validate_max_length(req.link.to_owned(), "link", 10000)?;
     validate_max_length(req.content.to_owned(), "content", 10000)?;
 
+    // Generate the list of the post's ancestors so we can increment their reply_count all at once.
+    let mut ancestor_post_ids: Vec<i32> = vec![];
     let parent_post_db_id: Option<i32> = match req.reply_to_post_id {
-        None => None,
         Some(proto_id) => match proto_id.to_db_id() {
-            Ok(db_id) => Some(db_id),
+            Ok(db_id) => {
+                let mut ppdpid: Option<i32> = Some(db_id);
+                while let Some(parent_id) = ppdpid {
+                    ancestor_post_ids.push(parent_id);
+                    ppdpid = posts
+                        .select(parent_post_id)
+                        .find(parent_id)
+                        .first::<Option<i32>>(conn)
+                        .unwrap();
+                }
+                Some(db_id)
+            }
             Err(_) => {
                 return Err(Status::new(
                     Code::InvalidArgument,
@@ -38,6 +50,7 @@ pub fn create_post(
                 ))
             }
         },
+        None => None,
     };
 
     let parent_post_title: Option<String> = match parent_post_db_id {
@@ -64,19 +77,10 @@ pub fn create_post(
                 preview: None,
             })
             .get_result::<models::Post>(conn)?;
-        match parent_post_db_id {
-            Some(parent_post_db_id) => match update(posts)
-                .filter(id.eq(parent_post_db_id))
-                .set(reply_count.eq(reply_count + 1))
-                .execute(conn)?
-            {
-                // This error should be impossible given that the
-                // above insert would hit a foreign key constraint.
-                0 => Err(diesel::result::Error::NotFound),
-                _ => Ok(()),
-            }?,
-            None => (),
-        }
+        update(posts)
+            .filter(id.eq_any(ancestor_post_ids))
+            .set(reply_count.eq(reply_count + 1))
+            .execute(conn)?;
         Ok(inserted_post)
     });
 
@@ -87,6 +91,7 @@ pub fn create_post(
         }
         Err(e) => {
             println!("Error creating post! {:?}", e);
-            Err(Status::new(Code::Internal, "internal_error"))        },
+            Err(Status::new(Code::Internal, "internal_error"))
+        }
     }
 }

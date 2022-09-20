@@ -1,6 +1,6 @@
 FROM debian:11.5
 
-RUN apt-get update && apt-get -y install libpq5 curl 
+RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 
 # grpcurl is useful to have on a jonline instance!
 RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt
