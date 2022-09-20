@@ -38,6 +38,16 @@ class Settings {
     }
   }
 
+  static int _replyLayersToLoad = 2;
+  static int get replyLayersToLoad => _replyLayersToLoad;
+  static set replyLayersToLoad(int v) {
+    {
+      _replyLayersToLoad = v;
+      Future.microtask(
+          () async => appStorage.setInt("reply_layers_to_load", v));
+    }
+  }
+
   static ValueNotifier<bool> showSettingsTabListener = ValueNotifier(false);
   static bool get showSettingsTab => showSettingsTabListener.value;
   static set showSettingsTab(bool v) {
@@ -50,8 +60,9 @@ class Settings {
   static initialize(VoidCallback onComplete) async {
     _powerUserMode = appStorage.getBool("power_user_mode") ?? false;
     _developerMode = appStorage.getBool("developer_mode") ?? false;
+    _replyLayersToLoad = appStorage.getInt("reply_layers_to_load") ?? 2;
     _preferServerPreviews =
-        appStorage.getBool("prefer_server_previews") ?? false;
+        appStorage.getBool("prefer_server_previews") ?? MyPlatform.isWeb;
     showSettingsTabListener.value =
         appStorage.getBool("show_settings_tab") ?? false;
   }

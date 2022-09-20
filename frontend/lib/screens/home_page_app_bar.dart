@@ -94,6 +94,8 @@ extension AppBarManagement on HomePageState {
 
   List<Widget>? get actions {
     switch (context.topRoute.name) {
+      case 'PostDetailsRoute':
+        return [const AccountChooser()];
       case 'PostListRoute':
       case 'PostsTab':
         return [

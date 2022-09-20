@@ -185,6 +185,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
 
       return;
     }
+    appState.updateReplies();
     // appState.posts.value = Posts(posts: [post] + appState.posts.value.posts);
     // Future.delayed(const Duration(seconds: 3),
     //     () => appState.updatePosts(showMessage: showSnackBar));

@@ -36,6 +36,8 @@ class PostPreview extends StatefulWidget {
 }
 
 class PostPreviewState extends State<PostPreview> {
+  TextTheme get textTheme => Theme.of(context).textTheme;
+
   String? get title => widget.post.title;
   String? get link => widget.post.link.isEmpty
       ? null
@@ -92,7 +94,7 @@ class PostPreviewState extends State<PostPreview> {
 
   @override
   Widget build(BuildContext context) {
-    final Widget view = AnimatedContainer(
+    Widget view = AnimatedContainer(
       duration: animationDuration,
       padding: const EdgeInsets.all(8.0), //child: Text('hi')
       child: Column(
@@ -160,7 +162,23 @@ class PostPreviewState extends State<PostPreview> {
                                 Row(
                                   children: [
                                     Expanded(
-                                        child: MarkdownBody(data: content!)),
+                                        child: MarkdownBody(
+                                      data: content!,
+                                      selectable:
+                                          widget.maxContentHeight == null ||
+                                              widget.allowScrollingContent,
+                                      onTapLink: (text, href, title) {
+                                        if (href != null) {
+                                          try {
+                                            launchUrl(Uri.parse(href));
+                                          } catch (e) {
+                                            showSnackBar("Invalid link. 😔");
+                                          }
+                                        } else {
+                                          showSnackBar("No link. 😔");
+                                        }
+                                      },
+                                    )),
                                   ],
                                 ),
                             ],
@@ -211,6 +229,22 @@ class PostPreviewState extends State<PostPreview> {
         ],
       ),
     );
+
+    if (Settings.developerMode) {
+      view = Stack(
+        children: [
+          view,
+          Align(
+            alignment: Alignment.topRight,
+            child: Container(
+              color: Colors.black.withOpacity(0.7),
+              padding: const EdgeInsets.all(8.0),
+              child: Text(widget.post.id, style: textTheme.caption),
+            ),
+          )
+        ],
+      );
+    }
 
     final card = Card(
         child: widget.onTap == null

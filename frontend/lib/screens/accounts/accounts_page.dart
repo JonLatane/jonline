@@ -358,7 +358,7 @@ class AccountsPageState extends State<AccountsPage> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          if (Settings.developerMode)
+                          if (Settings.powerUserMode)
                             Expanded(
                               child: SizedBox(
                                 height: 32,

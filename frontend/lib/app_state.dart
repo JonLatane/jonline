@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'db.dart';
 import 'generated/posts.pb.dart';
+import 'jonotifier.dart';
 import 'main.dart';
 import 'models/jonline_account.dart';
 import 'models/jonline_operations.dart';
@@ -23,6 +24,7 @@ class AppState extends State<MyApp> {
   final authService = AuthService();
   final ValueNotifier<List<JonlineAccount>> accounts = ValueNotifier([]);
   final ValueNotifier<Posts> posts = ValueNotifier(Posts());
+  final Jonotifier updateReplies = Jonotifier();
 
   final _rootRouter = RootRouter(
     authGuard: AuthGuard(),
@@ -36,7 +38,7 @@ class AppState extends State<MyApp> {
       this.posts.value = posts;
     });
     await communicationDelay;
-    showMessage?.call("Posts updated! 🎉");
+    // showMessage?.call("Posts updated! 🎉");
   }
 
   JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
@@ -67,6 +69,8 @@ class AppState extends State<MyApp> {
   @override
   void dispose() {
     accounts.removeListener(updatePosts);
+    accounts.dispose();
+    updateReplies.dispose();
     super.dispose();
   }
 
