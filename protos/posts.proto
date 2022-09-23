@@ -5,6 +5,7 @@ package jonline;
 // import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 // import "users.proto";
+import "visibility_moderation.proto";
 
 message GetPostRequest {
   string id = 1;
@@ -38,12 +39,13 @@ message Post {
   optional Author author = 2;
   google.protobuf.Timestamp created_at = 3;
   optional google.protobuf.Timestamp updated_at = 4;
-  string title = 5;
+  optional string title = 5;
   optional string link = 6;
   optional string content = 7;
   int32 reply_count = 8;
   optional string reply_to_post_id = 9;
   optional bytes preview_image = 10;
+  Visibility visibility = 11;
 
   message Author {
     string user_id = 1;

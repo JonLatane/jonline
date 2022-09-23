@@ -20,7 +20,10 @@ pub fn create_post(
     );
     let req = request.into_inner();
     match req.title.to_owned() {
-        None => (),
+        None => match req.reply_to_post_id {
+            Some(_) => {}
+            None => return Err(Status::new(Code::InvalidArgument, "title_or_parent_post_id_required")),
+        },
         Some(other_title) => validate_length(&other_title, "title", 4, 255)?,
     }
     // validate_length(&req.title, "title", 4, 255)?;
@@ -29,7 +32,7 @@ pub fn create_post(
 
     // Generate the list of the post's ancestors so we can increment their reply_count all at once.
     let mut ancestor_post_ids: Vec<i32> = vec![];
-    let parent_post_db_id: Option<i32> = match req.reply_to_post_id {
+    let parent_post_db_id: Option<i32> = match req.reply_to_post_id.to_owned() {
         Some(proto_id) => match proto_id.to_db_id() {
             Ok(db_id) => {
                 let mut ppdpid: Option<i32> = Some(db_id);
@@ -53,17 +56,15 @@ pub fn create_post(
         None => None,
     };
 
-    let parent_post_title: Option<String> = match parent_post_db_id {
-        None => None,
-        Some(parent_id) => posts.select(title).find(parent_id).first(conn).ok(),
-    };
+    // let parent_post_title: Option<String> = match parent_post_db_id {
+    //     None => None,
+    //     Some(parent_id) => posts.select(title).find(parent_id).first(conn).ok(),
+    // };
 
-    let post_title: String = parent_post_title
-        .or(req.title.to_owned())
-        .ok_or(Status::new(
-            Code::Internal,
-            "title_or_reply_to_post_id_required",
-        ))?;
+    let post_title: Option<String> = match req.reply_to_post_id {
+        Some(_) => req.title,
+        None => None
+    };
 
     let post = conn.transaction::<models::Post, diesel::result::Error, _>(|| {
         let inserted_post = insert_into(posts)
@@ -73,7 +74,7 @@ pub fn create_post(
                 title: post_title,
                 link: req.link.to_link(),
                 content: req.content.to_owned(),
-                published: true,
+                visibility: "GLOBAL_PUBLIC".to_string(),
                 preview: None,
             })
             .get_result::<models::Post>(conn)?;

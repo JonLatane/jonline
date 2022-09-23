@@ -92,6 +92,21 @@ impl Jonline for JonLineImpl {
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
         rpcs::get_posts(request, user, &conn)
     }
+
+    async fn configure_server(
+        &self,
+        request: Request<ServerPublicConfiguration>,
+    ) -> Result<Response<ServerPublicConfiguration>, Status> {
+        Ok(Response::new(request.into_inner()))
+        // let conn = match get_connection(&self.pool) {
+        //     Err(e) => return Err(e),
+        //     Ok(conn) => conn,
+        // };
+        // match auth::get_auth_user(&request, &conn) {
+        //     Err(e) => Err(e),
+        //     Ok(user) => rpcs::create_post(request, user, &conn),
+        // }
+    }
 }
 
 fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {

@@ -236,6 +236,7 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
                       }
                     : null,
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
                     Icon(Icons.reply),
                     Text("Reply"),

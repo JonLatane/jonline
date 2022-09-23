@@ -56,15 +56,15 @@ A Dockerfile for a build server (to build `jonline` Linux x86 server images on w
 * `make local_registry_destroy` to delete the registry container.
 
 #### Build the `jonline-be-build` Image
-`make push_builder_local` will build the `jonline-be-build` image and upload it to your local registry, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `docker/build/Dockerfile` has been updated.
-* If you want to modify `jonline-be-build` and use/share it, `make push_builder_cloud` will push it to your remote `CLOUD_REGISTRY` you set in the `Makefile`.
+`make release_builder_push_local` will build the `jonline-be-build` image and upload it to your local registry, which we use to build the images we will deploy. This allows you to build imaes for Linux servers from you macOS or Windows laptop. You only need to do this once, or if `docker/build/Dockerfile` has been updated.
+* If you want to modify `jonline-be-build` and use/share it, `make release_builder_push_cloud` will push it to your remote `CLOUD_REGISTRY` you set in the `Makefile`.
 
 #### Build an Image to Deploy
 1. First, update `CLOUD_REGISTRY` in the `Makefile` to point to your registry. You will not be able to push to `docker.io/jonlatane` 🚫.
 2. `make release` will build your release (essentially, `backend/target/release/jonline`).
-3. `make push_be_release_cloud` will build the image and upload it to your Docker registry. The version will match that in the `Cargo.toml`.
+3. `make release_be_push_cloud` will build the image and upload it to your Docker registry. The version will match that in the `Cargo.toml`.
     * Be careful! If you built with `cargo build --release` and not `make release`, you could end up creating a useless Linux Docker image with a macOS or Windows `jonline` binary.
-    * You can also `make push_be_release_local` and test running the image from your local repo before pushing it to your cloud repo.
+    * You can also `make release_be_push_local` and test running the image from your local repo before pushing it to your cloud repo.
 
 #### Deploying your image
 Make sure to update `k8s/jonline.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make deploy_be_create` to launch your forked Jonline.

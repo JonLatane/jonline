@@ -207,6 +207,34 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             label: 'Settings',
           ),
       ];
+
+  DateTime? lastActiveNavTapTime;
+  handleNavThings() {
+    if (lastActiveNavTapTime != null &&
+        DateTime.now().difference(lastActiveNavTapTime!) <
+            const Duration(milliseconds: 500)) {
+      switch (context.topRoute.name) {
+        case "PostDetailsRoute":
+        case "CreatePostRoute":
+        case "CreateReplyRoute":
+        case "CreateDeepReplyRoute":
+          // context.popRoute();
+          context.replaceRoute(const PostListRoute());
+          break;
+        case "EventDetailsRoute":
+          context.replaceRoute(const EventListRoute());
+          break;
+        case "MyActivityRoute":
+          context.replaceRoute(const AccountsRoute());
+          break;
+        default:
+          print("${context.topRoute.name} not handled");
+      }
+    } else {
+      lastActiveNavTapTime = DateTime.now();
+    }
+  }
+
   Widget buildBottomNav(BuildContext context) {
     final tabsRouter = context.tabsRouter;
     final hideBottomNav = tabsRouter.topMatch.meta['hideBottomNav'] == true;
@@ -220,6 +248,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             onTap: (index) {
               if (index == tabsRouter.activeIndex) {
                 scrollToTop();
+                handleNavThings();
               }
               tabsRouter.setActiveIndex(index);
             },
@@ -254,6 +283,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 onTap: () {
                                   if (index == tabsRouter.activeIndex) {
                                     scrollToTop();
+                                    handleNavThings();
                                   }
                                   tabsRouter.setActiveIndex(index);
                                   if (MediaQuery.of(context).size.width < 700) {

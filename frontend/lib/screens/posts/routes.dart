@@ -12,18 +12,17 @@ const postsTab = AutoRoute(
   page: EmptyRouterPage,
   name: 'PostsTab',
   children: [
-    AutoRoute(path: '', page: PostListScreen),
+    AutoRoute(path: '', page: PostListScreen, guards: []),
+    AutoRoute(
+        path: 'post/:server/:postId',
+        usesPathAsKey: true,
+        page: PostDetailsPage,
+        guards: []),
     AutoRoute(
       path: 'create',
       usesPathAsKey: true,
       page: CreatePostPage,
       guards: [AuthGuard],
-    ),
-    AutoRoute(
-      path: 'post/:server/:postId',
-      usesPathAsKey: true,
-      page: PostDetailsPage,
-      guards: [],
     ),
     AutoRoute(
       path: 'post/:server/:postId/reply',
@@ -32,7 +31,7 @@ const postsTab = AutoRoute(
       guards: [AuthGuard],
     ),
     AutoRoute(
-      path: 'post/:server/:discussionPostId/reply/:postId/reply',
+      path: 'post/:server/:postId/reply/:subjectPostId/reply',
       usesPathAsKey: true,
       page: CreateDeepReplyPage,
       guards: [AuthGuard],

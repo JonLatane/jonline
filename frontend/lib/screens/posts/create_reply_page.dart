@@ -34,8 +34,8 @@ class CreateDeepReplyPage extends CreateReplyPage {
   const CreateDeepReplyPage({
     Key? key,
     @pathParam String server = "",
-    @pathParam String postId = "",
-    @pathParam String discussionPostId = "",
+    @PathParam('subjectPostId') String postId = "",
+    @PathParam('postId') String discussionPostId = "",
   }) : super(
           key: key,
           server: server,
@@ -140,9 +140,9 @@ class CreateReplyPageState extends State<CreateReplyPage> {
     }
     final account = JonlineAccount.selectedAccount!;
 
-    showSnackBar("Updating refresh token...");
+    // showSnackBar("Updating refresh token...");
     await account.updateRefreshToken(showMessage: showSnackBar);
-    await communicationDelay;
+    // await communicationDelay;
     final JonlineClient? client =
         await (account.getClient(showMessage: showSnackBar));
     if (client == null) {
@@ -201,14 +201,15 @@ class CreateReplyPageState extends State<CreateReplyPage> {
     return Scaffold(
         body: Column(
       children: [
-        if (discussionPostId != null)
-          Row(
-            children: [
+        Row(
+          children: [
+            if (discussionPostId != null)
               Expanded(
                 child: TextButton(
                   onPressed: () {
                     setState(() {
                       showingDiscussionPost = !showingDiscussionPost;
+                      if (showingDiscussionPost) showingSubject = false;
                     });
                   },
                   child: Row(
@@ -221,33 +222,18 @@ class CreateReplyPageState extends State<CreateReplyPage> {
                             child: const Icon(Icons.arrow_drop_down)),
                       ),
                       const Expanded(
-                        child: Text("Original discussion"),
+                        child: Text("Original Post..."),
                       )
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
-        if (discussionPostId != null)
-          AnimatedContainer(
-              duration: animationDuration,
-              height: showingDiscussionPost ? 150 : 0,
-              child: SingleChildScrollView(
-                  child: discussionPost != null
-                      ? PostPreview(
-                          post: discussionPost!,
-                          server: widget.server,
-                          maxContentHeight: null,
-                        )
-                      : const Text("loading"))),
-        Row(
-          children: [
             Expanded(
               child: TextButton(
                 onPressed: () {
                   setState(() {
                     showingSubject = !showingSubject;
+                    if (showingSubject) showingDiscussionPost = false;
                   });
                 },
                 child: Row(
@@ -260,7 +246,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
                           child: const Icon(Icons.arrow_drop_down)),
                     ),
                     const Expanded(
-                      child: Text("Replying to..."),
+                      child: Text("Replying To..."),
                     )
                   ],
                 ),
@@ -268,6 +254,18 @@ class CreateReplyPageState extends State<CreateReplyPage> {
             ),
           ],
         ),
+        if (discussionPostId != null)
+          AnimatedContainer(
+              duration: animationDuration,
+              height: showingDiscussionPost ? 150 : 0,
+              child: SingleChildScrollView(
+                  child: discussionPost != null
+                      ? PostPreview(
+                          post: discussionPost!,
+                          server: widget.server,
+                          maxContentHeight: null,
+                        )
+                      : const Text("loading"))),
         AnimatedContainer(
             duration: animationDuration,
             height: showingSubject ? 150 : 0,

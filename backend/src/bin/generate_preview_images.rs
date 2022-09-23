@@ -3,7 +3,7 @@ extern crate diesel;
 extern crate jonline;
 
 use diesel::*;
-use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::Png;
+use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
 use jonline::db_connection;

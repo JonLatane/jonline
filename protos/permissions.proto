@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package jonline;
+
+enum Permission {
+  VIEW_POSTS = 0;
+  CREATE_POSTS = 1;
+  GLOBALLY_PUBLISH_POSTS = 2;
+  MODERATE_POSTS = 3;
+
+  VIEW_EVENTS = 10;
+  CREATE_EVENTS = 11;
+  GLOBALLY_PUBLISH_EVENTS = 12;
+  MODERATE_EVENTS = 13;
+
+  ADMIN = 100;
+  // "Moderate users" refers to granting VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS
+  // and CREATE_EVENTS permissions to users.
+  MODERATE_USERS = 101;
+}

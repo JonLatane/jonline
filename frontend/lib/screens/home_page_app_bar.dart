@@ -7,7 +7,7 @@ import '../models/jonline_account.dart';
 import '../screens/accounts/account_chooser.dart';
 import '../screens/home_page.dart';
 
-extension AppBarManagement on HomePageState {
+extension HomePageAppBar on HomePageState {
   AppBar get appBar {
     return AppBar(
       title: titleWidget ?? Text(title),
@@ -29,6 +29,8 @@ extension AppBarManagement on HomePageState {
       case 'PostsTab':
       case 'EventListRoute':
       case 'EventsTab':
+      case 'AccountsRoute':
+      case 'AccountsTab':
         return false;
     }
     return true;

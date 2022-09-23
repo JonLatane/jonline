@@ -65,10 +65,10 @@ CREATE TABLE posts (
   parent_post_id INTEGER NULL DEFAULT NULL REFERENCES posts ON DELETE SET NULL,
   -- In the APIs title is treated as optional. However, for ease of loading,
   -- the replying-to Post's title will always be duplicated in child posts/replies.
-  title VARCHAR NOT NULL,
+  title VARCHAR NULL DEFAULT NULL,
   link VARCHAR NULL DEFAULT NULL,
   content TEXT NULL DEFAULT NULL,
-  published BOOLEAN NOT NULL DEFAULT 'f',
+  visibility VARCHAR NOT NULL DEFAULT 'private',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL,
   reply_count INTEGER NOT NULL DEFAULT 0,

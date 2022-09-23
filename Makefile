@@ -26,10 +26,6 @@ show_be_version:
 show_fe_version:
 	@echo $(FE_VERSION)
 
-# Core release targets
-release_be_local: build_be_release_binary push_be_release_local
-release_be_cloud: build_be_release_binary push_be_release_cloud
-
 # K8s server deployment targets
 deploy_be_create: deploy_ensure_namespace
 	kubectl create -f backend/k8s/jonline.yaml --save-config -n $(NAMESPACE)
@@ -96,17 +92,19 @@ deploy_be_get_certs:
 deploy_be_get_ca_certs:
 	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
 
-# Cert-Manager targets: These all require the K8s YAML 
+# Cert-Manager targets: These all revolve around generating a (.gitignored)
+# cert-manager.*.generated.yaml from a cert-manager.*.template.yaml
 deploy_certmanager_digitalocean_clean:
 	rm backend/k8s/cert-manager.digitalocean.generated.yaml
+
+# DigitalOcean Cert-Manager targets
 deploy_certmanager_digitalocean_prepare: backend/k8s/cert-manager.digitalocean.generated.yaml
 backend/k8s/cert-manager.digitalocean.generated.yaml:
 	cat backend/k8s/cert-manager.digitalocean.template.yaml | \
 	  sed 's/$${CERT_MANAGER_EMAIL}/$(CERT_MANAGER_EMAIL)/g' | \
 	  sed 's/$${CERT_MANAGER_DOMAIN}/$(CERT_MANAGER_DOMAIN)/g' \
 	  > backend/k8s/cert-manager.digitalocean.generated.yaml
-
-deploy_certmanager_digitalocean_apply: deploy_ensure_namespace
+deploy_certmanager_digitalocean_apply: deploy_ensure_namespace deploy_certmanager_digitalocean_prepare
 	kubectl apply -f backend/k8s/cert-manager.digitalocean.generated.yaml -n $(NAMESPACE)
 
 # Custom CA certificate generation targets
@@ -152,6 +150,11 @@ certs_gen_test_pass_openssl_verify:
 	openssl verify -CAfile generated_certs/ca.pem generated_certs/server.pem
 
 # DEVELOPMENT-RELATED TARGETS
+# Core release targets (for general use, CI/CD, etc.)
+release_ios: release_ios_push_testflight
+release_be_cloud: release_be_push_cloud
+release_be_local: release_be_push_local
+
 # Local registry targets for build
 local_registry_start:
 	docker start local-registry
@@ -166,46 +169,45 @@ local_registry_create:
 local_registry_destroy:
 	$(MAKE) local_registry_stop; rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
 
+# RELEASE TARGETS (for developers)
+
+# Flutter app release targets
+release_ios_push_testflight:
+	cd frontend && ./build-release ios
+
+release_web_build:
+	cd frontend && ./build-release web
+
 # jonline-be-build image targets
-push_builder_local: local_registry_create
+release_builder_push_local: local_registry_create
 	docker build . -t $(LOCAL_REGISTRY)/jonline-be-build -f backend/docker/build/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline-be-build
 
-push_builder_cloud:
+release_builder_push_cloud:
 	docker build . -t $(CLOUD_REGISTRY)/jonline-be-build -f backend/docker/build/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline-be-build
 
 # Server image build targets
-build_be_release_binary: backend/target/release/jonline__server_release
+release_be_build_binary: backend/target/release/jonline__server_release
 
-backend/target/release/jonline__server_release: push_builder_local
+backend/target/release/jonline__server_release: release_builder_push_local
 	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-be-build:latest /bin/bash -c "cargo build --release"
 	mv backend/target/release/jonline backend/target/release/jonline__server_release
 	mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release
 	mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release
 	mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release
 
-push_be_release_local: local_registry_create build_be_release_binary build_web_release
+release_be_push_local: local_registry_create release_be_build_binary release_web_build
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline
 	docker build . -t $(LOCAL_REGISTRY)/jonline_preview_generator -f backend/docker/preview_generator/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline_preview_generator
 
-push_be_release_cloud: build_be_release_binary build_web_release
+release_be_push_cloud: release_be_build_binary release_web_build
 	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
 	docker build . -t $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION) -f backend/docker/preview_generator/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION)
-
-build_web_release:
-	cd frontend && ./build-release web
-
-push_web_release_local: build_web_release
-	docker build . -t $(LOCAL_REGISTRY)/jonline-web -f frontend/docker/web/Dockerfile
-	docker push $(LOCAL_REGISTRY)/jonline-web
-
-push_ios_release:
-	cd frontend && ./build-release ios
 
 # Full-Stack dev targets
 clean:

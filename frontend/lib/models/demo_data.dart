@@ -11,7 +11,7 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar) async {
   if (client == null) {
     showSnackBar("Account not ready.");
   }
-  showSnackBar("Updating refresh token...");
+  // showSnackBar("Updating refresh token...");
   await account.updateRefreshToken(showMessage: showSnackBar);
 
   for (final data in _demoData) {

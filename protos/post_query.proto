@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package jonline;
+
+// import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+// import "users.proto";
+import "visibility.proto";
+
+
+message PostQuery {
+  oneof query {
+    SinglePostQuery single_post = 1;
+    PostRepliesQuery post_replies = 2;
+    AuthorQuery author = 3;
+  }
+
+  message SinglePostQuery {
+    string post_id = 1;
+  }
+  message PostRepliesQuery {
+    string post_id = 1;
+    uint32 depth = 2;
+    uint32 limit = 3;
+  }
+  message AuthorQuery {
+    string user_id = 1;
+    uint32 limit = 2;
+    
+  }
+}

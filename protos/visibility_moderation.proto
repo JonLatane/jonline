@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package jonline;
+
+enum Visibility {
+  VISIBILITY_UNKNOWN = 0;
+  PRIVATE = 1;
+  LIMITED = 2;
+  SERVER_PUBLIC = 3;
+  GLOBAL_PUBLIC = 4;
+}
+
+enum ModerationStatus {
+  PENDING = 0;
+  APPROVED = 1;
+  REJECTED = 2;
+}

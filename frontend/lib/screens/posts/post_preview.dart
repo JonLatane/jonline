@@ -220,7 +220,7 @@ class PostPreviewState extends State<PostPreview> {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                " repl${replyCount == 1 ? "y" : "ies"}",
+                " response${replyCount == 1 ? "" : "s"}",
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

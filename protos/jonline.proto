@@ -9,6 +9,7 @@ import "authentication.proto";
 import "posts.proto";
 import "users.proto";
 import "federation.proto";
+import "admin.proto";
 
 service Jonline {
   // Get the version (from Cargo) of the Jonline service.
@@ -27,4 +28,7 @@ service Jonline {
   rpc CreatePost(CreatePostRequest) returns (Post) {}
   // Gets Posts.
   rpc GetPosts(GetPostsRequest) returns (Posts) {}
+
+  // Configure the server. Requires ADMIN permissions (permissions.proto).
+  rpc ConfigureServer(ServerPublicConfiguration) returns (ServerPublicConfiguration) {}
 }

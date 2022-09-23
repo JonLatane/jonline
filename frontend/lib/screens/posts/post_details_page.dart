@@ -43,6 +43,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
     updatingReplies.addListener(updateState);
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.scrollToTop.addListener(scrollToTop);
+    updateReplies.addListener(updatePost);
     try {
       final post =
           appState.posts.value.posts.firstWhere((p) => p.id == widget.postId);
@@ -97,100 +98,70 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   }
 
   get q => MediaQuery.of(context);
+  updatePost() async {
+    try {
+      final post = await JonlineOperations.getSelectedPosts(
+          request: GetPostsRequest(postId: widget.postId),
+          showMessage: showSnackBar);
+      setState(() {
+        subjectPost = post!.posts.first;
+        // showSnackBar("Updated post details! 🎉");
+      });
+    } catch (e) {
+      showSnackBar("Failed to load post data for ${widget.postId} 😔");
+      showSnackBar(formatServerError(e));
+    }
+  }
+
+  onRefresh() async {
+    updateReplies();
+    await updatePost();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         body: subjectPost != null
-            ? RefreshIndicator(
-                onRefresh: () async {
-                  try {
-                    final post = await JonlineOperations.getSelectedPosts(
-                        request: GetPostsRequest(postId: widget.postId),
-                        showMessage: showSnackBar);
-                    setState(() {
-                      subjectPost = post!.posts.first;
-                      // showSnackBar("Updated post details! 🎉");
-                    });
-                  } catch (e) {
-                    showSnackBar(
-                        "Failed to load post data for ${widget.postId} 😔");
-                    showSnackBar(formatServerError(e));
-                  }
-                  updateReplies();
-                },
-                child: CustomScrollView(
-                  controller: scrollController,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: PostPreview(
-                        server: widget.server,
-                        post: subjectPost!,
-                        maxContentHeight: null,
-                      ),
-                    ),
-                    SliverPersistentHeader(
-                      key:
-                          Key("replyHeader-$canReply-${updatingReplies.value}"),
-                      floating: true,
-                      delegate: HeaderSliver(subjectPost!, updateReplies,
-                          widget.server, canReply, updatingReplies),
-                    ),
-                    ThreadedReplies(
-                      post: subjectPost!,
-                      server: widget.server,
-                      updateReplies: updateReplies,
-                      updatingReplies: updatingReplies,
-                    ),
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 48),
-                    ),
-
-                    // other sliver widgets
-                  ],
-                ),
-              ) /*SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Center(
-                    child: Column(
-                  children: [
-                    PostPreview(
-                      server: widget.server,
-                      post: subjectPost!,
-                      maxContentHeight: null,
-                    ),
-                    Row(children: [
-                      Expanded(
-                          child: TextButton(
-                        onPressed: updateReplies,
-                        child: Row(children: const [
-                          Icon(Icons.refresh),
-                          Expanded(child: Text("Update Replies")),
-                        ]),
-                      )),
-                      Expanded(
-                          child: TextButton(
-                        onPressed: () {
-                          context.pushRoute(CreateReplyRoute(
-                              postId: widget.postId, server: widget.server));
-                        },
-                        child: Row(children: const [
-                          Icon(Icons.reply),
-                          Expanded(child: Text("Reply")),
-                        ]),
-                      )),
-                    ]),
-                    SizedBox(
-                        height: q.size.height -
-                            q.padding.top -
-                            q.padding.bottom -
-                            100,
-                        child: ThreadedReplies(
+            ? Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: RefreshIndicator(
+                    onRefresh: () async => await onRefresh(),
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      controller: scrollController,
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: PostPreview(
+                            server: widget.server,
+                            post: subjectPost!,
+                            maxContentHeight: null,
+                          ),
+                        ),
+                        SliverPersistentHeader(
+                          key: Key(
+                              "replyHeader-$canReply-${updatingReplies.value}"),
+                          floating: true,
+                          // pinned: true,
+                          delegate: HeaderSliver(subjectPost!, updateReplies,
+                              widget.server, canReply, updatingReplies),
+                        ),
+                        ThreadedReplies(
                           post: subjectPost!,
                           server: widget.server,
                           updateReplies: updateReplies,
-                        ))
-                  ],
-                )))*/
+                          updatingReplies: updatingReplies,
+                        ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 48),
+                        ),
+
+                        // other sliver widgets
+                      ],
+                    ),
+                  ),
+                ),
+              )
             : Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -222,39 +193,62 @@ class HeaderSliver extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final q = MediaQuery.of(context);
-    return Column(
-      children: [
-        // PostPreview(
-        //   server: server,
-        //   post: subjectPost,
-        //   maxContentHeight: null,
-        // ),
-        Row(children: [
+    // final q = MediaQuery.of(context);
+    return Card(
+      child: Column(
+        children: [
+          // PostPreview(
+          //   server: server,
+          //   post: subjectPost,
+          //   maxContentHeight: null,
+          // ),
           Expanded(
-              child: TextButton(
-            onPressed: updatingReplies.value ? null : () => updateReplies(),
-            child: Row(children: const [
-              Icon(Icons.refresh),
-              Expanded(child: Text("Update Replies")),
+            child: Row(children: [
+              Expanded(
+                  child: TextButton(
+                onPressed: updatingReplies.value ? null : () => updateReplies(),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          // Expanded(flex: 1, child: SizedBox()),
+                          Icon(Icons.refresh),
+                          Text(
+                            "Update",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ]),
+                  ],
+                ),
+              )),
+              Expanded(
+                  child: TextButton(
+                // key: ValueKey("replyButton-${JonlineAccount.selectedAccount}"),
+                onPressed: canReply
+                    ? () {
+                        context.pushRoute(CreateReplyRoute(
+                            postId: subjectPost.id, server: server));
+                      }
+                    : null,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.reply),
+                          Text("Reply"),
+                        ]),
+                  ],
+                ),
+              )),
             ]),
-          )),
-          Expanded(
-              child: TextButton(
-            // key: ValueKey("replyButton-${JonlineAccount.selectedAccount}"),
-            onPressed: canReply
-                ? () {
-                    context.pushRoute(CreateReplyRoute(
-                        postId: subjectPost.id, server: server));
-                  }
-                : null,
-            child: Row(children: const [
-              Icon(Icons.reply),
-              Expanded(child: Text("Reply")),
-            ]),
-          )),
-        ]),
-      ],
+          ),
+        ],
+      ),
     );
   }
 

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package jonline;
+
+import "visibility_moderation.proto";
+import "permissions.proto";
+
+message ServerPublicConfiguration {
+  string name = 1;
+  repeated Permission default_user_permissions = 2;
+  ModerationDefaults post_defaults = 3;
+  ModerationDefaults event_defaults = 4;
+
+  message ModerationDefaults {
+    ModerationStatus default_moderation_status = 1;
+    // Only SERVER_PUBLIC and GLOBAL_PUBLIC are allowed.
+    Visibility default_visibility = 2;
+  }
+}

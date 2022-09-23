@@ -23,6 +23,7 @@ impl ToProtoPost for models::MinimalPost {
             author: self.proto_author(username),
             reply_count: self.reply_count,
             preview_image: None,
+            ..Default::default()
         }
     }
     fn proto_author(&self, username: Option<String>) -> Option<post::Author> {
@@ -49,6 +50,7 @@ impl ToProtoPost for models::Post {
             author: self.proto_author(username),
             reply_count: self.reply_count,
             preview_image: self.preview.to_owned(),
+            ..Default::default()
         }
     }
     fn proto_author(&self, username: Option<String>) -> Option<post::Author> {
