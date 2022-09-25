@@ -5,15 +5,48 @@ package jonline;
 import "visibility_moderation.proto";
 import "permissions.proto";
 
-message ServerPublicConfiguration {
-  string name = 1;
+// Confuguration for a Jonline server instance.
+message ServerConfiguration {
+  // The name of the server.
+  optional ServerInfo info = 1;
+  // Default user permissions given to a user. Valid values are VIEW_POSTS,
+  // CREATE_POSTS, GLOBALLY_PUBLISH_POSTS, VIEW_EVENTS, CREATE_EVENTS, and
+  // GLOBALLY_PUBLISH_EVENTS. Users with MODERATE_USERS permission can
+  // grant these permissions to other users. Only users with ADMIN can grant
+  // MODERATE_USERS, MODERATE_POSTS, and MODERATE_EVENTS.
   repeated Permission default_user_permissions = 2;
-  ModerationDefaults post_defaults = 3;
-  ModerationDefaults event_defaults = 4;
+  FeatureDefaults post_defaults = 3;
+  FeatureDefaults event_defaults = 4;
 
-  message ModerationDefaults {
-    ModerationStatus default_moderation_status = 1;
-    // Only SERVER_PUBLIC and GLOBAL_PUBLIC are allowed.
-    Visibility default_visibility = 2;
+  message FeatureDefaults {
+    // Hide the Posts or Events tab from the user with this flag.
+    bool visible = 1;
+    // Only UNMODERATED and PENDING are valid.
+    // When UNMODERATED, user reports may transition status to PENDING.
+    // When PENDING, users' SERVER_PUBLIC or GLOBAL_PUBLIC posts will not
+    // be visible until a moderator approves them. LIMITED visiblity
+    // posts are always visible to targeted users (who have not blocked 
+    // the author) regardless of default_moderation_status.
+    ModerationStatus default_moderation_status = 2;
+    // Only SERVER_PUBLIC and GLOBAL_PUBLIC are valid.
+    Visibility default_visibility = 3;
+    optional string custom_title = 4;
   }
+
+  message ServerInfo {
+    optional string name = 1;
+    optional string short_name = 2;
+    optional string description = 3;
+    optional string privacy_policy_link = 4;
+    optional string about_link = 5;
+    optional bytes logo = 6;
+
+    // Color in ARGB hex format (i.e 0xAARRGGBB).
+    // Clients may override/modify colors that cause poor UX.
+    message ServerColors {
+      optional int32 top = 1;
+      optional int32 bottom = 2;
+    }
+  }
+
 }

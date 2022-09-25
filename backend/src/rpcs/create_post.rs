@@ -30,7 +30,7 @@ pub fn create_post(
     validate_max_length(req.link.to_owned(), "link", 10000)?;
     validate_max_length(req.content.to_owned(), "content", 10000)?;
 
-    // Generate the list of the post's ancestors so we can increment their reply_count all at once.
+    // Generate the list of the post's ancestors so we can increment their response_count all at once.
     let mut ancestor_post_ids: Vec<i32> = vec![];
     let parent_post_db_id: Option<i32> = match req.reply_to_post_id.to_owned() {
         Some(proto_id) => match proto_id.to_db_id() {
@@ -74,14 +74,24 @@ pub fn create_post(
                 title: post_title,
                 link: req.link.to_link(),
                 content: req.content.to_owned(),
-                visibility: "GLOBAL_PUBLIC".to_string(),
+                visibility: "global_public".to_string(),
                 preview: None,
             })
             .get_result::<models::Post>(conn)?;
-        update(posts)
-            .filter(id.eq_any(ancestor_post_ids))
-            .set(reply_count.eq(reply_count + 1))
-            .execute(conn)?;
+            match parent_post_db_id.to_owned() {
+                Some(parent_id) => {
+                    update(posts)
+                        .filter(id.eq(parent_id))
+                        .set(reply_count.eq(reply_count + 1))
+                        .execute(conn)?;
+                    update(posts)
+                        .filter(id.eq_any(ancestor_post_ids))
+                        .set(response_count.eq(response_count + 1))
+                        .execute(conn)?;
+                        
+                    },
+                None => ()
+            };
         Ok(inserted_post)
     });
 

@@ -50,7 +50,10 @@ impl Jonline for JonLineImpl {
         rpcs::login(request, &conn)
     }
 
-    async fn refresh_token(&self, request: Request<RefreshTokenRequest>) -> Result<Response<ExpirableToken>, Status> {
+    async fn refresh_token(
+        &self,
+        request: Request<RefreshTokenRequest>,
+    ) -> Result<Response<ExpirableToken>, Status> {
         let conn = match get_connection(&self.pool) {
             Err(e) => return Err(e),
             Ok(conn) => conn,
@@ -92,11 +95,30 @@ impl Jonline for JonLineImpl {
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
         rpcs::get_posts(request, user, &conn)
     }
+    async fn query_posts(
+        &self,
+        _request: Request<PostQuery>,
+    ) -> Result<Response<Posts>, Status> {
+        //TODO implement me!
+        Ok(Response::new(Posts {
+            ..Default::default()
+        }))
+    }
 
+    async fn get_server_configuration(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<ServerConfiguration>, Status> {
+        //TODO implement me!
+        Ok(Response::new(ServerConfiguration {
+            ..Default::default()
+        }))
+    }
     async fn configure_server(
         &self,
-        request: Request<ServerPublicConfiguration>,
-    ) -> Result<Response<ServerPublicConfiguration>, Status> {
+        request: Request<ServerConfiguration>,
+    ) -> Result<Response<ServerConfiguration>, Status> {
+        //TODO implement me!
         Ok(Response::new(request.into_inner()))
         // let conn = match get_connection(&self.pool) {
         //     Err(e) => return Err(e),
@@ -107,6 +129,27 @@ impl Jonline for JonLineImpl {
         //     Ok(user) => rpcs::create_post(request, user, &conn),
         // }
     }
+
+
+    async fn update_post(
+        &self,
+        _request: Request<Post>,
+    ) -> Result<Response<Post>, Status> {
+        //TODO implement me!
+        Ok(Response::new(Post {
+            ..Default::default()
+        }))
+    }
+    async fn delete_post(
+        &self,
+        _request: Request<Post>,
+    ) -> Result<Response<Post>, Status> {
+        //TODO implement me!
+        Ok(Response::new(Post {
+            ..Default::default()
+        }))
+    }
+
 }
 
 fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {

@@ -21,7 +21,7 @@ impl ToProtoPost for models::MinimalPost {
             }),
             updated_at: None,
             author: self.proto_author(username),
-            reply_count: self.reply_count,
+            response_count: self.response_count,
             preview_image: None,
             ..Default::default()
         }
@@ -48,7 +48,7 @@ impl ToProtoPost for models::Post {
             }),
             updated_at: None,
             author: self.proto_author(username),
-            reply_count: self.reply_count,
+            response_count: self.response_count,
             preview_image: self.preview.to_owned(),
             ..Default::default()
         }

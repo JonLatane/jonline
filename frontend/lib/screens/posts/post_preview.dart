@@ -49,7 +49,7 @@ class PostPreviewState extends State<PostPreview> {
       widget.post.content.isEmpty ? null : widget.post.content;
   String? get username =>
       widget.post.author.username.isEmpty ? null : widget.post.author.username;
-  int get replyCount => widget.post.replyCount;
+  int get responseCount => widget.post.responseCount;
 
   bool _hasLoadedServerPreview = false;
 
@@ -82,11 +82,13 @@ class PostPreviewState extends State<PostPreview> {
           ?.previewImage;
       previewStorage.write(key, previewData);
     }
+    if (!mounted) return;
     if (previewData != null && previewData.isNotEmpty) {
       setState(() {
         previewImage = previewData;
       });
     }
+    if (!mounted) return;
     setState(() {
       _hasLoadedServerPreview = true;
     });
@@ -215,12 +217,12 @@ class PostPreviewState extends State<PostPreview> {
                 color: Colors.white,
               ),
               Text(
-                replyCount.toString(),
+                responseCount.toString(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                " response${replyCount == 1 ? "" : "s"}",
+                " response${responseCount == 1 ? "" : "s"}",
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

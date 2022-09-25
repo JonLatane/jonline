@@ -3,9 +3,9 @@ syntax = "proto3";
 package jonline;
 
 // import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
+// import "google/protobuf/timestamp.proto";
 // import "users.proto";
-import "visibility.proto";
+// import "visibility_moderation.proto";
 
 
 message PostQuery {
@@ -15,8 +15,13 @@ message PostQuery {
     AuthorQuery author = 3;
   }
 
+  // Request a single Post, along with its preview, and a limited number of
+  // responses up to a given depth.
   message SinglePostQuery {
     string post_id = 1;
+    bool include_preview = 2;
+    uint32 response_depth = 3;
+    uint32 response_limit = 4;
   }
   message PostRepliesQuery {
     string post_id = 1;
@@ -26,6 +31,6 @@ message PostQuery {
   message AuthorQuery {
     string user_id = 1;
     uint32 limit = 2;
-    
+
   }
 }

@@ -15,6 +15,7 @@ import 'federation.pb.dart' as $1;
 import 'authentication.pb.dart' as $2;
 import 'users.pb.dart' as $3;
 import 'posts.pb.dart' as $4;
+import 'admin.pb.dart' as $5;
 export 'jonline.pb.dart';
 
 class JonlineClient extends $grpc.Client {
@@ -53,6 +54,12 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/GetPosts',
       ($4.GetPostsRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $4.Posts.fromBuffer(value));
+  static final _$configureServer = $grpc.ClientMethod<
+          $5.ServerPublicConfiguration, $5.ServerPublicConfiguration>(
+      '/jonline.Jonline/ConfigureServer',
+      ($5.ServerPublicConfiguration value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) =>
+          $5.ServerPublicConfiguration.fromBuffer(value));
 
   JonlineClient($grpc.ClientChannel channel,
       {$grpc.CallOptions? options,
@@ -95,6 +102,12 @@ class JonlineClient extends $grpc.Client {
   $grpc.ResponseFuture<$4.Posts> getPosts($4.GetPostsRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getPosts, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.ServerPublicConfiguration> configureServer(
+      $5.ServerPublicConfiguration request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$configureServer, request, options: options);
   }
 }
 
@@ -154,6 +167,15 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $4.GetPostsRequest.fromBuffer(value),
         ($4.Posts value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.ServerPublicConfiguration,
+            $5.ServerPublicConfiguration>(
+        'ConfigureServer',
+        configureServer_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $5.ServerPublicConfiguration.fromBuffer(value),
+        ($5.ServerPublicConfiguration value) => value.writeToBuffer()));
   }
 
   $async.Future<$1.GetServiceVersionResponse> getServiceVersion_Pre(
@@ -191,6 +213,12 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getPosts(call, await request);
   }
 
+  $async.Future<$5.ServerPublicConfiguration> configureServer_Pre(
+      $grpc.ServiceCall call,
+      $async.Future<$5.ServerPublicConfiguration> request) async {
+    return configureServer(call, await request);
+  }
+
   $async.Future<$1.GetServiceVersionResponse> getServiceVersion(
       $grpc.ServiceCall call, $0.Empty request);
   $async.Future<$2.AuthTokenResponse> createAccount(
@@ -205,4 +233,6 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $4.CreatePostRequest request);
   $async.Future<$4.Posts> getPosts(
       $grpc.ServiceCall call, $4.GetPostsRequest request);
+  $async.Future<$5.ServerPublicConfiguration> configureServer(
+      $grpc.ServiceCall call, $5.ServerPublicConfiguration request);
 }

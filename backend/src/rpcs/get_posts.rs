@@ -42,7 +42,7 @@ fn get_by_post_id(post_id: &str, conn: &PgPooledConnection) -> Result<Vec<Post>,
             schema::posts::all_columns,
             schema::users::username.nullable(),
         ))
-        .filter(schema::posts::visibility.eq("GLOBAL_PUBLIC"))
+        .filter(schema::posts::visibility.eq("global_public"))
         .filter(schema::posts::id.eq(post_db_id))
         .order(schema::posts::created_at.desc())
         .limit(1)
@@ -65,7 +65,7 @@ fn get_all_posts(
                 models::MINIMAL_POST_COLUMNS,
                 schema::users::username.nullable(),
             ))
-            .filter(schema::posts::visibility.eq("GLOBAL_PUBLIC"))
+            .filter(schema::posts::visibility.eq("global_public"))
             .filter(schema::posts::parent_post_id.is_null())
             .order(schema::posts::created_at.desc())
             .limit(100)
@@ -87,7 +87,7 @@ fn get_replies_to_post_id(post_id: &str, conn: &PgPooledConnection) -> Result<Ve
             models::MINIMAL_POST_COLUMNS,
             schema::users::username.nullable(),
         ))
-        .filter(schema::posts::visibility.eq("GLOBAL_PUBLIC"))
+        .filter(schema::posts::visibility.eq("global_public"))
         .filter(schema::posts::parent_post_id.eq(post_db_id))
         .order(schema::posts::created_at.desc())
         .limit(100)

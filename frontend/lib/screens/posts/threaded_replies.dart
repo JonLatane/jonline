@@ -60,7 +60,7 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
     for (int i = 1; i < Settings.replyLayersToLoad; i++) {
       final repliesCopy = List.from(updatedReplies);
       for (final reply in repliesCopy) {
-        if (reply.post.replyCount == 0 || subRepliesLoaded.contains(reply)) {
+        if (reply.post.responseCount == 0 || subRepliesLoaded.contains(reply)) {
           continue;
         }
         // subReplyFutures.add(Future.microtask(() async {

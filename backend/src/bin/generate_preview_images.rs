@@ -54,12 +54,13 @@ pub fn main() {
 
 fn generate_preview(url: &str) -> Result<Vec<u8>, anyhow::Error> {
     let options = headless_chrome::LaunchOptionsBuilder::default()
+        .headless(false)
         .sandbox(false)
         .args(
             [
                 std::ffi::OsStr::new("--hide-scrollbars"),
                 std::ffi::OsStr::new("--lang=en_US"),
-                std::ffi::OsStr::new("--headless=chrome"),
+                // std::ffi::OsStr::new("--headless=chrome"),
             ]
             .to_vec(),
         )

@@ -1,3 +1,14 @@
+CREATE TABLE server_configurations (
+  id SERIAL PRIMARY KEY,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  server_info JSONB NOT NULL DEFAULT '{}'::JSONB,
+  default_user_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
+  post_defaults JSONB NOT NULL DEFAULT '{}'::JSONB,
+  event_defaults JSONB NOT NULL DEFAULT '{}'::JSONB,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 -- CORE USER/AUTH MODELS
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -5,6 +16,7 @@ CREATE TABLE users (
   password_salted_hash VARCHAR NOT NULL,
   email VARCHAR NULL DEFAULT NULL,
   phone VARCHAR NULL DEFAULT NULL,
+  permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -69,8 +81,10 @@ CREATE TABLE posts (
   link VARCHAR NULL DEFAULT NULL,
   content TEXT NULL DEFAULT NULL,
   visibility VARCHAR NOT NULL DEFAULT 'private',
+  moderation_status VARCHAR NOT NULL DEFAULT 'unmoderated',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL,
+  response_count INTEGER NOT NULL DEFAULT 0,
   reply_count INTEGER NOT NULL DEFAULT 0,
   preview BYTEA NULL DEFAULT NULL
 );

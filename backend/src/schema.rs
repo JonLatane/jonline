@@ -34,10 +34,36 @@ table! {
         link -> Nullable<Varchar>,
         content -> Nullable<Text>,
         visibility -> Varchar,
+        moderation_status -> Varchar,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
+        response_count -> Int4,
         reply_count -> Int4,
         preview -> Nullable<Bytea>,
+    }
+}
+
+table! {
+    server_configuration (id) {
+        id -> Int4,
+        active -> Bool,
+        server_info -> Jsonb,
+        default_user_permissions -> Jsonb,
+        post_defaults -> Jsonb,
+        event_defaults -> Jsonb,
+    }
+}
+
+table! {
+    server_configurations (id) {
+        id -> Int4,
+        active -> Bool,
+        server_info -> Jsonb,
+        default_user_permissions -> Jsonb,
+        post_defaults -> Jsonb,
+        event_defaults -> Jsonb,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -68,6 +94,7 @@ table! {
         password_salted_hash -> Varchar,
         email -> Nullable<Varchar>,
         phone -> Nullable<Varchar>,
+        permissions -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -84,6 +111,8 @@ allow_tables_to_appear_in_same_query!(
     federated_servers,
     follows,
     posts,
+    server_configuration,
+    server_configurations,
     user_auth_tokens,
     user_refresh_tokens,
     users,

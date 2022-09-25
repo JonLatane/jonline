@@ -42,10 +42,12 @@ message Post {
   optional string title = 5;
   optional string link = 6;
   optional string content = 7;
-  int32 reply_count = 8;
-  optional string reply_to_post_id = 9;
-  optional bytes preview_image = 10;
-  Visibility visibility = 11;
+  int32 response_count = 8;
+  int32 reply_count = 9;
+  optional string reply_to_post_id = 10;
+  optional bytes preview_image = 11;
+  Visibility visibility = 12;
+  repeated Post replies = 13;
 
   message Author {
     string user_id = 1;
