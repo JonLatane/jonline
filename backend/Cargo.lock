@@ -1275,7 +1275,7 @@ checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 
 [[package]]
 name = "jonline"
-version = "0.1.91"
+version = "0.1.93"
 dependencies = [
  "anyhow",
  "bcrypt",
@@ -1286,10 +1286,12 @@ dependencies = [
  "futures 0.3.24",
  "headless_chrome",
  "prost",
+ "prost-build",
  "prost-types",
  "regex",
  "ring",
  "rocket",
+ "serde",
  "serde_json",
  "tokio",
  "tonic",

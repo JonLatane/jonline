@@ -153,9 +153,8 @@ class CreateReplyPageState extends State<CreateReplyPage> {
     }
     showSnackBar("Creating reply...");
     final startTime = DateTime.now();
-    final Post reply;
     try {
-      reply = await client!.createPost(
+      await client!.createPost(
           CreatePostRequest(replyToPostId: subjectPost!.id, content: content),
           options: account.authenticatedCallOptions);
     } catch (e) {

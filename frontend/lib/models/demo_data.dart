@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../app_state.dart';
 import '../generated/jonline.pbgrpc.dart';
 import '../generated/posts.pb.dart';
@@ -14,18 +16,60 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar) async {
   // showSnackBar("Updating refresh token...");
   await account.updateRefreshToken(showMessage: showSnackBar);
 
+  final List<Post> posts = [];
   for (final data in _demoData) {
     showSnackBar('Posting "${data.title}"...');
     try {
-      await client!.createPost(data, options: account.authenticatedCallOptions);
+      posts.add(await client!
+          .createPost(data, options: account.authenticatedCallOptions));
     } catch (e) {
       showSnackBar("Error posting demo data: $e");
       return;
     }
     await communicationDelay;
   }
-  showSnackBar("Posted demo data successfully! 🎉");
+  showSnackBar(
+      "Posted demo topics successfully! 🎉 Generating conversations...");
+  int replyCount = 0;
+  for (final post in posts) {
+    final totalReplies = Random().nextInt(12);
+    final targets = [post];
+    // showSnackBar('Replying to "${post.title}"...');
+    for (int i = 0; i < totalReplies; i++) {
+      final reply = _demoReplies[_random.nextInt(_demoReplies.length)];
+      final target = targets[_random.nextInt(targets.length)];
+      try {
+        final replyPost = await client!.createPost(
+            CreatePostRequest(
+              replyToPostId: target.id,
+              content: reply,
+            ),
+            options: account.authenticatedCallOptions);
+        targets.add(replyPost);
+        if (++replyCount % 10 == 0) {
+          showSnackBar('Posted $replyCount replies.');
+          await communicationDelay;
+        }
+      } catch (e) {
+        showSnackBar("Error posting demo data: $e");
+        return;
+      }
+    }
+  }
+  showSnackBar("Posted all demo data, with $replyCount replies 🎉🎉🎉🎉🎉 ");
 }
+
+final _random = Random();
+
+final List<String> _demoReplies = [
+  "Wow, that's a great idea!",
+  "I don't think that's really the best idea.",
+  "And your mother too!",
+  "You should be kind to others and hydrate",
+  "Ape stonk moon",
+  "Mercury in the microwave",
+  "It seems like you need some self healing"
+];
 
 final List<CreatePostRequest> _demoData = [
   CreatePostRequest(

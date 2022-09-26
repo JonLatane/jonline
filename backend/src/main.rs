@@ -12,6 +12,7 @@ extern crate tonic_web;
 #[macro_use]
 extern crate rocket;
 extern crate futures;
+extern crate serde;
 extern crate serde_json;
 
 use std::{

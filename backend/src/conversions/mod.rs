@@ -9,3 +9,5 @@ pub use post_conversions::ToProtoPost;
 
 mod link_conversions;
 pub use link_conversions::ToLink;
+
+pub mod configuration_conversions;

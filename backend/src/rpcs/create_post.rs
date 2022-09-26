@@ -56,14 +56,9 @@ pub fn create_post(
         None => None,
     };
 
-    // let parent_post_title: Option<String> = match parent_post_db_id {
-    //     None => None,
-    //     Some(parent_id) => posts.select(title).find(parent_id).first(conn).ok(),
-    // };
-
     let post_title: Option<String> = match req.reply_to_post_id {
-        Some(_) => req.title,
-        None => None
+        Some(_) => None,
+        None => req.title
     };
 
     let post = conn.transaction::<models::Post, diesel::result::Error, _>(|| {

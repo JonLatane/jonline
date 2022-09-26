@@ -196,6 +196,7 @@ backend/target/release/jonline__server_release: release_builder_push_local
 	mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release
 	mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release
 	mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release
+	mv backend/target/release/set_admin backend/target/release/set_admin_images__server_release
 
 release_be_push_local: local_registry_create release_be_build_binary release_web_build
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile

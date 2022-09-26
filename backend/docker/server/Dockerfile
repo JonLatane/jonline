@@ -13,8 +13,12 @@ COPY backend/target/release/jonline__server_release /opt/jonline
 
 # Background job binaries
 COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_expired_tokens
+
+# Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
-# No need for the preview generator tho
+COPY backend/target/release/set_admin__server_release /opt/set_admin
+
+# No need for the preview generator though!
 # COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 
 EXPOSE 27707 8000 80 443 8001-9000

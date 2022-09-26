@@ -384,6 +384,14 @@ class AccountsPageState extends State<AccountsPage> {
                       )
                     ],
                   ),
+                  // Align(
+                  //     alignment: Alignment.bottomLeft,
+                  //     child: Transform.translate(
+                  //         offset: Offset(
+                  //             100 * MediaQuery.of(context).textScaleFactor,
+                  //             -30),
+                  //         child: TextButton(
+                  //             onPressed: () {}, child: Icon(Icons.copy)))),
                   Align(
                     alignment: Alignment.topRight,
                     child: Transform.translate(

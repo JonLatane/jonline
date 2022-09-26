@@ -1,10 +1,11 @@
+-- SERVER CONFIGURATION MODEL
 CREATE TABLE server_configurations (
   id SERIAL PRIMARY KEY,
   active BOOLEAN NOT NULL DEFAULT TRUE,
   server_info JSONB NOT NULL DEFAULT '{}'::JSONB,
   default_user_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
-  post_defaults JSONB NOT NULL DEFAULT '{}'::JSONB,
-  event_defaults JSONB NOT NULL DEFAULT '{}'::JSONB,
+  post_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
+  event_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

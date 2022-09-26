@@ -44,24 +44,13 @@ table! {
 }
 
 table! {
-    server_configuration (id) {
-        id -> Int4,
-        active -> Bool,
-        server_info -> Jsonb,
-        default_user_permissions -> Jsonb,
-        post_defaults -> Jsonb,
-        event_defaults -> Jsonb,
-    }
-}
-
-table! {
     server_configurations (id) {
         id -> Int4,
         active -> Bool,
         server_info -> Jsonb,
         default_user_permissions -> Jsonb,
-        post_defaults -> Jsonb,
-        event_defaults -> Jsonb,
+        post_settings -> Jsonb,
+        event_settings -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -111,7 +100,6 @@ allow_tables_to_appear_in_same_query!(
     federated_servers,
     follows,
     posts,
-    server_configuration,
     server_configurations,
     user_auth_tokens,
     user_refresh_tokens,

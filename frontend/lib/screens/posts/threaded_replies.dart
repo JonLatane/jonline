@@ -55,7 +55,7 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
     //   replies = posts.posts.map((p) => ThreadedReply(p, 0)).toList();
     // });
 
-    List<Future<void>> subReplyFutures = [];
+    // List<Future<void>> subReplyFutures = [];
     Set<String> preloadedReplies = {};
     for (int i = 1; i < Settings.replyLayersToLoad; i++) {
       final repliesCopy = List.from(updatedReplies);

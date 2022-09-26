@@ -16,7 +16,8 @@ message PostQuery {
   }
 
   // Request a single Post, along with its preview, and a limited number of
-  // responses up to a given depth.
+  // responses up to a given depth. Examples:
+  // * {depth: 0} - Get only the post, no replies/responses.
   message SinglePostQuery {
     string post_id = 1;
     bool include_preview = 2;

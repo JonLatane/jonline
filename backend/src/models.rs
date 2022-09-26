@@ -10,11 +10,19 @@ pub struct ServerConfiguration {
     
     pub server_info: serde_json::Value,
     pub default_user_permissions: serde_json::Value,
-    pub post_defaults: serde_json::Value,
-    pub event_defaults: serde_json::Value,
+    pub post_settings: serde_json::Value,
+    pub event_settings: serde_json::Value,
 
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
+}
+#[derive(Debug, Insertable)]
+#[table_name = "server_configurations"]
+pub struct NewServerConfiguration {    
+    pub server_info: serde_json::Value,
+    pub default_user_permissions: serde_json::Value,
+    pub post_settings: serde_json::Value,
+    pub event_settings: serde_json::Value
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]

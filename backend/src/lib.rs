@@ -10,6 +10,8 @@ extern crate bs58;
 extern crate ring;
 extern crate tonic_web;
 extern crate futures;
+extern crate serde;
+extern crate serde_json;
 
 
 pub mod auth;
