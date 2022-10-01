@@ -3,7 +3,7 @@ pub trait ToProtoId {
 }
 impl ToProtoId for i32 {
     fn to_proto_id(&self) -> String {
-        let id_bytes = (self + 10000).to_ne_bytes();
+        let id_bytes = (self + OFFSET).to_ne_bytes();
         bs58::encode(id_bytes).into_string()
     }
 }
@@ -21,6 +21,8 @@ impl ToDbId for String {
                 index: 0,
             });
         }
-        Ok(id - 10000)
+        Ok(id - OFFSET)
     }
 }
+
+const OFFSET: i32 = 7;

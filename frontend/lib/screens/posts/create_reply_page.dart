@@ -79,7 +79,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
-          final post = await JonlineOperations.getSelectedPosts(
+          final post = await JonlineOperations.getPosts(
               request: GetPostsRequest(postId: widget.postId),
               showMessage: showSnackBar);
           setState(() {
@@ -99,7 +99,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
       } catch (e) {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           try {
-            final post = await JonlineOperations.getSelectedPosts(
+            final post = await JonlineOperations.getPosts(
                 request: GetPostsRequest(postId: widget.postId),
                 showMessage: showSnackBar);
             setState(() {

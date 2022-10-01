@@ -16,7 +16,7 @@ COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_ex
 
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
-COPY backend/target/release/set_admin__server_release /opt/set_admin
+COPY backend/target/release/set_permission__server_release /opt/set_permission
 
 # No need for the preview generator though!
 # COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images

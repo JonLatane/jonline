@@ -7,11 +7,13 @@ import 'jonline_account.dart';
 import 'jonline_account_operations.dart';
 import 'jonline_clients.dart';
 
-postDemoData(JonlineAccount account, Function(String) showSnackBar) async {
+postDemoData(JonlineAccount account, Function(String) showSnackBar,
+    AppState appState) async {
   final JonlineClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
     showSnackBar("Account not ready.");
+    return;
   }
   // showSnackBar("Updating refresh token...");
   await account.updateRefreshToken(showMessage: showSnackBar);
@@ -20,8 +22,8 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar) async {
   for (final data in _demoData) {
     showSnackBar('Posting "${data.title}"...');
     try {
-      posts.add(await client!
-          .createPost(data, options: account.authenticatedCallOptions));
+      posts.add(await client.createPost(data,
+          options: account.authenticatedCallOptions));
     } catch (e) {
       showSnackBar("Error posting demo data: $e");
       return;
@@ -30,21 +32,53 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar) async {
   }
   showSnackBar(
       "Posted demo topics successfully! 🎉 Generating conversations...");
+  // JonlineAccount? sideAccount;
+  List<JonlineAccount> sideAccounts = [];
+  String prefix = "not";
+  while (sideAccounts.length < 2 && prefix.length < 100) {
+    try {
+      final JonlineAccount? sideAccount = await JonlineAccount.createAccount(
+          account.server,
+          "$prefix-${account.username}",
+          getRandomString(15),
+          showSnackBar,
+          allowInsecure: account.allowInsecure,
+          selectAccount: false);
+      // final JonlineClient? sideClient =
+      //     await (sideAccount?.getClient(showMessage: showSnackBar));
+      if (sideAccount != null) {
+        showSnackBar("Created side account ${sideAccount.username}.");
+        appState.updateAccountList();
+        sideAccounts.add(sideAccount);
+      }
+    } catch (e) {
+      print("Error creating side account '$prefix-${account.username}': $e");
+    }
+    prefix = "not-$prefix";
+  }
+  List<JonlineAccount> replyAccounts = [
+    account,
+    ...sideAccounts,
+    ...sideAccounts,
+    ...sideAccounts
+  ];
   int replyCount = 0;
   for (final post in posts) {
-    final totalReplies = Random().nextInt(12);
+    final totalReplies = 1 + Random().nextInt(100);
     final targets = [post];
     // showSnackBar('Replying to "${post.title}"...');
     for (int i = 0; i < totalReplies; i++) {
+      final targetAccount =
+          replyAccounts[_random.nextInt(replyAccounts.length)];
       final reply = _demoReplies[_random.nextInt(_demoReplies.length)];
       final target = targets[_random.nextInt(targets.length)];
       try {
-        final replyPost = await client!.createPost(
+        final replyPost = await client.createPost(
             CreatePostRequest(
               replyToPostId: target.id,
               content: reply,
             ),
-            options: account.authenticatedCallOptions);
+            options: targetAccount.authenticatedCallOptions);
         targets.add(replyPost);
         if (++replyCount % 10 == 0) {
           showSnackBar('Posted $replyCount replies.');
@@ -59,8 +93,7 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar) async {
   showSnackBar("Posted all demo data, with $replyCount replies 🎉🎉🎉🎉🎉 ");
 }
 
-final _random = Random();
-
+// Many generated from https://www.commments.com :)
 final List<String> _demoReplies = [
   "Wow, that's a great idea!",
   "I don't think that's really the best idea.",
@@ -68,7 +101,30 @@ final List<String> _demoReplies = [
   "You should be kind to others and hydrate",
   "Ape stonk moon",
   "Mercury in the microwave",
-  "It seems like you need some self healing"
+  "It seems like you need some self healing",
+  "Leading the way mate.",
+  "I admire your spaces m8",
+  "My 15 year old child rates this shot very killer!",
+  "Alluring. So cool.",
+  "Navigation, avatar, boldness, shot – incredible, friend.",
+  "Nice use of turquoise in this design mate",
+  "Green. Mmh wondering if this comment will hit the generateor as well...",
+  "Really simple!",
+  "Flat design is going to die.",
+  "Outstandingly thought out! I'd love to see a video of how it works.",
+  "Just radiant.",
+  "I think I'm crying. It's that **bold**.",
+  "I want to learn this kind of camera angle! Teach me.",
+  "This colour palette has navigated right into my heart.",
+  "Magnificent work you have here.",
+  "These are appealing and sick :-)",
+  "Excellent, friend. I admire the use of lines and button!",
+  "Let me take a nap... great shot, anyway.",
+  "I want to learn this kind of type! Teach me.",
+  "This is minimal work!!",
+  "Nice use of aquamarine in this shot, friend.",
+  "I think I'm crying. It's that classic.",
+  "Shade, background image, icons, shot - strong, friend.",
 ];
 
 final List<CreatePostRequest> _demoData = [
@@ -146,24 +202,41 @@ string'''),
           "Jonline is released under the GPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech."),
   CreatePostRequest(
       title: "What is Jonline??",
-      content: '''The social media that capitalism has given us sucks.
+      content: '''Large-scale capitalist social media sucks for most of us. 
+Jonline takes large-scale social media and downsizes it. A Jonline *instance* 
+(like the one you're reading this post on - probably 
+[jonline.io](https://jonline.io) or [getj.online](https://getj.online)) is designed for groups like:
 
-Jonline takes large-scale social media and downsizes it. It's just Posts and Events,
-and a single server is meant for a community smaller than 100M users - typically, though,
-a handful or a few dozen people. A Jonline instance is much like a ListServ, 
-Slack/Discord server, Reddit community, IRC server if 
-you're old, or a Facebook group if you're *really* old. It keeps things
-simple: just Posts and Events, with replies/comment threads on both. And it's
-trustworthy, because you can literally look at the 
+* Neighborhoods, communities, or cities
+* (Ex-)Coworkers wanting a private channel to chat
+* Run/bike/etc. clubs
+* Hobbyist/maker groups
+* Local concert listings
+* Event venue calendars
+* Board game groups
+* D&D parties
+* App user groups
+* Online game clans
+
+Instances are designed to be maintainable by a *single person* in any of these groups,
+at a cost of no more than \$15/mo, *on any provider you choose or your own hardware*. 
+Jonline keeps things simple: there are only Users, Posts (with replies), (eventually) 
+Friendships, and (eventually) Events, along with visibility features like most 
+other social media apps, and easy-to-use admin and moderation tools. A Jonline 
+instance is much like a ListServ, Slack/Discord server, Reddit community, IRC 
+server or PHPBB/vBulletin/Wordpress forum if you're old, or a Facebook group if 
+you're *really* old. 
+
+Jonline is trustworthy, because you can literally look at the 
 [code where we store](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L24) 
 and [validate your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
 even [the code that was used to generate *this post you're reading right now*](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/frontend/lib/models/demo_data.dart#L105) 🤯🙃
 
 Importantly, to "run" a community like this one at [jonline.io](https://jonline.io), 
 you have to (or really, *get to*) run your own Jonline server. 
-(This is unlike Slack/Discord/Reddit/Facebook, but more like IRC, ListServ, or email.) 
-You can (and should!) sign up here at [jonline.io](https://jonline.io) to post/comment; 
-just remember I'll likely delete all your (and my) data as I continue developing here. 
+(This is unlike Slack/Discord/Reddit/Facebook, but more like IRC, open-source forums/blogs,
+ListServ, or email.) You can (and should!) sign up here at [jonline.io](https://jonline.io) 
+to post/comment; just remember I'll likely delete all your (and my) data as I continue developing here. 
 The upside: nothing you do here at [jonline.io](https://jonline.io) matters! ✨🔮✨ 
 So just button-mash a password (your account will stay logged-in/available until 
 data is reset) and you can post/comment away in a few seconds! Create lots of 
@@ -193,3 +266,8 @@ and served by Rocket on the ports listed. So the [single `jonline` Docker image]
 is a full-stack app that can be run wherever!
 '''),
 ];
+
+final _random = Random();
+const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
+    length, (_) => _chars.codeUnitAt(_random.nextInt(_chars.length))));

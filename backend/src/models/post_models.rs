@@ -1,41 +1,6 @@
 use std::time::SystemTime;
 
-use crate::schema::server_configurations;
-use crate::schema::users;
 use crate::schema::posts;
-
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
-pub struct ServerConfiguration {
-    pub id: i32,
-    
-    pub server_info: serde_json::Value,
-    pub default_user_permissions: serde_json::Value,
-    pub post_settings: serde_json::Value,
-    pub event_settings: serde_json::Value,
-
-    pub created_at: SystemTime,
-    pub updated_at: SystemTime,
-}
-#[derive(Debug, Insertable)]
-#[table_name = "server_configurations"]
-pub struct NewServerConfiguration {    
-    pub server_info: serde_json::Value,
-    pub default_user_permissions: serde_json::Value,
-    pub post_settings: serde_json::Value,
-    pub event_settings: serde_json::Value
-}
-
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
-pub struct User {
-    pub id: i32,
-    pub username: String,
-    pub password_salted_hash: String,
-    pub email: Option<String>,
-    pub phone: Option<String>,
-    pub permissions: serde_json::Value,
-    pub created_at: SystemTime,
-    pub updated_at: SystemTime,
-}
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct Post {
@@ -46,12 +11,12 @@ pub struct Post {
     pub link: Option<String>,
     pub content: Option<String>,
     pub visibility: String,
-    pub moderation_status: String,
+    pub moderation: String,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
     pub response_count: i32,
     pub reply_count: i32,
-    pub preview: Option<Vec<u8>>
+    pub preview: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
@@ -66,7 +31,7 @@ pub struct MinimalPost {
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
     pub response_count: i32,
-    pub reply_count: i32
+    pub reply_count: i32,
 }
 
 pub static MINIMAL_POST_COLUMNS: (
@@ -102,5 +67,5 @@ pub struct NewPost {
     pub link: Option<String>,
     pub content: Option<String>,
     pub visibility: String,
-    pub preview: Option<Vec<u8>>
+    pub preview: Option<Vec<u8>>,
 }

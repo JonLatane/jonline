@@ -3,11 +3,20 @@ import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
 import '../app_state.dart';
+import '../generated/authentication.pb.dart';
+import '../generated/jonline.pbgrpc.dart';
+import '../generated/permissions.pbenum.dart';
+import 'jonline_clients.dart';
+import 'server_errors.dart';
 import 'storage.dart';
 
 const uuid = Uuid();
 
+/// Local storage for the user's account on a given Jonline instance.
+/// Constructors are private; factory methods [loginToAccount] and [createAccount]
+/// should be used instead.
 class JonlineAccount {
+  static JonlineAccount? _selectedAccount;
   static JonlineAccount? get selectedAccount => _selectedAccount;
   static set selectedAccount(JonlineAccount? account) {
     _selectedAccount = account;
@@ -18,11 +27,94 @@ class JonlineAccount {
     }
   }
 
-  static String get selectedServer =>
-      selectedAccount?.server ?? _selectedServer;
+  // static String get selectedServer =>
+  //     selectedAccount?.server ?? _selectedServer;
 
-  static JonlineAccount? _selectedAccount;
-  static const String _selectedServer = defaultServer;
+  // static const String _selectedServer = defaultServer;
+
+  static Future<JonlineAccount?> loginToAccount(String server, String username,
+      String password, Function(String) showMessage,
+      {bool allowInsecure = false, bool selectAccount = true}) async {
+    JonlineClient? client = await JonlineClients.createAndTestClient(server,
+        showMessage: showMessage, allowInsecure: allowInsecure);
+    if (client == null) return null;
+    await communicationDelay;
+
+    AuthTokenResponse authResponse;
+    try {
+      authResponse = await client
+          .login(LoginRequest(username: username, password: password));
+    } catch (e) {
+      await communicationDelay;
+      showMessage("Failed to login to $server as \"$username\"!");
+      final formattedError = formatServerError(e);
+      showMessage(formattedError);
+      return null;
+    }
+    await communicationDelay;
+    showMessage("Logged in to $server as $username!");
+
+    final account = JonlineAccount._fromAuth(server,
+        authResponse.authToken.token, authResponse.refreshToken.token, username,
+        allowInsecure: allowInsecure);
+    await account.saveNew(atBeginning: selectAccount);
+    if (selectAccount) {
+      JonlineAccount.selectedAccount = account;
+    }
+    return account;
+  }
+
+  static Future<JonlineAccount?> createAccount(String server, String username,
+      String password, Function(String) showMessage,
+      {bool allowInsecure = false, bool selectAccount = true}) async {
+    return _authAccount(
+        (client) => client.createAccount(
+            CreateAccountRequest(username: username, password: password)),
+        ['Creating account', 'create account', 'Created account'],
+        server,
+        username,
+        password,
+        showMessage,
+        allowInsecure: allowInsecure,
+        selectAccount: selectAccount);
+  }
+
+  static Future<JonlineAccount?> _authAccount(
+      Future<AuthTokenResponse> Function(JonlineClient) authenticator,
+      List<String> verbs,
+      String server,
+      String username,
+      String password,
+      Function(String) showMessage,
+      {bool allowInsecure = false,
+      bool selectAccount = true}) async {
+    JonlineClient? client = await JonlineClients.createAndTestClient(server,
+        showMessage: showMessage, allowInsecure: allowInsecure);
+    if (client == null) return null;
+    await communicationDelay;
+    showMessage("Connected to $server! ${verbs[0]}...");
+    AuthTokenResponse authResponse;
+    try {
+      authResponse = await authenticator(client);
+    } catch (e) {
+      await communicationDelay;
+      showMessage("Failed to ${verbs[1]} $username on $server!");
+      final formattedError = formatServerError(e);
+      showMessage(formattedError);
+      return null;
+    }
+    await communicationDelay;
+    showMessage("${verbs[2]} $username on $server!");
+
+    final account = JonlineAccount._fromAuth(server,
+        authResponse.authToken.token, authResponse.refreshToken.token, username,
+        allowInsecure: allowInsecure);
+    await account.saveNew(atBeginning: selectAccount);
+    if (selectAccount) {
+      JonlineAccount.selectedAccount = account;
+    }
+    return account;
+  }
 
   final String id;
   final String server;
@@ -32,15 +124,19 @@ class JonlineAccount {
   String refreshToken;
   String username;
   bool allowInsecure;
+  List<Permission> permissions;
 
-  JonlineAccount(
+  /// Used by [loginToAccount] and [createAccount] when creating a new account.
+  JonlineAccount._fromAuth(
       this.server, this.authorizationToken, this.refreshToken, this.username,
       {this.allowInsecure = false})
       : id = uuid.v4(),
         userId = "",
-        serviceVersion = "";
+        serviceVersion = "",
+        permissions = [];
 
-  JonlineAccount.fromJson(Map<String, dynamic> json)
+  /// Used by [accounts] to load data.
+  JonlineAccount._fromJson(Map<String, dynamic> json)
       : id = json['id'],
         username = json['username'] ?? '',
         userId = json['userId'] ?? '',
@@ -48,7 +144,14 @@ class JonlineAccount {
         authorizationToken = json['authorizationToken'],
         refreshToken = json['refreshToken'],
         allowInsecure = json['allowInsecure'],
-        serviceVersion = json['serviceVersion'] ?? "";
+        serviceVersion = json['serviceVersion'] ?? "",
+        permissions = json['permissions'] == null
+            ? []
+            : (json['permissions'] as List<dynamic>)
+                .map((e) => Permission.values.firstWhere((p) => p.name == e,
+                    orElse: () => Permission.PERMISSION_UNKNOWN))
+                .where((e) => e != Permission.PERMISSION_UNKNOWN)
+                .toList();
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -59,6 +162,7 @@ class JonlineAccount {
         'refreshToken': refreshToken,
         'allowInsecure': allowInsecure,
         'serviceVersion': serviceVersion,
+        'permissions': permissions.map((e) => e.name).toList(),
       };
 
   Future<void> save() async {
@@ -68,9 +172,9 @@ class JonlineAccount {
     await updateAccountList(jsonArray);
   }
 
-  Future<void> saveNew() async {
+  Future<void> saveNew({bool atBeginning = true}) async {
     List<JonlineAccount> jsonArray = await accounts;
-    jsonArray.insert(0, this);
+    jsonArray.insert(atBeginning ? 0 : jsonArray.length, this);
     await updateAccountList(jsonArray);
   }
 
@@ -97,7 +201,7 @@ class JonlineAccount {
         .toList();
     // List<Map<String, dynamic>> jsonArray = await accountsJson;
     final accounts =
-        accountsJson.map((e) => JonlineAccount.fromJson(e)).toList();
+        accountsJson.map((e) => JonlineAccount._fromJson(e)).toList();
 
     if (selectedAccount != null) {
       selectedAccount = accounts.firstWhere((a) => a.id == selectedAccount?.id,

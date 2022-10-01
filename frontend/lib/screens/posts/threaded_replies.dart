@@ -44,7 +44,7 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
 
   updateReplies() async {
     widget.updatingReplies.value = true;
-    final Posts? posts = await JonlineOperations.getSelectedPosts(
+    final Posts? posts = await JonlineOperations.getPosts(
         request: GetPostsRequest(repliesToPostId: widget.post.id),
         showMessage: showSnackBar);
     if (posts == null) return;
@@ -65,6 +65,8 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
         }
         // subReplyFutures.add(Future.microtask(() async {
         await loadSubReplies(reply, targetReplySet: updatedReplies);
+
+        if (!mounted) return;
         setState(() => preloadedReplies.add(reply.post.id));
         // }));
       }
@@ -94,7 +96,7 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
         subRepliesLoaded.add(reply);
       });
     }
-    final Posts? posts = await JonlineOperations.getSelectedPosts(
+    final Posts? posts = await JonlineOperations.getPosts(
         request: GetPostsRequest(repliesToPostId: reply.post.id),
         showMessage: showSnackBar);
     if (posts == null) {
@@ -193,10 +195,13 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
     Widget result = Column(
       children: [
         PostPreview(
-            server: widget.server,
-            post: reply.post,
-            maxContentHeight: null,
-            isReply: true),
+          server: widget.server,
+          post: reply.post,
+          maxContentHeight: null,
+          isReply: true,
+          isReplyByAuthor: reply.post.author.userId.isNotEmpty &&
+              reply.post.author.userId == widget.post.author.userId,
+        ),
         Row(
           children: [
             Expanded(

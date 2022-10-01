@@ -7,8 +7,11 @@ import '../generated/jonline.pbgrpc.dart';
 import 'jonline_account.dart';
 import 'jonline_channels_native.dart'
     if (dart.library.html) 'jonline_channels_web.dart';
+import 'jonline_server.dart';
 import 'server_errors.dart';
 
+/// Tracks JonlineClient instances for each Jonline server, and provides
+/// extension methods for JonlineAccount to fetch the appropriate client.
 extension JonlineClients on JonlineAccount {
   static JonlineClient createClient(
       String server, ChannelCredentials credentials) {
@@ -24,14 +27,16 @@ extension JonlineClients on JonlineAccount {
       client = createClient(server, const ChannelCredentials.secure());
       serviceVersion = (await client.getServiceVersion(Empty())).version;
     } catch (e) {
-      showMessage?.call("Failed to connect to \"$server\" securely!");
+      if (!allowInsecure) {
+        showMessage?.call("Failed to connect to \"$server\" securely!");
+      }
       client = null;
     }
 
     if (allowInsecure && serviceVersion == null) {
       await communicationDelay;
       try {
-        showMessage?.call("Trying to connect to \"$server\" insecurely...");
+        // showMessage?.call("Trying to connect to \"$server\" insecurely...");
         client = createClient(server, const ChannelCredentials.insecure());
         serviceVersion = (await client.getServiceVersion(Empty())).version;
         showMessage?.call("Connected to \"$server\" insecurely 🤨");
@@ -64,7 +69,7 @@ extension JonlineClients on JonlineAccount {
 
   static Future<JonlineClient?> getDefaultClient(
       {Function(String)? showMessage}) async {
-    final server = JonlineAccount.selectedServer;
+    final server = JonlineServer.selectedServer.server;
     final clients = _secureClients;
     if (clients.containsKey(server)) {
       return clients[server];

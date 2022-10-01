@@ -59,6 +59,30 @@ extension HomePageAppBar on HomePageState {
             Text(titleUsername ?? '...', style: textTheme.subtitle2),
           ],
         );
+      case 'AdminRoute':
+        // context.topRoute.args[0] as String;
+        if (titleServer == null || titleUsername == null) {
+          // final Object? accountId = context.topRoute.args;
+          final String accountId = context.topRoute.pathParams.get('accountId');
+          Future.microtask(() async {
+            final account = (await JonlineAccount.accounts).firstWhere(
+              (account) => account.id == accountId,
+            );
+            setState(() {
+              titleServer = account.server;
+              titleUsername = account.username;
+            });
+          });
+        }
+        return Row(
+          children: [
+            Text('Admin: ', style: textTheme.subtitle2),
+            // Text(' for ', style: textTheme.bodyText2),
+            // SizedBox(width: 7 * MediaQuery.of(context).textScaleFactor),
+            Text("${titleServer ?? '...'}/", style: textTheme.caption),
+            Text(titleUsername ?? '...', style: textTheme.subtitle2),
+          ],
+        );
       default:
         titleServer = null;
         titleUsername = null;

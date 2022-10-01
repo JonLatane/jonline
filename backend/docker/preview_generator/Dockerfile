@@ -7,7 +7,11 @@ RUN apt-get -y install chromium gconf-service libasound2 libatk1.0-0 libc6 libca
 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 \
 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 \
 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
-ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
+ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget fonts-noto-color-emoji
+
+# Copy emoji-supporting fonts
+RUN mkdir -p /usr/local/share/fonts/truetype
+RUN cp -r /usr/share/fonts/truetype/noto /usr/local/share/fonts/truetype/noto
 
 # grpcurl is useful to have on a jonline instance!
 RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt

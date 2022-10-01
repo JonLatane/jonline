@@ -8,8 +8,8 @@ import "users.proto";
 message CreateAccountRequest {
   string username = 1;
   string password = 2;
-  optional string email = 3;
-  optional string phone = 4;
+  optional ContactMethod email = 3;
+  optional ContactMethod phone = 4;
   // Request an expiration time for the Auth Token returned. By default it will not expire.
   optional google.protobuf.Timestamp expires_at = 5;
 }

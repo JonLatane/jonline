@@ -32,10 +32,7 @@ impl Jonline for JonLineImpl {
         &self,
         request: Request<CreateAccountRequest>,
     ) -> Result<Response<AuthTokenResponse>, Status> {
-        let conn = match get_connection(&self.pool) {
-            Err(e) => return Err(e),
-            Ok(conn) => conn,
-        };
+        let conn = get_connection(&self.pool)?;
         rpcs::create_account(request, &conn)
     }
 
@@ -43,10 +40,7 @@ impl Jonline for JonLineImpl {
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<AuthTokenResponse>, Status> {
-        let conn = match get_connection(&self.pool) {
-            Err(e) => return Err(e),
-            Ok(conn) => conn,
-        };
+        let conn = get_connection(&self.pool)?;
         rpcs::login(request, &conn)
     }
 
@@ -54,18 +48,12 @@ impl Jonline for JonLineImpl {
         &self,
         request: Request<RefreshTokenRequest>,
     ) -> Result<Response<ExpirableToken>, Status> {
-        let conn = match get_connection(&self.pool) {
-            Err(e) => return Err(e),
-            Ok(conn) => conn,
-        };
+        let conn = get_connection(&self.pool)?;
         rpcs::refresh_token(request, &conn)
     }
 
     async fn get_current_user(&self, request: Request<()>) -> Result<Response<User>, Status> {
-        let conn = match get_connection(&self.pool) {
-            Err(e) => return Err(e),
-            Ok(conn) => conn,
-        };
+        let conn = get_connection(&self.pool)?;
         match auth::get_auth_user(&request, &conn) {
             Err(e) => Err(e),
             Ok(user) => rpcs::get_current_user(user),
@@ -75,10 +63,7 @@ impl Jonline for JonLineImpl {
         &self,
         request: Request<CreatePostRequest>,
     ) -> Result<Response<Post>, Status> {
-        let conn = match get_connection(&self.pool) {
-            Err(e) => return Err(e),
-            Ok(conn) => conn,
-        };
+        let conn =  get_connection(&self.pool)?;
         match auth::get_auth_user(&request, &conn) {
             Err(e) => Err(e),
             Ok(user) => rpcs::create_post(request, user, &conn),
@@ -88,10 +73,7 @@ impl Jonline for JonLineImpl {
         &self,
         request: Request<GetPostsRequest>,
     ) -> Result<Response<Posts>, Status> {
-        let conn = match get_connection(&self.pool) {
-            Err(e) => return Err(e),
-            Ok(conn) => conn,
-        };
+        let conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
         rpcs::get_posts(request, user, &conn)
     }
@@ -109,10 +91,8 @@ impl Jonline for JonLineImpl {
         &self,
         _request: Request<()>,
     ) -> Result<Response<ServerConfiguration>, Status> {
-        //TODO implement me!
-        Ok(Response::new(ServerConfiguration {
-            ..Default::default()
-        }))
+        let conn = get_connection(&self.pool)?;
+        rpcs::get_server_configuration(&conn)
     }
     async fn configure_server(
         &self,

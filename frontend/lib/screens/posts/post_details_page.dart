@@ -51,7 +51,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
-          final post = await JonlineOperations.getSelectedPosts(
+          final post = await JonlineOperations.getPosts(
               request: GetPostsRequest(postId: widget.postId),
               showMessage: showSnackBar);
           setState(() {
@@ -100,7 +100,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   get q => MediaQuery.of(context);
   updatePost() async {
     try {
-      final post = await JonlineOperations.getSelectedPosts(
+      final post = await JonlineOperations.getPosts(
           request: GetPostsRequest(postId: widget.postId),
           showMessage: showSnackBar);
       setState(() {

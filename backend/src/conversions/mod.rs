@@ -10,4 +10,14 @@ pub use post_conversions::ToProtoPost;
 mod link_conversions;
 pub use link_conversions::ToLink;
 
-pub mod configuration_conversions;
+mod permission_conversions;
+pub use permission_conversions::ToProtoPermission;
+pub use permission_conversions::ALL_PERMISSIONS;
+
+mod visibility_moderation_conversions;
+pub use visibility_moderation_conversions::ToProtoVisibility;
+pub use visibility_moderation_conversions::ToProtoModeration;
+
+mod configuration_conversions;
+pub use configuration_conversions::ToDbServerConfiguration;
+pub use configuration_conversions::ToProtoServerConfiguration;

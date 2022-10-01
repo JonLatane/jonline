@@ -1,5 +1,17 @@
 # Jonline
-Jonline is an open-source server+client for maintaining a small-ish (up to millions, but maybe not hundreds of millions of users), localized social network, letting anyone else set up their own private network, and making it easy to federate lots of Jonline instances and profiles together.
+Jonline is an open-source, small-scale (<1M users) social network capable of "federating" with other Jonline instances/communities. It's a network of, and a protocol for, social networks. Use cases include:
+
+* Neighborhoods, communities, or cities
+* (Ex-)Coworkers wanting a private channel to chat
+* Run/bike/etc. clubs
+* App user groups
+* Online game clans
+* Board game groups
+* D&D parties
+* Local concert listings
+* Event venue calendars
+
+The core model of Jonline is that *each of these communities is run as its own Jonline instance*. Each of these instances and their data are literally *owned* by the organization (or a chosen "IT admin person" and/or "moderation team" for it). Finally, the same person's *accounts on all of these instances can be federated* (if the user chooses, and dependent upon server configurations and permissions, of course). Federation is simply a means to let, say, a user, Jeff, see their D&D DM also knows the guy from run club who left his wallet, *even if Jeff and the DM are not friends on the run club network*, but *only if the DM chooses* to federate their identity across both those networks.
 
 One way to think of Jonline is as social media meets the email server model (I use Gmail, you use your ISP's email, we can still talk to each other), with a bit of the ListServ model too (it's *very* easy to set up a neighborhood Jonline instance, Posts function effectively identically to ListServ messages, and Events are basically just a nice extra feature ListServ doesn't have).
 
@@ -30,10 +42,82 @@ cd jonline
 Next, from the repo root, to create a DB and two load-balanced servers in the namespace `jonline` (which will be auto-created), run:
 
 ```bash
-make deploy_db_create deploy_be_create
+make deploy_data_create deploy_be_create
 ```
 
-That's it! You've created an *unsecured instance* where ***passwords and auth tokens will be sent in plain text***. Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
+That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text***. Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
+
+To see *everything* you just deployed (minio, postgres, Jonline server and background cron jobs), run:
+
+```bash
+$ make deploy_be_get_all
+kubectl get all -n jonline
+NAME                                                  READY   STATUS        RESTARTS   AGE
+pod/delete-expired-tokens-27742795--1-nlkh6           0/1     Completed     0          11m
+pod/delete-expired-tokens-27742800--1-tpplp           0/1     Completed     0          6m49s
+pod/delete-expired-tokens-27742805--1-dgrsb           0/1     Completed     0          109s
+pod/generate-preview-images-27721161--1-2hqgq         0/1     Error         0          15d
+pod/generate-preview-images-27721161--1-6fwvq         0/1     Error         0          15d
+pod/generate-preview-images-27721161--1-kxtvt         0/1     Error         0          15d
+pod/generate-preview-images-27721161--1-mpnbv         0/1     Error         0          15d
+pod/generate-preview-images-27721161--1-sg7rz         0/1     Error         0          15d
+pod/generate-preview-images-27721161--1-t24th         0/1     Error         0          15d
+pod/generate-preview-images-27742804--1-q8vdn         0/1     Completed     0          2m49s
+pod/generate-preview-images-27742805--1-tbbvm         0/1     Completed     0          109s
+pod/generate-preview-images-27742806--1-qrrnx         0/1     Completed     0          49s
+pod/jonline-7f69759bd7-x64nd                          1/1     Running       0          30s
+pod/jonline-7f69759bd7-x6scq                          1/1     Running       0          36s
+pod/jonline-c4b798878-l6xhk                           1/1     Terminating   0          53m
+pod/jonline-c4b798878-tg5qf                           1/1     Terminating   0          53m
+pod/jonline-expired-token-cleanup-27742795--1-l8fzs   0/1     Completed     0          11m
+pod/jonline-expired-token-cleanup-27742800--1-x6gch   0/1     Completed     0          6m49s
+pod/jonline-expired-token-cleanup-27742805--1-hd2wj   0/1     Completed     0          109s
+pod/jonline-minio-84685f9bd4-8knxq                    1/1     Running       0          4d22h
+pod/jonline-postgres-bf6cb7679-l6mcb                  1/1     Running       0          53m
+
+NAME                       TYPE           CLUSTER-IP       EXTERNAL-IP       PORT(S)                                                     AGE
+service/jonline            LoadBalancer   10.245.199.164   178.128.137.194   27707:30679/TCP,443:32401/TCP,80:30932/TCP,8000:30414/TCP   20d
+service/jonline-minio      LoadBalancer   10.245.220.21    174.138.106.145   9000:32603/TCP                                              2d
+service/jonline-postgres   ClusterIP      10.245.198.74    <none>            5432/TCP                                                    53m
+
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/jonline            2/2     2            2           20d
+deployment.apps/jonline-minio      1/1     1            1           4d22h
+deployment.apps/jonline-postgres   1/1     1            1           53m
+
+NAME                                         DESIRED   CURRENT   READY   AGE
+replicaset.apps/jonline-54d8b475bb           0         0         0       4d6h
+replicaset.apps/jonline-6b6655cd79           0         0         0       2d23h
+replicaset.apps/jonline-6bb49b7c9c           0         0         0       24h
+replicaset.apps/jonline-6c8899f68c           0         0         0       4d2h
+replicaset.apps/jonline-6f5c8955f7           0         0         0       3d22h
+replicaset.apps/jonline-74557695b            0         0         0       2d23h
+replicaset.apps/jonline-77585dcf8            0         0         0       3d20h
+replicaset.apps/jonline-7bff45979c           0         0         0       4d6h
+replicaset.apps/jonline-7f69759bd7           2         2         2       38s
+replicaset.apps/jonline-7f6d9d4cbd           0         0         0       3d23h
+replicaset.apps/jonline-c4b798878            0         0         0       53m
+replicaset.apps/jonline-minio-84685f9bd4     1         1         1       4d22h
+replicaset.apps/jonline-postgres-bf6cb7679   1         1         1       53m
+
+NAME                                          SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+cronjob.batch/delete-expired-tokens           */5 * * * *   False     0        113s            15d
+cronjob.batch/generate-preview-images         * * * * *     False     0        53s             15d
+cronjob.batch/jonline-expired-token-cleanup   0/5 * * * *   False     0        113s            20d
+
+NAME                                               COMPLETIONS   DURATION   AGE
+job.batch/delete-expired-tokens-27742795           1/1           4s         11m
+job.batch/delete-expired-tokens-27742800           1/1           4s         6m53s
+job.batch/delete-expired-tokens-27742805           1/1           4s         113s
+job.batch/generate-preview-images-27721161         0/1           15d        15d
+job.batch/generate-preview-images-27742804         1/1           1s         2m53s
+job.batch/generate-preview-images-27742805         1/1           4s         113s
+job.batch/generate-preview-images-27742806         1/1           1s         53s
+job.batch/jonline-expired-token-cleanup-27721007   0/1           15d        15d
+job.batch/jonline-expired-token-cleanup-27742795   1/1           4s         11m
+job.batch/jonline-expired-token-cleanup-27742800   1/1           5s         6m53s
+job.batch/jonline-expired-token-cleanup-27742805   1/1           4s         113s
+```
 
 (Note: to deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make deploy_db_create deploy_be_create` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.)
 

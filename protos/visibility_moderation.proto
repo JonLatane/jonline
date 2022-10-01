@@ -10,8 +10,8 @@ enum Visibility {
   GLOBAL_PUBLIC = 4;
 }
 
-enum ModerationStatus {
-  MODERATION_STATUS_UNKNOWN = 0;
+enum Moderation {
+  MODERATION_UNKNOWN = 0;
   UNMODERATED = 1;
   PENDING = 2;
   APPROVED = 3;

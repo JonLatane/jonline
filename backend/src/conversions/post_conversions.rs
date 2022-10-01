@@ -1,5 +1,7 @@
 use super::ToLink;
+use super::ToProtoVisibility;
 use super::id_conversions::ToProtoId;
+use super::visibility_moderation_conversions::ToProtoModeration;
 use crate::models;
 use crate::protos::*;
 
@@ -49,8 +51,11 @@ impl ToProtoPost for models::Post {
             updated_at: None,
             author: self.proto_author(username),
             response_count: self.response_count,
+            reply_count: self.reply_count,
             preview_image: self.preview.to_owned(),
-            ..Default::default()
+            visibility: self.visibility.to_proto_visibility().unwrap_or(0),
+            moderation: self.moderation.to_proto_moderation().unwrap_or(0),
+            replies: vec![], //TODO update this
         }
     }
     fn proto_author(&self, username: Option<String>) -> Option<post::Author> {

@@ -5,21 +5,22 @@ import '../../app_state.dart';
 import '../../models/demo_data.dart';
 import '../../models/jonline_account.dart';
 
-class MyActivityPage extends StatefulWidget {
+class ServerConfigurationPage extends StatefulWidget {
   final String? filter;
   final String accountId;
 
-  const MyActivityPage({
+  const ServerConfigurationPage({
     Key? key,
     @queryParam this.filter = 'none',
     @pathParam this.accountId = '',
   }) : super(key: key);
 
   @override
-  State<MyActivityPage> createState() => _MyActivityPageState();
+  State<ServerConfigurationPage> createState() =>
+      _ServerConfigurationPageState();
 }
 
-class _MyActivityPageState extends State<MyActivityPage> {
+class _ServerConfigurationPageState extends State<ServerConfigurationPage> {
   late AppState appState;
 
   JonlineAccount? account;

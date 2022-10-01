@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../app_state.dart';
 import '../../models/jonline_account.dart';
+import '../../models/jonline_server.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -67,7 +68,7 @@ class AccountChooserState extends State<AccountChooser> {
         child: Column(
           children: [
             const Expanded(child: SizedBox()),
-            Text('${JonlineAccount.selectedServer}/',
+            Text('${JonlineServer.selectedServer.server}/',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.caption),
@@ -90,6 +91,7 @@ Future<Object> showAccountsMenu(
   ThemeData darkTheme = theme;
   ThemeData lightTheme = ThemeData.light();
   final accounts = await JonlineAccount.accounts;
+  final servers = await JonlineServer.servers;
 
   return showMenu(
       context: context,
@@ -100,22 +102,29 @@ Future<Object> showAccountsMenu(
       //         : musicBackgroundColor)
       //     .withOpacity(0.95),
       items: [
-        PopupMenuItem(
-          padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
-          mouseCursor: SystemMouseCursors.basic,
-          value: null,
-          enabled: false,
-          child: Text(
-            'Accounts',
-            style: darkTheme.textTheme.titleLarge,
-          ),
-        ),
+        // PopupMenuItem(
+        //   padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
+        //   mouseCursor: SystemMouseCursors.basic,
+        //   value: null,
+        //   enabled: false,
+        //   child: Text(
+        //     'Accounts',
+        //     style: darkTheme.textTheme.titleLarge,
+        //   ),
+        // ),
         PopupMenuItem(
           padding: EdgeInsets.zero,
           mouseCursor: SystemMouseCursors.basic,
           value: null,
           enabled: false,
           child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                accounts.isEmpty ? 'No Accounts' : 'Accounts',
+                style: darkTheme.textTheme.titleLarge,
+              ),
+            ),
             ...accounts.map((a) {
               bool selected = a.id == JonlineAccount.selectedAccount?.id;
               ThemeData theme = selected ? lightTheme : darkTheme;
@@ -137,7 +146,7 @@ Future<Object> showAccountsMenu(
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                                 content: Text(
-                                    "Browsing anonymously on ${JonlineAccount.selectedServer}.")),
+                                    "Browsing anonymously on ${JonlineServer.selectedServer.server}.")),
                           );
                         } else {
                           appState.selectedAccount = a;
@@ -176,6 +185,55 @@ Future<Object> showAccountsMenu(
                 ),
               );
             }),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                'Servers',
+                style: darkTheme.textTheme.titleLarge,
+              ),
+            ),
+            ...servers.map((s) {
+              bool selected = s == JonlineServer.selectedServer;
+              ThemeData theme = selected ? lightTheme : darkTheme;
+              TextTheme textTheme = theme.textTheme;
+              return Theme(
+                data: theme,
+                child: Material(
+                  // color: backgroundColor,
+                  color: selected ? Colors.white : Colors.transparent,
+                  child: InkWell(
+                      mouseCursor: SystemMouseCursors.basic,
+                      onTap: () {
+                        Navigator.pop(context);
+                        AppState appState =
+                            context.findRootAncestorStateOfType<AppState>()!;
+                        JonlineServer.selectedServer = s;
+                        appState.selectedAccount = null;
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  "Browsing anonymously on ${JonlineServer.selectedServer.server}.")),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text("${s.server}/",
+                                  textAlign: TextAlign.left,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: textTheme.caption),
+                            ),
+                          ],
+                        ),
+                      )),
+                ),
+              );
+            }),
             Material(
               // color: backgroundColor,
               color: Colors.transparent,
@@ -193,7 +251,7 @@ Future<Object> showAccountsMenu(
                         Row(
                           children: [
                             Expanded(
-                              child: Text("Login/Create Account...",
+                              child: Text("Add Account/Server...",
                                   textAlign: TextAlign.left,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

@@ -4,6 +4,9 @@ pub use validations::*;
 mod get_service_version;
 pub use get_service_version::get_service_version;
 
+mod get_server_configuration;
+pub use get_server_configuration::get_server_configuration;
+
 mod create_account;
 pub use create_account::create_account;
 

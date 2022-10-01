@@ -4,11 +4,11 @@ import 'jonline_account.dart';
 import 'jonline_clients.dart';
 import 'server_errors.dart';
 
-// Extension/static class for methods that operate
-// regardless of whether a JonlineAccount is selected,
-// or the user is browsing anonymously on a server.
+/// Operations based on [JonlineAccount.selectedAccount] and
+/// [JonlineAccount.selectedServer] that are useful whether or not
+/// the user is logged in.
 extension JonlineOperations on JonlineAccount {
-  static Future<Posts?> getSelectedPosts(
+  static Future<Posts?> getPosts(
       {GetPostsRequest? request,
       Function(String)? showMessage,
       bool forReplies = false}) async {

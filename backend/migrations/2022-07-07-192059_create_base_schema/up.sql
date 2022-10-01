@@ -15,8 +15,8 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   username VARCHAR NOT NULL UNIQUE,
   password_salted_hash VARCHAR NOT NULL,
-  email VARCHAR NULL DEFAULT NULL,
-  phone VARCHAR NULL DEFAULT NULL,
+  email JSONB NULL DEFAULT NULL,
+  phone JSONB NULL DEFAULT NULL,
   permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -43,11 +43,7 @@ CREATE INDEX idx_refresh_tokens ON user_refresh_tokens(token);
 -- FEDERATION MODELS
 CREATE TABLE federated_servers (
   id SERIAL PRIMARY KEY,
-  server_location VARCHAR NOT NULL,
-  -- For ease of setup, Jonline instances by default use their own Certificate Authorities (CA).
-  -- When this Jonline wants to talk to Bobline, it will need to get Bobline's CA cert
-  ca_cert VARCHAR NULL DEFAULT NULL,
-  tls_key VARCHAR NULL DEFAULT NULL
+  server_location VARCHAR NOT NULL
 );
 CREATE INDEX idx_server_locations ON federated_servers(server_location);
 
@@ -69,7 +65,8 @@ CREATE TABLE follows (
   -- Indicates the user at user_id is following a user on this Jonline instance.
   local_user_id INTEGER NULL REFERENCES users ON DELETE CASCADE,
   -- Indicates the user at user_id is following a user on another Jonline instance.
-  federated_account_id INTEGER NULL REFERENCES users ON DELETE CASCADE
+  federated_account_id INTEGER NULL REFERENCES users ON DELETE CASCADE,
+  accepted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE posts (
@@ -82,7 +79,7 @@ CREATE TABLE posts (
   link VARCHAR NULL DEFAULT NULL,
   content TEXT NULL DEFAULT NULL,
   visibility VARCHAR NOT NULL DEFAULT 'private',
-  moderation_status VARCHAR NOT NULL DEFAULT 'unmoderated',
+  moderation VARCHAR NOT NULL DEFAULT 'unmoderated',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL,
   response_count INTEGER NOT NULL DEFAULT 0,

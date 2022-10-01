@@ -57,6 +57,15 @@ class Settings {
     }
   }
 
+  static bool _showServers = false;
+  static bool get showServers => _showServers;
+  static set showServers(bool v) {
+    {
+      _showServers = v;
+      Future.microtask(() async => appStorage.setBool("show_servers", v));
+    }
+  }
+
   static initialize(VoidCallback onComplete) async {
     _powerUserMode = appStorage.getBool("power_user_mode") ?? false;
     _developerMode = appStorage.getBool("developer_mode") ?? false;
@@ -65,5 +74,6 @@ class Settings {
         appStorage.getBool("prefer_server_previews") ?? MyPlatform.isWeb;
     showSettingsTabListener.value =
         appStorage.getBool("show_settings_tab") ?? false;
+    _showServers = appStorage.getBool("show_servers") ?? false;
   }
 }

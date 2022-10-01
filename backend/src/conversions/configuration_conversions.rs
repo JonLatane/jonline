@@ -6,6 +6,7 @@
 // use super::id_conversions::ToProtoId;
 use crate::models;
 use crate::protos::*;
+use super::permission_conversions::ToProtoPermission;
 
 pub trait ToDbServerConfiguration {
     fn to_proto(&self) -> models::NewServerConfiguration;
@@ -14,31 +15,6 @@ pub trait ToDbServerConfiguration {
 pub trait ToProtoServerConfiguration {
     fn to_proto(&self) -> ServerConfiguration;
 }
-pub trait ToProtoPermission {
-    fn to_proto_permission(&self) -> Option<Permission>;
-}
-impl ToProtoPermission for String {
-    fn to_proto_permission(&self) -> Option<Permission> {
-        for permission in [
-            Permission::ViewPosts,
-            Permission::CreatePosts,
-            Permission::GloballyPublishPosts,
-            Permission::ModeratePosts,
-            Permission::ViewEvents,
-            Permission::CreateEvents,
-            Permission::GloballyPublishEvents,
-            Permission::ModerateEvents,
-            Permission::Admin,
-            Permission::ModerateUsers,
-        ] {
-            if permission.as_str_name() == *self {
-                return Some(permission);
-            }
-        }
-        return None;
-    }
-}
-
 impl ToProtoServerConfiguration for models::ServerConfiguration {
     fn to_proto(&self) -> ServerConfiguration {
         let server_info: ServerInfo = serde_json::from_value(self.server_info.to_owned()).unwrap();

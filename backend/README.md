@@ -1,9 +1,36 @@
 # Jonline Backend
 
-The backend of Jonline is built with Rust, Tonic, Diesel, and PostreSQL.
+The backend of Jonline is built in Rust, with [Tonic](https://github.com/hyperium/tonic), [Rocket](http://rocket.rs), and [Diesel](https://diesel.rs), atop PostreSQL. A Tonic thread serves up the Jonline gRPC backend on port 27707, while Rocket threads serve up the Flutter Web frontend on ports 80, 8000, and 443 if TLS is configured.
+
+## Build and release management
+Most of the high-level Jonline backend build management lives in `../Makefile`.
+For instance, for me, after incremention the version in `Cargo.toml`, I generally run the following to build/push a release to Dockerhub and deploy to both [jonline.io](https://jonline.io) and [get.jonline](https://getj.online):
+
+```bash
+make release_be_cloud deploy_be_update && NAMESPACE=getjonline make deploy_be_update && say 'deploy complete'
+```
+
+As an end user, once you've set up per the quick setup, you can simply run this to apply updates:
+
+```bash
+git pull && make deploy_be_update
+```
+
+Until Jonline is fairly complete, I'm not bothering with migrations. Be prepared to reset data until then. To reset your database/minio (if you're using the K8s one and not a managed DB):
+
+```bash
+make deploy_db_delete deploy_db_create deploy_minio_delete deploy_minio_create deploy_be_restart
+```
+
+or, more succinctly:
+
+```bash
+make deploy_data_delete deploy_data_create deploy_be_restart
+```
+
 
 ## Building and running locally
-Use `cargo build` and `cargo run` to run against your local database. `make build` and `make run` simply mirror these to avoid confusion.
+Use `cargo build` and `cargo run` from here (`backend/`) to run against your local database. `make build` and `make run` simply mirror these to avoid confusion. Make targets assume you have a fairly "normal" local Postgres setup with `createdb` and `dropdb` commands in your `PATH`.
 
 ### Unit testing
 TBD. Should be a matter of doing a `cargo test`. Ideally there shoouldn't be so much logic that we *need* a lot of unit tests. This is kinda the point.
@@ -33,7 +60,7 @@ The quickest way to deploy is to simply run `make deploy_db_create deploy_be_cre
         * You can also [install `kail`](https://github.com/boz/kail#installing) and just `kail -d jonline` 🚀
 
 ### Testing your (or any) deployment
-Once you've deployed, get the EXTERNAL-IP of your instance:
+Once you've deployed, get the EXTERNAL-IP of your instance/community:
 
 ```sh
 $ kubectl get services     

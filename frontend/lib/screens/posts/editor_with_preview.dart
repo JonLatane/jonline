@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../app_state.dart';
 import '../../generated/posts.pb.dart';
 import '../../models/jonline_account.dart';
+import '../../models/jonline_server.dart';
 import '../home_page.dart';
 import 'post_preview.dart';
 
@@ -29,9 +30,10 @@ class EditorWithPreview extends StatefulWidget {
 class EditorWithPreviewState extends State<EditorWithPreview> {
   late AppState appState;
   late HomePageState homePage;
-  bool _showPreview = false;
   List<bool> focuses = [false, false, false];
-  bool get showPreview => _showPreview;
+  bool get inlinePreview => MediaQuery.of(context).size.width > 600;
+  bool _showPreview = false;
+  bool get showPreview => _showPreview && !inlinePreview;
   set showPreview(bool value) {
     if (value != _showPreview) {
       final focusSources = [titleFocus, linkFocus, contentFocus];
@@ -61,11 +63,24 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
   late final TextEditingController? titleController;
   late final TextEditingController? linkController;
   late final TextEditingController? contentController;
-  late final ValueNotifier<bool> enabled;
-
   String? get title => titleController?.value.text;
   String? get link => linkController?.value.text;
   String? get content => contentController?.value.text;
+  bool get linkValid {
+    try {
+      Uri.parse(link!);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  bool get canCreate =>
+      title?.isNotEmpty == true ||
+      (link?.isNotEmpty == true && linkValid) ||
+      content?.isNotEmpty == true;
+
+  late final ValueNotifier<bool> enabled;
 
   @override
   void initState() {
@@ -105,29 +120,37 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
     return Container(
       padding: const EdgeInsets.all(8),
       constraints: const BoxConstraints(maxWidth: 500),
-      child: Column(
+      child: Row(
         children: [
-          buildModeSwitch(context),
-          const SizedBox(height: 8),
           Expanded(
-              child: Stack(
-            children: [
-              IgnorePointer(
-                ignoring: showPreview,
-                child: AnimatedOpacity(
-                    duration: animationDuration,
-                    opacity: showPreview ? 0.03 : 1,
-                    child: buildEditor(context)),
-              ),
-              IgnorePointer(
-                ignoring: !showPreview,
-                child: AnimatedOpacity(
-                    duration: animationDuration,
-                    opacity: !showPreview ? 0 : 1,
-                    child: buildPreview(context)),
-              )
-            ],
-          )),
+            child: Column(
+              children: [
+                if (!inlinePreview) buildModeSwitch(context),
+                const SizedBox(height: 8),
+                Expanded(
+                    child: Stack(
+                  children: [
+                    IgnorePointer(
+                      ignoring: showPreview,
+                      child: AnimatedOpacity(
+                          duration: animationDuration,
+                          opacity: showPreview ? 0.03 : 1,
+                          child: buildEditor(context)),
+                    ),
+                    if (!inlinePreview)
+                      IgnorePointer(
+                        ignoring: !showPreview,
+                        child: AnimatedOpacity(
+                            duration: animationDuration,
+                            opacity: !showPreview ? 0 : 1,
+                            child: buildPreview(context)),
+                      )
+                  ],
+                )),
+              ],
+            ),
+          ),
+          if (inlinePreview) SizedBox(width: 300, child: buildPreview(context))
         ],
       ),
     );
@@ -162,11 +185,9 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
           Expanded(
             flex: 6,
             child: TextButton(
-              onPressed: title?.isEmpty == true
-                  ? null
-                  : () {
-                      showPreview = true;
-                    },
+              onPressed: () {
+                showPreview = true;
+              },
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(
                       showPreview ? Colors.white : Colors.transparent)),
@@ -196,12 +217,14 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
             child: SingleChildScrollView(
               child: PostPreview(
                   allowScrollingContent: true,
-                  server: JonlineAccount.selectedServer,
+                  server: JonlineServer.selectedServer.server,
                   post: Post(
                       title: title,
                       content: content,
                       link: link,
-                      author: Post_Author(username: "jonline.io/jon"))),
+                      author: Post_Author(
+                          username: JonlineAccount.selectedAccount?.username ??
+                              "jonline.io/jon"))),
             ),
           ),
         ],
@@ -212,12 +235,16 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
           child: SizedBox(),
         ),
         PostPreview(
-            server: JonlineAccount.selectedServer,
+            allowScrollingContent: true,
+            server: JonlineServer.selectedServer.server,
+            maxContentHeight: MediaQuery.of(context).size.height - 200,
             post: Post(
                 title: title,
                 content: content,
                 link: link,
-                author: Post_Author(username: "jonline.io/jon"))),
+                author: Post_Author(
+                    username: JonlineAccount.selectedAccount?.username ??
+                        "jonline.io/jon"))),
         const Expanded(
           child: SizedBox(),
         ),
@@ -262,9 +289,7 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
                     fontSize: 14),
                 enabled: enabled.value && !showPreview,
                 decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    hintText: "Link (optional)",
-                    isDense: true),
+                    border: InputBorder.none, hintText: "Link", isDense: true),
                 onChanged: (value) {},
               ),
             ),
@@ -322,18 +347,15 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.w400, fontSize: 14),
             enabled: enabled.value && !showPreview,
-            decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText:
-                    "Content${widget.titleController != null ? " (optional)" : ""} ",
-                isDense: true),
+            decoration: const InputDecoration(
+                border: InputBorder.none, hintText: "Content", isDense: true),
             onChanged: (value) {},
           ),
         ),
       const Align(
           alignment: Alignment.centerRight,
           child: Text(
-            "Markdown is supported.",
+            "Markdown content is supported.",
             textAlign: TextAlign.right,
             style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12),

@@ -1,29 +1,31 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
+import '../../generated/admin.pb.dart';
 import '../../app_state.dart';
-import '../../models/demo_data.dart';
 import '../../models/jonline_account.dart';
 
-class MyActivityPage extends StatefulWidget {
+class AdminPage extends StatefulWidget {
   final String? filter;
   final String accountId;
 
-  const MyActivityPage({
+  const AdminPage({
     Key? key,
     @queryParam this.filter = 'none',
     @pathParam this.accountId = '',
   }) : super(key: key);
 
   @override
-  State<MyActivityPage> createState() => _MyActivityPageState();
+  State<AdminPage> createState() => _AdminPageState();
 }
 
-class _MyActivityPageState extends State<MyActivityPage> {
+class _AdminPageState extends State<AdminPage> {
   late AppState appState;
 
   JonlineAccount? account;
   TextTheme get textTheme => Theme.of(context).textTheme;
+  String? get server => account?.server;
+  ServerConfiguration? serverConfiguration;
 
   @override
   initState() {
@@ -50,23 +52,24 @@ class _MyActivityPageState extends State<MyActivityPage> {
         body: Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          TextButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: const Text('Really post demo data?'),
-                    action: SnackBarAction(
-                      label: 'Post it!', // or some operation you would like
-                      onPressed: () {
-                        if (account == null) {
-                          showSnackBar("Account not ready.");
-                        }
-                        postDemoData(account!, showSnackBar, appState);
-                      },
-                    )));
-              },
-              child: const Text("Post demo data"))
+        children: const [
+          Text('Admin Page 👷🏼‍♂️🛠'),
+          // TextButton(
+          //     onPressed: () {
+          //       ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          //       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          //           content: const Text('Really post demo data?'),
+          //           action: SnackBarAction(
+          //             label: 'Post it!', // or some operation you would like
+          //             onPressed: () {
+          //               if (account == null) {
+          //                 showSnackBar("Account not ready.");
+          //               }
+          //               postDemoData(account!, showSnackBar, appState);
+          //             },
+          //           )));
+          //     },
+          //     child: const Text("Post demo data"))
         ],
       ),
     )

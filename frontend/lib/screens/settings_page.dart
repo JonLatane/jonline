@@ -21,6 +21,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage>
     with AutoRouteAwareStateMixin<SettingsPage> {
   TextTheme get textTheme => Theme.of(context).textTheme;
+  AppState get appState => context.findRootAncestorStateOfType<AppState>()!;
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +43,9 @@ class _SettingsPageState extends State<SettingsPage>
                       value: Settings.preferServerPreviews,
                       onChanged: (v) {
                         setState(() => Settings.preferServerPreviews = v);
-                        context.findRootAncestorStateOfType<AppState>()!
+                        appState
                           ..updatePosts()
-                          ..updateAccountDependents();
+                          ..notifyAccountsListeners();
                       }),
                 ],
               ),
@@ -102,9 +103,7 @@ class _SettingsPageState extends State<SettingsPage>
                       value: Settings.powerUserMode,
                       onChanged: (v) {
                         setState(() => Settings.powerUserMode = v);
-                        context
-                            .findRootAncestorStateOfType<AppState>()!
-                            .updateAccountDependents();
+                        appState.notifyAccountsListeners();
                       }),
                 ],
               ),
@@ -120,7 +119,7 @@ class _SettingsPageState extends State<SettingsPage>
                         setState(() => Settings.developerMode = v);
                         context
                             .findRootAncestorStateOfType<AppState>()!
-                            .updateAccountDependents();
+                            .notifyAccountsListeners();
                       }),
                 ],
               ),

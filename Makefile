@@ -41,7 +41,7 @@ deploy_be_restart:
 
 deploy_be_get_external_ip:
 # Suppress echoing this so 'make deploy_be_get_external_ip` is easily composable. 
-	@kubectl get service jonline -n jonline | sed -n 2p | awk '{print $$4}'
+	@kubectl get service jonline -n $(NAMESPACE) | sed -n 2p | awk '{print $$4}'
 
 deploy_be_get_all:
 	kubectl get all -n $(NAMESPACE)
@@ -69,6 +69,11 @@ test_deploy_be_unsecured:
 test_deploy_be_tls_openssl:
 	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem
 
+deploy_data_create: deploy_db_create deploy_minio_create
+deploy_data_update: deploy_db_update deploy_minio_update
+deploy_data_delete: deploy_db_delete deploy_minio_delete
+deploy_data_restart: deploy_ddbrestart deploy_dminiorestart
+
 # K8s DB deployment targets (optional if using managed DB)
 deploy_db_create: deploy_ensure_namespace
 	kubectl create -f backend/k8s/k8s-postgres.yaml --save-config -n $(NAMESPACE)
@@ -81,6 +86,19 @@ deploy_db_delete:
 
 deploy_db_restart:
 	kubectl rollout restart deployment jonline-postgres -n $(NAMESPACE)
+
+# K8s Minio deployment targets (optional if using managed S3/Minio)
+deploy_minio_create: deploy_ensure_namespace
+	kubectl create -f backend/k8s/k8s-minio.yaml --save-config -n $(NAMESPACE)
+
+deploy_minio_update:
+	kubectl apply -f backend/k8s/k8s-minio.yaml -n $(NAMESPACE)
+
+deploy_minio_delete:
+	kubectl delete -f backend/k8s/k8s-minio.yaml -n $(NAMESPACE)
+
+deploy_minio_restart:
+	kubectl rollout restart deployment jonline-minio -n $(NAMESPACE)
 
 # Useful things
 deploy_ensure_namespace:
@@ -196,7 +214,7 @@ backend/target/release/jonline__server_release: release_builder_push_local
 	mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release
 	mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release
 	mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release
-	mv backend/target/release/set_admin backend/target/release/set_admin_images__server_release
+	mv backend/target/release/set_permission backend/target/release/set_permission__server_release
 
 release_be_push_local: local_registry_create release_be_build_binary release_web_build
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile

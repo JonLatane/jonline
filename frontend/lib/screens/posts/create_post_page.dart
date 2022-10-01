@@ -8,6 +8,7 @@ import '../../generated/posts.pb.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_clients.dart';
+import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../home_page.dart';
@@ -33,6 +34,17 @@ class CreatePostPageState extends State<CreatePostPage> {
   String get title => titleController.value.text;
   String get link => linkController.value.text;
   String get content => contentController.value.text;
+  bool get linkValid {
+    try {
+      Uri.parse(link);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  bool get canCreate =>
+      title.isNotEmpty || (link.isNotEmpty && linkValid) || content.isNotEmpty;
 
   @override
   void initState() {
@@ -42,14 +54,24 @@ class CreatePostPageState extends State<CreatePostPage> {
     homePage.createPost.addListener(doCreate);
     titleController.addListener(() {
       setState(() {});
-      homePage.canCreatePost.value = title.isNotEmpty && !doingCreate;
+      updateHomepage();
     });
     contentController.addListener(() {
       setState(() {});
+      updateHomepage();
     });
     linkController.addListener(() {
       setState(() {});
+      updateHomepage();
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      updateHomepage();
+    });
+  }
+
+  updateHomepage() {
+    homePage.canCreatePost.value = canCreate && !doingCreate;
   }
 
   @override
@@ -68,7 +90,7 @@ class CreatePostPageState extends State<CreatePostPage> {
       enabled.value = !value;
       _doingCreate = value;
     });
-    homePage.canCreatePost.value = title.isNotEmpty && !value;
+    homePage.canCreatePost.value = canCreate && !value;
   }
 
   doCreate() async {
@@ -92,7 +114,10 @@ class CreatePostPageState extends State<CreatePostPage> {
     final Post post;
     try {
       post = await client!.createPost(
-          CreatePostRequest(title: title, link: link, content: content),
+          CreatePostRequest(
+              title: title.isNotEmpty ? title : null,
+              link: link.isNotEmpty ? link : null,
+              content: content.isNotEmpty ? content : null),
           options: account.authenticatedCallOptions);
     } catch (e) {
       await communicationDelay;
@@ -114,7 +139,7 @@ class CreatePostPageState extends State<CreatePostPage> {
     }
     // context.navigateBack();
     context.replaceRoute(PostDetailsRoute(
-        postId: post.id, server: JonlineAccount.selectedServer));
+        postId: post.id, server: JonlineServer.selectedServer.server));
     final appState = context.findRootAncestorStateOfType<AppState>();
     if (appState == null) {
       doingCreate = false;

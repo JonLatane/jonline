@@ -20,13 +20,12 @@ pub fn create_post(
     );
     let req = request.into_inner();
     match req.title.to_owned() {
-        None => match req.reply_to_post_id {
-            Some(_) => {}
-            None => return Err(Status::new(Code::InvalidArgument, "title_or_parent_post_id_required")),
+        None => {}
+        Some(t) => match req.reply_to_post_id {
+            Some(_) => return Err(Status::new(Code::InvalidArgument, "title_not_allowed_with_reply")),
+            None => validate_length(&t, "title", 1, 255)?,
         },
-        Some(other_title) => validate_length(&other_title, "title", 4, 255)?,
     }
-    // validate_length(&req.title, "title", 4, 255)?;
     validate_max_length(req.link.to_owned(), "link", 10000)?;
     validate_max_length(req.content.to_owned(), "content", 10000)?;
 

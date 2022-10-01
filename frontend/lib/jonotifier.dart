@@ -5,7 +5,7 @@ class Jonotifier extends ChangeNotifier {
   notifyChange() => notifyListeners();
 }
 
-class BSValueMethod<T> extends ValueNotifier<T> {
-  BSValueMethod(value) : super(value);
-  call(value) => this.value = value;
+class ValueJonotifer<T> extends ValueNotifier<T> {
+  ValueJonotifer(value) : super(value);
+  notify() => notifyListeners();
 }

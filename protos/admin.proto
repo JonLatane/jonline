@@ -28,8 +28,8 @@ message FeatureSettings {
   // When PENDING, users' SERVER_PUBLIC or GLOBAL_PUBLIC posts will not
   // be visible until a moderator approves them. LIMITED visiblity
   // posts are always visible to targeted users (who have not blocked 
-  // the author) regardless of default_moderation_status.
-  ModerationStatus default_moderation_status = 2;
+  // the author) regardless of default_moderation.
+  Moderation default_moderation = 2;
   // Only SERVER_PUBLIC and GLOBAL_PUBLIC are valid.
   Visibility default_visibility = 3;
   optional string custom_title = 4;

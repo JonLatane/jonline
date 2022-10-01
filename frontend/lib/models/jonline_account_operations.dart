@@ -1,33 +1,33 @@
-import '../app_state.dart';
+// import '../app_state.dart';
 import '../generated/authentication.pb.dart';
 import '../generated/google/protobuf/empty.pb.dart';
-import '../generated/posts.pb.dart';
+// import '../generated/posts.pb.dart';
 import '../generated/users.pb.dart';
 import 'jonline_account.dart';
 import 'jonline_clients.dart';
 import 'server_errors.dart';
 
 extension JonlineAccountOperations on JonlineAccount {
-  Future<Posts?> getPosts(
-      {GetPostsRequest? request, Function(String)? showMessage}) async {
-    final client = await getClient(showMessage: showMessage);
-    if (client == null) {
-      showMessage?.call("Error: No client");
-      return null;
-    }
-    showMessage?.call("Loading posts...");
-    final Posts posts;
-    try {
-      posts = await client.getPosts(request ?? GetPostsRequest(),
-          options: authenticatedCallOptions);
-    } catch (e) {
-      showMessage?.call("Error loading posts.");
-      if (showMessage != null) await communicationDelay;
-      showMessage?.call(formatServerError(e));
-      return null;
-    }
-    return posts;
-  }
+  // Future<Posts?> getPosts(
+  //     {GetPostsRequest? request, Function(String)? showMessage}) async {
+  //   final client = await getClient(showMessage: showMessage);
+  //   if (client == null) {
+  //     showMessage?.call("Error: No client");
+  //     return null;
+  //   }
+  //   showMessage?.call("Loading posts...");
+  //   final Posts posts;
+  //   try {
+  //     posts = await client.getPosts(request ?? GetPostsRequest(),
+  //         options: authenticatedCallOptions);
+  //   } catch (e) {
+  //     showMessage?.call("Error loading posts.");
+  //     if (showMessage != null) await communicationDelay;
+  //     showMessage?.call(formatServerError(e));
+  //     return null;
+  //   }
+  //   return posts;
+  // }
 
   Future<User?> getUser({Function(String)? showMessage}) async {
     final User? user;
@@ -50,6 +50,7 @@ extension JonlineAccountOperations on JonlineAccount {
 
     username = user.username;
     userId = user.id;
+    permissions = user.permissions;
     await save();
   }
 

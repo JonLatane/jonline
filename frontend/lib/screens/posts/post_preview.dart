@@ -21,14 +21,16 @@ class PostPreview extends StatefulWidget {
   final double? maxContentHeight;
   final VoidCallback? onTap;
   final bool isReply;
+  final bool isReplyByAuthor;
   const PostPreview(
       {Key? key,
       required this.server,
       required this.post,
       this.maxContentHeight = 300,
       this.onTap,
+      this.allowScrollingContent = false,
       this.isReply = false,
-      this.allowScrollingContent = false})
+      this.isReplyByAuthor = false})
       : super(key: key);
 
   @override
@@ -74,7 +76,7 @@ class PostPreviewState extends State<PostPreview> {
       previewData = previewStorage.read(key).cast<int>();
     }
     if (previewData == null) {
-      previewData = (await JonlineOperations.getSelectedPosts(
+      previewData = (await JonlineOperations.getPosts(
               request: GetPostsRequest(postId: widget.post.id),
               showMessage: showSnackBar))
           ?.posts
@@ -205,10 +207,11 @@ class PostPreviewState extends State<PostPreview> {
                   username ?? noOne,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w300,
-                      color: Colors.grey),
+                      color:
+                          widget.isReplyByAuthor ? authorColor : Colors.grey),
                 ),
               ),
               const Expanded(child: SizedBox()),

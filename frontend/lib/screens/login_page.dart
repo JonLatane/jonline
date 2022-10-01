@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../models/jonline_account.dart';
-import '../models/jonline_account_factories.dart';
 import '../models/jonline_account_operations.dart';
+import '../models/jonline_server.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function(bool isLoggedIn)? onLoginResult;
@@ -17,7 +17,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  AppState get appState => context.findRootAncestorStateOfType<AppState>()!;
+  late final AppState appState;
 
   bool doingStuff = false;
   final FocusNode usernameFocus = FocusNode();
@@ -37,12 +37,14 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+    appState = context.findRootAncestorStateOfType<AppState>()!;
     usernameController.addListener(() {
       setState(() {});
     });
     passwordController.addListener(() {
       setState(() {});
     });
+    appState.servers.addListener(updateState);
   }
 
   @override
@@ -51,23 +53,32 @@ class _LoginPageState extends State<LoginPage> {
     usernameController.dispose();
     passwordFocus.dispose();
     passwordController.dispose();
+    appState.servers.removeListener(updateState);
     super.dispose();
+  }
+
+  updateState() {
+    setState(() {});
   }
 
   createAccount() async {
     authenticate(
         "create account",
-        JonlineAccountFactories.createAccount(
-            server, username, password, context, showSnackBar,
+        JonlineAccount.createAccount(server, username, password, showSnackBar,
             allowInsecure: allowInsecure));
   }
 
   login() async {
     authenticate(
         "login",
-        JonlineAccountFactories.loginToAccount(
-            server, username, password, context, showSnackBar,
+        JonlineAccount.loginToAccount(server, username, password, showSnackBar,
             allowInsecure: allowInsecure));
+  }
+
+  addServer() async {
+    await JonlineServer(server).saveNew();
+    appState.updateServerList();
+    showSnackBar("Added server $server");
   }
 
   authenticate(String action, Future<JonlineAccount?> generator) async {
@@ -92,15 +103,18 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     appState.updateAccountList();
+    appState.updateServerList();
     if (!mounted) return;
     context.navigateBack();
   }
 
   @override
   Widget build(BuildContext context) {
+    bool showAddServerButton =
+        !appState.servers.value.contains(JonlineServer(server));
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Login/Create Account"),
+        title: const Text("Add Account/Server"),
         leading: const AutoLeadingButton(
           ignorePagelessRoutes: true,
         ),
@@ -153,7 +167,45 @@ class _LoginPageState extends State<LoginPage> {
                         fontWeight: FontWeight.w400,
                         fontSize: 12),
                   )),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              AnimatedOpacity(
+                duration: animationDuration,
+                opacity: showAddServerButton ? 1 : 0,
+                child: AnimatedContainer(
+                  duration: animationDuration,
+                  height: showAddServerButton
+                      ? 50 * MediaQuery.of(context).textScaleFactor
+                      : 0,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: addServer,
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Add Server',
+                                textAlign: TextAlign.center,
+                              ),
+                              Text(
+                                "$server/",
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w400, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               TextField(
                 focusNode: passwordFocus,
                 controller: passwordController,
