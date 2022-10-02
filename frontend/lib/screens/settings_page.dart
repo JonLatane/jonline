@@ -26,108 +26,115 @@ class _SettingsPageState extends State<SettingsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(
-                child: Container(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                          child: Text("Prefer Server Previews",
-                              style: textTheme.labelLarge)),
-                      Switch(
-                          value: Settings.preferServerPreviews,
-                          onChanged: (v) {
-                            setState(() => Settings.preferServerPreviews = v);
-                            appState
-                              ..updatePosts()
-                              ..notifyAccountsListeners();
-                          }),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Expanded(
-                          child: Text("Reply Layers to Load",
-                              style: textTheme.labelLarge)),
-                      if (MediaQuery.of(context).size.width > 450)
-                        Slider(
-                            min: 1,
-                            max: 5,
-                            divisions: 4,
-                            value: Settings.replyLayersToLoad.toDouble(),
-                            onChanged: (v) {
-                              setState(
-                                  () => Settings.replyLayersToLoad = v.toInt());
-                            }),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 4.0, horizontal: 16.0),
-                          child: Text(
-                            Settings.replyLayersToLoad.toString(),
-                            style: textTheme.labelLarge,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 5)
-                    ],
-                  ),
-                  if (MediaQuery.of(context).size.width <= 450)
-                    Row(
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Center(
+                      child: Container(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: Column(
                       children: [
-                        const Expanded(child: SizedBox()),
-                        Slider(
-                            min: 1,
-                            max: 5,
-                            divisions: 4,
-                            value: Settings.replyLayersToLoad.toDouble(),
-                            onChanged: (v) {
-                              setState(
-                                  () => Settings.replyLayersToLoad = v.toInt());
-                            }),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Text("Prefer Server Previews",
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                value: Settings.preferServerPreviews,
+                                onChanged: (v) {
+                                  setState(
+                                      () => Settings.preferServerPreviews = v);
+                                  appState
+                                    ..updatePosts()
+                                    ..notifyAccountsListeners();
+                                }),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Text("Reply Layers to Load",
+                                    style: textTheme.labelLarge)),
+                            if (MediaQuery.of(context).size.width > 450)
+                              Slider(
+                                  min: 1,
+                                  max: 5,
+                                  divisions: 4,
+                                  value: Settings.replyLayersToLoad.toDouble(),
+                                  onChanged: (v) {
+                                    setState(() =>
+                                        Settings.replyLayersToLoad = v.toInt());
+                                  }),
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 4.0, horizontal: 16.0),
+                                child: Text(
+                                  Settings.replyLayersToLoad.toString(),
+                                  style: textTheme.labelLarge,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 5)
+                          ],
+                        ),
+                        if (MediaQuery.of(context).size.width <= 450)
+                          Row(
+                            children: [
+                              const Expanded(child: SizedBox()),
+                              Slider(
+                                  min: 1,
+                                  max: 5,
+                                  divisions: 4,
+                                  value: Settings.replyLayersToLoad.toDouble(),
+                                  onChanged: (v) {
+                                    setState(() =>
+                                        Settings.replyLayersToLoad = v.toInt());
+                                  }),
+                            ],
+                          ),
+                        Row(
+                          key: const Key('powerUserModeSetting'),
+                          children: [
+                            Expanded(
+                                child: Text("Power User Mode",
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                value: Settings.powerUserMode,
+                                onChanged: (v) {
+                                  setState(() => Settings.powerUserMode = v);
+                                  appState.notifyAccountsListeners();
+                                }),
+                          ],
+                        ),
+                        Row(
+                          key: const Key('devModeSetting'),
+                          children: [
+                            Expanded(
+                                child: Text("Developer Mode",
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                value: Settings.developerMode,
+                                onChanged: (v) {
+                                  setState(() => Settings.developerMode = v);
+                                  context
+                                      .findRootAncestorStateOfType<AppState>()!
+                                      .notifyAccountsListeners();
+                                }),
+                          ],
+                        ),
                       ],
                     ),
-                  Row(
-                    key: const Key('powerUserModeSetting'),
-                    children: [
-                      Expanded(
-                          child: Text("Power User Mode",
-                              style: textTheme.labelLarge)),
-                      Switch(
-                          value: Settings.powerUserMode,
-                          onChanged: (v) {
-                            setState(() => Settings.powerUserMode = v);
-                            appState.notifyAccountsListeners();
-                          }),
-                    ],
-                  ),
-                  Row(
-                    key: const Key('devModeSetting'),
-                    children: [
-                      Expanded(
-                          child: Text("Developer Mode",
-                              style: textTheme.labelLarge)),
-                      Switch(
-                          value: Settings.developerMode,
-                          onChanged: (v) {
-                            setState(() => Settings.developerMode = v);
-                            context
-                                .findRootAncestorStateOfType<AppState>()!
-                                .notifyAccountsListeners();
-                          }),
-                    ],
-                  ),
-                ],
-              ),
-            )),
-          )),
+                  )),
+                )),
+          ),
+        ],
+      ),
     );
   }
 

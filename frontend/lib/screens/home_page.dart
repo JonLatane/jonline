@@ -42,7 +42,7 @@ class RouteDestination {
 class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AppState appState;
 
-  Jonotifier adminPageFocused = Jonotifier();
+  Jonotifier serverConfigPageFocused = Jonotifier();
 
   // Notifiers to let the App Bar communicate with pages
   Jonotifier createPost = Jonotifier();
@@ -118,20 +118,23 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   updateState() => setState(() {});
 
   RouteData? _lastRoute;
+  bool isServerConfigPage(RouteData? route) =>
+      route?.name == "AdminRoute" || route?.name == "ServerConfigurationRoute";
   @override
   Widget build(context) {
     // builder will rebuild everytime this router's stack updates
 
-    if (_lastRoute?.name == "AdminRoute" &&
-        context.topRoute.name != "AdminRoute") {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (isServerConfigPage(_lastRoute) &&
+        !isServerConfigPage(context.topRoute)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await JonlineServer.selectedServer.updateConfiguration();
         appState.colorTheme.value =
             JonlineServer.selectedServer.configuration?.serverInfo.colors;
       });
-    } else if (_lastRoute?.name != "AdminRoute" &&
-        context.topRoute.name == "AdminRoute") {
+    } else if (!isServerConfigPage(_lastRoute) &&
+        isServerConfigPage(context.topRoute)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        adminPageFocused();
+        serverConfigPageFocused();
       });
     }
     _lastRoute = context.topRoute;

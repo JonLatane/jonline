@@ -82,7 +82,7 @@ extension JonlineAccountOperations on JonlineAccount {
       return;
     }
     if (serviceVersion == null) {
-      showMessage?.call('No refresh token received.');
+      showMessage?.call('No service version received.');
       return;
     }
     this.serviceVersion = serviceVersion;

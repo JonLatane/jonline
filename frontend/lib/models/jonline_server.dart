@@ -8,6 +8,7 @@ import '../generated/admin.pb.dart';
 import '../generated/google/protobuf/empty.pb.dart';
 import 'jonline_account.dart';
 import 'jonline_clients.dart';
+import 'server_errors.dart';
 import 'storage.dart';
 
 const uuid = Uuid();
@@ -104,6 +105,21 @@ class JonlineServer {
     configuration = (await client.getServerConfiguration(Empty()));
     await save();
     return configuration;
+  }
+
+  Future<void> updateServiceVersion({Function(String)? showMessage}) async {
+    final client = await JonlineClients.getServerClient(this,
+        showMessage: (m) => print(m), allowInsecure: true);
+    if (client == null) return;
+    String? serviceVersion;
+    try {
+      serviceVersion = (await client.getServiceVersion(Empty())).version;
+    } catch (e) {
+      showMessage?.call(formatServerError(e));
+      return;
+    }
+    this.serviceVersion = serviceVersion;
+    await save();
   }
 
   @override

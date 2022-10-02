@@ -45,10 +45,10 @@ extension JonlineClients on JonlineAccount {
         return null;
       }
     }
-    if (client != null) {
-      showMessage
-          ?.call("Connected to $server running Jonline $serviceVersion!");
-    }
+    // if (client != null) {
+    //   showMessage
+    //       ?.call("Connected to $server running Jonline $serviceVersion!");
+    // }
     return client;
   }
 

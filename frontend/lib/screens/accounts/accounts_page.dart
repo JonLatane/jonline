@@ -224,12 +224,7 @@ class AccountsPageState extends State<AccountsPage> {
   }
 
   refreshAccount(JonlineAccount account) async {
-    await account.updateServiceVersion(showMessage: showSnackBar);
-    // showSnackBar('Service version updated.');
-    await communicationDelay;
     await account.updateRefreshToken(showMessage: showSnackBar);
-    // showSnackBar('Refresh token updated.');
-    await communicationDelay;
     await account.updateUserData(showMessage: showSnackBar);
     showSnackBar('Account details updated.');
     appState.updateAccountList();
@@ -239,15 +234,6 @@ class AccountsPageState extends State<AccountsPage> {
     await server.updateConfiguration();
     await appState.updateColorTheme();
     showSnackBar('Server configuration updated.');
-    // await account.updateServiceVersion(showMessage: showSnackBar);
-    // showSnackBar('Service version updated.');
-    // await communicationDelay;
-    // await account.updateRefreshToken(showMessage: showSnackBar);
-    // showSnackBar('Refresh token updated.');
-    // await communicationDelay;
-    // await account.updateUserData(showMessage: showSnackBar);
-    // showSnackBar('User details updated.');
-    // appState.updateAccountList();
   }
 
   void deleteAllAccounts() async {
@@ -434,16 +420,6 @@ class AccountsPageState extends State<AccountsPage> {
                         Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
-                            if (Settings.powerUserMode)
-                              if (account.serviceVersion != "")
-                                Transform.translate(
-                                    offset: const Offset(0, -3),
-                                    child: Text(
-                                      "v${account.serviceVersion}",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: textTheme.caption,
-                                    )),
                             if (account.allowInsecure)
                               Padding(
                                 padding: const EdgeInsets.only(
@@ -641,18 +617,34 @@ class AccountsPageState extends State<AccountsPage> {
                 padding: const EdgeInsets.all(4.0),
                 child: Row(
                   children: [
-                    if (Settings.powerUserMode)
-                      SizedBox(
-                        height: 32,
-                        width: 32,
-                        child: TextButton(
-                            style: ButtonStyle(
-                                padding: MaterialStateProperty.all(
-                                    const EdgeInsets.all(0))),
-                            // padding: const EdgeInsets.all(0),
-                            onPressed: () => refreshServer(server),
-                            child: const Icon(Icons.refresh)),
-                      ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: 32,
+                          width: 32,
+                          child: TextButton(
+                              style: ButtonStyle(
+                                  padding: MaterialStateProperty.all(
+                                      const EdgeInsets.all(0))),
+                              onPressed: () => context.navigateNamedTo(
+                                  'server/${server.server}/configuration'),
+                              child: const Icon(Icons.info)),
+                        ),
+                        if (Settings.powerUserMode)
+                          SizedBox(
+                            height: 32,
+                            width: 32,
+                            child: TextButton(
+                                style: ButtonStyle(
+                                    padding: MaterialStateProperty.all(
+                                        const EdgeInsets.all(0))),
+                                // padding: const EdgeInsets.all(0),
+                                onPressed: () => refreshServer(server),
+                                child: const Icon(Icons.refresh)),
+                          ),
+                      ],
+                    ),
                     Expanded(
                       child: Column(children: [
                         const SizedBox(height: 8),

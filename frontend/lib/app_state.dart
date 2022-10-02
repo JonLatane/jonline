@@ -1,10 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/screens/accounts/admin_page.dart';
+import 'package:jonline/screens/accounts/server_configuration_page.dart';
+import 'package:jonline/screens/login_page.dart';
 import 'package:provider/provider.dart';
 import 'generated/admin.pb.dart';
-import 'generated/google/protobuf/empty.pb.dart';
-import 'models/jonline_clients.dart';
 import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
 
 import 'db.dart';
@@ -19,7 +18,6 @@ import 'my_platform.dart';
 import 'router/auth_guard.dart';
 import 'router/router.gr.dart';
 
-const defaultServer = 'jonline.io';
 const noOne = 'no one';
 const animationDuration = Duration(milliseconds: 300);
 const communicationDuration = Duration(milliseconds: 1000);
@@ -171,6 +169,7 @@ class AppState extends State<MyApp> {
         final String serverHost = context.callMethod("getJonlineServer", []);
         final JonlineServer server = JonlineServer(serverHost);
         final List<JonlineServer> servers = await JonlineServer.servers;
+        LoginPage.defaultServer = serverHost;
         if (!servers.contains(server)) {
           await server.saveNew(atBeginning: true);
           JonlineServer.selectedServer = server;

@@ -7,6 +7,8 @@ import '../models/jonline_account_operations.dart';
 import '../models/jonline_server.dart';
 
 class LoginPage extends StatefulWidget {
+  static String defaultServer = 'jonline.io';
+
   final void Function(bool isLoggedIn)? onLoginResult;
   final bool showBackButton;
   const LoginPage({Key? key, this.onLoginResult, this.showBackButton = true})
@@ -18,6 +20,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   late final AppState appState;
+  get defaultServer => LoginPage.defaultServer;
 
   bool doingStuff = false;
   final FocusNode usernameFocus = FocusNode();
@@ -28,7 +31,7 @@ class _LoginPageState extends State<LoginPage> {
 
   String get serverAndUser => usernameController.value.text;
   String get server =>
-      serverAndUser.contains('/') ? serverAndUser.split('/')[0] : 'jonline.io';
+      serverAndUser.contains('/') ? serverAndUser.split('/')[0] : defaultServer;
   String get username =>
       serverAndUser.contains('/') ? serverAndUser.split('/')[1] : serverAndUser;
   String get friendlyUsername => username == "" ? noOne : username;
@@ -160,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
               Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    "e.g. jonline.io/jon, bobline.io/jon, ${server == 'jonline.io' || server == 'bobline.io' ? '' : "$server/bob, "}etc.",
+                    "e.g. $defaultServer/jon, bobline.io/jon, ${server == defaultServer || server == 'bobline.io' ? '' : "$server/bob, "}etc.",
                     textAlign: TextAlign.right,
                     style: const TextStyle(
                         color: Colors.white,

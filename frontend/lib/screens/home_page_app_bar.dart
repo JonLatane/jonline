@@ -1,5 +1,7 @@
 // ignore_for_file: invalid_use_of_protected_member
 
+import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
@@ -8,20 +10,43 @@ import '../screens/accounts/account_chooser.dart';
 import '../screens/home_page.dart';
 
 extension HomePageAppBar on HomePageState {
-  AppBar get appBar {
-    return AppBar(
-      title: titleWidget ?? Text(title),
-      key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
-      leading: showLeadingNav
-          ? const AutoLeadingButton(
-              // showIfChildCanPop: false,
-              showIfParentCanPop: false,
-              ignorePagelessRoutes: true,
-            )
-          : null,
-      automaticallyImplyLeading: false,
-      actions: actions,
+  PreferredSizeWidget get appBar {
+    return PreferredSize(
+      child: Container(
+        child: ClipRRect(
+            child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: AppBar(
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  title: titleWidget ?? Text(title),
+                  key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
+                  leading: showLeadingNav
+                      ? const AutoLeadingButton(
+                          // showIfChildCanPop: false,
+                          showIfParentCanPop: false,
+                          ignorePagelessRoutes: true,
+                        )
+                      : null,
+                  automaticallyImplyLeading: false,
+                  actions: actions,
+                ))),
+      ),
+      preferredSize: Size(MediaQuery.of(context).size.width, 48),
     );
+    // return AppBar(
+    //   title: titleWidget ?? Text(title),
+    //   key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
+    //   leading: showLeadingNav
+    //       ? const AutoLeadingButton(
+    //           // showIfChildCanPop: false,
+    //           showIfParentCanPop: false,
+    //           ignorePagelessRoutes: true,
+    //         )
+    //       : null,
+    //   automaticallyImplyLeading: false,
+    //   actions: actions,
+    // );
   }
 
   bool get showLeadingNav {
@@ -58,6 +83,14 @@ extension HomePageAppBar on HomePageState {
           children: [
             Text("${titleServer ?? '...'}/", style: textTheme.caption),
             Text(titleUsername ?? '...', style: textTheme.subtitle2),
+          ],
+        );
+      case 'ServerConfigurationRoute':
+        final String server = context.topRoute.pathParams.get('server');
+        return Row(
+          children: [
+            Text('Server Configuration: ', style: textTheme.subtitle2),
+            Text("$server/", style: textTheme.caption),
           ],
         );
       case 'AdminRoute':
