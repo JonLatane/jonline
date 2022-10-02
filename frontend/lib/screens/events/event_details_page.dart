@@ -26,34 +26,37 @@ class EventDetailsPageState extends State<EventDetailsPage> {
     return book == null
         ? const Text('Book null')
         : Scaffold(
-            body: SizedBox(
-              width: double.infinity,
-              child: Hero(
-                tag: 'Hero${book.id}',
-                child: Card(
-                  margin: const EdgeInsets.all(48),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Book Details/${book.id}'),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 24),
-                        child: Text(
-                          'Reads  $counter',
-                          style: const TextStyle(fontSize: 20),
+            body: Padding(
+              padding: const EdgeInsets.only(top: 48),
+              child: SizedBox(
+                width: double.infinity,
+                child: Hero(
+                  tag: 'Hero${book.id}',
+                  child: Card(
+                    margin: const EdgeInsets.all(48),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Book Details/${book.id}'),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 24),
+                          child: Text(
+                            'Reads  $counter',
+                            style: const TextStyle(fontSize: 20),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                      FloatingActionButton(
-                        heroTag: null,
-                        onPressed: () {
-                          setState(() {
-                            counter++;
-                          });
-                        },
-                        child: const Icon(Icons.add),
-                      ),
-                    ],
+                        const SizedBox(height: 32),
+                        FloatingActionButton(
+                          heroTag: null,
+                          onPressed: () {
+                            setState(() {
+                              counter++;
+                            });
+                          },
+                          child: const Icon(Icons.add),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

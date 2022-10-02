@@ -186,6 +186,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             },
             child: Scaffold(
               appBar: appBar,
+              extendBodyBehindAppBar: true,
               body: Row(
                 children: [
                   AnimatedContainer(
@@ -288,6 +289,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           : 48,
       child: Column(
         children: [
+          const SizedBox(
+            height: 48,
+          ),
           Expanded(
               child: SingleChildScrollView(
             child: Column(children: [

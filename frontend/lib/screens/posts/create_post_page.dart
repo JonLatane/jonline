@@ -158,6 +158,7 @@ class CreatePostPageState extends State<CreatePostPage> {
     return Scaffold(
         body: Column(
       children: [
+        const SizedBox(height: 48),
         Expanded(
           child: Row(
             children: [

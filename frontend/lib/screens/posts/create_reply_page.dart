@@ -200,6 +200,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
     return Scaffold(
         body: Column(
       children: [
+        const SizedBox(height: 48),
         Row(
           children: [
             if (discussionPostId != null)

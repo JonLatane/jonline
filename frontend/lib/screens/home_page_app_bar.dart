@@ -12,27 +12,25 @@ import '../screens/home_page.dart';
 extension HomePageAppBar on HomePageState {
   PreferredSizeWidget get appBar {
     return PreferredSize(
-      child: Container(
-        child: ClipRRect(
-            child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: AppBar(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                  title: titleWidget ?? Text(title),
-                  key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
-                  leading: showLeadingNav
-                      ? const AutoLeadingButton(
-                          // showIfChildCanPop: false,
-                          showIfParentCanPop: false,
-                          ignorePagelessRoutes: true,
-                        )
-                      : null,
-                  automaticallyImplyLeading: false,
-                  actions: actions,
-                ))),
-      ),
       preferredSize: Size(MediaQuery.of(context).size.width, 48),
+      child: ClipRRect(
+          child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: AppBar(
+                backgroundColor:
+                    Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                title: titleWidget ?? Text(title),
+                key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
+                leading: showLeadingNav
+                    ? const AutoLeadingButton(
+                        // showIfChildCanPop: false,
+                        showIfParentCanPop: false,
+                        ignorePagelessRoutes: true,
+                      )
+                    : null,
+                automaticallyImplyLeading: false,
+                actions: actions,
+              ))),
     );
     // return AppBar(
     //   title: titleWidget ?? Text(title),

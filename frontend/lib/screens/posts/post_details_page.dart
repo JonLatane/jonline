@@ -131,6 +131,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       controller: scrollController,
                       slivers: [
+                        const SliverToBoxAdapter(child: SizedBox(height: 48)),
                         SliverToBoxAdapter(
                           child: PostPreview(
                             server: widget.server,

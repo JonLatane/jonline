@@ -80,7 +80,7 @@ class AccountsPageState extends State<AccountsPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 56),
               Row(
                 children: [
                   const SizedBox(width: 8),

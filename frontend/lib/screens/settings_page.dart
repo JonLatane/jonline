@@ -32,7 +32,8 @@ class _SettingsPageState extends State<SettingsPage>
             child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.only(
+                      top: 56.0, left: 8.0, right: 8.0, bottom: 8.0),
                   child: Center(
                       child: Container(
                     constraints: const BoxConstraints(maxWidth: 600),
