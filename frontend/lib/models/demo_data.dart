@@ -52,7 +52,7 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar,
         sideAccounts.add(sideAccount);
       }
     } catch (e) {
-      print("Error creating side account '$prefix-${account.username}': $e");
+      // print("Error creating side account '$prefix-${account.username}': $e");
     }
     prefix = "not-$prefix";
   }
@@ -228,9 +228,9 @@ server or PHPBB/vBulletin/Wordpress forum if you're old, or a Facebook group if
 you're *really* old. 
 
 Jonline is trustworthy, because you can literally look at the 
-[code where we store](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L24) 
+[code where we store](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L30) 
 and [validate your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
-even [the code that was used to generate *this post you're reading right now*](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/frontend/lib/models/demo_data.dart#L105) 🤯🙃
+even [the code that was used to generate *this post you're reading right now*](https://github.com/JonLatane/jonline/blob/b64e41d6d66bc5258176276f06c9c42d0baed026/frontend/lib/models/demo_data.dart#L233) 🤯🙃
 
 Importantly, to "run" a community like this one at [jonline.io](https://jonline.io), 
 you have to (or really, *get to*) run your own Jonline server. 

@@ -259,7 +259,9 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
         decoration: BoxDecoration(
             border: Border(
                 left: BorderSide(
-                    color: (reply.depth - i) % 2 == 0 ? topColor : bottomColor,
+                    color: (reply.depth - i) % 2 == 0
+                        ? appState.primaryColor
+                        : appState.navColor,
                     width: 5.0))),
         child: result,
       );

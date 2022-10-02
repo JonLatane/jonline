@@ -30,7 +30,9 @@ message FeatureSettings {
   // posts are always visible to targeted users (who have not blocked 
   // the author) regardless of default_moderation.
   Moderation default_moderation = 2;
-  // Only SERVER_PUBLIC and GLOBAL_PUBLIC are valid.
+  // Only SERVER_PUBLIC and GLOBAL_PUBLIC are valid. GLOBAL_PUBLIC is only valid
+  // if default_user_permissions contains GLOBALLY_PUBLISH_POSTS or 
+  // GLOBALLY_PUBLISH_EVENTS as appropriate.
   Visibility default_visibility = 3;
   optional string custom_title = 4;
 }
@@ -42,11 +44,20 @@ message ServerInfo {
   optional string privacy_policy_link = 4;
   optional string about_link = 5;
   optional bytes logo = 6;
+  optional ServerColors colors = 7;
+}
 
-  // Color in ARGB hex format (i.e 0xAARRGGBB).
-  // Clients may override/modify colors that cause poor UX.
-  message ServerColors {
-    optional int32 top = 1;
-    optional int32 bottom = 2;
-  }
+// Color in ARGB hex format (i.e 0xAARRGGBB).
+// Clients may override/modify colors that cause poor UX.
+message ServerColors {
+  // App Bar/primary accent color.
+  optional uint32 primary = 1;
+  // Nav/secondary accent color.
+  optional uint32 navigation = 2;
+  // Color used on author of a post in discussion threads for it.
+  optional uint32 author = 3;
+  // Color used on author for admin posts.
+  optional uint32 admin = 4;
+  // Color used on author for moderator posts.
+  optional uint32 moderator = 5;
 }

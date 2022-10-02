@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use crate::protos::{FeatureSettings, Moderation, Permission, ServerInfo, Visibility};
+use crate::protos::{ServerColors, FeatureSettings, Moderation, Permission, ServerInfo, Visibility};
 use crate::schema::server_configurations;
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
@@ -35,6 +35,10 @@ pub fn default_server_configuration() -> NewServerConfiguration {
             privacy_policy_link: None,
             about_link: None,
             logo: None,
+            colors: Some(ServerColors {
+                primary: Some(0xFF2E86AB),
+                navigation: Some(0xFFA23B72),
+                 ..Default::default() }),
         })
         .unwrap(),
         default_user_permissions: serde_json::to_value([

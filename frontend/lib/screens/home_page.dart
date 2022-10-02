@@ -90,6 +90,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     canCreatePost.addListener(updateState);
     canCreateReply.addListener(updateState);
     appState.accounts.addListener(updateState);
+    appState.colorTheme.addListener(updateState);
     Settings.showSettingsTabListener.addListener(updateState);
     if (MyPlatform.isMobile) {
       NativeDeviceOrientationCommunicator()
@@ -107,6 +108,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     appState.accounts.removeListener(updateState);
     canCreatePost.removeListener(updateState);
     canCreateReply.removeListener(updateState);
+    appState.colorTheme.removeListener(updateState);
     super.dispose();
   }
 
@@ -228,7 +230,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           context.replaceRoute(const AccountsRoute());
           break;
         default:
-          print("${context.topRoute.name} not handled");
+        // print("${context.topRoute.name} not handled");
       }
     } else {
       lastActiveNavTapTime = DateTime.now();
@@ -242,7 +244,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return hideBottomNav
         ? const SizedBox.shrink()
         : BottomNavigationBar(
-            selectedItemColor: bottomColor,
+            selectedItemColor: appState.navColor,
             type: BottomNavigationBarType.fixed,
             currentIndex: min(items.length - 1, tabsRouter.activeIndex),
             onTap: (index) {
@@ -300,7 +302,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                         Icon((item.icon as Icon).icon,
                                             size: 32,
                                             color: active
-                                                ? bottomColor
+                                                ? appState.navColor
                                                 : Colors.grey),
                                         Expanded(
                                           child: Row(
@@ -323,7 +325,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                           .subtitle1!
                                                           .copyWith(
                                                               color: active
-                                                                  ? bottomColor
+                                                                  ? appState
+                                                                      .navColor
                                                                   : Colors
                                                                       .grey)),
                                                 ),

@@ -22,6 +22,8 @@ pub mod protos;
 pub mod rpcs;
 pub mod schema;
 pub mod conversions;
+pub mod proto_models;
+
 #[cfg(test)]
 mod tests {
     use crate::conversions::ToProtoId;

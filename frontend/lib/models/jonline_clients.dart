@@ -60,6 +60,23 @@ extension JonlineClients on JonlineAccount {
     return getSelectedClient(showMessage: showMessage);
   }
 
+  static Future<JonlineClient?> getServerClient(JonlineServer server,
+      {bool allowInsecure = false, Function(String)? showMessage}) async {
+    final clients = allowInsecure ? _insecureClients : _secureClients;
+    if (clients.containsKey(server)) {
+      return clients[server];
+    } else {
+      try {
+        clients[server.server] = (await createAndTestClient(server.server,
+            showMessage: showMessage, allowInsecure: allowInsecure))!;
+        return clients[server.server];
+      } catch (e) {
+        showMessage?.call(formatServerError(e));
+        return null;
+      }
+    }
+  }
+
   static Future<JonlineClient?> getSelectedClient(
       {Function(String)? showMessage}) async {
     if (JonlineAccount.selectedAccount == null) return null;

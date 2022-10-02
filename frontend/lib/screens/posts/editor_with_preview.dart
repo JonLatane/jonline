@@ -322,11 +322,12 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
                       AnimatedOpacity(
                           opacity: quickPasteDone ? 0.8 : 1,
                           duration: animationDuration,
-                          child: Icon(Icons.paste, color: topColor)),
+                          child:
+                              Icon(Icons.paste, color: appState.primaryColor)),
                       AnimatedOpacity(
                           opacity: quickPasteDone ? 1 : 0,
                           duration: animationDuration,
-                          child: Icon(Icons.check, color: bottomColor)),
+                          child: Icon(Icons.check, color: appState.navColor)),
                     ],
                   ),
                 ))

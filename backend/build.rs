@@ -8,6 +8,7 @@ fn main() {
     tonic_build::configure()
         .build_server(true)
         .type_attribute("ServerInfo", "#[derive(serde::Serialize, serde::Deserialize)]")
+        .type_attribute("ServerColors", "#[derive(serde::Serialize, serde::Deserialize)]")
         .type_attribute("FeatureSettings", "#[derive(serde::Serialize, serde::Deserialize)]")
         .type_attribute("ContactMethod", "#[derive(serde::Serialize, serde::Deserialize)]")
         .file_descriptor_set_path(out_dir.join("greeter_descriptor.bin"))

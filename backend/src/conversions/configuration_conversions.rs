@@ -1,15 +1,29 @@
-// use std::collections::HashMap;
+use std::mem::transmute;
 
-// use serde_json::Value;
-
-// use super::ToLink;
-// use super::id_conversions::ToProtoId;
-use crate::models;
-use crate::protos::*;
 use super::permission_conversions::ToProtoPermission;
+use crate::models;
+use crate::models::NewServerConfiguration;
+use crate::protos::*;
 
 pub trait ToDbServerConfiguration {
-    fn to_proto(&self) -> models::NewServerConfiguration;
+    fn to_db(&self) -> models::NewServerConfiguration;
+}
+
+impl ToDbServerConfiguration for ServerConfiguration {
+    fn to_db(&self) -> models::NewServerConfiguration {
+        NewServerConfiguration {
+            server_info: serde_json::to_value(self.server_info.to_owned()).unwrap(),
+            default_user_permissions: serde_json::to_value(
+                self.default_user_permissions
+                    .iter()
+                    .map(|p| (unsafe { transmute::<i32, Permission>(*p) }).as_str_name().to_string())
+                    .collect::<Vec<String>>(),
+            )
+            .unwrap(),
+            post_settings: serde_json::to_value(self.post_settings.to_owned()).unwrap(),
+            event_settings: serde_json::to_value(self.event_settings.to_owned()).unwrap(),
+        }
+    }
 }
 
 pub trait ToProtoServerConfiguration {

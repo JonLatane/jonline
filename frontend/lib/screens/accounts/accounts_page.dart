@@ -73,7 +73,6 @@ class AccountsPageState extends State<AccountsPage> {
 
   @override
   Widget build(BuildContext context) {
-    bool showServersButton = servers.length > 1;
     return Scaffold(
       body: Center(
         child: Container(
@@ -237,6 +236,9 @@ class AccountsPageState extends State<AccountsPage> {
   }
 
   refreshServer(JonlineServer server) async {
+    await server.updateConfiguration();
+    await appState.updateColorTheme();
+    showSnackBar('Server configuration updated.');
     // await account.updateServiceVersion(showMessage: showSnackBar);
     // showSnackBar('Service version updated.');
     // await communicationDelay;
@@ -353,7 +355,9 @@ class AccountsPageState extends State<AccountsPage> {
       duration: animationDuration,
       height: 103.0 + (23.0 * MediaQuery.of(context).textScaleFactor),
       child: Card(
-        color: appState.selectedAccount?.id == account.id ? bottomColor : null,
+        color: appState.selectedAccount?.id == account.id
+            ? appState.navColor
+            : null,
         child: InkWell(
           onTap: () {
             if (appState.selectedAccount?.id == account.id) {
@@ -604,9 +608,9 @@ class AccountsPageState extends State<AccountsPage> {
         children: [
           Card(
             color: uiSelectedServer == server
-                ? topColor
+                ? appState.primaryColor
                 : JonlineServer.selectedServer == server
-                    ? bottomColor
+                    ? appState.navColor
                     : null,
             // color:
             //     appState.selectedServer?.id == server.id ? bottomColor : null,
@@ -647,7 +651,7 @@ class AccountsPageState extends State<AccountsPage> {
                                     const EdgeInsets.all(0))),
                             // padding: const EdgeInsets.all(0),
                             onPressed: () => refreshServer(server),
-                            child: Icon(Icons.refresh)),
+                            child: const Icon(Icons.refresh)),
                       ),
                     Expanded(
                       child: Column(children: [

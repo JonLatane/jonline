@@ -11,6 +11,7 @@ extension HomePageAppBar on HomePageState {
   AppBar get appBar {
     return AppBar(
       title: titleWidget ?? Text(title),
+      key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
       leading: showLeadingNav
           ? const AutoLeadingButton(
               // showIfChildCanPop: false,

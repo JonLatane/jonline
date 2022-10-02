@@ -82,7 +82,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   bool canReply = JonlineAccount.selectedAccount != null;
 
   updateState() {
-    print("PostDetailsPage.updateState");
+    // print("PostDetailsPage.updateState");
     setState(() {
       canReply = JonlineAccount.selectedAccount != null;
     });

@@ -38,6 +38,7 @@ class PostPreview extends StatefulWidget {
 }
 
 class PostPreviewState extends State<PostPreview> {
+  late final AppState appState;
   TextTheme get textTheme => Theme.of(context).textTheme;
 
   String? get title => widget.post.title;
@@ -58,6 +59,8 @@ class PostPreviewState extends State<PostPreview> {
   @override
   void initState() {
     super.initState();
+    appState = context.findRootAncestorStateOfType<AppState>()!;
+
     if (widget.post.link.isNotEmpty) {
       loadServerPreview();
     }
@@ -210,8 +213,9 @@ class PostPreviewState extends State<PostPreview> {
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w300,
-                      color:
-                          widget.isReplyByAuthor ? authorColor : Colors.grey),
+                      color: widget.isReplyByAuthor
+                          ? appState.authorColor
+                          : Colors.grey),
                 ),
               ),
               const Expanded(child: SizedBox()),
@@ -301,7 +305,7 @@ class PostPreviewState extends State<PostPreview> {
                               style: Theme.of(context)
                                   .textTheme
                                   .caption!
-                                  .copyWith(color: topColor),
+                                  .copyWith(color: appState.primaryColor),
                             ),
                           ),
                         ),
@@ -392,7 +396,7 @@ class PostPreviewState extends State<PostPreview> {
         }
       },
       child: Container(
-        color: bottomColor.withOpacity(0.5),
+        color: appState.navColor.withOpacity(0.5),
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
         child: Column(
           children: [
@@ -410,7 +414,7 @@ class PostPreviewState extends State<PostPreview> {
                   style: Theme.of(context)
                       .textTheme
                       .labelLarge!
-                      .copyWith(color: topColor),
+                      .copyWith(color: appState.primaryColor),
                 )),
               ],
             ),
@@ -449,7 +453,7 @@ class PostPreviewState extends State<PostPreview> {
                   style: Theme.of(context)
                       .textTheme
                       .labelLarge!
-                      .copyWith(color: topColor),
+                      .copyWith(color: appState.primaryColor),
                 )),
               ],
             ),

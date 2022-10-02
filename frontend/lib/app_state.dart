@@ -1,6 +1,10 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/screens/accounts/admin_page.dart';
 import 'package:provider/provider.dart';
+import 'generated/admin.pb.dart';
+import 'generated/google/protobuf/empty.pb.dart';
+import 'models/jonline_clients.dart';
 import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
 
 import 'db.dart';
@@ -21,12 +25,15 @@ const animationDuration = Duration(milliseconds: 300);
 const communicationDuration = Duration(milliseconds: 1000);
 get animationDelay => Future.delayed(animationDuration);
 get communicationDelay => Future.delayed(communicationDuration);
-Color topColor = const Color(0xFF2E86AB);
-Color bottomColor = const Color(0xFFA23B72);
-Color authorColor = const Color(0xFF2eab54);
-Color adminColor = const Color(0xFFab372e);
 
 class AppState extends State<MyApp> {
+  Color primaryColor = const Color(0xFF2E86AB);
+  Color navColor = const Color(0xFFA23B72);
+  Color authorColor = const Color(0xFF2eab54);
+  Color adminColor = const Color(0xFFab372e);
+  final ValueJonotifer<ServerColors?> colorTheme =
+      ValueJonotifer<ServerColors?>(null);
+
   final authService = AuthService();
   final ValueJonotifer<List<JonlineAccount>> accounts =
       ValueJonotifer(<JonlineAccount>[]);
@@ -34,6 +41,8 @@ class AppState extends State<MyApp> {
       ValueJonotifer(<JonlineServer>[]);
   final ValueJonotifer<Posts> posts = ValueJonotifer(Posts());
   final Jonotifier updateReplies = Jonotifier();
+  final Jonotifier selectedServerChanged = Jonotifier();
+  final Jonotifier selectedAccountChanged = Jonotifier();
 
   final _rootRouter = RootRouter(
     authGuard: AuthGuard(),
@@ -67,7 +76,10 @@ class AppState extends State<MyApp> {
   JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
   set selectedAccount(JonlineAccount? account) {
     if (account != null) {
-      JonlineServer.selectedServer = JonlineServer(account.server);
+      Future.sync(() async => JonlineServer.selectedServer =
+          (await JonlineServer.servers).firstWhere(
+              (s) => s.server == account.server,
+              orElse: () => JonlineServer(account.server)));
     }
     JonlineAccount.selectedAccount = account;
     updateAccountList();
@@ -98,9 +110,61 @@ class AppState extends State<MyApp> {
     servers.notify();
   }
 
+  updateColors() {
+    final theme = colorTheme.value;
+    if (theme != null) {
+      var primary = Color(theme.primary);
+      if (primary.alpha == 0) primary = defaultPrimaryColor;
+      var nav = Color(theme.navigation);
+      if (nav.alpha == 0) nav = defaultNavColor;
+      setState(() {
+        primaryColor = primary;
+        navColor = nav;
+        // primaryColor = Color(theme.primary);
+        // primaryColor = Color(theme.primary);
+      });
+    } else {
+      setState(() {
+        primaryColor = defaultPrimaryColor;
+        navColor = defaultNavColor;
+      });
+    }
+  }
+
+  JonlineAccount? _lastSelectedAccount;
+  JonlineServer _lastSelectedServer = JonlineServer.selectedServer;
+  monitorAccountChange() {
+    if (_lastSelectedAccount?.id != selectedAccount?.id) {
+      selectedAccountChanged();
+    }
+    _lastSelectedAccount = selectedAccount;
+  }
+
+  monitorServerChange() {
+    if (_lastSelectedServer != JonlineServer.selectedServer) {
+      selectedServerChanged();
+    }
+    _lastSelectedServer = JonlineServer.selectedServer;
+  }
+
+  updateColorTheme() async {
+    ServerConfiguration? configuration =
+        JonlineServer.selectedServer.configuration ??
+            await JonlineServer.selectedServer.updateConfiguration();
+
+    ServerColors? colors = configuration?.serverInfo.colors;
+    colorTheme.value = colors;
+  }
+
   @override
   void initState() {
     super.initState();
+    accounts.addListener(updatePosts);
+    accounts.addListener(monitorAccountChange);
+    accounts.addListener(monitorServerChange);
+    selectedServerChanged.addListener(updateColorTheme);
+    colorTheme.addListener(updateColors);
+    Settings.initialize(notifyAccountsListeners);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // For web, ensure the actual URL hostname is used as the default server.
       if (MyPlatform.isWeb) {
@@ -112,19 +176,24 @@ class AppState extends State<MyApp> {
           JonlineServer.selectedServer = server;
         }
       }
-      updateServerList();
-      updateAccountList();
-      updatePosts();
+      await updateColorTheme();
+      await updateServerList();
+      await updateAccountList();
+      await updatePosts();
     });
-    accounts.addListener(updatePosts);
-    Settings.initialize(notifyAccountsListeners);
   }
 
   @override
   void dispose() {
+    accounts.removeListener(monitorAccountChange);
+    accounts.removeListener(monitorServerChange);
+    selectedServerChanged.removeListener(updateColorTheme);
+    colorTheme.removeListener(updateColors);
+    colorTheme.removeListener(updateColors);
     accounts.removeListener(updatePosts);
     accounts.dispose();
     updateReplies.dispose();
+    colorTheme.dispose();
     super.dispose();
   }
 
@@ -135,7 +204,7 @@ class AppState extends State<MyApp> {
         // bottomAppBarColor: const Color(0xFF884DF2),
         // splashColor: const Color(0xFFFFC145),
         // buttonColor: const Color(0xFF884DF2),
-        colorScheme: ColorScheme.fromSeed(seedColor: topColor),
+        colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
         pageTransitionsTheme: const PageTransitionsTheme(builders: {
           TargetPlatform.macOS: NoShadowCupertinoPageTransitionsBuilder(),
           TargetPlatform.iOS: NoShadowCupertinoPageTransitionsBuilder(),

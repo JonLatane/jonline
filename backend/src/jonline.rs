@@ -63,7 +63,7 @@ impl Jonline for JonLineImpl {
         &self,
         request: Request<CreatePostRequest>,
     ) -> Result<Response<Post>, Status> {
-        let conn =  get_connection(&self.pool)?;
+        let conn = get_connection(&self.pool)?;
         match auth::get_auth_user(&request, &conn) {
             Err(e) => Err(e),
             Ok(user) => rpcs::create_post(request, user, &conn),
@@ -77,10 +77,7 @@ impl Jonline for JonLineImpl {
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
         rpcs::get_posts(request, user, &conn)
     }
-    async fn query_posts(
-        &self,
-        _request: Request<PostQuery>,
-    ) -> Result<Response<Posts>, Status> {
+    async fn query_posts(&self, _request: Request<PostQuery>) -> Result<Response<Posts>, Status> {
         //TODO implement me!
         Ok(Response::new(Posts {
             ..Default::default()
@@ -94,12 +91,18 @@ impl Jonline for JonLineImpl {
         let conn = get_connection(&self.pool)?;
         rpcs::get_server_configuration(&conn)
     }
+
     async fn configure_server(
         &self,
         request: Request<ServerConfiguration>,
     ) -> Result<Response<ServerConfiguration>, Status> {
         //TODO implement me!
-        Ok(Response::new(request.into_inner()))
+        // Ok(Response::new(request.into_inner()))
+        let conn = get_connection(&self.pool)?;
+        match auth::get_auth_user(&request, &conn) {
+            Err(e) => Err(e),
+            Ok(user) => rpcs::configure_server(request.into_inner(), user, &conn),
+        }
         // let conn = match get_connection(&self.pool) {
         //     Err(e) => return Err(e),
         //     Ok(conn) => conn,
@@ -110,26 +113,18 @@ impl Jonline for JonLineImpl {
         // }
     }
 
-
-    async fn update_post(
-        &self,
-        _request: Request<Post>,
-    ) -> Result<Response<Post>, Status> {
+    async fn update_post(&self, _request: Request<Post>) -> Result<Response<Post>, Status> {
         //TODO implement me!
         Ok(Response::new(Post {
             ..Default::default()
         }))
     }
-    async fn delete_post(
-        &self,
-        _request: Request<Post>,
-    ) -> Result<Response<Post>, Status> {
+    async fn delete_post(&self, _request: Request<Post>) -> Result<Response<Post>, Status> {
         //TODO implement me!
         Ok(Response::new(Post {
             ..Default::default()
         }))
     }
-
 }
 
 fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {
