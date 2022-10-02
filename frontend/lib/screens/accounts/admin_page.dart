@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:protobuf/protobuf.dart';
+import '../../models/jonline_server.dart';
 import '../../utils/proto_utils.dart';
 
 import '../../generated/admin.pb.dart';
@@ -12,6 +13,7 @@ import '../../generated/jonline.pbgrpc.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_clients.dart';
 import '../../models/settings.dart';
+import '../home_page.dart';
 
 const Color defaultPrimaryColor = Color(0xFF2E86AB);
 const Color defaultNavColor = Color(0xFFA23B72);
@@ -34,13 +36,15 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   late AppState appState;
+  late HomePageState homePage;
 
   JonlineAccount? account;
+  JonlineServer? server;
   JonlineClient? client;
   ServerConfiguration? serverConfiguration;
   ThemeData get theme => Theme.of(context);
   TextTheme get textTheme => theme.textTheme;
-  String? get server => account?.server;
+  String? get serverHost => account?.server;
   // bool? get isAdmin => account
 
   Color get primaryColor => resolveColor(
@@ -73,25 +77,41 @@ class _AdminPageState extends State<AdminPage> {
     final account = this.account ??
         (await JonlineAccount.accounts)
             .firstWhere((a) => a.id == widget.accountId);
+    final server = this.server ??
+        (await JonlineServer.servers)
+            .firstWhere((a) => a.server == account.server);
     final client = this.client ?? await account.getClient();
     final serverConfiguration =
         (await client!.getServerConfiguration(Empty())).jonCopy();
     setState(() {
       this.account = account;
+      this.server = server;
       this.client = client;
       this.serverConfiguration = serverConfiguration;
     });
+  }
+
+  onAdminPageFocused() {
+    if (serverConfiguration != null) {
+      appState.colorTheme.value = serverConfiguration!.serverInfo.colors;
+    }
   }
 
   @override
   initState() {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
-    Future.microtask(updateServerConfiguration);
+    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
+    homePage.adminPageFocused.addListener(onAdminPageFocused);
+    Future.microtask(() async {
+      await updateServerConfiguration();
+      onAdminPageFocused();
+    });
   }
 
   @override
   dispose() {
+    homePage.adminPageFocused.removeListener(onAdminPageFocused);
     super.dispose();
   }
 
@@ -202,12 +222,14 @@ class _AdminPageState extends State<AdminPage> {
               ),
               onPressed: () async {
                 try {
-                  print(
-                      "Sending configuration: ${serverConfiguration!.toProto3Json()}");
                   final response = await client!.configureServer(
                       serverConfiguration!,
                       options: account!.authenticatedCallOptions);
-                  print("Response configuration: ${response.toProto3Json()}");
+                  server!.configuration = response;
+                  setState(() {
+                    serverConfiguration = response.jonCopy();
+                  });
+                  await server!.save();
                 } catch (e) {
                   print(e);
                   showSnackBar(formatServerError(e));

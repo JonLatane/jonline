@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/models/jonline_server.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:scrolls_to_top/scrolls_to_top.dart';
 
@@ -40,6 +41,8 @@ class RouteDestination {
 
 class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AppState appState;
+
+  Jonotifier adminPageFocused = Jonotifier();
 
   // Notifiers to let the App Bar communicate with pages
   Jonotifier createPost = Jonotifier();
@@ -114,11 +117,24 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   updateState() => setState(() {});
 
+  RouteData? _lastRoute;
   @override
   Widget build(context) {
-    // builder will rebuild everytime this router's stack
-    // updates
-    // we need it to indicate which NavigationRailDestination is active
+    // builder will rebuild everytime this router's stack updates
+
+    if (_lastRoute?.name == "AdminRoute" &&
+        context.topRoute.name != "AdminRoute") {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        appState.colorTheme.value =
+            JonlineServer.selectedServer.configuration?.serverInfo.colors;
+      });
+    } else if (_lastRoute?.name != "AdminRoute" &&
+        context.topRoute.name == "AdminRoute") {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        adminPageFocused();
+      });
+    }
+    _lastRoute = context.topRoute;
     return /*kIsWeb
         ? AutoRouter(builder: (context, child) {
             // we check for active route index by using
