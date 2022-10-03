@@ -131,7 +131,9 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       controller: scrollController,
                       slivers: [
-                        const SliverToBoxAdapter(child: SizedBox(height: 48)),
+                        SliverToBoxAdapter(
+                            child: SizedBox(
+                                height: MediaQuery.of(context).padding.top)),
                         SliverToBoxAdapter(
                           child: PostPreview(
                             server: widget.server,
@@ -153,8 +155,9 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                           updateReplies: updateReplies,
                           updatingReplies: updatingReplies,
                         ),
-                        const SliverToBoxAdapter(
-                          child: SizedBox(height: 48),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                              height: MediaQuery.of(context).padding.bottom),
                         ),
 
                         // other sliver widgets

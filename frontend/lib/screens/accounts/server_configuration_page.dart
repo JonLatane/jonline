@@ -135,8 +135,11 @@ class _AdminPageState extends State<ServerConfigurationPage> {
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.only(
-                  top: 56.0, left: 8.0, right: 8.0, bottom: 8.0),
+              padding: EdgeInsets.only(
+                  top: 8 + MediaQuery.of(context).padding.top,
+                  left: 8.0,
+                  right: 8.0,
+                  bottom: 8 + MediaQuery.of(context).padding.bottom),
               child: Center(
                   child: Stack(
                 children: [
@@ -151,8 +154,10 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                       duration: animationDuration,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Center(child: CircularProgressIndicator()),
+                        children: [
+                          SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.3),
+                          const Center(child: CircularProgressIndicator()),
                         ],
                       ))
                 ],

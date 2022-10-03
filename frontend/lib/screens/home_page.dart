@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -187,6 +188,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: Scaffold(
               appBar: appBar,
               extendBodyBehindAppBar: true,
+              extendBody: true,
               body: Row(
                 children: [
                   AnimatedContainer(
@@ -263,19 +265,24 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final items = navigationItems;
     return hideBottomNav
         ? const SizedBox.shrink()
-        : BottomNavigationBar(
-            selectedItemColor: appState.navColor,
-            type: BottomNavigationBarType.fixed,
-            currentIndex: min(items.length - 1, tabsRouter.activeIndex),
-            onTap: (index) {
-              if (index == tabsRouter.activeIndex) {
-                scrollToTop();
-                handleNavThings();
-              }
-              tabsRouter.setActiveIndex(index);
-            },
-            items: items,
-          );
+        : ClipRRect(
+            child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: BottomNavigationBar(
+                  backgroundColor:
+                      Theme.of(context).canvasColor.withOpacity(0.5),
+                  selectedItemColor: appState.navColor,
+                  type: BottomNavigationBarType.fixed,
+                  currentIndex: min(items.length - 1, tabsRouter.activeIndex),
+                  onTap: (index) {
+                    if (index == tabsRouter.activeIndex) {
+                      scrollToTop();
+                      handleNavThings();
+                    }
+                    tabsRouter.setActiveIndex(index);
+                  },
+                  items: items,
+                )));
   }
 
   Widget buildSideNav(BuildContext context) {

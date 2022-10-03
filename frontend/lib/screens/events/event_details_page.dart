@@ -27,7 +27,9 @@ class EventDetailsPageState extends State<EventDetailsPage> {
         ? const Text('Book null')
         : Scaffold(
             body: Padding(
-              padding: const EdgeInsets.only(top: 48),
+              padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top,
+                  bottom: MediaQuery.of(context).padding.bottom),
               child: SizedBox(
                 width: double.infinity,
                 child: Hero(

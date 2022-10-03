@@ -80,7 +80,7 @@ class AccountsPageState extends State<AccountsPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const SizedBox(height: 56),
+              SizedBox(height: MediaQuery.of(context).padding.top),
               Row(
                 children: [
                   const SizedBox(width: 8),
@@ -321,6 +321,7 @@ class AccountsPageState extends State<AccountsPage> {
           JonlineAccount.updateAccountList(newItems);
         }
       },
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
       // reorderDuration: Duration.zero,
       itemBuilder: (context, animation, account, index) {
         return Reorderable(

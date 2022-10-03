@@ -158,7 +158,7 @@ class CreatePostPageState extends State<CreatePostPage> {
     return Scaffold(
         body: Column(
       children: [
-        const SizedBox(height: 48),
+        SizedBox(height: MediaQuery.of(context).padding.top),
         Expanded(
           child: Row(
             children: [
@@ -173,6 +173,7 @@ class CreatePostPageState extends State<CreatePostPage> {
             ],
           ),
         ),
+        SizedBox(height: MediaQuery.of(context).padding.bottom),
       ],
     ));
   }

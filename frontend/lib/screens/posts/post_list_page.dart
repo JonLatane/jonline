@@ -85,7 +85,7 @@ class PostListScreenState extends State<PostListScreen>
     }
   }
 
-  bool get useList => MediaQuery.of(context).size.width < 400;
+  bool get useList => MediaQuery.of(context).size.width < 450;
   TextTheme get textTheme => Theme.of(context).textTheme;
   @override
   Widget build(BuildContext context) {
@@ -152,6 +152,9 @@ class PostListScreenState extends State<PostListScreen>
                         // Called by the DiffUtil to decide whether two object represent the same item.
                         // For example, if your items have unique ids, this method should check their id equality.
                         areItemsTheSame: (a, b) => a.id == b.id,
+                        padding: EdgeInsets.only(
+                            top: MediaQuery.of(context).padding.top,
+                            bottom: MediaQuery.of(context).padding.bottom),
                         // Called, as needed, to build list item widgets.
                         // List items are only built when they're scrolled into view.
                         itemBuilder: (context, animation, post, index) {

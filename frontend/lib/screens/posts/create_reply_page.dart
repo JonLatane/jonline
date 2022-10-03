@@ -194,13 +194,19 @@ class CreateReplyPageState extends State<CreateReplyPage> {
 
   bool showingSubject = false;
   bool showingDiscussionPost = false;
+  double get detailHeight =>
+      (MediaQuery.of(context).size.height -
+          MediaQuery.of(context).padding.top -
+          MediaQuery.of(context).padding.bottom -
+          48) *
+      0.45;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         body: Column(
       children: [
-        const SizedBox(height: 48),
+        SizedBox(height: MediaQuery.of(context).padding.top),
         Row(
           children: [
             if (discussionPostId != null)
@@ -257,7 +263,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
         if (discussionPostId != null)
           AnimatedContainer(
               duration: animationDuration,
-              height: showingDiscussionPost ? 150 : 0,
+              height: showingDiscussionPost ? detailHeight : 0,
               child: SingleChildScrollView(
                   child: discussionPost != null
                       ? PostPreview(
@@ -268,7 +274,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
                       : const Text("loading"))),
         AnimatedContainer(
             duration: animationDuration,
-            height: showingSubject ? 150 : 0,
+            height: showingSubject ? detailHeight : 0,
             child: SingleChildScrollView(
                 child: subjectPost != null
                     ? PostPreview(
@@ -291,6 +297,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
             ],
           ),
         ),
+        SizedBox(height: MediaQuery.of(context).padding.bottom),
       ],
     ));
   }
