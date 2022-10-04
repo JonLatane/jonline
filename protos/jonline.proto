@@ -22,6 +22,10 @@ service Jonline {
   // (TODO) Gets the Jonline server's configuration. Publicly accessible.
   rpc GetServerConfiguration(google.protobuf.Empty) returns (ServerConfiguration) {}
 
+  // Gets Users. Publicly accessible *or* authenticated.
+  // Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility.
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
+
   // Gets Posts. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.
   rpc GetPosts(GetPostsRequest) returns (Posts) {}

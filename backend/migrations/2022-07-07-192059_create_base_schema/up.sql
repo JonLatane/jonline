@@ -6,6 +6,8 @@ CREATE TABLE server_configurations (
   default_user_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   post_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
   event_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
+  default_user_visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+  private_user_strategy VARCHAR NOT NULL DEFAULT 'ACCOUNT_IS_FROZEN',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -18,6 +20,10 @@ CREATE TABLE users (
   email JSONB NULL DEFAULT NULL,
   phone JSONB NULL DEFAULT NULL,
   permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
+  avatar BYTEA NULL DEFAULT NULL,
+  -- For user visibilities, PRIVATE is equivalent to a "frozen" account.
+  -- LIMITED will be visible only to user the user is following.
+  visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -78,8 +84,8 @@ CREATE TABLE posts (
   title VARCHAR NULL DEFAULT NULL,
   link VARCHAR NULL DEFAULT NULL,
   content TEXT NULL DEFAULT NULL,
-  visibility VARCHAR NOT NULL DEFAULT 'private',
-  moderation VARCHAR NOT NULL DEFAULT 'unmoderated',
+  visibility VARCHAR NOT NULL DEFAULT 'PRIVATE',
+  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL,
   response_count INTEGER NOT NULL DEFAULT 0,

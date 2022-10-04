@@ -15,7 +15,7 @@ extension HomePageAppBar on HomePageState {
       preferredSize: Size(MediaQuery.of(context).size.width, 48),
       child: ClipRRect(
           child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: AppBar(
                 backgroundColor:
                     Theme.of(context).colorScheme.primary.withOpacity(0.7),
@@ -124,6 +124,11 @@ extension HomePageAppBar on HomePageState {
 
   String get title {
     switch (context.topRoute.name) {
+      case 'PersonListRoute':
+      case 'PeopleTab':
+        return 'People [WIP]';
+      case 'PersonDetailsRoute':
+        return 'Person Details [Mock]';
       case 'PostListRoute':
       case 'PostsTab':
         return 'Posts';
@@ -131,9 +136,9 @@ extension HomePageAppBar on HomePageState {
         return 'Post Details';
       case 'EventListRoute':
       case 'EventsTab':
-        return 'Events';
+        return 'Events [Mock]';
       case 'EventDetailsRoute':
-        return 'Event Details';
+        return 'Event Details [Mock]';
       case 'ProfileRoute':
       case 'AccountsRoute':
       case 'AccountsTab':
@@ -152,6 +157,8 @@ extension HomePageAppBar on HomePageState {
 
   List<Widget>? get actions {
     switch (context.topRoute.name) {
+      // case 'AccountsRoute':
+      case 'PersonListRoute':
       case 'PostDetailsRoute':
         return [const AccountChooser()];
       case 'PostListRoute':

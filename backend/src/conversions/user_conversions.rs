@@ -1,5 +1,6 @@
 use super::id_conversions::ToProtoId;
 use super::permission_conversions::ToProtoPermissions;
+use crate::conversions::ToProtoVisibility;
 use crate::models;
 use crate::protos::*;
 
@@ -23,6 +24,8 @@ impl ToProtoUser for models::User {
             email: email,
             phone: phone,
             permissions: self.permissions.to_proto_permissions(),
+            avatar: self.avatar.to_owned(),
+            visibility: self.visibility.to_proto_visibility().unwrap()
         };
         println!("Converted user: {:?}", user);
         return user;

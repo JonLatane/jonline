@@ -53,11 +53,12 @@ extension JonlineClients on JonlineAccount {
   }
 
   static Future<JonlineClient?> getSelectedOrDefaultClient(
-      {Function(String)? showMessage}) async {
+      {Function(String)? showMessage, bool allowInsecure = false}) async {
     if (JonlineAccount.selectedAccount == null) {
-      return getDefaultClient(showMessage: showMessage);
+      return getSelectedServerClient(
+          showMessage: showMessage, allowInsecure: allowInsecure);
     }
-    return getSelectedClient(showMessage: showMessage);
+    return getSelectedAccountClient(showMessage: showMessage);
   }
 
   static Future<JonlineClient?> getServerClient(JonlineServer server,
@@ -77,23 +78,27 @@ extension JonlineClients on JonlineAccount {
     }
   }
 
-  static Future<JonlineClient?> getSelectedClient(
+  static Future<JonlineClient?> getSelectedAccountClient(
       {Function(String)? showMessage}) async {
     if (JonlineAccount.selectedAccount == null) return null;
     return await JonlineAccount.selectedAccount
         ?.getClient(showMessage: showMessage);
   }
 
-  static Future<JonlineClient?> getDefaultClient(
-      {Function(String)? showMessage}) async {
+  static Future<JonlineClient?> getSelectedServerClient(
+      {Function(String)? showMessage, bool allowInsecure = false}) async {
+    // Workaround for anonymous browsing on localhost
+    final reallyAllowInsecure =
+        allowInsecure || JonlineServer.selectedServer.server == 'localhost';
     final server = JonlineServer.selectedServer.server;
-    final clients = _secureClients;
+    final clients = Map.of(_secureClients)
+      ..addAll(reallyAllowInsecure ? _insecureClients : {});
     if (clients.containsKey(server)) {
       return clients[server];
     } else {
       try {
         clients[server] = (await createAndTestClient(server,
-            showMessage: showMessage, allowInsecure: false))!;
+            showMessage: showMessage, allowInsecure: reallyAllowInsecure))!;
         return clients[server];
       } catch (e) {
         showMessage?.call(formatServerError(e));

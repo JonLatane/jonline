@@ -4,6 +4,8 @@ import 'package:jonline/screens/accounts/server_configuration_page.dart';
 import 'package:jonline/screens/login_page.dart';
 import 'package:provider/provider.dart';
 import 'generated/admin.pb.dart';
+import 'generated/users.pb.dart';
+import 'generated/users.pb.dart' as users_pb;
 import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
 
 import 'db.dart';
@@ -38,6 +40,8 @@ class AppState extends State<MyApp> {
   final ValueJonotifer<List<JonlineServer>> servers =
       ValueJonotifer(<JonlineServer>[]);
   final ValueJonotifer<Posts> posts = ValueJonotifer(Posts());
+  final ValueJonotifer<List<users_pb.User>> users =
+      ValueJonotifer(<users_pb.User>[]);
   final Jonotifier updateReplies = Jonotifier();
   final Jonotifier selectedServerChanged = Jonotifier();
   final Jonotifier selectedAccountChanged = Jonotifier();
@@ -47,12 +51,14 @@ class AppState extends State<MyApp> {
   );
 
   ValueNotifier<bool> updatingPosts = ValueNotifier(true);
+  ValueNotifier<bool> errorUpdatingPosts = ValueNotifier(false);
   ValueNotifier<bool> didUpdatePosts = ValueNotifier(false);
   Future<void> updatePosts({Function(String)? showMessage}) async {
     updatingPosts.value = true;
     final Posts? posts = await JonlineOperations.getPosts();
     if (posts == null) {
       setState(() {
+        errorUpdatingPosts.value = true;
         updatingPosts.value = false;
         // showSnackBar
       });
@@ -71,6 +77,31 @@ class AppState extends State<MyApp> {
     // showMessage?.call("Posts updated! 🎉");
   }
 
+  ValueNotifier<bool> updatingUsers = ValueNotifier(true);
+  ValueNotifier<bool> errorUpdatingUsers = ValueNotifier(false);
+  ValueNotifier<bool> didUpdateUsers = ValueNotifier(false);
+  Future<void> updateUsers({Function(String)? showMessage}) async {
+    // updatingUsers.value = true;
+    final GetUsersResponse? response = await JonlineOperations.getUsers();
+    if (response == null) {
+      setState(() {
+        errorUpdatingUsers.value = true;
+        updatingUsers.value = false;
+        // showSnackBar
+      });
+      return;
+    }
+
+    didUpdateUsers.value = true;
+    setState(() {
+      updatingUsers.value = false;
+      users.value = response.users;
+    });
+    didUpdateUsers.value = false;
+    // await communicationDelay;
+    showMessage?.call("Users updated! 🎉");
+  }
+
   JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
   set selectedAccount(JonlineAccount? account) {
     if (account != null) {
@@ -82,6 +113,7 @@ class AppState extends State<MyApp> {
     JonlineAccount.selectedAccount = account;
     updateAccountList();
     resetPosts();
+    resetPeople();
   }
 
   resetPosts() {
@@ -90,6 +122,14 @@ class AppState extends State<MyApp> {
       posts.value = Posts();
     });
     updatePosts();
+  }
+
+  resetPeople() {
+    setState(() {
+      updatingUsers.value = true;
+      users.value = <users_pb.User>[];
+    });
+    updateUsers();
   }
 
   updateAccountList() async {
@@ -154,6 +194,9 @@ class AppState extends State<MyApp> {
     colorTheme.value = colors;
   }
 
+  // This is detected using the JS method getJonlineServerHost.
+  String primaryServerHost = "jonline.io";
+
   @override
   void initState() {
     super.initState();
@@ -166,15 +209,17 @@ class AppState extends State<MyApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // For web, ensure the actual URL hostname is used as the default server.
       if (MyPlatform.isWeb) {
-        final String serverHost = context.callMethod("getJonlineServer", []);
-        final JonlineServer server = JonlineServer(serverHost);
+        primaryServerHost = context.callMethod("getJonlineServerHost", []);
+        final JonlineServer server = JonlineServer(primaryServerHost);
         final List<JonlineServer> servers = await JonlineServer.servers;
-        LoginPage.defaultServer = serverHost;
+        LoginPage.defaultServer = primaryServerHost;
         if (!servers.contains(server)) {
           await server.saveNew(atBeginning: true);
           JonlineServer.selectedServer = server;
         }
       }
+      updatingPosts.addListener(() => errorUpdatingPosts.value = false);
+      updatingUsers.addListener(() => errorUpdatingUsers.value = false);
       await updateColorTheme();
       await updateServerList();
       await updateAccountList();

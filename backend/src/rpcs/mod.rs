@@ -6,6 +6,7 @@ pub use get_service_version::get_service_version;
 
 mod get_server_configuration;
 pub use get_server_configuration::get_server_configuration;
+
 mod configure_server;
 pub use configure_server::configure_server;
 
@@ -26,3 +27,6 @@ pub use create_post::create_post;
 
 mod get_posts;
 pub use get_posts::get_posts;
+
+mod get_users;
+pub use get_users::get_users;

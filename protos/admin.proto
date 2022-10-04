@@ -17,7 +17,13 @@ message ServerConfiguration {
   repeated Permission default_user_permissions = 2;
   FeatureSettings post_settings = 3;
   FeatureSettings event_settings = 4;
+  
+  // Defaults to SERVER_PUBLIC. If GLOBAL_PUBLIC, default_user_permissions *must*
+  // contain GLOBALLY_PUBLISH_PROFILE.
+  Visibility default_user_visibility = 5;
 
+  // Strategy when a user sets their visibility to PRIVATE. Defaults to ACCOUNT_IS_FROZEN.
+  PrivateUserStrategy private_user_strategy = 6;
 }
 
 message FeatureSettings {
@@ -35,6 +41,18 @@ message FeatureSettings {
   // GLOBALLY_PUBLISH_EVENTS as appropriate.
   Visibility default_visibility = 3;
   optional string custom_title = 4;
+}
+
+enum PrivateUserStrategy {
+  // PRIVATE Users can't see other Users (only PUBLIC_GLOBAL Visilibity Users/Posts/Events).
+  // Other users can't see them.
+  ACCOUNT_IS_FROZEN = 0;
+  // Users can see other users they follow, but only PUBLIC_GLOBAL Visilibity Posts/Events.
+  // Other users can't see them.
+  LIMITED_CREEPINESS = 1;
+  // Users can see other users they follow, including their PUBLIC_SERVER Posts/Events,
+  // Other users can't see them.
+  LET_ME_CREEP_ON_PPL = 2;
 }
 
 message ServerInfo {

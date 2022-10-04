@@ -1,12 +1,14 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:jonline/router/auth_guard.dart';
-import 'package:jonline/screens/events/routes.dart';
-import 'package:jonline/screens/home_page.dart';
-import 'package:jonline/screens/login_page.dart';
-import 'package:jonline/screens/posts/routes.dart';
-import 'package:jonline/screens/accounts/routes.dart';
-import 'package:jonline/screens/settings_page.dart';
-import 'package:jonline/screens/user-data/routes.dart';
+
+import '../router/auth_guard.dart';
+import '../screens/accounts/routes.dart';
+import '../screens/events/routes.dart';
+import '../screens/home_page.dart';
+import '../screens/login_page.dart';
+import '../screens/people/routes.dart';
+import '../screens/posts/routes.dart';
+import '../screens/settings_page.dart';
+import '../screens/user-data/routes.dart';
 
 @MaterialAutoRouter(
   replaceInRouteName: 'Page|Screen,Route',
@@ -18,6 +20,7 @@ import 'package:jonline/screens/user-data/routes.dart';
       guards: [AuthGuard],
       deferredLoading: true,
       children: [
+        peopleTab,
         postsTab,
         eventsTab,
         accountsTab,

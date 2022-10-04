@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:jonline/models/jonline_server.dart';
 import 'package:uuid/uuid.dart';
 
 import '../app_state.dart';
@@ -35,33 +36,47 @@ class JonlineAccount {
   static Future<JonlineAccount?> loginToAccount(String server, String username,
       String password, Function(String) showMessage,
       {bool allowInsecure = false, bool selectAccount = true}) async {
-    JonlineClient? client = await JonlineClients.createAndTestClient(server,
-        showMessage: showMessage, allowInsecure: allowInsecure);
-    if (client == null) return null;
-    await communicationDelay;
+    return _authAccount(
+        (client) =>
+            client.login(LoginRequest(username: username, password: password)),
+        ['Logging in', 'login', 'Logged in'],
+        server,
+        username,
+        password,
+        showMessage,
+        allowInsecure: allowInsecure,
+        selectAccount: selectAccount);
+    // JonlineClient? client = await JonlineClients.createAndTestClient(server,
+    //     showMessage: showMessage, allowInsecure: allowInsecure);
+    // if (client == null) return null;
+    // await communicationDelay;
 
-    AuthTokenResponse authResponse;
-    try {
-      authResponse = await client
-          .login(LoginRequest(username: username, password: password));
-    } catch (e) {
-      await communicationDelay;
-      showMessage("Failed to login to $server as \"$username\"!");
-      final formattedError = formatServerError(e);
-      showMessage(formattedError);
-      return null;
-    }
-    await communicationDelay;
-    showMessage("Logged in to $server as $username!");
+    // AuthTokenResponse authResponse;
+    // try {
+    //   authResponse = await client
+    //       .login(LoginRequest(username: username, password: password));
+    // } catch (e) {
+    //   await communicationDelay;
+    //   showMessage("Failed to login to $server as \"$username\"!");
+    //   final formattedError = formatServerError(e);
+    //   showMessage(formattedError);
+    //   return null;
+    // }
+    // await communicationDelay;
+    // showMessage("Logged in to $server as $username!");
 
-    final account = JonlineAccount._fromAuth(server,
-        authResponse.authToken.token, authResponse.refreshToken.token, username,
-        allowInsecure: allowInsecure);
-    await account.saveNew(atBeginning: selectAccount);
-    if (selectAccount) {
-      JonlineAccount.selectedAccount = account;
-    }
-    return account;
+    // final account = JonlineAccount._fromAuth(server,
+    //     authResponse.authToken.token, authResponse.refreshToken.token, username,
+    //     allowInsecure: allowInsecure);
+    // await account.saveNew(atBeginning: selectAccount);
+    // if (selectAccount) {
+    //   JonlineAccount.selectedAccount = account;
+    //   JonlineServer.selectedServer =
+    //       (await JonlineServer.servers).firstWhere((s) => s.server == server);
+    //   await JonlineServer.selectedServer.updateConfiguration();
+    //   await JonlineServer.selectedServer.save();
+    // }
+    // return account;
   }
 
   static Future<JonlineAccount?> createAccount(String server, String username,
@@ -112,6 +127,10 @@ class JonlineAccount {
     await account.saveNew(atBeginning: selectAccount);
     if (selectAccount) {
       JonlineAccount.selectedAccount = account;
+      JonlineServer.selectedServer =
+          (await JonlineServer.servers).firstWhere((s) => s.server == server);
+      await JonlineServer.selectedServer.updateConfiguration();
+      await JonlineServer.selectedServer.save();
     }
     return account;
   }
@@ -121,8 +140,9 @@ class JonlineAccount {
   final String authorizationToken;
   String serviceVersion;
   String userId;
-  String refreshToken;
   String username;
+  String refreshToken;
+  int refreshTokenExpiresAt;
   bool allowInsecure;
   List<Permission> permissions;
 
@@ -133,6 +153,7 @@ class JonlineAccount {
       : id = uuid.v4(),
         userId = "",
         serviceVersion = "",
+        refreshTokenExpiresAt = 0,
         permissions = [];
 
   /// Used by [accounts] to load data.
@@ -145,6 +166,7 @@ class JonlineAccount {
         refreshToken = json['refreshToken'],
         allowInsecure = json['allowInsecure'],
         serviceVersion = json['serviceVersion'] ?? "",
+        refreshTokenExpiresAt = json['refreshTokenExpiresAt'] ?? 0,
         permissions = json['permissions'] == null
             ? []
             : (json['permissions'] as List<dynamic>)
@@ -160,6 +182,7 @@ class JonlineAccount {
         'server': server,
         'authorizationToken': authorizationToken,
         'refreshToken': refreshToken,
+        'refreshTokenExpiresAt': refreshTokenExpiresAt,
         'allowInsecure': allowInsecure,
         'serviceVersion': serviceVersion,
         'permissions': permissions.map((e) => e.name).toList(),

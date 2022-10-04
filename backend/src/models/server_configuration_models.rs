@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use crate::protos::{ServerColors, FeatureSettings, Moderation, Permission, ServerInfo, Visibility};
+use crate::protos::*;
 use crate::schema::server_configurations;
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
@@ -13,6 +13,8 @@ pub struct ServerConfiguration {
     pub default_user_permissions: serde_json::Value,
     pub post_settings: serde_json::Value,
     pub event_settings: serde_json::Value,
+    pub default_user_visibility: String,
+    pub private_user_strategy: String,
 
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
@@ -24,6 +26,8 @@ pub struct NewServerConfiguration {
     pub default_user_permissions: serde_json::Value,
     pub post_settings: serde_json::Value,
     pub event_settings: serde_json::Value,
+    pub default_user_visibility: String,
+    pub private_user_strategy: String,
 }
 
 pub fn default_server_configuration() -> NewServerConfiguration {
@@ -38,20 +42,24 @@ pub fn default_server_configuration() -> NewServerConfiguration {
             colors: Some(ServerColors {
                 primary: Some(0xFF2E86AB),
                 navigation: Some(0xFFA23B72),
-                 ..Default::default() }),
+                ..Default::default()
+            }),
         })
         .unwrap(),
-        default_user_permissions: serde_json::to_value([
-            Permission::ViewPosts,
-            Permission::CreatePosts,
-            Permission::GloballyPublishPosts,
-            Permission::ViewEvents,
-            Permission::CreateEvents,
-            Permission::GloballyPublishEvents,
-        ]
-        .iter()
-        .map(|it| it.as_str_name())
-        .collect::<Vec<&str>>()).unwrap(),
+        default_user_permissions: serde_json::to_value(
+            [
+                Permission::ViewPosts,
+                Permission::CreatePosts,
+                Permission::GloballyPublishPosts,
+                Permission::ViewEvents,
+                Permission::CreateEvents,
+                Permission::GloballyPublishEvents,
+            ]
+            .iter()
+            .map(|it| it.as_str_name())
+            .collect::<Vec<&str>>(),
+        )
+        .unwrap(),
         post_settings: serde_json::to_value(FeatureSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
@@ -66,5 +74,9 @@ pub fn default_server_configuration() -> NewServerConfiguration {
             custom_title: None,
         })
         .unwrap(),
+        default_user_visibility: Visibility::ServerPublic.as_str_name().to_string(),
+        private_user_strategy: PrivateUserStrategy::AccountIsFrozen
+            .as_str_name()
+            .to_string(),
     };
 }

@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
 import '../../app_state.dart';
+import '../../generated/permissions.pbenum.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
 
@@ -93,6 +94,10 @@ Future<Object> showAccountsMenu(
   final accounts = await JonlineAccount.accounts;
   final servers = await JonlineServer.servers;
 
+  final accountsHere =
+      accounts.where((a) => a.server == JonlineServer.selectedServer.server);
+  final accountsElsewhere =
+      accounts.where((a) => a.server != JonlineServer.selectedServer.server);
   return showMenu(
       context: context,
       position: position,
@@ -120,71 +125,35 @@ Future<Object> showAccountsMenu(
           child: Column(children: [
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                accounts.isEmpty ? 'No Accounts' : 'Accounts',
-                style: darkTheme.textTheme.titleLarge,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    accountsHere.isEmpty ? 'No Accounts on ' : 'Accounts on ',
+                    style: accountsHere.isEmpty
+                        ? darkTheme.textTheme.titleMedium
+                        : darkTheme.textTheme.titleLarge,
+                  ),
+                  Text(
+                    "${JonlineServer.selectedServer.server}/",
+                    style: darkTheme.textTheme.caption,
+                  ),
+                ],
               ),
             ),
-            ...accounts.map((a) {
-              bool selected = a.id == JonlineAccount.selectedAccount?.id;
-              ThemeData theme = selected ? lightTheme : darkTheme;
-              TextTheme textTheme = theme.textTheme;
-              return Theme(
-                data: theme,
-                child: Material(
-                  // color: backgroundColor,
-                  color: selected ? Colors.white : Colors.transparent,
-                  child: InkWell(
-                      mouseCursor: SystemMouseCursors.basic,
-                      onTap: () {
-                        Navigator.pop(context);
-                        AppState appState =
-                            context.findRootAncestorStateOfType<AppState>()!;
-                        if (selected) {
-                          appState.selectedAccount = null;
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    "Browsing anonymously on ${JonlineServer.selectedServer.server}.")),
-                          );
-                        } else {
-                          appState.selectedAccount = a;
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    "Browsing ${a.server} as ${a.username}.")),
-                          );
-                        }
-                        // onSelected(part);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text("${a.server}/",
-                                  textAlign: TextAlign.left,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: textTheme.caption),
-                            ),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(a.username,
-                                  textAlign: TextAlign.left,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: textTheme.subtitle1),
-                            ),
-                          ],
-                        ),
-                      )),
-                ),
-              );
-            }),
+            ...accountsHere.map((a) => _accountItem(a, context)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                accountsElsewhere.isEmpty
+                    ? 'No Accounts Elsewhere'
+                    : 'Accounts Elsewhere',
+                style: accountsElsewhere.isEmpty
+                    ? darkTheme.textTheme.titleMedium
+                    : darkTheme.textTheme.titleLarge,
+              ),
+            ),
+            ...accountsElsewhere.map((a) => _accountItem(a, context)),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
@@ -192,48 +161,7 @@ Future<Object> showAccountsMenu(
                 style: darkTheme.textTheme.titleLarge,
               ),
             ),
-            ...servers.map((s) {
-              bool selected = s == JonlineServer.selectedServer;
-              ThemeData theme = selected ? lightTheme : darkTheme;
-              TextTheme textTheme = theme.textTheme;
-              return Theme(
-                data: theme,
-                child: Material(
-                  // color: backgroundColor,
-                  color: selected ? Colors.white : Colors.transparent,
-                  child: InkWell(
-                      mouseCursor: SystemMouseCursors.basic,
-                      onTap: () {
-                        Navigator.pop(context);
-                        AppState appState =
-                            context.findRootAncestorStateOfType<AppState>()!;
-                        JonlineServer.selectedServer = s;
-                        appState.selectedAccount = null;
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(
-                                  "Browsing anonymously on ${JonlineServer.selectedServer.server}.")),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text("${s.server}/",
-                                  textAlign: TextAlign.left,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: textTheme.caption),
-                            ),
-                          ],
-                        ),
-                      )),
-                ),
-              );
-            }),
+            ...servers.map((s) => _serverItem(s, context)),
             Material(
               // color: backgroundColor,
               color: Colors.transparent,
@@ -267,4 +195,119 @@ Future<Object> showAccountsMenu(
           ]),
         ),
       ]);
+}
+
+Widget _accountItem(JonlineAccount a, BuildContext context) {
+  ThemeData darkTheme = Theme.of(context);
+  ThemeData lightTheme = ThemeData.light();
+  bool selected = a.id == JonlineAccount.selectedAccount?.id;
+  ThemeData theme = selected ? lightTheme : darkTheme;
+  TextTheme textTheme = theme.textTheme;
+  return Theme(
+    data: theme,
+    child: Material(
+      // color: backgroundColor,
+      color: selected ? Colors.white : Colors.transparent,
+      child: InkWell(
+          mouseCursor: SystemMouseCursors.basic,
+          onTap: () {
+            Navigator.pop(context);
+            AppState appState =
+                context.findRootAncestorStateOfType<AppState>()!;
+            if (selected) {
+              appState.selectedAccount = null;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(
+                        "Browsing anonymously on ${JonlineServer.selectedServer.server}.")),
+              );
+            } else {
+              appState.selectedAccount = a;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text("Browsing ${a.server} as ${a.username}.")),
+              );
+            }
+            // onSelected(part);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text("${a.server}/",
+                            textAlign: TextAlign.left,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.caption),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(a.username,
+                            textAlign: TextAlign.left,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.subtitle1),
+                      ),
+                    ],
+                  ),
+                ),
+                if (a.permissions.contains(Permission.ADMIN))
+                  const Icon(Icons.admin_panel_settings_outlined)
+              ],
+            ),
+          )),
+    ),
+  );
+}
+
+Widget _serverItem(JonlineServer s, BuildContext context) {
+  ThemeData darkTheme = Theme.of(context);
+  ThemeData lightTheme = ThemeData.light();
+  bool selected = s == JonlineServer.selectedServer;
+  ThemeData theme = selected ? lightTheme : darkTheme;
+  TextTheme textTheme = theme.textTheme;
+  return Theme(
+    data: theme,
+    child: Material(
+      // color: backgroundColor,
+      color: selected ? Colors.white : Colors.transparent,
+      child: InkWell(
+          mouseCursor: SystemMouseCursors.basic,
+          onTap: () {
+            Navigator.pop(context);
+            AppState appState =
+                context.findRootAncestorStateOfType<AppState>()!;
+            JonlineServer.selectedServer = s;
+            appState.selectedAccount = null;
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(
+                      "Browsing anonymously on ${JonlineServer.selectedServer.server}.")),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text("${s.server}/",
+                      textAlign: TextAlign.left,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.caption),
+                ),
+              ],
+            ),
+          )),
+    ),
+  );
 }

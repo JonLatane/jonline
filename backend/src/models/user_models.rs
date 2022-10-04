@@ -11,6 +11,8 @@ pub struct User {
     pub phone: Option<serde_json::Value>,
     /// A serialized (by name) list of [crate::protos::Permission]s.
     pub permissions: serde_json::Value,
+    pub avatar: Option<Vec<u8>>,
+    pub visibility: String,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }

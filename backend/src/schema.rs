@@ -11,8 +11,6 @@ table! {
     federated_servers (id) {
         id -> Int4,
         server_location -> Varchar,
-        ca_cert -> Nullable<Varchar>,
-        tls_key -> Nullable<Varchar>,
     }
 }
 
@@ -22,6 +20,7 @@ table! {
         user_id -> Int4,
         local_user_id -> Nullable<Int4>,
         federated_account_id -> Nullable<Int4>,
+        accepted -> Bool,
     }
 }
 
@@ -51,6 +50,8 @@ table! {
         default_user_permissions -> Jsonb,
         post_settings -> Jsonb,
         event_settings -> Jsonb,
+        default_user_visibility -> Varchar,
+        private_user_strategy -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -84,6 +85,8 @@ table! {
         email -> Nullable<Jsonb>,
         phone -> Nullable<Jsonb>,
         permissions -> Jsonb,
+        avatar -> Nullable<Bytea>,
+        visibility -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

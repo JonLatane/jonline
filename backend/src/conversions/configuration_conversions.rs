@@ -22,6 +22,8 @@ impl ToDbServerConfiguration for ServerConfiguration {
             .unwrap(),
             post_settings: serde_json::to_value(self.post_settings.to_owned()).unwrap(),
             event_settings: serde_json::to_value(self.event_settings.to_owned()).unwrap(),
+            default_user_visibility: unsafe { transmute::<i32, Visibility>(self.default_user_visibility)}.as_str_name().to_string(),
+            private_user_strategy: unsafe { transmute::<i32, PrivateUserStrategy>(self.private_user_strategy)}.as_str_name().to_string() //self.private_user_strategy
         }
     }
 }

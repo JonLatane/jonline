@@ -10,6 +10,22 @@ message User {
   optional ContactMethod email = 3;
   optional ContactMethod phone = 4;
   repeated Permission permissions = 5;
+  optional bytes avatar = 6;
+  // User visibility is a bit different from Post visibility.
+  // LIMITED means the user can only be seen by users they follow
+  // (as opposed to Posts' individualized visibilities).
+  // PRIVATE visibility means no one can see the user
+  Visibility visibility = 7;
+}
+
+// To allow LIMITED visibility users to make friends, anyone
+// can send a FollowRequest with their username. If the target
+// has LIMITED visiblity, the response should be identical to a
+// "user_not_found" error. However, the follow request will still
+// be created to await the LIMITED user's approval.
+message FollowRequest {
+  optional string id = 1;
+  optional string username = 2;
 }
 
 message ContactMethod {
@@ -27,5 +43,5 @@ message GetUsersRequest {
 
 message GetUsersResponse {
   repeated User users = 1;
-  int32 total_results = 2;
+  bool has_next_page = 2;
 }

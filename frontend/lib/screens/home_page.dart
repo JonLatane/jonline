@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:jonline/models/jonline_server.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:scrolls_to_top/scrolls_to_top.dart';
@@ -63,39 +64,47 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   get useSideNav => MediaQuery.of(context).size.width > 600;
   TextTheme get textTheme => Theme.of(context).textTheme;
-  get destinations => [
-        const RouteDestination(
-          route: PostsTab(),
-          icon: Icons.chat_bubble,
-          label: 'Posts',
-        ),
-        const RouteDestination(
-          route: EventsTab(),
-          icon: Icons.calendar_month,
-          label: 'Events',
-        ),
-        const RouteDestination(
-          route: AccountsTab(),
-          icon: Icons.person,
-          label: 'Me',
-        ),
-        // if (showSettingsTab) // Making this dynamic screws up auto_route :(
-        RouteDestination(
-          route: SettingsTab(tab: 'tab'),
-          icon: Icons.settings,
-          label: 'Settings',
-        ),
-      ];
+  // get destinations => [
+  //       const RouteDestination(
+  //         route: PeopleTab(),
+  //         icon: Icons.people_alt_outlined,
+  //         label: 'People',
+  //       ),
+  //       const RouteDestination(
+  //         route: PostsTab(),
+  //         icon: Icons.chat_bubble,
+  //         label: 'Posts',
+  //       ),
+  //       const RouteDestination(
+  //         route: EventsTab(),
+  //         icon: Icons.calendar_month,
+  //         label: 'Events',
+  //       ),
+  //       const RouteDestination(
+  //         route: AccountsTab(),
+  //         icon: Icons.person,
+  //         label: 'Me',
+  //       ),
+  //       // if (showSettingsTab) // Making this dynamic screws up auto_route :(
+  //       RouteDestination(
+  //         route: SettingsTab(tab: 'tab'),
+  //         icon: Icons.settings,
+  //         label: 'Settings',
+  //       ),
+  //     ];
 
   @override
   initState() {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
+
     canCreatePost.addListener(updateState);
     canCreateReply.addListener(updateState);
     appState.accounts.addListener(updateState);
     appState.colorTheme.addListener(updateState);
     Settings.showSettingsTabListener.addListener(updateState);
+    Settings.showPeopleTabListener.addListener(updateState);
+
     if (MyPlatform.isMobile) {
       NativeDeviceOrientationCommunicator()
           .onOrientationChanged()
@@ -109,28 +118,36 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   dispose() {
-    appState.accounts.removeListener(updateState);
     canCreatePost.removeListener(updateState);
     canCreateReply.removeListener(updateState);
+    appState.accounts.removeListener(updateState);
     appState.colorTheme.removeListener(updateState);
+    Settings.showSettingsTabListener.removeListener(updateState);
+    Settings.showPeopleTabListener.removeListener(updateState);
+
     super.dispose();
   }
 
   updateState() => setState(() {});
 
   RouteData? _lastRoute;
+
+  bool isFirstBuild = true;
   bool isServerConfigPage(RouteData? route) =>
       route?.name == "AdminRoute" || route?.name == "ServerConfigurationRoute";
   @override
   Widget build(context) {
     // builder will rebuild everytime this router's stack updates
-
     if (isServerConfigPage(_lastRoute) &&
         !isServerConfigPage(context.topRoute)) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await JonlineServer.selectedServer.updateConfiguration();
         appState.colorTheme.value =
             JonlineServer.selectedServer.configuration?.serverInfo.colors;
+        // await JonlineServer.selectedServer.updateConfiguration();
+        // if (!isServerConfigPage(context.topRoute)) {
+        //   appState.colorTheme.value =
+        //       JonlineServer.selectedServer.configuration?.serverInfo.colors;
+        // }
       });
     } else if (!isServerConfigPage(_lastRoute) &&
         isServerConfigPage(context.topRoute)) {
@@ -175,12 +192,21 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         :*/
         AutoTabsRouter.pageView(
       routes: [
+        const PeopleTab(),
         const PostsTab(),
         const EventsTab(),
         const AccountsTab(),
         SettingsTab(tab: 'tab'),
       ],
       builder: (context, child, animation) {
+        TabsRouter tabsRouter = context.tabsRouter;
+
+        if (isFirstBuild && context.topRoute.path == "people") {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            tabsRouter.setActiveIndex(1);
+          });
+        }
+        isFirstBuild = false;
         return ScrollsToTop(
             onScrollsToTop: (ScrollsToTopEvent event) async {
               scrollToTop();
@@ -189,25 +215,23 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
               appBar: appBar,
               extendBodyBehindAppBar: true,
               extendBody: true,
-              body: Row(
+              body: Stack(
                 children: [
-                  AnimatedContainer(
-                    duration: animationDuration,
-                    width: (orientation ==
-                            NativeDeviceOrientation.landscapeLeft)
-                        ? MediaQuery.of(context).padding.left *
-                                (useSideNav && sideNavExpanded ? 0.6 : 0.7) +
-                            (useSideNav ? 4 : 0)
-                        : 0,
+                  Row(
+                    children: [
+                      buildLeftPadding(),
+                      if (useSideNav) const SizedBox(width: sideNavBaseWidth),
+                      Expanded(child: child),
+                      buildRightPadding(),
+                    ],
                   ),
-                  if (useSideNav) buildSideNav(context),
-                  Expanded(child: child),
-                  SizedBox(
-                    width:
-                        (orientation == NativeDeviceOrientation.landscapeRight)
-                            ? MediaQuery.of(context).padding.right * 0.7
-                            : 0,
-                  )
+                  if (useSideNav)
+                    Row(
+                      children: [
+                        buildLeftPadding(),
+                        buildSideNav(context),
+                      ],
+                    )
                 ],
               ),
               bottomNavigationBar: useSideNav ? null : buildBottomNav(context),
@@ -216,7 +240,31 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  Widget buildLeftPadding() => AnimatedContainer(
+        duration: animationDuration,
+        width: (orientation == NativeDeviceOrientation.landscapeLeft)
+            ? MediaQuery.of(context).padding.left *
+                    (useSideNav && sideNavExpanded ? 0.7 : 0.7) +
+                (useSideNav ? 4 : 0)
+            : 0,
+      );
+
+  Widget buildRightPadding() => SizedBox(
+        width: (orientation == NativeDeviceOrientation.landscapeRight)
+            ? MediaQuery.of(context).padding.right * 0.7
+            : 0,
+      );
+
+  static const sideNavBaseWidth = 48.0;
+
+  bool get showPeople =>
+      Settings.showPeopleTab || context.topRoute.name == "PersonListRoute";
+  bool get showSettings =>
+      Settings.showSettingsTab || context.topRoute.name == 'SettingsTab';
   List<BottomNavigationBarItem> get navigationItems => [
+        // if (showPeople)
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.people), label: 'People'),
         const BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble), label: 'Posts'),
         const BottomNavigationBarItem(
@@ -225,11 +273,11 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           icon: Icon(Icons.person),
           label: 'Me',
         ),
-        if (Settings.showSettingsTab || context.topRoute.name == 'SettingsTab')
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
+        // if (Settings.showSettingsTab || context.topRoute.name == 'SettingsTab')
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.settings),
+          label: 'Settings',
+        ),
       ];
 
   DateTime? lastActiveNavTapTime;
@@ -259,142 +307,351 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  double _lastBottomNavDragPosition = 0.0;
+
   Widget buildBottomNav(BuildContext context) {
-    final tabsRouter = context.tabsRouter;
+    TabsRouter tabsRouter = context.tabsRouter;
     final hideBottomNav = tabsRouter.topMatch.meta['hideBottomNav'] == true;
     final items = navigationItems;
+    final width = MediaQuery.of(context).size.width;
+    final numButtons = 3 + (showSettings ? 1 : 0) + (showPeople ? 1 : 0);
+    final buttonWidth = width / numButtons;
+    final bottomPadding = MediaQuery.of(context).padding.bottom * 0.7;
     return hideBottomNav
         ? const SizedBox.shrink()
-        : ClipRRect(
-            child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: BottomNavigationBar(
-                  backgroundColor:
-                      Theme.of(context).canvasColor.withOpacity(0.5),
-                  selectedItemColor: appState.navColor,
-                  type: BottomNavigationBarType.fixed,
-                  currentIndex: min(items.length - 1, tabsRouter.activeIndex),
-                  onTap: (index) {
-                    if (index == tabsRouter.activeIndex) {
-                      scrollToTop();
-                      handleNavThings();
-                    }
-                    tabsRouter.setActiveIndex(index);
-                  },
-                  items: items,
-                )));
+        : GestureDetector(
+            onHorizontalDragStart: (details) =>
+                _lastBottomNavDragPosition = details.globalPosition.dx,
+            onHorizontalDragUpdate: (details) {
+              int lastTab = (_lastBottomNavDragPosition / increment).floor();
+              int tab = (details.globalPosition.dx / increment).floor();
+              if (tab > lastTab) {
+                if (tabsRouter.activeIndex < navigationItems.length - 1) {
+                  HapticFeedback.lightImpact();
+                  tabsRouter.setActiveIndex(tabsRouter.activeIndex + 1);
+                  _lastBottomNavDragPosition = details.globalPosition.dx;
+                }
+              } else if (tab < lastTab) {
+                if (tabsRouter.activeIndex > 0) {
+                  HapticFeedback.lightImpact();
+                  tabsRouter.setActiveIndex(tabsRouter.activeIndex - 1);
+                  _lastBottomNavDragPosition = details.globalPosition.dx;
+                }
+              }
+            },
+            child: ClipRRect(
+                child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: AnimatedContainer(
+                      color: Theme.of(context).canvasColor.withOpacity(0.7),
+                      duration: animationDuration,
+                      width: width,
+                      height: 72 + bottomPadding,
+                      // width: _sideNavExpanded
+                      //     ? (MediaQuery.of(context).size.width > 600 ? 150 : 110) *
+                      //         MediaQuery.of(context).textScaleFactor
+                      //     : sideNavBaseWidth,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                // const SizedBox(
+                                //   height: 48,
+                                // ),
+                                ...items
+                                    .asMap()
+                                    .map(
+                                      (index, item) {
+                                        final active =
+                                            index == tabsRouter.activeIndex;
+                                        final hidden =
+                                            ((index == 0) && !showPeople) ||
+                                                ((index == 4) && !showSettings);
+                                        final actualWidth =
+                                            hidden ? 0.0 : buttonWidth;
+                                        return MapEntry(
+                                            index,
+                                            Tooltip(
+                                              message: item.label!,
+                                              child: AnimatedOpacity(
+                                                duration: animationDuration,
+                                                opacity: hidden ? 0.0 : 1.0,
+                                                child: AnimatedContainer(
+                                                  duration: animationDuration,
+                                                  width: actualWidth,
+                                                  child: TextButton(
+                                                      style: ButtonStyle(
+                                                          overlayColor:
+                                                              MaterialStateProperty
+                                                                  .all(appState
+                                                                      .navColor
+                                                                      .withOpacity(
+                                                                          0.2)),
+                                                          padding:
+                                                              MaterialStateProperty
+                                                                  .all(EdgeInsets
+                                                                      .zero)),
+                                                      onPressed: () {
+                                                        if (index ==
+                                                            tabsRouter
+                                                                .activeIndex) {
+                                                          scrollToTop();
+                                                          handleNavThings();
+                                                        }
+                                                        tabsRouter
+                                                            .setActiveIndex(
+                                                                index);
+                                                        setState(() {
+                                                          _sideNavExpanded =
+                                                              false;
+                                                        });
+                                                        // }
+                                                      },
+                                                      child: Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                      .symmetric(
+                                                                  vertical: 8,
+                                                                  horizontal:
+                                                                      8),
+                                                          child: Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .center,
+                                                            children: [
+                                                              Icon(
+                                                                  (item.icon
+                                                                          as Icon)
+                                                                      .icon,
+                                                                  size: 32,
+                                                                  color: active
+                                                                      ? appState
+                                                                          .navColor
+                                                                      : Colors
+                                                                          .grey),
+                                                              AnimatedScale(
+                                                                duration:
+                                                                    animationDuration,
+                                                                scale: active
+                                                                    ? 1.2
+                                                                    : 1,
+                                                                child: Text(
+                                                                    item.label!,
+                                                                    maxLines: 1,
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .clip,
+                                                                    style: textTheme
+                                                                        .caption!
+                                                                        .copyWith(
+                                                                            color: active
+                                                                                ? appState.navColor
+                                                                                : Colors.grey)),
+                                                              ),
+                                                            ],
+                                                          ))),
+                                                ),
+                                              ),
+                                            ));
+                                      },
+                                    )
+                                    .values
+                                    .toList(),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            height: bottomPadding,
+                          )
+                        ],
+                      ),
+                    ))),
+          );
   }
 
+  double _lastSideNavDragPosition = 0.0;
+  static const double increment = 72.0;
   Widget buildSideNav(BuildContext context) {
     final tabsRouter = context.tabsRouter;
     final items = navigationItems;
-    return AnimatedContainer(
-      duration: animationDuration,
-      width: _sideNavExpanded
-          ? (MediaQuery.of(context).size.width > 600 ? 150 : 110) *
-              MediaQuery.of(context).textScaleFactor
-          : 48,
-      child: Column(
-        children: [
-          const SizedBox(
-            height: 48,
-          ),
-          Expanded(
-              child: SingleChildScrollView(
-            child: Column(children: [
-              ...items
-                  .asMap()
-                  .map(
-                    (index, item) {
-                      final active = index == tabsRouter.activeIndex;
-                      return MapEntry(
-                          index,
-                          Tooltip(
-                            message: item.label!,
-                            child: InkWell(
-                                onTap: () {
-                                  if (index == tabsRouter.activeIndex) {
-                                    scrollToTop();
-                                    handleNavThings();
-                                  }
-                                  tabsRouter.setActiveIndex(index);
-                                  if (MediaQuery.of(context).size.width < 700) {
-                                    setState(() {
-                                      _sideNavExpanded = false;
-                                    });
-                                  }
-                                },
-                                child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 8, horizontal: 8),
-                                    child: Row(
-                                      children: [
-                                        Icon((item.icon as Icon).icon,
-                                            size: 32,
-                                            color: active
-                                                ? appState.navColor
-                                                : Colors.grey),
-                                        Expanded(
-                                          child: Row(
-                                            children: [
-                                              AnimatedContainer(
-                                                duration: animationDuration,
-                                                width:
-                                                    _sideNavExpanded ? 12 : 0,
-                                              ),
-                                              Expanded(
-                                                child: AnimatedOpacity(
-                                                  opacity:
-                                                      _sideNavExpanded ? 1 : 0,
-                                                  duration: animationDuration,
-                                                  child: Text(item.label!,
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.clip,
-                                                      style: textTheme
-                                                          .subtitle1!
-                                                          .copyWith(
-                                                              color: active
-                                                                  ? appState
-                                                                      .navColor
-                                                                  : Colors
-                                                                      .grey)),
-                                                ),
-                                              )
-                                            ],
-                                          ),
+    return GestureDetector(
+      onVerticalDragStart: (details) =>
+          _lastSideNavDragPosition = details.globalPosition.dy,
+      onVerticalDragUpdate: (details) {
+        int lastTab = (_lastSideNavDragPosition / increment).floor();
+        int tab = (details.globalPosition.dy / increment).floor();
+        if (tab > lastTab) {
+          if (tabsRouter.activeIndex < navigationItems.length - 1) {
+            HapticFeedback.lightImpact();
+            tabsRouter.setActiveIndex(tabsRouter.activeIndex + 1);
+            _lastSideNavDragPosition = details.globalPosition.dy;
+          }
+        } else if (tab < lastTab) {
+          if (tabsRouter.activeIndex > 0) {
+            HapticFeedback.lightImpact();
+            tabsRouter.setActiveIndex(tabsRouter.activeIndex - 1);
+            _lastSideNavDragPosition = details.globalPosition.dy;
+          }
+        }
+      },
+      onHorizontalDragUpdate: (details) {
+        if (details.primaryDelta != null) {
+          if (details.primaryDelta! > 5.0) {
+            setState(() {
+              _sideNavExpanded = true;
+            });
+          } else if (details.primaryDelta! < -5.0) {
+            setState(() {
+              _sideNavExpanded = false;
+            });
+          }
+        }
+      },
+      child: ClipRRect(
+          child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: AnimatedContainer(
+                color: Theme.of(context).canvasColor.withOpacity(0.7),
+                duration: animationDuration,
+                width: _sideNavExpanded
+                    ? (MediaQuery.of(context).size.width > 600 ? 150 : 110) *
+                        MediaQuery.of(context).textScaleFactor
+                    : sideNavBaseWidth,
+                child: Column(
+                  children: [
+                    const SizedBox(
+                      height: 48,
+                    ),
+                    Expanded(
+                        child: SingleChildScrollView(
+                      child: Column(children: [
+                        ...items
+                            .asMap()
+                            .map(
+                              (index, item) {
+                                final active = index == tabsRouter.activeIndex;
+                                final hidden = ((index == 0) && !showPeople) ||
+                                    ((index == 4) && !showSettings);
+                                return MapEntry(
+                                    index,
+                                    Tooltip(
+                                      message: item.label!,
+                                      child: AnimatedOpacity(
+                                        duration: animationDuration,
+                                        opacity: hidden ? 0 : 1,
+                                        child: AnimatedContainer(
+                                          duration: animationDuration,
+                                          height: hidden ? 0 : 48,
+                                          child: TextButton(
+                                              style: ButtonStyle(
+                                                  overlayColor:
+                                                      MaterialStateProperty.all(
+                                                          appState.navColor
+                                                              .withOpacity(
+                                                                  0.2)),
+                                                  padding:
+                                                      MaterialStateProperty.all(
+                                                          EdgeInsets.zero)),
+                                              onPressed: () {
+                                                if (index ==
+                                                    tabsRouter.activeIndex) {
+                                                  scrollToTop();
+                                                  handleNavThings();
+                                                }
+                                                tabsRouter
+                                                    .setActiveIndex(index);
+                                                setState(() {
+                                                  _sideNavExpanded = false;
+                                                });
+                                                // }
+                                              },
+                                              child: Padding(
+                                                  padding: const EdgeInsets
+                                                          .symmetric(
+                                                      vertical: 8,
+                                                      horizontal: 8),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                          (item.icon as Icon)
+                                                              .icon,
+                                                          size: 32,
+                                                          color: active
+                                                              ? appState
+                                                                  .navColor
+                                                              : Colors.grey),
+                                                      Expanded(
+                                                        child: Row(
+                                                          children: [
+                                                            AnimatedContainer(
+                                                              duration:
+                                                                  animationDuration,
+                                                              width:
+                                                                  _sideNavExpanded
+                                                                      ? 12
+                                                                      : 0,
+                                                            ),
+                                                            Expanded(
+                                                              child:
+                                                                  AnimatedOpacity(
+                                                                opacity:
+                                                                    _sideNavExpanded
+                                                                        ? 1
+                                                                        : 0,
+                                                                duration:
+                                                                    animationDuration,
+                                                                child: Text(
+                                                                    item.label!,
+                                                                    maxLines: 1,
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .clip,
+                                                                    style: textTheme
+                                                                        .subtitle1!
+                                                                        .copyWith(
+                                                                            color: active
+                                                                                ? appState.navColor
+                                                                                : Colors.grey)),
+                                                              ),
+                                                            )
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ))),
                                         ),
-                                      ],
-                                    ))),
-                          ));
-                    },
-                  )
-                  .values
-                  .toList(),
-            ]),
-          )),
-          InkWell(
-              onTap: () {
-                setState(() {
-                  _sideNavExpanded = !_sideNavExpanded;
-                });
-              },
-              child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                          _sideNavExpanded
-                              ? Icons.arrow_left
-                              : Icons.arrow_right,
-                          size: 32,
-                          color: Colors.grey),
-                    ],
-                  )))
-        ],
-      ),
+                                      ),
+                                    ));
+                              },
+                            )
+                            .values
+                            .toList(),
+                      ]),
+                    )),
+                    InkWell(
+                        onTap: () {
+                          setState(() {
+                            _sideNavExpanded = !_sideNavExpanded;
+                          });
+                        },
+                        child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AnimatedRotation(
+                                  duration: animationDuration,
+                                  turns: _sideNavExpanded ? 0 : -0.5,
+                                  child: const Icon(Icons.arrow_left,
+                                      size: 32, color: Colors.grey),
+                                ),
+                              ],
+                            )))
+                  ],
+                ),
+              ))),
     );
   }
 

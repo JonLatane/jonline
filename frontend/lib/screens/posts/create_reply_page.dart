@@ -10,7 +10,9 @@ import '../../models/jonline_account.dart';
 import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_clients.dart';
 import '../../models/jonline_operations.dart';
+import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
+import '../../router/router.gr.dart';
 import '../home_page.dart';
 
 // import 'package:jonline/db.dart';
@@ -59,12 +61,22 @@ class CreateReplyPageState extends State<CreateReplyPage> {
   String? get discussionPostId =>
       widget.discussionPostId.isNotEmpty ? widget.discussionPostId : null;
 
+  onAccountsChanged() {
+    if (JonlineServer.selectedServer.server != widget.server) {
+      context.replaceRoute(const PostListRoute());
+    } else {
+      setState(() {});
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.createReply.addListener(doCreate);
+    appState.accounts.addListener(onAccountsChanged);
+
     contentController.addListener(() {
       setState(() {});
       homePage.canCreateReply.value = content.isNotEmpty && !doingCreate;
@@ -116,6 +128,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
 
   @override
   dispose() {
+    appState.accounts.removeListener(onAccountsChanged);
     homePage.createReply.removeListener(doCreate);
     contentController.dispose();
     // linkController.dispose();
@@ -141,7 +154,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
     final account = JonlineAccount.selectedAccount!;
 
     // showSnackBar("Updating refresh token...");
-    await account.updateRefreshToken(showMessage: showSnackBar);
+    await account.ensureRefreshToken(showMessage: showSnackBar);
     // await communicationDelay;
     final JonlineClient? client =
         await (account.getClient(showMessage: showSnackBar));

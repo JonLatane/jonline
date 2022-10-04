@@ -68,7 +68,7 @@ pub fn create_post(
                 title: post_title,
                 link: req.link.to_link(),
                 content: req.content.to_owned(),
-                visibility: "global_public".to_string(),
+                visibility: "GLOBAL_PUBLIC".to_string(),
                 preview: None,
             })
             .get_result::<models::Post>(conn)?;

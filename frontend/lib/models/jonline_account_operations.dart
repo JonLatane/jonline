@@ -8,27 +8,6 @@ import 'jonline_clients.dart';
 import 'server_errors.dart';
 
 extension JonlineAccountOperations on JonlineAccount {
-  // Future<Posts?> getPosts(
-  //     {GetPostsRequest? request, Function(String)? showMessage}) async {
-  //   final client = await getClient(showMessage: showMessage);
-  //   if (client == null) {
-  //     showMessage?.call("Error: No client");
-  //     return null;
-  //   }
-  //   showMessage?.call("Loading posts...");
-  //   final Posts posts;
-  //   try {
-  //     posts = await client.getPosts(request ?? GetPostsRequest(),
-  //         options: authenticatedCallOptions);
-  //   } catch (e) {
-  //     showMessage?.call("Error loading posts.");
-  //     if (showMessage != null) await communicationDelay;
-  //     showMessage?.call(formatServerError(e));
-  //     return null;
-  //   }
-  //   return posts;
-  // }
-
   Future<User?> getUser({Function(String)? showMessage}) async {
     final User? user;
     try {
@@ -54,7 +33,14 @@ extension JonlineAccountOperations on JonlineAccount {
     await save();
   }
 
-  Future<void> updateRefreshToken({Function(String)? showMessage}) async {
+  Future<void> ensureRefreshToken({Function(String)? showMessage}) async {
+    final now = DateTime.now().millisecondsSinceEpoch / 1000;
+    if (refreshTokenExpiresAt - now < 60) {
+      await _updateRefreshToken(showMessage: showMessage);
+    }
+  }
+
+  Future<void> _updateRefreshToken({Function(String)? showMessage}) async {
     ExpirableToken? newRefreshToken;
     try {
       newRefreshToken = await (await getClient(showMessage: showMessage))
@@ -68,6 +54,7 @@ extension JonlineAccountOperations on JonlineAccount {
       return;
     }
     refreshToken = newRefreshToken.token;
+    refreshTokenExpiresAt = newRefreshToken.expiresAt.seconds.toInt();
     await save();
   }
 

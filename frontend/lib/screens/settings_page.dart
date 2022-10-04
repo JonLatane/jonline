@@ -33,7 +33,7 @@ class _SettingsPageState extends State<SettingsPage>
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
                   padding: EdgeInsets.only(
-                      top: 8 + MediaQuery.of(context).padding.top,
+                      top: 16 + MediaQuery.of(context).padding.top,
                       left: 8.0,
                       right: 8.0,
                       bottom: 8 + MediaQuery.of(context).padding.bottom),
@@ -42,23 +42,60 @@ class _SettingsPageState extends State<SettingsPage>
                     constraints: const BoxConstraints(maxWidth: 600),
                     child: Column(
                       children: [
+                        Text('App Settings', style: textTheme.subtitle1),
                         Row(
                           children: [
                             Expanded(
-                                child: Text("Prefer Server Previews",
+                                child: Text('Always Show "People" Tab',
                                     style: textTheme.labelLarge)),
                             Switch(
-                                value: Settings.preferServerPreviews,
+                                value: Settings.showPeopleTab,
                                 onChanged: (v) {
-                                  setState(
-                                      () => Settings.preferServerPreviews = v);
-                                  appState
-                                    ..updatePosts()
-                                    ..notifyAccountsListeners();
+                                  setState(() => Settings.showPeopleTab = v);
+                                  // appState
+                                  //   ..updatePosts()
+                                  //   ..notifyAccountsListeners();
                                 }),
                           ],
                         ),
-                        const SizedBox(height: 5),
+                        const Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'Swipe left of "Posts" to access "People" at any time.',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 12),
+                            )),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Text('Always Show "Settings" Tab',
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                value: Settings.showSettingsTab,
+                                onChanged: (v) {
+                                  setState(() => Settings.showSettingsTab = v);
+                                  // appState
+                                  //   ..updatePosts()
+                                  //   ..notifyAccountsListeners();
+                                }),
+                          ],
+                        ),
+                        const Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'Swipe right of "Me" to access "Settings" at any time.',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 12),
+                            )),
+                        const SizedBox(height: 25),
+                        Text('Performance Settings',
+                            style: textTheme.subtitle1),
                         Row(
                           children: [
                             Expanded(
@@ -102,6 +139,45 @@ class _SettingsPageState extends State<SettingsPage>
                                   }),
                             ],
                           ),
+                        const Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              "Higher values mean comments take longer to load.",
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 12),
+                            )),
+                        const SizedBox(height: 35),
+                        Text('Advanced Settings', style: textTheme.subtitle1),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Text("Prefer Server Previews",
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                value: Settings.preferServerPreviews,
+                                onChanged: (v) {
+                                  setState(
+                                      () => Settings.preferServerPreviews = v);
+                                  appState
+                                    ..updatePosts()
+                                    ..notifyAccountsListeners();
+                                }),
+                          ],
+                        ),
+                        const Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              "Server previews are useful for browsers due to CORS.",
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 12),
+                            )),
+                        const SizedBox(height: 4),
                         Row(
                           key: const Key('powerUserModeSetting'),
                           children: [

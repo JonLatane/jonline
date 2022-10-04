@@ -93,6 +93,7 @@ class PostListScreenState extends State<PostListScreen>
     return Scaffold(
       // appBar: ,
       body: RefreshIndicator(
+        displacement: MediaQuery.of(context).padding.top + 40,
         onRefresh: () async =>
             await appState.updatePosts(showMessage: showSnackBar),
         child: ScrollConfiguration(
@@ -127,7 +128,10 @@ class PostListScreenState extends State<PostListScreen>
                                         Text(
                                             appState.updatingPosts.value
                                                 ? "Loading Posts..."
-                                                : "No Posts!",
+                                                : appState.errorUpdatingPosts
+                                                        .value
+                                                    ? "Error Loading Posts"
+                                                    : "No Posts!",
                                             style: textTheme.titleLarge),
                                         Text(
                                             JonlineServer.selectedServer.server,

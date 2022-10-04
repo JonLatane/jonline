@@ -69,19 +69,31 @@ impl Jonline for JonLineImpl {
             Ok(user) => rpcs::create_post(request, user, &conn),
         }
     }
+
     async fn get_posts(
         &self,
         request: Request<GetPostsRequest>,
     ) -> Result<Response<Posts>, Status> {
+        println!("GetPosts yay!");
         let conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
         rpcs::get_posts(request, user, &conn)
     }
+
     async fn query_posts(&self, _request: Request<PostQuery>) -> Result<Response<Posts>, Status> {
         //TODO implement me!
         Ok(Response::new(Posts {
             ..Default::default()
         }))
+    }
+
+    async fn get_users(
+        &self,
+        request: Request<GetUsersRequest>,
+    ) -> Result<Response<GetUsersResponse>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
+        rpcs::get_users(request.into_inner(), user, &conn)
     }
 
     async fn get_server_configuration(

@@ -15,6 +15,7 @@ enum Permission {
   GLOBALLY_PUBLISH_EVENTS = 22;
   MODERATE_EVENTS = 23;
 
+  GLOBALLY_PUBLISH_PROFILE = 999;
   ADMIN = 1000;
   // "Moderate users" refers to granting VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS
   // and CREATE_EVENTS permissions to users.

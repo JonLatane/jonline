@@ -16,7 +16,7 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar,
     return;
   }
   // showSnackBar("Updating refresh token...");
-  await account.updateRefreshToken(showMessage: showSnackBar);
+  await account.ensureRefreshToken(showMessage: showSnackBar);
 
   final List<Post> posts = [];
   for (final data in _demoData) {
@@ -47,6 +47,7 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar,
       // final JonlineClient? sideClient =
       //     await (sideAccount?.getClient(showMessage: showSnackBar));
       if (sideAccount != null) {
+        await sideAccount.updateUserData(showMessage: showSnackBar);
         showSnackBar("Created side account ${sideAccount.username}.");
         appState.updateAccountList();
         sideAccounts.add(sideAccount);

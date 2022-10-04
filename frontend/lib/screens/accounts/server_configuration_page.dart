@@ -89,7 +89,10 @@ class _AdminPageState extends State<ServerConfigurationPage> {
     final JonlineServer server = this.server ??
         (await JonlineServer.servers)
             .firstWhere((a) => a.server == (account?.server ?? widget.server!));
-    final client = await JonlineClients.getServerClient(server);
+    final client = this.client ??
+        await JonlineClients.getServerClient(server,
+            allowInsecure:
+                server.server == "localhost" || server.server == "Armothy");
     await server.updateServiceVersion();
     await server.updateConfiguration();
 
@@ -136,7 +139,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
               padding: EdgeInsets.only(
-                  top: 8 + MediaQuery.of(context).padding.top,
+                  top: 16 + MediaQuery.of(context).padding.top,
                   left: 8.0,
                   right: 8.0,
                   bottom: 8 + MediaQuery.of(context).padding.bottom),
@@ -265,7 +268,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                 onPressed: () async {
                   try {
                     await account!
-                        .updateRefreshToken(showMessage: showSnackBar);
+                        .ensureRefreshToken(showMessage: showSnackBar);
                     final response = await client!.configureServer(
                         serverConfiguration!,
                         options: account!.authenticatedCallOptions);
@@ -274,10 +277,14 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                       serverConfiguration = response.jonCopy();
                     });
                     await server!.save();
+                    if (server == JonlineServer.selectedServer) {
+                      appState.colorTheme.value =
+                          serverConfiguration!.serverInfo.colors;
+                    }
                     showSnackBar("Configuration Updated 🎉");
                   } catch (e) {
-                    print(e);
                     showSnackBar(formatServerError(e));
+                    rethrow;
                   }
                 },
               ),

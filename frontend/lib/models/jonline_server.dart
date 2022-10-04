@@ -56,6 +56,9 @@ class JonlineServer {
     List<JonlineServer> jsonArray = await servers;
     final index = jsonArray.indexWhere((element) => element.server == server);
     jsonArray[index] = this;
+    if (_selectedServer == this) {
+      _selectedServer = this;
+    }
     await updateServerList(jsonArray);
   }
 

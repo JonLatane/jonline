@@ -7,6 +7,7 @@ import '../../app_state.dart';
 import '../../generated/posts.pb.dart';
 import '../../jonotifier.dart';
 import '../../models/jonline_operations.dart';
+import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../home_page.dart';
@@ -34,11 +35,19 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   TextTheme get textTheme => Theme.of(context).textTheme;
   Post? subjectPost;
 
+  onAccountsChanged() {
+    if (JonlineServer.selectedServer.server != widget.server) {
+      context.replaceRoute(const PostListRoute());
+    } else {
+      setState(() {});
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
-    appState.accounts.addListener(updateState);
+    appState.accounts.addListener(onAccountsChanged);
     appState.updateReplies.addListener(updateReplies);
     updatingReplies.addListener(updateState);
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
@@ -72,7 +81,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
     updateReplies.dispose();
     updatingReplies.dispose();
     scrollController.dispose();
-    appState.accounts.removeListener(updateState);
+    appState.accounts.removeListener(onAccountsChanged);
 
     homePage.scrollToTop.removeListener(scrollToTop);
     super.dispose();
@@ -126,6 +135,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 1000),
                   child: RefreshIndicator(
+                    displacement: MediaQuery.of(context).padding.top + 40,
                     onRefresh: () async => await onRefresh(),
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -157,7 +167,8 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                         ),
                         SliverToBoxAdapter(
                           child: SizedBox(
-                              height: MediaQuery.of(context).padding.bottom),
+                              height:
+                                  MediaQuery.of(context).padding.bottom + 48),
                         ),
 
                         // other sliver widgets

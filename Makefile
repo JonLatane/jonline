@@ -43,14 +43,14 @@ deploy_be_get_external_ip:
 # Suppress echoing this so 'make deploy_be_get_external_ip` is easily composable. 
 	@kubectl get service jonline -n $(NAMESPACE) | sed -n 2p | awk '{print $$4}'
 
-deploy_be_get_all:
+deploy_get_all:
 	kubectl get all -n $(NAMESPACE)
 
 deploy_be_get_pods:
 	kubectl get pods --selector=app=jonline -n $(NAMESPACE)
 
 # K8s server deployment test targets
-test_deploy_be:
+deploy_test_be:
 	@echo 'Getting services on target server...'
 	grpcurl $(TEST_GRPC_TARGET) list
 	@echo "\nGetting Jonline service version..."
@@ -58,7 +58,7 @@ test_deploy_be:
 	@echo "\nGetting available Jonline RPCs..."
 	grpcurl $(TEST_GRPC_TARGET) list jonline.Jonline
 
-test_deploy_be_unsecured:
+deploy_test_be_unsecured:
 	@echo 'Getting services on target server...'
 	grpcurl -plaintext $(TEST_GRPC_TARGET) list
 	@echo "\nGetting Jonline service version..."
@@ -66,7 +66,7 @@ test_deploy_be_unsecured:
 	@echo "\nGetting available Jonline RPCs..."
 	grpcurl -plaintext $(TEST_GRPC_TARGET) list jonline.Jonline
 
-test_deploy_be_tls_openssl:
+deploy_test_be_tls_openssl:
 	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem
 
 deploy_data_create: deploy_db_create deploy_minio_create

@@ -39,18 +39,21 @@ git clone https://github.com/JonLatane/jonline.git
 cd jonline
 ```
 
-Next, from the repo root, to create a DB and two load-balanced servers in the namespace `jonline` (which will be auto-created), run:
+Next, from the repo root, to create Postgres, Minio and two load-balanced Jonline servers in the namespace `jonline` (plus a few recurring jobs), run:
 
 ```bash
 make deploy_data_create deploy_be_create
 ```
 
-That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text***. Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
+That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `make deploy_data_delete deploy_data_create deploy_be_restart` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
 
-To see *everything* you just deployed (minio, postgres, Jonline server and background cron jobs), run:
+(Note: to deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make deploy_data_create deploy_be_create` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.)
+
+#### Validating your deployment
+To see *everything* you just deployed (minio, postgres, Jonline server and background cron jobs), run `make deploy_get_all`. It should look something like this (with fewer jobs after a fresh install, probably):
 
 ```bash
-$ make deploy_be_get_all
+$ make deploy_get_all
 kubectl get all -n jonline
 NAME                                                  READY   STATUS        RESTARTS   AGE
 pod/delete-expired-tokens-27742795--1-nlkh6           0/1     Completed     0          11m
@@ -119,19 +122,17 @@ job.batch/jonline-expired-token-cleanup-27742800   1/1           5s         6m53
 job.batch/jonline-expired-token-cleanup-27742805   1/1           4s         113s
 ```
 
-(Note: to deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make deploy_db_create deploy_be_create` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.)
-
-To view your whole deployment, use `make deploy_be_get_all`. Use `make deploy_be_get_external_ip` to see what your service's external IP is (until set, it will return `<pending>`).
+Use `make deploy_be_get_external_ip` to see what your service's external IP is (until set, it will return `<pending>`).
 
 ```bash
 $ make deploy_be_get_external_ip
 188.166.203.133
 ```
 
-Finally, once the IP is set, to test the service from your own computer, use `make test_deploy_be_unsecured` to run tests against that external IP (you need `grpcurl` for this; `brew install grpcurl` works for macOS):
+Finally, once the IP is set, to test the service from your own computer, use `make deploy_test_be_unsecured` to run tests against that external IP (you need `grpcurl` for this; `brew install grpcurl` works for macOS):
 
 ```bash
-$ make test_deploy_be
+$ make deploy_test_be
 Getting services on target server...
 grpcurl -plaintext 188.166.203.133:27707 list
 grpc.reflection.v1alpha.ServerReflection
@@ -153,6 +154,11 @@ jonline.Jonline.RefreshToken
 ```
 
 That's it! You're up and running, although again, *it's an unsecured instance* where ***passwords and auth tokens will be sent in plain text***. Get that thing secured before you go telling people to use it!
+
+#### Pointing a domain at your deployment
+Before you can secure with LetsEncrypt, you need to point a domain at your Jonline instance's IP. Again, you can get the IP with `make deploy_be_get_external_ip`, and create your DNS records with your DNS provider. If you're choosing a DNS provider, it's worth noting that [I recommend DigitalOcean DNS (sponsored link)](https://m.do.co/c/1eaa3f9e536c) and Jonline has scripts for it. However, any [Cert-Manager](http://cert-manager.io) supported DNS provider (for the LetsEncrypt dns01 challenge) should be pretty easy to set up.
+
+Continue to the next section for more info about setting up encryption and its relation to your DNS provider.
 
 #### Securing your deployment
 Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network. If you're using DigitalOcean DNS you can be setup in a few minutes.
