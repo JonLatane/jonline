@@ -195,6 +195,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                 Expanded(
                     child: Text("Enable Posts", style: textTheme.labelLarge)),
                 Switch(
+                    activeColor: appState.primaryColor,
                     value: serverConfiguration?.postSettings.visible ?? false,
                     onChanged: account != null
                         ? (v) {
@@ -209,6 +210,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                 Expanded(
                     child: Text("Enable Events", style: textTheme.labelLarge)),
                 Switch(
+                    activeColor: appState.primaryColor,
                     value: serverConfiguration?.eventSettings.visible ?? false,
                     onChanged: account != null
                         ? (v) {

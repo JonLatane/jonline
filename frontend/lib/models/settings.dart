@@ -66,6 +66,15 @@ class Settings {
     }
   }
 
+  static ValueNotifier<bool> showGroupsTabListener = ValueNotifier(false);
+  static bool get showGroupsTab => showGroupsTabListener.value;
+  static set showGroupsTab(bool v) {
+    {
+      showGroupsTabListener.value = v;
+      Future.microtask(() async => appStorage.setBool("show_groups_tab", v));
+    }
+  }
+
   static bool _showServers = false;
   static bool get showServers => _showServers;
   static set showServers(bool v) {
@@ -85,6 +94,8 @@ class Settings {
         appStorage.getBool("show_settings_tab") ?? false;
     showPeopleTabListener.value =
         appStorage.getBool("show_people_tab") ?? false;
+    showGroupsTabListener.value =
+        appStorage.getBool("show_groups_tab") ?? false;
     _showServers = appStorage.getBool("show_servers") ?? false;
   }
 }

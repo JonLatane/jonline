@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
@@ -47,14 +46,22 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Jonotifier serverConfigPageFocused = Jonotifier();
 
   // Notifiers to let the App Bar communicate with pages
+  Jonotifier createGroup = Jonotifier();
   Jonotifier createPost = Jonotifier();
   Jonotifier createReply = Jonotifier();
   Jonotifier updatePost = Jonotifier();
   Jonotifier updateReply = Jonotifier();
+  ValueNotifier<bool> canCreateGroup = ValueNotifier(false);
   ValueNotifier<bool> canCreatePost = ValueNotifier(false);
   ValueNotifier<bool> canCreateReply = ValueNotifier(false);
   Jonotifier scrollToTop = Jonotifier();
   Map<String, Function(BuildContext)> appBarBuilders = {};
+  FocusNode peopleSearchFocus = FocusNode();
+  TextEditingController peopleSearchController = TextEditingController();
+  ValueJonotifier<bool> peopleSearch = ValueJonotifier(false);
+  FocusNode groupsSearchFocus = FocusNode();
+  TextEditingController groupsSearchController = TextEditingController();
+  ValueJonotifier<bool> groupsSearch = ValueJonotifier(false);
 
   String? titleServer;
   String? titleUsername;
@@ -98,12 +105,16 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
 
+    canCreateGroup.addListener(updateState);
     canCreatePost.addListener(updateState);
     canCreateReply.addListener(updateState);
     appState.accounts.addListener(updateState);
     appState.colorTheme.addListener(updateState);
     Settings.showSettingsTabListener.addListener(updateState);
     Settings.showPeopleTabListener.addListener(updateState);
+    Settings.showGroupsTabListener.addListener(updateState);
+    peopleSearch.addListener(updateState);
+    groupsSearch.addListener(updateState);
 
     if (MyPlatform.isMobile) {
       NativeDeviceOrientationCommunicator()
@@ -118,12 +129,16 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   dispose() {
+    canCreateGroup.removeListener(updateState);
     canCreatePost.removeListener(updateState);
     canCreateReply.removeListener(updateState);
     appState.accounts.removeListener(updateState);
     appState.colorTheme.removeListener(updateState);
     Settings.showSettingsTabListener.removeListener(updateState);
     Settings.showPeopleTabListener.removeListener(updateState);
+    Settings.showGroupsTabListener.removeListener(updateState);
+    peopleSearch.removeListener(updateState);
+    groupsSearch.removeListener(updateState);
 
     super.dispose();
   }
@@ -192,6 +207,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         :*/
         AutoTabsRouter.pageView(
       routes: [
+        const GroupsTab(),
         const PeopleTab(),
         const PostsTab(),
         const EventsTab(),
@@ -201,9 +217,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       builder: (context, child, animation) {
         TabsRouter tabsRouter = context.tabsRouter;
 
-        if (isFirstBuild && context.topRoute.path == "people") {
+        if (isFirstBuild && context.topRoute.path == "groups") {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            tabsRouter.setActiveIndex(1);
+            tabsRouter.setActiveIndex(2);
           });
         }
         isFirstBuild = false;
@@ -258,11 +274,14 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   static const sideNavBaseWidth = 48.0;
 
   bool get showPeople =>
-      Settings.showPeopleTab || context.topRoute.name == "PersonListRoute";
+      Settings.showPeopleTab || context.topRoute.name == "PeopleRoute";
+  bool get showGroups =>
+      Settings.showGroupsTab || context.topRoute.name == "GroupsRoute";
   bool get showSettings =>
       Settings.showSettingsTab || context.topRoute.name == 'SettingsTab';
   List<BottomNavigationBarItem> get navigationItems => [
-        // if (showPeople)
+        const BottomNavigationBarItem(
+            icon: Icon(Icons.group_work_outlined), label: 'Groups'),
         const BottomNavigationBarItem(
             icon: Icon(Icons.people), label: 'People'),
         const BottomNavigationBarItem(
@@ -291,7 +310,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         case "CreateReplyRoute":
         case "CreateDeepReplyRoute":
           // context.popRoute();
-          context.replaceRoute(const PostListRoute());
+          context.replaceRoute(const PostsRoute());
           break;
         case "EventDetailsRoute":
           context.replaceRoute(const EventListRoute());
@@ -314,7 +333,10 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final hideBottomNav = tabsRouter.topMatch.meta['hideBottomNav'] == true;
     final items = navigationItems;
     final width = MediaQuery.of(context).size.width;
-    final numButtons = 3 + (showSettings ? 1 : 0) + (showPeople ? 1 : 0);
+    final numButtons = 3 +
+        (showSettings ? 1 : 0) +
+        (showGroups ? 1 : 0) +
+        (showPeople ? 1 : 0);
     final buttonWidth = width / numButtons;
     final bottomPadding = MediaQuery.of(context).padding.bottom * 0.7;
     return hideBottomNav
@@ -366,8 +388,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                         final active =
                                             index == tabsRouter.activeIndex;
                                         final hidden =
-                                            ((index == 0) && !showPeople) ||
-                                                ((index == 4) && !showSettings);
+                                            ((index == 0) && !showGroups) ||
+                                                ((index == 1) && !showPeople) ||
+                                                ((index == 5) && !showSettings);
                                         final actualWidth =
                                             hidden ? 0.0 : buttonWidth;
                                         return MapEntry(
@@ -441,7 +464,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                                     maxLines: 1,
                                                                     overflow:
                                                                         TextOverflow
-                                                                            .clip,
+                                                                            .ellipsis,
                                                                     style: textTheme
                                                                         .caption!
                                                                         .copyWith(
@@ -531,8 +554,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             .map(
                               (index, item) {
                                 final active = index == tabsRouter.activeIndex;
-                                final hidden = ((index == 0) && !showPeople) ||
-                                    ((index == 4) && !showSettings);
+                                final hidden = ((index == 0) && !showGroups) ||
+                                    ((index == 1) && !showPeople) ||
+                                    ((index == 5) && !showSettings);
                                 return MapEntry(
                                     index,
                                     Tooltip(

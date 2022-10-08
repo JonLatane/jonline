@@ -12,6 +12,7 @@ message CreateAccountRequest {
   optional ContactMethod phone = 4;
   // Request an expiration time for the Auth Token returned. By default it will not expire.
   optional google.protobuf.Timestamp expires_at = 5;
+  optional string device_name = 6;
 }
 
 message LoginRequest {
@@ -19,6 +20,7 @@ message LoginRequest {
   string password = 2;
   // Request an expiration time for the Auth Token returned. By default it will not expire.
   optional google.protobuf.Timestamp expires_at = 3;
+  optional string device_name = 4;
 }
 
 // Returned when creating an account or logging in.

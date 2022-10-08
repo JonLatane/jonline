@@ -9,6 +9,7 @@ import "authentication.proto";
 import "posts.proto";
 import "post_query.proto";
 import "users.proto";
+import "groups.proto";
 import "federation.proto";
 import "admin.proto";
 
@@ -25,6 +26,29 @@ service Jonline {
   // Gets Users. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility.
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
+
+  
+  // Gets Groups. Publicly accessible *or* authenticated.
+  // Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility.
+  rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse) {}
+
+  // Creates a group with the current user as its admin. Authenticated.
+  // Requires the CREATE_GROUPS permission.
+  rpc CreateGroup(Group) returns (Group) {}
+  // Update a Groups's information, default membership permissions or moderation. Authenticated.
+  // Requires ADMIN permissions within the group, or ADMIN permissions for the user.
+  rpc UpdateGroup(Group) returns (Group) {}
+  // Delete a Group. Authenticated.
+  // Requires ADMIN permissions within the group, or ADMIN permissions for the user.
+  // rpc DeleteGroup(Group) returns (Group) {}
+
+  // Requests to join a group (or joins it), or sends an invite to the user. Authenticated.
+  // Memberships and moderations are set to their defaults.
+  rpc CreateMembership(Membership) returns (Membership) {}
+  // Update aspects of a user's membership. Authenticated.
+  // Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user.
+  // Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group.
+  rpc UpdateMembership(Membership) returns (Membership) {}
 
   // Gets Posts. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.

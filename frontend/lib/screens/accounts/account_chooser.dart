@@ -90,7 +90,6 @@ Future<Object> showAccountsMenu(
   ThemeData theme = Theme.of(context);
   TextTheme textTheme = theme.textTheme;
   ThemeData darkTheme = theme;
-  ThemeData lightTheme = ThemeData.light();
   final accounts = await JonlineAccount.accounts;
   final servers = await JonlineServer.servers;
 

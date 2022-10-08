@@ -4,6 +4,7 @@ import 'package:jonline/screens/accounts/server_configuration_page.dart';
 import 'package:jonline/screens/login_page.dart';
 import 'package:provider/provider.dart';
 import 'generated/admin.pb.dart';
+import 'generated/groups.pb.dart';
 import 'generated/users.pb.dart';
 import 'generated/users.pb.dart' as users_pb;
 import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
@@ -31,17 +32,18 @@ class AppState extends State<MyApp> {
   Color navColor = const Color(0xFFA23B72);
   Color authorColor = const Color(0xFF2eab54);
   Color adminColor = const Color(0xFFab372e);
-  final ValueJonotifer<ServerColors?> colorTheme =
-      ValueJonotifer<ServerColors?>(null);
+  final ValueJonotifier<ServerColors?> colorTheme =
+      ValueJonotifier<ServerColors?>(null);
 
   final authService = AuthService();
-  final ValueJonotifer<List<JonlineAccount>> accounts =
-      ValueJonotifer(<JonlineAccount>[]);
-  final ValueJonotifer<List<JonlineServer>> servers =
-      ValueJonotifer(<JonlineServer>[]);
-  final ValueJonotifer<Posts> posts = ValueJonotifer(Posts());
-  final ValueJonotifer<List<users_pb.User>> users =
-      ValueJonotifer(<users_pb.User>[]);
+  final ValueJonotifier<List<JonlineAccount>> accounts =
+      ValueJonotifier(<JonlineAccount>[]);
+  final ValueJonotifier<List<JonlineServer>> servers =
+      ValueJonotifier(<JonlineServer>[]);
+  final ValueJonotifier<Posts> posts = ValueJonotifier(Posts());
+  final ValueJonotifier<List<users_pb.User>> users =
+      ValueJonotifier(<users_pb.User>[]);
+  final ValueJonotifier<List<Group>> groups = ValueJonotifier(<Group>[]);
   final Jonotifier updateReplies = Jonotifier();
   final Jonotifier selectedServerChanged = Jonotifier();
   final Jonotifier selectedAccountChanged = Jonotifier();
@@ -81,7 +83,7 @@ class AppState extends State<MyApp> {
   ValueNotifier<bool> errorUpdatingUsers = ValueNotifier(false);
   ValueNotifier<bool> didUpdateUsers = ValueNotifier(false);
   Future<void> updateUsers({Function(String)? showMessage}) async {
-    // updatingUsers.value = true;
+    updatingUsers.value = true;
     final GetUsersResponse? response = await JonlineOperations.getUsers();
     if (response == null) {
       setState(() {
@@ -102,6 +104,31 @@ class AppState extends State<MyApp> {
     showMessage?.call("Users updated! 🎉");
   }
 
+  ValueNotifier<bool> updatingGroups = ValueNotifier(true);
+  ValueNotifier<bool> errorUpdatingGroups = ValueNotifier(false);
+  ValueNotifier<bool> didUpdateGroups = ValueNotifier(false);
+  Future<void> updateGroups({Function(String)? showMessage}) async {
+    updatingGroups.value = true;
+    final GetGroupsResponse? response = await JonlineOperations.getGroups();
+    if (response == null) {
+      setState(() {
+        errorUpdatingGroups.value = true;
+        updatingGroups.value = false;
+        // showSnackBar
+      });
+      return;
+    }
+
+    didUpdateGroups.value = true;
+    setState(() {
+      updatingGroups.value = false;
+      groups.value = response.groups;
+    });
+    didUpdateGroups.value = false;
+    // await communicationDelay;
+    showMessage?.call("Groups updated! 🎉");
+  }
+
   JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
   set selectedAccount(JonlineAccount? account) {
     if (account != null) {
@@ -114,6 +141,7 @@ class AppState extends State<MyApp> {
     updateAccountList();
     resetPosts();
     resetPeople();
+    resetGroups();
   }
 
   resetPosts() {
@@ -130,6 +158,14 @@ class AppState extends State<MyApp> {
       users.value = <users_pb.User>[];
     });
     updateUsers();
+  }
+
+  resetGroups() {
+    setState(() {
+      updatingGroups.value = true;
+      groups.value = <Group>[];
+    });
+    updateGroups();
   }
 
   updateAccountList() async {
@@ -201,6 +237,8 @@ class AppState extends State<MyApp> {
   void initState() {
     super.initState();
     accounts.addListener(updatePosts);
+    accounts.addListener(updateUsers);
+    accounts.addListener(updateGroups);
     accounts.addListener(monitorAccountChange);
     accounts.addListener(monitorServerChange);
     selectedServerChanged.addListener(updateColorTheme);
@@ -218,12 +256,19 @@ class AppState extends State<MyApp> {
           JonlineServer.selectedServer = server;
         }
       }
-      updatingPosts.addListener(() => errorUpdatingPosts.value = false);
-      updatingUsers.addListener(() => errorUpdatingUsers.value = false);
-      await updateColorTheme();
+      updatingPosts.addListener(() {
+        if (updatingPosts.value) errorUpdatingPosts.value = false;
+      });
+      updatingUsers.addListener(() {
+        if (updatingUsers.value) errorUpdatingUsers.value = false;
+      });
+      updatingGroups.addListener(() {
+        if (updatingGroups.value) errorUpdatingGroups.value = false;
+      });
       await updateServerList();
+      await updateColorTheme();
       await updateAccountList();
-      await updatePosts();
+      await Future.wait([updatePosts(), updateUsers(), updateGroups()]);
     });
   }
 
@@ -235,6 +280,7 @@ class AppState extends State<MyApp> {
     colorTheme.removeListener(updateColors);
     colorTheme.removeListener(updateColors);
     accounts.removeListener(updatePosts);
+    accounts.removeListener(updateUsers);
     accounts.dispose();
     updateReplies.dispose();
     colorTheme.dispose();

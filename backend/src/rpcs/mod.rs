@@ -30,3 +30,10 @@ pub use get_posts::get_posts;
 
 mod get_users;
 pub use get_users::get_users;
+
+mod get_groups;
+pub use get_groups::get_groups;
+
+
+mod create_group;
+pub use create_group::create_group;

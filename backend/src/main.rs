@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db_connection::migrate_database();
     let pool = db_connection::establish_pool();
 
-    let tonic_server = tokio::spawn(async {
+    tokio::spawn(async {
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], 27707));
         let tonic_router = create_tonic_router(pool);
         match tonic_router.serve(tonic_addr).await {
@@ -93,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     join_all::<_>([
-        tonic_server,
+        // tonic_server,
         rocket_unsecure_8000_server,
         rocket_unsecure_80_server,
         rocket_secure_server,

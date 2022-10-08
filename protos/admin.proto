@@ -24,6 +24,18 @@ message ServerConfiguration {
 
   // Strategy when a user sets their visibility to PRIVATE. Defaults to ACCOUNT_IS_FROZEN.
   PrivateUserStrategy private_user_strategy = 6;
+
+  // Allows admins to enable/disable creating accounts and logging in.
+  // Eventually, external auth too hopefully!
+  repeated AuthenticationFeature authentication_features = 7;
+}
+
+enum AuthenticationFeature {
+  AUTHENTICATION_FEATURE_UNKNOWN = 0;
+  // Users can sign up for an account.
+  CREATE_ACCOUNT = 1;
+  // Users can sign in with an existing account.
+  LOGIN = 2;
 }
 
 message FeatureSettings {

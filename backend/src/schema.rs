@@ -18,9 +18,35 @@ table! {
     follows (id) {
         id -> Int4,
         user_id -> Int4,
-        local_user_id -> Nullable<Int4>,
-        federated_account_id -> Nullable<Int4>,
+        local_user_id -> Int4,
         accepted -> Bool,
+    }
+}
+
+table! {
+    groups (id) {
+        id -> Int4,
+        name -> Varchar,
+        description -> Nullable<Varchar>,
+        avatar -> Nullable<Bytea>,
+        visibility -> Varchar,
+        default_membership_permissions -> Jsonb,
+        default_membership_moderation -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
+    memberships (id) {
+        id -> Int4,
+        user_id -> Int4,
+        group_id -> Int4,
+        permissions -> Jsonb,
+        group_moderation -> Varchar,
+        user_moderation -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -94,6 +120,8 @@ table! {
 
 joinable!(federated_accounts -> federated_servers (federated_server_id));
 joinable!(federated_accounts -> users (user_id));
+joinable!(memberships -> groups (group_id));
+joinable!(memberships -> users (user_id));
 joinable!(posts -> users (user_id));
 joinable!(user_auth_tokens -> users (user_id));
 joinable!(user_refresh_tokens -> user_auth_tokens (auth_token_id));
@@ -102,6 +130,8 @@ allow_tables_to_appear_in_same_query!(
     federated_accounts,
     federated_servers,
     follows,
+    groups,
+    memberships,
     posts,
     server_configurations,
     user_auth_tokens,

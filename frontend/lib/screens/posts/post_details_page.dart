@@ -37,7 +37,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
 
   onAccountsChanged() {
     if (JonlineServer.selectedServer.server != widget.server) {
-      context.replaceRoute(const PostListRoute());
+      context.replaceRoute(const PostsRoute());
     } else {
       setState(() {});
     }

@@ -48,6 +48,18 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {});
     });
     appState.servers.addListener(updateState);
+    final serverValue = "${JonlineServer.selectedServer.server}/";
+    if (serverValue != "$defaultServer/") {
+      usernameController.value = TextEditingValue(
+        text: serverValue,
+        selection: TextSelection.fromPosition(
+          TextPosition(offset: serverValue.length),
+        ),
+      );
+    }
+
+    // usernameController.t
+    // usernameController.value.text = defaultServer;
   }
 
   @override

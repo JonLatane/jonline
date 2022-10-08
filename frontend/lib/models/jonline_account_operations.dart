@@ -23,39 +23,42 @@ extension JonlineAccountOperations on JonlineAccount {
     return user;
   }
 
-  Future<void> updateUserData({Function(String)? showMessage}) async {
+  Future<User?> updateUserData({Function(String)? showMessage}) async {
     final User? user = await getUser(showMessage: showMessage);
-    if (user == null) return;
+    if (user == null) return null;
 
     username = user.username;
     userId = user.id;
     permissions = user.permissions;
     await save();
+    return user;
   }
 
-  Future<void> ensureRefreshToken({Function(String)? showMessage}) async {
+  Future<bool> ensureRefreshToken({Function(String)? showMessage}) async {
     final now = DateTime.now().millisecondsSinceEpoch / 1000;
     if (refreshTokenExpiresAt - now < 60) {
-      await _updateRefreshToken(showMessage: showMessage);
+      return await _updateRefreshToken(showMessage: showMessage);
     }
+    return true;
   }
 
-  Future<void> _updateRefreshToken({Function(String)? showMessage}) async {
+  Future<bool> _updateRefreshToken({Function(String)? showMessage}) async {
     ExpirableToken? newRefreshToken;
     try {
       newRefreshToken = await (await getClient(showMessage: showMessage))
           ?.refreshToken(RefreshTokenRequest(authToken: authorizationToken));
     } catch (e) {
       showMessage?.call(formatServerError(e));
-      return;
+      return false;
     }
-    if (newRefreshToken == null) {
+    if (newRefreshToken == null || newRefreshToken.token.isEmpty) {
       showMessage?.call('No refresh token received.');
-      return;
+      return false;
     }
     refreshToken = newRefreshToken.token;
     refreshTokenExpiresAt = newRefreshToken.expiresAt.seconds.toInt();
     await save();
+    return true;
   }
 
   Future<void> updateServiceVersion({Function(String)? showMessage}) async {

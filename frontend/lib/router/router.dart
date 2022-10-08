@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import '../screens/groups/routes.dart';
 
 import '../router/auth_guard.dart';
 import '../screens/accounts/routes.dart';
@@ -18,8 +19,9 @@ import '../screens/user-data/routes.dart';
       path: '/',
       page: HomePage,
       guards: [AuthGuard],
-      deferredLoading: true,
+      deferredLoading: false,
       children: [
+        groupsTab,
         peopleTab,
         postsTab,
         eventsTab,

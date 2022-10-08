@@ -9,22 +9,21 @@ import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 
 import '../../app_state.dart';
 import '../../generated/permissions.pb.dart';
-import '../../generated/users.pb.dart';
-import '../../generated/users.pb.dart';
-import '../../models/jonline_server.dart';
-import '../../router/router.gr.dart';
-import '../home_page.dart';
-// import 'user_preview.dart';
+import '../../generated/groups.pb.dart';
 
-class PersonListScreen extends StatefulWidget {
-  const PersonListScreen({Key? key}) : super(key: key);
+import '../../models/jonline_server.dart';
+import '../home_page.dart';
+// import 'group_preview.dart';
+
+class GroupsScreen extends StatefulWidget {
+  const GroupsScreen({Key? key}) : super(key: key);
 
   @override
-  PersonListScreenState createState() => PersonListScreenState();
+  GroupsScreenState createState() => GroupsScreenState();
 }
 
-class PersonListScreenState extends State<PersonListScreen>
-    with AutoRouteAwareStateMixin<PersonListScreen> {
+class GroupsScreenState extends State<GroupsScreen>
+    with AutoRouteAwareStateMixin<GroupsScreen> {
   late AppState appState;
   late HomePageState homePage;
 
@@ -37,49 +36,49 @@ class PersonListScreenState extends State<PersonListScreen>
 
   @override
   void initState() {
-    // print("UserListPage.initState");
+    // print("GroupListPage.initState");
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
-    appState.accounts.addListener(onAccountsChanged);
+    appState.accounts.addListener(updateState);
     for (var n in [
-      appState.users,
-      appState.updatingUsers,
-      appState.didUpdateUsers
+      appState.groups,
+      appState.updatingGroups,
+      appState.didUpdateGroups
     ]) {
-      n.addListener(onUsersUpdated);
+      n.addListener(updateState);
     }
     homePage.scrollToTop.addListener(scrollToTop);
+    homePage.groupsSearch.addListener(updateState);
+    homePage.groupsSearchController.addListener(updateState);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => appState.updateAccountList());
   }
 
   @override
   dispose() {
-    // print("UserListPage.dispose");
-    appState.accounts.removeListener(onAccountsChanged);
+    // print("GroupListPage.dispose");
+    appState.accounts.removeListener(updateState);
     for (var n in [
-      appState.users,
-      appState.updatingUsers,
-      appState.didUpdateUsers
+      appState.groups,
+      appState.updatingGroups,
+      appState.didUpdateGroups
     ]) {
-      n.removeListener(onUsersUpdated);
+      n.removeListener(updateState);
     }
     homePage.scrollToTop.removeListener(scrollToTop);
+    homePage.groupsSearch.removeListener(updateState);
+    homePage.groupsSearchController.removeListener(updateState);
     scrollController.dispose();
     super.dispose();
   }
 
-  onAccountsChanged() {
-    setState(() {});
-  }
-
-  onUsersUpdated() {
+  updateState() {
     setState(() {});
   }
 
   scrollToTop() {
-    if (context.topRoute.name == 'UserListRoute') {
+    if (context.topRoute.name == 'GroupsRoute') {
       scrollController.animateTo(0,
           duration: animationDuration, curve: Curves.easeInOut);
       // gridScrollController.animateTo(0,
@@ -91,15 +90,23 @@ class PersonListScreenState extends State<PersonListScreen>
   TextTheme get textTheme => Theme.of(context).textTheme;
   @override
   Widget build(BuildContext context) {
-    final List<User> userList = appState.users.value;
+    List<Group> groupList = appState.groups.value;
+    if (homePage.groupsSearch.value &&
+        homePage.groupsSearchController.text != '') {
+      groupList = groupList.where((group) {
+        return group.name
+            .toLowerCase()
+            .contains(homePage.groupsSearchController.text.toLowerCase());
+      }).toList();
+    }
     return Scaffold(
       // appBar: ,
       body: RefreshIndicator(
         displacement: MediaQuery.of(context).padding.top + 40,
         onRefresh: () async =>
-            await appState.updateUsers(showMessage: showSnackBar),
+            await appState.updateGroups(showMessage: showSnackBar),
         child: ScrollConfiguration(
-            // key: Key("userListScrollConfiguration-${userList.length}"),
+            // key: Key("groupListScrollConfiguration-${groupList.length}"),
             behavior: ScrollConfiguration.of(context).copyWith(
               dragDevices: {
                 PointerDeviceKind.touch,
@@ -108,7 +115,7 @@ class PersonListScreenState extends State<PersonListScreen>
                 PointerDeviceKind.stylus,
               },
             ),
-            child: userList.isEmpty && !appState.didUpdateUsers.value
+            child: groupList.isEmpty && !appState.didUpdateGroups.value
                 ? Column(
                     children: [
                       Expanded(
@@ -122,26 +129,64 @@ class PersonListScreenState extends State<PersonListScreen>
                                         (MediaQuery.of(context).size.height -
                                                 200) /
                                             2),
-                                Row(
-                                  children: [
-                                    const Expanded(child: SizedBox()),
-                                    Column(
+                                Center(
+                                  child: Container(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 350),
+                                    child: Column(
                                       children: [
                                         Text(
-                                            appState.updatingUsers.value
-                                                ? "Loading People..."
-                                                : appState.errorUpdatingUsers
+                                            appState.updatingGroups.value
+                                                ? "Loading Groups..."
+                                                : appState.errorUpdatingGroups
                                                         .value
-                                                    ? "Error Loading People"
-                                                    : "No People!",
+                                                    ? "Error Loading Groups"
+                                                    : "No Groups",
                                             style: textTheme.titleLarge),
                                         Text(
                                             JonlineServer.selectedServer.server,
                                             style: textTheme.caption),
+                                        if (!appState.updatingGroups.value &&
+                                            !appState
+                                                .errorUpdatingGroups.value &&
+                                            appState.selectedAccount == null)
+                                          Column(
+                                            children: [
+                                              const SizedBox(height: 8),
+                                              TextButton(
+                                                style: ButtonStyle(
+                                                    padding:
+                                                        MaterialStateProperty
+                                                            .all(
+                                                                const EdgeInsets
+                                                                    .all(16))),
+                                                onPressed: () => context
+                                                    .navigateNamedTo('/login'),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                          'Login/Create Account to see more Groups.',
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: textTheme
+                                                              .titleSmall
+                                                              ?.copyWith(
+                                                                  color: appState
+                                                                      .primaryColor)),
+                                                    ),
+                                                    const Icon(
+                                                        Icons.arrow_right)
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                       ],
                                     ),
-                                    const Expanded(child: SizedBox()),
-                                  ],
+                                  ),
                                 ),
                               ],
                             )),
@@ -149,22 +194,22 @@ class PersonListScreenState extends State<PersonListScreen>
                     ],
                   )
                 : useList
-                    ? ImplicitlyAnimatedList<User>(
+                    ? ImplicitlyAnimatedList<Group>(
                         physics: const AlwaysScrollableScrollPhysics(),
                         controller: scrollController,
-                        items: userList,
+                        items: groupList,
                         areItemsTheSame: (a, b) => a.id == b.id,
                         padding: EdgeInsets.only(
                             top: MediaQuery.of(context).padding.top,
                             bottom: MediaQuery.of(context).padding.bottom),
-                        itemBuilder: (context, animation, user, index) {
+                        itemBuilder: (context, animation, group, index) {
                           return SizeFadeTransition(
                               sizeFraction: 0.7,
                               curve: Curves.easeInOut,
                               animation: animation,
                               child: Row(
                                 children: [
-                                  Expanded(child: buildUserItem(user)),
+                                  Expanded(child: buildGroupItem(group)),
                                 ],
                               ));
                         },
@@ -178,23 +223,23 @@ class PersonListScreenState extends State<PersonListScreen>
                                 .floor()),
                         mainAxisSpacing: 4,
                         crossAxisSpacing: 4,
-                        itemCount: userList.length,
+                        itemCount: groupList.length,
                         itemBuilder: (context, index) {
-                          final user = userList[index];
-                          return buildUserItem(user);
+                          final group = groupList[index];
+                          return buildGroupItem(group);
                         },
                       )),
       ),
     );
   }
 
-  Widget buildUserItem(User user) {
-    bool cannotFollow = appState.selectedAccount == null ||
-        appState.selectedAccount?.userId == user.id;
+  Widget buildGroupItem(Group group) {
+    bool cannotJoin = false;
     return Card(
-      color: appState.selectedAccount?.id == user.id ? appState.navColor : null,
+      color:
+          appState.selectedAccount?.id == group.id ? appState.navColor : null,
       child: InkWell(
-        onTap: null, //TODO: Do we want to navigate the user somewhere?
+        onTap: null, //TODO: Do we want to navigate the group somewhere?
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Stack(
@@ -206,7 +251,7 @@ class PersonListScreenState extends State<PersonListScreen>
                       const SizedBox(
                         height: 48,
                         width: 48,
-                        child: Icon(Icons.account_circle,
+                        child: Icon(Icons.group_work_outlined,
                             size: 32, color: Colors.white),
                       ),
                       Expanded(
@@ -216,7 +261,7 @@ class PersonListScreenState extends State<PersonListScreen>
                               children: [
                                 Expanded(
                                   child: Text(
-                                      '${JonlineServer.selectedServer.server}/',
+                                      '${JonlineServer.selectedServer.server}/group/',
                                       style: textTheme.caption,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis),
@@ -227,13 +272,14 @@ class PersonListScreenState extends State<PersonListScreen>
                               children: [
                                 Expanded(
                                   child: Text(
-                                    user.username,
+                                    group.name,
                                     style: textTheme.headline6?.copyWith(
-                                        color:
-                                            appState.selectedAccount?.userId ==
-                                                    user.id
+                                        /*color:
+                                            appState.selectedAccount?.groupId ==
+                                                    group.id
                                                 ? appState.primaryColor
-                                                : null),
+                                                : null*/
+                                        ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -243,16 +289,16 @@ class PersonListScreenState extends State<PersonListScreen>
                           ],
                         ),
                       ),
-                      if (user.permissions.contains(Permission.ADMIN))
-                        Tooltip(
-                          message: "${user.username} is an admin",
-                          child: const SizedBox(
-                            height: 32,
-                            width: 32,
-                            child: Icon(Icons.admin_panel_settings_outlined,
-                                size: 24, color: Colors.white),
-                          ),
-                        ),
+                      // if (group.permissions.contains(Permission.ADMIN))
+                      //   Tooltip(
+                      //     message: "${group.name} is an admin",
+                      //     child: const SizedBox(
+                      //       height: 32,
+                      //       width: 32,
+                      //       child: Icon(Icons.admin_panel_settings_outlined,
+                      //           size: 24, color: Colors.white),
+                      //     ),
+                      //   ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -265,14 +311,14 @@ class PersonListScreenState extends State<PersonListScreen>
                           child: Row(
                             children: [
                               Text(
-                                "User ID: ",
+                                "Group ID: ",
                                 style: textTheme.caption,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Expanded(
                                 child: Text(
-                                  user.id,
+                                  group.id,
                                   style: textTheme.caption,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -281,6 +327,15 @@ class PersonListScreenState extends State<PersonListScreen>
                             ],
                           ),
                         ),
+                        const Icon(
+                          Icons.account_circle,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(group.memberCount.toString(),
+                            style: textTheme.caption),
+                        Text(" member${group.memberCount == 1 ? '' : 's'}",
+                            style: textTheme.caption),
                       ],
                     ),
                   ),
@@ -294,7 +349,7 @@ class PersonListScreenState extends State<PersonListScreen>
                                   style: ButtonStyle(
                                       padding: MaterialStateProperty.all(
                                           const EdgeInsets.all(0))),
-                                  onPressed: cannotFollow
+                                  onPressed: cannotJoin
                                       ? null
                                       : () {
                                           showSnackBar(
@@ -304,7 +359,7 @@ class PersonListScreenState extends State<PersonListScreen>
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: const [
                                       Icon(Icons.add),
-                                      Text("FOLLOW")
+                                      Text("JOIN")
                                     ],
                                   ))))
                     ],

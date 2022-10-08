@@ -16,7 +16,7 @@ impl ToDbServerConfiguration for ServerConfiguration {
             default_user_permissions: serde_json::to_value(
                 self.default_user_permissions
                     .iter()
-                    .map(|p| (unsafe { transmute::<i32, Permission>(*p) }).as_str_name().to_string())
+                    .map(|p| p.to_proto_permission().unwrap().as_str_name().to_string())
                     .collect::<Vec<String>>(),
             )
             .unwrap(),

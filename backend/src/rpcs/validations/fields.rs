@@ -8,7 +8,7 @@ pub fn validate_username(value: &str) -> Result<(), Status> {
   validate_all_word_chars(&value, "username")?;
   // A "standard" way to represent a federated Jonline user is federatedserver.com/username. But we also want
   // federatedserver.com/events and federatedserver.com/post/asdf123, etc. to be able to point to valid things.
-  validate_reserved_values(&value, "username", &["events", "event", "e", "posts", "post", "p"])
+  validate_reserved_values(&value, "username", &["events", "event", "e", "posts", "post", "p", "groups", "group", "g", "people", "person"])
 }
 
 pub fn validate_password(value: &str) -> Result<(), Status> {

@@ -204,9 +204,11 @@ string'''),
   CreatePostRequest(
       title: "What is Jonline??",
       content: '''Large-scale capitalist social media sucks for most of us. 
-Jonline takes large-scale social media and downsizes it. A Jonline *instance* 
-(like the one you're reading this post on - probably 
-[jonline.io](https://jonline.io) or [getj.online](https://getj.online)) is designed for groups like:
+Jonline takes a minimalist approach to social media, both in terms of user count 
+(per "instance" at least) and features. 
+A Jonline *instance* or community (like the one you're reading this post on - probably 
+[jonline.io](https://jonline.io) or [getj.online](https://getj.online)) 
+is designed for groups like:
 
 * Neighborhoods, communities, or cities
 * (Ex-)Coworkers wanting a private channel to chat

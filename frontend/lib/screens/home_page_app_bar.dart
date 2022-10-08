@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/app_state.dart';
 
 import '../models/jonline_account.dart';
 import '../screens/accounts/account_chooser.dart';
@@ -21,13 +22,7 @@ extension HomePageAppBar on HomePageState {
                     Theme.of(context).colorScheme.primary.withOpacity(0.7),
                 title: titleWidget ?? Text(title),
                 key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
-                leading: showLeadingNav
-                    ? const AutoLeadingButton(
-                        // showIfChildCanPop: false,
-                        showIfParentCanPop: false,
-                        ignorePagelessRoutes: true,
-                      )
-                    : null,
+                leading: leadingNavWidget,
                 automaticallyImplyLeading: false,
                 actions: actions,
               ))),
@@ -49,7 +44,7 @@ extension HomePageAppBar on HomePageState {
 
   bool get showLeadingNav {
     switch (context.topRoute.name) {
-      case 'PostListRoute':
+      case 'PostsRoute':
       case 'PostsTab':
       case 'EventListRoute':
       case 'EventsTab':
@@ -60,8 +55,92 @@ extension HomePageAppBar on HomePageState {
     return true;
   }
 
+  Widget? get leadingNavWidget {
+    if (!showLeadingNav) return null;
+    switch (context.topRoute.name) {
+      case 'PeopleRoute':
+        return peopleSearch.value == false
+            ? Tooltip(
+                message: "Search People",
+                child: TextButton(
+                  child: const Icon(
+                    Icons.search,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    peopleSearch.value = true;
+                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      peopleSearchFocus.requestFocus();
+                    });
+                  },
+                ))
+            : null;
+      case 'GroupsRoute':
+        return groupsSearch.value == false
+            ? Tooltip(
+                message: "Search Groups",
+                child: TextButton(
+                  child: const Icon(
+                    Icons.search,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    groupsSearch.value = true;
+                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      groupsSearchFocus.requestFocus();
+                    });
+                  },
+                ),
+              )
+            : null;
+    }
+    return const AutoLeadingButton(
+      // showIfChildCanPop: false,
+      showIfParentCanPop: false,
+      ignorePagelessRoutes: true,
+    );
+  }
+
   Widget? get titleWidget {
     switch (context.topRoute.name) {
+      case 'PeopleRoute':
+        if (peopleSearch.value == true) {
+          return TextField(
+            autofocus: true,
+            focusNode: peopleSearchFocus,
+            controller: peopleSearchController,
+            onChanged: (value) {
+              // peopleSearch.value = value;
+            },
+            decoration: const InputDecoration(
+              hintText: 'Search People',
+              border: InputBorder.none,
+              // hintStyle: TextStyle(color: Colors.white),
+            ),
+            style: const TextStyle(color: Colors.white),
+          );
+        } else {
+          return null;
+        }
+      case 'GroupsRoute':
+        if (groupsSearch.value == true) {
+          return TextField(
+            autofocus: true,
+            focusNode: groupsSearchFocus,
+            controller: groupsSearchController,
+            onChanged: (value) {
+              // peopleSearch.value = value;
+            },
+            decoration: const InputDecoration(
+              hintText: 'Search Groups',
+              border: InputBorder.none,
+              // hintStyle: TextStyle(color: Colors.white),
+            ),
+            style: const TextStyle(color: Colors.white),
+          );
+        } else {
+          return null;
+        }
       case 'MyActivityRoute':
         // context.topRoute.args[0] as String;
         if (titleServer == null || titleUsername == null) {
@@ -124,12 +203,17 @@ extension HomePageAppBar on HomePageState {
 
   String get title {
     switch (context.topRoute.name) {
-      case 'PersonListRoute':
+      case 'GroupsRoute':
+      case 'GroupsTab':
+        return 'Groups';
+      case 'CreateGroupRoute':
+        return 'Create Group';
+      case 'PeopleRoute':
       case 'PeopleTab':
-        return 'People [WIP]';
+        return 'People';
       case 'PersonDetailsRoute':
         return 'Person Details [Mock]';
-      case 'PostListRoute':
+      case 'PostsRoute':
       case 'PostsTab':
         return 'Posts';
       case 'PostDetailsRoute':
@@ -142,7 +226,7 @@ extension HomePageAppBar on HomePageState {
       case 'ProfileRoute':
       case 'AccountsRoute':
       case 'AccountsTab':
-        return 'Accounts & Profiles';
+        return 'Accounts';
       case 'CreatePostRoute':
         return 'Create Post';
       case 'CreateReplyRoute':
@@ -157,11 +241,92 @@ extension HomePageAppBar on HomePageState {
 
   List<Widget>? get actions {
     switch (context.topRoute.name) {
-      // case 'AccountsRoute':
-      case 'PersonListRoute':
+      case 'PeopleRoute':
+        return [
+          if (peopleSearch.value == true)
+            TextButton(
+              child: const Icon(
+                Icons.close,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                peopleSearchController.text = '';
+                peopleSearch.value = false;
+                // context.navigateNamedTo('/posts/create');
+              },
+            ),
+          const AccountChooser(),
+        ];
+      case 'GroupsRoute':
+      case 'GroupsTab':
+        bool showSearch = groupsSearch.value;
+        bool showAddButton =
+            !showSearch && JonlineAccount.selectedAccount != null;
+        return [
+          if (showSearch || showAddButton)
+            Tooltip(
+              message: showSearch ? 'Cancel Search' : 'Add Group',
+              child: TextButton(
+                onPressed: showSearch
+                    ? () {
+                        groupsSearchController.text = '';
+                        groupsSearch.value = false;
+                      }
+                    : () {
+                        context.navigateNamedTo('/groups/create');
+                      },
+                child: AnimatedRotation(
+                  duration: animationDuration,
+                  turns: showSearch ? 0.125 : 0,
+                  child: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          const AccountChooser(),
+        ];
+      case 'CreateGroupRoute':
+        return [
+          if (JonlineAccount.selectedAccount != null)
+            SizedBox(
+              width: 72,
+              child: ElevatedButton(
+                style: ButtonStyle(
+                    padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
+                    foregroundColor: MaterialStateProperty.all(
+                        Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
+                    overlayColor:
+                        MaterialStateProperty.all(Colors.white.withAlpha(100)),
+                    splashFactory: InkSparkle.splashFactory),
+                onPressed: canCreateGroup.value ? () => createGroup() : null,
+                // doingStuff || username.isEmpty || password.isEmpty
+                //     ? null
+                //     : createAccount,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Opacity(
+                    opacity: canCreateGroup.value ? 1 : 0.5,
+                    child: Column(
+                      children: const [
+                        Expanded(child: SizedBox()),
+                        Icon(Icons.add),
+                        // Text('jonline.io/', style: TextStyle(fontSize: 11)),
+                        Text('CREATE', style: TextStyle(fontSize: 12)),
+                        Expanded(child: SizedBox()),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          const AccountChooser(),
+        ];
+      case 'AccountsRoute':
       case 'PostDetailsRoute':
         return [const AccountChooser()];
-      case 'PostListRoute':
+      case 'PostsRoute':
       case 'PostsTab':
         return [
           if (JonlineAccount.selectedAccount != null)

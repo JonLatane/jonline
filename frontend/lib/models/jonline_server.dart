@@ -102,7 +102,7 @@ class JonlineServer {
 
   Future<ServerConfiguration?> updateConfiguration() async {
     final client = await JonlineClients.getServerClient(this,
-        showMessage: (m) => print(m), allowInsecure: true);
+        showMessage: (m) => print(m), allowInsecure: server == 'localhost');
     if (client == null) return null;
 
     configuration = (await client.getServerConfiguration(Empty()));

@@ -46,6 +46,58 @@ CREATE TABLE user_refresh_tokens (
 );
 CREATE INDEX idx_refresh_tokens ON user_refresh_tokens(token);
 
+CREATE TABLE groups (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR NOT NULL UNIQUE,
+  description VARCHAR NULL DEFAULT NULL,
+  avatar BYTEA NULL DEFAULT NULL,
+  visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+  default_membership_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
+  default_membership_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE memberships (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
+  group_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  user_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX idx_membership ON memberships(user_id, group_id);
+
+-- CORE SOCIAL/POST MODELS
+CREATE TABLE follows (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  local_user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  accepted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE posts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NULL REFERENCES users ON DELETE SET NULL,
+  parent_post_id INTEGER NULL DEFAULT NULL REFERENCES posts ON DELETE SET NULL,
+  -- In the APIs title is treated as optional. However, for ease of loading,
+  -- the replying-to Post's title will always be duplicated in child posts/replies.
+  title VARCHAR NULL DEFAULT NULL,
+  link VARCHAR NULL DEFAULT NULL,
+  content TEXT NULL DEFAULT NULL,
+  visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NULL DEFAULT NULL,
+  response_count INTEGER NOT NULL DEFAULT 0,
+  reply_count INTEGER NOT NULL DEFAULT 0,
+  preview BYTEA NULL DEFAULT NULL
+);
+-- Speed up loading of posts by user.
+CREATE INDEX idx_post_vis_parent_created ON posts(visibility, parent_post_id, created_at);
+
 -- FEDERATION MODELS
 CREATE TABLE federated_servers (
   id SERIAL PRIMARY KEY,
@@ -62,33 +114,4 @@ CREATE TABLE federated_accounts (
   -- But the user being followed, who "lives" on the other server, has not (yet?) federated
   -- their account to this Jonline instance.
   user_id INTEGER NULL DEFAULT NULL REFERENCES users ON DELETE CASCADE
-);
-
--- CORE SOCIAL/POST MODELS
-CREATE TABLE follows (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  -- Indicates the user at user_id is following a user on this Jonline instance.
-  local_user_id INTEGER NULL REFERENCES users ON DELETE CASCADE,
-  -- Indicates the user at user_id is following a user on another Jonline instance.
-  federated_account_id INTEGER NULL REFERENCES users ON DELETE CASCADE,
-  accepted BOOLEAN NOT NULL DEFAULT FALSE
-);
-
-CREATE TABLE posts (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NULL REFERENCES users ON DELETE SET NULL,
-  parent_post_id INTEGER NULL DEFAULT NULL REFERENCES posts ON DELETE SET NULL,
-  -- In the APIs title is treated as optional. However, for ease of loading,
-  -- the replying-to Post's title will always be duplicated in child posts/replies.
-  title VARCHAR NULL DEFAULT NULL,
-  link VARCHAR NULL DEFAULT NULL,
-  content TEXT NULL DEFAULT NULL,
-  visibility VARCHAR NOT NULL DEFAULT 'PRIVATE',
-  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  response_count INTEGER NOT NULL DEFAULT 0,
-  reply_count INTEGER NOT NULL DEFAULT 0,
-  preview BYTEA NULL DEFAULT NULL
 );

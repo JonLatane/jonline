@@ -20,7 +20,7 @@ class EventListScreenState extends State<EventListScreen>
 
   @override
   void initState() {
-    // print("PostListPage.initState");
+    // print("PostsPage.initState");
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
@@ -31,13 +31,13 @@ class EventListScreenState extends State<EventListScreen>
 
   @override
   dispose() {
-    // print("PostListPage.dispose");
+    // print("PostsPage.dispose");
     appState.accounts.removeListener(onAccountsChanged);
     super.dispose();
   }
 
   onAccountsChanged() {
-    // print("PostListPage.onAccountsChanged");
+    // print("PostsPage.onAccountsChanged");
     setState(() {});
   }
 

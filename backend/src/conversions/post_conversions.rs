@@ -53,8 +53,8 @@ impl ToProtoPost for models::Post {
             response_count: self.response_count,
             reply_count: self.reply_count,
             preview_image: self.preview.to_owned(),
-            visibility: self.visibility.to_proto_visibility().unwrap_or(0),
-            moderation: self.moderation.to_proto_moderation().unwrap_or(0),
+            visibility: self.visibility.to_proto_visibility().unwrap_or(Visibility::Unknown) as i32,
+            moderation: self.moderation.to_proto_moderation().unwrap_or(Moderation::Unknown) as i32,
             replies: vec![], //TODO update this
         }
     }

@@ -46,9 +46,36 @@ class _SettingsPageState extends State<SettingsPage>
                         Row(
                           children: [
                             Expanded(
+                                child: Text('Always Show "Settings" Tab',
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                activeColor: appState.primaryColor,
+                                value: Settings.showSettingsTab,
+                                onChanged: (v) {
+                                  setState(() => Settings.showSettingsTab = v);
+                                  // appState
+                                  //   ..updatePosts()
+                                  //   ..notifyAccountsListeners();
+                                }),
+                          ],
+                        ),
+                        const Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'Swipe right of "Me" to access "Settings" at any time.',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 12),
+                            )),
+                        Row(
+                          children: [
+                            Expanded(
                                 child: Text('Always Show "People" Tab',
                                     style: textTheme.labelLarge)),
                             Switch(
+                                activeColor: appState.primaryColor,
                                 value: Settings.showPeopleTab,
                                 onChanged: (v) {
                                   setState(() => Settings.showPeopleTab = v);
@@ -71,12 +98,13 @@ class _SettingsPageState extends State<SettingsPage>
                         Row(
                           children: [
                             Expanded(
-                                child: Text('Always Show "Settings" Tab',
+                                child: Text('Always Show "Groups" Tab',
                                     style: textTheme.labelLarge)),
                             Switch(
-                                value: Settings.showSettingsTab,
+                                activeColor: appState.primaryColor,
+                                value: Settings.showGroupsTab,
                                 onChanged: (v) {
-                                  setState(() => Settings.showSettingsTab = v);
+                                  setState(() => Settings.showGroupsTab = v);
                                   // appState
                                   //   ..updatePosts()
                                   //   ..notifyAccountsListeners();
@@ -86,7 +114,7 @@ class _SettingsPageState extends State<SettingsPage>
                         const Align(
                             alignment: Alignment.centerRight,
                             child: Text(
-                              'Swipe right of "Me" to access "Settings" at any time.',
+                              'Swipe left of "People" to access "Groups" at any time.',
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                   color: Colors.white,
@@ -157,6 +185,7 @@ class _SettingsPageState extends State<SettingsPage>
                                 child: Text("Prefer Server Previews",
                                     style: textTheme.labelLarge)),
                             Switch(
+                                activeColor: appState.primaryColor,
                                 value: Settings.preferServerPreviews,
                                 onChanged: (v) {
                                   setState(
@@ -185,6 +214,7 @@ class _SettingsPageState extends State<SettingsPage>
                                 child: Text("Power User Mode",
                                     style: textTheme.labelLarge)),
                             Switch(
+                                activeColor: appState.primaryColor,
                                 value: Settings.powerUserMode,
                                 onChanged: (v) {
                                   setState(() => Settings.powerUserMode = v);
@@ -199,6 +229,7 @@ class _SettingsPageState extends State<SettingsPage>
                                 child: Text("Developer Mode",
                                     style: textTheme.labelLarge)),
                             Switch(
+                                activeColor: appState.primaryColor,
                                 value: Settings.developerMode,
                                 onChanged: (v) {
                                   setState(() => Settings.developerMode = v);

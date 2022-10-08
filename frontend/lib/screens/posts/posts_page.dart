@@ -14,15 +14,15 @@ import '../../router/router.gr.dart';
 import '../home_page.dart';
 import 'post_preview.dart';
 
-class PostListScreen extends StatefulWidget {
-  const PostListScreen({Key? key}) : super(key: key);
+class PostsScreen extends StatefulWidget {
+  const PostsScreen({Key? key}) : super(key: key);
 
   @override
-  PostListScreenState createState() => PostListScreenState();
+  PostsScreenState createState() => PostsScreenState();
 }
 
-class PostListScreenState extends State<PostListScreen>
-    with AutoRouteAwareStateMixin<PostListScreen> {
+class PostsScreenState extends State<PostsScreen>
+    with AutoRouteAwareStateMixin<PostsScreen> {
   late AppState appState;
   late HomePageState homePage;
 
@@ -35,7 +35,7 @@ class PostListScreenState extends State<PostListScreen>
 
   @override
   void initState() {
-    // print("PostListPage.initState");
+    // print("PostsPage.initState");
     super.initState();
     appState = context.findRootAncestorStateOfType<AppState>()!;
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
@@ -54,7 +54,7 @@ class PostListScreenState extends State<PostListScreen>
 
   @override
   dispose() {
-    // print("PostListPage.dispose");
+    // print("PostsPage.dispose");
     appState.accounts.removeListener(onAccountsChanged);
     for (var n in [
       appState.posts,
@@ -77,7 +77,7 @@ class PostListScreenState extends State<PostListScreen>
   }
 
   scrollToTop() {
-    if (context.topRoute.name == 'PostListRoute') {
+    if (context.topRoute.name == 'PostsRoute') {
       scrollController.animateTo(0,
           duration: animationDuration, curve: Curves.easeInOut);
       // gridScrollController.animateTo(0,

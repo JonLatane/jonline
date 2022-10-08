@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:jonline/screens/accounts/server_configuration_page.dart';
 
 import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
@@ -126,7 +127,7 @@ class AccountsPageState extends State<AccountsPage> {
                                             style: ButtonStyle(
                                                 padding:
                                                     MaterialStateProperty.all(
-                                              EdgeInsets.all(8),
+                                              const EdgeInsets.all(8),
                                             )),
                                             onPressed: () {
                                               context.navigateNamedTo('/login');
@@ -151,52 +152,86 @@ class AccountsPageState extends State<AccountsPage> {
                                         // const SizedBox(width: 8),
                                         Expanded(
                                             flex: 2,
-                                            child: TextButton(
-                                              onPressed: () async {
-                                                setState(() {
-                                                  showServers = !showServers;
-                                                });
-                                              },
-                                              child: Icon(Icons.computer,
-                                                  color: showServers
-                                                      ? Colors.white
-                                                      : null),
+                                            child: Tooltip(
+                                              message: showServers
+                                                  ? 'Hide Servers'
+                                                  : 'Show Servers',
+                                              child: TextButton(
+                                                onPressed: () async {
+                                                  setState(() {
+                                                    showServers = !showServers;
+                                                  });
+                                                },
+                                                child: Icon(Icons.computer,
+                                                    color: showServers
+                                                        ? Colors.white
+                                                        : null),
+                                              ),
                                             )),
                                         Expanded(
                                             flex: 2,
-                                            child: TextButton(
-                                              onPressed: () async {
-                                                ScaffoldMessenger.of(context)
-                                                    .hideCurrentSnackBar();
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(SnackBar(
-                                                        content: const Text(
-                                                            'Really delete all accounts and servers?'),
-                                                        action: SnackBarAction(
-                                                          label:
-                                                              'Delete all', // or some operation you would like
-                                                          onPressed:
-                                                              deleteAllAccounts,
-                                                        )));
-                                              },
-                                              child: const Icon(
-                                                  Icons.delete_forever),
+                                            child: Tooltip(
+                                              message:
+                                                  'Delete All Accounts & Servers',
+                                              child: TextButton(
+                                                onPressed: () async {
+                                                  ScaffoldMessenger.of(context)
+                                                      .hideCurrentSnackBar();
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(SnackBar(
+                                                          content: const Text(
+                                                              'Really delete all accounts and servers?'),
+                                                          action:
+                                                              SnackBarAction(
+                                                            label:
+                                                                'Delete all', // or some operation you would like
+                                                            onPressed:
+                                                                () async {
+                                                              ScaffoldMessenger
+                                                                      .of(context)
+                                                                  .hideCurrentSnackBar();
+                                                              ScaffoldMessenger
+                                                                      .of(
+                                                                          context)
+                                                                  .showSnackBar(
+                                                                      SnackBar(
+                                                                          content: const Text(
+                                                                              'Really REALLY delete them all??'),
+                                                                          action:
+                                                                              SnackBarAction(
+                                                                            label:
+                                                                                'Delete all', // or some operation you would like
+                                                                            onPressed:
+                                                                                deleteAllAccounts,
+                                                                          )));
+                                                            },
+                                                          )));
+                                                },
+                                                child: const Icon(
+                                                    Icons.delete_forever),
+                                              ),
                                             )),
                                         Expanded(
                                             flex: 2,
-                                            child: TextButton(
-                                              onPressed: toggleSettingsTab,
-                                              child: Stack(
-                                                children: [
-                                                  const Icon(Icons.settings),
-                                                  Transform.translate(
-                                                    offset: const Offset(20, 0),
-                                                    child: Icon(Settings
-                                                            .showSettingsTab
-                                                        ? Icons.close
-                                                        : Icons.arrow_right),
-                                                  ),
-                                                ],
+                                            child: Tooltip(
+                                              message: Settings.showSettingsTab
+                                                  ? 'Hide Settings Tab'
+                                                  : 'Open Settings',
+                                              child: TextButton(
+                                                onPressed: toggleSettingsTab,
+                                                child: Stack(
+                                                  children: [
+                                                    const Icon(Icons.settings),
+                                                    Transform.translate(
+                                                      offset:
+                                                          const Offset(20, 0),
+                                                      child: Icon(Settings
+                                                              .showSettingsTab
+                                                          ? Icons.close
+                                                          : Icons.arrow_right),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             )),
                                         // const SizedBox(width: 8)
@@ -310,8 +345,16 @@ class AccountsPageState extends State<AccountsPage> {
   }
 
   refreshAccount(JonlineAccount account) async {
-    await account.ensureRefreshToken(showMessage: showSnackBar);
-    await account.updateUserData(showMessage: showSnackBar);
+    if (!await account.ensureRefreshToken(showMessage: showSnackBar)) {
+      await communicationDelay;
+      showSnackBar('Failed to update account details.');
+      return;
+    }
+    if (await account.updateUserData(showMessage: showSnackBar) == null) {
+      await communicationDelay;
+      showSnackBar('Failed to update account details.');
+      return;
+    }
     showSnackBar('Account details updated.');
     appState.updateAccountList();
   }
@@ -425,7 +468,7 @@ class AccountsPageState extends State<AccountsPage> {
                       ?.serverInfo
                       .colors
                       .primary ??
-                  appState.primaryColor.value)),
+                  defaultPrimaryColor.value)),
         ),
         child: Card(
           color: appState.selectedAccount?.id == account.id
@@ -655,13 +698,12 @@ class AccountsPageState extends State<AccountsPage> {
             JonlineServer.selectedServer = server;
             if (appState.selectedAccount != null &&
                 appState.selectedAccount!.server != server.server) {
-              showSnackBar(
-                  "Deselecting ${appState.selectedAccount!.server}/${appState.selectedAccount!.username} to browse on ${server.server}.");
               appState.selectedAccount = null;
             } else {
               appState.notifyAccountsListeners();
             }
             appState.resetPosts();
+            showSnackBar("Browsing anonymously on ${server.server}.");
           }
         : null;
     return AnimatedContainer(
@@ -679,12 +721,12 @@ class AccountsPageState extends State<AccountsPage> {
                 colorScheme: ColorScheme.fromSeed(
                     seedColor: Color(
                         server.configuration?.serverInfo.colors.primary ??
-                            appState.primaryColor.value)),
+                            defaultPrimaryColor.value)),
               ),
               child: Card(
                 color: uiSelectedServer == server
                     ? Color(server.configuration?.serverInfo.colors.primary ??
-                        appState.primaryColor.value)
+                        defaultPrimaryColor.value)
                     : JonlineServer.selectedServer == server
                         ? appState.navColor
                         : null,

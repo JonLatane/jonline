@@ -5,7 +5,7 @@ pub fn validate_all_word_chars(
     value: &str,
     entity_name: &str
 ) -> Result<(), Status> {
-    let re = Regex::new(r"^[\w-]+$").unwrap();
+    let re = Regex::new(r"^[\w.-]+$").unwrap();
     if re.is_match(value) {
         return Ok(());
     }

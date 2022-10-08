@@ -64,17 +64,18 @@ impl Jonline for JonLineImpl {
         request: Request<CreatePostRequest>,
     ) -> Result<Response<Post>, Status> {
         let conn = get_connection(&self.pool)?;
-        match auth::get_auth_user(&request, &conn) {
-            Err(e) => Err(e),
-            Ok(user) => rpcs::create_post(request, user, &conn),
-        }
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::create_post(request, user, &conn)
+        // match auth::get_auth_user(&request, &conn) {
+        //     Err(e) => Err(e),
+        //     Ok(user) => rpcs::create_post(request, user, &conn),
+        // }
     }
 
     async fn get_posts(
         &self,
         request: Request<GetPostsRequest>,
     ) -> Result<Response<Posts>, Status> {
-        println!("GetPosts yay!");
         let conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
         rpcs::get_posts(request, user, &conn)
@@ -96,6 +97,43 @@ impl Jonline for JonLineImpl {
         rpcs::get_users(request.into_inner(), user, &conn)
     }
 
+    async fn get_groups(&self, request: Request<GetGroupsRequest>) -> Result<Response<GetGroupsResponse>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
+        rpcs::get_groups(request.into_inner(), user, &conn)
+    }
+
+    async fn create_group(&self, request: Request<Group>) -> Result<Response<Group>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::create_group(request.into_inner(), user, &conn)
+        //TODO implement me!
+        // Ok(Response::new(Group {
+        //     ..Default::default()
+        // }))
+    }
+
+    async fn update_group(&self, _request: Request<Group>) -> Result<Response<Group>, Status> {
+        //TODO implement me!
+        Ok(Response::new(Group {
+            ..Default::default()
+        }))
+    }
+
+    async fn create_membership(&self, _request: Request<Membership>) -> Result<Response<Membership>, Status> {
+        //TODO implement me!
+        Ok(Response::new(Membership {
+            ..Default::default()
+        }))
+    }
+
+    async fn update_membership(&self, _request: Request<Membership>) -> Result<Response<Membership>, Status> {
+        //TODO implement me!
+        Ok(Response::new(Membership {
+            ..Default::default()
+        }))
+    }
+
     async fn get_server_configuration(
         &self,
         _request: Request<()>,
@@ -108,21 +146,11 @@ impl Jonline for JonLineImpl {
         &self,
         request: Request<ServerConfiguration>,
     ) -> Result<Response<ServerConfiguration>, Status> {
-        //TODO implement me!
-        // Ok(Response::new(request.into_inner()))
         let conn = get_connection(&self.pool)?;
         match auth::get_auth_user(&request, &conn) {
             Err(e) => Err(e),
             Ok(user) => rpcs::configure_server(request.into_inner(), user, &conn),
         }
-        // let conn = match get_connection(&self.pool) {
-        //     Err(e) => return Err(e),
-        //     Ok(conn) => conn,
-        // };
-        // match auth::get_auth_user(&request, &conn) {
-        //     Err(e) => Err(e),
-        //     Ok(user) => rpcs::create_post(request, user, &conn),
-        // }
     }
 
     async fn update_post(&self, _request: Request<Post>) -> Result<Response<Post>, Status> {

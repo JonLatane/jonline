@@ -39,6 +39,15 @@ message GetUsersRequest {
   optional string phone = 3;
   optional string user_id = 4;
   optional int32 page = 5;
+  UserListingType listing_type = 6;
+}
+
+enum UserListingType {
+  EVERYONE = 0;
+  FOLLOWING = 1;
+  FOLLOWERS = 2;
+  FRIENDS = 3;
+  FOLLOW_REQUESTS = 4;
 }
 
 message GetUsersResponse {

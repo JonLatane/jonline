@@ -5,7 +5,7 @@ class Jonotifier extends ChangeNotifier {
   notifyChange() => notifyListeners();
 }
 
-class ValueJonotifer<T> extends ValueNotifier<T> {
-  ValueJonotifer(value) : super(value);
+class ValueJonotifier<T> extends ValueNotifier<T> {
+  ValueJonotifier(value) : super(value);
   notify() => notifyListeners();
 }

@@ -5,6 +5,9 @@ package jonline;
 enum Permission {
   PERMISSION_UNKNOWN = 0;
 
+  CREATE_GROUPS = 1;
+  GLOBALLY_PUBLISH_GROUPS = 2;
+
   VIEW_POSTS = 10;
   CREATE_POSTS = 11;
   GLOBALLY_PUBLISH_POSTS = 12;

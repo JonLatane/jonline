@@ -63,7 +63,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
 
   onAccountsChanged() {
     if (JonlineServer.selectedServer.server != widget.server) {
-      context.replaceRoute(const PostListRoute());
+      context.replaceRoute(const PostsRoute());
     } else {
       setState(() {});
     }
