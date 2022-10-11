@@ -1,5 +1,5 @@
 use diesel::*;
-use tonic::{Code, Response, Status};
+use tonic::{Code, Status};
 
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
@@ -14,10 +14,9 @@ pub fn create_group(
     request: Group,
     user: models::User,
     conn: &PgPooledConnection,
-) -> Result<Response<Group>, Status> {
+) -> Result<Group, Status> {
     validate_permission(&user, Permission::CreateGroups)?;
-    validate_length(&request.name, "name", 1, 128)?;
-    validate_max_length(request.description.to_owned(), "description", 10000)?;
+    validate_group(&request)?;
 
     let visibility = match request.visibility.to_proto_visibility() {
         Some(Visibility::Unknown) => Visibility::ServerPublic,
@@ -33,6 +32,7 @@ pub fn create_group(
         .to_string_moderation();
     let default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();
+    let mut membership: Option<models::Membership> = None;
     let group: Result<models::Group, _> = conn
         .transaction::<models::Group, diesel::result::Error, _>(|| {
             let group = insert_into(groups::table)
@@ -52,7 +52,7 @@ pub fn create_group(
                     _ => Moderation::Approved,
                 }
                 .to_string_moderation();
-            let _membership = insert_into(memberships::table)
+            membership = Some(insert_into(memberships::table)
                 .values(&models::NewMembership {
                     user_id: user.id,
                     group_id: group.id,
@@ -60,14 +60,14 @@ pub fn create_group(
                     group_moderation: group_moderation,
                     user_moderation: Moderation::Approved.to_string_moderation(),
                 })
-                .get_result::<models::Membership>(conn)?;
+                .get_result::<models::Membership>(conn)?);
             Ok(group)
         });
 
     match group {
         Ok(group) => {
             println!("Group created! Result: {:?}", group);
-            Ok(Response::new(group.to_proto(1)))
+            Ok(group.to_proto_with(1, membership.map(|m| m.to_proto())))
         }
         Err(e) => {
             println!("Error creating group! {:?}", e);

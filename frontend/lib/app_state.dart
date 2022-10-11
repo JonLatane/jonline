@@ -1,16 +1,16 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/screens/accounts/server_configuration_page.dart';
-import 'package:jonline/screens/login_page.dart';
 import 'package:provider/provider.dart';
+
+import '../models/jonline_account_operations.dart';
+import '../screens/accounts/server_configuration_page.dart';
+import '../screens/login_page.dart';
+import 'db.dart';
 import 'generated/admin.pb.dart';
 import 'generated/groups.pb.dart';
+import 'generated/posts.pb.dart';
 import 'generated/users.pb.dart';
 import 'generated/users.pb.dart' as users_pb;
-import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
-
-import 'db.dart';
-import 'generated/posts.pb.dart';
 import 'jonotifier.dart';
 import 'main.dart';
 import 'models/jonline_account.dart';
@@ -20,6 +20,7 @@ import 'models/settings.dart';
 import 'my_platform.dart';
 import 'router/auth_guard.dart';
 import 'router/router.gr.dart';
+import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
 
 const noOne = 'no one';
 const animationDuration = Duration(milliseconds: 300);
@@ -168,12 +169,30 @@ class AppState extends State<MyApp> {
     updateGroups();
   }
 
-  updateAccountList() async {
+  Future<void> updateAccountList() async {
     accounts.value = await JonlineAccount.accounts;
   }
 
-  updateServerList() async {
+  Future<void> updateAccounts() async {
+    List<Future> futures = [];
+    for (JonlineAccount account in accounts.value) {
+      futures += [account.updateUserData()];
+    }
+    await Future.wait(futures);
+    notifyAccountsListeners();
+  }
+
+  Future<void> updateServerList() async {
     servers.value = await JonlineServer.servers;
+  }
+
+  Future<void> updateServers() async {
+    List<Future> futures = [];
+    for (JonlineServer server in servers.value) {
+      futures += [server.updateConfiguration(), server.updateServiceVersion()];
+    }
+    await Future.wait(futures);
+    notifyAccountsListeners();
   }
 
   notifyAccountsListeners() {
@@ -265,11 +284,17 @@ class AppState extends State<MyApp> {
       updatingGroups.addListener(() {
         if (updatingGroups.value) errorUpdatingGroups.value = false;
       });
-      await updateServerList();
-      await updateColorTheme();
-      await updateAccountList();
+      await updateServersAndAccounts();
       await Future.wait([updatePosts(), updateUsers(), updateGroups()]);
     });
+  }
+
+  updateServersAndAccounts() async {
+    await updateServerList();
+    await updateColorTheme();
+    await updateServers();
+    await updateAccountList();
+    await updateAccounts();
   }
 
   @override

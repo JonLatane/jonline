@@ -11,6 +11,7 @@ import '../../generated/permissions.pbenum.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_server.dart';
+import '../../utils/colors.dart';
 import '../../models/settings.dart';
 import '../home_page.dart';
 import '../user-data/data_collector.dart';
@@ -172,45 +173,63 @@ class AccountsPageState extends State<AccountsPage> {
                                             flex: 2,
                                             child: Tooltip(
                                               message:
-                                                  'Delete All Accounts & Servers',
+                                                  'Refresh Servers & Accounts',
                                               child: TextButton(
                                                 onPressed: () async {
-                                                  ScaffoldMessenger.of(context)
-                                                      .hideCurrentSnackBar();
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(SnackBar(
-                                                          content: const Text(
-                                                              'Really delete all accounts and servers?'),
-                                                          action:
-                                                              SnackBarAction(
-                                                            label:
-                                                                'Delete all', // or some operation you would like
-                                                            onPressed:
-                                                                () async {
-                                                              ScaffoldMessenger
-                                                                      .of(context)
-                                                                  .hideCurrentSnackBar();
-                                                              ScaffoldMessenger
-                                                                      .of(
-                                                                          context)
-                                                                  .showSnackBar(
-                                                                      SnackBar(
-                                                                          content: const Text(
-                                                                              'Really REALLY delete them all??'),
-                                                                          action:
-                                                                              SnackBarAction(
-                                                                            label:
-                                                                                'Delete all', // or some operation you would like
-                                                                            onPressed:
-                                                                                deleteAllAccounts,
-                                                                          )));
-                                                            },
-                                                          )));
+                                                  showSnackBar(
+                                                      'Refreshing Servers & Accounts…');
+                                                  await appState
+                                                      .updateServersAndAccounts();
+                                                  showSnackBar(
+                                                      'Servers & Accounts Refreshed! 🎉');
                                                 },
                                                 child: const Icon(
-                                                    Icons.delete_forever),
+                                                  Icons.refresh,
+                                                ),
                                               ),
                                             )),
+                                        if (Settings.powerUserMode)
+                                          Expanded(
+                                              flex: 2,
+                                              child: Tooltip(
+                                                message:
+                                                    'Delete All Accounts & Servers',
+                                                child: TextButton(
+                                                  onPressed: () async {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .hideCurrentSnackBar();
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(SnackBar(
+                                                            content: const Text(
+                                                                'Really delete all accounts and servers?'),
+                                                            action:
+                                                                SnackBarAction(
+                                                              label:
+                                                                  'Delete all', // or some operation you would like
+                                                              onPressed:
+                                                                  () async {
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .hideCurrentSnackBar();
+                                                                ScaffoldMessenger.of(
+                                                                        context)
+                                                                    .showSnackBar(
+                                                                        SnackBar(
+                                                                            content:
+                                                                                const Text('Really REALLY delete them all??'),
+                                                                            action: SnackBarAction(
+                                                                              label: 'Delete all', // or some operation you would like
+                                                                              onPressed: deleteAllAccounts,
+                                                                            )));
+                                                              },
+                                                            )));
+                                                  },
+                                                  child: const Icon(
+                                                      Icons.delete_forever),
+                                                ),
+                                              )),
                                         Expanded(
                                             flex: 2,
                                             child: Tooltip(
@@ -452,6 +471,9 @@ class AccountsPageState extends State<AccountsPage> {
   }
 
   Widget buildAccountItem(JonlineAccount account) {
+    final backgroundColor =
+        appState.selectedAccount?.id == account.id ? appState.navColor : null;
+    final textColor = backgroundColor?.textColor;
     return AnimatedContainer(
       // constraints: const BoxConstraints(maxWidth: 600),
       duration: animationDuration,
@@ -471,9 +493,7 @@ class AccountsPageState extends State<AccountsPage> {
                   defaultPrimaryColor.value)),
         ),
         child: Card(
-          color: appState.selectedAccount?.id == account.id
-              ? appState.navColor
-              : null,
+          color: backgroundColor,
           child: InkWell(
             onTap: () {
               if (appState.selectedAccount?.id == account.id) {
@@ -499,10 +519,10 @@ class AccountsPageState extends State<AccountsPage> {
                             child: TextButton(
                               onPressed: () {
                                 context.navigateNamedTo(
-                                    'account/${account.id}/activity');
+                                    'account/${account.id}/profile');
                               },
-                              child: const Icon(Icons.account_circle,
-                                  size: 32, color: Colors.white),
+                              child: Icon(Icons.account_circle,
+                                  size: 32, color: textColor ?? Colors.white),
                             ),
                           ),
                           Expanded(
@@ -512,7 +532,9 @@ class AccountsPageState extends State<AccountsPage> {
                                   children: [
                                     Expanded(
                                       child: Text('${account.server}/',
-                                          style: textTheme.caption,
+                                          style: textTheme.caption?.copyWith(
+                                              color:
+                                                  textColor?.withOpacity(0.5)),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis),
                                     ),
@@ -523,7 +545,9 @@ class AccountsPageState extends State<AccountsPage> {
                                     Expanded(
                                       child: Text(
                                         account.username,
-                                        style: textTheme.headline6,
+                                        style: textTheme.headline6
+                                            ?.copyWith(color: textColor),
+                                        // style: textTheme.headline6,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -533,20 +557,6 @@ class AccountsPageState extends State<AccountsPage> {
                               ],
                             ),
                           ),
-                          if (account.permissions.contains(Permission.ADMIN))
-                            SizedBox(
-                              height: 48,
-                              child: TextButton(
-                                onPressed: () {
-                                  context.navigateNamedTo(
-                                      'account/${account.id}/admin');
-                                },
-                                child: const Icon(
-                                    Icons.admin_panel_settings_outlined,
-                                    size: 32,
-                                    color: Colors.white),
-                              ),
-                            ),
                           Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
@@ -557,13 +567,27 @@ class AccountsPageState extends State<AccountsPage> {
                                   ),
                                   child: Transform.translate(
                                       offset: const Offset(0, 0),
-                                      child: const Tooltip(
-                                        message: "The connection is insecure.",
-                                        child: Icon(Icons.warning, size: 16),
+                                      child: Tooltip(
+                                        message:
+                                            "The connection may be insecure.",
+                                        child: Icon(Icons.warning,
+                                            size: 16, color: textColor),
                                       )),
                                 ),
                             ],
                           ),
+                          if (account.permissions.contains(Permission.ADMIN))
+                            SizedBox(
+                              height: 48,
+                              child: TextButton(
+                                onPressed: () {
+                                  context.navigateNamedTo(
+                                      'account/${account.id}/admin');
+                                },
+                                child: Icon(Icons.admin_panel_settings_outlined,
+                                    size: 32, color: textColor ?? Colors.white),
+                              ),
+                            ),
                           AnimatedContainer(
                               duration: animationDuration,
                               width: uiSelectedServer == null ? 36 : 8)
@@ -580,14 +604,16 @@ class AccountsPageState extends State<AccountsPage> {
                                 children: [
                                   Text(
                                     "User ID: ",
-                                    style: textTheme.caption,
+                                    style: textTheme.caption?.copyWith(
+                                        color: textColor?.withOpacity(0.5)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Expanded(
                                     child: Text(
                                       account.userId,
-                                      style: textTheme.caption,
+                                      style: textTheme.caption?.copyWith(
+                                          color: textColor?.withOpacity(0.5)),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -599,14 +625,16 @@ class AccountsPageState extends State<AccountsPage> {
                               const SizedBox(width: 4),
                             if (Settings.developerMode)
                               Text('Refresh Token: ',
-                                  style: textTheme.caption,
+                                  style: textTheme.caption?.copyWith(
+                                      color: textColor?.withOpacity(0.5)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                             if (Settings.developerMode)
                               Expanded(
                                 flex: 1,
                                 child: Text(account.refreshToken,
-                                    style: textTheme.caption,
+                                    style: textTheme.caption?.copyWith(
+                                        color: textColor?.withOpacity(0.5)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis),
                               ),
@@ -616,19 +644,19 @@ class AccountsPageState extends State<AccountsPage> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          if (Settings.powerUserMode)
-                            Expanded(
-                              child: SizedBox(
-                                height: 32,
-                                child: TextButton(
-                                    style: ButtonStyle(
-                                        padding: MaterialStateProperty.all(
-                                            const EdgeInsets.all(0))),
-                                    // padding: const EdgeInsets.all(0),
-                                    onPressed: () => refreshAccount(account),
-                                    child: const Icon(Icons.refresh)),
-                              ),
-                            ),
+                          // if (Settings.powerUserMode)
+                          //   Expanded(
+                          //     child: SizedBox(
+                          //       height: 32,
+                          //       child: TextButton(
+                          //           style: ButtonStyle(
+                          //               padding: MaterialStateProperty.all(
+                          //                   const EdgeInsets.all(0))),
+                          //           // padding: const EdgeInsets.all(0),
+                          //           onPressed: () => refreshAccount(account),
+                          //           child: const Icon(Icons.refresh)),
+                          //     ),
+                          //   ),
                           Expanded(
                               child: SizedBox(
                                   height: 32,
@@ -706,6 +734,13 @@ class AccountsPageState extends State<AccountsPage> {
             showSnackBar("Browsing anonymously on ${server.server}.");
           }
         : null;
+    final backgroundColor = uiSelectedServer == server
+        ? Color(server.configuration?.serverInfo.colors.primary ??
+            defaultPrimaryColor.value)
+        : JonlineServer.selectedServer == server
+            ? appState.navColor
+            : null;
+    final textColor = backgroundColor?.textColor;
     return AnimatedContainer(
       duration: animationDuration,
       width: 163 + 20 * MediaQuery.of(context).textScaleFactor,
@@ -724,12 +759,7 @@ class AccountsPageState extends State<AccountsPage> {
                             defaultPrimaryColor.value)),
               ),
               child: Card(
-                color: uiSelectedServer == server
-                    ? Color(server.configuration?.serverInfo.colors.primary ??
-                        defaultPrimaryColor.value)
-                    : JonlineServer.selectedServer == server
-                        ? appState.navColor
-                        : null,
+                color: backgroundColor,
                 // color:
                 //     appState.selectedServer?.id == server.id ? bottomColor : null,
                 child: InkWell(
@@ -771,34 +801,36 @@ class AccountsPageState extends State<AccountsPage> {
                                           const EdgeInsets.all(0))),
                                   onPressed: () => context.navigateNamedTo(
                                       'server/${server.server}/configuration'),
-                                  child: const Icon(Icons.info)),
+                                  child: Icon(Icons.info, color: textColor)),
                             ),
-                            if (Settings.powerUserMode)
-                              SizedBox(
-                                height: 32,
-                                width: 32,
-                                child: TextButton(
-                                    style: ButtonStyle(
-                                        padding: MaterialStateProperty.all(
-                                            const EdgeInsets.all(0))),
-                                    // padding: const EdgeInsets.all(0),
-                                    onPressed: () => refreshServer(server),
-                                    child: const Icon(Icons.refresh)),
-                              ),
+                            // if (Settings.powerUserMode)
+                            //   SizedBox(
+                            //     height: 32,
+                            //     width: 32,
+                            //     child: TextButton(
+                            //         style: ButtonStyle(
+                            //             padding: MaterialStateProperty.all(
+                            //                 const EdgeInsets.all(0))),
+                            //         // padding: const EdgeInsets.all(0),
+                            //         onPressed: () => refreshServer(server),
+                            //         child: const Icon(Icons.refresh)),
+                            //   ),
                           ],
                         ),
                         Expanded(
                           child: Column(children: [
                             const SizedBox(height: 8),
-                            const Expanded(
-                                child: Icon(Icons.computer, size: 32)),
+                            Expanded(
+                                child: Icon(Icons.computer,
+                                    size: 32, color: textColor)),
                             Row(
                               children: [
                                 Expanded(
                                   child: Text(
                                     server.server,
                                     textAlign: TextAlign.center,
-                                    style: textTheme.caption,
+                                    style: textTheme.caption
+                                        ?.copyWith(color: textColor),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),

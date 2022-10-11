@@ -13,11 +13,11 @@ import 'package:grpc/service_api.dart' as $grpc;
 import 'google/protobuf/empty.pb.dart' as $0;
 import 'federation.pb.dart' as $1;
 import 'admin.pb.dart' as $2;
-import 'users.pb.dart' as $3;
-import 'groups.pb.dart' as $4;
-import 'posts.pb.dart' as $5;
-import 'post_query.pb.dart' as $6;
-import 'authentication.pb.dart' as $7;
+import 'authentication.pb.dart' as $3;
+import 'users.pb.dart' as $4;
+import 'groups.pb.dart' as $5;
+import 'posts.pb.dart' as $6;
+import 'post_query.pb.dart' as $7;
 export 'jonline.pb.dart';
 
 class JonlineClient extends $grpc.Client {
@@ -33,77 +33,89 @@ class JonlineClient extends $grpc.Client {
           ($0.Empty value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
               $2.ServerConfiguration.fromBuffer(value));
-  static final _$getUsers =
-      $grpc.ClientMethod<$3.GetUsersRequest, $3.GetUsersResponse>(
-          '/jonline.Jonline/GetUsers',
-          ($3.GetUsersRequest value) => value.writeToBuffer(),
-          ($core.List<$core.int> value) =>
-              $3.GetUsersResponse.fromBuffer(value));
-  static final _$getGroups =
-      $grpc.ClientMethod<$4.GetGroupsRequest, $4.GetGroupsResponse>(
-          '/jonline.Jonline/GetGroups',
-          ($4.GetGroupsRequest value) => value.writeToBuffer(),
-          ($core.List<$core.int> value) =>
-              $4.GetGroupsResponse.fromBuffer(value));
-  static final _$createGroup = $grpc.ClientMethod<$4.Group, $4.Group>(
-      '/jonline.Jonline/CreateGroup',
-      ($4.Group value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $4.Group.fromBuffer(value));
-  static final _$updateGroup = $grpc.ClientMethod<$4.Group, $4.Group>(
-      '/jonline.Jonline/UpdateGroup',
-      ($4.Group value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $4.Group.fromBuffer(value));
-  static final _$createMembership =
-      $grpc.ClientMethod<$4.Membership, $4.Membership>(
-          '/jonline.Jonline/CreateMembership',
-          ($4.Membership value) => value.writeToBuffer(),
-          ($core.List<$core.int> value) => $4.Membership.fromBuffer(value));
-  static final _$updateMembership =
-      $grpc.ClientMethod<$4.Membership, $4.Membership>(
-          '/jonline.Jonline/UpdateMembership',
-          ($4.Membership value) => value.writeToBuffer(),
-          ($core.List<$core.int> value) => $4.Membership.fromBuffer(value));
-  static final _$getPosts = $grpc.ClientMethod<$5.GetPostsRequest, $5.Posts>(
-      '/jonline.Jonline/GetPosts',
-      ($5.GetPostsRequest value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $5.Posts.fromBuffer(value));
-  static final _$queryPosts = $grpc.ClientMethod<$6.PostQuery, $5.Posts>(
-      '/jonline.Jonline/QueryPosts',
-      ($6.PostQuery value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $5.Posts.fromBuffer(value));
   static final _$createAccount =
-      $grpc.ClientMethod<$7.CreateAccountRequest, $7.AuthTokenResponse>(
+      $grpc.ClientMethod<$3.CreateAccountRequest, $3.AuthTokenResponse>(
           '/jonline.Jonline/CreateAccount',
-          ($7.CreateAccountRequest value) => value.writeToBuffer(),
+          ($3.CreateAccountRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
-              $7.AuthTokenResponse.fromBuffer(value));
+              $3.AuthTokenResponse.fromBuffer(value));
   static final _$login =
-      $grpc.ClientMethod<$7.LoginRequest, $7.AuthTokenResponse>(
+      $grpc.ClientMethod<$3.LoginRequest, $3.AuthTokenResponse>(
           '/jonline.Jonline/Login',
-          ($7.LoginRequest value) => value.writeToBuffer(),
+          ($3.LoginRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
-              $7.AuthTokenResponse.fromBuffer(value));
+              $3.AuthTokenResponse.fromBuffer(value));
   static final _$refreshToken =
-      $grpc.ClientMethod<$7.RefreshTokenRequest, $7.ExpirableToken>(
+      $grpc.ClientMethod<$3.RefreshTokenRequest, $3.ExpirableToken>(
           '/jonline.Jonline/RefreshToken',
-          ($7.RefreshTokenRequest value) => value.writeToBuffer(),
-          ($core.List<$core.int> value) => $7.ExpirableToken.fromBuffer(value));
-  static final _$getCurrentUser = $grpc.ClientMethod<$0.Empty, $3.User>(
+          ($3.RefreshTokenRequest value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) => $3.ExpirableToken.fromBuffer(value));
+  static final _$getCurrentUser = $grpc.ClientMethod<$0.Empty, $4.User>(
       '/jonline.Jonline/GetCurrentUser',
       ($0.Empty value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $3.User.fromBuffer(value));
-  static final _$createPost = $grpc.ClientMethod<$5.CreatePostRequest, $5.Post>(
+      ($core.List<$core.int> value) => $4.User.fromBuffer(value));
+  static final _$getUsers =
+      $grpc.ClientMethod<$4.GetUsersRequest, $4.GetUsersResponse>(
+          '/jonline.Jonline/GetUsers',
+          ($4.GetUsersRequest value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) =>
+              $4.GetUsersResponse.fromBuffer(value));
+  static final _$updateUser = $grpc.ClientMethod<$4.User, $4.User>(
+      '/jonline.Jonline/UpdateUser',
+      ($4.User value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $4.User.fromBuffer(value));
+  static final _$getGroups =
+      $grpc.ClientMethod<$5.GetGroupsRequest, $5.GetGroupsResponse>(
+          '/jonline.Jonline/GetGroups',
+          ($5.GetGroupsRequest value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) =>
+              $5.GetGroupsResponse.fromBuffer(value));
+  static final _$createGroup = $grpc.ClientMethod<$5.Group, $5.Group>(
+      '/jonline.Jonline/CreateGroup',
+      ($5.Group value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $5.Group.fromBuffer(value));
+  static final _$updateGroup = $grpc.ClientMethod<$5.Group, $5.Group>(
+      '/jonline.Jonline/UpdateGroup',
+      ($5.Group value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $5.Group.fromBuffer(value));
+  static final _$deleteGroup = $grpc.ClientMethod<$5.Group, $0.Empty>(
+      '/jonline.Jonline/DeleteGroup',
+      ($5.Group value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
+  static final _$createMembership =
+      $grpc.ClientMethod<$5.Membership, $5.Membership>(
+          '/jonline.Jonline/CreateMembership',
+          ($5.Membership value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) => $5.Membership.fromBuffer(value));
+  static final _$updateMembership =
+      $grpc.ClientMethod<$5.Membership, $5.Membership>(
+          '/jonline.Jonline/UpdateMembership',
+          ($5.Membership value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) => $5.Membership.fromBuffer(value));
+  static final _$deleteMembership = $grpc.ClientMethod<$5.Membership, $0.Empty>(
+      '/jonline.Jonline/DeleteMembership',
+      ($5.Membership value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
+  static final _$getPosts = $grpc.ClientMethod<$6.GetPostsRequest, $6.Posts>(
+      '/jonline.Jonline/GetPosts',
+      ($6.GetPostsRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $6.Posts.fromBuffer(value));
+  static final _$queryPosts = $grpc.ClientMethod<$7.PostQuery, $6.Posts>(
+      '/jonline.Jonline/QueryPosts',
+      ($7.PostQuery value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $6.Posts.fromBuffer(value));
+  static final _$createPost = $grpc.ClientMethod<$6.CreatePostRequest, $6.Post>(
       '/jonline.Jonline/CreatePost',
-      ($5.CreatePostRequest value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $5.Post.fromBuffer(value));
-  static final _$updatePost = $grpc.ClientMethod<$5.Post, $5.Post>(
+      ($6.CreatePostRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $6.Post.fromBuffer(value));
+  static final _$updatePost = $grpc.ClientMethod<$6.Post, $6.Post>(
       '/jonline.Jonline/UpdatePost',
-      ($5.Post value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $5.Post.fromBuffer(value));
-  static final _$deletePost = $grpc.ClientMethod<$5.Post, $5.Post>(
+      ($6.Post value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $6.Post.fromBuffer(value));
+  static final _$deletePost = $grpc.ClientMethod<$6.Post, $6.Post>(
       '/jonline.Jonline/DeletePost',
-      ($5.Post value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $5.Post.fromBuffer(value));
+      ($6.Post value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $6.Post.fromBuffer(value));
   static final _$configureServer =
       $grpc.ClientMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
           '/jonline.Jonline/ConfigureServer',
@@ -129,80 +141,95 @@ class JonlineClient extends $grpc.Client {
         options: options);
   }
 
-  $grpc.ResponseFuture<$3.GetUsersResponse> getUsers($3.GetUsersRequest request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$getUsers, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$4.GetGroupsResponse> getGroups(
-      $4.GetGroupsRequest request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$getGroups, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$4.Group> createGroup($4.Group request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$createGroup, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$4.Group> updateGroup($4.Group request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$updateGroup, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$4.Membership> createMembership($4.Membership request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$createMembership, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$4.Membership> updateMembership($4.Membership request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$updateMembership, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$5.Posts> getPosts($5.GetPostsRequest request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$getPosts, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$5.Posts> queryPosts($6.PostQuery request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$queryPosts, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$7.AuthTokenResponse> createAccount(
-      $7.CreateAccountRequest request,
+  $grpc.ResponseFuture<$3.AuthTokenResponse> createAccount(
+      $3.CreateAccountRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createAccount, request, options: options);
   }
 
-  $grpc.ResponseFuture<$7.AuthTokenResponse> login($7.LoginRequest request,
+  $grpc.ResponseFuture<$3.AuthTokenResponse> login($3.LoginRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$login, request, options: options);
   }
 
-  $grpc.ResponseFuture<$7.ExpirableToken> refreshToken(
-      $7.RefreshTokenRequest request,
+  $grpc.ResponseFuture<$3.ExpirableToken> refreshToken(
+      $3.RefreshTokenRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$refreshToken, request, options: options);
   }
 
-  $grpc.ResponseFuture<$3.User> getCurrentUser($0.Empty request,
+  $grpc.ResponseFuture<$4.User> getCurrentUser($0.Empty request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getCurrentUser, request, options: options);
   }
 
-  $grpc.ResponseFuture<$5.Post> createPost($5.CreatePostRequest request,
+  $grpc.ResponseFuture<$4.GetUsersResponse> getUsers($4.GetUsersRequest request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getUsers, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$4.User> updateUser($4.User request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateUser, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.GetGroupsResponse> getGroups(
+      $5.GetGroupsRequest request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getGroups, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.Group> createGroup($5.Group request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createGroup, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.Group> updateGroup($5.Group request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateGroup, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> deleteGroup($5.Group request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteGroup, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.Membership> createMembership($5.Membership request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createMembership, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.Membership> updateMembership($5.Membership request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateMembership, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> deleteMembership($5.Membership request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteMembership, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$6.Posts> getPosts($6.GetPostsRequest request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getPosts, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$6.Posts> queryPosts($7.PostQuery request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$queryPosts, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$6.Post> createPost($6.CreatePostRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createPost, request, options: options);
   }
 
-  $grpc.ResponseFuture<$5.Post> updatePost($5.Post request,
+  $grpc.ResponseFuture<$6.Post> updatePost($6.Post request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updatePost, request, options: options);
   }
 
-  $grpc.ResponseFuture<$5.Post> deletePost($5.Post request,
+  $grpc.ResponseFuture<$6.Post> deletePost($6.Post request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deletePost, request, options: options);
   }
@@ -232,114 +259,135 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.Empty.fromBuffer(value),
         ($2.ServerConfiguration value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$3.GetUsersRequest, $3.GetUsersResponse>(
-        'GetUsers',
-        getUsers_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $3.GetUsersRequest.fromBuffer(value),
-        ($3.GetUsersResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$4.GetGroupsRequest, $4.GetGroupsResponse>(
-        'GetGroups',
-        getGroups_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $4.GetGroupsRequest.fromBuffer(value),
-        ($4.GetGroupsResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$4.Group, $4.Group>(
-        'CreateGroup',
-        createGroup_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $4.Group.fromBuffer(value),
-        ($4.Group value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$4.Group, $4.Group>(
-        'UpdateGroup',
-        updateGroup_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $4.Group.fromBuffer(value),
-        ($4.Group value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$4.Membership, $4.Membership>(
-        'CreateMembership',
-        createMembership_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $4.Membership.fromBuffer(value),
-        ($4.Membership value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$4.Membership, $4.Membership>(
-        'UpdateMembership',
-        updateMembership_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $4.Membership.fromBuffer(value),
-        ($4.Membership value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$5.GetPostsRequest, $5.Posts>(
-        'GetPosts',
-        getPosts_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $5.GetPostsRequest.fromBuffer(value),
-        ($5.Posts value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$6.PostQuery, $5.Posts>(
-        'QueryPosts',
-        queryPosts_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $6.PostQuery.fromBuffer(value),
-        ($5.Posts value) => value.writeToBuffer()));
     $addMethod(
-        $grpc.ServiceMethod<$7.CreateAccountRequest, $7.AuthTokenResponse>(
+        $grpc.ServiceMethod<$3.CreateAccountRequest, $3.AuthTokenResponse>(
             'CreateAccount',
             createAccount_Pre,
             false,
             false,
             ($core.List<$core.int> value) =>
-                $7.CreateAccountRequest.fromBuffer(value),
-            ($7.AuthTokenResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$7.LoginRequest, $7.AuthTokenResponse>(
+                $3.CreateAccountRequest.fromBuffer(value),
+            ($3.AuthTokenResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$3.LoginRequest, $3.AuthTokenResponse>(
         'Login',
         login_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $7.LoginRequest.fromBuffer(value),
-        ($7.AuthTokenResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$7.RefreshTokenRequest, $7.ExpirableToken>(
+        ($core.List<$core.int> value) => $3.LoginRequest.fromBuffer(value),
+        ($3.AuthTokenResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$3.RefreshTokenRequest, $3.ExpirableToken>(
         'RefreshToken',
         refreshToken_Pre,
         false,
         false,
         ($core.List<$core.int> value) =>
-            $7.RefreshTokenRequest.fromBuffer(value),
-        ($7.ExpirableToken value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$0.Empty, $3.User>(
+            $3.RefreshTokenRequest.fromBuffer(value),
+        ($3.ExpirableToken value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.Empty, $4.User>(
         'GetCurrentUser',
         getCurrentUser_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $0.Empty.fromBuffer(value),
-        ($3.User value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$5.CreatePostRequest, $5.Post>(
+        ($4.User value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.GetUsersRequest, $4.GetUsersResponse>(
+        'GetUsers',
+        getUsers_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.GetUsersRequest.fromBuffer(value),
+        ($4.GetUsersResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.User, $4.User>(
+        'UpdateUser',
+        updateUser_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.User.fromBuffer(value),
+        ($4.User value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.GetGroupsRequest, $5.GetGroupsResponse>(
+        'GetGroups',
+        getGroups_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.GetGroupsRequest.fromBuffer(value),
+        ($5.GetGroupsResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.Group, $5.Group>(
+        'CreateGroup',
+        createGroup_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.Group.fromBuffer(value),
+        ($5.Group value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.Group, $5.Group>(
+        'UpdateGroup',
+        updateGroup_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.Group.fromBuffer(value),
+        ($5.Group value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.Group, $0.Empty>(
+        'DeleteGroup',
+        deleteGroup_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.Group.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.Membership, $5.Membership>(
+        'CreateMembership',
+        createMembership_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.Membership.fromBuffer(value),
+        ($5.Membership value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.Membership, $5.Membership>(
+        'UpdateMembership',
+        updateMembership_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.Membership.fromBuffer(value),
+        ($5.Membership value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.Membership, $0.Empty>(
+        'DeleteMembership',
+        deleteMembership_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.Membership.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.GetPostsRequest, $6.Posts>(
+        'GetPosts',
+        getPosts_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $6.GetPostsRequest.fromBuffer(value),
+        ($6.Posts value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$7.PostQuery, $6.Posts>(
+        'QueryPosts',
+        queryPosts_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $7.PostQuery.fromBuffer(value),
+        ($6.Posts value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.CreatePostRequest, $6.Post>(
         'CreatePost',
         createPost_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $5.CreatePostRequest.fromBuffer(value),
-        ($5.Post value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$5.Post, $5.Post>(
+        ($core.List<$core.int> value) => $6.CreatePostRequest.fromBuffer(value),
+        ($6.Post value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.Post, $6.Post>(
         'UpdatePost',
         updatePost_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $5.Post.fromBuffer(value),
-        ($5.Post value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$5.Post, $5.Post>(
+        ($core.List<$core.int> value) => $6.Post.fromBuffer(value),
+        ($6.Post value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.Post, $6.Post>(
         'DeletePost',
         deletePost_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $5.Post.fromBuffer(value),
-        ($5.Post value) => value.writeToBuffer()));
+        ($core.List<$core.int> value) => $6.Post.fromBuffer(value),
+        ($6.Post value) => value.writeToBuffer()));
     $addMethod(
         $grpc.ServiceMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
             'ConfigureServer',
@@ -361,78 +409,93 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getServerConfiguration(call, await request);
   }
 
-  $async.Future<$3.GetUsersResponse> getUsers_Pre(
-      $grpc.ServiceCall call, $async.Future<$3.GetUsersRequest> request) async {
-    return getUsers(call, await request);
-  }
-
-  $async.Future<$4.GetGroupsResponse> getGroups_Pre($grpc.ServiceCall call,
-      $async.Future<$4.GetGroupsRequest> request) async {
-    return getGroups(call, await request);
-  }
-
-  $async.Future<$4.Group> createGroup_Pre(
-      $grpc.ServiceCall call, $async.Future<$4.Group> request) async {
-    return createGroup(call, await request);
-  }
-
-  $async.Future<$4.Group> updateGroup_Pre(
-      $grpc.ServiceCall call, $async.Future<$4.Group> request) async {
-    return updateGroup(call, await request);
-  }
-
-  $async.Future<$4.Membership> createMembership_Pre(
-      $grpc.ServiceCall call, $async.Future<$4.Membership> request) async {
-    return createMembership(call, await request);
-  }
-
-  $async.Future<$4.Membership> updateMembership_Pre(
-      $grpc.ServiceCall call, $async.Future<$4.Membership> request) async {
-    return updateMembership(call, await request);
-  }
-
-  $async.Future<$5.Posts> getPosts_Pre(
-      $grpc.ServiceCall call, $async.Future<$5.GetPostsRequest> request) async {
-    return getPosts(call, await request);
-  }
-
-  $async.Future<$5.Posts> queryPosts_Pre(
-      $grpc.ServiceCall call, $async.Future<$6.PostQuery> request) async {
-    return queryPosts(call, await request);
-  }
-
-  $async.Future<$7.AuthTokenResponse> createAccount_Pre($grpc.ServiceCall call,
-      $async.Future<$7.CreateAccountRequest> request) async {
+  $async.Future<$3.AuthTokenResponse> createAccount_Pre($grpc.ServiceCall call,
+      $async.Future<$3.CreateAccountRequest> request) async {
     return createAccount(call, await request);
   }
 
-  $async.Future<$7.AuthTokenResponse> login_Pre(
-      $grpc.ServiceCall call, $async.Future<$7.LoginRequest> request) async {
+  $async.Future<$3.AuthTokenResponse> login_Pre(
+      $grpc.ServiceCall call, $async.Future<$3.LoginRequest> request) async {
     return login(call, await request);
   }
 
-  $async.Future<$7.ExpirableToken> refreshToken_Pre($grpc.ServiceCall call,
-      $async.Future<$7.RefreshTokenRequest> request) async {
+  $async.Future<$3.ExpirableToken> refreshToken_Pre($grpc.ServiceCall call,
+      $async.Future<$3.RefreshTokenRequest> request) async {
     return refreshToken(call, await request);
   }
 
-  $async.Future<$3.User> getCurrentUser_Pre(
+  $async.Future<$4.User> getCurrentUser_Pre(
       $grpc.ServiceCall call, $async.Future<$0.Empty> request) async {
     return getCurrentUser(call, await request);
   }
 
-  $async.Future<$5.Post> createPost_Pre($grpc.ServiceCall call,
-      $async.Future<$5.CreatePostRequest> request) async {
+  $async.Future<$4.GetUsersResponse> getUsers_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.GetUsersRequest> request) async {
+    return getUsers(call, await request);
+  }
+
+  $async.Future<$4.User> updateUser_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.User> request) async {
+    return updateUser(call, await request);
+  }
+
+  $async.Future<$5.GetGroupsResponse> getGroups_Pre($grpc.ServiceCall call,
+      $async.Future<$5.GetGroupsRequest> request) async {
+    return getGroups(call, await request);
+  }
+
+  $async.Future<$5.Group> createGroup_Pre(
+      $grpc.ServiceCall call, $async.Future<$5.Group> request) async {
+    return createGroup(call, await request);
+  }
+
+  $async.Future<$5.Group> updateGroup_Pre(
+      $grpc.ServiceCall call, $async.Future<$5.Group> request) async {
+    return updateGroup(call, await request);
+  }
+
+  $async.Future<$0.Empty> deleteGroup_Pre(
+      $grpc.ServiceCall call, $async.Future<$5.Group> request) async {
+    return deleteGroup(call, await request);
+  }
+
+  $async.Future<$5.Membership> createMembership_Pre(
+      $grpc.ServiceCall call, $async.Future<$5.Membership> request) async {
+    return createMembership(call, await request);
+  }
+
+  $async.Future<$5.Membership> updateMembership_Pre(
+      $grpc.ServiceCall call, $async.Future<$5.Membership> request) async {
+    return updateMembership(call, await request);
+  }
+
+  $async.Future<$0.Empty> deleteMembership_Pre(
+      $grpc.ServiceCall call, $async.Future<$5.Membership> request) async {
+    return deleteMembership(call, await request);
+  }
+
+  $async.Future<$6.Posts> getPosts_Pre(
+      $grpc.ServiceCall call, $async.Future<$6.GetPostsRequest> request) async {
+    return getPosts(call, await request);
+  }
+
+  $async.Future<$6.Posts> queryPosts_Pre(
+      $grpc.ServiceCall call, $async.Future<$7.PostQuery> request) async {
+    return queryPosts(call, await request);
+  }
+
+  $async.Future<$6.Post> createPost_Pre($grpc.ServiceCall call,
+      $async.Future<$6.CreatePostRequest> request) async {
     return createPost(call, await request);
   }
 
-  $async.Future<$5.Post> updatePost_Pre(
-      $grpc.ServiceCall call, $async.Future<$5.Post> request) async {
+  $async.Future<$6.Post> updatePost_Pre(
+      $grpc.ServiceCall call, $async.Future<$6.Post> request) async {
     return updatePost(call, await request);
   }
 
-  $async.Future<$5.Post> deletePost_Pre(
-      $grpc.ServiceCall call, $async.Future<$5.Post> request) async {
+  $async.Future<$6.Post> deletePost_Pre(
+      $grpc.ServiceCall call, $async.Future<$6.Post> request) async {
     return deletePost(call, await request);
   }
 
@@ -446,32 +509,36 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $0.Empty request);
   $async.Future<$2.ServerConfiguration> getServerConfiguration(
       $grpc.ServiceCall call, $0.Empty request);
-  $async.Future<$3.GetUsersResponse> getUsers(
-      $grpc.ServiceCall call, $3.GetUsersRequest request);
-  $async.Future<$4.GetGroupsResponse> getGroups(
-      $grpc.ServiceCall call, $4.GetGroupsRequest request);
-  $async.Future<$4.Group> createGroup($grpc.ServiceCall call, $4.Group request);
-  $async.Future<$4.Group> updateGroup($grpc.ServiceCall call, $4.Group request);
-  $async.Future<$4.Membership> createMembership(
-      $grpc.ServiceCall call, $4.Membership request);
-  $async.Future<$4.Membership> updateMembership(
-      $grpc.ServiceCall call, $4.Membership request);
-  $async.Future<$5.Posts> getPosts(
-      $grpc.ServiceCall call, $5.GetPostsRequest request);
-  $async.Future<$5.Posts> queryPosts(
-      $grpc.ServiceCall call, $6.PostQuery request);
-  $async.Future<$7.AuthTokenResponse> createAccount(
-      $grpc.ServiceCall call, $7.CreateAccountRequest request);
-  $async.Future<$7.AuthTokenResponse> login(
-      $grpc.ServiceCall call, $7.LoginRequest request);
-  $async.Future<$7.ExpirableToken> refreshToken(
-      $grpc.ServiceCall call, $7.RefreshTokenRequest request);
-  $async.Future<$3.User> getCurrentUser(
+  $async.Future<$3.AuthTokenResponse> createAccount(
+      $grpc.ServiceCall call, $3.CreateAccountRequest request);
+  $async.Future<$3.AuthTokenResponse> login(
+      $grpc.ServiceCall call, $3.LoginRequest request);
+  $async.Future<$3.ExpirableToken> refreshToken(
+      $grpc.ServiceCall call, $3.RefreshTokenRequest request);
+  $async.Future<$4.User> getCurrentUser(
       $grpc.ServiceCall call, $0.Empty request);
-  $async.Future<$5.Post> createPost(
-      $grpc.ServiceCall call, $5.CreatePostRequest request);
-  $async.Future<$5.Post> updatePost($grpc.ServiceCall call, $5.Post request);
-  $async.Future<$5.Post> deletePost($grpc.ServiceCall call, $5.Post request);
+  $async.Future<$4.GetUsersResponse> getUsers(
+      $grpc.ServiceCall call, $4.GetUsersRequest request);
+  $async.Future<$4.User> updateUser($grpc.ServiceCall call, $4.User request);
+  $async.Future<$5.GetGroupsResponse> getGroups(
+      $grpc.ServiceCall call, $5.GetGroupsRequest request);
+  $async.Future<$5.Group> createGroup($grpc.ServiceCall call, $5.Group request);
+  $async.Future<$5.Group> updateGroup($grpc.ServiceCall call, $5.Group request);
+  $async.Future<$0.Empty> deleteGroup($grpc.ServiceCall call, $5.Group request);
+  $async.Future<$5.Membership> createMembership(
+      $grpc.ServiceCall call, $5.Membership request);
+  $async.Future<$5.Membership> updateMembership(
+      $grpc.ServiceCall call, $5.Membership request);
+  $async.Future<$0.Empty> deleteMembership(
+      $grpc.ServiceCall call, $5.Membership request);
+  $async.Future<$6.Posts> getPosts(
+      $grpc.ServiceCall call, $6.GetPostsRequest request);
+  $async.Future<$6.Posts> queryPosts(
+      $grpc.ServiceCall call, $7.PostQuery request);
+  $async.Future<$6.Post> createPost(
+      $grpc.ServiceCall call, $6.CreatePostRequest request);
+  $async.Future<$6.Post> updatePost($grpc.ServiceCall call, $6.Post request);
+  $async.Future<$6.Post> deletePost($grpc.ServiceCall call, $6.Post request);
   $async.Future<$2.ServerConfiguration> configureServer(
       $grpc.ServiceCall call, $2.ServerConfiguration request);
 }

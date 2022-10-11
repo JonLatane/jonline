@@ -14,7 +14,7 @@ pub fn get_posts(
     _user: Option<models::User>,
     conn: &PgPooledConnection,
 ) -> Result<Response<Posts>, Status> {
-    println!("GetPosts called");
+    // println!("GetPosts called");
     let req: GetPostsRequest = request.into_inner();
     let result = match req.to_owned().post_id {
         Some(post_id) => get_by_post_id(&post_id, conn)?,

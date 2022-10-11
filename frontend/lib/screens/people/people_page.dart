@@ -239,7 +239,12 @@ class PeopleScreenState extends State<PeopleScreen>
     return Card(
       color: appState.selectedAccount?.id == user.id ? appState.navColor : null,
       child: InkWell(
-        onTap: null, //TODO: Do we want to navigate the user somewhere?
+        //    onTap: null, //TODO: Do we want to navigate the user somewhere?
+
+        onTap: () {
+          context.navigateNamedTo(
+              'person/${JonlineServer.selectedServer.server}/${user.id}');
+        },
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Stack(

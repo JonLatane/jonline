@@ -1,11 +1,16 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/screens/posts/editor_with_preview.dart';
+import 'package:multi_select_flutter/chip_field/multi_select_chip_field.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
+import 'package:recase/recase.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../generated/jonline.pbgrpc.dart';
+import '../../generated/permissions.pbenum.dart';
 import '../../generated/posts.pb.dart';
+import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../models/jonline_account.dart';
 import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_clients.dart';
@@ -26,6 +31,7 @@ class CreateGroupPage extends StatefulWidget {
 class CreateGroupPageState extends State<CreateGroupPage> {
   late AppState appState;
   late HomePageState homePage;
+  TextTheme get textTheme => Theme.of(context).textTheme;
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
@@ -35,6 +41,8 @@ class CreateGroupPageState extends State<CreateGroupPage> {
   String get description => descriptionController.value.text;
 
   bool get canCreate => name.isNotEmpty;
+  vm.Visibility visibility = vm.Visibility.SERVER_PUBLIC;
+  vm.Moderation default_membership_moderation = vm.Moderation.UNMODERATED;
 
   @override
   void initState() {
@@ -101,7 +109,9 @@ class CreateGroupPageState extends State<CreateGroupPage> {
       group = await client!.createGroup(
           Group(
               name: name,
-              description: description.isNotEmpty ? description : null),
+              description: description.isNotEmpty ? description : null,
+              visibility: visibility,
+              defaultMembershipModeration: default_membership_moderation),
           options: account.authenticatedCallOptions);
     } catch (e) {
       await communicationDelay;
@@ -204,6 +214,74 @@ class CreateGroupPageState extends State<CreateGroupPage> {
                               fontWeight: FontWeight.w400,
                               fontSize: 12),
                         )),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text("Visibility", style: textTheme.labelLarge),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Container(
+                            key: Key(
+                                "visibility-control-${(JonlineAccount.selectedAccount)?.id}"),
+                            child: MultiSelectChipField<vm.Visibility?>(
+                              // title: const Text("Select Visibility"),
+                              // buttonText: const Text("Select Permissions"),
+                              showHeader: false,
+                              // searchable: true,
+                              items: vm.Visibility.values
+                                  .where((v) {
+                                    final account =
+                                        JonlineAccount.selectedAccount;
+                                    return v !=
+                                            vm.Visibility.VISIBILITY_UNKNOWN &&
+                                        (account?.permissions.contains(Permission
+                                                    .GLOBALLY_PUBLISH_GROUPS) ==
+                                                true ||
+                                            account?.permissions.contains(
+                                                    Permission.ADMIN) ==
+                                                true ||
+                                            visibility ==
+                                                vm.Visibility.GLOBAL_PUBLIC ||
+                                            v != vm.Visibility.GLOBAL_PUBLIC);
+                                  })
+                                  .map((e) => MultiSelectItem(
+                                      e, e.name.replaceAll('_', ' ').titleCase))
+                                  .toList(),
+                              initialValue: <vm.Visibility?>[visibility],
+
+                              onTap: (List<vm.Visibility?> values) {
+                                if (values.length > 1) {
+                                  values.remove(visibility);
+                                  setState(() => visibility = values.first!);
+                                } else {
+                                  values.add(visibility ??
+                                      vm.Visibility.VISIBILITY_UNKNOWN);
+                                  setState(() => visibility = values.first!);
+                                }
+                              },
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text("Require Approval to Join",
+                              style: textTheme.labelLarge),
+                        ),
+                        const SizedBox(width: 16),
+                        Switch(
+                            value: default_membership_moderation ==
+                                vm.Moderation.PENDING,
+                            onChanged: (value) {
+                              setState(() => default_membership_moderation =
+                                  value
+                                      ? vm.Moderation.PENDING
+                                      : vm.Moderation.UNMODERATED);
+                            })
+                      ],
+                    )
                   ]),
                 ),
               ],

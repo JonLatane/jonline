@@ -24,6 +24,7 @@ CREATE TABLE users (
   -- For user visibilities, PRIVATE is equivalent to a "frozen" account.
   -- LIMITED will be visible only to user the user is following.
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+  default_follow_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -74,8 +75,8 @@ CREATE UNIQUE INDEX idx_membership ON memberships(user_id, group_id);
 CREATE TABLE follows (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  local_user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  accepted BOOLEAN NOT NULL DEFAULT FALSE
+  target_user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  target_user_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED'
 );
 
 CREATE TABLE posts (

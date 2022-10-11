@@ -18,8 +18,8 @@ table! {
     follows (id) {
         id -> Int4,
         user_id -> Int4,
-        local_user_id -> Int4,
-        accepted -> Bool,
+        target_user_id -> Int4,
+        target_user_moderation -> Varchar,
     }
 }
 
@@ -113,6 +113,7 @@ table! {
         permissions -> Jsonb,
         avatar -> Nullable<Bytea>,
         visibility -> Varchar,
+        default_follow_moderation -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

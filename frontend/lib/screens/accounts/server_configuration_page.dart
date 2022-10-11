@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jonline/models/jonline_account_operations.dart';
 import 'package:jonline/models/server_errors.dart';
+import 'package:jonline/utils/colors.dart';
+import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
+import 'package:recase/recase.dart';
 import '../../generated/permissions.pbenum.dart';
+import '../../models/demo_data.dart';
 import '../../models/jonline_server.dart';
 import '../../utils/proto_utils.dart';
 
@@ -47,29 +52,30 @@ class _AdminPageState extends State<ServerConfigurationPage> {
   JonlineAccount? account;
   JonlineServer? server;
   JonlineClient? client;
-  ServerConfiguration? serverConfiguration;
+  ServerConfiguration? config;
   ThemeData get theme => Theme.of(context);
   TextTheme get textTheme => theme.textTheme;
   String? get serverHost => account?.server;
-  // bool? get isAdmin => account
+  bool get isAdmin =>
+      account != null && account!.permissions.contains(Permission.ADMIN);
 
-  Color get primaryColor => resolveColor(
-      serverConfiguration?.serverInfo.colors.primary, defaultPrimaryColor);
+  Color get primaryColor =>
+      resolveColor(config?.serverInfo.colors.primary, defaultPrimaryColor);
   set primaryColor(Color value) => applyColor((c) => c.primary = value.value);
-  Color get navColor => resolveColor(
-      serverConfiguration?.serverInfo.colors.navigation, defaultNavColor);
+  Color get navColor =>
+      resolveColor(config?.serverInfo.colors.navigation, defaultNavColor);
   set navColor(Color value) => applyColor((c) => c.navigation = value.value);
 
   applyColor(Function(ServerColors) update) {
     setState(() {
-      serverConfiguration = serverConfiguration?.jonRebuild((c) {
+      config = config?.jonRebuild((c) {
         c.serverInfo = c.serverInfo.jonRebuild((i) {
           i.colors = i.colors.jonRebuild(update);
         });
       });
     });
-    if (serverConfiguration != null) {
-      appState.colorTheme.value = serverConfiguration!.serverInfo.colors;
+    if (config != null) {
+      appState.colorTheme.value = config!.serverInfo.colors;
     }
   }
 
@@ -101,13 +107,13 @@ class _AdminPageState extends State<ServerConfigurationPage> {
       this.account = account;
       this.server = server;
       this.client = client;
-      this.serverConfiguration = serverConfiguration;
+      this.config = serverConfiguration;
     });
   }
 
   onAdminPageFocused() {
-    if (serverConfiguration != null) {
-      appState.colorTheme.value = serverConfiguration!.serverInfo.colors;
+    if (config != null) {
+      appState.colorTheme.value = config!.serverInfo.colors;
     }
   }
 
@@ -147,13 +153,13 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                   child: Stack(
                 children: [
                   AnimatedOpacity(
-                      opacity: serverConfiguration == null ? 0 : 1,
+                      opacity: config == null ? 0 : 1,
                       duration: animationDuration,
                       child: IgnorePointer(
                           ignoring: account == null,
                           child: buildConfiguration())),
                   AnimatedOpacity(
-                      opacity: serverConfiguration == null ? 1 : 0,
+                      opacity: config == null ? 1 : 0,
                       duration: animationDuration,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -196,11 +202,10 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                     child: Text("Enable Posts", style: textTheme.labelLarge)),
                 Switch(
                     activeColor: appState.primaryColor,
-                    value: serverConfiguration?.postSettings.visible ?? false,
+                    value: config?.postSettings.visible ?? false,
                     onChanged: account != null
                         ? (v) {
-                            setState(() =>
-                                serverConfiguration!.postSettings.visible = v);
+                            setState(() => config!.postSettings.visible = v);
                           }
                         : null),
               ],
@@ -211,11 +216,10 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                     child: Text("Enable Events", style: textTheme.labelLarge)),
                 Switch(
                     activeColor: appState.primaryColor,
-                    value: serverConfiguration?.eventSettings.visible ?? false,
+                    value: config?.eventSettings.visible ?? false,
                     onChanged: account != null
                         ? (v) {
-                            setState(() =>
-                                serverConfiguration!.eventSettings.visible = v);
+                            setState(() => config!.eventSettings.visible = v);
                           }
                         : null),
               ],
@@ -233,7 +237,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                       ? null
                       : showColorPicker("Primary Color", primaryColor,
                           (c) => primaryColor = c),
-                  child: const Icon(Icons.palette),
+                  child: Icon(Icons.palette, color: primaryColor.textColor),
                 ),
               ],
             ),
@@ -249,13 +253,53 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                       ? null
                       : showColorPicker(
                           "Navigation Color", navColor, (c) => navColor = c),
-                  child: const Icon(Icons.palette),
+                  child: Icon(Icons.palette, color: navColor.textColor),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            if (account != null &&
-                account!.permissions.contains(Permission.ADMIN))
+            Text('Default User Permissions', style: textTheme.subtitle1),
+            const SizedBox(height: 8),
+            if (isAdmin)
+              MultiSelectDialogField(
+                title: const Text("Select Default\nUser Permissions"),
+                buttonText: const Text("Select Default User Permissions"),
+                searchable: true,
+                items: Permission.values
+                    .where((p) => p != Permission.PERMISSION_UNKNOWN)
+                    .map((e) => MultiSelectItem(
+                        e, e.name.replaceAll('_', ' ').titleCase))
+                    .toList(),
+                listType: MultiSelectListType.CHIP,
+                initialValue: config?.defaultUserPermissions ?? [],
+                selectedColor: appState.navColor,
+                selectedItemsTextStyle:
+                    TextStyle(color: appState.navColor.textColor),
+                onConfirm: (values) {
+                  setState(() {
+                    config = config?.jonRebuild((c) {
+                      c.defaultUserPermissions
+                          .addAll(values.cast<Permission>());
+                    });
+                    // account?.user = account?.user?.jonRebuild((u) {
+                    //   u.permissions.clear();
+                    //   u.permissions.addAll(values.map((e) => e as Permission));
+                    // });
+                  });
+                },
+                // padding: const EdgeInsets.all(0),
+              ),
+            if (!isAdmin)
+              MultiSelectChipDisplay<Permission>(
+                chipColor: appState.navColor,
+                textStyle: TextStyle(color: appState.navColor.textColor),
+                items: (config?.defaultUserPermissions ?? [])
+                    .map((e) => MultiSelectItem(
+                        e, e.name.replaceAll('_', ' ').titleCase))
+                    .toList(),
+              ),
+            const SizedBox(height: 24),
+            if (isAdmin)
               TextButton(
                 child: SizedBox(
                   height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
@@ -271,17 +315,15 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                   try {
                     await account!
                         .ensureRefreshToken(showMessage: showSnackBar);
-                    final response = await client!.configureServer(
-                        serverConfiguration!,
+                    final response = await client!.configureServer(config!,
                         options: account!.authenticatedCallOptions);
                     server!.configuration = response;
                     setState(() {
-                      serverConfiguration = response.jonCopy();
+                      config = response.jonCopy();
                     });
                     await server!.save();
                     if (server == JonlineServer.selectedServer) {
-                      appState.colorTheme.value =
-                          serverConfiguration!.serverInfo.colors;
+                      appState.colorTheme.value = config!.serverInfo.colors;
                     }
                     showSnackBar("Configuration Updated 🎉");
                   } catch (e) {
@@ -290,6 +332,36 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                   }
                 },
               ),
+            if (isAdmin) const SizedBox(height: 16),
+            if (isAdmin) Text('Admin/Dev Tools', style: textTheme.subtitle1),
+            if (isAdmin) const SizedBox(height: 8),
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Really post demo data?'),
+                      action: SnackBarAction(
+                        label: 'Post it!', // or some operation you would like
+                        onPressed: () {
+                          if (account == null) {
+                            showSnackBar("Account not ready.");
+                          }
+                          postDemoData(account!, showSnackBar, appState);
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.developer_mode),
+                      Text('Post Demo Data'),
+                    ],
+                  ),
+                ),
+              )
           ],
         ),
       ),

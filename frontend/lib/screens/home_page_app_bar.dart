@@ -141,7 +141,7 @@ extension HomePageAppBar on HomePageState {
         } else {
           return null;
         }
-      case 'MyActivityRoute':
+      case 'MyProfileRoute':
         // context.topRoute.args[0] as String;
         if (titleServer == null || titleUsername == null) {
           // final Object? accountId = context.topRoute.args;
@@ -179,10 +179,10 @@ extension HomePageAppBar on HomePageState {
             final account = (await JonlineAccount.accounts).firstWhere(
               (account) => account.id == accountId,
             );
-            setState(() {
-              titleServer = account.server;
-              titleUsername = account.username;
-            });
+            // setState(() {
+            titleServer = account.server;
+            titleUsername = account.username;
+            // });
           });
         }
         return Row(
@@ -195,10 +195,16 @@ extension HomePageAppBar on HomePageState {
           ],
         );
       default:
-        titleServer = null;
-        titleUsername = null;
+        resetTitleServerAndUser();
         return null;
     }
+  }
+
+  resetTitleServerAndUser() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      titleServer = null;
+      titleUsername = null;
+    });
   }
 
   String get title {
@@ -211,6 +217,8 @@ extension HomePageAppBar on HomePageState {
       case 'PeopleRoute':
       case 'PeopleTab':
         return 'People';
+      case 'UserProfileRoute':
+        return 'Person Details';
       case 'PersonDetailsRoute':
         return 'Person Details [Mock]';
       case 'PostsRoute':
@@ -323,6 +331,7 @@ extension HomePageAppBar on HomePageState {
             ),
           const AccountChooser(),
         ];
+      case 'UserProfileRoute':
       case 'AccountsRoute':
       case 'PostDetailsRoute':
         return [const AccountChooser()];

@@ -471,6 +471,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.2"
+  multi_select_flutter:
+    dependency: "direct main"
+    description:
+      name: multi_select_flutter
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.1.2"
   native_device_orientation:
     dependency: "direct main"
     description:
@@ -611,6 +618,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.1"
+  recase:
+    dependency: "direct main"
+    description:
+      name: recase
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.1.0"
   scrolls_to_top:
     dependency: "direct main"
     description:

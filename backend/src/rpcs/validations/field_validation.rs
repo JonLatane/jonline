@@ -1,7 +1,7 @@
 use tonic::Status;
-use super::string_length::validate_length;
-use super::matching::*;
-use super::matching::validate_all_word_chars;
+use super::string_length_validation::validate_length;
+use super::matching_validation::*;
+use super::matching_validation::validate_all_word_chars;
 
 pub fn validate_username(value: &str) -> Result<(), Status> {
   validate_length(&value, "username", 1, 47)?;

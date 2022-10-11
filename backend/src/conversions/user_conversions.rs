@@ -23,9 +23,11 @@ impl ToProtoUser for models::User {
             phone: phone,
             permissions: self.permissions.to_i32_permissions(),
             avatar: self.avatar.to_owned(),
-            visibility: self.visibility.to_proto_visibility().unwrap() as i32
+            visibility: self.visibility.to_proto_visibility().unwrap() as i32,
+            default_follow_moderation: self.default_follow_moderation.to_proto_moderation().unwrap() as i32,
+            follow_relationship: None,
         };
-        println!("Converted user: {:?}", user);
+        // println!("Converted user: {:?}", user);
         return user;
     }
 }

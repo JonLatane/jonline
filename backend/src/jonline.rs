@@ -25,7 +25,7 @@ impl Jonline for JonLineImpl {
         &self,
         _request: Request<()>,
     ) -> Result<Response<GetServiceVersionResponse>, Status> {
-        rpcs::get_service_version()
+        rpcs::get_service_version().map(Response::new)
     }
 
     async fn create_account(
@@ -33,7 +33,7 @@ impl Jonline for JonLineImpl {
         request: Request<CreateAccountRequest>,
     ) -> Result<Response<AuthTokenResponse>, Status> {
         let conn = get_connection(&self.pool)?;
-        rpcs::create_account(request, &conn)
+        rpcs::create_account(request.into_inner(), &conn).map(Response::new)
     }
 
     async fn login(
@@ -58,6 +58,12 @@ impl Jonline for JonLineImpl {
             Err(e) => Err(e),
             Ok(user) => rpcs::get_current_user(user),
         }
+    }
+
+    async fn update_user(&self, request: Request<User>) -> Result<Response<User>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::update_user(request.into_inner(), user, &conn).map(Response::new)
     }
     async fn create_post(
         &self,
@@ -94,44 +100,47 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<GetUsersResponse>, Status> {
         let conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
-        rpcs::get_users(request.into_inner(), user, &conn)
+        rpcs::get_users(request.into_inner(), user, &conn).map(Response::new)
     }
 
     async fn get_groups(&self, request: Request<GetGroupsRequest>) -> Result<Response<GetGroupsResponse>, Status> {
         let conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
-        rpcs::get_groups(request.into_inner(), user, &conn)
+        rpcs::get_groups(request.into_inner(), user, &conn).map(Response::new)
     }
 
     async fn create_group(&self, request: Request<Group>) -> Result<Response<Group>, Status> {
         let conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &conn)?;
-        rpcs::create_group(request.into_inner(), user, &conn)
-        //TODO implement me!
-        // Ok(Response::new(Group {
-        //     ..Default::default()
-        // }))
+        rpcs::create_group(request.into_inner(), user, &conn).map(Response::new)
     }
 
-    async fn update_group(&self, _request: Request<Group>) -> Result<Response<Group>, Status> {
-        //TODO implement me!
-        Ok(Response::new(Group {
-            ..Default::default()
-        }))
+    async fn update_group(&self, request: Request<Group>) -> Result<Response<Group>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::update_group(request.into_inner(), user, &conn).map(Response::new)
+    }
+    async fn delete_group(&self, request: Request<Group>) -> Result<Response<()>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::delete_group(request.into_inner(), user, &conn).map(Response::new)
     }
 
-    async fn create_membership(&self, _request: Request<Membership>) -> Result<Response<Membership>, Status> {
-        //TODO implement me!
-        Ok(Response::new(Membership {
-            ..Default::default()
-        }))
+    async fn create_membership(&self, request: Request<Membership>) -> Result<Response<Membership>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::create_membership(request.into_inner(), user, &conn).map(Response::new)
     }
 
-    async fn update_membership(&self, _request: Request<Membership>) -> Result<Response<Membership>, Status> {
-        //TODO implement me!
-        Ok(Response::new(Membership {
-            ..Default::default()
-        }))
+    async fn update_membership(&self, request: Request<Membership>) -> Result<Response<Membership>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::update_membership(request.into_inner(), user, &conn).map(Response::new)
+    }
+    async fn delete_membership(&self, request: Request<Membership>) -> Result<Response<()>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::delete_membership(request.into_inner(), user, &conn).map(Response::new)
     }
 
     async fn get_server_configuration(
@@ -139,7 +148,7 @@ impl Jonline for JonLineImpl {
         _request: Request<()>,
     ) -> Result<Response<ServerConfiguration>, Status> {
         let conn = get_connection(&self.pool)?;
-        rpcs::get_server_configuration(&conn)
+        rpcs::get_server_configuration(&conn).map(Response::new)
     }
 
     async fn configure_server(

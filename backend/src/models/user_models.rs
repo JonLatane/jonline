@@ -13,6 +13,7 @@ pub struct User {
     pub permissions: serde_json::Value,
     pub avatar: Option<Vec<u8>>,
     pub visibility: String,
+    pub default_follow_moderation: String,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }

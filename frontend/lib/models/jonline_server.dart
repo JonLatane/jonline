@@ -100,7 +100,8 @@ class JonlineServer {
     return LinkedHashSet.of(servers).toList();
   }
 
-  Future<ServerConfiguration?> updateConfiguration() async {
+  Future<ServerConfiguration?> updateConfiguration(
+      {Function(String)? showMessage}) async {
     final client = await JonlineClients.getServerClient(this,
         showMessage: (m) => print(m), allowInsecure: server == 'localhost');
     if (client == null) return null;
@@ -111,14 +112,15 @@ class JonlineServer {
   }
 
   Future<void> updateServiceVersion({Function(String)? showMessage}) async {
+    showMessage ??= (m) => print(m);
     final client = await JonlineClients.getServerClient(this,
-        showMessage: (m) => print(m), allowInsecure: true);
+        showMessage: showMessage, allowInsecure: true);
     if (client == null) return;
     String? serviceVersion;
     try {
       serviceVersion = (await client.getServiceVersion(Empty())).version;
     } catch (e) {
-      showMessage?.call(formatServerError(e));
+      showMessage.call(formatServerError(e));
       return;
     }
     this.serviceVersion = serviceVersion;

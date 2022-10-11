@@ -3,7 +3,7 @@ import 'package:auto_route/empty_router_widgets.dart';
 
 import 'accounts_page.dart';
 import 'server_configuration_page.dart';
-import 'my_activity_page.dart';
+import 'user_profile_page.dart';
 
 const accountsTab = AutoRoute(
   path: 'accounts',
@@ -12,9 +12,9 @@ const accountsTab = AutoRoute(
   children: [
     AutoRoute(path: '', page: AccountsPage),
     AutoRoute(
-        path: 'account/:accountId/activity',
+        path: 'account/:accountId/profile',
         usesPathAsKey: true,
-        page: MyActivityPage),
+        page: MyProfilePage),
     AutoRoute(
         path: 'server/:server/configuration',
         usesPathAsKey: true,

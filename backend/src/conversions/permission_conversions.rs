@@ -2,6 +2,28 @@ use std::mem::transmute;
 
 use crate::protos::*;
 
+pub const ALL_PERMISSIONS: [Permission; 15] = [
+    Permission::Unknown,
+
+    Permission::CreateGroups,
+    Permission::GloballyPublishGroups,
+
+    Permission::ViewPosts,
+    Permission::CreatePosts,
+    Permission::GloballyPublishPosts,
+    Permission::ModeratePosts,
+
+    Permission::ViewEvents,
+    Permission::CreateEvents,
+    Permission::GloballyPublishEvents,
+    Permission::ModerateEvents,
+
+    Permission::GloballyPublishProfile,
+    Permission::Admin,
+    Permission::ModerateUsers,
+    Permission::ViewPrivateContactMethods,
+];
+
 pub trait ToProtoPermission {
     fn to_proto_permission(&self) -> Option<Permission>;
 }
@@ -21,21 +43,6 @@ impl ToProtoPermission for i32 {
     }
 }
 
-
-pub const ALL_PERMISSIONS: [Permission; 11] = [
-    Permission::ViewPosts,
-    Permission::CreatePosts,
-    Permission::GloballyPublishPosts,
-    Permission::ModeratePosts,
-    Permission::ViewEvents,
-    Permission::CreateEvents,
-    Permission::GloballyPublishEvents,
-    Permission::ModerateEvents,
-    Permission::Admin,
-    Permission::ModerateUsers,
-    Permission::ViewPrivateContactMethods,
-];
-
 pub trait ToProtoPermissions {
     fn to_proto_permissions(&self) -> Vec<Permission>;
 }
@@ -44,11 +51,11 @@ impl ToProtoPermissions for serde_json::Value {
         match self {
             serde_json::Value::Array(permissions) => {
                 let mut mapped_permissions: Vec<Permission> = Vec::new();
-                println!("Converting permissions: {:?}", permissions);
+                // println!("Converting permissions: {:?}", permissions);
                 for permission in permissions {
                     let mapped_permission = permission.as_str().map(|s| s.to_string().to_proto_permission()).flatten();
 
-                    println!("Mapped permission {:?} to {:?}", permission, mapped_permission);
+                    // println!("Mapped permission {:?} to {:?}", permission, mapped_permission);
                     if mapped_permission.is_some() {
                         mapped_permissions.push(mapped_permission.unwrap());
                     }
@@ -57,6 +64,11 @@ impl ToProtoPermissions for serde_json::Value {
             }
             _ => return Vec::new(),
         }
+    }
+}
+impl ToProtoPermissions for Vec<i32> {
+    fn to_proto_permissions(&self) -> Vec<Permission> {
+        self.iter().map(|p| p.to_proto_permission().unwrap()).collect()
     }
 }
 pub trait ToJsonPermissions {

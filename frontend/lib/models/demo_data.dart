@@ -64,6 +64,7 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar,
     ...sideAccounts
   ];
   int replyCount = 0;
+  var lastMessageTime = DateTime.now();
   for (final post in posts) {
     final totalReplies = 1 + Random().nextInt(100);
     final targets = [post];
@@ -81,9 +82,11 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar,
             ),
             options: targetAccount.authenticatedCallOptions);
         targets.add(replyPost);
-        if (++replyCount % 10 == 0) {
-          showSnackBar('Posted $replyCount replies.');
-          await communicationDelay;
+        replyCount += 1;
+        if (DateTime.now().difference(lastMessageTime) >
+            const Duration(seconds: 1)) {
+          showSnackBar("Posted $replyCount replies.");
+          lastMessageTime = DateTime.now();
         }
       } catch (e) {
         showSnackBar("Error posting demo data: $e");

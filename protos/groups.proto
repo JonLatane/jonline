@@ -16,6 +16,7 @@ message Group {
   // visibile to users with the ADMIN group permission.
   Visibility visibility = 7;
   uint32 member_count = 8;
+  optional Membership current_user_membership = 9;
 }
 
 message Membership {

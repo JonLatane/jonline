@@ -23,10 +23,22 @@ service Jonline {
   // (TODO) Gets the Jonline server's configuration. Publicly accessible.
   rpc GetServerConfiguration(google.protobuf.Empty) returns (ServerConfiguration) {}
 
+  // Creates a user account and provides an auth token. Publicly accessible.
+  rpc CreateAccount(CreateAccountRequest) returns (AuthTokenResponse) {}
+  // Logs in a user and provides an Auth Token (along with a Refresh Token).
+  rpc Login(LoginRequest) returns (AuthTokenResponse) {}
+  // Gets a new Refresh Token (given an Auth Token).
+  rpc RefreshToken(RefreshTokenRequest) returns (ExpirableToken) {}
+
+  // Gets the current user. Authenticated.
+  rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
   // Gets Users. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility.
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
 
+  // Update a user by ID. Authenticated.
+  // Updating other users requires ADMIN permissions.
+  rpc UpdateUser(User) returns (User) {}
   
   // Gets Groups. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility.
@@ -40,7 +52,7 @@ service Jonline {
   rpc UpdateGroup(Group) returns (Group) {}
   // Delete a Group. Authenticated.
   // Requires ADMIN permissions within the group, or ADMIN permissions for the user.
-  // rpc DeleteGroup(Group) returns (Group) {}
+  rpc DeleteGroup(Group) returns (google.protobuf.Empty) {}
 
   // Requests to join a group (or joins it), or sends an invite to the user. Authenticated.
   // Memberships and moderations are set to their defaults.
@@ -49,6 +61,7 @@ service Jonline {
   // Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user.
   // Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group.
   rpc UpdateMembership(Membership) returns (Membership) {}
+  rpc DeleteMembership(Membership) returns (google.protobuf.Empty) {}
 
   // Gets Posts. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.
@@ -57,16 +70,6 @@ service Jonline {
   // Eventually I should replace GetPosts with this.
   // Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.
   rpc QueryPosts(PostQuery) returns (Posts) {}
-
-  // Creates a user account and provides an auth token. Publicly accessible.
-  rpc CreateAccount(CreateAccountRequest) returns (AuthTokenResponse) {}
-  // Logs in a user and provides an Auth Token (along with a Refresh Token).
-  rpc Login(LoginRequest) returns (AuthTokenResponse) {}
-  // Gets a new Refresh Token (given an Auth Token).
-  rpc RefreshToken(RefreshTokenRequest) returns (ExpirableToken) {}
-
-  // Gets the current user. Authenticated.
-  rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
 
   // Creates a Post. Authenticated.
   rpc CreatePost(CreatePostRequest) returns (Post) {}

@@ -22,6 +22,9 @@ pub use refresh_token::refresh_token;
 mod get_current_user;
 pub use get_current_user::get_current_user;
 
+mod update_user;
+pub use update_user::update_user;
+
 mod create_post;
 pub use create_post::create_post;
 
@@ -34,6 +37,20 @@ pub use get_users::get_users;
 mod get_groups;
 pub use get_groups::get_groups;
 
-
 mod create_group;
 pub use create_group::create_group;
+
+mod update_group;
+pub use update_group::update_group;
+
+mod delete_group;
+pub use delete_group::delete_group;
+
+mod create_membership;
+pub use create_membership::create_membership;
+
+mod update_membership;
+pub use update_membership::update_membership;
+
+mod delete_membership;
+pub use delete_membership::delete_membership;

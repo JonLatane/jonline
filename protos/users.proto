@@ -16,6 +16,9 @@ message User {
   // (as opposed to Posts' individualized visibilities).
   // PRIVATE visibility means no one can see the user
   Visibility visibility = 7;
+  // Only PENDING or UNMODERATED are valid.
+  Moderation default_follow_moderation = 8;
+  optional Follow follow_relationship = 9;
 }
 
 // To allow LIMITED visibility users to make friends, anyone
@@ -23,9 +26,10 @@ message User {
 // has LIMITED visiblity, the response should be identical to a
 // "user_not_found" error. However, the follow request will still
 // be created to await the LIMITED user's approval.
-message FollowRequest {
-  optional string id = 1;
-  optional string username = 2;
+message Follow {
+  string user_id = 1;
+  string target_user_id = 2;
+  Moderation target_user_moderation = 3;
 }
 
 message ContactMethod {

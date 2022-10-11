@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../generated/authentication.pb.dart';
 import '../generated/jonline.pbgrpc.dart';
 import '../generated/permissions.pbenum.dart';
+import '../generated/users.pb.dart';
 import 'jonline_clients.dart';
 import 'server_errors.dart';
 import 'storage.dart';
@@ -121,8 +122,8 @@ class JonlineAccount {
     await communicationDelay;
     showMessage("${verbs[2]} $username on $server!");
 
-    final account = JonlineAccount._fromAuth(server,
-        authResponse.authToken.token, authResponse.refreshToken.token, username,
+    final account = JonlineAccount._fromAuth(
+        server, authResponse.authToken.token, authResponse.refreshToken.token,
         allowInsecure: allowInsecure);
     await account.saveNew(atBeginning: selectAccount);
     if (selectAccount) {
@@ -139,53 +140,57 @@ class JonlineAccount {
   final String server;
   final String authorizationToken;
   String serviceVersion;
-  String userId;
-  String username;
   String refreshToken;
   int refreshTokenExpiresAt;
   bool allowInsecure;
-  List<Permission> permissions;
+  User? user;
+  String get userId => user?.id ?? '';
+  String get username => user?.username ?? '';
+  List<Permission> get permissions => user?.permissions ?? [];
 
   /// Used by [loginToAccount] and [createAccount] when creating a new account.
   JonlineAccount._fromAuth(
-      this.server, this.authorizationToken, this.refreshToken, this.username,
+      this.server, this.authorizationToken, this.refreshToken,
       {this.allowInsecure = false})
       : id = uuid.v4(),
-        userId = "",
+        // userId = "",
         serviceVersion = "",
-        refreshTokenExpiresAt = 0,
-        permissions = [];
+        refreshTokenExpiresAt = 0; //permissions = [];
 
   /// Used by [accounts] to load data.
   JonlineAccount._fromJson(Map<String, dynamic> json)
       : id = json['id'],
-        username = json['username'] ?? '',
-        userId = json['userId'] ?? '',
+        // username = json['username'] ?? '',
+        // userId = json['userId'] ?? '',
         server = json['server'],
         authorizationToken = json['authorizationToken'],
         refreshToken = json['refreshToken'],
         allowInsecure = json['allowInsecure'],
         serviceVersion = json['serviceVersion'] ?? "",
         refreshTokenExpiresAt = json['refreshTokenExpiresAt'] ?? 0,
-        permissions = json['permissions'] == null
-            ? []
-            : (json['permissions'] as List<dynamic>)
-                .map((e) => Permission.values.firstWhere((p) => p.name == e,
-                    orElse: () => Permission.PERMISSION_UNKNOWN))
-                .where((e) => e != Permission.PERMISSION_UNKNOWN)
-                .toList();
+        // permissions = json['permissions'] == null
+        //     ? []
+        //     : (json['permissions'] as List<dynamic>)
+        //         .map((e) => Permission.values.firstWhere((p) => p.name == e,
+        //             orElse: () => Permission.PERMISSION_UNKNOWN))
+        //         .where((e) => e != Permission.PERMISSION_UNKNOWN)
+        //         .toList(),
+        user = json['user'] == null
+            ? null
+            : User.fromJson(jsonEncode(json['user']));
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'username': username,
-        'userId': userId,
+        // 'username': username,
+        // 'userId': userId,
         'server': server,
         'authorizationToken': authorizationToken,
         'refreshToken': refreshToken,
         'refreshTokenExpiresAt': refreshTokenExpiresAt,
         'allowInsecure': allowInsecure,
         'serviceVersion': serviceVersion,
-        'permissions': permissions.map((e) => e.name).toList(),
+        // 'permissions': permissions.map((e) => e.name).toList(),
+        'user': user == null ? null : jsonDecode(user!.writeToJson()),
       };
 
   Future<void> save() async {

@@ -9,6 +9,8 @@ import 'server_errors.dart';
 
 extension JonlineAccountOperations on JonlineAccount {
   Future<User?> getUser({Function(String)? showMessage}) async {
+    if (!await ensureRefreshToken()) return null;
+
     final User? user;
     try {
       user = await (await getClient(showMessage: showMessage))
@@ -27,9 +29,7 @@ extension JonlineAccountOperations on JonlineAccount {
     final User? user = await getUser(showMessage: showMessage);
     if (user == null) return null;
 
-    username = user.username;
-    userId = user.id;
-    permissions = user.permissions;
+    this.user = user;
     await save();
     return user;
   }

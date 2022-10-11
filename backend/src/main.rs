@@ -14,6 +14,8 @@ extern crate rocket;
 extern crate futures;
 extern crate serde;
 extern crate serde_json;
+extern crate rocket_async_compression;
+
 
 use std::{
     env, fs,
@@ -37,6 +39,7 @@ use protos::jonline_server::JonlineServer;
 use rocket::fs::NamedFile;
 use std::net::SocketAddr;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
+use rocket_async_compression::Compression;
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
@@ -132,7 +135,12 @@ fn create_rocket_unsecured(port: i32) -> rocket::Rocket<rocket::Build> {
 }
 
 fn create_rocket<T: rocket::figment::Provider>(figment: T) -> rocket::Rocket<rocket::Build> {
-    rocket::custom(figment).mount("/", routes![index, file])
+    let server = rocket::custom(figment).mount("/", routes![index, file]);
+    if cfg!(debug_assertions) {
+        server
+    } else {
+        server.attach(Compression::fairing())
+    }
 }
 
 #[get("/<file..>")]

@@ -63,8 +63,12 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   TextEditingController groupsSearchController = TextEditingController();
   ValueJonotifier<bool> groupsSearch = ValueJonotifier(false);
 
-  String? titleServer;
-  String? titleUsername;
+  ValueJonotifier<String?> titleServerNotifier = ValueJonotifier(null);
+  ValueJonotifier<String?> titleUsernameNotifier = ValueJonotifier(null);
+  String? get titleServer => titleServerNotifier.value;
+  set titleServer(String? value) => titleServerNotifier.value = value;
+  String? get titleUsername => titleUsernameNotifier.value;
+  set titleUsername(String? value) => titleUsernameNotifier.value = value;
   bool get sideNavExpanded => _sideNavExpanded;
   bool _sideNavExpanded = false;
   NativeDeviceOrientation orientation = NativeDeviceOrientation.unknown;
@@ -115,6 +119,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     Settings.showGroupsTabListener.addListener(updateState);
     peopleSearch.addListener(updateState);
     groupsSearch.addListener(updateState);
+    titleServerNotifier.addListener(updateState);
+    titleUsernameNotifier.addListener(updateState);
 
     if (MyPlatform.isMobile) {
       NativeDeviceOrientationCommunicator()
@@ -139,6 +145,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     Settings.showGroupsTabListener.removeListener(updateState);
     peopleSearch.removeListener(updateState);
     groupsSearch.removeListener(updateState);
+    titleServerNotifier.removeListener(updateState);
+    titleUsernameNotifier.removeListener(updateState);
 
     super.dispose();
   }
@@ -158,6 +166,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         appState.colorTheme.value =
             JonlineServer.selectedServer.configuration?.serverInfo.colors;
+        await appState.updateServersAndAccounts();
         // await JonlineServer.selectedServer.updateConfiguration();
         // if (!isServerConfigPage(context.topRoute)) {
         //   appState.colorTheme.value =
@@ -315,7 +324,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         case "EventDetailsRoute":
           context.replaceRoute(const EventListRoute());
           break;
-        case "MyActivityRoute":
+        case "MyProfileRoute":
+        case "ServerConfigurationRoute":
           context.replaceRoute(const AccountsRoute());
           break;
         default:
