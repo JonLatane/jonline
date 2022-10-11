@@ -22,7 +22,7 @@ pub mod protos;
 pub mod rpcs;
 pub mod schema;
 pub mod conversions;
-pub mod proto_models;
+pub mod logic;
 
 #[cfg(test)]
 mod tests {

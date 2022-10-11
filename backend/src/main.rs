@@ -30,7 +30,7 @@ pub mod models;
 pub mod protos;
 pub mod rpcs;
 pub mod schema;
-pub mod proto_models;
+pub mod logic;
 
 use crate::jonline::JonLineImpl;
 use ::jonline::{db_connection::PgPool, env_var, report_error};

@@ -1,4 +1,6 @@
 /backend/target
+/backend/src/protos/jonline.rs
+/backend/src/protos/google.protobuf.rs
 .vscode
 .env
 

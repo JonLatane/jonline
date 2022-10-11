@@ -12,7 +12,7 @@ fn main() {
         .type_attribute("FeatureSettings", "#[derive(serde::Serialize, serde::Deserialize)]")
         .type_attribute("ContactMethod", "#[derive(serde::Serialize, serde::Deserialize)]")
         .file_descriptor_set_path(out_dir.join("greeter_descriptor.bin"))
-        .out_dir("./target/compiled_protos")
+        .out_dir("./src/protos")
         .compile(&[proto_file], &["../protos"])
         .unwrap_or_else(|e| panic!("protobuf compile error: {}", e));
 

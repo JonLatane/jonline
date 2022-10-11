@@ -3,9 +3,9 @@ use crate::schema::server_configurations::dsl::*;
 use diesel::*;
 use tonic::{Code, Response, Status};
 
-use crate::conversions::{ToProtoServerConfiguration, ToDbServerConfiguration};
-use crate::proto_models::HasPermission;
 use crate::{models, protos};
+use crate::conversions::*;
+use crate::logic::*;
 
 pub fn configure_server(
     request: protos::ServerConfiguration,
