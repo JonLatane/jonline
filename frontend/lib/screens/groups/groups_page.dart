@@ -8,12 +8,9 @@ import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reord
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 
 import '../../app_state.dart';
-import '../../generated/permissions.pb.dart';
 import '../../generated/groups.pb.dart';
-
 import '../../models/jonline_server.dart';
 import '../home_page.dart';
-// import 'group_preview.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({Key? key}) : super(key: key);

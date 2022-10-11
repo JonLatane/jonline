@@ -4,7 +4,6 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jonline/models/jonline_account_operations.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/colors.dart';
-import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:recase/recase.dart';
 import '../../generated/permissions.pbenum.dart';
@@ -102,12 +101,12 @@ class _AdminPageState extends State<ServerConfigurationPage> {
     await server.updateServiceVersion();
     await server.updateConfiguration();
 
-    final serverConfiguration = server.configuration;
+    final config = server.configuration;
     setState(() {
       this.account = account;
       this.server = server;
       this.client = client;
-      this.config = serverConfiguration;
+      this.config = config;
     });
   }
 

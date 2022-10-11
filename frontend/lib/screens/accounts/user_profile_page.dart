@@ -183,9 +183,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     ? appState.navColor
                     : null,
                 child: InkWell(
-                  //    onTap: null, //TODO: Do we want to navigate the user somewhere?
-
-                  onTap: null,
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Stack(
@@ -239,7 +236,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                       TextField(
                                         // focusNode: titleFocus,
                                         controller: usernameController,
-                                        keyboardType: TextInputType.text,
+                                        keyboardType: TextInputType.url,
                                         textCapitalization:
                                             TextCapitalization.words,
                                         enableSuggestions: true,
@@ -342,10 +339,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   key: Key(
                       "visibility-control-${(account ?? JonlineAccount.selectedAccount)?.id}"),
                   child: MultiSelectChipField<vm.Visibility?>(
+                    decoration: const BoxDecoration(),
+                    // decoration: null,
                     // title: const Text("Select Visibility"),
                     // buttonText: const Text("Select Permissions"),
+
                     showHeader: false,
                     // searchable: true,
+                    selectedChipColor: appState.navColor,
+                    selectedTextStyle:
+                        TextStyle(color: appState.navColor.textColor),
                     items: vm.Visibility.values
                         .where((v) {
                           final account =

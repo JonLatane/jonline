@@ -1,7 +1,5 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:jonline/screens/posts/editor_with_preview.dart';
-import 'package:multi_select_flutter/chip_field/multi_select_chip_field.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:recase/recase.dart';
 
@@ -9,14 +7,11 @@ import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../generated/jonline.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
-import '../../generated/posts.pb.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../models/jonline_account.dart';
 import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_clients.dart';
-import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
-import '../../router/router.gr.dart';
 import '../home_page.dart';
 
 // import 'package:jonline/db.dart';
@@ -254,8 +249,7 @@ class CreateGroupPageState extends State<CreateGroupPage> {
                                   values.remove(visibility);
                                   setState(() => visibility = values.first!);
                                 } else {
-                                  values.add(visibility ??
-                                      vm.Visibility.VISIBILITY_UNKNOWN);
+                                  values.add(visibility);
                                   setState(() => visibility = values.first!);
                                 }
                               },

@@ -8,6 +8,7 @@ import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reord
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 
 import '../../app_state.dart';
+import '../../utils/colors.dart';
 import '../../generated/permissions.pb.dart';
 import '../../generated/users.pb.dart';
 
@@ -236,8 +237,12 @@ class PeopleScreenState extends State<PeopleScreen>
   Widget buildUserItem(User user) {
     bool cannotFollow = appState.selectedAccount == null ||
         appState.selectedAccount?.userId == user.id;
+    final backgroundColor =
+        appState.selectedAccount?.userId == user.id ? appState.navColor : null;
+    final textColor = backgroundColor?.textColor;
     return Card(
-      color: appState.selectedAccount?.id == user.id ? appState.navColor : null,
+      // color: Colors.blue,
+      color: backgroundColor,
       child: InkWell(
         //    onTap: null, //TODO: Do we want to navigate the user somewhere?
 
@@ -253,11 +258,11 @@ class PeopleScreenState extends State<PeopleScreen>
                 children: [
                   Row(
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         height: 48,
                         width: 48,
                         child: Icon(Icons.account_circle,
-                            size: 32, color: Colors.white),
+                            size: 32, color: textColor ?? Colors.white),
                       ),
                       Expanded(
                         child: Column(
@@ -267,7 +272,8 @@ class PeopleScreenState extends State<PeopleScreen>
                                 Expanded(
                                   child: Text(
                                       '${JonlineServer.selectedServer.server}/',
-                                      style: textTheme.caption,
+                                      style: textTheme.caption?.copyWith(
+                                          color: textColor?.withOpacity(0.5)),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis),
                                 ),
@@ -278,12 +284,8 @@ class PeopleScreenState extends State<PeopleScreen>
                                 Expanded(
                                   child: Text(
                                     user.username,
-                                    style: textTheme.headline6?.copyWith(
-                                        color:
-                                            appState.selectedAccount?.userId ==
-                                                    user.id
-                                                ? appState.primaryColor
-                                                : null),
+                                    style: textTheme.headline6
+                                        ?.copyWith(color: textColor),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -296,11 +298,11 @@ class PeopleScreenState extends State<PeopleScreen>
                       if (user.permissions.contains(Permission.ADMIN))
                         Tooltip(
                           message: "${user.username} is an admin",
-                          child: const SizedBox(
+                          child: SizedBox(
                             height: 32,
                             width: 32,
                             child: Icon(Icons.admin_panel_settings_outlined,
-                                size: 24, color: Colors.white),
+                                size: 24, color: textColor ?? Colors.white),
                           ),
                         ),
                     ],
@@ -316,14 +318,16 @@ class PeopleScreenState extends State<PeopleScreen>
                             children: [
                               Text(
                                 "User ID: ",
-                                style: textTheme.caption,
+                                style: textTheme.caption?.copyWith(
+                                    color: textColor?.withOpacity(0.5)),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Expanded(
                                 child: Text(
                                   user.id,
-                                  style: textTheme.caption,
+                                  style: textTheme.caption?.copyWith(
+                                      color: textColor?.withOpacity(0.5)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
