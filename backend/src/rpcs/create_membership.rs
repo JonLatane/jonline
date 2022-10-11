@@ -13,7 +13,7 @@ pub fn create_membership(
     user: models::User,
     conn: &PgPooledConnection,
 ) -> Result<Membership, Status> {
-    validate_membership(&request)?;
+    validate_membership(&request, OperationType::Create)?;
     let group = groups::table
         .select(groups::all_columns)
         .filter(groups::id.eq(request.group_id.to_db_id_or_err("group_id")?))
@@ -53,7 +53,13 @@ pub fn create_membership(
             Some(membership) => create_membership_for_other(request, group, user, membership, conn),
         }
     };
-    result.map(|membership| membership.to_proto())
+    match result {
+        Ok(membership) => {
+            membership.update_related_counts(conn)?;
+            Ok(membership.to_proto())
+        },
+        Err(e) => Err(e)
+    }
 }
 
 fn create_membership_for_self(
@@ -70,7 +76,7 @@ fn create_membership_for_self(
                     group_id: request.group_id.to_db_id().unwrap(),
                     permissions: request.permissions.to_json_permissions(),
                     group_moderation: group.default_membership_moderation,
-                    user_moderation: request.user_moderation.to_string_moderation(),
+                    user_moderation: Moderation::Approved.to_string_moderation(),
                 })
                 .get_result::<models::Membership>(conn)?;
             Ok(membership)

@@ -1,3 +1,4 @@
+use super::OperationType;
 use super::{validate_email, validate_phone, validate_username};
 use tonic::{Code, Status};
 
@@ -52,6 +53,27 @@ pub fn validate_user(user: &User) -> Result<(), Status> {
             }
             _ => (),
         };
+    }
+    Ok(())
+}
+
+pub fn validate_follow(follow: &Follow, validation_type: OperationType) -> Result<(), Status> {
+    follow.user_id.to_db_id_or_err("user_id")?;
+    follow.target_user_id.to_db_id_or_err("target_user_id")?;
+    if follow.user_id == follow.target_user_id {
+        return Err(Status::new(
+            Code::InvalidArgument,
+            "user_cannot_follow_themselves",
+        ));
+    }
+    match validation_type {
+        OperationType::Update => {
+            match follow.target_user_moderation.to_proto_moderation().unwrap() {
+                Moderation::Approved | Moderation::Rejected => {}
+                _ => return Err(Status::new(Code::Internal, "invalid_target_user_moderation")),
+            };
+        }
+        _ => ()
     }
     Ok(())
 }

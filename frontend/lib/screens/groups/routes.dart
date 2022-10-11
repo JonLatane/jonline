@@ -13,10 +13,10 @@ const groupsTab = AutoRoute(
   children: [
     AutoRoute(path: '', page: GroupsScreen),
     AutoRoute(
-      path: 'group/:id',
+      path: 'group/:server/:groupId',
       usesPathAsKey: true,
       page: GroupDetailsPage,
-      guards: [AuthGuard],
+      guards: [],
     ),
     AutoRoute(
       path: 'create',

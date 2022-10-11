@@ -15,7 +15,7 @@ pub fn update_membership(
     current_user: models::User,
     conn: &PgPooledConnection,
 ) -> Result<Membership, Status> {
-    validate_membership(&request)?;
+    validate_membership(&request, OperationType::Create)?;
     // let group = groups::table
     //     .select(groups::all_columns)
     //     .filter(groups::id.eq(request.group_id.to_db_id_or_err("group_id")?))
@@ -76,10 +76,16 @@ pub fn update_membership(
     existing_membership.updated_at = SystemTime::now().into();
 
     match diesel::update(memberships::table)
+        .filter(memberships::user_id.eq(request.user_id.to_db_id().unwrap()))
+        .filter(memberships::group_id.eq(request.group_id.to_db_id().unwrap()))
         .set(&existing_membership)
         .execute(conn)
     {
-        Ok(_) => Ok(existing_membership.to_proto()),
+        Ok(_) => {
+            existing_membership.update_related_counts(conn)?;
+            Ok(existing_membership.to_proto())
+        }
+        ,
         Err(e) => {
             println!("Error updating membership: {:?}", e);
             Err(Status::new(Code::Internal, "error_updating_membership"))

@@ -6,10 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:jonline/models/jonline_clients.dart';
+import 'package:jonline/screens/groups/group_details_page.dart';
+import 'package:jonline/utils/enum_conversions.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
+import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
+import '../../models/server_errors.dart';
+import '../../router/router.gr.dart';
 import '../home_page.dart';
 
 class GroupsScreen extends StatefulWidget {
@@ -128,8 +134,10 @@ class GroupsScreenState extends State<GroupsScreen>
                                             2),
                                 Center(
                                   child: Container(
-                                    constraints:
-                                        const BoxConstraints(maxWidth: 350),
+                                    constraints: BoxConstraints(
+                                        maxWidth: 250 *
+                                            MediaQuery.of(context)
+                                                .textScaleFactor),
                                     child: Column(
                                       children: [
                                         Text(
@@ -165,7 +173,7 @@ class GroupsScreenState extends State<GroupsScreen>
                                                   children: [
                                                     Expanded(
                                                       child: Text(
-                                                          'Login/Create Account to see more Groups.',
+                                                          'Login/Create Account to see/create more Groups.',
                                                           textAlign:
                                                               TextAlign.center,
                                                           style: textTheme
@@ -216,7 +224,7 @@ class GroupsScreenState extends State<GroupsScreen>
                         controller: scrollController,
                         crossAxisCount: max(
                             2,
-                            min(6, (MediaQuery.of(context).size.width) / 250)
+                            min(6, (MediaQuery.of(context).size.width) / 300)
                                 .floor()),
                         mainAxisSpacing: 4,
                         crossAxisSpacing: 4,
@@ -230,13 +238,66 @@ class GroupsScreenState extends State<GroupsScreen>
     );
   }
 
+  joinGroup(Group group) async {
+    try {
+      final membership =
+          await (await JonlineAccount.selectedAccount!.getClient())!
+              .createMembership(
+                  Membership(
+                    userId: JonlineAccount.selectedAccount!.userId,
+                    groupId: group.id,
+                  ),
+                  options:
+                      JonlineAccount.selectedAccount!.authenticatedCallOptions);
+      setState(() {
+        group.currentUserMembership = membership;
+        if (membership.groupModeration.passes &&
+            membership.userModeration.passes) {
+          group.memberCount += 1;
+        }
+      });
+      showSnackBar('Joined ${group.name}.');
+    } catch (e) {
+      showSnackBar(formatServerError(e));
+    }
+  }
+
+  leaveGroup(Group group) async {
+    final membership = group.currentUserMembership;
+    try {
+      await (await JonlineAccount.selectedAccount!.getClient())!
+          .deleteMembership(
+              Membership(
+                userId: JonlineAccount.selectedAccount!.userId,
+                groupId: group.id,
+              ),
+              options:
+                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+      setState(() {
+        group.currentUserMembership = Membership();
+
+        if (membership.groupModeration.passes &&
+            membership.userModeration.passes) {
+          group.memberCount -= 1;
+        }
+      });
+      showSnackBar('Left ${group.name}.');
+    } catch (e) {
+      showSnackBar(formatServerError(e));
+    }
+  }
+
   Widget buildGroupItem(Group group) {
-    bool cannotJoin = false;
+    bool isMember = group.currentUserMembership.groupModeration.passes;
+    bool invitePending = group.currentUserMembership.groupModeration.pending;
     return Card(
       color:
           appState.selectedAccount?.id == group.id ? appState.navColor : null,
       child: InkWell(
-        onTap: null, //TODO: Do we want to navigate the group somewhere?
+        onTap: () {
+          context.navigateTo(GroupDetailsRoute(
+              groupId: group.id, server: JonlineServer.selectedServer.server));
+        }, //TODO: Do we want to navigate the group somewhere?
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Stack(
@@ -286,16 +347,6 @@ class GroupsScreenState extends State<GroupsScreen>
                           ],
                         ),
                       ),
-                      // if (group.permissions.contains(Permission.ADMIN))
-                      //   Tooltip(
-                      //     message: "${group.name} is an admin",
-                      //     child: const SizedBox(
-                      //       height: 32,
-                      //       width: 32,
-                      //       child: Icon(Icons.admin_panel_settings_outlined,
-                      //           size: 24, color: Colors.white),
-                      //     ),
-                      //   ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -337,8 +388,8 @@ class GroupsScreenState extends State<GroupsScreen>
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
+                  if (isMember || invitePending)
+                    Row(children: [
                       Expanded(
                           child: SizedBox(
                               height: 32,
@@ -346,21 +397,41 @@ class GroupsScreenState extends State<GroupsScreen>
                                   style: ButtonStyle(
                                       padding: MaterialStateProperty.all(
                                           const EdgeInsets.all(0))),
-                                  onPressed: cannotJoin
-                                      ? null
-                                      : () {
-                                          showSnackBar(
-                                              "This isn't done yet 😔");
-                                        },
+                                  onPressed: () => leaveGroup(group),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    children: const [
-                                      Icon(Icons.add),
-                                      Text("JOIN")
+                                    children: [
+                                      const Icon(Icons.remove_circle_outline),
+                                      Text(invitePending
+                                          ? "CANCEL REQUEST"
+                                          : "LEAVE")
                                     ],
                                   ))))
-                    ],
-                  )
+                    ]),
+                  if (!isMember && !invitePending)
+                    Row(
+                      children: [
+                        Expanded(
+                            child: SizedBox(
+                                height: 32,
+                                child: TextButton(
+                                    style: ButtonStyle(
+                                        padding: MaterialStateProperty.all(
+                                            const EdgeInsets.all(0))),
+                                    onPressed: () => joinGroup(group),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.add),
+                                        Text(group.defaultMembershipModeration
+                                                .pending
+                                            ? "REQUEST"
+                                            : "JOIN")
+                                      ],
+                                    ))))
+                      ],
+                    )
                 ],
               ),
             ],

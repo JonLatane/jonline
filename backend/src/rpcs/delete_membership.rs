@@ -13,7 +13,7 @@ pub fn delete_membership(
     current_user: models::User,
     conn: &PgPooledConnection,
 ) -> Result<(), Status> {
-    validate_membership(&request)?;
+    validate_membership(&request, OperationType::Create)?;
 
     let user_membership = match memberships::table
         .select(memberships::all_columns)
@@ -36,7 +36,12 @@ pub fn delete_membership(
         .filter(memberships::user_id.eq(request.user_id.to_db_id().unwrap()))
         .execute(conn)
     {
-        Ok(_) => Ok(()),
+        Ok(_) => {
+            user_membership
+                .map(|m| m.update_related_counts(conn))
+                .transpose()?;
+            Ok(())
+        }
         Err(_) => Err(Status::new(Code::Internal, "data_error")),
     }
 }

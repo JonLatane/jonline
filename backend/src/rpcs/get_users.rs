@@ -5,9 +5,8 @@ use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
+use crate::schema::follows;
 use crate::schema::users;
-
-// use super::validations::*;
 
 pub fn get_users(
     request: GetUsersRequest,
@@ -39,7 +38,12 @@ fn get_all_users(
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
     let users = users::table
-        .select(users::all_columns)
+        .left_join(
+            follows::table.on(follows::target_user_id
+                .eq(users::id)
+                .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+        )
+        .select((users::all_columns, follows::all_columns.nullable()))
         .filter(
             users::visibility
                 .eq_any(visibilities)
@@ -48,10 +52,10 @@ fn get_all_users(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<models::User>(conn)
+        .load::<(models::User, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|user| user.to_proto())
+        .map(|(user, follow)| user.to_proto_with(&follow))
         .collect();
     GetUsersResponse {
         users,
@@ -71,7 +75,12 @@ fn get_by_username(
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
     let users = users::table
-        .select(users::all_columns)
+        .left_join(
+            follows::table.on(follows::target_user_id
+                .eq(users::id)
+                .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+        )
+        .select((users::all_columns, follows::all_columns.nullable()))
         .filter(
             users::visibility
                 .eq_any(visibilities)
@@ -81,10 +90,10 @@ fn get_by_username(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<models::User>(conn)
+        .load::<(models::User, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|user| user.to_proto())
+        .map(|(user, follow)| user.to_proto_with(&follow))
         .collect();
     GetUsersResponse {
         users,
@@ -105,19 +114,25 @@ fn get_by_user_id(
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
     let users = users::table
-        .select(users::all_columns)
+        .left_join(
+            follows::table.on(follows::target_user_id
+                .eq(users::id)
+                .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+        )
+        .select((users::all_columns, follows::all_columns.nullable()))
         .filter(
             users::visibility
                 .eq_any(visibilities)
                 .or(users::id.nullable().eq(user.map(|u| u.id))),
-        )        .filter(users::id.eq(request.user_id.unwrap().to_db_id().unwrap()))
+        )
+        .filter(users::id.eq(request.user_id.unwrap().to_db_id().unwrap()))
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<models::User>(conn)
+        .load::<(models::User, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|user| user.to_proto())
+        .map(|(user, follow)| user.to_proto_with(&follow))
         .collect();
     GetUsersResponse {
         users,

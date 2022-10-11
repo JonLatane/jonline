@@ -1,12 +1,15 @@
+import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jonline/models/jonline_account_operations.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/colors.dart';
+import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:recase/recase.dart';
 import '../../generated/permissions.pbenum.dart';
+import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../models/demo_data.dart';
 import '../../models/jonline_server.dart';
 import '../../utils/proto_utils.dart';
@@ -84,7 +87,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
     return result;
   }
 
-  updateServerConfiguration() async {
+  refreshServerConfiguration() async {
     final account = widget.accountId == null
         ? null
         : this.account ??
@@ -110,6 +113,27 @@ class _AdminPageState extends State<ServerConfigurationPage> {
     });
   }
 
+  applyServerConfiguration() async {
+    try {
+      await account!.ensureRefreshToken(showMessage: showSnackBar);
+      final response = await client!
+          .configureServer(config!, options: account!.authenticatedCallOptions);
+      server!.configuration = response;
+      setState(() {
+        config = response.jonCopy();
+      });
+      await server!.save();
+      if (server == JonlineServer.selectedServer) {
+        appState.colorTheme.value = config!.serverInfo.colors;
+      }
+      showSnackBar("Configuration Updated 🎉");
+      await refreshServerConfiguration();
+    } catch (e) {
+      showSnackBar(formatServerError(e));
+      rethrow;
+    }
+  }
+
   onAdminPageFocused() {
     if (config != null) {
       appState.colorTheme.value = config!.serverInfo.colors;
@@ -123,7 +147,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.serverConfigPageFocused.addListener(onAdminPageFocused);
     Future.microtask(() async {
-      await updateServerConfiguration();
+      await refreshServerConfiguration();
       onAdminPageFocused();
     });
   }
@@ -140,38 +164,54 @@ class _AdminPageState extends State<ServerConfigurationPage> {
         body: Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.only(
-                  top: 16 + MediaQuery.of(context).padding.top,
-                  left: 8.0,
-                  right: 8.0,
-                  bottom: 8 + MediaQuery.of(context).padding.bottom),
-              child: Center(
-                  child: Stack(
-                children: [
-                  AnimatedOpacity(
-                      opacity: config == null ? 0 : 1,
-                      duration: animationDuration,
-                      child: IgnorePointer(
-                          ignoring: account == null,
-                          child: buildConfiguration())),
-                  AnimatedOpacity(
-                      opacity: config == null ? 1 : 0,
-                      duration: animationDuration,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+          child: RefreshIndicator(
+              displacement: MediaQuery.of(context).padding.top + 40,
+              onRefresh: () async => await refreshServerConfiguration(),
+              child: ScrollConfiguration(
+                  // key: Key("postListScrollConfiguration-${postList.length}"),
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    dragDevices: {
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.trackpad,
+                      PointerDeviceKind.stylus,
+                    },
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          top: 16 + MediaQuery.of(context).padding.top,
+                          left: 8.0,
+                          right: 8.0,
+                          bottom: 8 + MediaQuery.of(context).padding.bottom),
+                      child: Center(
+                          child: Stack(
                         children: [
-                          SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.3),
-                          const Center(child: CircularProgressIndicator()),
+                          AnimatedOpacity(
+                              opacity: config == null ? 0 : 1,
+                              duration: animationDuration,
+                              child: IgnorePointer(
+                                  ignoring: account == null,
+                                  child: buildConfiguration())),
+                          AnimatedOpacity(
+                              opacity: config == null ? 1 : 0,
+                              duration: animationDuration,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.3),
+                                  const Center(
+                                      child: CircularProgressIndicator()),
+                                ],
+                              ))
                         ],
-                      ))
-                ],
-              )),
-            ),
-          ),
+                      )),
+                    ),
+                  ))),
         ),
       ],
     ));
@@ -195,6 +235,34 @@ class _AdminPageState extends State<ServerConfigurationPage> {
             ),
             const SizedBox(height: 24),
             Text('Feature Settings', style: textTheme.subtitle1),
+            // Row(
+            //   children: [
+            //     Expanded(
+            //         child: Text("Enable People", style: textTheme.labelLarge)),
+            //     Switch(
+            //         activeColor: appState.primaryColor,
+            //         value: config?.peopleSettings.visible ?? false,
+            //         onChanged: account != null
+            //             ? (v) {
+            //                 setState(() => config!.peopleSettings.visible = v);
+            //               }
+            //             : null),
+            //   ],
+            // ),
+            Row(
+              children: [
+                Expanded(
+                    child: Text("Enable Groups", style: textTheme.labelLarge)),
+                Switch(
+                    activeColor: appState.primaryColor,
+                    value: config?.groupSettings.visible ?? false,
+                    onChanged: account != null
+                        ? (v) {
+                            setState(() => config!.groupSettings.visible = v);
+                          }
+                        : null),
+              ],
+            ),
             Row(
               children: [
                 Expanded(
@@ -257,6 +325,59 @@ class _AdminPageState extends State<ServerConfigurationPage> {
               ],
             ),
             const SizedBox(height: 24),
+            Text('Default User Visibility', style: textTheme.subtitle1),
+            const SizedBox(height: 8),
+            if (isAdmin)
+              Container(
+                key: Key(
+                    "visibility-control-${(account ?? JonlineAccount.selectedAccount)?.id}"),
+                child: MultiSelectChipField<vm.Visibility?>(
+                  decoration: const BoxDecoration(),
+                  showHeader: false,
+                  selectedChipColor: appState.navColor,
+                  selectedTextStyle:
+                      TextStyle(color: appState.navColor.textColor),
+                  items: vm.Visibility.values
+                      .where((v) {
+                        final account =
+                            this.account ?? JonlineAccount.selectedAccount;
+                        return v != vm.Visibility.VISIBILITY_UNKNOWN &&
+                            (account?.permissions.contains(
+                                        Permission.GLOBALLY_PUBLISH_USERS) ==
+                                    true ||
+                                account?.permissions
+                                        .contains(Permission.ADMIN) ==
+                                    true ||
+                                config?.peopleSettings.defaultVisibility ==
+                                    vm.Visibility.GLOBAL_PUBLIC ||
+                                v != vm.Visibility.GLOBAL_PUBLIC);
+                      })
+                      .map((e) => MultiSelectItem(e, e.displayName))
+                      .toList(),
+                  // listType: MultiSelectListType.CHIP,
+                  initialValue: <vm.Visibility?>[
+                    config?.peopleSettings.defaultVisibility ??
+                        vm.Visibility.VISIBILITY_UNKNOWN
+                  ],
+
+                  onTap: (List<vm.Visibility?> values) {
+                    if (values.length > 1) {
+                      values.remove(config?.peopleSettings.defaultVisibility ??
+                          vm.Visibility.VISIBILITY_UNKNOWN);
+                      setState(() => config?.peopleSettings.defaultVisibility =
+                          values.first!);
+                    } else {
+                      values.add(config?.peopleSettings.defaultVisibility ??
+                          vm.Visibility.VISIBILITY_UNKNOWN);
+                      setState(() => config?.peopleSettings.defaultVisibility =
+                          values.first!);
+                    }
+                    print(
+                        "User visibility: ${config?.peopleSettings.defaultVisibility}");
+                  },
+                ),
+              ),
+            const SizedBox(height: 24),
             Text('Default User Permissions', style: textTheme.subtitle1),
             const SizedBox(height: 8),
             if (isAdmin)
@@ -266,8 +387,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                 searchable: true,
                 items: Permission.values
                     .where((p) => p != Permission.PERMISSION_UNKNOWN)
-                    .map((e) => MultiSelectItem(
-                        e, e.name.replaceAll('_', ' ').titleCase))
+                    .map((p) => MultiSelectItem(p, p.displayName))
                     .toList(),
                 listType: MultiSelectListType.CHIP,
                 initialValue: config?.defaultUserPermissions ?? [],
@@ -293,8 +413,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                 chipColor: appState.navColor,
                 textStyle: TextStyle(color: appState.navColor.textColor),
                 items: (config?.defaultUserPermissions ?? [])
-                    .map((e) => MultiSelectItem(
-                        e, e.name.replaceAll('_', ' ').titleCase))
+                    .map((p) => MultiSelectItem(p, p.displayName))
                     .toList(),
               ),
             const SizedBox(height: 24),
@@ -310,26 +429,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                     ],
                   ),
                 ),
-                onPressed: () async {
-                  try {
-                    await account!
-                        .ensureRefreshToken(showMessage: showSnackBar);
-                    final response = await client!.configureServer(config!,
-                        options: account!.authenticatedCallOptions);
-                    server!.configuration = response;
-                    setState(() {
-                      config = response.jonCopy();
-                    });
-                    await server!.save();
-                    if (server == JonlineServer.selectedServer) {
-                      appState.colorTheme.value = config!.serverInfo.colors;
-                    }
-                    showSnackBar("Configuration Updated 🎉");
-                  } catch (e) {
-                    showSnackBar(formatServerError(e));
-                    rethrow;
-                  }
-                },
+                onPressed: applyServerConfiguration,
               ),
             if (isAdmin) const SizedBox(height: 16),
             if (isAdmin) Text('Admin/Dev Tools', style: textTheme.subtitle1),
@@ -360,7 +460,36 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                     ],
                   ),
                 ),
-              )
+              ),
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Really post randomized demo data?'),
+                      action: SnackBarAction(
+                        label: 'Post it!', // or some operation you would like
+                        onPressed: () {
+                          if (account == null) {
+                            showSnackBar("Account not ready.");
+                          }
+                          postDemoData(account!, showSnackBar, appState,
+                              randomize: true);
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.developer_mode),
+                      Text('Post *Randomized* Demo Data'),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 48)
           ],
         ),
       ),

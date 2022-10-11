@@ -15,6 +15,7 @@ extern crate futures;
 extern crate serde;
 extern crate serde_json;
 extern crate rocket_async_compression;
+extern crate itertools;
 
 
 use std::{

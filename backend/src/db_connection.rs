@@ -11,6 +11,8 @@ use diesel::pg::PgConnection;
 pub type PgPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
 pub type PgPool = Pool<ConnectionManager<PgConnection>>;
 
+pub type Backend = <PgConnection as Connection>::Backend;
+
 pub fn establish_pool() -> PgPool {
     dotenv().ok();
 

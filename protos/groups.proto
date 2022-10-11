@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 package jonline;
+
+import "google/protobuf/timestamp.proto";
 import "permissions.proto";
 import "visibility_moderation.proto";
 
@@ -17,6 +19,8 @@ message Group {
   Visibility visibility = 7;
   uint32 member_count = 8;
   optional Membership current_user_membership = 9;
+  google.protobuf.Timestamp created_at = 10;
+  optional google.protobuf.Timestamp updated_at = 11;
 }
 
 message Membership {
@@ -31,13 +35,16 @@ message Membership {
   Moderation group_moderation = 4;
   // Tracks whether the user needs to approve the membership.
   Moderation user_moderation = 5;
+  google.protobuf.Timestamp created_at = 6;
+  optional google.protobuf.Timestamp updated_at = 7;
 }
 
 
 message GetGroupsRequest {
-  optional string group_name = 1;
-  GroupListingType listing_type = 2;
-  optional int32 page = 3;
+  optional string group_id = 1;
+  optional string group_name = 2;
+  GroupListingType listing_type = 3;
+  optional int32 page = 4;
 }
 
 enum GroupListingType {

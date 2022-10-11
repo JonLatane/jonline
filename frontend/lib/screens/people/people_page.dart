@@ -6,8 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:jonline/models/jonline_clients.dart';
+import 'package:jonline/utils/enum_conversions.dart';
 
 import '../../app_state.dart';
+import '../../models/jonline_account.dart';
+import '../../models/server_errors.dart';
 import '../../utils/colors.dart';
 import '../../generated/permissions.pb.dart';
 import '../../generated/users.pb.dart';
@@ -234,7 +238,52 @@ class PeopleScreenState extends State<PeopleScreen>
     );
   }
 
+  follow(User user) async {
+    try {
+      final follow = await (await JonlineAccount.selectedAccount!.getClient())!
+          .createFollow(
+              Follow(
+                userId: JonlineAccount.selectedAccount!.userId,
+                targetUserId: user.id,
+              ),
+              options:
+                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+      setState(() {
+        user.followRelationship = follow;
+        if (follow.targetUserModeration.passes) {
+          user.followerCount += 1;
+        }
+      });
+      showSnackBar('Followed ${user.username}.');
+    } catch (e) {
+      showSnackBar(formatServerError(e));
+    }
+  }
+
+  unfollow(User user) async {
+    final follow = user.followRelationship;
+    try {
+      await (await JonlineAccount.selectedAccount!.getClient())!.deleteFollow(
+          Follow(
+            userId: JonlineAccount.selectedAccount!.userId,
+            targetUserId: user.id,
+          ),
+          options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
+      setState(() {
+        user.followRelationship = Follow();
+        if (follow.targetUserModeration.passes) {
+          user.followerCount -= 1;
+        }
+      });
+      showSnackBar('Unfollowed ${user.username}.');
+    } catch (e) {
+      showSnackBar(formatServerError(e));
+    }
+  }
+
   Widget buildUserItem(User user) {
+    bool following = user.followRelationship.targetUserModeration.passes;
+    bool pending_request = user.followRelationship.targetUserModeration.pending;
     bool cannotFollow = appState.selectedAccount == null ||
         appState.selectedAccount?.userId == user.id;
     final backgroundColor =
@@ -316,22 +365,35 @@ class PeopleScreenState extends State<PeopleScreen>
                           flex: 2,
                           child: Row(
                             children: [
+                              // Text(
+                              //   "User ID: ",
+                              //   style: textTheme.caption?.copyWith(
+                              //       color: textColor?.withOpacity(0.5)),
+                              //   maxLines: 1,
+                              //   overflow: TextOverflow.ellipsis,
+                              // ),
+                              // Expanded(
+                              //   child: Text(
+                              //     user.id,
+                              //     style: textTheme.caption?.copyWith(
+                              //         color: textColor?.withOpacity(0.5)),
+                              //     maxLines: 1,
+                              //     overflow: TextOverflow.ellipsis,
+                              //   ),
+                              // ),
+                              // const Icon(
+                              //   Icons.account_circle,
+                              //   color: Colors.white,
+                              // ),
+                              // const SizedBox(width: 4),
+                              Text(user.followerCount.toString(),
+                                  style: textTheme.caption),
                               Text(
-                                "User ID: ",
-                                style: textTheme.caption?.copyWith(
-                                    color: textColor?.withOpacity(0.5)),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  user.id,
-                                  style: textTheme.caption?.copyWith(
-                                      color: textColor?.withOpacity(0.5)),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
+                                  " follower${user.followerCount == 1 ? '' : 's'}",
+                                  style: textTheme.caption),
+                              const Expanded(child: SizedBox()),
+                              Text("following ${user.followingCount}",
+                                  style: textTheme.caption),
                             ],
                           ),
                         ),
@@ -339,8 +401,8 @@ class PeopleScreenState extends State<PeopleScreen>
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
+                  if (following || pending_request)
+                    Row(children: [
                       Expanded(
                           child: SizedBox(
                               height: 32,
@@ -348,21 +410,43 @@ class PeopleScreenState extends State<PeopleScreen>
                                   style: ButtonStyle(
                                       padding: MaterialStateProperty.all(
                                           const EdgeInsets.all(0))),
-                                  onPressed: cannotFollow
-                                      ? null
-                                      : () {
-                                          showSnackBar(
-                                              "This isn't done yet 😔");
-                                        },
+                                  onPressed: () => unfollow(user),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    children: const [
-                                      Icon(Icons.add),
-                                      Text("FOLLOW")
+                                    children: [
+                                      const Icon(Icons.remove_circle_outline),
+                                      Text(pending_request
+                                          ? "CANCEL REQUEST"
+                                          : "UNFOLLOW")
                                     ],
                                   ))))
-                    ],
-                  )
+                    ]),
+                  if (!following)
+                    Row(
+                      children: [
+                        Expanded(
+                            child: SizedBox(
+                                height: 32,
+                                child: TextButton(
+                                    style: ButtonStyle(
+                                        padding: MaterialStateProperty.all(
+                                            const EdgeInsets.all(0))),
+                                    onPressed: cannotFollow
+                                        ? null
+                                        : () => follow(user),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.add),
+                                        Text(
+                                            user.defaultFollowModeration.pending
+                                                ? "REQUEST"
+                                                : "FOLLOW")
+                                      ],
+                                    ))))
+                      ],
+                    )
                 ],
               ),
             ],

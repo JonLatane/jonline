@@ -4,24 +4,32 @@ package jonline;
 
 enum Permission {
   PERMISSION_UNKNOWN = 0;
-
-  CREATE_GROUPS = 1;
-  GLOBALLY_PUBLISH_GROUPS = 2;
-
-  VIEW_POSTS = 10;
-  CREATE_POSTS = 11;
-  GLOBALLY_PUBLISH_POSTS = 12;
-  MODERATE_POSTS = 13;
-
-  VIEW_EVENTS = 20;
-  CREATE_EVENTS = 21;
-  GLOBALLY_PUBLISH_EVENTS = 22;
-  MODERATE_EVENTS = 23;
-
-  GLOBALLY_PUBLISH_PROFILE = 999;
+  // Would "Create Users" ever make sense as a permission?
+  reserved 1;
+  // This generally only applies to the user's own profile, except for Admins.
+  GLOBALLY_PUBLISH_USERS = 2;
   // "Moderate users" refers to granting VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS
   // and CREATE_EVENTS permissions to users.
-  MODERATE_USERS = 1001;
+  MODERATE_USERS = 3;
+  FOLLOW_USERS = 4;
+  // "Basic Permissions" refers to VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS
+  // and CREATE_EVENTS.
+  GRANT_BASIC_PERMISSIONS = 5;
+
+  CREATE_GROUPS = 11;
+  GLOBALLY_PUBLISH_GROUPS = 12;
+  MODERATE_GROUPS = 13;
+  JOIN_GROUPS = 14;
+
+  VIEW_POSTS = 20;
+  CREATE_POSTS = 21;
+  GLOBALLY_PUBLISH_POSTS = 22;
+  MODERATE_POSTS = 23;
+
+  VIEW_EVENTS = 30;
+  CREATE_EVENTS = 31;
+  GLOBALLY_PUBLISH_EVENTS = 32;
+  MODERATE_EVENTS = 33;
 
   ADMIN = 10000;
   VIEW_PRIVATE_CONTACT_METHODS = 10001;

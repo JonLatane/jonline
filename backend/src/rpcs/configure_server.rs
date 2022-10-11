@@ -6,6 +6,7 @@ use tonic::{Code, Response, Status};
 use crate::{models, protos};
 use crate::conversions::*;
 use crate::logic::*;
+use super::validations::*;
 
 pub fn configure_server(
     request: protos::ServerConfiguration,
@@ -13,6 +14,7 @@ pub fn configure_server(
     conn: &PgPooledConnection,
 ) -> Result<Response<protos::ServerConfiguration>, Status> {
     println!("ConfigureServer called; request {:?}", request);
+    validate_configuration(&request)?;
 
     if !user.has_permission(protos::Permission::Admin) {
         return Err(Status::new(Code::PermissionDenied, "not_admin"));

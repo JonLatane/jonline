@@ -64,6 +64,18 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/UpdateUser',
       ($4.User value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $4.User.fromBuffer(value));
+  static final _$createFollow = $grpc.ClientMethod<$4.Follow, $4.Follow>(
+      '/jonline.Jonline/CreateFollow',
+      ($4.Follow value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $4.Follow.fromBuffer(value));
+  static final _$updateFollow = $grpc.ClientMethod<$4.Follow, $4.Follow>(
+      '/jonline.Jonline/UpdateFollow',
+      ($4.Follow value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $4.Follow.fromBuffer(value));
+  static final _$deleteFollow = $grpc.ClientMethod<$4.Follow, $0.Empty>(
+      '/jonline.Jonline/DeleteFollow',
+      ($4.Follow value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$getGroups =
       $grpc.ClientMethod<$5.GetGroupsRequest, $5.GetGroupsResponse>(
           '/jonline.Jonline/GetGroups',
@@ -171,6 +183,21 @@ class JonlineClient extends $grpc.Client {
   $grpc.ResponseFuture<$4.User> updateUser($4.User request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateUser, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$4.Follow> createFollow($4.Follow request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createFollow, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$4.Follow> updateFollow($4.Follow request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateFollow, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> deleteFollow($4.Follow request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteFollow, request, options: options);
   }
 
   $grpc.ResponseFuture<$5.GetGroupsResponse> getGroups(
@@ -304,6 +331,27 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $4.User.fromBuffer(value),
         ($4.User value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.Follow, $4.Follow>(
+        'CreateFollow',
+        createFollow_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.Follow.fromBuffer(value),
+        ($4.Follow value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.Follow, $4.Follow>(
+        'UpdateFollow',
+        updateFollow_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.Follow.fromBuffer(value),
+        ($4.Follow value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.Follow, $0.Empty>(
+        'DeleteFollow',
+        deleteFollow_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.Follow.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$5.GetGroupsRequest, $5.GetGroupsResponse>(
         'GetGroups',
         getGroups_Pre,
@@ -439,6 +487,21 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return updateUser(call, await request);
   }
 
+  $async.Future<$4.Follow> createFollow_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.Follow> request) async {
+    return createFollow(call, await request);
+  }
+
+  $async.Future<$4.Follow> updateFollow_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.Follow> request) async {
+    return updateFollow(call, await request);
+  }
+
+  $async.Future<$0.Empty> deleteFollow_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.Follow> request) async {
+    return deleteFollow(call, await request);
+  }
+
   $async.Future<$5.GetGroupsResponse> getGroups_Pre($grpc.ServiceCall call,
       $async.Future<$5.GetGroupsRequest> request) async {
     return getGroups(call, await request);
@@ -520,6 +583,12 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$4.GetUsersResponse> getUsers(
       $grpc.ServiceCall call, $4.GetUsersRequest request);
   $async.Future<$4.User> updateUser($grpc.ServiceCall call, $4.User request);
+  $async.Future<$4.Follow> createFollow(
+      $grpc.ServiceCall call, $4.Follow request);
+  $async.Future<$4.Follow> updateFollow(
+      $grpc.ServiceCall call, $4.Follow request);
+  $async.Future<$0.Empty> deleteFollow(
+      $grpc.ServiceCall call, $4.Follow request);
   $async.Future<$5.GetGroupsResponse> getGroups(
       $grpc.ServiceCall call, $5.GetGroupsRequest request);
   $async.Future<$5.Group> createGroup($grpc.ServiceCall call, $5.Group request);

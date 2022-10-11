@@ -186,7 +186,7 @@ class PostsScreenState extends State<PostsScreen>
                         controller: scrollController,
                         crossAxisCount: max(
                             2,
-                            min(6, (MediaQuery.of(context).size.width) / 250)
+                            min(6, (MediaQuery.of(context).size.width) / 290)
                                 .floor()),
                         mainAxisSpacing: 4,
                         crossAxisSpacing: 4,

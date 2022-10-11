@@ -12,6 +12,7 @@ extern crate tonic_web;
 extern crate futures;
 extern crate serde;
 extern crate serde_json;
+extern crate itertools;
 
 
 pub mod auth;

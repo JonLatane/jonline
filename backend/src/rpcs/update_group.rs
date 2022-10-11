@@ -1,6 +1,9 @@
 use std::time::SystemTime;
 
+use diesel::result::DatabaseErrorKind::UniqueViolation;
+use diesel::result::Error::DatabaseError;
 use diesel::*;
+
 use tonic::{Code, Status};
 
 use crate::conversions::*;
@@ -41,12 +44,24 @@ pub fn update_group(
     group.description = request.description;
     group.avatar = request.avatar;
     group.visibility = request.visibility.to_string_visibility();
-    group.default_membership_permissions = request.default_membership_permissions.to_json_permissions();
-    group.default_membership_moderation = request.default_membership_moderation.to_string_moderation();
+    group.default_membership_permissions =
+        request.default_membership_permissions.to_json_permissions();
+    group.default_membership_moderation =
+        request.default_membership_moderation.to_string_moderation();
     group.updated_at = SystemTime::now().into();
 
-    match diesel::update(groups::table).set(&group).execute(conn) {
+    match diesel::update(groups::table)
+        .filter(groups::id.eq(request.id.to_db_id().unwrap()))
+        .set(&group)
+        .execute(conn)
+    {
         Ok(_) => Ok(group.to_proto(&conn, &Some(user))),
-        Err(_) => Err(Status::new(Code::Internal, "data_error")),
+        Err(DatabaseError(UniqueViolation, _)) => {
+            Err(Status::new(Code::NotFound, "duplicate_group_name"))
+        }
+        Err(e) => {
+            println!("Error updating group! {:?}", e);
+            Err(Status::new(Code::Internal, "data_error"))
+        }
     }
 }

@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:recase/recase.dart';
 
@@ -11,7 +12,9 @@ import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../models/jonline_account.dart';
 import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_clients.dart';
+import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
+import '../../router/router.gr.dart';
 import '../home_page.dart';
 
 // import 'package:jonline/db.dart';
@@ -37,7 +40,7 @@ class CreateGroupPageState extends State<CreateGroupPage> {
 
   bool get canCreate => name.isNotEmpty;
   vm.Visibility visibility = vm.Visibility.SERVER_PUBLIC;
-  vm.Moderation default_membership_moderation = vm.Moderation.UNMODERATED;
+  vm.Moderation defaultMembershipModeration = vm.Moderation.UNMODERATED;
 
   @override
   void initState() {
@@ -106,7 +109,7 @@ class CreateGroupPageState extends State<CreateGroupPage> {
               name: name,
               description: description.isNotEmpty ? description : null,
               visibility: visibility,
-              defaultMembershipModeration: default_membership_moderation),
+              defaultMembershipModeration: defaultMembershipModeration),
           options: account.authenticatedCallOptions);
     } catch (e) {
       await communicationDelay;
@@ -126,9 +129,8 @@ class CreateGroupPageState extends State<CreateGroupPage> {
       doingCreate = false;
       return;
     }
-    context.navigateBack();
-    // context.replaceRoute(PostDetailsRoute(
-    //     postId: group.id, server: JonlineServer.selectedServer.server));
+    context.replaceRoute(GroupDetailsRoute(
+        groupId: group.id, server: JonlineServer.selectedServer.server));
     final appState = context.findRootAncestorStateOfType<AppState>();
     if (appState == null) {
       doingCreate = false;
@@ -239,8 +241,7 @@ class CreateGroupPageState extends State<CreateGroupPage> {
                                                 vm.Visibility.GLOBAL_PUBLIC ||
                                             v != vm.Visibility.GLOBAL_PUBLIC);
                                   })
-                                  .map((e) => MultiSelectItem(
-                                      e, e.name.replaceAll('_', ' ').titleCase))
+                                  .map((v) => MultiSelectItem(v, v.displayName))
                                   .toList(),
                               initialValue: <vm.Visibility?>[visibility],
 
@@ -266,13 +267,12 @@ class CreateGroupPageState extends State<CreateGroupPage> {
                         ),
                         const SizedBox(width: 16),
                         Switch(
-                            value: default_membership_moderation ==
+                            value: defaultMembershipModeration ==
                                 vm.Moderation.PENDING,
                             onChanged: (value) {
-                              setState(() => default_membership_moderation =
-                                  value
-                                      ? vm.Moderation.PENDING
-                                      : vm.Moderation.UNMODERATED);
+                              setState(() => defaultMembershipModeration = value
+                                  ? vm.Moderation.PENDING
+                                  : vm.Moderation.UNMODERATED);
                             })
                       ],
                     )

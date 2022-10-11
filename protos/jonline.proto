@@ -39,6 +39,11 @@ service Jonline {
   // Update a user by ID. Authenticated.
   // Updating other users requires ADMIN permissions.
   rpc UpdateUser(User) returns (User) {}
+
+  rpc CreateFollow(Follow) returns (Follow) {}
+  // Used to approved follow requests. Authenticated.
+  rpc UpdateFollow(Follow) returns (Follow) {}
+  rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
   
   // Gets Groups. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility.

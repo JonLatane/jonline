@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 package jonline;
+
+import "google/protobuf/timestamp.proto";
 import "permissions.proto";
 import "visibility_moderation.proto";
 
@@ -16,9 +18,14 @@ message User {
   // (as opposed to Posts' individualized visibilities).
   // PRIVATE visibility means no one can see the user
   Visibility visibility = 7;
+  Moderation moderation = 8;
   // Only PENDING or UNMODERATED are valid.
-  Moderation default_follow_moderation = 8;
-  optional Follow follow_relationship = 9;
+  Moderation default_follow_moderation = 9;
+  optional int32 follower_count = 10;
+  optional int32 following_count = 11;
+  optional Follow follow_relationship = 12;
+  google.protobuf.Timestamp created_at = 13;
+  optional google.protobuf.Timestamp updated_at = 14;
 }
 
 // To allow LIMITED visibility users to make friends, anyone
@@ -30,6 +37,8 @@ message Follow {
   string user_id = 1;
   string target_user_id = 2;
   Moderation target_user_moderation = 3;
+  google.protobuf.Timestamp created_at = 4;
+  optional google.protobuf.Timestamp updated_at = 5;
 }
 
 message ContactMethod {
@@ -42,8 +51,9 @@ message GetUsersRequest {
   optional string email = 2;
   optional string phone = 3;
   optional string user_id = 4;
-  optional int32 page = 5;
-  UserListingType listing_type = 6;
+  optional string group_id = 5;
+  optional int32 page = 99;
+  UserListingType listing_type = 100;
 }
 
 enum UserListingType {

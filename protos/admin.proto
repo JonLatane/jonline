@@ -14,20 +14,28 @@ message ServerConfiguration {
   // GLOBALLY_PUBLISH_EVENTS. Users with MODERATE_USERS permission can
   // grant these permissions to other users. Only users with ADMIN can grant
   // MODERATE_USERS, MODERATE_POSTS, and MODERATE_EVENTS.
-  repeated Permission default_user_permissions = 2;
-  FeatureSettings post_settings = 3;
-  FeatureSettings event_settings = 4;
-  
-  // Defaults to SERVER_PUBLIC. If GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain GLOBALLY_PUBLISH_PROFILE.
-  Visibility default_user_visibility = 5;
+  repeated Permission default_user_permissions = 10;
+
+  // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
+  // contain GLOBALLY_PUBLISH_USERS.
+  FeatureSettings people_settings = 20;
+  // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
+  // contain GLOBALLY_PUBLISH_GROUPS.
+  FeatureSettings group_settings = 21;
+  // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
+  // contain GLOBALLY_PUBLISH_POSTS.
+  FeatureSettings post_settings = 22;
+  // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
+  // contain GLOBALLY_PUBLISH_EVENTS.
+  FeatureSettings event_settings = 23;
 
   // Strategy when a user sets their visibility to PRIVATE. Defaults to ACCOUNT_IS_FROZEN.
-  PrivateUserStrategy private_user_strategy = 6;
+  PrivateUserStrategy private_user_strategy = 100;
 
   // Allows admins to enable/disable creating accounts and logging in.
   // Eventually, external auth too hopefully!
-  repeated AuthenticationFeature authentication_features = 7;
+  repeated AuthenticationFeature authentication_features = 101;
+
 }
 
 enum AuthenticationFeature {
@@ -49,8 +57,8 @@ message FeatureSettings {
   // the author) regardless of default_moderation.
   Moderation default_moderation = 2;
   // Only SERVER_PUBLIC and GLOBAL_PUBLIC are valid. GLOBAL_PUBLIC is only valid
-  // if default_user_permissions contains GLOBALLY_PUBLISH_POSTS or 
-  // GLOBALLY_PUBLISH_EVENTS as appropriate.
+  // if default_user_permissions contains GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS] 
+  // as appropriate.
   Visibility default_visibility = 3;
   optional string custom_title = 4;
 }

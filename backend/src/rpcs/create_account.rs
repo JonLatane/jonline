@@ -3,7 +3,7 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::auth;
-use crate::conversions::{ToProtoUser, ToJsonPermissions};
+use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::{AuthTokenResponse, CreateAccountRequest};
@@ -46,6 +46,8 @@ pub fn create_account(
             email.eq(req_email),
             phone.eq(req_phone),
             permissions.eq(server_configuration.default_user_permissions.to_json_permissions()),
+            moderation.eq(server_configuration.people_settings.as_ref().unwrap().default_moderation.to_string_moderation()),
+            visibility.eq(server_configuration.people_settings.unwrap().default_visibility.to_string_visibility()),
         ))
         .get_result::<models::User>(conn);
 

@@ -2,12 +2,19 @@
 CREATE TABLE server_configurations (
   id SERIAL PRIMARY KEY,
   active BOOLEAN NOT NULL DEFAULT TRUE,
+
   server_info JSONB NOT NULL DEFAULT '{}'::JSONB,
+
   default_user_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
+
+  people_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
+  group_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
   post_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
   event_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
-  default_user_visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+
   private_user_strategy VARCHAR NOT NULL DEFAULT 'ACCOUNT_IS_FROZEN',
+  authentication_features JSONB NOT NULL DEFAULT '[]'::JSONB,
+
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -24,7 +31,10 @@ CREATE TABLE users (
   -- For user visibilities, PRIVATE is equivalent to a "frozen" account.
   -- LIMITED will be visible only to user the user is following.
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   default_follow_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  follower_count INTEGER NOT NULL DEFAULT 0,
+  following_count INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -47,6 +57,16 @@ CREATE TABLE user_refresh_tokens (
 );
 CREATE INDEX idx_refresh_tokens ON user_refresh_tokens(token);
 
+
+CREATE TABLE follows (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  target_user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  target_user_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE groups (
   id SERIAL PRIMARY KEY,
   name VARCHAR NOT NULL UNIQUE,
@@ -55,6 +75,8 @@ CREATE TABLE groups (
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
   default_membership_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   default_membership_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  member_count INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -72,12 +94,6 @@ CREATE TABLE memberships (
 CREATE UNIQUE INDEX idx_membership ON memberships(user_id, group_id);
 
 -- CORE SOCIAL/POST MODELS
-CREATE TABLE follows (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  target_user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  target_user_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED'
-);
 
 CREATE TABLE posts (
   id SERIAL PRIMARY KEY,

@@ -1,68 +1,472 @@
-import 'package:auto_route/auto_route.dart';
-import 'package:flutter/material.dart';
+import 'dart:ui';
 
-import '../../db.dart';
+import 'package:auto_route/auto_route.dart';
+import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
+import 'package:jonline/models/jonline_clients.dart';
+import 'package:jonline/utils/colors.dart';
+import 'package:jonline/utils/enum_conversions.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
+import 'package:recase/recase.dart';
+import '../../generated/groups.pb.dart';
+import '../../generated/permissions.pbenum.dart';
+import '../../generated/users.pb.dart';
+import '../../models/jonline_account_operations.dart';
+
+import '../../generated/visibility_moderation.pbenum.dart' as vm;
+import '../../app_state.dart';
+import '../../models/jonline_operations.dart';
+import '../../models/jonline_server.dart';
+import '../../models/server_errors.dart';
+import '../../router/router.gr.dart';
+import '../../utils/proto_utils.dart';
+import '../../models/jonline_account.dart';
+import '../home_page.dart';
 
 class GroupDetailsPage extends StatefulWidget {
-  final int id;
+  final String server;
+  final String groupId;
 
-  const GroupDetailsPage({
-    Key? key,
-    @pathParam this.id = -1,
-  }) : super(key: key);
+  const GroupDetailsPage(
+      {Key? key, @pathParam this.server = '', @pathParam this.groupId = ''})
+      : super(key: key);
 
   @override
-  GroupDetailsPageState createState() => GroupDetailsPageState();
+  State<GroupDetailsPage> createState() => _GroupDetailsPageState();
 }
 
-class GroupDetailsPageState extends State<GroupDetailsPage> {
-  int counter = 1;
+class _GroupDetailsPageState extends State<GroupDetailsPage> {
+  late AppState appState;
+  late HomePageState homePage;
+
+  bool loading = true;
+  Group? group;
+  // JonlineAccount? account;
+  // User? userData;
+  bool get loaded => group != null;
+  TextTheme get textTheme => Theme.of(context).textTheme;
+  TextEditingController groupNameController = TextEditingController();
+  List<Permission> get userPermissions =>
+      JonlineAccount.selectedAccount?.permissions ?? [];
+  List<Permission> get groupPermissions =>
+      group?.currentUserMembership.permissions ?? [];
+
+  bool get member =>
+      (group?.currentUserMembership.userModeration.passes ?? false) &&
+      (group?.currentUserMembership.groupModeration.passes ?? false);
+  bool get admin => userPermissions.contains(Permission.ADMIN);
+  bool get moderator => userPermissions.contains(Permission.MODERATE_GROUPS);
+  bool get groupAdmin => admin || groupPermissions.contains(Permission.ADMIN);
+
+  @override
+  initState() {
+    super.initState();
+    appState = context.findRootAncestorStateOfType<AppState>()!;
+    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
+    appState.accounts.addListener(updateState);
+    groupNameController.addListener(() {
+      setState(() {
+        group = group?.jonRebuild((u) {
+          u.name = groupNameController.text;
+        });
+      });
+    });
+    Future.microtask(refreshGroupData);
+  }
+
+  @override
+  dispose() {
+    appState.accounts.removeListener(updateState);
+    groupNameController.dispose();
+    super.dispose();
+  }
+
+  updateState() {
+    setState(() {});
+  }
+
+  refreshGroupData() async {
+    Group? group;
+
+    final groups = (await JonlineOperations.getGroups(
+                request: GetGroupsRequest(groupId: widget.groupId)))
+            ?.groups ??
+        [];
+    group = groups.singleOrNull;
+
+    setState(() {
+      groupNameController.text = group?.name ?? '';
+      this.group = group;
+      loading = false;
+    });
+    // This keeps the rest of the app consistent with the new group data (if
+    // this group is within scope).
+    appState.updateGroups();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final booksDb = BooksDBProvider.of(context);
-    final book = booksDb?.findBookById(widget.id);
+    if (JonlineServer.selectedServer.server != widget.server) {
+      context.replaceRoute(const GroupsRoute());
+    }
+    return Scaffold(
+        body: Column(
+      children: [
+        Expanded(
+          child: RefreshIndicator(
+              displacement: MediaQuery.of(context).padding.top + 40,
+              onRefresh: () async => await refreshGroupData(),
+              child: ScrollConfiguration(
+                  // key: Key("postListScrollConfiguration-${postList.length}"),
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    dragDevices: {
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.trackpad,
+                      PointerDeviceKind.stylus,
+                    },
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          top: 16 + MediaQuery.of(context).padding.top,
+                          left: 8.0,
+                          right: 8.0,
+                          bottom: 8 + MediaQuery.of(context).padding.bottom),
+                      child: Center(
+                          child: Stack(
+                        children: [
+                          AnimatedOpacity(
+                              opacity: !loaded ? 0 : 1,
+                              duration: animationDuration,
+                              child: IgnorePointer(
+                                  ignoring: !loaded,
+                                  child: buildConfiguration())),
+                          AnimatedOpacity(
+                              opacity: !loaded ? 1 : 0,
+                              duration: animationDuration,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.3),
+                                  const Center(
+                                      child: CircularProgressIndicator()),
+                                ],
+                              ))
+                        ],
+                      )),
+                    ),
+                  ))),
+        ),
+      ],
+    ));
+  }
 
-    return book == null
-        ? const Text('Book null')
-        : Scaffold(
-            body: Padding(
-              padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top,
-                  bottom: MediaQuery.of(context).padding.bottom),
-              child: SizedBox(
-                width: double.infinity,
-                child: Hero(
-                  tag: 'Hero${book.id}',
-                  child: Card(
-                    margin: const EdgeInsets.all(48),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+  buildHeading(String name) => Text(name, style: textTheme.subtitle1);
+
+  Widget buildConfiguration() {
+    if (!loaded) return const SizedBox();
+    return Center(
+        child: Container(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Card(
+                child: InkWell(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Stack(
                       children: [
-                        Text('Book Details/${book.id}'),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 24),
-                          child: Text(
-                            'Reads  $counter',
-                            style: const TextStyle(fontSize: 20),
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        FloatingActionButton(
-                          heroTag: null,
-                          onPressed: () {
-                            setState(() {
-                              counter++;
-                            });
-                          },
-                          child: const Icon(Icons.add),
+                        Column(
+                          children: [
+                            Row(
+                              children: [
+                                const SizedBox(
+                                  height: 48,
+                                  width: 48,
+                                  child: Icon(Icons.account_circle,
+                                      size: 32, color: Colors.white),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                                '${JonlineServer.selectedServer.server}/',
+                                                style: textTheme.caption,
+                                                maxLines: 1,
+                                                overflow:
+                                                    TextOverflow.ellipsis),
+                                          ),
+                                        ],
+                                      ),
+                                      // Row(
+                                      //   children: [
+                                      //     Expanded(
+                                      //       child: Text(
+                                      //         userData?.username ?? '...',
+                                      //         style: textTheme.headline6
+                                      //             ?.copyWith(
+                                      //                 color: appState
+                                      //                             .selectedAccount
+                                      //                             ?.userId ==
+                                      //                         userData?.id
+                                      //                     ? appState
+                                      //                         .primaryColor
+                                      //                     : null),
+                                      //         maxLines: 1,
+                                      //         overflow: TextOverflow.ellipsis,
+                                      //       ),
+                                      //     ),
+                                      //   ],
+                                      // ),
+
+                                      TextField(
+                                        // focusNode: titleFocus,
+                                        controller: groupNameController,
+                                        keyboardType: TextInputType.url,
+                                        textCapitalization:
+                                            TextCapitalization.words,
+                                        enableSuggestions: true,
+                                        autocorrect: true,
+                                        maxLines: 1,
+                                        cursorColor: Colors.white,
+                                        style: textTheme.headline6,
+                                        enabled: member || admin,
+                                        decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            hintText: "Group Name",
+                                            isDense: true),
+                                        onChanged: (value) {},
+                                      ),
+                                      if (member || admin)
+                                        const Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Text(
+                                              "Group Name may be updated.",
+                                              textAlign: TextAlign.right,
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w400,
+                                                  fontSize: 12),
+                                            )),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          "Group ID: ",
+                                          style: textTheme.caption,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            group?.id ?? '...',
+                                            style: textTheme.caption,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // const SizedBox(height: 4),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
-          );
+              const SizedBox(height: 16),
+              // buildHeading("Avatar"),
+              // Text('(TODO) 🚧🛠', style: textTheme.subtitle1),
+              // const SizedBox(height: 16),
+              // buildHeading("Contact Information"),
+              // Text('(TODO) 🚧🛠', style: textTheme.subtitle1),
+              // const SizedBox(height: 16),
+              buildHeading("Visibility"),
+              const SizedBox(height: 8),
+              if (admin || groupAdmin)
+                Container(
+                  key: Key("visibility-control-${group?.id}"),
+                  child: MultiSelectChipField<vm.Visibility?>(
+                    decoration: const BoxDecoration(),
+                    // decoration: null,
+                    // title: const Text("Select Visibility"),
+                    // buttonText: const Text("Select Permissions"),
+
+                    showHeader: false,
+                    // searchable: true,
+                    selectedChipColor: appState.navColor,
+                    selectedTextStyle:
+                        TextStyle(color: appState.navColor.textColor),
+                    items: vm.Visibility.values
+                        .where((v) {
+                          return v != vm.Visibility.VISIBILITY_UNKNOWN &&
+                              (userPermissions.contains(
+                                      Permission.GLOBALLY_PUBLISH_GROUPS) ||
+                                  userPermissions.contains(Permission.ADMIN) ||
+                                  group?.visibility ==
+                                      vm.Visibility.GLOBAL_PUBLIC ||
+                                  v != vm.Visibility.GLOBAL_PUBLIC);
+                        })
+                        .map((e) => MultiSelectItem(e, e.displayName))
+                        .toList(),
+                    // listType: MultiSelectListType.CHIP,
+                    initialValue: <vm.Visibility?>[
+                      group?.visibility ?? vm.Visibility.VISIBILITY_UNKNOWN
+                    ],
+
+                    onTap: (List<vm.Visibility?> values) {
+                      if (values.length > 1) {
+                        values.remove(group?.visibility ??
+                            vm.Visibility.VISIBILITY_UNKNOWN);
+                        setState(() => group?.visibility = values.first!);
+                      } else {
+                        values.add(group?.visibility ??
+                            vm.Visibility.VISIBILITY_UNKNOWN);
+                        setState(() => group?.visibility = values.first!);
+                      }
+                      print("User visibility: ${group?.visibility}");
+                    },
+                  ),
+                ),
+              if (!admin && !member)
+                MultiSelectChipDisplay<vm.Visibility>(
+                  // chipColor: appState.navColor,
+                  textStyle: TextStyle(color: appState.navColor.textColor),
+                  items: group == null
+                      ? []
+                      : [group!.visibility]
+                          .map((e) => MultiSelectItem(e, e.displayName))
+                          .toList(),
+                ),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                        "Require${admin || member ? '' : 's'} Approval to Join",
+                        style: textTheme.labelLarge),
+                  ),
+                  const SizedBox(width: 16),
+                  Switch(
+                      value: group?.defaultMembershipModeration ==
+                          vm.Moderation.PENDING,
+                      activeColor: appState.primaryColor,
+                      onChanged: admin || member
+                          ? (value) {
+                              setState(() =>
+                                  group?.defaultMembershipModeration = value
+                                      ? vm.Moderation.PENDING
+                                      : vm.Moderation.UNMODERATED);
+                            }
+                          : null)
+                ],
+              ),
+              const SizedBox(height: 16),
+              buildHeading("Default Member Permissions"),
+              const SizedBox(height: 8),
+              if (admin)
+                MultiSelectDialogField(
+                  title: const Text("Select Group Permissions"),
+                  buttonText: const Text("Select Group Permissions"),
+                  searchable: true,
+                  items: Permission.values
+                      .where((p) => [
+                            Permission.VIEW_POSTS,
+                            Permission.CREATE_POSTS,
+                            Permission.MODERATE_POSTS,
+                            Permission.VIEW_EVENTS,
+                            Permission.CREATE_EVENTS,
+                            Permission.MODERATE_EVENTS,
+                            Permission.ADMIN,
+                            Permission.MODERATE_USERS
+                          ].contains(p))
+                      .map((p) => MultiSelectItem(p, p.displayName))
+                      .toList(),
+                  listType: MultiSelectListType.CHIP,
+                  initialValue: group?.defaultMembershipPermissions ?? [],
+                  selectedColor: appState.navColor,
+                  selectedItemsTextStyle:
+                      TextStyle(color: appState.navColor.textColor),
+                  onConfirm: (values) {
+                    setState(() {
+                      group = group?.jonRebuild((g) {
+                        g.defaultMembershipPermissions.clear();
+                        g.defaultMembershipPermissions
+                            .addAll(values.cast<Permission>());
+                      });
+                    });
+                  },
+                ),
+              if (!admin)
+                MultiSelectChipDisplay<Permission>(
+                  chipColor: appState.navColor,
+                  textStyle: TextStyle(color: appState.navColor.textColor),
+                  items: (group?.defaultMembershipPermissions ?? <Permission>[])
+                      .map((p) => MultiSelectItem(p, p.displayName))
+                      .toList(),
+                ),
+              if (member || admin || moderator)
+                TextButton(
+                  child: SizedBox(
+                    height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.check),
+                        Text('Apply Changes'),
+                      ],
+                    ),
+                  ),
+                  onPressed: () async {
+                    try {
+                      final account = JonlineAccount.selectedAccount;
+                      await account!.ensureRefreshToken();
+                      await (await account.getClient())!.updateGroup(group!,
+                          options: account.authenticatedCallOptions);
+                      showSnackBar("Group Data Updated 🎉");
+                      homePage.titleUsername = account.username;
+                      await appState.updateAccounts();
+                    } catch (e) {
+                      showSnackBar(formatServerError(e));
+                      await communicationDelay;
+                      showSnackBar("Failed to update group.");
+                      // rethrow;
+                    }
+                  },
+                ),
+              const SizedBox(height: 16),
+            ])));
+  }
+
+  showSnackBar(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
   }
 }

@@ -107,13 +107,17 @@ class JonlineAccount {
     JonlineClient? client = await JonlineClients.createAndTestClient(server,
         showMessage: showMessage, allowInsecure: allowInsecure);
     if (client == null) return null;
-    await communicationDelay;
-    showMessage("Connected to $server! ${verbs[0]}...");
+    if (selectAccount) {
+      await communicationDelay;
+    }
+    // showMessage("Connected to $server! ${verbs[0]}...");
     AuthTokenResponse authResponse;
     try {
       authResponse = await authenticator(client);
     } catch (e) {
-      await communicationDelay;
+      if (selectAccount) {
+        await communicationDelay;
+      }
       showMessage("Failed to ${verbs[1]} $username on $server!");
       final formattedError = formatServerError(e);
       showMessage(formattedError);

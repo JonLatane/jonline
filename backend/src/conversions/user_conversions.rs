@@ -1,12 +1,35 @@
 use crate::conversions::*;
+use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::PASSING_MODERATIONS;
+use crate::schema::{follows, users};
+use diesel::*;
+use tonic::Code;
+use tonic::Status;
 
 pub trait ToProtoUser {
     fn to_proto(&self) -> User;
+    fn to_proto_with(&self, follow: &Option<models::Follow>) -> User;
+    fn to_proto_auto(&self, conn: &PgPooledConnection, user: &Option<models::User>) -> User;
 }
 impl ToProtoUser for models::User {
     fn to_proto(&self) -> User {
+        return self.to_proto_with(&None);
+    }
+    fn to_proto_auto(&self, conn: &PgPooledConnection, user: &Option<models::User>) -> User {
+        let follow = match user {
+            Some(user) => follows::table
+                .select(follows::all_columns)
+                .filter(follows::user_id.eq(user.id))
+                .filter(follows::target_user_id.eq(self.id))
+                .first::<models::Follow>(conn)
+                .ok(),
+            None => None,
+        };
+        self.to_proto_with(&follow)
+    }
+    fn to_proto_with(&self, follow: &Option<models::Follow>) -> User {
         let email: Option<ContactMethod> = self
             .email
             .to_owned()
@@ -24,10 +47,64 @@ impl ToProtoUser for models::User {
             permissions: self.permissions.to_i32_permissions(),
             avatar: self.avatar.to_owned(),
             visibility: self.visibility.to_proto_visibility().unwrap() as i32,
-            default_follow_moderation: self.default_follow_moderation.to_proto_moderation().unwrap() as i32,
-            follow_relationship: None,
+            moderation: self.moderation.to_proto_moderation().unwrap() as i32,
+            follower_count: Some(self.follower_count),
+            following_count: Some(self.following_count),
+            default_follow_moderation: self
+                .default_follow_moderation
+                .to_proto_moderation()
+                .unwrap() as i32,
+            follow_relationship: follow.as_ref().map(|f| f.to_proto()),
+            created_at: Some(self.created_at.to_proto()),
+            updated_at: Some(self.updated_at.to_proto()),
         };
         // println!("Converted user: {:?}", user);
         return user;
+    }
+}
+
+pub trait ToProtoFollow {
+    fn to_proto(&self) -> Follow;
+    fn update_related_counts(&self, conn: &PgPooledConnection) -> Result<(), Status>;
+}
+impl ToProtoFollow for models::Follow {
+    fn to_proto(&self) -> Follow {
+        return Follow {
+            user_id: self.user_id.to_proto_id().to_string(),
+            target_user_id: self.target_user_id.to_proto_id().to_string(),
+            target_user_moderation: self.target_user_moderation.to_proto_moderation().unwrap()
+                as i32,
+            created_at: Some(self.created_at.to_proto()),
+            updated_at: Some(self.updated_at.to_proto()),
+        };
+    }
+
+    fn update_related_counts(&self, conn: &PgPooledConnection) -> Result<(), Status> {
+        let following_count = follows::table
+            .count()
+            .filter(follows::user_id.eq(self.user_id))
+            .filter(follows::target_user_moderation.eq_any(PASSING_MODERATIONS))
+            .first::<i64>(conn)
+            .unwrap() as i32;
+
+        diesel::update(users::table)
+            .filter(users::id.eq(self.user_id))
+            .set(users::following_count.eq(following_count))
+            .execute(conn)
+            .map_err(|_| Status::new(Code::Internal, "error_updating_following_count"))?;
+
+        let target_follower_count = follows::table
+            .count()
+            .filter(follows::target_user_id.eq(self.target_user_id))
+            .filter(follows::target_user_moderation.eq_any(PASSING_MODERATIONS))
+            .first::<i64>(conn)
+            .unwrap() as i32;
+
+        diesel::update(users::table)
+            .filter(users::id.eq(self.target_user_id))
+            .set(users::follower_count.eq(target_follower_count))
+            .execute(conn)
+            .map_err(|_| Status::new(Code::Internal, "error_updating_follower_count"))?;
+        Ok(())
     }
 }

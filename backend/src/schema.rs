@@ -20,6 +20,8 @@ table! {
         user_id -> Int4,
         target_user_id -> Int4,
         target_user_moderation -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -32,6 +34,8 @@ table! {
         visibility -> Varchar,
         default_membership_permissions -> Jsonb,
         default_membership_moderation -> Varchar,
+        moderation -> Varchar,
+        member_count -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -74,10 +78,12 @@ table! {
         active -> Bool,
         server_info -> Jsonb,
         default_user_permissions -> Jsonb,
+        people_settings -> Jsonb,
+        group_settings -> Jsonb,
         post_settings -> Jsonb,
         event_settings -> Jsonb,
-        default_user_visibility -> Varchar,
         private_user_strategy -> Varchar,
+        authentication_features -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -113,7 +119,10 @@ table! {
         permissions -> Jsonb,
         avatar -> Nullable<Bytea>,
         visibility -> Varchar,
+        moderation -> Varchar,
         default_follow_moderation -> Varchar,
+        follower_count -> Int4,
+        following_count -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

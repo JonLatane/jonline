@@ -34,6 +34,15 @@ pub use get_posts::get_posts;
 mod get_users;
 pub use get_users::get_users;
 
+mod create_follow;
+pub use create_follow::create_follow;
+
+mod update_follow;
+pub use update_follow::update_follow;
+
+mod delete_follow;
+pub use delete_follow::delete_follow;
+
 mod get_groups;
 pub use get_groups::get_groups;
 

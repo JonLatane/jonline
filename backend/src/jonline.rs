@@ -103,6 +103,22 @@ impl Jonline for JonLineImpl {
         rpcs::get_users(request.into_inner(), user, &conn).map(Response::new)
     }
 
+    async fn create_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::create_follow(request.into_inner(), user, &conn).map(Response::new)
+    }
+    async fn update_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::update_follow(request.into_inner(), user, &conn).map(Response::new)
+    }
+    async fn delete_follow(&self, request: Request<Follow>) -> Result<Response<()>, Status> {
+        let conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &conn)?;
+        rpcs::delete_follow(request.into_inner(), user, &conn).map(Response::new)
+    }
+
     async fn get_groups(&self, request: Request<GetGroupsRequest>) -> Result<Response<GetGroupsResponse>, Status> {
         let conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &conn).ok();
@@ -131,7 +147,6 @@ impl Jonline for JonLineImpl {
         let user = auth::get_auth_user(&request, &conn)?;
         rpcs::create_membership(request.into_inner(), user, &conn).map(Response::new)
     }
-
     async fn update_membership(&self, request: Request<Membership>) -> Result<Response<Membership>, Status> {
         let conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &conn)?;

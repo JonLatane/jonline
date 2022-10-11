@@ -1,26 +1,14 @@
-pub trait ToProtoId {
-    fn to_proto_id(&self) -> String;
-}
-impl ToProtoId for i32 {
-    fn to_proto_id(&self) -> String {
-        let id_bytes = (self + 10000).to_ne_bytes();
-        bs58::encode(id_bytes).into_string()
-    }
-}
+use std::time::{SystemTime, UNIX_EPOCH};
+use prost_types::Timestamp;
 
-pub trait ToDbId {
-    fn to_db_id(&self) -> Result<i32, bs58::decode::Error>;
+pub trait ToProtoTime {
+    fn to_proto(&self) -> Timestamp;
 }
-impl ToDbId for String {
-    fn to_db_id(&self) -> Result<i32, bs58::decode::Error> {
-        let id_bytes = bs58::decode(self).into_vec()?;
-        let id = i32::from_ne_bytes(id_bytes.as_slice().try_into().unwrap_or([0; 4]));
-        if id == 0 {
-            return Err(bs58::decode::Error::InvalidCharacter {
-                character: '0',
-                index: 0,
-            });
+impl ToProtoTime for SystemTime {
+    fn to_proto(&self) -> Timestamp {
+        Timestamp {
+            seconds: self.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
+            nanos: 0,
         }
-        Ok(id - 10000)
     }
 }

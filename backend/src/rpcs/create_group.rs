@@ -1,3 +1,5 @@
+use diesel::result::DatabaseErrorKind::UniqueViolation;
+use diesel::result::Error::DatabaseError;
 use diesel::*;
 use tonic::{Code, Status};
 
@@ -21,8 +23,9 @@ pub fn create_group(
     let visibility = match request.visibility.to_proto_visibility() {
         Some(Visibility::Unknown) => Visibility::ServerPublic,
         Some(v) => v,
-        _ => Visibility::ServerPublic
-    }.to_string_visibility();
+        _ => Visibility::ServerPublic,
+    }
+    .to_string_visibility();
     let default_membership_moderation =
         match request.default_membership_moderation.to_proto_moderation() {
             Some(Moderation::Pending) => Moderation::Pending,
@@ -30,10 +33,14 @@ pub fn create_group(
             _ => Moderation::Unmoderated,
         }
         .to_string_moderation();
-    let default_membership_permissions =
+    let mut default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();
+    if request.default_membership_permissions.is_empty() {
+        default_membership_permissions =
+            vec![Permission::ViewPosts, Permission::ViewEvents].to_json_permissions();
+    }
     let mut membership: Option<models::Membership> = None;
-    let group: Result<models::Group, _> = conn
+    let group: Result<models::Group, diesel::result::Error> = conn
         .transaction::<models::Group, diesel::result::Error, _>(|| {
             let group = insert_into(groups::table)
                 .values(&models::NewGroup {
@@ -52,15 +59,17 @@ pub fn create_group(
                     _ => Moderation::Approved,
                 }
                 .to_string_moderation();
-            membership = Some(insert_into(memberships::table)
-                .values(&models::NewMembership {
-                    user_id: user.id,
-                    group_id: group.id,
-                    permissions: vec![Permission::Admin].to_json_permissions(),
-                    group_moderation: group_moderation,
-                    user_moderation: Moderation::Approved.to_string_moderation(),
-                })
-                .get_result::<models::Membership>(conn)?);
+            membership = Some(
+                insert_into(memberships::table)
+                    .values(&models::NewMembership {
+                        user_id: user.id,
+                        group_id: group.id,
+                        permissions: vec![Permission::Admin].to_json_permissions(),
+                        group_moderation: group_moderation,
+                        user_moderation: Moderation::Approved.to_string_moderation(),
+                    })
+                    .get_result::<models::Membership>(conn)?,
+            );
             Ok(group)
         });
 
@@ -68,6 +77,9 @@ pub fn create_group(
         Ok(group) => {
             println!("Group created! Result: {:?}", group);
             Ok(group.to_proto_with(1, membership.map(|m| m.to_proto())))
+        }
+        Err(DatabaseError(UniqueViolation, _)) => {
+            Err(Status::new(Code::NotFound, "duplicate_group_name"))
         }
         Err(e) => {
             println!("Error creating group! {:?}", e);

@@ -106,7 +106,7 @@ class AccountsPageState extends State<AccountsPage> {
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Container(
-                                height: MediaQuery.of(context).padding.top + 8,
+                                height: MediaQuery.of(context).padding.top,
                                 color: Theme.of(context)
                                     .canvasColor
                                     .withOpacity(0.5),
@@ -169,25 +169,25 @@ class AccountsPageState extends State<AccountsPage> {
                                                         : null),
                                               ),
                                             )),
-                                        Expanded(
-                                            flex: 2,
-                                            child: Tooltip(
-                                              message:
-                                                  'Refresh Servers & Accounts',
-                                              child: TextButton(
-                                                onPressed: () async {
-                                                  showSnackBar(
-                                                      'Refreshing Servers & Accounts…');
-                                                  await appState
-                                                      .updateServersAndAccounts();
-                                                  showSnackBar(
-                                                      'Servers & Accounts Refreshed! 🎉');
-                                                },
-                                                child: const Icon(
-                                                  Icons.refresh,
-                                                ),
-                                              ),
-                                            )),
+                                        // Expanded(
+                                        //     flex: 2,
+                                        //     child: Tooltip(
+                                        //       message:
+                                        //           'Refresh Servers & Accounts',
+                                        //       child: TextButton(
+                                        //         onPressed: () async {
+                                        //           showSnackBar(
+                                        //               'Refreshing Servers & Accounts…');
+                                        //           await appState
+                                        //               .updateServersAndAccounts();
+                                        //           showSnackBar(
+                                        //               'Servers & Accounts Refreshed! 🎉');
+                                        //         },
+                                        //         child: const Icon(
+                                        //           Icons.refresh,
+                                        //         ),
+                                        //       ),
+                                        //     )),
                                         if (Settings.powerUserMode)
                                           Expanded(
                                               flex: 2,
@@ -230,29 +230,33 @@ class AccountsPageState extends State<AccountsPage> {
                                                       Icons.delete_forever),
                                                 ),
                                               )),
-                                        Expanded(
-                                            flex: 2,
-                                            child: Tooltip(
-                                              message: Settings.showSettingsTab
-                                                  ? 'Hide Settings Tab'
-                                                  : 'Open Settings',
-                                              child: TextButton(
-                                                onPressed: toggleSettingsTab,
-                                                child: Stack(
-                                                  children: [
-                                                    const Icon(Icons.settings),
-                                                    Transform.translate(
-                                                      offset:
-                                                          const Offset(20, 0),
-                                                      child: Icon(Settings
-                                                              .showSettingsTab
-                                                          ? Icons.close
-                                                          : Icons.arrow_right),
-                                                    ),
-                                                  ],
+                                        if (!Settings.showSettingsTab)
+                                          Expanded(
+                                              flex: 2,
+                                              child: Tooltip(
+                                                message:
+                                                    Settings.showSettingsTab
+                                                        ? 'Hide Settings Tab'
+                                                        : 'Open Settings',
+                                                child: TextButton(
+                                                  onPressed: toggleSettingsTab,
+                                                  child: Stack(
+                                                    children: [
+                                                      const Icon(
+                                                          Icons.settings),
+                                                      Transform.translate(
+                                                        offset:
+                                                            const Offset(20, 0),
+                                                        child: Icon(Settings
+                                                                .showSettingsTab
+                                                            ? Icons.close
+                                                            : Icons
+                                                                .arrow_right),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
-                                              ),
-                                            )),
+                                              )),
                                         // const SizedBox(width: 8)
                                       ],
                                     ),
@@ -265,6 +269,31 @@ class AccountsPageState extends State<AccountsPage> {
                                     .canvasColor
                                     .withOpacity(0.5),
                               ),
+                              AnimatedOpacity(
+                                  opacity: showHeader ? 1 : 0,
+                                  duration: animationDuration,
+                                  child: AnimatedContainer(
+                                    color: Theme.of(context)
+                                        .canvasColor
+                                        .withOpacity(0.5),
+                                    height: showHeader ? serverHeaderHeight : 0,
+                                    duration: animationDuration,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Transform.translate(
+                                          offset: Offset(
+                                              0,
+                                              -5 *
+                                                  MediaQuery.of(context)
+                                                      .textScaleFactor),
+                                          child: Text("Servers",
+                                              style: textTheme.titleMedium),
+                                        ),
+                                      ],
+                                    ),
+                                  )),
                               AnimatedOpacity(
                                 opacity: showServers ? 1 : 0,
                                 duration: animationDuration,
@@ -285,7 +314,7 @@ class AccountsPageState extends State<AccountsPage> {
                                   color: Theme.of(context)
                                       .canvasColor
                                       .withOpacity(0.5),
-                                  height: showHeader ? headerHeight : 0,
+                                  height: showHeader ? accountHeaderHeight : 0,
                                   duration: animationDuration,
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -316,21 +345,22 @@ class AccountsPageState extends State<AccountsPage> {
     );
   }
 
-  double get headerHeight => 40 * MediaQuery.of(context).textScaleFactor;
+  double get serverHeaderHeight => 18 * MediaQuery.of(context).textScaleFactor;
+  double get accountHeaderHeight => 32 * MediaQuery.of(context).textScaleFactor;
 
   void toggleSettingsTab() {
-    if (!Settings.showSettingsTab) {
-      setState(() {
-        Settings.showSettingsTab = true;
-      });
-      Future.delayed(const Duration(milliseconds: 100), () {
-        context.navigateNamedTo('settings/main');
-      });
-    } else {
-      setState(() {
-        Settings.showSettingsTab = false;
-      });
-    }
+    // if (!Settings.showSettingsTab) {
+    //   setState(() {
+    //     Settings.showSettingsTab = true;
+    //   });
+    Future.delayed(const Duration(milliseconds: 100), () {
+      context.navigateNamedTo('settings/main');
+    });
+    // } else {
+    //   setState(() {
+    //     Settings.showSettingsTab = false;
+    //   });
+    // }
   }
 
   deleteAccount(JonlineAccount account) {
@@ -398,7 +428,8 @@ class AccountsPageState extends State<AccountsPage> {
         AnimatedContainer(
           duration: animationDuration,
           height: showServers
-              ? serverItemHeight + (showHeader ? headerHeight : 0)
+              ? serverItemHeight +
+                  (showHeader ? accountHeaderHeight + serverHeaderHeight : 0)
               : 0,
         ),
         Expanded(
@@ -443,31 +474,45 @@ class AccountsPageState extends State<AccountsPage> {
 
   ScrollController accountScrollController = ScrollController();
   Widget buildAccountList() {
-    return ImplicitlyAnimatedReorderableList<JonlineAccount>(
-      padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 60,
-          bottom: MediaQuery.of(context).padding.bottom),
-      physics: const AlwaysScrollableScrollPhysics(),
-      items: accounts,
-      areItemsTheSame: (a, b) => a.id == b.id,
-      onReorderFinished: (item, from, to, newItems) {
-        if (uiSelectedServer == null) {
-          JonlineAccount.updateAccountList(newItems);
-        }
-      },
+    return RefreshIndicator(
+        displacement: MediaQuery.of(context).padding.top + 80,
+        onRefresh: () async => await appState.updateServersAndAccounts(),
+        child: ScrollConfiguration(
+            // key: Key("postListScrollConfiguration-${postList.length}"),
+            behavior: ScrollConfiguration.of(context).copyWith(
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.trackpad,
+                PointerDeviceKind.stylus,
+              },
+            ),
+            child: ImplicitlyAnimatedReorderableList<JonlineAccount>(
+              padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 48,
+                  bottom: MediaQuery.of(context).padding.bottom),
+              physics: const AlwaysScrollableScrollPhysics(),
+              items: accounts,
+              areItemsTheSame: (a, b) => a.id == b.id,
+              onReorderFinished: (item, from, to, newItems) {
+                if (uiSelectedServer == null) {
+                  JonlineAccount.updateAccountList(newItems);
+                }
+              },
 
-      // reorderDuration: Duration.zero,
-      itemBuilder: (context, animation, account, index) {
-        return Reorderable(
-          key: Key(account.id),
-          builder: (context, dragAnimation, inDrag) => SizeFadeTransition(
-              sizeFraction: 0.7,
-              curve: Curves.easeInOut,
-              animation: animation,
-              child: buildAccountItem(account)),
-        );
-      },
-    );
+              // reorderDuration: Duration.zero,
+              itemBuilder: (context, animation, account, index) {
+                return Reorderable(
+                  key: Key(account.id),
+                  builder: (context, dragAnimation, inDrag) =>
+                      SizeFadeTransition(
+                          sizeFraction: 0.7,
+                          curve: Curves.easeInOut,
+                          animation: animation,
+                          child: buildAccountItem(account)),
+                );
+              },
+            )));
   }
 
   Widget buildAccountItem(JonlineAccount account) {

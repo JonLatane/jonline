@@ -11,10 +11,12 @@ pub struct ServerConfiguration {
 
     pub server_info: serde_json::Value,
     pub default_user_permissions: serde_json::Value,
+    pub people_settings: serde_json::Value,
+    pub group_settings: serde_json::Value,
     pub post_settings: serde_json::Value,
     pub event_settings: serde_json::Value,
-    pub default_user_visibility: String,
     pub private_user_strategy: String,
+    pub authentication_features: serde_json::Value,
 
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
@@ -24,10 +26,12 @@ pub struct ServerConfiguration {
 pub struct NewServerConfiguration {
     pub server_info: serde_json::Value,
     pub default_user_permissions: serde_json::Value,
+    pub people_settings: serde_json::Value,
+    pub group_settings: serde_json::Value,
     pub post_settings: serde_json::Value,
     pub event_settings: serde_json::Value,
-    pub default_user_visibility: String,
     pub private_user_strategy: String,
+    pub authentication_features: serde_json::Value,
 }
 
 pub fn default_server_configuration() -> NewServerConfiguration {
@@ -48,35 +52,58 @@ pub fn default_server_configuration() -> NewServerConfiguration {
         .unwrap(),
         default_user_permissions: serde_json::to_value(
             [
+                Permission::FollowUsers,
+                Permission::CreateGroups,
+                Permission::JoinGroups,
                 Permission::ViewPosts,
                 Permission::CreatePosts,
-                Permission::GloballyPublishPosts,
                 Permission::ViewEvents,
                 Permission::CreateEvents,
-                Permission::GloballyPublishEvents,
             ]
             .iter()
             .map(|it| it.as_str_name())
             .collect::<Vec<&str>>(),
         )
         .unwrap(),
+        people_settings: serde_json::to_value(FeatureSettings {
+            visible: true,
+            default_moderation: Moderation::Unmoderated as i32,
+            default_visibility: Visibility::ServerPublic as i32,
+            custom_title: None,
+        })
+        .unwrap(),
+        group_settings: serde_json::to_value(FeatureSettings {
+            visible: true,
+            default_moderation: Moderation::Unmoderated as i32,
+            default_visibility: Visibility::ServerPublic as i32,
+            custom_title: None,
+        }).unwrap(),
         post_settings: serde_json::to_value(FeatureSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
-            default_visibility: Visibility::GlobalPublic as i32,
+            default_visibility: Visibility::ServerPublic as i32,
             custom_title: None,
         })
         .unwrap(),
         event_settings: serde_json::to_value(FeatureSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
-            default_visibility: Visibility::GlobalPublic as i32,
+            default_visibility: Visibility::ServerPublic as i32,
             custom_title: None,
         })
         .unwrap(),
-        default_user_visibility: Visibility::ServerPublic.as_str_name().to_string(),
         private_user_strategy: PrivateUserStrategy::AccountIsFrozen
             .as_str_name()
             .to_string(),
+        authentication_features: serde_json::to_value(
+            [
+                AuthenticationFeature::Login,
+                AuthenticationFeature::CreateAccount,
+            ]
+            .iter()
+            .map(|it| it.as_str_name())
+            .collect::<Vec<&str>>(),
+        )
+        .unwrap(),
     };
 }

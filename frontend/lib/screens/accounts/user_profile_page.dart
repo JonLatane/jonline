@@ -1,8 +1,11 @@
+import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/colors.dart';
+import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:recase/recase.dart';
 import '../../generated/permissions.pbenum.dart';
@@ -120,6 +123,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
       this.userData = userData;
       loading = false;
     });
+    // This keeps the rest of the app consistent with the new server data.
+    if (widget.accountId != null) {
+      appState.updateAccounts();
+    }
   }
 
   @override
@@ -132,37 +139,63 @@ class _UserProfilePageState extends State<UserProfilePage> {
         body: Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.only(
-                  top: 16 + MediaQuery.of(context).padding.top,
-                  left: 8.0,
-                  right: 8.0,
-                  bottom: 8 + MediaQuery.of(context).padding.bottom),
-              child: Center(
-                  child: Stack(
-                children: [
-                  AnimatedOpacity(
-                      opacity: !loaded ? 0 : 1,
-                      duration: animationDuration,
-                      child: IgnorePointer(
-                          ignoring: !loaded, child: buildConfiguration())),
-                  AnimatedOpacity(
-                      opacity: !loaded ? 1 : 0,
-                      duration: animationDuration,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.3),
-                          const Center(child: CircularProgressIndicator()),
-                        ],
-                      ))
-                ],
-              )),
-            ),
-          ),
+          child: RefreshIndicator(
+              displacement: MediaQuery.of(context).padding.top + 40,
+              onRefresh: () async => await updateProfileData(),
+              child: ScrollConfiguration(
+                  // key: Key("postListScrollConfiguration-${postList.length}"),
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    dragDevices: {
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.trackpad,
+                      PointerDeviceKind.stylus,
+                    },
+                  ),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                                top: 16 + MediaQuery.of(context).padding.top,
+                                left: 8.0,
+                                right: 8.0,
+                                bottom:
+                                    8 + MediaQuery.of(context).padding.bottom),
+                            child: Center(
+                                child: Stack(
+                              children: [
+                                AnimatedOpacity(
+                                    opacity: !loaded ? 0 : 1,
+                                    duration: animationDuration,
+                                    child: IgnorePointer(
+                                        ignoring: !loaded,
+                                        child: buildConfiguration())),
+                                AnimatedOpacity(
+                                    opacity: !loaded ? 1 : 0,
+                                    duration: animationDuration,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.3),
+                                        const Center(
+                                            child: CircularProgressIndicator()),
+                                      ],
+                                    ))
+                              ],
+                            )),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ))),
         ),
       ],
     ));
@@ -354,8 +387,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           final account =
                               this.account ?? JonlineAccount.selectedAccount;
                           return v != vm.Visibility.VISIBILITY_UNKNOWN &&
-                              (account?.permissions.contains(Permission
-                                          .GLOBALLY_PUBLISH_PROFILE) ==
+                              (account?.permissions.contains(
+                                          Permission.GLOBALLY_PUBLISH_USERS) ==
                                       true ||
                                   account?.permissions
                                           .contains(Permission.ADMIN) ==
@@ -364,8 +397,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                       vm.Visibility.GLOBAL_PUBLIC ||
                                   v != vm.Visibility.GLOBAL_PUBLIC);
                         })
-                        .map((e) => MultiSelectItem(
-                            e, e.name.replaceAll('_', ' ').titleCase))
+                        .map((e) => MultiSelectItem(e, e.displayName))
                         .toList(),
                     // listType: MultiSelectListType.CHIP,
                     initialValue: <vm.Visibility?>[
@@ -393,8 +425,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   items: userData == null
                       ? []
                       : [userData!.visibility]
-                          .map((e) => MultiSelectItem(
-                              e, e.name.replaceAll('_', ' ').titleCase))
+                          .map((e) => MultiSelectItem(e, e.displayName))
                           .toList(),
                 ),
 
@@ -430,8 +461,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   searchable: true,
                   items: Permission.values
                       .where((p) => p != Permission.PERMISSION_UNKNOWN)
-                      .map((e) => MultiSelectItem(
-                          e, e.name.replaceAll('_', ' ').titleCase))
+                      .map((p) => MultiSelectItem(p, p.displayName))
                       .toList(),
                   listType: MultiSelectListType.CHIP,
                   initialValue: userData?.permissions ?? [],
@@ -452,8 +482,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   chipColor: appState.navColor,
                   textStyle: TextStyle(color: appState.navColor.textColor),
                   items: (userData?.permissions ?? <Permission>[])
-                      .map((e) => MultiSelectItem(
-                          e, e.name.replaceAll('_', ' ').titleCase))
+                      .map((p) => MultiSelectItem(p, p.displayName))
                       .toList(),
                 ),
               if (ownProfile || admin || moderator)

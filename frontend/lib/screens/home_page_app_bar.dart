@@ -212,6 +212,8 @@ extension HomePageAppBar on HomePageState {
       case 'GroupsRoute':
       case 'GroupsTab':
         return 'Groups';
+      case 'GroupDetailsRoute':
+        return 'Group Details';
       case 'CreateGroupRoute':
         return 'Create Group';
       case 'PeopleRoute':
@@ -331,6 +333,7 @@ extension HomePageAppBar on HomePageState {
             ),
           const AccountChooser(),
         ];
+      case 'GroupDetailsRoute':
       case 'UserProfileRoute':
       case 'AccountsRoute':
       case 'PostDetailsRoute':

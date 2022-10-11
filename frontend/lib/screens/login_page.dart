@@ -5,6 +5,7 @@ import '../app_state.dart';
 import '../models/jonline_account.dart';
 import '../models/jonline_account_operations.dart';
 import '../models/jonline_server.dart';
+import '../router/router.gr.dart';
 
 class LoginPage extends StatefulWidget {
   static String defaultServer = 'jonline.io';
@@ -115,12 +116,17 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       doingStuff = false;
     });
-    if (!mounted) return;
 
     appState.updateAccountList();
     appState.updateServerList();
+    appState.updateAccounts();
+
     if (!mounted) return;
-    context.navigateBack();
+    context
+        .replaceRoute(const HomeRoute(children: [AccountsTab(children: [])]));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.navigateTo(MyProfileRoute(accountId: account.id));
+    });
   }
 
   @override

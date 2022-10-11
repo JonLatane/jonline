@@ -1,7 +1,8 @@
-use super::ToLink;
-use super::ToProtoVisibility;
 use super::id_conversions::ToProtoId;
 use super::visibility_moderation_conversions::ToProtoModeration;
+use super::ToLink;
+use super::ToProtoVisibility;
+use super::ToProtoTime;
 use crate::models;
 use crate::protos::*;
 
@@ -17,11 +18,8 @@ impl ToProtoPost for models::MinimalPost {
             title: self.title.to_owned(),
             link: self.link.to_link(),
             content: self.content.to_owned(),
-            created_at: Some(::prost_types::Timestamp {
-                seconds: 1,
-                nanos: 1,
-            }),
-            updated_at: None,
+            created_at: Some(self.created_at.to_proto()),
+            updated_at: self.updated_at.map(|t| t.to_proto()),
             author: self.proto_author(username),
             response_count: self.response_count,
             preview_image: None,
@@ -53,8 +51,14 @@ impl ToProtoPost for models::Post {
             response_count: self.response_count,
             reply_count: self.reply_count,
             preview_image: self.preview.to_owned(),
-            visibility: self.visibility.to_proto_visibility().unwrap_or(Visibility::Unknown) as i32,
-            moderation: self.moderation.to_proto_moderation().unwrap_or(Moderation::Unknown) as i32,
+            visibility: self
+                .visibility
+                .to_proto_visibility()
+                .unwrap_or(Visibility::Unknown) as i32,
+            moderation: self
+                .moderation
+                .to_proto_moderation()
+                .unwrap_or(Moderation::Unknown) as i32,
             replies: vec![], //TODO update this
         }
     }

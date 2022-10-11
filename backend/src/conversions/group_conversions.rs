@@ -1,5 +1,6 @@
-use diesel::dsl::*;
 use diesel::*;
+use tonic::Code;
+use tonic::Status;
 
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
@@ -7,6 +8,7 @@ use crate::models;
 use crate::protos::*;
 
 use crate::rpcs::PASSING_MODERATIONS;
+use crate::schema::groups;
 use crate::schema::memberships;
 
 pub trait ToProtoGroup {
@@ -16,13 +18,13 @@ pub trait ToProtoGroup {
 impl ToProtoGroup for models::Group {
     fn to_proto(&self, conn: &PgPooledConnection, user: &Option<models::User>) -> Group {
         let member_count = memberships::table
-            .select(count(memberships::id))
+            .count()
             .filter(memberships::group_id.eq(self.id))
             .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
             .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
-            // .filter(memberships::status.eq("member"))
             .first::<i64>(conn)
             .unwrap();
+        println!("member count {}", member_count);
         let user_membership = match user {
             Some(user) => memberships::table
                 .select(memberships::all_columns)
@@ -47,6 +49,8 @@ impl ToProtoGroup for models::Group {
             visibility: self.visibility.to_i32_visibility(),
             member_count: member_count as u32,
             current_user_membership: user_membership,
+            created_at: Some(self.created_at.to_proto()),
+            updated_at: Some(self.updated_at.to_proto()),
         };
         // println!("Converted Group: {:?}", group);
         return group;
@@ -55,6 +59,7 @@ impl ToProtoGroup for models::Group {
 
 pub trait ToProtoMembership {
     fn to_proto(&self) -> Membership;
+    fn update_related_counts(&self, conn: &PgPooledConnection) -> Result<(), Status>;
 }
 impl ToProtoMembership for models::Membership {
     fn to_proto(&self) -> Membership {
@@ -65,8 +70,27 @@ impl ToProtoMembership for models::Membership {
             permissions: self.permissions.to_i32_permissions(),
             group_moderation: self.group_moderation.to_i32_moderation(),
             user_moderation: self.user_moderation.to_i32_moderation(),
+            created_at: Some(self.created_at.to_proto()),
+            updated_at: Some(self.updated_at.to_proto()),
         };
-        println!("Converted Membership: {:?}", membership);
+        // println!("Converted Membership: {:?}", membership);
         return membership;
+    }
+
+    fn update_related_counts(&self, conn: &PgPooledConnection) -> Result<(), Status> {
+        let member_count = memberships::table
+            .count()
+            .filter(memberships::group_id.eq(self.group_id))
+            .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
+            .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
+            .first::<i64>(conn)
+            .unwrap() as i32;
+
+        diesel::update(groups::table)
+            .filter(groups::id.eq(self.group_id))
+            .set(groups::member_count.eq(member_count))
+            .execute(conn)
+            .map_err(|_| Status::new(Code::Internal, "error_updating_follower_count"))?;
+        Ok(())
     }
 }

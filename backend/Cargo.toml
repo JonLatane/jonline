@@ -30,6 +30,7 @@ bcrypt = "0.13.0"
 bs58 = "0.4.0"
 ring = "0.16.20"
 regex = "1.6.0"
+itertools = "0.10.5"
 
 headless_chrome = { git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"], rev = "f8012ec4ed867ccc0efa6b262723363afd775011" }
 anyhow = "1.0.65"

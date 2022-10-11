@@ -3,12 +3,14 @@ import 'dart:math';
 import '../app_state.dart';
 import '../generated/jonline.pbgrpc.dart';
 import '../generated/posts.pb.dart';
+import '../generated/users.pb.dart';
 import 'jonline_account.dart';
 import 'jonline_account_operations.dart';
 import 'jonline_clients.dart';
 
-postDemoData(JonlineAccount account, Function(String) showSnackBar,
-    AppState appState) async {
+postDemoData(
+    JonlineAccount account, Function(String) showSnackBar, AppState appState,
+    {bool randomize = false}) async {
   final JonlineClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
@@ -19,7 +21,11 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar,
   await account.ensureRefreshToken(showMessage: showSnackBar);
 
   final List<Post> posts = [];
-  for (final data in _demoData) {
+  var topLevelPosts = List.of(_demoData);
+  if (randomize) {
+    topLevelPosts.shuffle();
+  }
+  for (final data in topLevelPosts) {
     showSnackBar('Posting "${data.title}"...');
     try {
       posts.add(await client.createPost(data,
@@ -31,71 +37,150 @@ postDemoData(JonlineAccount account, Function(String) showSnackBar,
     await communicationDelay;
   }
   showSnackBar(
-      "Posted demo topics successfully! 🎉 Generating conversations...");
+      "Posted demo topics successfully! 🎉 Generating users, relationships, and conversations...");
   // JonlineAccount? sideAccount;
+  List<JonlineAccount> sideAccounts =
+      await generateSideAccounts(client, account, showSnackBar, appState, 7);
+  List<JonlineAccount> replyAccounts = [
+    account,
+    ...sideAccounts,
+    ...sideAccounts
+  ];
+  int replyCount = 0;
+  var lastMessageTime = DateTime.now();
+  final totalReplies = 1 + Random().nextInt(posts.length * 200);
+  final targets = posts;
+  // showSnackBar('Replying to "${post.title}"...');
+  for (int i = 0; i < totalReplies; i++) {
+    final targetAccount = replyAccounts[_random.nextInt(replyAccounts.length)];
+    final reply = _demoReplies[_random.nextInt(_demoReplies.length)];
+    final target = targets[_random.nextInt(targets.length)];
+    try {
+      final replyPost = await client.createPost(
+          CreatePostRequest(
+            replyToPostId: target.id,
+            content: reply,
+          ),
+          options: targetAccount.authenticatedCallOptions);
+      targets.add(replyPost);
+      replyCount += 1;
+      if (DateTime.now().difference(lastMessageTime) >
+          const Duration(seconds: 5)) {
+        showSnackBar("Posted $replyCount replies.");
+        lastMessageTime = DateTime.now();
+      }
+    } catch (e) {
+      showSnackBar("Error posting demo data: $e");
+      return;
+    }
+  }
+  showSnackBar("Posted all demo data, with $replyCount replies 🎉🎉🎉🎉🎉 ");
+}
+
+Future<List<JonlineAccount>> generateSideAccounts(
+    JonlineClient client,
+    JonlineAccount account,
+    Function(String) showSnackBar,
+    AppState appState,
+    int count) async {
   List<JonlineAccount> sideAccounts = [];
-  String prefix = "not";
-  while (sideAccounts.length < 2 && prefix.length < 100) {
+  String prefix = "";
+  String fakeAccountName = generateRandomName();
+
+  while (sideAccounts.length < count && prefix.length < 200) {
     try {
       final JonlineAccount? sideAccount = await JonlineAccount.createAccount(
-          account.server,
-          "$prefix-${account.username}",
-          getRandomString(15),
-          showSnackBar,
-          allowInsecure: account.allowInsecure,
-          selectAccount: false);
+          account.server, "$prefix$fakeAccountName", getRandomString(15), (m) {
+        if (!m.contains("insecurely") &&
+            !m.contains("already exists") &&
+            !m.contains("Failed to create account")) {
+          showSnackBar(m);
+        }
+      }, allowInsecure: account.allowInsecure, selectAccount: false);
       // final JonlineClient? sideClient =
       //     await (sideAccount?.getClient(showMessage: showSnackBar));
       if (sideAccount != null) {
-        await sideAccount.updateUserData(showMessage: showSnackBar);
-        showSnackBar("Created side account ${sideAccount.username}.");
+        await sideAccount.updateUserData();
+        // showSnackBar("Created side account ${sideAccount.username}.");
         appState.updateAccountList();
         sideAccounts.add(sideAccount);
+        prefix = "";
+        fakeAccountName = generateRandomName();
       }
     } catch (e) {
       // print("Error creating side account '$prefix-${account.username}': $e");
     }
     prefix = "not-$prefix";
   }
-  List<JonlineAccount> replyAccounts = [
-    account,
-    ...sideAccounts,
-    ...sideAccounts,
-    ...sideAccounts
-  ];
-  int replyCount = 0;
-  var lastMessageTime = DateTime.now();
-  for (final post in posts) {
-    final totalReplies = 1 + Random().nextInt(100);
-    final targets = [post];
-    // showSnackBar('Replying to "${post.title}"...');
-    for (int i = 0; i < totalReplies; i++) {
-      final targetAccount =
-          replyAccounts[_random.nextInt(replyAccounts.length)];
-      final reply = _demoReplies[_random.nextInt(_demoReplies.length)];
-      final target = targets[_random.nextInt(targets.length)];
-      try {
-        final replyPost = await client.createPost(
-            CreatePostRequest(
-              replyToPostId: target.id,
-              content: reply,
+
+  //Generate follow relationships between side accounts and originating account
+  int relationshipsCreated = 0;
+  final targetAccounts = [account, account, account, ...sideAccounts];
+  for (final sideAccount in sideAccounts) {
+    final followedAccounts = [sideAccount];
+    final totalFollows = Random().nextInt(max(0, targetAccounts.length - 3));
+    try {
+      for (int i = 0; i < totalFollows; i++) {
+        final followableAccounts = List.of(targetAccounts)
+          ..removeWhere((a) => followedAccounts.contains(a));
+        final targetAccount =
+            followableAccounts[_random.nextInt(followableAccounts.length)];
+        followedAccounts.add(targetAccount);
+        await client.createFollow(
+            Follow(
+              userId: sideAccount.userId,
+              targetUserId: targetAccount.userId,
             ),
-            options: targetAccount.authenticatedCallOptions);
-        targets.add(replyPost);
-        replyCount += 1;
-        if (DateTime.now().difference(lastMessageTime) >
-            const Duration(seconds: 1)) {
-          showSnackBar("Posted $replyCount replies.");
-          lastMessageTime = DateTime.now();
-        }
-      } catch (e) {
-        showSnackBar("Error posting demo data: $e");
-        return;
+            options: sideAccount.authenticatedCallOptions);
+        relationshipsCreated += 1;
       }
+    } catch (e) {
+      showSnackBar("Error following side account: $e");
     }
   }
-  showSnackBar("Posted all demo data, with $replyCount replies 🎉🎉🎉🎉🎉 ");
+  showSnackBar("Created $relationshipsCreated follow relationships.");
+  return sideAccounts;
 }
+
+String generateRandomName() =>
+    _demoNameComponents.map((fix) => fix[_random.nextInt(fix.length)]).join('');
+
+final List<List<String>> _demoNameComponents = [
+  [
+    'kim',
+    'bob',
+    'tim',
+    'jess',
+    'kim',
+    'mar',
+    'jen',
+    'jeff',
+    'anton',
+    'chris',
+    'mor',
+    'shay',
+    'trey',
+    'josh',
+    'joe',
+    'jim',
+    'jimmy',
+    'shan',
+    'han',
+    'mike'
+  ],
+  [
+    'berly',
+    'othy',
+    'athon',
+    'bothy',
+    'ine',
+    'an',
+    'frey',
+    'nifer',
+    'berly',
+    'bo'
+  ]
+];
 
 // Many generated from https://www.commments.com :)
 final List<String> _demoReplies = [
