@@ -20,7 +20,7 @@ pub struct Post {
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
-#[table_name = "posts"]
+#[diesel(table_name = posts)]
 pub struct MinimalPost {
     pub id: i32,
     pub user_id: Option<i32>,
@@ -59,7 +59,7 @@ pub static MINIMAL_POST_COLUMNS: (
 );
 
 #[derive(Debug, Insertable)]
-#[table_name = "posts"]
+#[diesel(table_name = posts)]
 pub struct NewPost {
     pub user_id: Option<i32>,
     pub parent_post_id: Option<i32>,

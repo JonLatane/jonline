@@ -13,10 +13,10 @@ use crate::schema::memberships;
 
 pub trait ToProtoGroup {
     fn to_proto_with(&self, member_count: i32, user_membership: Option<Membership>) -> Group;
-    fn to_proto(&self, conn: &PgPooledConnection, user: &Option<models::User>) -> Group;
+    fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> Group;
 }
 impl ToProtoGroup for models::Group {
-    fn to_proto(&self, conn: &PgPooledConnection, user: &Option<models::User>) -> Group {
+    fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> Group {
         let member_count = memberships::table
             .count()
             .filter(memberships::group_id.eq(self.id))
@@ -59,7 +59,7 @@ impl ToProtoGroup for models::Group {
 
 pub trait ToProtoMembership {
     fn to_proto(&self) -> Membership;
-    fn update_related_counts(&self, conn: &PgPooledConnection) -> Result<(), Status>;
+    fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status>;
 }
 impl ToProtoMembership for models::Membership {
     fn to_proto(&self) -> Membership {
@@ -77,7 +77,7 @@ impl ToProtoMembership for models::Membership {
         return membership;
     }
 
-    fn update_related_counts(&self, conn: &PgPooledConnection) -> Result<(), Status> {
+    fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status> {
         let member_count = memberships::table
             .count()
             .filter(memberships::group_id.eq(self.group_id))

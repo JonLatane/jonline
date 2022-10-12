@@ -18,7 +18,7 @@ use super::validations::*;
 pub fn update_group(
     request: Group,
     user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Group, Status> {
     validate_group(&request)?;
     match memberships::table
@@ -55,7 +55,7 @@ pub fn update_group(
         .set(&group)
         .execute(conn)
     {
-        Ok(_) => Ok(group.to_proto(&conn, &Some(user))),
+        Ok(_) => Ok(group.to_proto(conn, &Some(user))),
         Err(DatabaseError(UniqueViolation, _)) => {
             Err(Status::new(Code::NotFound, "duplicate_group_name"))
         }

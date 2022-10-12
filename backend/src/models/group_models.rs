@@ -19,7 +19,7 @@ pub struct Group {
 }
 
 #[derive(Debug, Insertable)]
-#[table_name = "groups"]
+#[diesel(table_name = groups)]
 pub struct NewGroup {
     pub name: String,
     pub description: Option<String>,
@@ -41,7 +41,7 @@ pub struct Membership {
     pub updated_at: SystemTime,
 }
 #[derive(Debug, Insertable)]
-#[table_name = "memberships"]
+#[diesel(table_name = memberships)]
 pub struct NewMembership {
     pub user_id: i32,
     pub group_id: i32,

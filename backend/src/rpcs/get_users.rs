@@ -12,7 +12,7 @@ use crate::schema::users;
 pub fn get_users(
     request: GetUsersRequest,
     user: Option<models::User>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
     println!("GetUsers called");
     let response = match (request.to_owned().listing_type.to_proto_user_listing_type(), request.to_owned().username, request.to_owned().user_id) {
@@ -35,7 +35,7 @@ pub fn get_users(
 fn get_all_users(
     request: GetUsersRequest,
     user: Option<models::User>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> GetUsersResponse {
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
@@ -75,7 +75,7 @@ fn get_all_users(
 fn get_by_username(
     request: GetUsersRequest,
     user: Option<models::User>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> GetUsersResponse {
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
@@ -114,7 +114,7 @@ fn get_by_username(
 fn get_by_user_id(
     request: GetUsersRequest,
     user: Option<models::User>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> GetUsersResponse {
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],

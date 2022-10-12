@@ -12,7 +12,7 @@ use crate::schema::{posts, users};
 pub fn get_posts(
     request: Request<GetPostsRequest>,
     _user: Option<models::User>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Response<Posts>, Status> {
     // println!("GetPosts called");
     let req: GetPostsRequest = request.into_inner();
@@ -27,7 +27,7 @@ pub fn get_posts(
     Ok(Response::new(Posts { posts: result }))
 }
 
-fn get_by_post_id(post_id: &str, conn: &PgPooledConnection) -> Result<Vec<Post>, Status> {
+fn get_by_post_id(post_id: &str, conn: &mut PgPooledConnection) -> Result<Vec<Post>, Status> {
     let post_db_id = match post_id.to_string().to_db_id() {
         Ok(db_id) => db_id,
         Err(_) => return Err(Status::new(Code::InvalidArgument, "post_id_invalid")),
@@ -47,7 +47,7 @@ fn get_by_post_id(post_id: &str, conn: &PgPooledConnection) -> Result<Vec<Post>,
     Ok(result)
 }
 
-fn get_all_posts(conn: &PgPooledConnection) -> Vec<Post> {
+fn get_all_posts(conn: &mut PgPooledConnection) -> Vec<Post> {
     posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((models::MINIMAL_POST_COLUMNS, users::username.nullable()))
@@ -62,7 +62,7 @@ fn get_all_posts(conn: &PgPooledConnection) -> Vec<Post> {
         .collect()
 }
 
-fn get_replies_to_post_id(post_id: &str, conn: &PgPooledConnection) -> Result<Vec<Post>, Status> {
+fn get_replies_to_post_id(post_id: &str, conn: &mut PgPooledConnection) -> Result<Vec<Post>, Status> {
     let post_db_id = match post_id.to_string().to_db_id() {
         Ok(db_id) => db_id,
         Err(_) => {

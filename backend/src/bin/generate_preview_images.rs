@@ -13,12 +13,12 @@ use jonline::schema::posts::dsl::*;
 pub fn main() {
     println!("Generating preview images...");
     println!("Connecting to DB...");
-    let conn = db_connection::establish_connection();
+    let mut conn = db_connection::establish_connection();
     let posts_to_update = posts
         .filter(preview.is_null())
         .filter(link.is_not_null())
         .limit(100)
-        .load::<jonline::models::Post>(&conn)
+        .load::<jonline::models::Post>(&mut conn)
         .unwrap();
     println!("Got {} posts to update.", posts_to_update.len());
 
@@ -38,7 +38,7 @@ pub fn main() {
                         update(posts)
                             .filter(id.eq(post.id))
                             .set(preview.eq(screenshot))
-                            .execute(&crate::db_connection::establish_connection())
+                            .execute(&mut conn)
                             .unwrap();
                     }
                     Err(e) => {

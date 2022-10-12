@@ -8,7 +8,7 @@ use crate::conversions::ToProtoServerConfiguration;
 use crate::{models, protos};
 
 pub fn get_server_configuration(
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<protos::ServerConfiguration, Status> {
     let server_configuration = server_configurations
         .filter(active.eq(true))

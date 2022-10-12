@@ -22,7 +22,7 @@ pub struct ServerConfiguration {
     pub updated_at: SystemTime,
 }
 #[derive(Debug, Insertable)]
-#[table_name = "server_configurations"]
+#[diesel(table_name = server_configurations)]
 pub struct NewServerConfiguration {
     pub server_info: serde_json::Value,
     pub default_user_permissions: serde_json::Value,

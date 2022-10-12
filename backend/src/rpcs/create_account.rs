@@ -13,7 +13,7 @@ use super::{validations::*, get_server_configuration};
 
 pub fn create_account(
     request: CreateAccountRequest,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<AuthTokenResponse, Status> {
     validate_username(&request.username)?;
     validate_password(&request.password)?;

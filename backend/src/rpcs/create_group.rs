@@ -15,7 +15,7 @@ use super::validations::*;
 pub fn create_group(
     request: Group,
     user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Group, Status> {
     validate_permission(&user, Permission::CreateGroups)?;
     validate_group(&request)?;
@@ -41,7 +41,7 @@ pub fn create_group(
     }
     let mut membership: Option<models::Membership> = None;
     let group: Result<models::Group, diesel::result::Error> = conn
-        .transaction::<models::Group, diesel::result::Error, _>(|| {
+        .transaction::<models::Group, diesel::result::Error, _>(|conn| {
             let group = insert_into(groups::table)
                 .values(&models::NewGroup {
                     name: request.name,

@@ -12,7 +12,7 @@ use super::validations::*;
 pub fn create_post(
     request: Request<CreatePostRequest>,
     user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Response<Post>, Status> {
     println!(
         "CreatePost called for user {}, user_id={}",
@@ -60,7 +60,7 @@ pub fn create_post(
         None => req.title
     };
 
-    let post = conn.transaction::<models::Post, diesel::result::Error, _>(|| {
+    let post = conn.transaction::<models::Post, diesel::result::Error, _>(|conn| {
         let inserted_post = insert_into(posts)
             .values(&models::NewPost {
                 user_id: Some(user.id),

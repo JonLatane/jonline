@@ -11,7 +11,7 @@ use crate::schema::groups;
 pub fn get_groups(
     request: GetGroupsRequest,
     user: Option<models::User>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<GetGroupsResponse, Status> {
     println!("GetGroups called");
     let response = match (
@@ -38,7 +38,7 @@ pub fn get_groups(
 fn get_all_groups(
     request: GetGroupsRequest,
     user: Option<models::User>,
-    conn: &PgPooledConnection,
+    mut conn: &mut PgPooledConnection,
 ) -> GetGroupsResponse {
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
@@ -58,7 +58,7 @@ fn get_all_groups(
         .load::<models::Group>(conn)
         .unwrap()
         .iter()
-        .map(|group| group.to_proto(&conn, &user))
+        .map(|group| group.to_proto(&mut conn, &user))
         .collect();
     GetGroupsResponse {
         groups,
@@ -68,7 +68,7 @@ fn get_all_groups(
 fn get_by_name(
     request: GetGroupsRequest,
     user: Option<models::User>,
-    conn: &PgPooledConnection,
+    mut conn: &mut PgPooledConnection,
 ) -> GetGroupsResponse {
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
@@ -87,7 +87,7 @@ fn get_by_name(
         .load::<models::Group>(conn)
         .unwrap()
         .iter()
-        .map(|group| group.to_proto(&conn, &user))
+        .map(|group| group.to_proto(&mut conn, &user))
         .collect();
     GetGroupsResponse {
         groups,
@@ -98,7 +98,7 @@ fn get_by_name(
 fn get_by_id(
     request: GetGroupsRequest,
     user: Option<models::User>,
-    conn: &PgPooledConnection,
+    mut conn: &mut PgPooledConnection,
 ) -> GetGroupsResponse {
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
@@ -123,7 +123,7 @@ fn get_by_id(
         .load::<models::Group>(conn)
         .unwrap()
         .iter()
-        .map(|group| group.to_proto(&conn, &user))
+        .map(|group| group.to_proto(&mut conn, &user))
         .collect();
     GetGroupsResponse {
         groups,

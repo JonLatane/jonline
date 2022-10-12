@@ -13,7 +13,7 @@ use crate::schema::follows;
 pub fn update_follow(
     request: Follow,
     current_user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Follow, Status> {
     validate_follow(&request, OperationType::Update)?;
     if request.user_id != current_user.id.to_proto_id() {

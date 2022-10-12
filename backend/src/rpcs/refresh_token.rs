@@ -10,7 +10,7 @@ use crate::schema::user_auth_tokens::dsl::*;
 
 pub fn refresh_token(
     request: Request<RefreshTokenRequest>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Response<ExpirableToken>, Status> {
     println!("RefreshToken called.");
     let token_and_user_id: Result<(i32, i32), _> = user_auth_tokens

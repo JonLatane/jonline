@@ -11,7 +11,7 @@ use crate::schema::{groups, memberships};
 pub fn create_membership(
     request: Membership,
     user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Membership, Status> {
     validate_membership(&request, OperationType::Create)?;
     let group = groups::table
@@ -66,10 +66,10 @@ fn create_membership_for_self(
     request: Membership,
     group: models::Group,
     user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<models::Membership, Status> {
     let membership: Result<models::Membership, diesel::result::Error> = conn
-        .transaction::<models::Membership, diesel::result::Error, _>(|| {
+        .transaction::<models::Membership, diesel::result::Error, _>(|conn| {
             let membership = insert_into(memberships::table)
                 .values(&models::NewMembership {
                     user_id: user.id,
@@ -92,7 +92,7 @@ fn create_membership_for_other(
     group: models::Group,
     _user: models::User,
     user_membership: models::Membership,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<models::Membership, Status> {
     let group_moderation = match validate_any_group_permission(
         &user_membership,
@@ -103,7 +103,7 @@ fn create_membership_for_other(
     };
 
     let membership: Result<models::Membership, diesel::result::Error> = conn
-        .transaction::<models::Membership, diesel::result::Error, _>(|| {
+        .transaction::<models::Membership, diesel::result::Error, _>(|conn| {
             let membership = insert_into(memberships::table)
                 .values(&models::NewMembership {
                     user_id: request.user_id.to_db_id().unwrap(),

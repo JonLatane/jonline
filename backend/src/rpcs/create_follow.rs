@@ -11,7 +11,7 @@ use crate::schema::{follows, users};
 pub fn create_follow(
     request: Follow,
     user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Follow, Status> {
     validate_follow(&request, OperationType::Create)?;
     if request.user_id != user.id.to_proto_id() {
@@ -24,7 +24,7 @@ pub fn create_follow(
         .map_err(|_| Status::new(Code::NotFound, "target_user_not_found"))?;
 
     let follow_result: Result<models::Follow, diesel::result::Error> = conn
-        .transaction::<models::Follow, diesel::result::Error, _>(|| {
+        .transaction::<models::Follow, diesel::result::Error, _>(|conn| {
             let follow = insert_into(follows::table)
                 .values(&models::NewFollow {
                     user_id: user.id,

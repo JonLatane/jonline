@@ -13,7 +13,7 @@ use super::validations::*;
 pub fn delete_group(
     request: Group,
     user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     validate_group(&request)?;
     let user_membership = match memberships::table

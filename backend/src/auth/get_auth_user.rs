@@ -10,7 +10,7 @@ use crate::schema::users::dsl as users;
 
 pub fn get_auth_user_id<T>(
     request: &Request<T>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<i32, Status> {
     let refresh_token = request
         .metadata()
@@ -42,7 +42,7 @@ pub fn get_auth_user_id<T>(
 
 pub fn get_auth_user<T>(
     request: &Request<T>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<models::User, Status> {
     let user_id = get_auth_user_id(request, conn);
     let user: models::User = match user_id {

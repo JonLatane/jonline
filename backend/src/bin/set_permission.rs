@@ -33,11 +33,11 @@ pub fn main() {
     );
 
     println!("Connecting to DB...");
-    let conn = db_connection::establish_connection();
+    let mut conn = db_connection::establish_connection();
     let mut user = match users::table
         .select(users::all_columns)
         .filter(users::username.eq(username))
-        .first::<jonline::models::User>(&conn)
+        .first::<jonline::models::User>(&mut conn)
     {
         Ok(user) => user,
         Err(_) => return println!("Could not find user."),
@@ -71,7 +71,7 @@ pub fn main() {
     }
     println!("Updated permissions: {:?}", perms);
     user.permissions = perms.into();
-    user.save_changes::<jonline::models::User>(&conn).unwrap();
+    user.save_changes::<jonline::models::User>(&mut conn).unwrap();
     println!("Updated user {}.", username);
 }
 

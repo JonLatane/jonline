@@ -18,7 +18,7 @@ use super::validations::*;
 pub fn update_user(
     request: User,
     current_user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<User, Status> {
     validate_user(&request)?;
 
@@ -45,7 +45,7 @@ pub fn update_user(
     );
 
     let transaction_result: Result<models::User, diesel::result::Error> = conn
-        .transaction::<models::User, diesel::result::Error, _>(|| {
+        .transaction::<models::User, diesel::result::Error, _>(|conn| {
             let mut existing_user = users::table
                 .select(users::all_columns)
                 .filter(users::id.eq(request.id.to_db_id().unwrap()))

@@ -3,7 +3,6 @@ use std::env;
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
-#[macro_use]
 extern crate diesel_migrations;
 extern crate bcrypt;
 extern crate bs58;

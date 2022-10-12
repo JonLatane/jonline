@@ -11,7 +11,7 @@ use super::validations::*;
 pub fn configure_server(
     request: protos::ServerConfiguration,
     user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Response<protos::ServerConfiguration>, Status> {
     println!("ConfigureServer called; request {:?}", request);
     validate_configuration(&request)?;
@@ -19,7 +19,7 @@ pub fn configure_server(
     if !user.has_permission(protos::Permission::Admin) {
         return Err(Status::new(Code::PermissionDenied, "not_admin"));
     }
-    let result = conn.transaction::<models::ServerConfiguration, diesel::result::Error, _>(|| {
+    let result = conn.transaction::<models::ServerConfiguration, diesel::result::Error, _>(|conn| {
         update(server_configurations).set(active.eq(false)).execute(conn)?;
         let configuration = insert_into(server_configurations)
             .values(request.to_db())

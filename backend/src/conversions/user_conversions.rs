@@ -11,13 +11,13 @@ use tonic::Status;
 pub trait ToProtoUser {
     fn to_proto(&self) -> User;
     fn to_proto_with(&self, follow: &Option<models::Follow>) -> User;
-    fn to_proto_auto(&self, conn: &PgPooledConnection, user: &Option<models::User>) -> User;
+    fn to_proto_auto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> User;
 }
 impl ToProtoUser for models::User {
     fn to_proto(&self) -> User {
         return self.to_proto_with(&None);
     }
-    fn to_proto_auto(&self, conn: &PgPooledConnection, user: &Option<models::User>) -> User {
+    fn to_proto_auto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> User {
         let follow = match user {
             Some(user) => follows::table
                 .select(follows::all_columns)
@@ -66,7 +66,7 @@ impl ToProtoUser for models::User {
 
 pub trait ToProtoFollow {
     fn to_proto(&self) -> Follow;
-    fn update_related_counts(&self, conn: &PgPooledConnection) -> Result<(), Status>;
+    fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status>;
 }
 impl ToProtoFollow for models::Follow {
     fn to_proto(&self) -> Follow {
@@ -80,7 +80,7 @@ impl ToProtoFollow for models::Follow {
         };
     }
 
-    fn update_related_counts(&self, conn: &PgPooledConnection) -> Result<(), Status> {
+    fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status> {
         let following_count = follows::table
             .count()
             .filter(follows::user_id.eq(self.user_id))

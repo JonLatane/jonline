@@ -32,7 +32,7 @@ pub struct Follow {
 }
 
 #[derive(Debug, Insertable)]
-#[table_name = "follows"]
+#[diesel(table_name = follows)]
 pub struct NewFollow {
     pub user_id: i32,
     pub target_user_id: i32,

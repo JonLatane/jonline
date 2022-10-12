@@ -11,7 +11,7 @@ use crate::schema::follows;
 pub fn delete_follow(
     request: Follow,
     current_user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     if request.user_id != current_user.id.to_proto_id() {
         validate_permission(&current_user, Permission::Admin)?;

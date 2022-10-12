@@ -1,8 +1,9 @@
 use diesel::prelude::*;
+use diesel_migrations::{MigrationHarness, embed_migrations, EmbeddedMigrations};
 
-use diesel_migrations::embed_migrations;
+// embed_migrations!("./migrations");
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
-embed_migrations!("./migrations");
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use dotenv::dotenv;
 use std::env;
@@ -31,7 +32,8 @@ pub fn establish_connection() -> PgConnection {
 }
 
 pub fn migrate_database() {
-    let connection = establish_connection();
-    embedded_migrations::run_with_output(&connection, &mut std::io::stdout())
-        .expect("Error running migrations");
+    let mut connection = establish_connection();
+    connection.run_pending_migrations(MIGRATIONS).unwrap();
+    // embedded_migrations::run_with_output(&connection, &mut std::io::stdout())
+    //     .expect("Error running migrations");
 }

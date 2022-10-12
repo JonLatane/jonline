@@ -12,7 +12,7 @@ use crate::schema::users::dsl::*;
 
 pub fn login(
     request: Request<LoginRequest>,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<Response<AuthTokenResponse>, Status> {
     let req = request.into_inner();
     validate_username(&req.username)?;

@@ -11,7 +11,7 @@ use crate::schema::memberships;
 pub fn delete_membership(
     request: Membership,
     current_user: models::User,
-    conn: &PgPooledConnection,
+    conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     validate_membership(&request, OperationType::Create)?;
 
