@@ -290,9 +290,10 @@ class GroupsScreenState extends State<GroupsScreen>
   Widget buildGroupItem(Group group) {
     bool isMember = group.currentUserMembership.groupModeration.passes;
     bool invitePending = group.currentUserMembership.groupModeration.pending;
+    bool canJoin = appState.selectedAccount != null;
     return Card(
-      color:
-          appState.selectedAccount?.id == group.id ? appState.navColor : null,
+      // color:
+      //     appState.selectedAccount?.id == group.id ? appState.navColor : null,
       child: InkWell(
         onTap: () {
           context.navigateTo(GroupDetailsRoute(
@@ -434,14 +435,18 @@ class GroupsScreenState extends State<GroupsScreen>
                                                     MaterialStateProperty.all(
                                                         const EdgeInsets.all(
                                                             0))),
-                                            onPressed: () => joinGroup(group),
+                                            onPressed: canJoin
+                                                ? () => joinGroup(group)
+                                                : null,
                                             child: Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
                                               children: [
                                                 const Icon(Icons.add),
                                                 const SizedBox(width: 4),
-                                                Text(invitePending
+                                                Text(group
+                                                        .defaultMembershipModeration
+                                                        .pending
                                                     ? "REQUEST"
                                                     : "JOIN")
                                               ],

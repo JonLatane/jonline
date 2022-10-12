@@ -153,6 +153,7 @@ class PostsScreenState extends State<PostsScreen>
                         // controller: PrimaryScrollController.of(context),
                         // The current items in the list.
                         items: postList,
+
                         // Called by the DiffUtil to decide whether two object represent the same item.
                         // For example, if your items have unique ids, this method should check their id equality.
                         areItemsTheSame: (a, b) => a.id == b.id,

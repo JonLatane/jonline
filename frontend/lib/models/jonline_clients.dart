@@ -88,8 +88,9 @@ extension JonlineClients on JonlineAccount {
   static Future<JonlineClient?> getSelectedServerClient(
       {Function(String)? showMessage, bool allowInsecure = false}) async {
     // Workaround for anonymous browsing on localhost
-    final reallyAllowInsecure =
-        allowInsecure || JonlineServer.selectedServer.server == 'localhost';
+    final reallyAllowInsecure = allowInsecure ||
+        JonlineServer.selectedServer.server == "localhost" ||
+        JonlineServer.selectedServer.server == "Armothy";
     final server = JonlineServer.selectedServer.server;
     final clients = Map.of(_secureClients)
       ..addAll(reallyAllowInsecure ? _insecureClients : {});

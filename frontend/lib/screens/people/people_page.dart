@@ -252,6 +252,11 @@ class PeopleScreenState extends State<PeopleScreen>
         user.followRelationship = follow;
         if (follow.targetUserModeration.passes) {
           user.followerCount += 1;
+          appState.users.value
+              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .forEach((u) {
+            u.followingCount += 1;
+          });
         }
       });
       showSnackBar('Followed ${user.username}.');
@@ -273,6 +278,11 @@ class PeopleScreenState extends State<PeopleScreen>
         user.followRelationship = Follow();
         if (follow.targetUserModeration.passes) {
           user.followerCount -= 1;
+          appState.users.value
+              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .forEach((u) {
+            u.followingCount -= 1;
+          });
         }
       });
       showSnackBar('Unfollowed ${user.username}.');
@@ -387,13 +397,16 @@ class PeopleScreenState extends State<PeopleScreen>
                               // ),
                               // const SizedBox(width: 4),
                               Text(user.followerCount.toString(),
-                                  style: textTheme.caption),
+                                  style: textTheme.caption?.copyWith(
+                                      color: textColor?.withOpacity(0.5))),
                               Text(
                                   " follower${user.followerCount == 1 ? '' : 's'}",
-                                  style: textTheme.caption),
+                                  style: textTheme.caption?.copyWith(
+                                      color: textColor?.withOpacity(0.5))),
                               const Expanded(child: SizedBox()),
                               Text("following ${user.followingCount}",
-                                  style: textTheme.caption),
+                                  style: textTheme.caption?.copyWith(
+                                      color: textColor?.withOpacity(0.5))),
                             ],
                           ),
                         ),
@@ -445,14 +458,17 @@ class PeopleScreenState extends State<PeopleScreen>
                                         style: ButtonStyle(
                                             padding: MaterialStateProperty.all(
                                                 const EdgeInsets.all(0))),
-                                        onPressed: () => follow(user),
+                                        onPressed: cannotFollow
+                                            ? null
+                                            : () => follow(user),
                                         child: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
                                             const Icon(Icons.add),
                                             const SizedBox(width: 4),
-                                            Text(pending_request
+                                            Text(user.defaultFollowModeration
+                                                    .pending
                                                 ? "REQUEST"
                                                 : "FOLLOW")
                                           ],

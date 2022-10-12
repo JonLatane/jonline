@@ -106,19 +106,27 @@ Future<List<JonlineAccount>> generateSideAccounts(
         sideAccounts.add(sideAccount);
         prefix = "";
         fakeAccountName = generateRandomName();
+      } else {
+        prefix = "not-$prefix";
       }
     } catch (e) {
-      // print("Error creating side account '$prefix-${account.username}': $e");
+      prefix = "not-$prefix";
     }
-    prefix = "not-$prefix";
   }
 
   //Generate follow relationships between side accounts and originating account
   int relationshipsCreated = 0;
-  final targetAccounts = [account, account, account, ...sideAccounts];
+
+  final originalAccountDupes = sideAccounts.length * 2;
+  final targetAccounts = [
+    ...List.filled(originalAccountDupes, account),
+    ...sideAccounts
+  ];
   for (final sideAccount in sideAccounts) {
+    showSnackBar("Creating relationships for ${sideAccount.username}.");
     final followedAccounts = [sideAccount];
-    final totalFollows = Random().nextInt(max(0, targetAccounts.length - 3));
+    final maxFollows = targetAccounts.length - originalAccountDupes;
+    final totalFollows = 3 + Random().nextInt(max(0, maxFollows - 3));
     try {
       for (int i = 0; i < totalFollows; i++) {
         final followableAccounts = List.of(targetAccounts)

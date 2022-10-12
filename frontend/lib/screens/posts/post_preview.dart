@@ -263,6 +263,7 @@ class PostPreviewState extends State<PostPreview> {
   }
 
   Widget buildServerPreview(BuildContext context) {
+    if (link == null) return const SizedBox();
     return Tooltip(
       message: link!,
       child: SizedBox(

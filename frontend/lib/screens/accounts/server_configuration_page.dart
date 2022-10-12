@@ -217,6 +217,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
     ));
   }
 
+  bool addedGloballyPublishProfilePermissionToMeetInvariant = false;
   Widget buildConfiguration() {
     return Center(
       child: Container(
@@ -330,7 +331,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
             if (isAdmin)
               Container(
                 key: Key(
-                    "visibility-control-${(account ?? JonlineAccount.selectedAccount)?.id}"),
+                    "visibility-control-${(account ?? JonlineAccount.selectedAccount)?.id}-${config?.peopleSettings.defaultVisibility}"),
                 child: MultiSelectChipField<vm.Visibility?>(
                   decoration: const BoxDecoration(),
                   showHeader: false,
@@ -366,14 +367,27 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                           vm.Visibility.VISIBILITY_UNKNOWN);
                       setState(() => config?.peopleSettings.defaultVisibility =
                           values.first!);
+                      if (values.first == vm.Visibility.GLOBAL_PUBLIC &&
+                          !config!.defaultUserPermissions
+                              .contains(Permission.GLOBALLY_PUBLISH_USERS) &&
+                          !addedGloballyPublishProfilePermissionToMeetInvariant) {
+                        addedGloballyPublishProfilePermissionToMeetInvariant =
+                            true;
+                        config!.defaultUserPermissions
+                            .add(Permission.GLOBALLY_PUBLISH_USERS);
+                      } else if (values.first != vm.Visibility.GLOBAL_PUBLIC &&
+                          addedGloballyPublishProfilePermissionToMeetInvariant) {
+                        addedGloballyPublishProfilePermissionToMeetInvariant =
+                            false;
+                        config!.defaultUserPermissions
+                            .remove(Permission.GLOBALLY_PUBLISH_USERS);
+                      }
                     } else {
                       values.add(config?.peopleSettings.defaultVisibility ??
                           vm.Visibility.VISIBILITY_UNKNOWN);
                       setState(() => config?.peopleSettings.defaultVisibility =
                           values.first!);
                     }
-                    print(
-                        "User visibility: ${config?.peopleSettings.defaultVisibility}");
                   },
                 ),
               ),
@@ -381,32 +395,38 @@ class _AdminPageState extends State<ServerConfigurationPage> {
             Text('Default User Permissions', style: textTheme.subtitle1),
             const SizedBox(height: 8),
             if (isAdmin)
-              MultiSelectDialogField(
-                title: const Text("Select Default\nUser Permissions"),
-                buttonText: const Text("Select Default User Permissions"),
-                searchable: true,
-                items: Permission.values
-                    .where((p) => p != Permission.PERMISSION_UNKNOWN)
-                    .map((p) => MultiSelectItem(p, p.displayName))
-                    .toList(),
-                listType: MultiSelectListType.CHIP,
-                initialValue: config?.defaultUserPermissions ?? [],
-                selectedColor: appState.navColor,
-                selectedItemsTextStyle:
-                    TextStyle(color: appState.navColor.textColor),
-                onConfirm: (values) {
-                  setState(() {
-                    config = config?.jonRebuild((c) {
-                      c.defaultUserPermissions
-                          .addAll(values.cast<Permission>());
+              Container(
+                key: Key(
+                    "default-permissions-control-${config!.defaultUserPermissions}"),
+                child: MultiSelectDialogField(
+                  title: const Text("Select Default\nUser Permissions"),
+                  buttonText: const Text("Select Default User Permissions"),
+                  searchable: true,
+                  items: Permission.values
+                      .where((p) => p != Permission.PERMISSION_UNKNOWN)
+                      .map((p) => MultiSelectItem(p, p.displayName))
+                      .toList(),
+                  listType: MultiSelectListType.CHIP,
+                  initialValue: config?.defaultUserPermissions ?? [],
+                  selectedColor: appState.navColor,
+                  selectedItemsTextStyle:
+                      TextStyle(color: appState.navColor.textColor),
+                  onConfirm: (values) {
+                    setState(() {
+                      config!.defaultUserPermissions
+                        ..clear()
+                        ..addAll(values.cast<Permission>());
+                      if (!values.contains(Permission.GLOBALLY_PUBLISH_USERS) &&
+                          config!.peopleSettings.defaultVisibility ==
+                              vm.Visibility.GLOBAL_PUBLIC) {
+                        addedGloballyPublishProfilePermissionToMeetInvariant =
+                            false;
+                        config!.peopleSettings.defaultVisibility =
+                            vm.Visibility.SERVER_PUBLIC;
+                      }
                     });
-                    // account?.user = account?.user?.jonRebuild((u) {
-                    //   u.permissions.clear();
-                    //   u.permissions.addAll(values.map((e) => e as Permission));
-                    // });
-                  });
-                },
-                // padding: const EdgeInsets.all(0),
+                  },
+                ),
               ),
             if (!isAdmin)
               MultiSelectChipDisplay<Permission>(
@@ -419,6 +439,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
             const SizedBox(height: 24),
             if (isAdmin)
               TextButton(
+                onPressed: applyServerConfiguration,
                 child: SizedBox(
                   height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
                   child: Row(
@@ -429,7 +450,6 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                     ],
                   ),
                 ),
-                onPressed: applyServerConfiguration,
               ),
             if (isAdmin) const SizedBox(height: 16),
             if (isAdmin) Text('Admin/Dev Tools', style: textTheme.subtitle1),
