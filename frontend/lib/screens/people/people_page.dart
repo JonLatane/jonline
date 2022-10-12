@@ -401,52 +401,67 @@ class PeopleScreenState extends State<PeopleScreen>
                     ),
                   ),
                   const SizedBox(height: 4),
-                  if (following || pending_request)
-                    Row(children: [
-                      Expanded(
-                          child: SizedBox(
-                              height: 32,
-                              child: TextButton(
-                                  style: ButtonStyle(
-                                      padding: MaterialStateProperty.all(
-                                          const EdgeInsets.all(0))),
-                                  onPressed: () => unfollow(user),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.remove_circle_outline),
-                                      Text(pending_request
-                                          ? "CANCEL REQUEST"
-                                          : "UNFOLLOW")
-                                    ],
-                                  ))))
-                    ]),
-                  if (!following)
-                    Row(
-                      children: [
-                        Expanded(
-                            child: SizedBox(
-                                height: 32,
-                                child: TextButton(
-                                    style: ButtonStyle(
-                                        padding: MaterialStateProperty.all(
-                                            const EdgeInsets.all(0))),
-                                    onPressed: cannotFollow
-                                        ? null
-                                        : () => follow(user),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(Icons.add),
-                                        Text(
-                                            user.defaultFollowModeration.pending
+                  Stack(
+                    children: [
+                      IgnorePointer(
+                        ignoring: !(following || pending_request),
+                        child: AnimatedOpacity(
+                          duration: animationDuration,
+                          opacity: following || pending_request ? 1 : 0,
+                          child: Row(children: [
+                            Expanded(
+                                child: SizedBox(
+                                    height: 32,
+                                    child: TextButton(
+                                        style: ButtonStyle(
+                                            padding: MaterialStateProperty.all(
+                                                const EdgeInsets.all(0))),
+                                        onPressed: () => unfollow(user),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                                Icons.remove_circle_outline),
+                                            const SizedBox(width: 4),
+                                            Text(pending_request
+                                                ? "CANCEL REQUEST"
+                                                : "UNFOLLOW")
+                                          ],
+                                        ))))
+                          ]),
+                        ),
+                      ),
+                      IgnorePointer(
+                        ignoring: (following || pending_request),
+                        child: AnimatedOpacity(
+                          duration: animationDuration,
+                          opacity: !(following || pending_request) ? 1 : 0,
+                          child: Row(children: [
+                            Expanded(
+                                child: SizedBox(
+                                    height: 32,
+                                    child: TextButton(
+                                        style: ButtonStyle(
+                                            padding: MaterialStateProperty.all(
+                                                const EdgeInsets.all(0))),
+                                        onPressed: () => follow(user),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(Icons.add),
+                                            const SizedBox(width: 4),
+                                            Text(pending_request
                                                 ? "REQUEST"
                                                 : "FOLLOW")
-                                      ],
-                                    ))))
-                      ],
-                    )
+                                          ],
+                                        ))))
+                          ]),
+                        ),
+                      )
+                    ],
+                  ),
                 ],
               ),
             ],

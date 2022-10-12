@@ -388,50 +388,67 @@ class GroupsScreenState extends State<GroupsScreen>
                     ),
                   ),
                   const SizedBox(height: 4),
-                  if (isMember || invitePending)
-                    Row(children: [
-                      Expanded(
-                          child: SizedBox(
-                              height: 32,
-                              child: TextButton(
-                                  style: ButtonStyle(
-                                      padding: MaterialStateProperty.all(
-                                          const EdgeInsets.all(0))),
-                                  onPressed: () => leaveGroup(group),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.remove_circle_outline),
-                                      Text(invitePending
-                                          ? "CANCEL REQUEST"
-                                          : "LEAVE")
-                                    ],
-                                  ))))
-                    ]),
-                  if (!isMember && !invitePending)
-                    Row(
-                      children: [
-                        Expanded(
-                            child: SizedBox(
-                                height: 32,
-                                child: TextButton(
-                                    style: ButtonStyle(
-                                        padding: MaterialStateProperty.all(
-                                            const EdgeInsets.all(0))),
-                                    onPressed: () => joinGroup(group),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(Icons.add),
-                                        Text(group.defaultMembershipModeration
-                                                .pending
-                                            ? "REQUEST"
-                                            : "JOIN")
-                                      ],
-                                    ))))
-                      ],
-                    )
+                  Stack(
+                    children: [
+                      IgnorePointer(
+                        ignoring: !(isMember || invitePending),
+                        child: AnimatedOpacity(
+                          duration: animationDuration,
+                          opacity: isMember || invitePending ? 1 : 0,
+                          child: Row(children: [
+                            Expanded(
+                                child: SizedBox(
+                                    height: 32,
+                                    child: TextButton(
+                                        style: ButtonStyle(
+                                            padding: MaterialStateProperty.all(
+                                                const EdgeInsets.all(0))),
+                                        onPressed: () => leaveGroup(group),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                                Icons.remove_circle_outline),
+                                            const SizedBox(width: 4),
+                                            Text(invitePending
+                                                ? "CANCEL REQUEST"
+                                                : "LEAVE")
+                                          ],
+                                        ))))
+                          ]),
+                        ),
+                      ),
+                      IgnorePointer(
+                          ignoring: (isMember || invitePending),
+                          child: AnimatedOpacity(
+                              duration: animationDuration,
+                              opacity: !(isMember || invitePending) ? 1 : 0,
+                              child: Row(children: [
+                                Expanded(
+                                    child: SizedBox(
+                                        height: 32,
+                                        child: TextButton(
+                                            style: ButtonStyle(
+                                                padding:
+                                                    MaterialStateProperty.all(
+                                                        const EdgeInsets.all(
+                                                            0))),
+                                            onPressed: () => joinGroup(group),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.add),
+                                                const SizedBox(width: 4),
+                                                Text(invitePending
+                                                    ? "REQUEST"
+                                                    : "JOIN")
+                                              ],
+                                            ))))
+                              ]))),
+                    ],
+                  ),
                 ],
               ),
             ],
