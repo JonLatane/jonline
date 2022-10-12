@@ -1,4 +1,5 @@
 use diesel::*;
+// use diesel::internal::operators_macro::FieldAliasMapper;
 use tonic::Status;
 
 use crate::conversions::*;
@@ -45,15 +46,22 @@ fn get_all_users(
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
 
-    // Diesel 2 will allow this stuff
-    // let target_follows = alias!(follows as target_follows);
+    let target_follows = alias!(follows as target_follows);
+    let target_follows_user_id = target_follows.field(follows::user_id);
+    let target_follows_target_user_id = target_follows.field(follows::target_user_id);
+    let target_follows_columns = target_follows.fields(follows::all_columns);
     let users = users::table
         .left_join(
             follows::table.on(follows::target_user_id
                 .eq(users::id)
                 .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
         )
-        .select((users::all_columns, follows::all_columns.nullable()))
+        .left_join(
+            target_follows.on(target_follows_user_id
+                .eq(users::id)
+                .and(target_follows_target_user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+        )
+        .select((users::all_columns, follows::all_columns.nullable(), target_follows_columns.nullable()))
         .filter(
             users::visibility
                 .eq_any(visibilities)
@@ -62,10 +70,10 @@ fn get_all_users(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<(models::User, Option<models::Follow>)>(conn)
+        .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow)| user.to_proto_with(&follow))
+        .map(|(user, follow, target_follow)| user.to_proto_with(&follow, &target_follow))
         .collect();
     GetUsersResponse {
         users,
@@ -84,13 +92,23 @@ fn get_by_username(
     .iter()
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
+
+    let target_follows = alias!(follows as target_follows);
+    let target_follows_user_id = target_follows.field(follows::user_id);
+    let target_follows_target_user_id = target_follows.field(follows::target_user_id);
+    let target_follows_columns = target_follows.fields(follows::all_columns);
     let users = users::table
         .left_join(
             follows::table.on(follows::target_user_id
                 .eq(users::id)
                 .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
         )
-        .select((users::all_columns, follows::all_columns.nullable()))
+        .left_join(
+            target_follows.on(target_follows_user_id
+                .eq(users::id)
+                .and(target_follows_target_user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+        )
+        .select((users::all_columns, follows::all_columns.nullable(), target_follows_columns.nullable()))
         .filter(
             users::visibility
                 .eq_any(visibilities)
@@ -100,10 +118,10 @@ fn get_by_username(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<(models::User, Option<models::Follow>)>(conn)
+        .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow)| user.to_proto_with(&follow))
+        .map(|(user, follow, target_follow)| user.to_proto_with(&follow, &target_follow))
         .collect();
     GetUsersResponse {
         users,
@@ -123,13 +141,23 @@ fn get_by_user_id(
     .iter()
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
+
+    let target_follows = alias!(follows as target_follows);
+    let target_follows_user_id = target_follows.field(follows::user_id);
+    let target_follows_target_user_id = target_follows.field(follows::target_user_id);
+    let target_follows_columns = target_follows.fields(follows::all_columns);
     let users = users::table
         .left_join(
             follows::table.on(follows::target_user_id
                 .eq(users::id)
                 .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
         )
-        .select((users::all_columns, follows::all_columns.nullable()))
+        .left_join(
+            target_follows.on(target_follows_user_id
+                .eq(users::id)
+                .and(target_follows_target_user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+        )
+        .select((users::all_columns, follows::all_columns.nullable(), target_follows_columns.nullable()))
         .filter(
             users::visibility
                 .eq_any(visibilities)
@@ -139,10 +167,10 @@ fn get_by_user_id(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<(models::User, Option<models::Follow>)>(conn)
+        .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow)| user.to_proto_with(&follow))
+        .map(|(user, follow, target_follow)| user.to_proto_with(&follow, &target_follow))
         .collect();
     GetUsersResponse {
         users,

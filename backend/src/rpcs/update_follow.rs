@@ -16,10 +16,10 @@ pub fn update_follow(
     conn: &mut PgPooledConnection,
 ) -> Result<Follow, Status> {
     validate_follow(&request, OperationType::Update)?;
-    if request.user_id != current_user.id.to_proto_id() {
+    if request.target_user_id != current_user.id.to_proto_id() {
         return Err(Status::new(
             Code::InvalidArgument,
-            "follow_and_moderator_status_required",
+            "only_target_user_can_update_follow",
         ));
     }
     let mut existing_follow = follows::table

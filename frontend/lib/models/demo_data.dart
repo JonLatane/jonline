@@ -123,7 +123,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
     ...sideAccounts
   ];
   for (final sideAccount in sideAccounts) {
-    showSnackBar("Creating relationships for ${sideAccount.username}.");
+    // showSnackBar("Creating relationships for ${sideAccount.username}.");
     final followedAccounts = [sideAccount];
     final maxFollows = targetAccounts.length - originalAccountDupes;
     final totalFollows = 3 + Random().nextInt(max(0, maxFollows - 3));

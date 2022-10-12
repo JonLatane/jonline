@@ -16,7 +16,6 @@ extern crate serde_json;
 extern crate rocket_async_compression;
 extern crate itertools;
 
-
 use std::{
     env, fs,
     path::{Path, PathBuf},

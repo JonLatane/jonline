@@ -10,12 +10,12 @@ use tonic::Status;
 
 pub trait ToProtoUser {
     fn to_proto(&self) -> User;
-    fn to_proto_with(&self, follow: &Option<models::Follow>) -> User;
+    fn to_proto_with(&self, follow: &Option<models::Follow>, target_follow: &Option<models::Follow>) -> User;
     fn to_proto_auto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> User;
 }
 impl ToProtoUser for models::User {
     fn to_proto(&self) -> User {
-        return self.to_proto_with(&None);
+        return self.to_proto_with(&None, &None);
     }
     fn to_proto_auto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> User {
         let follow = match user {
@@ -27,9 +27,9 @@ impl ToProtoUser for models::User {
                 .ok(),
             None => None,
         };
-        self.to_proto_with(&follow)
+        self.to_proto_with(&follow, &None)
     }
-    fn to_proto_with(&self, follow: &Option<models::Follow>) -> User {
+    fn to_proto_with(&self, follow: &Option<models::Follow>, target_follow: &Option<models::Follow>) -> User {
         let email: Option<ContactMethod> = self
             .email
             .to_owned()
@@ -55,7 +55,7 @@ impl ToProtoUser for models::User {
                 .to_proto_moderation()
                 .unwrap() as i32,
             current_user_follow: follow.as_ref().map(|f| f.to_proto()),
-            target_current_user_follow: None,//follow.as_ref().map(|f| f.to_proto()),
+            target_current_user_follow: target_follow.as_ref().map(|f| f.to_proto()),
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
         };

@@ -13,7 +13,6 @@ extern crate serde;
 extern crate serde_json;
 extern crate itertools;
 
-
 pub mod auth;
 pub mod db_connection;
 pub mod jonline;

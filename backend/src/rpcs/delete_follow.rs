@@ -13,7 +13,7 @@ pub fn delete_follow(
     current_user: models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    if request.user_id != current_user.id.to_proto_id() {
+    if request.user_id != current_user.id.to_proto_id() && request.target_user_id != current_user.id.to_proto_id() {
         validate_permission(&current_user, Permission::Admin)?;
     }
     let existing_follow = follows::table

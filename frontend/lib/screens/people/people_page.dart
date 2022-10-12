@@ -11,6 +11,7 @@ import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 
 import '../../app_state.dart';
+import '../../generated/visibility_moderation.pbenum.dart';
 import '../../models/jonline_account.dart';
 import '../../models/server_errors.dart';
 import '../../utils/colors.dart';
@@ -373,6 +374,10 @@ class PeopleScreenState extends State<PeopleScreen>
         user.currentUserFollow = follow;
         if (follow.targetUserModeration.passes) {
           user.followerCount += 1;
+          appState.users.value.where((u) => u.id == user.id).forEach((u) {
+            u.followerCount += 1;
+          });
+          JonlineAccount.selectedAccount?.user?.followingCount += 1;
           appState.users.value
               .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
               .forEach((u) {
@@ -380,7 +385,9 @@ class PeopleScreenState extends State<PeopleScreen>
           });
         }
       });
-      showSnackBar('Followed ${user.username}.');
+      // showSnackBar('Followed ${user.username}.');
+      showSnackBar(
+          '${follow.targetUserModeration.pending ? "Requested to follow" : "Followed"} ${user.username}.');
     } catch (e) {
       showSnackBar(formatServerError(e));
     }
@@ -396,9 +403,13 @@ class PeopleScreenState extends State<PeopleScreen>
           ),
           options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
-        user.currentUserFollow = Follow();
+        user.currentUserFollow = follow;
         if (follow.targetUserModeration.passes) {
           user.followerCount -= 1;
+          appState.users.value.where((u) => u.id == user.id).forEach((u) {
+            u.followerCount -= 1;
+          });
+          JonlineAccount.selectedAccount?.user?.followingCount -= 1;
           appState.users.value
               .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
               .forEach((u) {
@@ -406,7 +417,55 @@ class PeopleScreenState extends State<PeopleScreen>
           });
         }
       });
-      showSnackBar('Unfollowed ${user.username}.');
+      showSnackBar(
+          '${follow.targetUserModeration.pending ? "Canceled request to" : "Unfollowed"} ${user.username}.');
+    } catch (e) {
+      showSnackBar(formatServerError(e));
+    }
+  }
+
+  approve(User user) async {
+    try {
+      final follow = await (await JonlineAccount.selectedAccount!.getClient())!
+          .updateFollow(
+              Follow(
+                  userId: user.id,
+                  targetUserId: JonlineAccount.selectedAccount!.userId,
+                  targetUserModeration: Moderation.APPROVED),
+              options:
+                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
+      setState(() {
+        user.targetCurrentUserFollow = follow;
+        if (follow.targetUserModeration.passes) {
+          user.followingCount += 1;
+          appState.users.value.where((u) => u.id == user.id).forEach((u) {
+            u.followingCount += 1;
+          });
+          JonlineAccount.selectedAccount?.user?.followerCount += 1;
+          appState.users.value
+              .where((u) => u.id == JonlineAccount.selectedAccount?.userId)
+              .forEach((u) {
+            u.followerCount += 1;
+          });
+        }
+      });
+      showSnackBar('Approved request from ${user.username}.');
+    } catch (e) {
+      showSnackBar(formatServerError(e));
+    }
+  }
+
+  reject(User user) async {
+    try {
+      await (await JonlineAccount.selectedAccount!.getClient())!.deleteFollow(
+          Follow(
+              userId: user.id,
+              targetUserId: JonlineAccount.selectedAccount!.userId),
+          options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
+      setState(() {
+        user.targetCurrentUserFollow = Follow();
+      });
+      showSnackBar('Rejected request from ${user.username}.');
     } catch (e) {
       showSnackBar(formatServerError(e));
     }
@@ -420,6 +479,7 @@ class PeopleScreenState extends State<PeopleScreen>
     final backgroundColor =
         appState.selectedAccount?.userId == user.id ? appState.navColor : null;
     final textColor = backgroundColor?.textColor;
+    // print("user.targetCurrentUserFollow: ${user.targetCurrentUserFollow}");
     return Card(
       // color: Colors.blue,
       color: backgroundColor,
@@ -487,6 +547,92 @@ class PeopleScreenState extends State<PeopleScreen>
                         ),
                     ],
                   ),
+                  const SizedBox(height: 4),
+                  AnimatedContainer(
+                      duration: animationDuration,
+                      height: user.targetCurrentUserFollow.targetUserModeration
+                              .pending
+                          ? 50 * mq.textScaleFactor
+                          : 0,
+                      child: AnimatedOpacity(
+                        duration: animationDuration,
+                        opacity: user.targetCurrentUserFollow
+                                .targetUserModeration.pending
+                            ? 1
+                            : 0,
+                        child: Column(
+                          children: [
+                            Text("wants to follow you",
+                                style: textTheme.caption?.copyWith(
+                                    color: textColor?.withOpacity(0.5))),
+                            Expanded(
+                              child: Row(children: [
+                                Expanded(
+                                    child: SizedBox(
+                                        height: 32,
+                                        child: TextButton(
+                                            style: ButtonStyle(
+                                                padding:
+                                                    MaterialStateProperty.all(
+                                                        const EdgeInsets.all(
+                                                            0))),
+                                            onPressed: cannotFollow
+                                                ? null
+                                                : () => approve(user),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: const [
+                                                Icon(Icons.check),
+                                                SizedBox(width: 4),
+                                                Text("APPROVE")
+                                              ],
+                                            )))),
+                                // ]),
+                                // Row(children: [
+                                Expanded(
+                                    child: SizedBox(
+                                        height: 32,
+                                        child: TextButton(
+                                            style: ButtonStyle(
+                                                padding:
+                                                    MaterialStateProperty.all(
+                                                        const EdgeInsets.all(
+                                                            0))),
+                                            onPressed: cannotFollow
+                                                ? null
+                                                : () => reject(user),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: const [
+                                                Icon(Icons
+                                                    .remove_circle_outline),
+                                                SizedBox(width: 4),
+                                                Text("REJECT")
+                                              ],
+                                            ))))
+                              ]),
+                            ),
+                          ],
+                        ),
+                      )),
+                  AnimatedContainer(
+                      duration: animationDuration,
+                      height: user.targetCurrentUserFollow.targetUserModeration
+                              .passes
+                          ? 16 * mq.textScaleFactor
+                          : 0,
+                      child: AnimatedOpacity(
+                        duration: animationDuration,
+                        opacity: user.targetCurrentUserFollow
+                                .targetUserModeration.passes
+                            ? 1
+                            : 0,
+                        child: Text("follows you",
+                            style: textTheme.caption
+                                ?.copyWith(color: textColor?.withOpacity(0.5))),
+                      )),
                   const SizedBox(height: 4),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
