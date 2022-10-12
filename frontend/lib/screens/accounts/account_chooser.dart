@@ -21,6 +21,22 @@ class AccountChooserState extends State<AccountChooser> {
   late AppState appState;
   TextTheme get textTheme => Theme.of(context).textTheme;
 
+  int currentServerIndex = 0;
+  List<String> servers = ['', ''];
+  String get currentServer => servers[currentServerIndex];
+  set currentServer(String name) {
+    currentServerIndex = (currentServerIndex + 1) % 2;
+    servers[currentServerIndex] = name;
+  }
+
+  int currentUsernameIndex = 0;
+  List<String> usernames = ['', ''];
+  String get currentUsername => usernames[currentUsernameIndex];
+  set currentUsername(String name) {
+    currentUsernameIndex = (currentUsernameIndex + 1) % 2;
+    usernames[currentUsernameIndex] = name;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,13 +56,19 @@ class AccountChooserState extends State<AccountChooser> {
 
   @override
   Widget build(BuildContext context) {
+    if ("${JonlineServer.selectedServer.server}/" != currentServer) {
+      currentServer = "${JonlineServer.selectedServer.server}/";
+    }
+    if ((appState.selectedAccount?.username ?? noOne) != currentUsername) {
+      currentUsername = appState.selectedAccount?.username ?? noOne;
+    }
     return SizedBox(
       width: 72 * MediaQuery.of(context).textScaleFactor,
       child: TextButton(
         style: ButtonStyle(
             padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
             foregroundColor:
-                MaterialStateProperty.all(Colors.white.withAlpha(100)),
+                MaterialStateProperty.all(Colors.white.withAlpha(255)),
             overlayColor:
                 MaterialStateProperty.all(Colors.white.withAlpha(100)),
             splashFactory: InkSparkle.splashFactory),
@@ -69,14 +91,55 @@ class AccountChooserState extends State<AccountChooser> {
         child: Column(
           children: [
             const Expanded(child: SizedBox()),
-            Text('${JonlineServer.selectedServer.server}/',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.caption),
-            Text(JonlineAccount.selectedAccount?.username ?? noOne,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.subtitle2),
+            Stack(
+              children: [
+                ...servers.map(
+                  (name) => AnimatedOpacity(
+                    opacity: "${JonlineServer.selectedServer.server}/" == name
+                        ? 1
+                        : 0,
+                    duration: animationDuration,
+                    child: Center(
+                        child: Text(
+                      name,
+                      style: textTheme.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      // textAlign: TextAlign.center,
+                    )),
+                  ),
+                )
+              ],
+            ),
+            Stack(
+              children: [
+                ...usernames.map(
+                  (name) => AnimatedOpacity(
+                    opacity:
+                        (appState.selectedAccount?.username ?? noOne) == name
+                            ? 1
+                            : 0,
+                    duration: animationDuration,
+                    child: Center(
+                        child: Text(
+                      name,
+                      style: textTheme.subtitle2,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      // textAlign: TextAlign.center,
+                    )),
+                  ),
+                )
+              ],
+            ),
+            // Text('${JonlineServer.selectedServer.server}/',
+            //     maxLines: 1,
+            //     overflow: TextOverflow.ellipsis,
+            //     style: textTheme.caption),
+            // Text(JonlineAccount.selectedAccount?.username ?? noOne,
+            //     maxLines: 1,
+            //     overflow: TextOverflow.ellipsis,
+            //     style: textTheme.subtitle2),
             const Expanded(child: SizedBox()),
           ],
         ),
@@ -235,6 +298,10 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
+                Column(
+                  children: const [Icon(Icons.account_circle)],
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     children: [
@@ -258,7 +325,7 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
                   ),
                 ),
                 if (a.permissions.contains(Permission.ADMIN))
-                  const Icon(Icons.admin_panel_settings_outlined)
+                  const Icon(Icons.admin_panel_settings_outlined, size: 16)
               ],
             ),
           )),
@@ -294,15 +361,23 @@ Widget _serverItem(JonlineServer s, BuildContext context) {
           },
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Column(
+            child: Row(
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text("${s.server}/",
-                      textAlign: TextAlign.left,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.caption),
+                Column(
+                  children: const [Icon(Icons.computer, size: 20)],
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text("${s.server}/",
+                          textAlign: TextAlign.left,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.caption),
+                    ),
+                  ],
                 ),
               ],
             ),

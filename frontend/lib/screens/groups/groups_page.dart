@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/gestures.dart';
@@ -8,6 +9,7 @@ import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reord
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/screens/groups/group_details_page.dart';
+import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 
 import '../../app_state.dart';
@@ -29,8 +31,14 @@ class GroupsScreenState extends State<GroupsScreen>
     with AutoRouteAwareStateMixin<GroupsScreen> {
   late AppState appState;
   late HomePageState homePage;
+  TextTheme get textTheme => Theme.of(context).textTheme;
+  MediaQueryData get mq => MediaQuery.of(context);
 
+  GroupListingType listingType = GroupListingType.ALL_GROUPS;
+  Map<GroupListingType, GetGroupsResponse> listingData = {};
   ScrollController scrollController = ScrollController();
+  bool get useList => MediaQuery.of(context).size.width < 450;
+  double get headerHeight => 48 * MediaQuery.of(context).textScaleFactor;
 
   @override
   void didPushNext() {
@@ -89,8 +97,6 @@ class GroupsScreenState extends State<GroupsScreen>
     }
   }
 
-  bool get useList => MediaQuery.of(context).size.width < 450;
-  TextTheme get textTheme => Theme.of(context).textTheme;
   @override
   Widget build(BuildContext context) {
     List<Group> groupList = appState.groups.value;
@@ -104,138 +110,237 @@ class GroupsScreenState extends State<GroupsScreen>
     }
     return Scaffold(
       // appBar: ,
-      body: RefreshIndicator(
-        displacement: MediaQuery.of(context).padding.top + 40,
-        onRefresh: () async =>
-            await appState.updateGroups(showMessage: showSnackBar),
-        child: ScrollConfiguration(
-            // key: Key("groupListScrollConfiguration-${groupList.length}"),
-            behavior: ScrollConfiguration.of(context).copyWith(
-              dragDevices: {
-                PointerDeviceKind.touch,
-                PointerDeviceKind.mouse,
-                PointerDeviceKind.trackpad,
-                PointerDeviceKind.stylus,
-              },
-            ),
-            child: groupList.isEmpty && !appState.didUpdateGroups.value
-                ? Column(
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            controller: scrollController,
-                            child: Column(
-                              children: [
-                                SizedBox(
-                                    height:
-                                        (MediaQuery.of(context).size.height -
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            displacement: MediaQuery.of(context).padding.top + 40,
+            onRefresh: () async =>
+                await appState.updateGroups(showMessage: showSnackBar),
+            child: ScrollConfiguration(
+                // key: Key("groupListScrollConfiguration-${groupList.length}"),
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.trackpad,
+                    PointerDeviceKind.stylus,
+                  },
+                ),
+                child: groupList.isEmpty && !appState.didUpdateGroups.value
+                    ? Column(
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                controller: scrollController,
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                        height: (MediaQuery.of(context)
+                                                    .size
+                                                    .height -
                                                 200) /
                                             2),
-                                Center(
-                                  child: Container(
-                                    constraints: BoxConstraints(
-                                        maxWidth: 250 *
-                                            MediaQuery.of(context)
-                                                .textScaleFactor),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                            appState.updatingGroups.value
-                                                ? "Loading Groups..."
-                                                : appState.errorUpdatingGroups
-                                                        .value
-                                                    ? "Error Loading Groups"
-                                                    : "No Groups",
-                                            style: textTheme.titleLarge),
-                                        Text(
-                                            JonlineServer.selectedServer.server,
-                                            style: textTheme.caption),
-                                        if (!appState.updatingGroups.value &&
-                                            !appState
-                                                .errorUpdatingGroups.value &&
-                                            appState.selectedAccount == null)
-                                          Column(
-                                            children: [
-                                              const SizedBox(height: 8),
-                                              TextButton(
-                                                style: ButtonStyle(
-                                                    padding:
-                                                        MaterialStateProperty
-                                                            .all(
+                                    Center(
+                                      child: Container(
+                                        constraints: BoxConstraints(
+                                            maxWidth: 250 *
+                                                MediaQuery.of(context)
+                                                    .textScaleFactor),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                                appState.updatingGroups.value
+                                                    ? "Loading Groups..."
+                                                    : appState
+                                                            .errorUpdatingGroups
+                                                            .value
+                                                        ? "Error Loading Groups"
+                                                        : "No Groups",
+                                                style: textTheme.titleLarge),
+                                            Text(
+                                                JonlineServer
+                                                    .selectedServer.server,
+                                                style: textTheme.caption),
+                                            if (!appState
+                                                    .updatingGroups.value &&
+                                                !appState.errorUpdatingGroups
+                                                    .value &&
+                                                appState.selectedAccount ==
+                                                    null)
+                                              Column(
+                                                children: [
+                                                  const SizedBox(height: 8),
+                                                  TextButton(
+                                                    style: ButtonStyle(
+                                                        padding:
+                                                            MaterialStateProperty.all(
                                                                 const EdgeInsets
                                                                     .all(16))),
-                                                onPressed: () => context
-                                                    .navigateNamedTo('/login'),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                          'Login/Create Account to see/create more Groups.',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: textTheme
-                                                              .titleSmall
-                                                              ?.copyWith(
-                                                                  color: appState
-                                                                      .primaryColor)),
+                                                    onPressed: () =>
+                                                        context.navigateNamedTo(
+                                                            '/login'),
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        Expanded(
+                                                          child: Text(
+                                                              'Login/Create Account to see/create more Groups.',
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style: textTheme
+                                                                  .titleSmall
+                                                                  ?.copyWith(
+                                                                      color: appState
+                                                                          .primaryColor)),
+                                                        ),
+                                                        const Icon(
+                                                            Icons.arrow_right)
+                                                      ],
                                                     ),
-                                                    const Icon(
-                                                        Icons.arrow_right)
-                                                  ],
-                                                ),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
-                                      ],
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ],
-                            )),
-                      ),
-                    ],
-                  )
-                : useList
-                    ? ImplicitlyAnimatedList<Group>(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        controller: scrollController,
-                        items: groupList,
-                        areItemsTheSame: (a, b) => a.id == b.id,
-                        padding: EdgeInsets.only(
-                            top: MediaQuery.of(context).padding.top,
-                            bottom: MediaQuery.of(context).padding.bottom),
-                        itemBuilder: (context, animation, group, index) {
-                          return SizeFadeTransition(
-                              sizeFraction: 0.7,
-                              curve: Curves.easeInOut,
-                              animation: animation,
-                              child: Row(
-                                children: [
-                                  Expanded(child: buildGroupItem(group)),
-                                ],
-                              ));
-                        },
+                                  ],
+                                )),
+                          ),
+                        ],
                       )
-                    : MasonryGridView.count(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        controller: scrollController,
-                        crossAxisCount: max(
-                            2,
-                            min(6, (MediaQuery.of(context).size.width) / 300)
-                                .floor()),
-                        mainAxisSpacing: 4,
-                        crossAxisSpacing: 4,
-                        itemCount: groupList.length,
-                        itemBuilder: (context, index) {
-                          final group = groupList[index];
-                          return buildGroupItem(group);
-                        },
-                      )),
+                    : useList
+                        ? ImplicitlyAnimatedList<Group>(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            controller: scrollController,
+                            items: groupList,
+                            areItemsTheSame: (a, b) => a.id == b.id,
+                            padding: EdgeInsets.only(
+                                top: MediaQuery.of(context).padding.top +
+                                    headerHeight,
+                                bottom: MediaQuery.of(context).padding.bottom),
+                            itemBuilder: (context, animation, group, index) {
+                              return SizeFadeTransition(
+                                  sizeFraction: 0.7,
+                                  curve: Curves.easeInOut,
+                                  animation: animation,
+                                  child: Row(
+                                    children: [
+                                      Expanded(child: buildGroupItem(group)),
+                                    ],
+                                  ));
+                            },
+                          )
+                        : MasonryGridView.count(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            controller: scrollController,
+                            padding: EdgeInsets.only(
+                                top: MediaQuery.of(context).padding.top +
+                                    headerHeight,
+                                bottom: MediaQuery.of(context).padding.bottom),
+                            crossAxisCount: max(
+                                2,
+                                min(
+                                        6,
+                                        (MediaQuery.of(context).size.width) /
+                                            300)
+                                    .floor()),
+                            mainAxisSpacing: 4,
+                            crossAxisSpacing: 4,
+                            itemCount: groupList.length,
+                            itemBuilder: (context, index) {
+                              final group = groupList[index];
+                              return buildGroupItem(group);
+                            },
+                          )),
+          ),
+          Column(
+            children: [
+              ClipRRect(
+                  child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: MediaQuery.of(context).padding.top,
+                            color:
+                                Theme.of(context).canvasColor.withOpacity(0.5),
+                          ),
+                          Container(
+                            height: headerHeight,
+                            color:
+                                Theme.of(context).canvasColor.withOpacity(0.5),
+                            child: buildSectionSelector(),
+                          ),
+                          Container(
+                            height: 4,
+                            color:
+                                Theme.of(context).canvasColor.withOpacity(0.5),
+                          ),
+                        ],
+                      ))),
+            ],
+          )
+        ],
       ),
     );
+  }
+
+  Widget buildSectionSelector() {
+    final sectionCount = GroupListingType.values.length;
+    final minSectionTabWidth = 110.0 * mq.textScaleFactor;
+    bool scrollSections =
+        (mq.size.width / minSectionTabWidth) < sectionCount.toDouble();
+    final selector = Row(
+      children: [
+        ...GroupListingType.values.map((e) {
+          var textButton = TextButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(e == listingType
+                      ? appState.primaryColor.textColor
+                      : null)),
+              // bac: ,
+              onPressed: () {
+                setState(() {
+                  listingType = e;
+                });
+              },
+              child: Column(
+                children: [
+                  const Expanded(child: SizedBox()),
+                  Text(
+                    e.name.replaceAll('_', '\n'),
+                    style:
+                        TextStyle(color: e == listingType ? null : Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const Expanded(child: SizedBox()),
+                ],
+              ));
+          if (!scrollSections) {
+            return Expanded(
+              child: textButton,
+            );
+          } else {
+            return SizedBox(width: minSectionTabWidth, child: textButton);
+          }
+        })
+        // const SizedBox(width: 8)
+      ],
+    );
+    if (scrollSections) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: selector,
+      );
+    } else {
+      return selector;
+    }
   }
 
   joinGroup(Group group) async {
@@ -256,7 +361,8 @@ class GroupsScreenState extends State<GroupsScreen>
           group.memberCount += 1;
         }
       });
-      showSnackBar('Joined ${group.name}.');
+      showSnackBar(
+          '${group.defaultMembershipModeration.pending ? "Requested to join" : "Joined"} ${group.name}.');
     } catch (e) {
       showSnackBar(formatServerError(e));
     }
@@ -281,7 +387,8 @@ class GroupsScreenState extends State<GroupsScreen>
           group.memberCount -= 1;
         }
       });
-      showSnackBar('Left ${group.name}.');
+      showSnackBar(
+          '${membership.groupModeration.pending ? "Canceled request for" : "Left"} ${group.name}.');
     } catch (e) {
       showSnackBar(formatServerError(e));
     }
@@ -291,10 +398,21 @@ class GroupsScreenState extends State<GroupsScreen>
     bool isMember = group.currentUserMembership.groupModeration.passes;
     bool invitePending = group.currentUserMembership.groupModeration.pending;
     bool canJoin = appState.selectedAccount != null;
+    bool selected = appState.selectedGroup.value == group;
+    final backgroundColor = selected ? appState.navColor : null;
+    final textColor = backgroundColor?.textColor;
     return Card(
+      color: backgroundColor,
       // color:
       //     appState.selectedAccount?.id == group.id ? appState.navColor : null,
       child: InkWell(
+        onLongPress: () {
+          if (selected) {
+            appState.selectedGroup.value = null;
+          } else {
+            appState.selectedGroup.value = group;
+          }
+        },
         onTap: () {
           context.navigateTo(GroupDetailsRoute(
               groupId: group.id, server: JonlineServer.selectedServer.server));
@@ -307,11 +425,11 @@ class GroupsScreenState extends State<GroupsScreen>
                 children: [
                   Row(
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         height: 48,
                         width: 48,
                         child: Icon(Icons.group_work_outlined,
-                            size: 32, color: Colors.white),
+                            size: 32, color: textColor ?? Colors.white),
                       ),
                       Expanded(
                         child: Column(
@@ -321,7 +439,9 @@ class GroupsScreenState extends State<GroupsScreen>
                                 Expanded(
                                   child: Text(
                                       '${JonlineServer.selectedServer.server}/group/',
-                                      style: textTheme.caption,
+                                      style: textTheme.caption?.copyWith(
+                                        color: textColor?.withOpacity(0.5),
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis),
                                 ),
@@ -333,12 +453,8 @@ class GroupsScreenState extends State<GroupsScreen>
                                   child: Text(
                                     group.name,
                                     style: textTheme.headline6?.copyWith(
-                                        /*color:
-                                            appState.selectedAccount?.groupId ==
-                                                    group.id
-                                                ? appState.primaryColor
-                                                : null*/
-                                        ),
+                                      color: textColor,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -361,14 +477,18 @@ class GroupsScreenState extends State<GroupsScreen>
                             children: [
                               Text(
                                 "Group ID: ",
-                                style: textTheme.caption,
+                                style: textTheme.caption?.copyWith(
+                                  color: textColor?.withOpacity(0.5),
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Expanded(
                                 child: Text(
                                   group.id,
-                                  style: textTheme.caption,
+                                  style: textTheme.caption?.copyWith(
+                                    color: textColor?.withOpacity(0.5),
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -376,15 +496,23 @@ class GroupsScreenState extends State<GroupsScreen>
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.account_circle,
-                          color: Colors.white,
+                          color: textColor ?? Colors.white,
                         ),
                         const SizedBox(width: 4),
-                        Text(group.memberCount.toString(),
-                            style: textTheme.caption),
-                        Text(" member${group.memberCount == 1 ? '' : 's'}",
-                            style: textTheme.caption),
+                        Text(
+                          group.memberCount.toString(),
+                          style: textTheme.caption?.copyWith(
+                            color: textColor?.withOpacity(0.5),
+                          ),
+                        ),
+                        Text(
+                          " member${group.memberCount == 1 ? '' : 's'}",
+                          style: textTheme.caption?.copyWith(
+                            color: textColor?.withOpacity(0.5),
+                          ),
+                        ),
                       ],
                     ),
                   ),

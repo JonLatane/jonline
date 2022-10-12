@@ -54,7 +54,8 @@ impl ToProtoUser for models::User {
                 .default_follow_moderation
                 .to_proto_moderation()
                 .unwrap() as i32,
-            follow_relationship: follow.as_ref().map(|f| f.to_proto()),
+            current_user_follow: follow.as_ref().map(|f| f.to_proto()),
+            target_current_user_follow: None,//follow.as_ref().map(|f| f.to_proto()),
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
         };

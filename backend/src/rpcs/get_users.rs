@@ -5,6 +5,7 @@ use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
+use crate::protos::UserListingType::*;
 use crate::schema::follows;
 use crate::schema::users;
 
@@ -14,13 +15,19 @@ pub fn get_users(
     conn: &PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
     println!("GetUsers called");
-    let response = match request.to_owned().username {
-        Some(_) => get_by_username(request.to_owned(), user, conn),
-        None => match request.to_owned().user_id {
-            Some(_) => get_by_user_id(request.to_owned(), user, conn),
-            None => get_all_users(request.to_owned(), user, conn),
-        },
+    let response = match (request.to_owned().listing_type.to_proto_user_listing_type(), request.to_owned().username, request.to_owned().user_id) {
+        (Some(FollowRequests), _, _) => get_all_users(request.to_owned(), user, conn),
+        (_, Some(_), _) => get_by_username(request.to_owned(), user, conn),
+        (_, _, Some(_)) => get_by_user_id(request.to_owned(), user, conn),
+        _ => get_all_users(request.to_owned(), user, conn),
     };
+    // let response = match request.to_owned().username {
+    //     Some(_) => get_by_username(request.to_owned(), user, conn),
+    //     None => match request.to_owned().user_id {
+    //         Some(_) => get_by_user_id(request.to_owned(), user, conn),
+    //         None => get_all_users(request.to_owned(), user, conn),
+    //     },
+    // };
     println!("GetUsers::request: {:?}, response: {:?}", request, response);
     Ok(response)
 }
@@ -37,6 +44,9 @@ fn get_all_users(
     .iter()
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
+
+    // Diesel 2 will allow this stuff
+    // let target_follows = alias!(follows as target_follows);
     let users = users::table
         .left_join(
             follows::table.on(follows::target_user_id

@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/app_state.dart';
+import 'package:jonline/screens/groups/group_chooser.dart';
 
 import '../models/jonline_account.dart';
 import '../screens/accounts/account_chooser.dart';
@@ -265,6 +266,7 @@ extension HomePageAppBar on HomePageState {
                 // context.navigateNamedTo('/posts/create');
               },
             ),
+          const GroupChooser(),
           const AccountChooser(),
         ];
       case 'GroupsRoute':
@@ -295,6 +297,7 @@ extension HomePageAppBar on HomePageState {
                 ),
               ),
             ),
+          const GroupChooser(),
           const AccountChooser(),
         ];
       case 'CreateGroupRoute':
@@ -351,6 +354,7 @@ extension HomePageAppBar on HomePageState {
                 context.navigateNamedTo('/posts/create');
               },
             ),
+          const GroupChooser(),
           const AccountChooser(),
         ];
       case 'EventListRoute':
@@ -364,6 +368,7 @@ extension HomePageAppBar on HomePageState {
                 // color: Colors.white,
               ),
             ),
+          const GroupChooser(),
           const AccountChooser(),
         ];
       case 'CreatePostRoute':

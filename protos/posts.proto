@@ -7,17 +7,36 @@ import "google/protobuf/timestamp.proto";
 // import "users.proto";
 import "visibility_moderation.proto";
 
-message GetPostRequest {
-  string id = 1;
+enum PostListingType {
+  // Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
+  // Also usable for getting replies anywhere.
+  PUBLIC_POSTS = 0;
+  // Returns posts from users the user is following.
+  FOLLOWING_POSTS = 1;
+  // Returns posts from any group the user is a member of.
+  MY_GROUPS_POSTS = 2;
+  // Returns LIMITED posts that are directly addressed to the user.
+  DIRECT_POSTS = 3;
 }
 
+// Valid GetPostsRequest combinations: 
+// - {}                           (get all posts)
+// - {listing_type:}              (get all posts)
+// - {post_id:}                   (get one post including preview data)
+// - {replies_to_post_id:}        (get replies to a post - to be replaced with PostQuery)
+// - {author_user_id:}            (get posts by a user)
+// - {group_id:}                  (get posts for a group)
+// - {author_user_id:, group_id:} (get posts by a user for a group)
 message GetPostsRequest {
-  // If specified, returns the single post with the given ID.
+  // Returns the single post with the given ID.
   optional string post_id = 1;
-  // If specified, limits results to replies to the given post.
+  // Limits results to replies to the given post.
   optional string replies_to_post_id = 2;
-  // If specified, limits results to those by the given author user ID.
+  // Limits results to those by the given author user ID.
   optional string author_user_id = 3;
+  // Limits
+  optional string group_id = 4;
+  PostListingType listing_type = 10;
 }
 
 message CreatePostRequest {

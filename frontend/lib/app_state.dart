@@ -44,6 +44,7 @@ class AppState extends State<MyApp> {
   final ValueJonotifier<Posts> posts = ValueJonotifier(Posts());
   final ValueJonotifier<List<users_pb.User>> users =
       ValueJonotifier(<users_pb.User>[]);
+  final ValueJonotifier<Group?> selectedGroup = ValueJonotifier(null);
   final ValueJonotifier<List<Group>> groups = ValueJonotifier(<Group>[]);
   final Jonotifier updateReplies = Jonotifier();
   final Jonotifier selectedServerChanged = Jonotifier();
@@ -137,6 +138,10 @@ class AppState extends State<MyApp> {
           (await JonlineServer.servers).firstWhere(
               (s) => s.server == account.server,
               orElse: () => JonlineServer(account.server)));
+    }
+    if (account != null &&
+        JonlineServer.selectedServer.server != account.server) {
+      selectedGroup.value = null;
     }
     JonlineAccount.selectedAccount = account;
     updateAccountList();
@@ -263,6 +268,7 @@ class AppState extends State<MyApp> {
     selectedServerChanged.addListener(updateColorTheme);
     colorTheme.addListener(updateColors);
     Settings.initialize(notifyAccountsListeners);
+    selectedGroup.addListener(notifyAccountsListeners);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // For web, ensure the actual URL hostname is used as the default server.
       if (MyPlatform.isWeb) {
@@ -299,6 +305,7 @@ class AppState extends State<MyApp> {
 
   @override
   void dispose() {
+    selectedGroup.removeListener(notifyAccountsListeners);
     accounts.removeListener(monitorAccountChange);
     accounts.removeListener(monitorServerChange);
     selectedServerChanged.removeListener(updateColorTheme);
@@ -319,6 +326,16 @@ class AppState extends State<MyApp> {
         // bottomAppBarColor: const Color(0xFF884DF2),
         // splashColor: const Color(0xFFFFC145),
         // buttonColor: const Color(0xFF884DF2),
+
+        textTheme: ThemeData.dark().textTheme.apply(
+              fontFamily: 'PublicSans',
+            ),
+        primaryTextTheme: ThemeData.dark().textTheme.apply(
+              fontFamily: 'PublicSans',
+            ),
+        accentTextTheme: ThemeData.dark().textTheme.apply(
+              fontFamily: 'PublicSans',
+            ),
         colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
         pageTransitionsTheme: const PageTransitionsTheme(builders: {
           TargetPlatform.macOS: NoShadowCupertinoPageTransitionsBuilder(),

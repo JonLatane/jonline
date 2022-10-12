@@ -57,7 +57,7 @@ class Settings {
     }
   }
 
-  static ValueNotifier<bool> showPeopleTabListener = ValueNotifier(false);
+  static ValueNotifier<bool> showPeopleTabListener = ValueNotifier(true);
   static bool get showPeopleTab => showPeopleTabListener.value;
   static set showPeopleTab(bool v) {
     {
@@ -66,7 +66,7 @@ class Settings {
     }
   }
 
-  static ValueNotifier<bool> showGroupsTabListener = ValueNotifier(false);
+  static ValueNotifier<bool> showGroupsTabListener = ValueNotifier(true);
   static bool get showGroupsTab => showGroupsTabListener.value;
   static set showGroupsTab(bool v) {
     {
@@ -92,10 +92,8 @@ class Settings {
         appStorage.getBool("prefer_server_previews") ?? MyPlatform.isWeb;
     showSettingsTabListener.value =
         appStorage.getBool("show_settings_tab") ?? false;
-    showPeopleTabListener.value =
-        appStorage.getBool("show_people_tab") ?? false;
-    showGroupsTabListener.value =
-        appStorage.getBool("show_groups_tab") ?? false;
+    showPeopleTabListener.value = appStorage.getBool("show_people_tab") ?? true;
+    showGroupsTabListener.value = appStorage.getBool("show_groups_tab") ?? true;
     _showServers = appStorage.getBool("show_servers") ?? false;
   }
 }

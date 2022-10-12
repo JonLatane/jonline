@@ -23,16 +23,16 @@ message User {
   Moderation default_follow_moderation = 9;
   optional int32 follower_count = 10;
   optional int32 following_count = 11;
-  optional Follow follow_relationship = 12;
-  google.protobuf.Timestamp created_at = 13;
-  optional google.protobuf.Timestamp updated_at = 14;
+  // Presence indicates the current user is following
+  // or has a pending follow request for this user.
+  optional Follow current_user_follow = 12;
+  // Presence indicates this user is following or has
+  // a pending follow request for the current user.
+  optional Follow target_current_user_follow = 13;
+  google.protobuf.Timestamp created_at = 14;
+  optional google.protobuf.Timestamp updated_at = 15;
 }
 
-// To allow LIMITED visibility users to make friends, anyone
-// can send a FollowRequest with their username. If the target
-// has LIMITED visiblity, the response should be identical to a
-// "user_not_found" error. However, the follow request will still
-// be created to await the LIMITED user's approval.
 message Follow {
   string user_id = 1;
   string target_user_id = 2;
@@ -48,10 +48,10 @@ message ContactMethod {
 
 message GetUsersRequest {
   optional string username = 1;
-  optional string email = 2;
-  optional string phone = 3;
-  optional string user_id = 4;
-  optional string group_id = 5;
+  optional string user_id = 2;
+  optional string group_id = 3;
+  // optional string email = 2;
+  // optional string phone = 3;
   optional int32 page = 99;
   UserListingType listing_type = 100;
 }
@@ -59,9 +59,11 @@ message GetUsersRequest {
 enum UserListingType {
   EVERYONE = 0;
   FOLLOWING = 1;
-  FOLLOWERS = 2;
-  FRIENDS = 3;
+  FRIENDS = 2;
+  FOLLOWERS = 3;
   FOLLOW_REQUESTS = 4;
+  // This listing type corresponds to UserMemberships rather than Users.
+  GROUP_REQUESTS = 5;
 }
 
 message GetUsersResponse {

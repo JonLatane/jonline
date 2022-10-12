@@ -3,6 +3,7 @@ syntax = "proto3";
 package jonline;
 
 import "google/protobuf/timestamp.proto";
+import "users.proto";
 import "permissions.proto";
 import "visibility_moderation.proto";
 
@@ -39,7 +40,6 @@ message Membership {
   optional google.protobuf.Timestamp updated_at = 7;
 }
 
-
 message GetGroupsRequest {
   optional string group_id = 1;
   optional string group_name = 2;
@@ -50,9 +50,28 @@ message GetGroupsRequest {
 enum GroupListingType {
   ALL_GROUPS = 0;
   MY_GROUPS = 1;
+  REQUESTED = 2;
+  INVITED = 3;
 }
 
 message GetGroupsResponse {
   repeated Group groups = 1;
+  bool has_next_page = 2;
+}
+
+// Used by group MODERATE_USERS mods to manage group requests from the People tab.
+// See also: UserListingType.GROUP_REQUESTS.
+message UserMembership {
+  User user = 1;
+  Membership membership = 2;
+}
+message GetUserMembershipsRequest {
+  optional string group_id = 1;
+  optional string username = 2;
+  optional int32 page = 10;
+}
+
+message GetUserMembershipsResponse {
+  repeated UserMembership user_memberships = 1;
   bool has_next_page = 2;
 }

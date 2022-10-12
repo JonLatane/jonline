@@ -16,6 +16,9 @@ pub use configuration_enum_conversions::*;
 mod configuration_conversions;
 pub use configuration_conversions::*;
 
+mod listing_type_conversions;
+pub use listing_type_conversions::*;
+
 mod user_conversions;
 pub use user_conversions::*;
 

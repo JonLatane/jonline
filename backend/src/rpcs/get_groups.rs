@@ -5,9 +5,8 @@ use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
+use crate::protos::GroupListingType::*;
 use crate::schema::groups;
-
-//TODO: Use GROUP BY queries to get counts. Or make it more efficient in some way.
 
 pub fn get_groups(
     request: GetGroupsRequest,
@@ -15,12 +14,19 @@ pub fn get_groups(
     conn: &PgPooledConnection,
 ) -> Result<GetGroupsResponse, Status> {
     println!("GetGroups called");
-    let response = match request.to_owned().group_id {
-        Some(_) => get_by_id(request.to_owned(), user, conn),
-        None => match request.to_owned().group_name {
-            Some(_) => get_by_name(request.to_owned(), user, conn),
-            None => get_all_groups(request.to_owned(), user, conn),
-        },
+    let response = match (
+        request
+            .to_owned()
+            .listing_type
+            .to_proto_group_listing_type(),
+        request.to_owned().group_id,
+        request.to_owned().group_name,
+    ) {
+        //TODO: Implement other listing types. For now this can be done in the UI.
+        (Some(Invited), _, _) => get_all_groups(request.to_owned(), user, conn),
+        (_, Some(_), _) => get_by_id(request.to_owned(), user, conn),
+        (_, _, Some(_)) => get_by_name(request.to_owned(), user, conn),
+        _ => get_all_groups(request.to_owned(), user, conn),
     };
     println!(
         "GetGroups::request: {:?}, response: {:?}",

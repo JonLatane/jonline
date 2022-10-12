@@ -114,6 +114,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     canCreateReply.addListener(updateState);
     appState.accounts.addListener(updateState);
     appState.colorTheme.addListener(updateState);
+    appState.selectedGroup.addListener(updateState);
     Settings.showSettingsTabListener.addListener(updateState);
     Settings.showPeopleTabListener.addListener(updateState);
     Settings.showGroupsTabListener.addListener(updateState);
@@ -140,6 +141,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     canCreateReply.removeListener(updateState);
     appState.accounts.removeListener(updateState);
     appState.colorTheme.removeListener(updateState);
+    appState.selectedGroup.removeListener(updateState);
     Settings.showSettingsTabListener.removeListener(updateState);
     Settings.showPeopleTabListener.removeListener(updateState);
     Settings.showGroupsTabListener.removeListener(updateState);
@@ -151,7 +153,10 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  updateState() => setState(() {});
+  updateState() {
+    print("HomePageState.updateState()");
+    setState(() {});
+  }
 
   RouteData? _lastRoute;
 
@@ -504,7 +509,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   double _lastSideNavDragPosition = 0.0;
-  static const double increment = 72.0;
+  static const double increment = 59.0;
   Widget buildSideNav(BuildContext context) {
     final tabsRouter = context.tabsRouter;
     final items = navigationItems;
