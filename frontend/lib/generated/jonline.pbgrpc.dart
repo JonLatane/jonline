@@ -134,6 +134,10 @@ class JonlineClient extends $grpc.Client {
           ($2.ServerConfiguration value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
               $2.ServerConfiguration.fromBuffer(value));
+  static final _$resetData = $grpc.ClientMethod<$0.Empty, $0.Empty>(
+      '/jonline.Jonline/ResetData',
+      ($0.Empty value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
 
   JonlineClient($grpc.ClientChannel channel,
       {$grpc.CallOptions? options,
@@ -265,6 +269,11 @@ class JonlineClient extends $grpc.Client {
       $2.ServerConfiguration request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$configureServer, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> resetData($0.Empty request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$resetData, request, options: options);
   }
 }
 
@@ -445,6 +454,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
             ($core.List<$core.int> value) =>
                 $2.ServerConfiguration.fromBuffer(value),
             ($2.ServerConfiguration value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.Empty, $0.Empty>(
+        'ResetData',
+        resetData_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.Empty.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
   }
 
   $async.Future<$1.GetServiceVersionResponse> getServiceVersion_Pre(
@@ -568,6 +584,11 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return configureServer(call, await request);
   }
 
+  $async.Future<$0.Empty> resetData_Pre(
+      $grpc.ServiceCall call, $async.Future<$0.Empty> request) async {
+    return resetData(call, await request);
+  }
+
   $async.Future<$1.GetServiceVersionResponse> getServiceVersion(
       $grpc.ServiceCall call, $0.Empty request);
   $async.Future<$2.ServerConfiguration> getServerConfiguration(
@@ -610,4 +631,5 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$6.Post> deletePost($grpc.ServiceCall call, $6.Post request);
   $async.Future<$2.ServerConfiguration> configureServer(
       $grpc.ServiceCall call, $2.ServerConfiguration request);
+  $async.Future<$0.Empty> resetData($grpc.ServiceCall call, $0.Empty request);
 }

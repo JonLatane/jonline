@@ -8,6 +8,7 @@ import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
+import '../../generated/google/protobuf/empty.pb.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../models/demo_data.dart';
@@ -505,6 +506,71 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                     children: const [
                       Icon(Icons.developer_mode),
                       Text('Post *Randomized* Demo Data'),
+                    ],
+                  ),
+                ),
+              ),
+            if (isAdmin) const SizedBox(height: 8),
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Really Reset Server Data?'),
+                      action: SnackBarAction(
+                        label: 'Delete it!', // or some operation you would like
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: const Text('REALLY DELETE IT ALL???'),
+                              action: SnackBarAction(
+                                label:
+                                    'DELETE IT ALL!!!', // or some operation you would like
+                                onPressed: () async {
+                                  try {
+                                    if (account == null) {
+                                      showSnackBar("Account not ready.");
+                                    }
+                                    (await account!.getClient())!.resetData(
+                                        Empty(),
+                                        options:
+                                            account!.authenticatedCallOptions);
+                                    showSnackBar(
+                                        "Server data reset. All Groups/Posts/Comments/Users (except ${account!.username}) deleted.");
+                                    for (var a in appState.accounts.value) {
+                                      if (a.server == account!.server &&
+                                          a.id != account!.id) {
+                                        await a.delete();
+                                      }
+                                    }
+                                    appState.updateAccountList();
+                                    appState.updateAccounts();
+                                    appState.notifyAccountsListeners();
+                                    // appState.updateGroups();
+                                    // appState.updatePosts();
+                                  } catch (e) {
+                                    showSnackBar(formatServerError(e));
+                                  }
+                                  // postDemoData(account!, showSnackBar, appState);
+                                },
+                              )));
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.developer_mode),
+                      Expanded(
+                        child: Text(
+                          'DELETE EVERYTHING: Posts, Groups, Users (except ${account!.username})',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.warning),
                     ],
                   ),
                 ),

@@ -10,6 +10,9 @@ pub use get_server_configuration::get_server_configuration;
 mod configure_server;
 pub use configure_server::configure_server;
 
+mod reset_data;
+pub use reset_data::reset_data;
+
 mod create_account;
 pub use create_account::create_account;
 

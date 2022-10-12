@@ -171,10 +171,17 @@ impl Jonline for JonLineImpl {
         request: Request<ServerConfiguration>,
     ) -> Result<Response<ServerConfiguration>, Status> {
         let mut conn = get_connection(&self.pool)?;
-        match auth::get_auth_user(&request, &mut conn) {
-            Err(e) => Err(e),
-            Ok(user) => rpcs::configure_server(request.into_inner(), user, &mut conn),
-        }
+        let user = auth::get_auth_user(&request, &mut conn) ?;
+        rpcs::configure_server(request.into_inner(), user, &mut conn)
+    }
+
+    async fn reset_data(
+        &self,
+        request: Request<()>,
+    ) -> Result<Response<()>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &mut conn) ?;
+        rpcs::reset_data(user, &mut conn).map(Response::new)
     }
 
     async fn update_post(&self, _request: Request<Post>) -> Result<Response<Post>, Status> {
