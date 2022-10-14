@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/screens/posts/threaded_replies.dart';
 
@@ -10,7 +11,6 @@ import '../../models/jonline_operations.dart';
 import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
-import '../home_page.dart';
 import 'post_preview.dart';
 
 class PostDetailsPage extends StatefulWidget {
@@ -27,12 +27,9 @@ class PostDetailsPage extends StatefulWidget {
   PostDetailsPageState createState() => PostDetailsPageState();
 }
 
-class PostDetailsPageState extends State<PostDetailsPage> {
-  late AppState appState;
-  late HomePageState homePage;
+class PostDetailsPageState extends JonlineState<PostDetailsPage> {
   Jonotifier updateReplies = Jonotifier();
   final ValueNotifier<bool> updatingReplies = ValueNotifier(false);
-  TextTheme get textTheme => Theme.of(context).textTheme;
   Post? subjectPost;
 
   onAccountsChanged() {
@@ -46,11 +43,9 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
     appState.accounts.addListener(onAccountsChanged);
     appState.updateReplies.addListener(updateReplies);
     updatingReplies.addListener(updateState);
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.scrollToTop.addListener(scrollToTop);
     updateReplies.addListener(updatePost);
     try {
@@ -88,12 +83,12 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   }
 
   ScrollController scrollController = ScrollController();
-  bool canReply = JonlineAccount.selectedAccount != null;
+  bool canReply = JonlineAccount.loggedIn;
 
   updateState() {
     // print("PostDetailsPage.updateState");
     setState(() {
-      canReply = JonlineAccount.selectedAccount != null;
+      canReply = JonlineAccount.loggedIn;
     });
   }
 
@@ -106,7 +101,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
     }
   }
 
-  get q => MediaQuery.of(context);
+  get q => mq;
   updatePost() async {
     try {
       final post = await JonlineOperations.getPosts(
@@ -135,15 +130,14 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 1000),
                   child: RefreshIndicator(
-                    displacement: MediaQuery.of(context).padding.top + 40,
+                    displacement: mq.padding.top + 40,
                     onRefresh: () async => await onRefresh(),
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       controller: scrollController,
                       slivers: [
                         SliverToBoxAdapter(
-                            child: SizedBox(
-                                height: MediaQuery.of(context).padding.top)),
+                            child: SizedBox(height: mq.padding.top)),
                         SliverToBoxAdapter(
                           child: PostPreview(
                             server: widget.server,
@@ -166,9 +160,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
                           updatingReplies: updatingReplies,
                         ),
                         SliverToBoxAdapter(
-                          child: SizedBox(
-                              height:
-                                  MediaQuery.of(context).padding.bottom + 48),
+                          child: SizedBox(height: mq.padding.bottom + 48),
                         ),
 
                         // other sliver widgets
@@ -188,6 +180,7 @@ class PostDetailsPageState extends State<PostDetailsPage> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),
@@ -208,7 +201,7 @@ class HeaderSliver extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    // final q = MediaQuery.of(context);
+    // final q =mq;
     return Card(
       child: Column(
         children: [

@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 
 import '../app_state.dart';
 import '../models/jonline_account.dart';
@@ -19,8 +20,7 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  late final AppState appState;
+class _LoginPageState extends JonlineBaseState<LoginPage> {
   get defaultServer => LoginPage.defaultServer;
 
   bool doingStuff = false;
@@ -41,7 +41,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
     usernameController.addListener(() {
       setState(() {});
     });
@@ -194,9 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                 opacity: showAddServerButton ? 1 : 0,
                 child: AnimatedContainer(
                   duration: animationDuration,
-                  height: showAddServerButton
-                      ? 50 * MediaQuery.of(context).textScaleFactor
-                      : 0,
+                  height: showAddServerButton ? 50 * mq.textScaleFactor : 0,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -371,6 +368,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

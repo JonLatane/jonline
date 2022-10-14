@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/screens/posts/editor_with_preview.dart';
 
 import '../../app_state.dart';
@@ -11,7 +12,6 @@ import '../../models/jonline_clients.dart';
 import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
-import '../home_page.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -22,10 +22,7 @@ class CreatePostPage extends StatefulWidget {
   CreatePostPageState createState() => CreatePostPageState();
 }
 
-class CreatePostPageState extends State<CreatePostPage> {
-  late AppState appState;
-  late HomePageState homePage;
-
+class CreatePostPageState extends JonlineState<CreatePostPage> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController linkController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
@@ -49,8 +46,6 @@ class CreatePostPageState extends State<CreatePostPage> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.createPost.addListener(doCreate);
     titleController.addListener(() {
       setState(() {});
@@ -140,12 +135,6 @@ class CreatePostPageState extends State<CreatePostPage> {
     // context.navigateBack();
     context.replaceRoute(PostDetailsRoute(
         postId: post.id, server: JonlineServer.selectedServer.server));
-    final appState = context.findRootAncestorStateOfType<AppState>();
-    if (appState == null) {
-      doingCreate = false;
-
-      return;
-    }
     appState.posts.value = Posts(posts: [post] + appState.posts.value.posts);
     Future.delayed(const Duration(seconds: 3),
         () => appState.updatePosts(showMessage: showSnackBar));
@@ -158,7 +147,7 @@ class CreatePostPageState extends State<CreatePostPage> {
     return Scaffold(
         body: Column(
       children: [
-        SizedBox(height: MediaQuery.of(context).padding.top),
+        SizedBox(height: mq.padding.top),
         Expanded(
           child: Row(
             children: [
@@ -173,12 +162,13 @@ class CreatePostPageState extends State<CreatePostPage> {
             ],
           ),
         ),
-        SizedBox(height: MediaQuery.of(context).padding.bottom),
+        SizedBox(height: mq.padding.bottom),
       ],
     ));
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

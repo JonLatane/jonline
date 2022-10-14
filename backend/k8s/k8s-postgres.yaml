@@ -29,7 +29,7 @@ spec:
         app: jonline-postgres
     spec:
       containers:
-        - image: postgres:11.4-alpine
+        - image: postgres:14.5-alpine
           name: db
           env:
             - name: POSTGRES_USER

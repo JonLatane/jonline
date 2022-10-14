@@ -50,15 +50,15 @@ pub fn create_membership(
                     "membership_required_to_invite",
                 ))
             }
-            Some(membership) => create_membership_for_other(request, group, user, membership, conn),
+            Some(membership) => invite_other_user(request, group, user, membership, conn),
         }
     };
     match result {
         Ok(membership) => {
             membership.update_related_counts(conn)?;
             Ok(membership.to_proto())
-        },
-        Err(e) => Err(e)
+        }
+        Err(e) => Err(e),
     }
 }
 
@@ -68,13 +68,18 @@ fn create_membership_for_self(
     user: models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<models::Membership, Status> {
+    let initial_permissions: serde_json::Value =
+        match group.default_membership_moderation.to_proto_moderation() {
+            Some(Moderation::Unmoderated) => group.default_membership_permissions,
+            _ => Vec::<i32>::new().to_json_permissions(),
+        };
     let membership: Result<models::Membership, diesel::result::Error> = conn
         .transaction::<models::Membership, diesel::result::Error, _>(|conn| {
             let membership = insert_into(memberships::table)
                 .values(&models::NewMembership {
                     user_id: user.id,
                     group_id: request.group_id.to_db_id().unwrap(),
-                    permissions: request.permissions.to_json_permissions(),
+                    permissions: initial_permissions,
                     group_moderation: group.default_membership_moderation,
                     user_moderation: Moderation::Approved.to_string_moderation(),
                 })
@@ -87,19 +92,35 @@ fn create_membership_for_self(
     })
 }
 
-fn create_membership_for_other(
+fn invite_other_user(
     request: Membership,
     group: models::Group,
     _user: models::User,
     user_membership: models::Membership,
     conn: &mut PgPooledConnection,
 ) -> Result<models::Membership, Status> {
-    let group_moderation = match validate_any_group_permission(
-        &user_membership,
-        vec![Permission::Admin, Permission::ModerateUsers],
+    let (group_moderation, initial_permissions) = match (
+        group.default_membership_moderation.to_proto_moderation(),
+        validate_any_group_permission(
+            &user_membership,
+            vec![Permission::Admin, Permission::ModerateUsers],
+        ),
     ) {
-        Ok(_) => Moderation::Approved.to_string_moderation(),
-        Err(_) => group.default_membership_moderation,
+        // Unmoderated group
+        (Some(Moderation::Unmoderated), _) => (
+            Moderation::Approved.to_string_moderation(),
+            group.default_membership_permissions,
+        ),
+        // User sending invite is a moderator
+        (_, Ok(_)) => (
+            Moderation::Approved.to_string_moderation(),
+            group.default_membership_permissions,
+        ),
+        // User sending invite is a regular member
+        (_, Err(_)) => (
+            group.default_membership_moderation,
+            Vec::<i32>::new().to_json_permissions(),
+        ),
     };
 
     let membership: Result<models::Membership, diesel::result::Error> = conn
@@ -108,7 +129,7 @@ fn create_membership_for_other(
                 .values(&models::NewMembership {
                     user_id: request.user_id.to_db_id().unwrap(),
                     group_id: request.group_id.to_db_id().unwrap(),
-                    permissions: request.permissions.to_json_permissions(),
+                    permissions: initial_permissions,
                     group_moderation: group_moderation,
                     user_moderation: Moderation::Pending.to_string_moderation(),
                 })

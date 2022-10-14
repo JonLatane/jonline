@@ -2,7 +2,7 @@ use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
-use crate::rpcs::PASSING_MODERATIONS;
+use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::{follows, users};
 use diesel::*;
 use tonic::Code;

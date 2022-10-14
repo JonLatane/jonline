@@ -3,25 +3,24 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_clients.dart';
+import 'package:jonline/screens/groups/group_preview.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:recase/recase.dart';
+
+import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
-import '../../generated/users.pb.dart';
-import '../../models/jonline_account_operations.dart';
-
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
-import '../../app_state.dart';
+import '../../models/jonline_account.dart';
+import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_operations.dart';
 import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../../utils/proto_utils.dart';
-import '../../models/jonline_account.dart';
-import '../home_page.dart';
 
 class GroupDetailsPage extends StatefulWidget {
   final String server;
@@ -35,19 +34,13 @@ class GroupDetailsPage extends StatefulWidget {
   State<GroupDetailsPage> createState() => _GroupDetailsPageState();
 }
 
-class _GroupDetailsPageState extends State<GroupDetailsPage> {
-  late AppState appState;
-  late HomePageState homePage;
-
+class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
   bool loading = true;
   Group? group;
   // JonlineAccount? account;
   // User? userData;
   bool get loaded => group != null;
-  TextTheme get textTheme => Theme.of(context).textTheme;
   TextEditingController groupNameController = TextEditingController();
-  List<Permission> get userPermissions =>
-      JonlineAccount.selectedAccount?.permissions ?? [];
   List<Permission> get groupPermissions =>
       group?.currentUserMembership.permissions ?? [];
 
@@ -61,8 +54,6 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
   @override
   initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(updateState);
     groupNameController.addListener(() {
       setState(() {
@@ -114,7 +105,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
       children: [
         Expanded(
           child: RefreshIndicator(
-              displacement: MediaQuery.of(context).padding.top + 40,
+              displacement: mq.padding.top + 40,
               onRefresh: () async => await refreshGroupData(),
               child: ScrollConfiguration(
                   // key: Key("postListScrollConfiguration-${postList.length}"),
@@ -130,10 +121,10 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Padding(
                       padding: EdgeInsets.only(
-                          top: 16 + MediaQuery.of(context).padding.top,
+                          top: 16 + mq.padding.top,
                           left: 8.0,
                           right: 8.0,
-                          bottom: 8 + MediaQuery.of(context).padding.bottom),
+                          bottom: 8 + mq.padding.bottom),
                       child: Center(
                           child: Stack(
                         children: [
@@ -149,10 +140,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.3),
+                                  SizedBox(height: mq.size.height * 0.3),
                                   const Center(
                                       child: CircularProgressIndicator()),
                                 ],
@@ -175,129 +163,12 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
             constraints: const BoxConstraints(maxWidth: 600),
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Card(
-                child: InkWell(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Stack(
-                      children: [
-                        Column(
-                          children: [
-                            Row(
-                              children: [
-                                const SizedBox(
-                                  height: 48,
-                                  width: 48,
-                                  child: Icon(Icons.account_circle,
-                                      size: 32, color: Colors.white),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                                '${JonlineServer.selectedServer.server}/',
-                                                style: textTheme.caption,
-                                                maxLines: 1,
-                                                overflow:
-                                                    TextOverflow.ellipsis),
-                                          ),
-                                        ],
-                                      ),
-                                      // Row(
-                                      //   children: [
-                                      //     Expanded(
-                                      //       child: Text(
-                                      //         userData?.username ?? '...',
-                                      //         style: textTheme.headline6
-                                      //             ?.copyWith(
-                                      //                 color: appState
-                                      //                             .selectedAccount
-                                      //                             ?.userId ==
-                                      //                         userData?.id
-                                      //                     ? appState
-                                      //                         .primaryColor
-                                      //                     : null),
-                                      //         maxLines: 1,
-                                      //         overflow: TextOverflow.ellipsis,
-                                      //       ),
-                                      //     ),
-                                      //   ],
-                                      // ),
-
-                                      TextField(
-                                        // focusNode: titleFocus,
-                                        controller: groupNameController,
-                                        keyboardType: TextInputType.url,
-                                        textCapitalization:
-                                            TextCapitalization.words,
-                                        enableSuggestions: true,
-                                        autocorrect: true,
-                                        maxLines: 1,
-                                        cursorColor: Colors.white,
-                                        style: textTheme.headline6,
-                                        enabled: member || admin,
-                                        decoration: const InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText: "Group Name",
-                                            isDense: true),
-                                        onChanged: (value) {},
-                                      ),
-                                      if (member || admin)
-                                        const Align(
-                                            alignment: Alignment.centerRight,
-                                            child: Text(
-                                              "Group Name may be updated.",
-                                              textAlign: TextAlign.right,
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w400,
-                                                  fontSize: 12),
-                                            )),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: Row(
-                                      children: [
-                                        Text(
-                                          "Group ID: ",
-                                          style: textTheme.caption,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Expanded(
-                                          child: Text(
-                                            group?.id ?? '...',
-                                            style: textTheme.caption,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // const SizedBox(height: 4),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              GroupPreview(
+                server: JonlineServer.selectedServer.server,
+                group: group!,
+                navigable: false,
+                groupNameController:
+                    (admin || groupAdmin) ? groupNameController : null,
               ),
               const SizedBox(height: 16),
               // buildHeading("Avatar"),
@@ -433,7 +304,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
               if (member || admin || moderator)
                 TextButton(
                   child: SizedBox(
-                    height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                    height: 20 + 20 * mq.textScaleFactor,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
@@ -451,6 +322,10 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
                       showSnackBar("Group Data Updated 🎉");
                       homePage.titleUsername = account.username;
                       await appState.updateAccounts();
+                      if (appState.selectedGroup.value?.id == group!.id) {
+                        appState.selectedGroup.value = group!;
+                      }
+                      await appState.groups.notify();
                     } catch (e) {
                       showSnackBar(formatServerError(e));
                       await communicationDelay;
@@ -464,6 +339,7 @@ class _GroupDetailsPageState extends State<GroupDetailsPage> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

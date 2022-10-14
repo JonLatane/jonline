@@ -157,6 +157,11 @@ impl Jonline for JonLineImpl {
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::delete_membership(request.into_inner(), user, &mut conn).map(Response::new)
     }
+    async fn get_members(&self, request: Request<GetMembersRequest>) -> Result<Response<GetMembersResponse>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
+        rpcs::get_members(request.into_inner(), user, &mut conn).map(Response::new)
+    }
 
     async fn get_server_configuration(
         &self,

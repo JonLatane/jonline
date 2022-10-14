@@ -1,8 +1,10 @@
+import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_operations.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,10 +39,7 @@ class PostPreview extends StatefulWidget {
   PostPreviewState createState() => PostPreviewState();
 }
 
-class PostPreviewState extends State<PostPreview> {
-  late final AppState appState;
-  TextTheme get textTheme => Theme.of(context).textTheme;
-
+class PostPreviewState extends JonlineBaseState<PostPreview> {
   String? get title => widget.post.title;
   String? get link => widget.post.link.isEmpty
       ? null
@@ -59,7 +58,6 @@ class PostPreviewState extends State<PostPreview> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
 
     if (widget.post.link.isNotEmpty) {
       loadServerPreview();
@@ -103,7 +101,8 @@ class PostPreviewState extends State<PostPreview> {
   Widget build(BuildContext context) {
     Widget view = AnimatedContainer(
       duration: animationDuration,
-      padding: const EdgeInsets.all(8.0), //child: Text('hi')
+      padding: const EdgeInsets.only(
+          top: 8.0, left: 8.0, right: 8.0, bottom: 4.0), //child: Text('hi')
       child: Column(
         children: [
           // Text("hi"),
@@ -196,26 +195,42 @@ class PostPreviewState extends State<PostPreview> {
           ),
           Row(
             children: [
-              const Text(
-                "by ",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w300,
-                    color: Colors.grey),
-              ),
               Expanded(
-                child: Text(
-                  username ?? noOne,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w300,
-                      color: widget.isReplyByAuthor
-                          ? appState.authorColor
-                          : Colors.grey),
+                child: TextButton(
+                  style: ButtonStyle(
+                      padding: MaterialStateProperty.all(
+                    const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  )),
+                  onPressed: () {
+                    context.navigateNamedTo(
+                        '/posts/author/${widget.server}/${widget.post.author.userId}');
+                  },
+                  child: Row(
+                    children: [
+                      const Text(
+                        "by ",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w300,
+                            color: Colors.grey),
+                      ),
+                      Expanded(
+                        child: Text(
+                          username ?? noOne,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w300,
+                              color: widget.isReplyByAuthor
+                                  ? appState.authorColor
+                                  : Colors.grey),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const Expanded(child: SizedBox()),
@@ -383,7 +398,7 @@ class PostPreviewState extends State<PostPreview> {
     //   },
     //   previewData: _previewData,
     //   text: link!,
-    //   width: MediaQuery.of(context).size.width,
+    //   width:mq.size.width,
     // ),
   }
 
@@ -465,6 +480,7 @@ class PostPreviewState extends State<PostPreview> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

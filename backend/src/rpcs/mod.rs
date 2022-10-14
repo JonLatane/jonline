@@ -1,5 +1,5 @@
-mod validations;
-pub use validations::*;
+pub mod validations;
+// pub use validations::*;
 
 mod get_service_version;
 pub use get_service_version::get_service_version;
@@ -27,12 +27,6 @@ pub use get_current_user::get_current_user;
 
 mod update_user;
 pub use update_user::update_user;
-
-mod create_post;
-pub use create_post::create_post;
-
-mod get_posts;
-pub use get_posts::get_posts;
 
 mod get_users;
 pub use get_users::get_users;
@@ -66,3 +60,12 @@ pub use update_membership::update_membership;
 
 mod delete_membership;
 pub use delete_membership::delete_membership;
+
+mod get_members;
+pub use get_members::get_members;
+
+mod create_post;
+pub use create_post::create_post;
+
+mod get_posts;
+pub use get_posts::get_posts;

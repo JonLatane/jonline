@@ -28,7 +28,7 @@ pub fn delete_membership(
 
     let self_update = request.user_id == current_user.id.to_proto_id();
     if !self_update {
-        validate_group_or_general_admin(&current_user, &user_membership)?;
+        validate_group_admin(&current_user, &user_membership)?;
     }
 
     match diesel::delete(memberships::table)

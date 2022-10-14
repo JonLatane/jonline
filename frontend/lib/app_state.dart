@@ -44,6 +44,7 @@ class AppState extends State<MyApp> {
   final ValueJonotifier<Posts> posts = ValueJonotifier(Posts());
   final ValueJonotifier<List<users_pb.User>> users =
       ValueJonotifier(<users_pb.User>[]);
+  bool get viewingGroup => selectedGroup.value != null;
   final ValueJonotifier<Group?> selectedGroup = ValueJonotifier(null);
   final ValueJonotifier<List<Group>> groups = ValueJonotifier(<Group>[]);
   final Jonotifier updateReplies = Jonotifier();
@@ -103,7 +104,7 @@ class AppState extends State<MyApp> {
     });
     didUpdateUsers.value = false;
     // await communicationDelay;
-    showMessage?.call("Users updated! 🎉");
+    // showMessage?.call("Users updated! 🎉");
   }
 
   ValueNotifier<bool> updatingGroups = ValueNotifier(true);
@@ -127,8 +128,13 @@ class AppState extends State<MyApp> {
       groups.value = response.groups;
     });
     didUpdateGroups.value = false;
+    if (selectedGroup.value != null) {
+      selectedGroup.value = groups.value.cast<Group?>().firstWhere(
+          (group) => group?.id == selectedGroup.value?.id,
+          orElse: () => selectedGroup.value);
+    }
     // await communicationDelay;
-    showMessage?.call("Groups updated! 🎉");
+    // showMessage?.call("Groups updated! 🎉");
   }
 
   JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
@@ -323,20 +329,13 @@ class AppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       theme: ThemeData.dark().copyWith(
-        // bottomAppBarColor: const Color(0xFF884DF2),
-        // splashColor: const Color(0xFFFFC145),
-        // buttonColor: const Color(0xFF884DF2),
-
+        colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
         textTheme: ThemeData.dark().textTheme.apply(
               fontFamily: 'PublicSans',
             ),
         primaryTextTheme: ThemeData.dark().textTheme.apply(
               fontFamily: 'PublicSans',
             ),
-        accentTextTheme: ThemeData.dark().textTheme.apply(
-              fontFamily: 'PublicSans',
-            ),
-        colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
         pageTransitionsTheme: const PageTransitionsTheme(builders: {
           TargetPlatform.macOS: NoShadowCupertinoPageTransitionsBuilder(),
           TargetPlatform.iOS: NoShadowCupertinoPageTransitionsBuilder(),

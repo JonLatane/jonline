@@ -26,7 +26,7 @@ pub fn delete_group(
         Err(diesel::NotFound) => None,
         Err(_) => return Err(Status::new(Code::Internal, "data_error")),
     };
-    validate_group_or_general_admin(&user, &user_membership)?;
+    validate_group_admin(&user, &user_membership)?;
 
     let group = groups::table
         .select(groups::all_columns)

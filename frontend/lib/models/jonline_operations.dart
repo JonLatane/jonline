@@ -11,10 +11,33 @@ import 'server_errors.dart';
 /// [JonlineAccount.selectedServer] that are useful whether or not
 /// the user is logged in.
 extension JonlineOperations on JonlineAccount {
+  static Future<GetMembersResponse?> getMembers(
+      {GetMembersRequest? request, Function(String)? showMessage}) async {
+    await JonlineAccount.selectedAccount
+        ?.ensureRefreshToken(showMessage: showMessage);
+    final client = await JonlineClients.getSelectedOrDefaultClient(
+        showMessage: showMessage);
+    if (client == null) {
+      showMessage?.call("Error: No client");
+      return null;
+    }
+    await communicationDelay;
+    // showMessage?.call("Loading posts...");
+    final GetMembersResponse response;
+    try {
+      response = await client.getMembers(request ?? GetMembersRequest(),
+          options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
+    } catch (e) {
+      showMessage?.call('Error loading members.');
+      if (showMessage != null) await communicationDelay;
+      showMessage?.call(formatServerError(e));
+      return null;
+    }
+    return response;
+  }
+
   static Future<GetUsersResponse?> getUsers(
-      {GetUsersRequest? request,
-      Function(String)? showMessage,
-      bool forReplies = false}) async {
+      {GetUsersRequest? request, Function(String)? showMessage}) async {
     await JonlineAccount.selectedAccount
         ?.ensureRefreshToken(showMessage: showMessage);
     final client = await JonlineClients.getSelectedOrDefaultClient(
@@ -30,7 +53,7 @@ extension JonlineOperations on JonlineAccount {
       response = await client.getUsers(request ?? GetUsersRequest(),
           options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
     } catch (e) {
-      showMessage?.call('Error loading ${forReplies ? "replies" : "posts"}.');
+      showMessage?.call('Error loading users');
       if (showMessage != null) await communicationDelay;
       showMessage?.call(formatServerError(e));
       return null;

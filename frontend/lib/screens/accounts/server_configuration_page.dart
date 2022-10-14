@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_account_operations.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/colors.dart';
@@ -48,10 +49,7 @@ class AdminPage extends ServerConfigurationPage {
   State<ServerConfigurationPage> createState() => _AdminPageState();
 }
 
-class _AdminPageState extends State<ServerConfigurationPage> {
-  late AppState appState;
-  late HomePageState homePage;
-
+class _AdminPageState extends JonlineState<ServerConfigurationPage> {
   JonlineAccount? account;
   JonlineServer? server;
   JonlineClient? client;
@@ -144,8 +142,6 @@ class _AdminPageState extends State<ServerConfigurationPage> {
   @override
   initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.serverConfigPageFocused.addListener(onAdminPageFocused);
     Future.microtask(() async {
       await refreshServerConfiguration();
@@ -166,7 +162,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
       children: [
         Expanded(
           child: RefreshIndicator(
-              displacement: MediaQuery.of(context).padding.top + 40,
+              displacement: mq.padding.top + 40,
               onRefresh: () async => await refreshServerConfiguration(),
               child: ScrollConfiguration(
                   // key: Key("postListScrollConfiguration-${postList.length}"),
@@ -182,10 +178,10 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Padding(
                       padding: EdgeInsets.only(
-                          top: 16 + MediaQuery.of(context).padding.top,
+                          top: 16 + mq.padding.top,
                           left: 8.0,
                           right: 8.0,
-                          bottom: 8 + MediaQuery.of(context).padding.bottom),
+                          bottom: 8 + mq.padding.bottom),
                       child: Center(
                           child: Stack(
                         children: [
@@ -201,10 +197,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.3),
+                                  SizedBox(height: mq.size.height * 0.3),
                                   const Center(
                                       child: CircularProgressIndicator()),
                                 ],
@@ -442,7 +435,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
               TextButton(
                 onPressed: applyServerConfiguration,
                 child: SizedBox(
-                  height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                  height: 20 + 20 * mq.textScaleFactor,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
@@ -472,7 +465,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                       )));
                 },
                 child: SizedBox(
-                  height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                  height: 20 + 20 * mq.textScaleFactor,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
@@ -500,7 +493,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                       )));
                 },
                 child: SizedBox(
-                  height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                  height: 20 + 20 * mq.textScaleFactor,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
@@ -558,7 +551,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
                       )));
                 },
                 child: SizedBox(
-                  height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                  height: 20 + 20 * mq.textScaleFactor,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -606,7 +599,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
             ),
             TextButton(
               child: SizedBox(
-                height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                height: 20 + 20 * mq.textScaleFactor,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
@@ -647,6 +640,7 @@ class _AdminPageState extends State<ServerConfigurationPage> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

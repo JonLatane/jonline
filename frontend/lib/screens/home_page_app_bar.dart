@@ -190,7 +190,7 @@ extension HomePageAppBar on HomePageState {
           children: [
             Text('Admin: ', style: textTheme.subtitle2),
             // Text(' for ', style: textTheme.bodyText2),
-            // SizedBox(width: 7 * MediaQuery.of(context).textScaleFactor),
+            // SizedBox(width: 7 *mq.textScaleFactor),
             Text("${titleServer ?? '...'}/", style: textTheme.caption),
             Text(titleUsername ?? '...', style: textTheme.subtitle2),
           ],
@@ -208,6 +208,9 @@ extension HomePageAppBar on HomePageState {
     });
   }
 
+  bool get showingMembers => appState.selectedGroup.value != null;
+  String get people => !showingMembers ? 'People' : 'Members';
+  String get person => !showingMembers ? 'Person' : 'Member';
   String get title {
     switch (context.topRoute.name) {
       case 'GroupsRoute':
@@ -219,9 +222,11 @@ extension HomePageAppBar on HomePageState {
         return 'Create Group';
       case 'PeopleRoute':
       case 'PeopleTab':
-        return 'People';
+        return people;
+      case 'AuthorProfileRoute':
+        return 'Author Details';
       case 'UserProfileRoute':
-        return 'Person Details';
+        return '$person Details';
       case 'PersonDetailsRoute':
         return 'Person Details [Mock]';
       case 'PostsRoute':
@@ -272,8 +277,7 @@ extension HomePageAppBar on HomePageState {
       case 'GroupsRoute':
       case 'GroupsTab':
         bool showSearch = groupsSearch.value;
-        bool showAddButton =
-            !showSearch && JonlineAccount.selectedAccount != null;
+        bool showAddButton = !showSearch && JonlineAccount.loggedIn;
         return [
           if (showSearch || showAddButton)
             Tooltip(
@@ -302,7 +306,7 @@ extension HomePageAppBar on HomePageState {
         ];
       case 'CreateGroupRoute':
         return [
-          if (JonlineAccount.selectedAccount != null)
+          if (JonlineAccount.loggedIn)
             SizedBox(
               width: 72,
               child: ElevatedButton(
@@ -337,6 +341,7 @@ extension HomePageAppBar on HomePageState {
           const AccountChooser(),
         ];
       case 'GroupDetailsRoute':
+        return [const GroupChooser(), const AccountChooser()];
       case 'UserProfileRoute':
       case 'AccountsRoute':
       case 'PostDetailsRoute':
@@ -344,7 +349,7 @@ extension HomePageAppBar on HomePageState {
       case 'PostsRoute':
       case 'PostsTab':
         return [
-          if (JonlineAccount.selectedAccount != null)
+          if (JonlineAccount.loggedIn)
             TextButton(
               child: const Icon(
                 Icons.add,
@@ -360,7 +365,7 @@ extension HomePageAppBar on HomePageState {
       case 'EventListRoute':
       case 'EventsTab':
         return [
-          if (JonlineAccount.selectedAccount != null)
+          if (JonlineAccount.loggedIn)
             const TextButton(
               onPressed: null,
               child: Icon(
@@ -373,7 +378,7 @@ extension HomePageAppBar on HomePageState {
         ];
       case 'CreatePostRoute':
         return [
-          if (JonlineAccount.selectedAccount != null)
+          if (JonlineAccount.loggedIn)
             SizedBox(
               width: 72,
               child: ElevatedButton(
@@ -410,7 +415,7 @@ extension HomePageAppBar on HomePageState {
       case 'CreateDeepReplyRoute':
       case 'CreateReplyRoute':
         return [
-          if (JonlineAccount.selectedAccount != null)
+          if (JonlineAccount.loggedIn)
             SizedBox(
               width: 72,
               child: ElevatedButton(

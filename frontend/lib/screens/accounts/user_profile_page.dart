@@ -3,24 +3,23 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:recase/recase.dart';
+
+import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/users.pb.dart';
-import '../../models/jonline_account_operations.dart';
-
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
-import '../../app_state.dart';
+import '../../models/jonline_account.dart';
+import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_operations.dart';
 import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
 import '../../utils/proto_utils.dart';
-import '../../models/jonline_account.dart';
-import '../home_page.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String? accountId;
@@ -38,6 +37,17 @@ class UserProfilePage extends StatefulWidget {
   State<UserProfilePage> createState() => _UserProfilePageState();
 }
 
+class AuthorProfilePage extends UserProfilePage {
+  const AuthorProfilePage({
+    Key? key,
+    @pathParam super.server,
+    @pathParam super.userId,
+  }) : super(key: key);
+
+  @override
+  State<UserProfilePage> createState() => _UserProfilePageState();
+}
+
 class MyProfilePage extends UserProfilePage {
   const MyProfilePage({
     Key? key,
@@ -48,15 +58,11 @@ class MyProfilePage extends UserProfilePage {
   State<UserProfilePage> createState() => _UserProfilePageState();
 }
 
-class _UserProfilePageState extends State<UserProfilePage> {
-  late AppState appState;
-  late HomePageState homePage;
-
+class _UserProfilePageState extends JonlineState<UserProfilePage> {
   bool loading = true;
   JonlineAccount? account;
   User? userData;
   bool get loaded => userData != null;
-  TextTheme get textTheme => Theme.of(context).textTheme;
   TextEditingController usernameController = TextEditingController();
 
   bool get ownProfile =>
@@ -76,8 +82,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(updateState);
     usernameController.addListener(() {
       setState(() {
@@ -140,7 +144,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       children: [
         Expanded(
           child: RefreshIndicator(
-              displacement: MediaQuery.of(context).padding.top + 40,
+              displacement: mq.padding.top + 40,
               onRefresh: () async => await updateProfileData(),
               child: ScrollConfiguration(
                   // key: Key("postListScrollConfiguration-${postList.length}"),
@@ -159,11 +163,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           child: Padding(
                             padding: EdgeInsets.only(
-                                top: 16 + MediaQuery.of(context).padding.top,
+                                top: 16 + mq.padding.top,
                                 left: 8.0,
                                 right: 8.0,
-                                bottom:
-                                    8 + MediaQuery.of(context).padding.bottom),
+                                bottom: 8 + mq.padding.bottom),
                             child: Center(
                                 child: Stack(
                               children: [
@@ -180,11 +183,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        SizedBox(
-                                            height: MediaQuery.of(context)
-                                                    .size
-                                                    .height *
-                                                0.3),
+                                        SizedBox(height: mq.size.height * 0.3),
                                         const Center(
                                             child: CircularProgressIndicator()),
                                       ],
@@ -488,7 +487,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               if (ownProfile || admin || moderator)
                 TextButton(
                   child: SizedBox(
-                    height: 20 + 20 * MediaQuery.of(context).textScaleFactor,
+                    height: 20 + 20 * mq.textScaleFactor,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
@@ -521,6 +520,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

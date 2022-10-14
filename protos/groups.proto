@@ -60,18 +60,19 @@ message GetGroupsResponse {
 }
 
 // Used by group MODERATE_USERS mods to manage group requests from the People tab.
-// See also: UserListingType.GROUP_REQUESTS.
-message UserMembership {
+// See also: UserListingType.MEMBERSHIP_REQUESTS.
+message Member {
   User user = 1;
   Membership membership = 2;
 }
-message GetUserMembershipsRequest {
-  optional string group_id = 1;
+message GetMembersRequest {
+  string group_id = 1;
   optional string username = 2;
+  optional Moderation group_moderation = 3;
   optional int32 page = 10;
 }
 
-message GetUserMembershipsResponse {
-  repeated UserMembership user_memberships = 1;
+message GetMembersResponse {
+  repeated Member members = 1;
   bool has_next_page = 2;
 }

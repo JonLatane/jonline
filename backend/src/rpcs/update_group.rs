@@ -28,7 +28,7 @@ pub fn update_group(
         .first::<models::Membership>(conn)
     {
         Ok(membership) => {
-            validate_group_or_general_admin(&user, &Some(membership))?;
+            validate_group_admin(&user, &Some(membership))?;
         }
         Err(diesel::NotFound) => return Err(Status::new(Code::NotFound, "not_a_member")),
         Err(_) => return Err(Status::new(Code::Internal, "data_error")),

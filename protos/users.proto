@@ -49,7 +49,7 @@ message ContactMethod {
 message GetUsersRequest {
   optional string username = 1;
   optional string user_id = 2;
-  optional string group_id = 3;
+  // optional string group_id = 3;
   // optional string email = 2;
   // optional string phone = 3;
   optional int32 page = 99;
@@ -62,8 +62,6 @@ enum UserListingType {
   FRIENDS = 2;
   FOLLOWERS = 3;
   FOLLOW_REQUESTS = 4;
-  // This listing type corresponds to UserMemberships rather than Users.
-  GROUP_REQUESTS = 5;
 }
 
 message GetUsersResponse {

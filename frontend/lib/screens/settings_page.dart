@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 
 import '../app_state.dart';
 import '../models/settings.dart';
@@ -18,11 +19,8 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage>
+class _SettingsPageState extends JonlineState<SettingsPage>
     with AutoRouteAwareStateMixin<SettingsPage> {
-  TextTheme get textTheme => Theme.of(context).textTheme;
-  AppState get appState => context.findRootAncestorStateOfType<AppState>()!;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,10 +31,10 @@ class _SettingsPageState extends State<SettingsPage>
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
                   padding: EdgeInsets.only(
-                      top: 16 + MediaQuery.of(context).padding.top,
+                      top: 16 + mq.padding.top,
                       left: 8.0,
                       right: 8.0,
-                      bottom: 8 + MediaQuery.of(context).padding.bottom),
+                      bottom: 8 + mq.padding.bottom),
                   child: Center(
                       child: Container(
                     constraints: const BoxConstraints(maxWidth: 600),
@@ -121,6 +119,24 @@ class _SettingsPageState extends State<SettingsPage>
                                   fontWeight: FontWeight.w400,
                                   fontSize: 12),
                             )),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Text(
+                                    'Automatically Collapse Side Navigation',
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                activeColor: appState.primaryColor,
+                                value: !Settings.keepSideNavExpanded,
+                                onChanged: (v) {
+                                  setState(
+                                      () => Settings.keepSideNavExpanded = !v);
+                                  // appState
+                                  //   ..updatePosts()
+                                  //   ..notifyAccountsListeners();
+                                }),
+                          ],
+                        ),
                         const SizedBox(height: 25),
                         Text('Performance Settings',
                             style: textTheme.subtitle1),

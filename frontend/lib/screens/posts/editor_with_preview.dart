@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:jonline/jonline_state.dart';
 
 import '../../app_state.dart';
 import '../../generated/posts.pb.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
-import '../home_page.dart';
 import 'post_preview.dart';
 
 class EditorWithPreview extends StatefulWidget {
@@ -14,24 +14,24 @@ class EditorWithPreview extends StatefulWidget {
   final TextEditingController? linkController;
   final TextEditingController? contentController;
   final ValueNotifier<bool>? enabled;
+  final Widget Function()? buildPreview;
 
   const EditorWithPreview(
       {Key? key,
       this.titleController,
       this.linkController,
       this.contentController,
-      this.enabled})
+      this.enabled,
+      this.buildPreview})
       : super(key: key);
 
   @override
   EditorWithPreviewState createState() => EditorWithPreviewState();
 }
 
-class EditorWithPreviewState extends State<EditorWithPreview> {
-  late AppState appState;
-  late HomePageState homePage;
+class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
   List<bool> focuses = [false, false, false];
-  bool get inlinePreview => MediaQuery.of(context).size.width > 600;
+  bool get inlinePreview => mq.size.width > 600;
   bool _showPreview = false;
   bool get showPreview => _showPreview && !inlinePreview;
   set showPreview(bool value) {
@@ -85,9 +85,6 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
-
     titleController = widget.titleController;
     linkController = widget.linkController;
     contentController = widget.contentController;
@@ -237,7 +234,7 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
         PostPreview(
             allowScrollingContent: true,
             server: JonlineServer.selectedServer.server,
-            maxContentHeight: MediaQuery.of(context).size.height - 200,
+            maxContentHeight: mq.size.height - 200,
             post: Post(
                 title: title,
                 content: content,
@@ -365,6 +362,7 @@ class EditorWithPreviewState extends State<EditorWithPreview> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

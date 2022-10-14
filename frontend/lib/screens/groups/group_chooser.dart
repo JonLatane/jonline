@@ -1,10 +1,9 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
-import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
 
 // import 'package:jonline/db.dart';
@@ -18,24 +17,22 @@ class GroupChooser extends StatefulWidget {
   GroupChooserState createState() => GroupChooserState();
 }
 
-class GroupChooserState extends State<GroupChooser> {
-  late AppState appState;
-  TextTheme get textTheme => Theme.of(context).textTheme;
-
+class GroupChooserState extends JonlineState<GroupChooser> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    appState.accounts.addListener(onAccountsChanged);
+    appState.accounts.addListener(updateState);
+    appState.groups.addListener(updateState);
   }
 
   @override
   dispose() {
-    appState.accounts.removeListener(onAccountsChanged);
+    appState.accounts.removeListener(updateState);
+    appState.groups.removeListener(updateState);
     super.dispose();
   }
 
-  onAccountsChanged() async {
+  updateState() async {
     setState(() {});
   }
 
@@ -54,10 +51,9 @@ class GroupChooserState extends State<GroupChooser> {
         appState.selectedGroup.value!.name != currentGroupName) {
       currentGroupName = appState.selectedGroup.value!.name;
     }
-    print("width: $width");
     return AnimatedContainer(
       duration: animationDuration,
-      width: width * MediaQuery.of(context).textScaleFactor,
+      width: width * mq.textScaleFactor,
       child: TextButton(
         style: ButtonStyle(
             padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
@@ -111,7 +107,7 @@ class GroupChooserState extends State<GroupChooser> {
 Future<Object> showGroupsMenu(
     BuildContext context, RelativeRect position) async {
   ThemeData theme = Theme.of(context);
-  TextTheme textTheme = theme.textTheme;
+  // TextTheme textTheme = theme.textTheme;
   ThemeData darkTheme = theme;
   final groups = context.findRootAncestorStateOfType<AppState>()!.groups.value;
   return showMenu(

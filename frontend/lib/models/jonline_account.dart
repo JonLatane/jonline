@@ -18,6 +18,7 @@ const uuid = Uuid();
 /// Constructors are private; factory methods [loginToAccount] and [createAccount]
 /// should be used instead.
 class JonlineAccount {
+  static bool get loggedIn => _selectedAccount != null;
   static JonlineAccount? _selectedAccount;
   static JonlineAccount? get selectedAccount => _selectedAccount;
   static set selectedAccount(JonlineAccount? account) {

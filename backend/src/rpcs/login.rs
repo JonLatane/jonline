@@ -3,11 +3,11 @@ use diesel::*;
 use tonic::{Code, Request, Response, Status};
 
 use crate::auth;
-use crate::conversions::ToProtoUser;
+use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
-use crate::protos::{AuthTokenResponse, LoginRequest};
-use crate::rpcs::{validate_password, validate_username};
+use crate::protos::*;
+use crate::rpcs::validations::*;
 use crate::schema::users::dsl::*;
 
 pub fn login(

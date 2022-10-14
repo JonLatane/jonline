@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/screens/posts/editor_with_preview.dart';
 import 'package:jonline/screens/posts/post_preview.dart';
 
@@ -13,7 +14,6 @@ import '../../models/jonline_operations.dart';
 import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
-import '../home_page.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -46,10 +46,7 @@ class CreateDeepReplyPage extends CreateReplyPage {
         );
 }
 
-class CreateReplyPageState extends State<CreateReplyPage> {
-  late AppState appState;
-  late HomePageState homePage;
-
+class CreateReplyPageState extends JonlineState<CreateReplyPage> {
   // final TextEditingController linkController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
   final ValueNotifier<bool> enabled = ValueNotifier<bool>(true);
@@ -72,8 +69,6 @@ class CreateReplyPageState extends State<CreateReplyPage> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.createReply.addListener(doCreate);
     appState.accounts.addListener(onAccountsChanged);
 
@@ -189,19 +184,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
       return;
     }
     context.navigateBack();
-    // context.replaceRoute(PostDetailsRoute(
-    //     postId: post.id, server: JonlineAccount.selectedServer));
-    final appState = context.findRootAncestorStateOfType<AppState>();
-    if (appState == null) {
-      doingCreate = false;
-
-      return;
-    }
     appState.updateReplies();
-    // appState.posts.value = Posts(posts: [post] + appState.posts.value.posts);
-    // Future.delayed(const Duration(seconds: 3),
-    //     () => appState.updatePosts(showMessage: showSnackBar));
-
     doingCreate = false;
   }
 
@@ -209,8 +192,8 @@ class CreateReplyPageState extends State<CreateReplyPage> {
   bool showingDiscussionPost = false;
   double get detailHeight =>
       (MediaQuery.of(context).size.height -
-          MediaQuery.of(context).padding.top -
-          MediaQuery.of(context).padding.bottom -
+          mq.padding.top -
+          mq.padding.bottom -
           48) *
       0.45;
 
@@ -219,7 +202,7 @@ class CreateReplyPageState extends State<CreateReplyPage> {
     return Scaffold(
         body: Column(
       children: [
-        SizedBox(height: MediaQuery.of(context).padding.top),
+        SizedBox(height: mq.padding.top),
         Row(
           children: [
             if (discussionPostId != null)
@@ -310,12 +293,13 @@ class CreateReplyPageState extends State<CreateReplyPage> {
             ],
           ),
         ),
-        SizedBox(height: MediaQuery.of(context).padding.bottom),
+        SizedBox(height: mq.padding.bottom),
       ],
     ));
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

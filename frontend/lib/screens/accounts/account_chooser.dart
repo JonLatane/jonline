@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 
 import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
@@ -17,10 +18,7 @@ class AccountChooser extends StatefulWidget {
   AccountChooserState createState() => AccountChooserState();
 }
 
-class AccountChooserState extends State<AccountChooser> {
-  late AppState appState;
-  TextTheme get textTheme => Theme.of(context).textTheme;
-
+class AccountChooserState extends JonlineState<AccountChooser> {
   int currentServerIndex = 0;
   List<String> servers = ['', ''];
   String get currentServer => servers[currentServerIndex];
@@ -40,7 +38,6 @@ class AccountChooserState extends State<AccountChooser> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
     appState.accounts.addListener(onAccountsChanged);
   }
 
@@ -63,7 +60,7 @@ class AccountChooserState extends State<AccountChooser> {
       currentUsername = appState.selectedAccount?.username ?? noOne;
     }
     return SizedBox(
-      width: 72 * MediaQuery.of(context).textScaleFactor,
+      width: 72 * mq.textScaleFactor,
       child: TextButton(
         style: ButtonStyle(
             padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
@@ -88,59 +85,75 @@ class AccountChooserState extends State<AccountChooser> {
           showAccountsMenu(context, position);
           // context.router.pop();
         },
-        child: Column(
+        child: Stack(
           children: [
-            const Expanded(child: SizedBox()),
-            Stack(
+            Center(
+                child: AnimatedOpacity(
+              duration: animationDuration,
+              opacity: JonlineAccount.selectedAccount?.permissions
+                          .contains(Permission.ADMIN) ??
+                      false
+                  ? 0.5
+                  : 0,
+              child: const Icon(Icons.admin_panel_settings_outlined),
+            )),
+            Column(
               children: [
-                ...servers.map(
-                  (name) => AnimatedOpacity(
-                    opacity: "${JonlineServer.selectedServer.server}/" == name
-                        ? 1
-                        : 0,
-                    duration: animationDuration,
-                    child: Center(
-                        child: Text(
-                      name,
-                      style: textTheme.caption,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      // textAlign: TextAlign.center,
-                    )),
-                  ),
-                )
+                const Expanded(child: SizedBox()),
+                Stack(
+                  children: [
+                    ...servers.map(
+                      (name) => AnimatedOpacity(
+                        opacity:
+                            "${JonlineServer.selectedServer.server}/" == name
+                                ? 1
+                                : 0,
+                        duration: animationDuration,
+                        child: Center(
+                            child: Text(
+                          name,
+                          style: textTheme.caption,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          // textAlign: TextAlign.center,
+                        )),
+                      ),
+                    )
+                  ],
+                ),
+                Stack(
+                  children: [
+                    ...usernames.map(
+                      (name) => AnimatedOpacity(
+                        opacity:
+                            (appState.selectedAccount?.username ?? noOne) ==
+                                    name
+                                ? 1
+                                : 0,
+                        duration: animationDuration,
+                        child: Center(
+                            child: Text(
+                          name,
+                          style: textTheme.subtitle2,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          // textAlign: TextAlign.center,
+                        )),
+                      ),
+                    )
+                  ],
+                ),
+                // Text('${JonlineServer.selectedServer.server}/',
+                //     maxLines: 1,
+                //     overflow: TextOverflow.ellipsis,
+                //     style: textTheme.caption),
+                // Text(JonlineAccount.selectedAccount?.username ?? noOne,
+                //     maxLines: 1,
+                //     overflow: TextOverflow.ellipsis,
+                //     style: textTheme.subtitle2),
+                const Expanded(child: SizedBox()),
               ],
             ),
-            Stack(
-              children: [
-                ...usernames.map(
-                  (name) => AnimatedOpacity(
-                    opacity:
-                        (appState.selectedAccount?.username ?? noOne) == name
-                            ? 1
-                            : 0,
-                    duration: animationDuration,
-                    child: Center(
-                        child: Text(
-                      name,
-                      style: textTheme.subtitle2,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      // textAlign: TextAlign.center,
-                    )),
-                  ),
-                )
-              ],
-            ),
-            // Text('${JonlineServer.selectedServer.server}/',
-            //     maxLines: 1,
-            //     overflow: TextOverflow.ellipsis,
-            //     style: textTheme.caption),
-            // Text(JonlineAccount.selectedAccount?.username ?? noOne,
-            //     maxLines: 1,
-            //     overflow: TextOverflow.ellipsis,
-            //     style: textTheme.subtitle2),
-            const Expanded(child: SizedBox()),
           ],
         ),
       ),

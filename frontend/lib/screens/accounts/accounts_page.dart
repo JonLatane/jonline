@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/screens/accounts/server_configuration_page.dart';
 
 import '../../app_state.dart';
@@ -23,7 +24,7 @@ class AccountsPage extends StatefulWidget {
   AccountsPageState createState() => AccountsPageState();
 }
 
-class AccountsPageState extends State<AccountsPage> {
+class AccountsPageState extends JonlineState<AccountsPage> {
   UserData? userData;
   List<JonlineAccount> get allAccounts => appState.accounts.value;
   List<JonlineAccount> get accounts {
@@ -36,9 +37,6 @@ class AccountsPageState extends State<AccountsPage> {
 
   List<JonlineServer> get servers => appState.servers.value;
   JonlineServer? uiSelectedServer;
-  late AppState appState;
-  late HomePageState homePage;
-  TextTheme get textTheme => Theme.of(context).textTheme;
   bool get showServers => Settings.showServers;
   set showServers(bool value) {
     Settings.showServers = value;
@@ -106,7 +104,7 @@ class AccountsPageState extends State<AccountsPage> {
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Container(
-                                height: MediaQuery.of(context).padding.top,
+                                height: mq.padding.top,
                                 color: Theme.of(context)
                                     .canvasColor
                                     .withOpacity(0.5),
@@ -284,10 +282,7 @@ class AccountsPageState extends State<AccountsPage> {
                                       children: [
                                         Transform.translate(
                                           offset: Offset(
-                                              0,
-                                              -5 *
-                                                  MediaQuery.of(context)
-                                                      .textScaleFactor),
+                                              0, -5 * mq.textScaleFactor),
                                           child: Text("Servers",
                                               style: textTheme.titleMedium),
                                         ),
@@ -345,8 +340,8 @@ class AccountsPageState extends State<AccountsPage> {
     );
   }
 
-  double get serverHeaderHeight => 18 * MediaQuery.of(context).textScaleFactor;
-  double get accountHeaderHeight => 32 * MediaQuery.of(context).textScaleFactor;
+  double get serverHeaderHeight => 18 * mq.textScaleFactor;
+  double get accountHeaderHeight => 32 * mq.textScaleFactor;
 
   void toggleSettingsTab() {
     // if (!Settings.showSettingsTab) {
@@ -475,7 +470,7 @@ class AccountsPageState extends State<AccountsPage> {
   ScrollController accountScrollController = ScrollController();
   Widget buildAccountList() {
     return RefreshIndicator(
-        displacement: MediaQuery.of(context).padding.top + 80,
+        displacement: mq.padding.top + 80,
         onRefresh: () async => await appState.updateServersAndAccounts(),
         child: ScrollConfiguration(
             // key: Key("postListScrollConfiguration-${postList.length}"),
@@ -489,8 +484,7 @@ class AccountsPageState extends State<AccountsPage> {
             ),
             child: ImplicitlyAnimatedReorderableList<JonlineAccount>(
               padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 48,
-                  bottom: MediaQuery.of(context).padding.bottom),
+                  top: mq.padding.top + 48, bottom: mq.padding.bottom),
               physics: const AlwaysScrollableScrollPhysics(),
               items: accounts,
               areItemsTheSame: (a, b) => a.id == b.id,
@@ -522,7 +516,7 @@ class AccountsPageState extends State<AccountsPage> {
     return AnimatedContainer(
       // constraints: const BoxConstraints(maxWidth: 600),
       duration: animationDuration,
-      height: 103.0 + (23.0 * MediaQuery.of(context).textScaleFactor),
+      height: 103.0 + (23.0 * mq.textScaleFactor),
       child: Theme(
         data: ThemeData.dark().copyWith(
           // bottomAppBarColor: const Color(0xFF884DF2),
@@ -738,7 +732,7 @@ class AccountsPageState extends State<AccountsPage> {
     );
   }
 
-  // bool get verticalServerList => MediaQuery.of(context).size.width > 600;
+  // bool get verticalServerList =>mq.size.width > 600;
   Widget buildServerList() {
     return ImplicitlyAnimatedReorderableList<JonlineServer>(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -763,8 +757,7 @@ class AccountsPageState extends State<AccountsPage> {
     );
   }
 
-  double get serverItemHeight =>
-      70 + 10 * MediaQuery.of(context).textScaleFactor;
+  double get serverItemHeight => 70 + 10 * mq.textScaleFactor;
   Widget buildServerItem(JonlineServer server) {
     final selectServer = JonlineServer.selectedServer != server
         ? () {
@@ -788,9 +781,9 @@ class AccountsPageState extends State<AccountsPage> {
     final textColor = backgroundColor?.textColor;
     return AnimatedContainer(
       duration: animationDuration,
-      width: 163 + 20 * MediaQuery.of(context).textScaleFactor,
+      width: 163 + 20 * mq.textScaleFactor,
       height: serverItemHeight,
-      // height: 103.0 + (23.0 * MediaQuery.of(context).textScaleFactor),
+      // height: 103.0 + (23.0 *mq.textScaleFactor),
       child: Stack(
         children: [
           Theme(
@@ -928,6 +921,7 @@ class AccountsPageState extends State<AccountsPage> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

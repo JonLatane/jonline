@@ -2,24 +2,26 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/enum_conversions.dart';
+import 'package:recase/recase.dart';
 
 import '../../app_state.dart';
-import '../../generated/visibility_moderation.pbenum.dart';
-import '../../models/jonline_account.dart';
-import '../../models/server_errors.dart';
-import '../../utils/colors.dart';
+import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pb.dart';
 import '../../generated/users.pb.dart';
-
+import '../../generated/visibility_moderation.pbenum.dart';
+import '../../models/jonline_account.dart';
+import '../../models/jonline_operations.dart';
 import '../../models/jonline_server.dart';
-import '../home_page.dart';
+import '../../models/server_errors.dart';
+import '../../utils/colors.dart';
+import 'person_preview.dart';
 // import 'user_preview.dart';
 
 class PeopleScreen extends StatefulWidget {
@@ -29,19 +31,55 @@ class PeopleScreen extends StatefulWidget {
   PeopleScreenState createState() => PeopleScreenState();
 }
 
-class PeopleScreenState extends State<PeopleScreen>
-    with AutoRouteAwareStateMixin<PeopleScreen> {
-  late AppState appState;
-  late HomePageState homePage;
-  TextTheme get textTheme => Theme.of(context).textTheme;
-  MediaQueryData get mq => MediaQuery.of(context);
+enum PeopleListingType {
+  members,
+  everyone,
+  following,
+  friends,
+  followers,
+  followRequests,
+  membershipRequests,
+}
 
-  UserListingType listingType = UserListingType.EVERYONE;
-  Map<UserListingType, GetUsersResponse> listingData = {};
+extension PeopleUserListingType on PeopleListingType {
+  UserListingType? get userListingType {
+    switch (this) {
+      case PeopleListingType.everyone:
+        return UserListingType.EVERYONE;
+      case PeopleListingType.following:
+        return UserListingType.FOLLOWING;
+      case PeopleListingType.friends:
+        return UserListingType.FRIENDS;
+      case PeopleListingType.followers:
+        return UserListingType.FOLLOWERS;
+      case PeopleListingType.followRequests:
+        return UserListingType.FOLLOW_REQUESTS;
+      // case PeopleListingType.membershipRequests:
+      //   return UserListingType.MEMBERSHIP_REQUESTS;
+      default:
+        return null;
+    }
+  }
+}
+
+class PeopleListingResponse {
+  final GetUsersResponse? users;
+  final GetMembersResponse? members;
+
+  PeopleListingResponse({
+    this.users,
+    this.members,
+  });
+}
+
+class PeopleScreenState extends JonlineState<PeopleScreen>
+    with AutoRouteAwareStateMixin<PeopleScreen> {
+  PeopleListingType listingType = PeopleListingType.everyone;
+  Map<PeopleListingType, PeopleListingResponse> listingData = {};
   ScrollController scrollController = ScrollController();
 
-  bool get useList => MediaQuery.of(context).size.width < 450;
-  double get headerHeight => 48 * MediaQuery.of(context).textScaleFactor;
+  bool get useList => mq.size.width < 450;
+  double get headerHeight => 48 * mq.textScaleFactor;
   @override
   void didPushNext() {
     // print('didPushNext');
@@ -51,8 +89,6 @@ class PeopleScreenState extends State<PeopleScreen>
   void initState() {
     // print("UserListPage.initState");
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(updateState);
     for (var n in [
       appState.users,
@@ -61,6 +97,10 @@ class PeopleScreenState extends State<PeopleScreen>
     ]) {
       n.addListener(updateState);
     }
+    appState.selectedGroup.addListener(resetMembers);
+    appState.selectedAccountChanged.addListener(resetMembers);
+    // appState.selectedGroup.addListener(updateState);
+
     homePage.scrollToTop.addListener(scrollToTop);
     homePage.peopleSearch.addListener(updateState);
     homePage.peopleSearchController.addListener(updateState);
@@ -79,6 +119,10 @@ class PeopleScreenState extends State<PeopleScreen>
     ]) {
       n.removeListener(updateState);
     }
+    appState.selectedGroup.removeListener(resetMembers);
+    appState.selectedAccountChanged.removeListener(resetMembers);
+    // appState.selectedGroup.addListener(updateState);
+
     homePage.scrollToTop.removeListener(scrollToTop);
     homePage.peopleSearch.removeListener(updateState);
     homePage.peopleSearchController.removeListener(updateState);
@@ -99,12 +143,125 @@ class PeopleScreenState extends State<PeopleScreen>
     }
   }
 
-  List<User> get userList {
-    List<User> result = appState.users.value;
+  bool get showingMembers => appState.selectedGroup.value != null;
+  bool get canShowMembershipRequests {
+    final group = appState.selectedGroup.value;
+    if (group == null) return false;
+    return (appState.selectedAccount?.permissions.contains(Permission.ADMIN) ??
+            false) ||
+        group.currentUserMembership.permissions.any(
+            (p) => [Permission.ADMIN, Permission.MODERATE_USERS].contains(p));
+  }
+
+  String get people => showingMembers
+      ? listingType == PeopleListingType.membershipRequests
+          ? "Membership Requests"
+          : "Members"
+      : "People";
+  resetMembers() async {
+    // print("resetMembers");
+    appState.updatingUsers.value = true;
+    adaptToInvariants();
+    setState(() {
+      listingData = {};
+    });
+    await updateMembers();
+  }
+
+  updateMembers({PeopleListingType? customListingType}) async {
+    appState.updatingUsers.value = true;
+    final listingType = customListingType ?? this.listingType;
+    final selectedGroup = appState.selectedGroup.value;
+    if (selectedGroup == null) {
+      return;
+    }
+    final request = listingType == PeopleListingType.membershipRequests
+        ? GetMembersRequest(
+            groupId: selectedGroup.id, groupModeration: Moderation.PENDING)
+        : GetMembersRequest(
+            groupId: selectedGroup.id,
+          );
+    final GetMembersResponse? response = await JonlineOperations.getMembers(
+      request: request,
+    );
+    if (response == null) {
+      setState(() {
+        appState.errorUpdatingUsers.value = true;
+        appState.updatingUsers.value = false;
+        // showSnackBar
+      });
+      updateOtherMembers();
+      return;
+    }
+
+    appState.didUpdateUsers.value = true;
+    setState(() {
+      appState.updatingUsers.value = false;
+      listingData[listingType] = PeopleListingResponse(members: response);
+      // print("Set state: ${response.members.length}");
+    });
+    appState.didUpdateUsers.value = false;
+    if (customListingType == null) {
+      updateOtherMembers();
+    }
+  }
+
+  updateOtherMembers() {
+    if (listingType == PeopleListingType.membershipRequests) {
+      updateMembers(customListingType: PeopleListingType.members);
+    } else {
+      updateMembers(customListingType: PeopleListingType.membershipRequests);
+    }
+  }
+
+  List<Person> get userList {
+    List<Person> result = appState.users.value.map((p) => Person(p)).toList();
+    switch (listingType) {
+      case PeopleListingType.membershipRequests:
+      case PeopleListingType.members:
+        // print("userList");
+        result = listingData[listingType]
+                ?.members
+                ?.members
+                .map((e) => Person(e.user, membership: e.membership))
+                .toList() ??
+            [];
+        // result = [];
+        break;
+      case PeopleListingType.everyone:
+        // The cached data (appState.users.value) is fine.
+        break;
+      case PeopleListingType.following:
+        result = result
+            .where((p) => p.user.currentUserFollow.targetUserModeration.passes)
+            .toList();
+        break;
+      case PeopleListingType.friends:
+        result = result
+            .where((p) =>
+                p.user.currentUserFollow.targetUserModeration.passes &&
+                p.user.targetCurrentUserFollow.targetUserModeration.passes)
+            .toList();
+        break;
+      case PeopleListingType.followers:
+        result = result
+            .where((p) =>
+                p.user.targetCurrentUserFollow.targetUserModeration.passes)
+            .toList();
+        break;
+      case PeopleListingType.followRequests:
+        result = result
+            .where((p) =>
+                p.user.targetCurrentUserFollow.targetUserModeration.pending)
+            .toList();
+        break;
+      // default:
+      // result = appState.users.value;
+    }
     if (homePage.peopleSearch.value &&
         homePage.peopleSearchController.text != '') {
-      result = result.where((user) {
-        return user.username
+      result = result.where((person) {
+        return person.user.username
             .toLowerCase()
             .contains(homePage.peopleSearchController.text.toLowerCase());
       }).toList();
@@ -112,17 +269,42 @@ class PeopleScreenState extends State<PeopleScreen>
     return result;
   }
 
+  adaptToInvariants() {
+    if (!showingMembers && listingType.userListingType == null) {
+      listingType = PeopleListingType.everyone;
+    } else if (showingMembers && listingType.userListingType != null) {
+      listingType = PeopleListingType.members;
+      // resetMembers();
+    }
+
+    if (!JonlineAccount.loggedIn) {
+      listingType = showingMembers
+          ? PeopleListingType.members
+          : PeopleListingType.everyone;
+    }
+    if (listingType == PeopleListingType.membershipRequests &&
+        !canShowMembershipRequests) {
+      listingType = PeopleListingType.members;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    List<User> userList = this.userList;
+    adaptToInvariants();
+    List<Person> userList = this.userList;
     return Scaffold(
       // appBar: ,
       body: Stack(
         children: [
           RefreshIndicator(
-            displacement: MediaQuery.of(context).padding.top + 40,
-            onRefresh: () async =>
-                await appState.updateUsers(showMessage: showSnackBar),
+            displacement: mq.padding.top + 40,
+            onRefresh: () async {
+              if (showingMembers) {
+                await updateMembers();
+              } else {
+                await appState.updateUsers(showMessage: showSnackBar);
+              }
+            },
             child: ScrollConfiguration(
                 // key: Key("userListScrollConfiguration-${userList.length}"),
                 behavior: ScrollConfiguration.of(context).copyWith(
@@ -156,17 +338,19 @@ class PeopleScreenState extends State<PeopleScreen>
                                           children: [
                                             Text(
                                                 appState.updatingUsers.value
-                                                    ? "Loading People..."
+                                                    ? "Loading $people..."
                                                     : appState
                                                             .errorUpdatingUsers
                                                             .value
-                                                        ? "Error Loading People"
-                                                        : "No People",
+                                                        ? "Error Loading $people"
+                                                        : "No $people",
                                                 style: textTheme.titleLarge),
                                             Text(
-                                                JonlineServer
-                                                    .selectedServer.server,
+                                                "${JonlineServer.selectedServer.server}/${showingMembers ? 'group/' : ''}",
                                                 style: textTheme.caption),
+                                            if (showingMembers)
+                                              Text(appState
+                                                  .selectedGroup.value!.name),
                                             if (!appState.updatingUsers.value &&
                                                 !appState
                                                     .errorUpdatingUsers.value &&
@@ -218,23 +402,26 @@ class PeopleScreenState extends State<PeopleScreen>
                         ],
                       )
                     : useList
-                        ? ImplicitlyAnimatedList<User>(
+                        ? ImplicitlyAnimatedList<Person>(
                             physics: const AlwaysScrollableScrollPhysics(),
                             controller: scrollController,
                             items: userList,
-                            areItemsTheSame: (a, b) => a.id == b.id,
+                            areItemsTheSame: (a, b) => a.user.id == b.user.id,
                             padding: EdgeInsets.only(
-                                top: MediaQuery.of(context).padding.top +
-                                    headerHeight,
-                                bottom: MediaQuery.of(context).padding.bottom),
-                            itemBuilder: (context, animation, user, index) {
+                                top: mq.padding.top + headerHeight,
+                                bottom: mq.padding.bottom + 48),
+                            itemBuilder: (context, animation, person, index) {
                               return SizeFadeTransition(
                                   sizeFraction: 0.7,
                                   curve: Curves.easeInOut,
                                   animation: animation,
                                   child: Row(
                                     children: [
-                                      Expanded(child: buildUserItem(user)),
+                                      Expanded(
+                                          child: PersonPreview(
+                                              person: person,
+                                              server: JonlineServer
+                                                  .selectedServer.server)),
                                     ],
                                   ));
                             },
@@ -243,9 +430,8 @@ class PeopleScreenState extends State<PeopleScreen>
                             physics: const AlwaysScrollableScrollPhysics(),
                             controller: scrollController,
                             padding: EdgeInsets.only(
-                                top: MediaQuery.of(context).padding.top +
-                                    headerHeight,
-                                bottom: MediaQuery.of(context).padding.bottom),
+                                top: mq.padding.top + headerHeight,
+                                bottom: mq.padding.bottom),
                             crossAxisCount: max(
                                 2,
                                 min(
@@ -257,8 +443,10 @@ class PeopleScreenState extends State<PeopleScreen>
                             crossAxisSpacing: 4,
                             itemCount: userList.length,
                             itemBuilder: (context, index) {
-                              final user = userList[index];
-                              return buildUserItem(user);
+                              final person = userList[index];
+                              return PersonPreview(
+                                  person: person,
+                                  server: JonlineServer.selectedServer.server);
                             },
                           )),
           ),
@@ -271,7 +459,7 @@ class PeopleScreenState extends State<PeopleScreen>
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Container(
-                            height: MediaQuery.of(context).padding.top,
+                            height: mq.padding.top,
                             color:
                                 Theme.of(context).canvasColor.withOpacity(0.5),
                           ),
@@ -296,68 +484,81 @@ class PeopleScreenState extends State<PeopleScreen>
   }
 
   Widget buildSectionSelector() {
-    final sectionCount = UserListingType.values.length;
+    final visibleSections = (!showingMembers)
+        ? [
+            PeopleListingType.everyone,
+            PeopleListingType.following,
+            PeopleListingType.friends,
+            PeopleListingType.followers,
+            PeopleListingType.followRequests,
+          ]
+        : [
+            PeopleListingType.members,
+            PeopleListingType.membershipRequests,
+          ];
+    final sectionCount = visibleSections.length;
     final minSectionTabWidth = 110.0 * mq.textScaleFactor;
-    bool scrollSections =
-        (mq.size.width / minSectionTabWidth) < sectionCount.toDouble();
+    final evenSectionWidth =
+        (mq.size.width - homePage.sideNavPaddingWidth) / sectionCount;
+    final visibleSectionWidth = max(minSectionTabWidth, evenSectionWidth);
     final selector = Row(
       children: [
-        ...UserListingType.values
+        ...PeopleListingType.values
             // .where((l) => l != UserListingType.FRIENDS)
             .map((l) {
-          // bool friendsOrFollowers =
-          //     l == UserListingType.FOLLOWERS || l == UserListingType.FOLLOWING;
-          // bool selected = l == listingType ||
-          //     (listingType == UserListingType.FRIENDS && friendsOrFollowers);
+          bool usable = JonlineAccount.loggedIn ||
+              l == PeopleListingType.everyone ||
+              l == PeopleListingType.members;
+          usable &= canShowMembershipRequests ||
+              l != PeopleListingType.membershipRequests;
           var textButton = TextButton(
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(l == listingType
                       ? appState.primaryColor.textColor
                       : null)),
-              // bac: ,
-              // onLongPress: friendsOrFollowers
-              //     ? () {
-              //         setState(() {
-              //           listingType = UserListingType.FRIENDS;
-              //         });
-              //       }
-              //     : null,
-              onPressed: () {
-                setState(() {
-                  listingType = l;
-                });
-              },
+              onPressed: usable
+                  ? () {
+                      setState(() {
+                        listingType = l;
+                      });
+                    }
+                  : null,
               child: Column(
                 children: [
                   const Expanded(child: SizedBox()),
                   Text(
-                    l.name.replaceAll('_', '\n'),
-                    style:
-                        TextStyle(color: l == listingType ? null : Colors.grey),
+                    l.name.constantCase.replaceAll('_', '\n'),
+                    style: TextStyle(
+                        color: l == listingType
+                            ? null
+                            : usable
+                                ? Colors.white
+                                : Colors.grey),
+                    maxLines: l.name.constantCase.contains('_') ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                   ),
                   const Expanded(child: SizedBox()),
                 ],
               ));
-          if (!scrollSections) {
-            return Expanded(
-              child: textButton,
-            );
-          } else {
-            return SizedBox(width: minSectionTabWidth, child: textButton);
-          }
+          bool visible = visibleSections.contains(l);
+          return AnimatedOpacity(
+            duration: animationDuration,
+            opacity: visible ? 1 : 0,
+            child: AnimatedContainer(
+                duration: animationDuration,
+                width: visible ? visibleSectionWidth : 0,
+                child: textButton),
+          );
         })
         // const SizedBox(width: 8)
       ],
     );
-    if (scrollSections) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: selector,
-      );
-    } else {
-      return selector;
-    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: selector,
+    );
   }
 
   follow(User user) async {
@@ -403,7 +604,7 @@ class PeopleScreenState extends State<PeopleScreen>
           ),
           options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
-        user.currentUserFollow = follow;
+        user.currentUserFollow = Follow();
         if (follow.targetUserModeration.passes) {
           user.followerCount -= 1;
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
@@ -471,290 +672,8 @@ class PeopleScreenState extends State<PeopleScreen>
     }
   }
 
-  Widget buildUserItem(User user) {
-    bool following = user.currentUserFollow.targetUserModeration.passes;
-    bool pending_request = user.currentUserFollow.targetUserModeration.pending;
-    bool cannotFollow = appState.selectedAccount == null ||
-        appState.selectedAccount?.userId == user.id;
-    final backgroundColor =
-        appState.selectedAccount?.userId == user.id ? appState.navColor : null;
-    final textColor = backgroundColor?.textColor;
-    // print("user.targetCurrentUserFollow: ${user.targetCurrentUserFollow}");
-    return Card(
-      // color: Colors.blue,
-      color: backgroundColor,
-      child: InkWell(
-        //    onTap: null, //TODO: Do we want to navigate the user somewhere?
-
-        onTap: () {
-          context.navigateNamedTo(
-              'person/${JonlineServer.selectedServer.server}/${user.id}');
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        height: 48,
-                        width: 48,
-                        child: Icon(Icons.account_circle,
-                            size: 32, color: textColor ?? Colors.white),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                      '${JonlineServer.selectedServer.server}/',
-                                      style: textTheme.caption?.copyWith(
-                                          color: textColor?.withOpacity(0.5)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    user.username,
-                                    style: textTheme.headline6
-                                        ?.copyWith(color: textColor),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (user.permissions.contains(Permission.ADMIN))
-                        Tooltip(
-                          message: "${user.username} is an admin",
-                          child: SizedBox(
-                            height: 32,
-                            width: 32,
-                            child: Icon(Icons.admin_panel_settings_outlined,
-                                size: 24, color: textColor ?? Colors.white),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  AnimatedContainer(
-                      duration: animationDuration,
-                      height: user.targetCurrentUserFollow.targetUserModeration
-                              .pending
-                          ? 50 * mq.textScaleFactor
-                          : 0,
-                      child: AnimatedOpacity(
-                        duration: animationDuration,
-                        opacity: user.targetCurrentUserFollow
-                                .targetUserModeration.pending
-                            ? 1
-                            : 0,
-                        child: Column(
-                          children: [
-                            Text("wants to follow you",
-                                style: textTheme.caption?.copyWith(
-                                    color: textColor?.withOpacity(0.5))),
-                            Expanded(
-                              child: Row(children: [
-                                Expanded(
-                                    child: SizedBox(
-                                        height: 32,
-                                        child: TextButton(
-                                            style: ButtonStyle(
-                                                padding:
-                                                    MaterialStateProperty.all(
-                                                        const EdgeInsets.all(
-                                                            0))),
-                                            onPressed: cannotFollow
-                                                ? null
-                                                : () => approve(user),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.check),
-                                                SizedBox(width: 4),
-                                                Text("APPROVE")
-                                              ],
-                                            )))),
-                                // ]),
-                                // Row(children: [
-                                Expanded(
-                                    child: SizedBox(
-                                        height: 32,
-                                        child: TextButton(
-                                            style: ButtonStyle(
-                                                padding:
-                                                    MaterialStateProperty.all(
-                                                        const EdgeInsets.all(
-                                                            0))),
-                                            onPressed: cannotFollow
-                                                ? null
-                                                : () => reject(user),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons
-                                                    .remove_circle_outline),
-                                                SizedBox(width: 4),
-                                                Text("REJECT")
-                                              ],
-                                            ))))
-                              ]),
-                            ),
-                          ],
-                        ),
-                      )),
-                  AnimatedContainer(
-                      duration: animationDuration,
-                      height: user.targetCurrentUserFollow.targetUserModeration
-                              .passes
-                          ? 16 * mq.textScaleFactor
-                          : 0,
-                      child: AnimatedOpacity(
-                        duration: animationDuration,
-                        opacity: user.targetCurrentUserFollow
-                                .targetUserModeration.passes
-                            ? 1
-                            : 0,
-                        child: Text("follows you",
-                            style: textTheme.caption
-                                ?.copyWith(color: textColor?.withOpacity(0.5))),
-                      )),
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Row(
-                            children: [
-                              // Text(
-                              //   "User ID: ",
-                              //   style: textTheme.caption?.copyWith(
-                              //       color: textColor?.withOpacity(0.5)),
-                              //   maxLines: 1,
-                              //   overflow: TextOverflow.ellipsis,
-                              // ),
-                              // Expanded(
-                              //   child: Text(
-                              //     user.id,
-                              //     style: textTheme.caption?.copyWith(
-                              //         color: textColor?.withOpacity(0.5)),
-                              //     maxLines: 1,
-                              //     overflow: TextOverflow.ellipsis,
-                              //   ),
-                              // ),
-                              // const Icon(
-                              //   Icons.account_circle,
-                              //   color: Colors.white,
-                              // ),
-                              // const SizedBox(width: 4),
-                              Text(user.followerCount.toString(),
-                                  style: textTheme.caption?.copyWith(
-                                      color: textColor?.withOpacity(0.5))),
-                              Text(
-                                  " follower${user.followerCount == 1 ? '' : 's'}",
-                                  style: textTheme.caption?.copyWith(
-                                      color: textColor?.withOpacity(0.5))),
-                              const Expanded(child: SizedBox()),
-                              Text("following ${user.followingCount}",
-                                  style: textTheme.caption?.copyWith(
-                                      color: textColor?.withOpacity(0.5))),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Stack(
-                    children: [
-                      IgnorePointer(
-                        ignoring: !(following || pending_request),
-                        child: AnimatedOpacity(
-                          duration: animationDuration,
-                          opacity: following || pending_request ? 1 : 0,
-                          child: Row(children: [
-                            Expanded(
-                                child: SizedBox(
-                                    height: 32,
-                                    child: TextButton(
-                                        style: ButtonStyle(
-                                            padding: MaterialStateProperty.all(
-                                                const EdgeInsets.all(0))),
-                                        onPressed: () => unfollow(user),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                                Icons.remove_circle_outline),
-                                            const SizedBox(width: 4),
-                                            Text(pending_request
-                                                ? "CANCEL REQUEST"
-                                                : "UNFOLLOW")
-                                          ],
-                                        ))))
-                          ]),
-                        ),
-                      ),
-                      IgnorePointer(
-                        ignoring: (following || pending_request),
-                        child: AnimatedOpacity(
-                          duration: animationDuration,
-                          opacity: !(following || pending_request) ? 1 : 0,
-                          child: Row(children: [
-                            Expanded(
-                                child: SizedBox(
-                                    height: 32,
-                                    child: TextButton(
-                                        style: ButtonStyle(
-                                            padding: MaterialStateProperty.all(
-                                                const EdgeInsets.all(0))),
-                                        onPressed: cannotFollow
-                                            ? null
-                                            : () => follow(user),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(Icons.add),
-                                            const SizedBox(width: 4),
-                                            Text(user.defaultFollowModeration
-                                                    .pending
-                                                ? "REQUEST"
-                                                : "FOLLOW")
-                                          ],
-                                        ))))
-                          ]),
-                        ),
-                      )
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

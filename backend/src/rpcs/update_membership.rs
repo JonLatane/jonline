@@ -32,6 +32,7 @@ pub fn update_membership(
         Err(diesel::NotFound) => None,
         Err(_) => return Err(Status::new(Code::Internal, "data_error")),
     };
+    validate_group_user_moderator(&current_user, &user_membership)?;
 
     let self_update = request.user_id == current_user.id.to_proto_id();
     let mut admin = false;

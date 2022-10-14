@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:jonline/jonline_state.dart';
 
 import '../../app_state.dart';
 import '../../generated/posts.pb.dart';
 import '../../models/jonline_server.dart';
 import '../../router/router.gr.dart';
-import '../home_page.dart';
 import 'post_preview.dart';
 
 class PostsScreen extends StatefulWidget {
@@ -21,11 +21,8 @@ class PostsScreen extends StatefulWidget {
   PostsScreenState createState() => PostsScreenState();
 }
 
-class PostsScreenState extends State<PostsScreen>
+class PostsScreenState extends JonlineState<PostsScreen>
     with AutoRouteAwareStateMixin<PostsScreen> {
-  late AppState appState;
-  late HomePageState homePage;
-
   ScrollController scrollController = ScrollController();
 
   @override
@@ -37,8 +34,6 @@ class PostsScreenState extends State<PostsScreen>
   void initState() {
     // print("PostsPage.initState");
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(onAccountsChanged);
     for (var n in [
       appState.posts,
@@ -85,15 +80,14 @@ class PostsScreenState extends State<PostsScreen>
     }
   }
 
-  bool get useList => MediaQuery.of(context).size.width < 450;
-  TextTheme get textTheme => Theme.of(context).textTheme;
+  bool get useList => mq.size.width < 450;
   @override
   Widget build(BuildContext context) {
     final List<Post> postList = appState.posts.value.posts;
     return Scaffold(
       // appBar: ,
       body: RefreshIndicator(
-        displacement: MediaQuery.of(context).padding.top + 40,
+        displacement: mq.padding.top + 40,
         onRefresh: () async =>
             await appState.updatePosts(showMessage: showSnackBar),
         child: ScrollConfiguration(
@@ -158,8 +152,7 @@ class PostsScreenState extends State<PostsScreen>
                         // For example, if your items have unique ids, this method should check their id equality.
                         areItemsTheSame: (a, b) => a.id == b.id,
                         padding: EdgeInsets.only(
-                            top: MediaQuery.of(context).padding.top,
-                            bottom: MediaQuery.of(context).padding.bottom),
+                            top: mq.padding.top, bottom: mq.padding.bottom),
                         // Called, as needed, to build list item widgets.
                         // List items are only built when they're scrolled into view.
                         itemBuilder: (context, animation, post, index) {
@@ -211,6 +204,7 @@ class PostsScreenState extends State<PostsScreen>
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

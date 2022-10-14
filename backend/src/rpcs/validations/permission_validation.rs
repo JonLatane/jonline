@@ -3,7 +3,7 @@ use tonic::{Code, Status};
 use crate::{models, protos};
 use crate::conversions::*;
 
-pub fn validate_group_or_general_admin(
+pub fn validate_group_admin(
     user: &models::User,
     membership: &Option<models::Membership>
 ) -> Result<(), Status> {
@@ -12,6 +12,19 @@ pub fn validate_group_or_general_admin(
         Err(_) => match membership {
             Some(membership) => validate_group_permission(membership, protos::Permission::Admin),
             None => Err(Status::new(Code::PermissionDenied, "admin_group_membership_required")),
+        },
+    }
+}
+
+pub fn validate_group_user_moderator(
+    user: &models::User,
+    membership: &Option<models::Membership>
+) -> Result<(), Status> {
+    match validate_group_admin(user, membership) {
+        Ok(_) => Ok(()),
+        Err(_) => match membership {
+            Some(membership) => Ok(validate_group_permission(membership, protos::Permission::ModerateUsers)?),
+            None => Err(Status::new(Code::PermissionDenied, "moderator_group_membership_required")),
         },
     }
 }

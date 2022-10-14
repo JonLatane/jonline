@@ -5,6 +5,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/jonotifier.dart';
 import 'package:jonline/models/settings.dart';
 
@@ -13,7 +14,6 @@ import '../../generated/posts.pb.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_operations.dart';
 import '../../router/router.gr.dart';
-import '../home_page.dart';
 import 'post_preview.dart';
 
 class ThreadedReplies extends StatefulWidget {
@@ -34,10 +34,7 @@ class ThreadedReplies extends StatefulWidget {
   ThreadedRepliesState createState() => ThreadedRepliesState();
 }
 
-class ThreadedRepliesState extends State<ThreadedReplies> {
-  late AppState appState;
-  late HomePageState homePage;
-  TextTheme get textTheme => Theme.of(context).textTheme;
+class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
   List<ThreadedReply> replies = [];
   LinkedHashSet<ThreadedReply> subRepliesLoaded = LinkedHashSet();
   Set<ThreadedReply> subRepliesLoading = {};
@@ -147,18 +144,16 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
     });
   }
 
-  bool canReply = JonlineAccount.selectedAccount != null;
+  bool canReply = JonlineAccount.loggedIn;
   updateState() {
     setState(() {
-      canReply = JonlineAccount.selectedAccount != null;
+      canReply = JonlineAccount.loggedIn;
     });
   }
 
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(updateState);
 
     widget.updateReplies?.addListener(updateReplies);
@@ -270,6 +265,7 @@ class ThreadedRepliesState extends State<ThreadedReplies> {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

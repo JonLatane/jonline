@@ -108,6 +108,12 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/DeleteMembership',
       ($5.Membership value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
+  static final _$getMembers =
+      $grpc.ClientMethod<$5.GetMembersRequest, $5.GetMembersResponse>(
+          '/jonline.Jonline/GetMembers',
+          ($5.GetMembersRequest value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) =>
+              $5.GetMembersResponse.fromBuffer(value));
   static final _$getPosts = $grpc.ClientMethod<$6.GetPostsRequest, $6.Posts>(
       '/jonline.Jonline/GetPosts',
       ($6.GetPostsRequest value) => value.writeToBuffer(),
@@ -238,6 +244,12 @@ class JonlineClient extends $grpc.Client {
   $grpc.ResponseFuture<$0.Empty> deleteMembership($5.Membership request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteMembership, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$5.GetMembersResponse> getMembers(
+      $5.GetMembersRequest request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getMembers, request, options: options);
   }
 
   $grpc.ResponseFuture<$6.Posts> getPosts($6.GetPostsRequest request,
@@ -410,6 +422,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $5.Membership.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.GetMembersRequest, $5.GetMembersResponse>(
+        'GetMembers',
+        getMembers_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.GetMembersRequest.fromBuffer(value),
+        ($5.GetMembersResponse value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$6.GetPostsRequest, $6.Posts>(
         'GetPosts',
         getPosts_Pre,
@@ -553,6 +572,11 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return deleteMembership(call, await request);
   }
 
+  $async.Future<$5.GetMembersResponse> getMembers_Pre($grpc.ServiceCall call,
+      $async.Future<$5.GetMembersRequest> request) async {
+    return getMembers(call, await request);
+  }
+
   $async.Future<$6.Posts> getPosts_Pre(
       $grpc.ServiceCall call, $async.Future<$6.GetPostsRequest> request) async {
     return getPosts(call, await request);
@@ -621,6 +645,8 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $5.Membership request);
   $async.Future<$0.Empty> deleteMembership(
       $grpc.ServiceCall call, $5.Membership request);
+  $async.Future<$5.GetMembersResponse> getMembers(
+      $grpc.ServiceCall call, $5.GetMembersRequest request);
   $async.Future<$6.Posts> getPosts(
       $grpc.ServiceCall call, $6.GetPostsRequest request);
   $async.Future<$6.Posts> queryPosts(

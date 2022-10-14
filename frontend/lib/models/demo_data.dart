@@ -174,7 +174,8 @@ final List<List<String>> _demoNameComponents = [
     'jimmy',
     'shan',
     'han',
-    'mike'
+    'mike',
+    'hil'
   ],
   [
     'berly',
@@ -186,7 +187,8 @@ final List<List<String>> _demoNameComponents = [
     'frey',
     'nifer',
     'berly',
-    'bo'
+    'bo',
+    'ary'
   ]
 ];
 

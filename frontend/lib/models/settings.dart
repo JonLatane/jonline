@@ -75,6 +75,16 @@ class Settings {
     }
   }
 
+  static ValueNotifier<bool> keepSideNavExpandedListener = ValueNotifier(false);
+  static bool get keepSideNavExpanded => keepSideNavExpandedListener.value;
+  static set keepSideNavExpanded(bool v) {
+    {
+      keepSideNavExpandedListener.value = v;
+      Future.microtask(
+          () async => appStorage.setBool("keep_side_nav_expanded", v));
+    }
+  }
+
   static bool _showServers = false;
   static bool get showServers => _showServers;
   static set showServers(bool v) {
@@ -93,6 +103,8 @@ class Settings {
     showSettingsTabListener.value =
         appStorage.getBool("show_settings_tab") ?? false;
     showPeopleTabListener.value = appStorage.getBool("show_people_tab") ?? true;
+    keepSideNavExpandedListener.value =
+        appStorage.getBool("keep_side_nav_expanded") ?? false;
     showGroupsTabListener.value = appStorage.getBool("show_groups_tab") ?? true;
     _showServers = appStorage.getBool("show_servers") ?? false;
   }

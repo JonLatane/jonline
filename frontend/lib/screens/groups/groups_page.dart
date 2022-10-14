@@ -2,13 +2,12 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
-import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/screens/groups/group_details_page.dart';
+import 'package:jonline/jonline_state.dart';
+import 'package:jonline/screens/groups/group_preview.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 
@@ -16,9 +15,6 @@ import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
-import '../../models/server_errors.dart';
-import '../../router/router.gr.dart';
-import '../home_page.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({Key? key}) : super(key: key);
@@ -27,18 +23,13 @@ class GroupsScreen extends StatefulWidget {
   GroupsScreenState createState() => GroupsScreenState();
 }
 
-class GroupsScreenState extends State<GroupsScreen>
+class GroupsScreenState extends JonlineState<GroupsScreen>
     with AutoRouteAwareStateMixin<GroupsScreen> {
-  late AppState appState;
-  late HomePageState homePage;
-  TextTheme get textTheme => Theme.of(context).textTheme;
-  MediaQueryData get mq => MediaQuery.of(context);
-
   GroupListingType listingType = GroupListingType.ALL_GROUPS;
   Map<GroupListingType, GetGroupsResponse> listingData = {};
   ScrollController scrollController = ScrollController();
-  bool get useList => MediaQuery.of(context).size.width < 450;
-  double get headerHeight => 48 * MediaQuery.of(context).textScaleFactor;
+  bool get useList => mq.size.width < 450;
+  double get headerHeight => 48 * mq.textScaleFactor;
 
   @override
   void didPushNext() {
@@ -49,8 +40,6 @@ class GroupsScreenState extends State<GroupsScreen>
   void initState() {
     // print("GroupListPage.initState");
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     appState.accounts.addListener(updateState);
     for (var n in [
       appState.groups,
@@ -97,23 +86,53 @@ class GroupsScreenState extends State<GroupsScreen>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    List<Group> groupList = appState.groups.value;
-    if (homePage.groupsSearch.value &&
-        homePage.groupsSearchController.text != '') {
-      groupList = groupList.where((group) {
+  List<Group> get groupList {
+    List<Group> result = appState.groups.value;
+    switch (listingType) {
+      case GroupListingType.ALL_GROUPS:
+        break;
+      case GroupListingType.MY_GROUPS:
+        result = result
+            .where((u) =>
+                u.currentUserMembership.groupModeration.passes &&
+                u.currentUserMembership.userModeration.passes)
+            .toList();
+        break;
+      case GroupListingType.REQUESTED:
+        result = result
+            .where((u) =>
+                u.currentUserMembership.groupModeration.pending &&
+                u.currentUserMembership.userModeration.passes)
+            .toList();
+        break;
+      case GroupListingType.INVITED:
+        result = result
+            .where((u) => u.currentUserMembership.userModeration.pending)
+            .toList();
+        break;
+    }
+    if (homePage.peopleSearch.value &&
+        homePage.peopleSearchController.text != '') {
+      result = result.where((group) {
         return group.name
             .toLowerCase()
-            .contains(homePage.groupsSearchController.text.toLowerCase());
+            .contains(homePage.peopleSearchController.text.toLowerCase());
       }).toList();
+    }
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!JonlineAccount.loggedIn) {
+      listingType = GroupListingType.ALL_GROUPS;
     }
     return Scaffold(
       // appBar: ,
       body: Stack(
         children: [
           RefreshIndicator(
-            displacement: MediaQuery.of(context).padding.top + 40,
+            displacement: mq.padding.top + 40,
             onRefresh: () async =>
                 await appState.updateGroups(showMessage: showSnackBar),
             child: ScrollConfiguration(
@@ -144,9 +163,7 @@ class GroupsScreenState extends State<GroupsScreen>
                                     Center(
                                       child: Container(
                                         constraints: BoxConstraints(
-                                            maxWidth: 250 *
-                                                MediaQuery.of(context)
-                                                    .textScaleFactor),
+                                            maxWidth: 250 * mq.textScaleFactor),
                                         child: Column(
                                           children: [
                                             Text(
@@ -220,9 +237,8 @@ class GroupsScreenState extends State<GroupsScreen>
                             items: groupList,
                             areItemsTheSame: (a, b) => a.id == b.id,
                             padding: EdgeInsets.only(
-                                top: MediaQuery.of(context).padding.top +
-                                    headerHeight,
-                                bottom: MediaQuery.of(context).padding.bottom),
+                                top: mq.padding.top + headerHeight,
+                                bottom: mq.padding.bottom),
                             itemBuilder: (context, animation, group, index) {
                               return SizeFadeTransition(
                                   sizeFraction: 0.7,
@@ -239,9 +255,8 @@ class GroupsScreenState extends State<GroupsScreen>
                             physics: const AlwaysScrollableScrollPhysics(),
                             controller: scrollController,
                             padding: EdgeInsets.only(
-                                top: MediaQuery.of(context).padding.top +
-                                    headerHeight,
-                                bottom: MediaQuery.of(context).padding.bottom),
+                                top: mq.padding.top + headerHeight,
+                                bottom: mq.padding.bottom),
                             crossAxisCount: max(
                                 2,
                                 min(
@@ -267,7 +282,7 @@ class GroupsScreenState extends State<GroupsScreen>
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Container(
-                            height: MediaQuery.of(context).padding.top,
+                            height: mq.padding.top,
                             color:
                                 Theme.of(context).canvasColor.withOpacity(0.5),
                           ),
@@ -292,306 +307,72 @@ class GroupsScreenState extends State<GroupsScreen>
   }
 
   Widget buildSectionSelector() {
-    final sectionCount = GroupListingType.values.length;
+    final visibleSections = [
+      GroupListingType.ALL_GROUPS,
+      GroupListingType.MY_GROUPS,
+      GroupListingType.REQUESTED
+    ];
+    final sectionCount = visibleSections.length;
     final minSectionTabWidth = 110.0 * mq.textScaleFactor;
-    bool scrollSections =
-        (mq.size.width / minSectionTabWidth) < sectionCount.toDouble();
+    final evenSectionWidth =
+        (mq.size.width - homePage.sideNavPaddingWidth) / sectionCount;
+    final visibleSectionWidth = max(minSectionTabWidth, evenSectionWidth);
     final selector = Row(
       children: [
-        ...GroupListingType.values.map((e) {
+        ...GroupListingType.values.map((l) {
+          var usable =
+              JonlineAccount.loggedIn || l == GroupListingType.ALL_GROUPS;
+
           var textButton = TextButton(
               style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(e == listingType
+                  backgroundColor: MaterialStateProperty.all(l == listingType
                       ? appState.primaryColor.textColor
                       : null)),
               // bac: ,
-              onPressed: () {
-                setState(() {
-                  listingType = e;
-                });
-              },
+              onPressed: usable
+                  ? () {
+                      setState(() {
+                        listingType = l;
+                      });
+                    }
+                  : null,
               child: Column(
                 children: [
                   const Expanded(child: SizedBox()),
                   Text(
-                    e.name.replaceAll('_', '\n'),
-                    style:
-                        TextStyle(color: e == listingType ? null : Colors.grey),
+                    l.name.replaceAll('_', '\n'),
+                    style: TextStyle(
+                        color: l == listingType
+                            ? null
+                            : usable
+                                ? Colors.white
+                                : Colors.grey),
                     textAlign: TextAlign.center,
                   ),
                   const Expanded(child: SizedBox()),
                 ],
               ));
-          if (!scrollSections) {
-            return Expanded(
-              child: textButton,
-            );
-          } else {
-            return SizedBox(width: minSectionTabWidth, child: textButton);
-          }
+          return AnimatedContainer(
+              duration: animationDuration,
+              width: visibleSectionWidth,
+              child: textButton);
         })
         // const SizedBox(width: 8)
       ],
     );
-    if (scrollSections) {
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: selector,
-      );
-    } else {
-      return selector;
-    }
-  }
-
-  joinGroup(Group group) async {
-    try {
-      final membership =
-          await (await JonlineAccount.selectedAccount!.getClient())!
-              .createMembership(
-                  Membership(
-                    userId: JonlineAccount.selectedAccount!.userId,
-                    groupId: group.id,
-                  ),
-                  options:
-                      JonlineAccount.selectedAccount!.authenticatedCallOptions);
-      setState(() {
-        group.currentUserMembership = membership;
-        if (membership.groupModeration.passes &&
-            membership.userModeration.passes) {
-          group.memberCount += 1;
-        }
-      });
-      showSnackBar(
-          '${group.defaultMembershipModeration.pending ? "Requested to join" : "Joined"} ${group.name}.');
-    } catch (e) {
-      showSnackBar(formatServerError(e));
-    }
-  }
-
-  leaveGroup(Group group) async {
-    final membership = group.currentUserMembership;
-    try {
-      await (await JonlineAccount.selectedAccount!.getClient())!
-          .deleteMembership(
-              Membership(
-                userId: JonlineAccount.selectedAccount!.userId,
-                groupId: group.id,
-              ),
-              options:
-                  JonlineAccount.selectedAccount!.authenticatedCallOptions);
-      setState(() {
-        group.currentUserMembership = Membership();
-
-        if (membership.groupModeration.passes &&
-            membership.userModeration.passes) {
-          group.memberCount -= 1;
-        }
-      });
-      showSnackBar(
-          '${membership.groupModeration.pending ? "Canceled request for" : "Left"} ${group.name}.');
-    } catch (e) {
-      showSnackBar(formatServerError(e));
-    }
-  }
-
-  Widget buildGroupItem(Group group) {
-    bool isMember = group.currentUserMembership.groupModeration.passes;
-    bool invitePending = group.currentUserMembership.groupModeration.pending;
-    bool canJoin = appState.selectedAccount != null;
-    bool selected = appState.selectedGroup.value == group;
-    final backgroundColor = selected ? appState.navColor : null;
-    final textColor = backgroundColor?.textColor;
-    return Card(
-      color: backgroundColor,
-      // color:
-      //     appState.selectedAccount?.id == group.id ? appState.navColor : null,
-      child: InkWell(
-        onLongPress: () {
-          if (selected) {
-            appState.selectedGroup.value = null;
-          } else {
-            appState.selectedGroup.value = group;
-          }
-        },
-        onTap: () {
-          context.navigateTo(GroupDetailsRoute(
-              groupId: group.id, server: JonlineServer.selectedServer.server));
-        }, //TODO: Do we want to navigate the group somewhere?
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        height: 48,
-                        width: 48,
-                        child: Icon(Icons.group_work_outlined,
-                            size: 32, color: textColor ?? Colors.white),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                      '${JonlineServer.selectedServer.server}/group/',
-                                      style: textTheme.caption?.copyWith(
-                                        color: textColor?.withOpacity(0.5),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    group.name,
-                                    style: textTheme.headline6?.copyWith(
-                                      color: textColor,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Row(
-                            children: [
-                              Text(
-                                "Group ID: ",
-                                style: textTheme.caption?.copyWith(
-                                  color: textColor?.withOpacity(0.5),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  group.id,
-                                  style: textTheme.caption?.copyWith(
-                                    color: textColor?.withOpacity(0.5),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          Icons.account_circle,
-                          color: textColor ?? Colors.white,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          group.memberCount.toString(),
-                          style: textTheme.caption?.copyWith(
-                            color: textColor?.withOpacity(0.5),
-                          ),
-                        ),
-                        Text(
-                          " member${group.memberCount == 1 ? '' : 's'}",
-                          style: textTheme.caption?.copyWith(
-                            color: textColor?.withOpacity(0.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Stack(
-                    children: [
-                      IgnorePointer(
-                        ignoring: !(isMember || invitePending),
-                        child: AnimatedOpacity(
-                          duration: animationDuration,
-                          opacity: isMember || invitePending ? 1 : 0,
-                          child: Row(children: [
-                            Expanded(
-                                child: SizedBox(
-                                    height: 32,
-                                    child: TextButton(
-                                        style: ButtonStyle(
-                                            padding: MaterialStateProperty.all(
-                                                const EdgeInsets.all(0))),
-                                        onPressed: () => leaveGroup(group),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                                Icons.remove_circle_outline),
-                                            const SizedBox(width: 4),
-                                            Text(invitePending
-                                                ? "CANCEL REQUEST"
-                                                : "LEAVE")
-                                          ],
-                                        ))))
-                          ]),
-                        ),
-                      ),
-                      IgnorePointer(
-                          ignoring: (isMember || invitePending),
-                          child: AnimatedOpacity(
-                              duration: animationDuration,
-                              opacity: !(isMember || invitePending) ? 1 : 0,
-                              child: Row(children: [
-                                Expanded(
-                                    child: SizedBox(
-                                        height: 32,
-                                        child: TextButton(
-                                            style: ButtonStyle(
-                                                padding:
-                                                    MaterialStateProperty.all(
-                                                        const EdgeInsets.all(
-                                                            0))),
-                                            onPressed: canJoin
-                                                ? () => joinGroup(group)
-                                                : null,
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                const Icon(Icons.add),
-                                                const SizedBox(width: 4),
-                                                Text(group
-                                                        .defaultMembershipModeration
-                                                        .pending
-                                                    ? "REQUEST"
-                                                    : "JOIN")
-                                              ],
-                                            ))))
-                              ]))),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: selector,
     );
   }
 
+  Widget buildGroupItem(Group group) {
+    return GroupPreview(
+        server: JonlineServer.selectedServer.server, group: group);
+  }
+
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

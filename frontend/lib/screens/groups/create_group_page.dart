@@ -1,8 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
-import 'package:recase/recase.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
@@ -15,7 +15,6 @@ import '../../models/jonline_clients.dart';
 import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
 import '../../router/router.gr.dart';
-import '../home_page.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -26,11 +25,7 @@ class CreateGroupPage extends StatefulWidget {
   CreateGroupPageState createState() => CreateGroupPageState();
 }
 
-class CreateGroupPageState extends State<CreateGroupPage> {
-  late AppState appState;
-  late HomePageState homePage;
-  TextTheme get textTheme => Theme.of(context).textTheme;
-
+class CreateGroupPageState extends JonlineState<CreateGroupPage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final ValueNotifier<bool> enabled = ValueNotifier<bool>(true);
@@ -45,8 +40,6 @@ class CreateGroupPageState extends State<CreateGroupPage> {
   @override
   void initState() {
     super.initState();
-    appState = context.findRootAncestorStateOfType<AppState>()!;
-    homePage = context.findRootAncestorStateOfType<HomePageState>()!;
     homePage.createGroup.addListener(doCreate);
     nameController.addListener(() {
       setState(() {});
@@ -131,12 +124,6 @@ class CreateGroupPageState extends State<CreateGroupPage> {
     }
     context.replaceRoute(GroupDetailsRoute(
         groupId: group.id, server: JonlineServer.selectedServer.server));
-    final appState = context.findRootAncestorStateOfType<AppState>();
-    if (appState == null) {
-      doingCreate = false;
-
-      return;
-    }
 
     appState.groups.value = [group] + appState.groups.value;
     Future.delayed(const Duration(seconds: 3),
@@ -152,7 +139,7 @@ class CreateGroupPageState extends State<CreateGroupPage> {
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
-          SizedBox(height: MediaQuery.of(context).padding.top),
+          SizedBox(height: mq.padding.top),
           Expanded(
             child: Row(
               children: [
@@ -281,13 +268,14 @@ class CreateGroupPageState extends State<CreateGroupPage> {
               ],
             ),
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom),
+          SizedBox(height: mq.padding.bottom),
         ],
       ),
     ));
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

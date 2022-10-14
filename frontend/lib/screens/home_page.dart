@@ -42,6 +42,7 @@ class RouteDestination {
 
 class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AppState appState;
+  MediaQueryData get mq => MediaQuery.of(context);
 
   Jonotifier serverConfigPageFocused = Jonotifier();
 
@@ -73,7 +74,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool _sideNavExpanded = false;
   NativeDeviceOrientation orientation = NativeDeviceOrientation.unknown;
 
-  get useSideNav => MediaQuery.of(context).size.width > 600;
+  get useSideNav => mq.size.width > 600;
   TextTheme get textTheme => Theme.of(context).textTheme;
   // get destinations => [
   //       const RouteDestination(
@@ -118,6 +119,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     Settings.showSettingsTabListener.addListener(updateState);
     Settings.showPeopleTabListener.addListener(updateState);
     Settings.showGroupsTabListener.addListener(updateState);
+    Settings.keepSideNavExpandedListener.addListener(updateState);
     peopleSearch.addListener(updateState);
     groupsSearch.addListener(updateState);
     titleServerNotifier.addListener(updateState);
@@ -145,6 +147,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     Settings.showSettingsTabListener.removeListener(updateState);
     Settings.showPeopleTabListener.removeListener(updateState);
     Settings.showGroupsTabListener.removeListener(updateState);
+    Settings.keepSideNavExpandedListener.removeListener(updateState);
     peopleSearch.removeListener(updateState);
     groupsSearch.removeListener(updateState);
     titleServerNotifier.removeListener(updateState);
@@ -154,7 +157,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   updateState() {
-    print("HomePageState.updateState()");
+    // print("HomePageState.updateState()");
     setState(() {});
   }
 
@@ -250,7 +253,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   Row(
                     children: [
                       buildLeftPadding(),
-                      if (useSideNav) const SizedBox(width: sideNavBaseWidth),
+                      AnimatedContainer(
+                          duration: animationDuration,
+                          width: sideNavPaddingWidth),
                       Expanded(child: child),
                       buildRightPadding(),
                     ],
@@ -273,19 +278,31 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget buildLeftPadding() => AnimatedContainer(
         duration: animationDuration,
         width: (orientation == NativeDeviceOrientation.landscapeLeft)
-            ? MediaQuery.of(context).padding.left *
-                    (useSideNav && sideNavExpanded ? 0.7 : 0.7) +
+            ? mq.padding.left * (useSideNav && sideNavExpanded ? 0.7 : 0.7) +
                 (useSideNav ? 4 : 0)
             : 0,
       );
 
   Widget buildRightPadding() => SizedBox(
         width: (orientation == NativeDeviceOrientation.landscapeRight)
-            ? MediaQuery.of(context).padding.right * 0.7
+            ? mq.padding.right * 0.7
             : 0,
       );
 
   static const sideNavBaseWidth = 48.0;
+  double get sideNavExpandedWidth =>
+      (MediaQuery.of(context).size.width > 600 ? 150 : 110) *
+      mq.textScaleFactor;
+  double get sideNavPaddingWidth => useSideNav
+      ? Settings.keepSideNavExpanded
+          ? sideNavWidth
+          : sideNavBaseWidth
+      : 0;
+  double get sideNavWidth => useSideNav
+      ? _sideNavExpanded
+          ? sideNavExpandedWidth
+          : sideNavBaseWidth
+      : 0;
 
   bool get showPeople =>
       Settings.showPeopleTab || context.topRoute.name == "PeopleRoute";
@@ -296,8 +313,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   List<BottomNavigationBarItem> get navigationItems => [
         const BottomNavigationBarItem(
             icon: Icon(Icons.group_work_outlined), label: 'Groups'),
-        const BottomNavigationBarItem(
-            icon: Icon(Icons.people), label: 'People'),
+        BottomNavigationBarItem(
+            icon: const Icon(Icons.people),
+            label: appState.selectedGroup.value == null ? 'People' : 'Members'),
         const BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble), label: 'Posts'),
         const BottomNavigationBarItem(
@@ -347,13 +365,13 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     TabsRouter tabsRouter = context.tabsRouter;
     final hideBottomNav = tabsRouter.topMatch.meta['hideBottomNav'] == true;
     final items = navigationItems;
-    final width = MediaQuery.of(context).size.width;
+    final width = mq.size.width;
     final numButtons = 3 +
         (showSettings ? 1 : 0) +
         (showGroups ? 1 : 0) +
         (showPeople ? 1 : 0);
     final buttonWidth = width / numButtons;
-    final bottomPadding = MediaQuery.of(context).padding.bottom * 0.7;
+    final bottomPadding = mq.padding.bottom * 0.7;
     return hideBottomNav
         ? const SizedBox.shrink()
         : GestureDetector(
@@ -386,7 +404,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       height: 72 + bottomPadding,
                       // width: _sideNavExpanded
                       //     ? (MediaQuery.of(context).size.width > 600 ? 150 : 110) *
-                      //         MediaQuery.of(context).textScaleFactor
+                      //        mq.textScaleFactor
                       //     : sideNavBaseWidth,
                       child: Column(
                         children: [
@@ -440,10 +458,13 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                         tabsRouter
                                                             .setActiveIndex(
                                                                 index);
-                                                        setState(() {
-                                                          _sideNavExpanded =
-                                                              false;
-                                                        });
+                                                        if (!Settings
+                                                            .keepSideNavExpanded) {
+                                                          setState(() {
+                                                            _sideNavExpanded =
+                                                                false;
+                                                          });
+                                                        }
                                                         // }
                                                       },
                                                       child: Padding(
@@ -552,10 +573,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
               child: AnimatedContainer(
                 color: Theme.of(context).canvasColor.withOpacity(0.7),
                 duration: animationDuration,
-                width: _sideNavExpanded
-                    ? (MediaQuery.of(context).size.width > 600 ? 150 : 110) *
-                        MediaQuery.of(context).textScaleFactor
-                    : sideNavBaseWidth,
+                width: sideNavWidth,
                 child: Column(
                   children: [
                     const SizedBox(
@@ -600,10 +618,12 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                 }
                                                 tabsRouter
                                                     .setActiveIndex(index);
-                                                setState(() {
-                                                  _sideNavExpanded = false;
-                                                });
-                                                // }
+                                                if (!Settings
+                                                    .keepSideNavExpanded) {
+                                                  setState(() {
+                                                    _sideNavExpanded = false;
+                                                  });
+                                                }
                                               },
                                               child: Padding(
                                                   padding: const EdgeInsets
@@ -695,6 +715,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),

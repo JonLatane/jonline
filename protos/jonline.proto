@@ -67,6 +67,7 @@ service Jonline {
   // Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group.
   rpc UpdateMembership(Membership) returns (Membership) {}
   rpc DeleteMembership(Membership) returns (google.protobuf.Empty) {}
+  rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {}
 
   // Gets Posts. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.

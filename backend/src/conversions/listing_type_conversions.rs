@@ -9,13 +9,12 @@ pub const ALL_GROUP_LISTING_TYPES: [GroupListingType; 4] = [
     GroupListingType::Invited,
 ];
 
-pub const ALL_USER_LISTING_TYPES: [UserListingType; 6] = [
+pub const ALL_USER_LISTING_TYPES: [UserListingType; 5] = [
   UserListingType::Everyone,
   UserListingType::Following,
   UserListingType::Friends,
   UserListingType::Followers,
-  UserListingType::FollowRequests,
-  UserListingType::GroupRequests,
+  UserListingType::FollowRequests
 ];
 
 pub const ALL_POST_LISTING_TYPES: [PostListingType; 4] = [

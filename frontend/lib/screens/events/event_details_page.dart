@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:jonline/jonline_state.dart';
 
 import '../../db.dart';
 
@@ -15,7 +16,7 @@ class EventDetailsPage extends StatefulWidget {
   EventDetailsPageState createState() => EventDetailsPageState();
 }
 
-class EventDetailsPageState extends State<EventDetailsPage> {
+class EventDetailsPageState extends JonlineState<EventDetailsPage> {
   int counter = 1;
 
   @override
@@ -28,8 +29,7 @@ class EventDetailsPageState extends State<EventDetailsPage> {
         : Scaffold(
             body: Padding(
               padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top,
-                  bottom: MediaQuery.of(context).padding.bottom),
+                  top: mq.padding.top, bottom: mq.padding.bottom),
               child: SizedBox(
                 width: double.infinity,
                 child: Hero(
