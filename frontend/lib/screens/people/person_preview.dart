@@ -88,13 +88,13 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
       membership?.userModeration.passes == true;
   bool get wantsToJoinGroup => membership?.groupModeration.pending == true;
 
+  bool get currentUserProfile => user.id == appState.selectedAccount?.userId;
+
   @override
   Widget build(BuildContext context) {
     bool following = user.currentUserFollow.targetUserModeration.passes;
-    bool cannotFollow = appState.selectedAccount == null ||
-        appState.selectedAccount?.userId == user.id;
-    final backgroundColor =
-        appState.selectedAccount?.userId == user.id ? appState.navColor : null;
+    bool cannotFollow = appState.selectedAccount == null || currentUserProfile;
+    final backgroundColor = currentUserProfile ? appState.navColor : null;
     final textColor = backgroundColor?.textColor;
     // print("user.targetCurrentUserFollow: ${user.targetCurrentUserFollow}");
     return Card(
@@ -401,12 +401,15 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            const Icon(Icons.add),
+                                            if (!currentUserProfile)
+                                              const Icon(Icons.add),
                                             const SizedBox(width: 4),
-                                            Text(user.defaultFollowModeration
-                                                    .pending
-                                                ? "REQUEST"
-                                                : "FOLLOW")
+                                            Text(currentUserProfile
+                                                ? "YOU"
+                                                : user.defaultFollowModeration
+                                                        .pending
+                                                    ? "REQUEST"
+                                                    : "FOLLOW")
                                           ],
                                         ))))
                           ]),
