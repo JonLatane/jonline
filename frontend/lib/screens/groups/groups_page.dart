@@ -247,7 +247,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                             controller: scrollController,
                             padding: EdgeInsets.only(
                                 top: mq.padding.top + headerHeight,
-                                bottom: mq.padding.bottom),
+                                bottom: mq.padding.bottom + 48),
                             crossAxisCount: max(
                                 2,
                                 min(

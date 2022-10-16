@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
@@ -195,6 +196,26 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                     ],
                   ),
                   const SizedBox(height: 4),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              constraints: const BoxConstraints(maxHeight: 48),
+                              child: Opacity(
+                                opacity: 0.5,
+                                child: Transform.scale(
+                                  scale: 0.8,
+                                  child: Markdown(
+                                    data: group.description,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: Row(

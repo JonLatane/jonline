@@ -95,14 +95,14 @@ fn create_membership_for_self(
 fn invite_other_user(
     request: Membership,
     group: models::Group,
-    _user: models::User,
+    user: models::User,
     user_membership: models::Membership,
     conn: &mut PgPooledConnection,
 ) -> Result<models::Membership, Status> {
     let (group_moderation, initial_permissions) = match (
         group.default_membership_moderation.to_proto_moderation(),
         validate_any_group_permission(
-            &user_membership,
+            &user_membership, &user,
             vec![Permission::Admin, Permission::ModerateUsers],
         ),
     ) {

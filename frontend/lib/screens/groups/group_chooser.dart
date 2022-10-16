@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 
@@ -274,6 +276,9 @@ Widget _groupItem(Group g, BuildContext context) {
                     ],
                   ),
                 ),
+                if (g.currentUserMembership.permissions
+                    .contains(Permission.RUN_BOTS))
+                  const Iconify(FaSolid.robot, size: 16),
                 if (g.currentUserMembership.permissions
                     .contains(Permission.ADMIN))
                   const Icon(Icons.admin_panel_settings_outlined, size: 16)

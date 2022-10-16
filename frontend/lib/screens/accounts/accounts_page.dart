@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/jonline_state.dart';
@@ -606,24 +608,40 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               if (account.allowInsecure)
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    left: 8.0,
-                                  ),
-                                  child: Transform.translate(
-                                      offset: const Offset(0, 0),
-                                      child: Tooltip(
-                                        message:
-                                            "The connection may be insecure.",
+                                Tooltip(
+                                  message: "The connection may be insecure.",
+                                  child: Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 8.0,
+                                      ),
+                                      child: Transform.translate(
+                                        offset: const Offset(0, 0),
                                         child: Icon(Icons.warning,
                                             size: 16, color: textColor),
                                       )),
                                 ),
                             ],
                           ),
+                          if (account.permissions.contains(Permission.RUN_BOTS))
+                            Tooltip(
+                              message: "This account can run bots.",
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: SizedBox(
+                                  height: 18,
+                                  child: Transform.translate(
+                                    offset: const Offset(0, -1),
+                                    child: Iconify(FaSolid.robot,
+                                        size: 14,
+                                        color: textColor ?? Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ),
                           if (account.permissions.contains(Permission.ADMIN))
                             SizedBox(
                               height: 48,
+                              width: 48,
                               child: TextButton(
                                 onPressed: () {
                                   context.navigateNamedTo(

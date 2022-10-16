@@ -1,5 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
@@ -100,324 +102,342 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
     return Card(
       // color: Colors.blue,
       color: backgroundColor,
-      child: InkWell(
-        onTap: () {
-          context.navigateNamedTo(
-              'person/${JonlineServer.selectedServer.server}/${user.id}');
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        height: 48,
-                        width: 48,
-                        child: Icon(Icons.account_circle,
-                            size: 32, color: textColor ?? Colors.white),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                      '${JonlineServer.selectedServer.server}/',
-                                      style: textTheme.caption?.copyWith(
-                                          color: textColor?.withOpacity(0.5)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    user.username,
-                                    style: textTheme.headline6
-                                        ?.copyWith(color: textColor),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (user.permissions.contains(Permission.ADMIN))
-                        Tooltip(
-                          message: "${user.username} is an admin",
-                          child: SizedBox(
-                            height: 32,
-                            width: 32,
-                            child: Icon(Icons.admin_panel_settings_outlined,
-                                size: 24, color: textColor ?? Colors.white),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  AnimatedContainer(
-                      duration: animationDuration,
-                      height: wantsToJoinGroup ? 50 * mq.textScaleFactor : 0,
-                      child: AnimatedOpacity(
-                        duration: animationDuration,
-                        opacity: wantsToJoinGroup ? 1 : 0,
-                        child: Column(
-                          children: [
-                            Text(
-                                "wants to join ${appState.selectedGroup.value?.name}",
-                                style: textTheme.caption?.copyWith(
-                                    color: textColor?.withOpacity(0.5))),
-                            Expanded(
-                              child: Row(children: [
-                                Expanded(
-                                    child: SizedBox(
-                                        height: 32,
-                                        child: TextButton(
-                                            style: ButtonStyle(
-                                                padding:
-                                                    MaterialStateProperty.all(
-                                                        const EdgeInsets.all(
-                                                            0))),
-                                            onPressed: cannotFollow
-                                                ? null
-                                                : () => approveMembership(),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.check),
-                                                SizedBox(width: 4),
-                                                Text("APPROVE")
-                                              ],
-                                            )))),
-                                // ]),
-                                // Row(children: [
-                                Expanded(
-                                    child: SizedBox(
-                                        height: 32,
-                                        child: TextButton(
-                                            style: ButtonStyle(
-                                                padding:
-                                                    MaterialStateProperty.all(
-                                                        const EdgeInsets.all(
-                                                            0))),
-                                            onPressed: cannotFollow
-                                                ? null
-                                                : () => rejectMembership(),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons
-                                                    .remove_circle_outline),
-                                                SizedBox(width: 4),
-                                                Text("REJECT")
-                                              ],
-                                            ))))
-                              ]),
-                            ),
-                          ],
-                        ),
-                      )),
-                  AnimatedContainer(
-                      duration: animationDuration,
-                      height: wantsToFollowYou ? 50 * mq.textScaleFactor : 0,
-                      child: AnimatedOpacity(
-                        duration: animationDuration,
-                        opacity: wantsToFollowYou ? 1 : 0,
-                        child: Column(
-                          children: [
-                            Text("wants to follow you",
-                                style: textTheme.caption?.copyWith(
-                                    color: textColor?.withOpacity(0.5))),
-                            Expanded(
-                              child: Row(children: [
-                                Expanded(
-                                    child: SizedBox(
-                                        height: 32,
-                                        child: TextButton(
-                                            style: ButtonStyle(
-                                                padding:
-                                                    MaterialStateProperty.all(
-                                                        const EdgeInsets.all(
-                                                            0))),
-                                            onPressed: cannotFollow
-                                                ? null
-                                                : () => approveFollowRequest(),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.check),
-                                                SizedBox(width: 4),
-                                                Text("APPROVE")
-                                              ],
-                                            )))),
-                                // ]),
-                                // Row(children: [
-                                Expanded(
-                                    child: SizedBox(
-                                        height: 32,
-                                        child: TextButton(
-                                            style: ButtonStyle(
-                                                padding:
-                                                    MaterialStateProperty.all(
-                                                        const EdgeInsets.all(
-                                                            0))),
-                                            onPressed: cannotFollow
-                                                ? null
-                                                : () => rejectFollowRequest(),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons
-                                                    .remove_circle_outline),
-                                                SizedBox(width: 4),
-                                                Text("REJECT")
-                                              ],
-                                            ))))
-                              ]),
-                            ),
-                          ],
-                        ),
-                      )),
-                  AnimatedContainer(
-                      duration: animationDuration,
-                      height: followsYou ? 16 * mq.textScaleFactor : 0,
-                      child: AnimatedOpacity(
-                        duration: animationDuration,
-                        opacity: followsYou ? 1 : 0,
-                        child: Text("follows you",
-                            style: textTheme.caption
-                                ?.copyWith(color: textColor?.withOpacity(0.5))),
-                      )),
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: Row(
+      child: AnimatedContainer(
+        duration: animationDuration,
+        color: backgroundColor,
+        child: InkWell(
+          onTap: () {
+            context.navigateNamedTo(
+                'person/${JonlineServer.selectedServer.server}/${user.id}');
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    Row(
                       children: [
+                        SizedBox(
+                          height: 48,
+                          width: 48,
+                          child: Icon(Icons.account_circle,
+                              size: 32, color: textColor ?? Colors.white),
+                        ),
                         Expanded(
-                          flex: 2,
-                          child: Row(
+                          child: Column(
                             children: [
-                              // Text(
-                              //   "User ID: ",
-                              //   style: textTheme.caption?.copyWith(
-                              //       color: textColor?.withOpacity(0.5)),
-                              //   maxLines: 1,
-                              //   overflow: TextOverflow.ellipsis,
-                              // ),
-                              // Expanded(
-                              //   child: Text(
-                              //     user.id,
-                              //     style: textTheme.caption?.copyWith(
-                              //         color: textColor?.withOpacity(0.5)),
-                              //     maxLines: 1,
-                              //     overflow: TextOverflow.ellipsis,
-                              //   ),
-                              // ),
-                              // const Icon(
-                              //   Icons.account_circle,
-                              //   color: Colors.white,
-                              // ),
-                              // const SizedBox(width: 4),
-                              Text(user.followerCount.toString(),
-                                  style: textTheme.caption?.copyWith(
-                                      color: textColor?.withOpacity(0.5))),
-                              Text(
-                                  " follower${user.followerCount == 1 ? '' : 's'}",
-                                  style: textTheme.caption?.copyWith(
-                                      color: textColor?.withOpacity(0.5))),
-                              const Expanded(child: SizedBox()),
-                              Text("following ${user.followingCount}",
-                                  style: textTheme.caption?.copyWith(
-                                      color: textColor?.withOpacity(0.5))),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                        '${JonlineServer.selectedServer.server}/',
+                                        style: textTheme.caption?.copyWith(
+                                            color: textColor?.withOpacity(0.5)),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      user.username,
+                                      style: textTheme.headline6
+                                          ?.copyWith(color: textColor),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
+                        if (user.permissions.contains(Permission.RUN_BOTS))
+                          Tooltip(
+                            message: "${user.username} may run (or be) a bot",
+                            child: SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: Iconify(FaSolid.robot,
+                                  size: 18, color: textColor ?? Colors.white),
+                            ),
+                          ),
+                        if (user.permissions.contains(Permission.ADMIN))
+                          Tooltip(
+                            message: "${user.username} is an admin",
+                            child: SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: Icon(Icons.admin_panel_settings_outlined,
+                                  size: 22, color: textColor ?? Colors.white),
+                            ),
+                          ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Stack(
-                    children: [
-                      IgnorePointer(
-                        ignoring: !(following || followRequestPending),
+                    const SizedBox(height: 4),
+                    AnimatedContainer(
+                        duration: animationDuration,
+                        height: wantsToJoinGroup ? 50 * mq.textScaleFactor : 0,
                         child: AnimatedOpacity(
                           duration: animationDuration,
-                          opacity: following || followRequestPending ? 1 : 0,
-                          child: Row(children: [
-                            Expanded(
-                                child: SizedBox(
-                                    height: 32,
-                                    child: TextButton(
-                                        style: ButtonStyle(
-                                            padding: MaterialStateProperty.all(
-                                                const EdgeInsets.all(0))),
-                                        onPressed: () => unfollow(),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                                Icons.remove_circle_outline),
-                                            const SizedBox(width: 4),
-                                            Text(followRequestPending
-                                                ? "CANCEL REQUEST"
-                                                : "UNFOLLOW")
-                                          ],
-                                        ))))
-                          ]),
-                        ),
+                          opacity: wantsToJoinGroup ? 1 : 0,
+                          child: Column(
+                            children: [
+                              Text(
+                                  "wants to join ${appState.selectedGroup.value?.name}",
+                                  style: textTheme.caption?.copyWith(
+                                      color: textColor?.withOpacity(0.5))),
+                              Expanded(
+                                child: Row(children: [
+                                  Expanded(
+                                      child: SizedBox(
+                                          height: 32,
+                                          child: TextButton(
+                                              style: ButtonStyle(
+                                                  padding:
+                                                      MaterialStateProperty.all(
+                                                          const EdgeInsets.all(
+                                                              0))),
+                                              onPressed: cannotFollow
+                                                  ? null
+                                                  : () => approveMembership(),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: const [
+                                                  Icon(Icons.check),
+                                                  SizedBox(width: 4),
+                                                  Text("APPROVE")
+                                                ],
+                                              )))),
+                                  // ]),
+                                  // Row(children: [
+                                  Expanded(
+                                      child: SizedBox(
+                                          height: 32,
+                                          child: TextButton(
+                                              style: ButtonStyle(
+                                                  padding:
+                                                      MaterialStateProperty.all(
+                                                          const EdgeInsets.all(
+                                                              0))),
+                                              onPressed: cannotFollow
+                                                  ? null
+                                                  : () => rejectMembership(),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: const [
+                                                  Icon(Icons
+                                                      .remove_circle_outline),
+                                                  SizedBox(width: 4),
+                                                  Text("REJECT")
+                                                ],
+                                              ))))
+                                ]),
+                              ),
+                            ],
+                          ),
+                        )),
+                    AnimatedContainer(
+                        duration: animationDuration,
+                        height: wantsToFollowYou ? 50 * mq.textScaleFactor : 0,
+                        child: AnimatedOpacity(
+                          duration: animationDuration,
+                          opacity: wantsToFollowYou ? 1 : 0,
+                          child: Column(
+                            children: [
+                              Text("wants to follow you",
+                                  style: textTheme.caption?.copyWith(
+                                      color: textColor?.withOpacity(0.5))),
+                              Expanded(
+                                child: Row(children: [
+                                  Expanded(
+                                      child: SizedBox(
+                                          height: 32,
+                                          child: TextButton(
+                                              style: ButtonStyle(
+                                                  padding:
+                                                      MaterialStateProperty.all(
+                                                          const EdgeInsets.all(
+                                                              0))),
+                                              onPressed: cannotFollow
+                                                  ? null
+                                                  : () =>
+                                                      approveFollowRequest(),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: const [
+                                                  Icon(Icons.check),
+                                                  SizedBox(width: 4),
+                                                  Text("APPROVE")
+                                                ],
+                                              )))),
+                                  // ]),
+                                  // Row(children: [
+                                  Expanded(
+                                      child: SizedBox(
+                                          height: 32,
+                                          child: TextButton(
+                                              style: ButtonStyle(
+                                                  padding:
+                                                      MaterialStateProperty.all(
+                                                          const EdgeInsets.all(
+                                                              0))),
+                                              onPressed: cannotFollow
+                                                  ? null
+                                                  : () => rejectFollowRequest(),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: const [
+                                                  Icon(Icons
+                                                      .remove_circle_outline),
+                                                  SizedBox(width: 4),
+                                                  Text("REJECT")
+                                                ],
+                                              ))))
+                                ]),
+                              ),
+                            ],
+                          ),
+                        )),
+                    AnimatedContainer(
+                        duration: animationDuration,
+                        height: followsYou ? 16 * mq.textScaleFactor : 0,
+                        child: AnimatedOpacity(
+                          duration: animationDuration,
+                          opacity: followsYou ? 1 : 0,
+                          child: Text("follows you",
+                              style: textTheme.caption?.copyWith(
+                                  color: textColor?.withOpacity(0.5))),
+                        )),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Row(
+                              children: [
+                                // Text(
+                                //   "User ID: ",
+                                //   style: textTheme.caption?.copyWith(
+                                //       color: textColor?.withOpacity(0.5)),
+                                //   maxLines: 1,
+                                //   overflow: TextOverflow.ellipsis,
+                                // ),
+                                // Expanded(
+                                //   child: Text(
+                                //     user.id,
+                                //     style: textTheme.caption?.copyWith(
+                                //         color: textColor?.withOpacity(0.5)),
+                                //     maxLines: 1,
+                                //     overflow: TextOverflow.ellipsis,
+                                //   ),
+                                // ),
+                                // const Icon(
+                                //   Icons.account_circle,
+                                //   color: Colors.white,
+                                // ),
+                                // const SizedBox(width: 4),
+                                Text(user.followerCount.toString(),
+                                    style: textTheme.caption?.copyWith(
+                                        color: textColor?.withOpacity(0.5))),
+                                Text(
+                                    " follower${user.followerCount == 1 ? '' : 's'}",
+                                    style: textTheme.caption?.copyWith(
+                                        color: textColor?.withOpacity(0.5))),
+                                const Expanded(child: SizedBox()),
+                                Text("following ${user.followingCount}",
+                                    style: textTheme.caption?.copyWith(
+                                        color: textColor?.withOpacity(0.5))),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      IgnorePointer(
-                        ignoring: (following || followRequestPending),
-                        child: AnimatedOpacity(
-                          duration: animationDuration,
-                          opacity: !(following || followRequestPending) ? 1 : 0,
-                          child: Row(children: [
-                            Expanded(
-                                child: SizedBox(
-                                    height: 32,
-                                    child: TextButton(
-                                        style: ButtonStyle(
-                                            padding: MaterialStateProperty.all(
-                                                const EdgeInsets.all(0))),
-                                        onPressed: cannotFollow
-                                            ? null
-                                            : () => follow(),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            if (!currentUserProfile)
-                                              const Icon(Icons.add),
-                                            const SizedBox(width: 4),
-                                            Text(currentUserProfile
-                                                ? "YOU"
-                                                : user.defaultFollowModeration
-                                                        .pending
-                                                    ? "REQUEST"
-                                                    : "FOLLOW")
-                                          ],
-                                        ))))
-                          ]),
+                    ),
+                    const SizedBox(height: 4),
+                    Stack(
+                      children: [
+                        IgnorePointer(
+                          ignoring: !(following || followRequestPending),
+                          child: AnimatedOpacity(
+                            duration: animationDuration,
+                            opacity: following || followRequestPending ? 1 : 0,
+                            child: Row(children: [
+                              Expanded(
+                                  child: SizedBox(
+                                      height: 32,
+                                      child: TextButton(
+                                          style: ButtonStyle(
+                                              padding:
+                                                  MaterialStateProperty.all(
+                                                      const EdgeInsets.all(0))),
+                                          onPressed: () => unfollow(),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                  Icons.remove_circle_outline),
+                                              const SizedBox(width: 4),
+                                              Text(followRequestPending
+                                                  ? "CANCEL REQUEST"
+                                                  : "UNFOLLOW")
+                                            ],
+                                          ))))
+                            ]),
+                          ),
                         ),
-                      )
-                    ],
-                  ),
-                ],
-              ),
-            ],
+                        IgnorePointer(
+                          ignoring: (following || followRequestPending),
+                          child: AnimatedOpacity(
+                            duration: animationDuration,
+                            opacity:
+                                !(following || followRequestPending) ? 1 : 0,
+                            child: Row(children: [
+                              Expanded(
+                                  child: SizedBox(
+                                      height: 32,
+                                      child: TextButton(
+                                          style: ButtonStyle(
+                                              padding:
+                                                  MaterialStateProperty.all(
+                                                      const EdgeInsets.all(0))),
+                                          onPressed: cannotFollow
+                                              ? null
+                                              : () => follow(),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              if (!currentUserProfile)
+                                                const Icon(Icons.add),
+                                              const SizedBox(width: 4),
+                                              Text(currentUserProfile
+                                                  ? "YOU"
+                                                  : user.defaultFollowModeration
+                                                          .pending
+                                                      ? "REQUEST"
+                                                      : "FOLLOW")
+                                            ],
+                                          ))))
+                            ]),
+                          ),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

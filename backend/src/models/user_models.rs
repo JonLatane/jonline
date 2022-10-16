@@ -1,6 +1,18 @@
 use std::time::SystemTime;
 
+use tonic::{Code, Status};
+use diesel::*;
+
+use crate::db_connection::PgPooledConnection;
 use crate::schema::{users, follows};
+
+pub fn get_user(group_id: i32, conn: &mut PgPooledConnection,) -> Result<User, Status> {
+    users::table
+        .select(users::all_columns)
+        .filter(users::id.eq(group_id))
+        .first::<User>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
+}
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct User {

@@ -103,6 +103,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
     await server.updateConfiguration();
 
     final config = server.configuration;
+    if (!mounted) return;
     setState(() {
       this.account = account;
       this.server = server;

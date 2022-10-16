@@ -1,9 +1,16 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+import 'package:jonline/utils/proto_utils.dart';
+
 import '../app_state.dart';
+import '../generated/groups.pb.dart';
+import '../generated/visibility_moderation.pb.dart' as vm;
 import '../generated/jonline.pbgrpc.dart';
+import '../generated/permissions.pbenum.dart';
 import '../generated/posts.pb.dart';
 import '../generated/users.pb.dart';
+import '../generated/visibility_moderation.pbenum.dart';
 import 'jonline_account.dart';
 import 'jonline_account_operations.dart';
 import 'jonline_clients.dart';
@@ -20,27 +27,42 @@ postDemoData(
   // showSnackBar("Updating refresh token...");
   await account.ensureRefreshToken(showMessage: showSnackBar);
 
+  final demoGroups =
+      await generateDemoGroups(client, account, showSnackBar, appState);
+  // showSnackBar("Relevant Groups exist or have been generated.");
+
   final List<Post> posts = [];
   var topLevelPosts = List.of(_demoData);
   if (randomize) {
     topLevelPosts.shuffle();
   }
-  for (final data in topLevelPosts) {
-    showSnackBar('Posting "${data.title}"...');
+  for (final demoPost in topLevelPosts) {
+    final groups = demoPost.groups;
+    final basePost = demoPost.post;
+
+    showSnackBar(
+        'Posting "${basePost.title}" across ${groups.length} groups...');
     try {
-      posts.add(await client.createPost(data,
-          options: account.authenticatedCallOptions));
+      final post = await client.createPost(basePost,
+          options: account.authenticatedCallOptions);
+      posts.add(post);
+      for (final demoGroup in groups) {
+        final group = demoGroups[demoGroup]!;
+        await client.createGroupPost(
+            GroupPost(groupId: group.id, postId: post.id),
+            options: account.authenticatedCallOptions);
+      }
     } catch (e) {
       showSnackBar("Error posting demo data: $e");
-      return;
+      rethrow;
     }
     await communicationDelay;
   }
   showSnackBar(
       "Posted demo topics successfully! 🎉 Generating users, relationships, and conversations...");
   // JonlineAccount? sideAccount;
-  List<JonlineAccount> sideAccounts =
-      await generateSideAccounts(client, account, showSnackBar, appState, 7);
+  List<JonlineAccount> sideAccounts = await generateSideAccounts(
+      client, account, demoGroups, showSnackBar, appState, 7);
   List<JonlineAccount> replyAccounts = [
     account,
     ...sideAccounts,
@@ -77,9 +99,39 @@ postDemoData(
   showSnackBar("Posted all demo data, with $replyCount replies 🎉🎉🎉🎉🎉 ");
 }
 
+Future<Map<DemoGroup, Group>> generateDemoGroups(
+    JonlineClient client,
+    JonlineAccount account,
+    Function(String) showSnackBar,
+    AppState appState) async {
+  final existingGroups = await client.getGroups(GetGroupsRequest(),
+      options: account.authenticatedCallOptions);
+  final Map<DemoGroup, Group> result = {};
+  int generatedGroups = 0;
+  for (final demoGroup in _demoGroups.entries) {
+    final name = demoGroup.value.name;
+    if (existingGroups.groups.any((g) => g.name == name)) {
+      result[demoGroup.key] =
+          existingGroups.groups.firstWhere((g) => g.name == name);
+      // showSnackBar('Group "$name" already exists, skipping.');
+      continue;
+    }
+    generatedGroups++;
+    final group = await client.createGroup(demoGroup.value,
+        options: account.authenticatedCallOptions);
+    // showSnackBar('Created group "$name".');
+    result[demoGroup.key] = group;
+  }
+  if (generatedGroups > 0) {
+    showSnackBar('Created $generatedGroups new groups.');
+  }
+  return result;
+}
+
 Future<List<JonlineAccount>> generateSideAccounts(
     JonlineClient client,
     JonlineAccount account,
+    Map<DemoGroup, Group> demoGroups,
     Function(String) showSnackBar,
     AppState appState,
     int count) async {
@@ -100,7 +152,13 @@ Future<List<JonlineAccount>> generateSideAccounts(
       // final JonlineClient? sideClient =
       //     await (sideAccount?.getClient(showMessage: showSnackBar));
       if (sideAccount != null) {
-        await sideAccount.updateUserData();
+        final User? user = await sideAccount.updateUserData();
+        if (user != null) {
+          user.permissions.add(Permission.RUN_BOTS);
+          await client.updateUser(user,
+              options: account.authenticatedCallOptions);
+          await sideAccount.updateUserData();
+        }
         // showSnackBar("Created side account ${sideAccount.username}.");
         appState.updateAccountList();
         sideAccounts.add(sideAccount);
@@ -146,7 +204,33 @@ Future<List<JonlineAccount>> generateSideAccounts(
       showSnackBar("Error following side account: $e");
     }
   }
-  showSnackBar("Created $relationshipsCreated follow relationships.");
+
+  //Generate follow relationships between side accounts and originating account
+  int membershipsCreated = 0;
+
+  for (final sideAccount in sideAccounts) {
+    // showSnackBar("Creating relationships for ${sideAccount.username}.");
+    final targetGroups = List.of(demoGroups.values);
+    final maxJoins = targetGroups.length;
+    final totalJoins = 2 + Random().nextInt(max(0, maxJoins - 2));
+    try {
+      for (int i = 0; i < totalJoins; i++) {
+        final group = targetGroups[_random.nextInt(targetGroups.length)];
+        await client.createMembership(
+            Membership(
+              userId: sideAccount.userId,
+              groupId: group.id,
+            ),
+            options: sideAccount.authenticatedCallOptions);
+        targetGroups.remove(group);
+        membershipsCreated += 1;
+      }
+    } catch (e) {
+      showSnackBar("Error following side account: $e");
+    }
+  }
+  showSnackBar(
+      "Created $relationshipsCreated follow relationships and joined $membershipsCreated groups.");
   return sideAccounts;
 }
 
@@ -192,6 +276,84 @@ final List<List<String>> _demoNameComponents = [
   ]
 ];
 
+enum DemoGroup {
+  coolKidsClub,
+  everyoneWelcome,
+  musicNerds,
+  sportsNerds,
+  makers,
+  yoga,
+  engineering,
+  math,
+  science,
+  tech,
+  gamers,
+  homeImprovement,
+  toolSharing,
+  cooking,
+  restaurants,
+}
+
+final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
+  DemoGroup.coolKidsClub: Group(
+      name: "Cool Kids Club",
+      description: "Only the coolest ppl get in. Approval required to join.",
+      defaultMembershipModeration: Moderation.PENDING),
+  DemoGroup.everyoneWelcome:
+      Group(name: "Everyone Welcome", description: "Feel free to join!"),
+  DemoGroup.musicNerds: Group(
+      name: "Funktastic",
+      description: "Post your Spotify playlists or eventually videos n stuff"),
+  DemoGroup.sportsNerds: Group(
+      name: "Yoked",
+      description:
+          "Climbing, biking, running, spikeball, other things involving balls"),
+  DemoGroup.makers: Group(
+      name: "Makers",
+      description:
+          "Creators of art, music, furniture, knitting, software... just make stuff!"),
+  DemoGroup.yoga:
+      Group(name: "Yoga", description: "Only the coolest ppl get in "),
+  DemoGroup.engineering: Group(
+      name: "Real Engineering",
+      description: "Like with real things not software 😂😭"),
+  DemoGroup.math: Group(
+      name: "Math",
+      description:
+          "Shit that is literally not real but also the basis of reality"),
+  DemoGroup.science:
+      Group(name: "Science", description: "Straight from the lab bench"),
+  DemoGroup.tech: Group(
+      name: "Tech",
+      description:
+          "Let's talk about the cool stuff I've done and also a lot of other cool tech 🤓💚"),
+  DemoGroup.gamers: Group(
+      name: "Gamers",
+      description:
+          "Bro honestly I'm just tryna play Doom Eternal and soon Sonic Frontiers on easy mode here"),
+  DemoGroup.homeImprovement: Group(
+      name: "Home Improvement", description: "An endless and delightful hole"),
+  DemoGroup.toolSharing:
+      Group(name: "Tool Sharing", description: "Making Marx proud"),
+  DemoGroup.cooking:
+      Group(name: "Cooking", description: "😋 on the cheap and local"),
+  DemoGroup.restaurants:
+      Group(name: "Restaurants", description: "😋 on the expensive and local"),
+}.map((key, value) => MapEntry(key, value.jonRebuild((e) {
+      if (e.defaultMembershipModeration == Moderation.MODERATION_UNKNOWN) {
+        e.defaultMembershipModeration = Moderation.UNMODERATED;
+      }
+      if (e.visibility == vm.Visibility.VISIBILITY_UNKNOWN) {
+        e.visibility = vm.Visibility.GLOBAL_PUBLIC;
+      }
+      e.defaultMembershipPermissions.addAll([
+        Permission.VIEW_POSTS,
+        Permission.CREATE_POSTS,
+        Permission.VIEW_EVENTS,
+        Permission.CREATE_EVENTS
+      ]);
+    }))));
+
 // Many generated from https://www.commments.com :)
 final List<String> _demoReplies = [
   "Wow, that's a great idea!",
@@ -226,14 +388,23 @@ final List<String> _demoReplies = [
   "Shade, background image, icons, shot - strong, friend.",
 ];
 
-final List<CreatePostRequest> _demoData = [
-  CreatePostRequest(
-      title:
-          "Topologica was my first app; here's an article about how it works!",
-      link:
-          "https://medium.com/fully-automated-luxury-robot-music/topologica-jazz-orbifolds-and-your-event-sourced-flux-driven-dream-code-f8e24443a941",
-      content:
-          '''Several years ago I published my first mobile app, Topologica for Android.
+class DemoPost {
+  final List<DemoGroup> groups;
+  CreatePostRequest post;
+
+  DemoPost(this.groups, this.post);
+}
+
+final List<DemoPost> _demoData = [
+  DemoPost(
+      [DemoGroup.musicNerds, DemoGroup.math, DemoGroup.tech],
+      CreatePostRequest(
+          title:
+              "Topologica was my first app; here's an article about how it works!",
+          link:
+              "https://medium.com/fully-automated-luxury-robot-music/topologica-jazz-orbifolds-and-your-event-sourced-flux-driven-dream-code-f8e24443a941",
+          content:
+              '''Several years ago I published my first mobile app, Topologica for Android.
 
 ### Features
 * A MIDI sequencer that works basically like a TR-8 (built for 4/4 in 16th notes).
@@ -253,55 +424,82 @@ Large parts of Topologica/BeatScratch Legacy live on in my current app, BeatScra
 for iOS, macOS, Android and web.
 
 I plan to re-implement the Orbifold in BeatScratch, at which point this app will be deprecated.
-string'''),
-  CreatePostRequest(
-      title: "BeatScratch Legacy (formerly Topologica) on the Play Store",
-      link:
-          "https://play.google.com/store/apps/details?id=com.jonlatane.beatpad.free&hl=en_US&gl=US",
-      content: "Not maintained, but still available on the Play Store."),
-  CreatePostRequest(
-      title: "Yay socialism!",
-      link: "https://www.dsanc.org",
-      content: "I should go to more meetings but eh I pay my dues."),
-  CreatePostRequest(
-      title: "These burgers look soooo good 😋",
-      link: "https://www.eatqueenburger.com"),
-  CreatePostRequest(
-      title: "BeatScratch on the App Store",
-      link: "https://apps.apple.com/us/app/beatscratch/id1509788448",
-      content: "The freshest, slickest way to scratch your beat!"),
-  CreatePostRequest(
-      title: "BeatScratch on the Play Store",
-      link:
-          "https://play.google.com/store/apps/details?id=io.beatscratch.beatscratch_flutter_redux&hl=en_US&gl=US",
-      content:
-          "Android version of BeatScratch! FluidSynth doesn't quite keep up with AudioKit but still among the best you can get on Android."),
-  CreatePostRequest(
-      title: "My reddit account, or at least the one I'd post here 🙃",
-      link: "https://www.reddit.com/user/pseudocomposer"),
-  CreatePostRequest(
-      title: "These are cool! I want one",
-      link: "https://www.fuell.us/products/fuell-fllow-e-motorcycle"),
-  CreatePostRequest(
-      title:
-          "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness.",
-      link: "https://instagram.com/jon_luvs_ya"),
-  CreatePostRequest(
-    title: "My LinkedIn, if you wanna see things people have paid me to do",
-    link: "https://www.linkedin.com/in/jonlatane/",
-  ),
-  CreatePostRequest(
-    title: "Jonline images are on DockerHub so you can try/deploy it easily",
-    link: "https://hub.docker.com/r/jonlatane/jonline",
-  ),
-  CreatePostRequest(
-      title: "Jonline on GitHub",
-      link: "https://github.com/jonlatane/jonline",
-      content:
-          "Jonline is released under the GPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech."),
-  CreatePostRequest(
-      title: "What is Jonline??",
-      content: '''Large-scale capitalist social media sucks for most of us. 
+string''')),
+  DemoPost(
+      [DemoGroup.musicNerds, DemoGroup.math],
+      CreatePostRequest(
+          title: "BeatScratch Legacy (formerly Topologica) on the Play Store",
+          link:
+              "https://play.google.com/store/apps/details?id=com.jonlatane.beatpad.free&hl=en_US&gl=US",
+          content: "Not maintained, but still available on the Play Store.")),
+  DemoPost(
+      [DemoGroup.everyoneWelcome, DemoGroup.makers, DemoGroup.toolSharing],
+      CreatePostRequest(
+          title: "Yay socialism!",
+          link: "https://www.dsanc.org",
+          content: "I should go to more meetings but eh I pay my dues.")),
+  DemoPost(
+      [DemoGroup.restaurants],
+      CreatePostRequest(
+          title: "These burgers look soooo good 😋",
+          link: "https://www.eatqueenburger.com")),
+  DemoPost(
+      [DemoGroup.musicNerds],
+      CreatePostRequest(
+          title: "BeatScratch on the App Store",
+          link: "https://apps.apple.com/us/app/beatscratch/id1509788448",
+          content: "The freshest, slickest way to scratch your beat!")),
+  DemoPost(
+      [DemoGroup.musicNerds],
+      CreatePostRequest(
+          title: "BeatScratch on the Play Store",
+          link:
+              "https://play.google.com/store/apps/details?id=io.beatscratch.beatscratch_flutter_redux&hl=en_US&gl=US",
+          content:
+              "Android version of BeatScratch! FluidSynth doesn't quite keep up with AudioKit but still among the best you can get on Android.")),
+  DemoPost(
+      [DemoGroup.everyoneWelcome],
+      CreatePostRequest(
+          title: "My reddit account, or at least the one I'd post here 🙃",
+          link: "https://www.reddit.com/user/pseudocomposer")),
+  DemoPost(
+      [DemoGroup.everyoneWelcome, DemoGroup.tech],
+      CreatePostRequest(
+          title: "These are cool! I want one",
+          link: "https://www.fuell.us/products/fuell-fllow-e-motorcycle")),
+  DemoPost(
+      [
+        DemoGroup.everyoneWelcome,
+      ],
+      CreatePostRequest(
+          title:
+              "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness.",
+          link: "https://instagram.com/jon_luvs_ya")),
+  DemoPost(
+      [DemoGroup.everyoneWelcome],
+      CreatePostRequest(
+        title: "My LinkedIn, if you wanna see things people have paid me to do",
+        link: "https://www.linkedin.com/in/jonlatane/",
+      )),
+  DemoPost(
+      [DemoGroup.everyoneWelcome, DemoGroup.tech],
+      CreatePostRequest(
+        title:
+            "Jonline images are on DockerHub so you can try/deploy it easily",
+        link: "https://hub.docker.com/r/jonlatane/jonline",
+      )),
+  DemoPost(
+      [DemoGroup.everyoneWelcome, DemoGroup.tech],
+      CreatePostRequest(
+          title: "Jonline on GitHub",
+          link: "https://github.com/jonlatane/jonline",
+          content:
+              "Jonline is released under the GPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech.")),
+  DemoPost(
+      [DemoGroup.everyoneWelcome, DemoGroup.tech],
+      CreatePostRequest(
+          title: "What is Jonline??",
+          content: '''Large-scale capitalist social media sucks for most of us. 
 Jonline takes a minimalist approach to social media, both in terms of user count 
 (per "instance" at least) and features. 
 A Jonline *instance* or community (like the one you're reading this post on - probably 
@@ -365,7 +563,7 @@ iOS, Android, macOS, Windows, Linux, or any other platform Flutter supports.
 Jonline FE's Flutter Web build is also copied to the Jonline BE docker image, 
 and served by Rocket on the ports listed. So the [single `jonline` Docker image](https://hub.docker.com/r/jonlatane/jonline) 
 is a full-stack app that can be run wherever!
-'''),
+''')),
 ];
 
 final _random = Random();

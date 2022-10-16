@@ -1,8 +1,11 @@
+use tonic::Status;
+
 use super::id_conversions::ToProtoId;
 use super::visibility_moderation_conversions::ToProtoModeration;
 use super::ToLink;
 use super::ToProtoVisibility;
 use super::ToProtoTime;
+use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
 
@@ -67,5 +70,28 @@ impl ToProtoPost for models::Post {
             user_id: user_id.to_proto_id(),
             username: username,
         })
+    }
+}
+
+
+pub trait ToProtoGroupPost {
+    fn to_proto(&self) -> GroupPost;
+    fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status>;
+}
+impl ToProtoGroupPost for models::GroupPost {
+    fn to_proto(&self) -> GroupPost {
+        return GroupPost {
+            group_id: self.group_id.to_proto_id().to_string(),
+            post_id: self.post_id.to_proto_id().to_string(),
+            user_id: self.user_id.to_proto_id().to_string(),
+            group_moderation: self.group_moderation.to_proto_moderation().unwrap() as i32,
+            created_at: Some(self.created_at.to_proto()),
+            // updated_at: Some(self.updated_at.to_proto()),
+        };
+    }
+
+    fn update_related_counts(&self, _conn: &mut PgPooledConnection) -> Result<(), Status> {
+        //Notthing to do here yet!
+                Ok(())
     }
 }

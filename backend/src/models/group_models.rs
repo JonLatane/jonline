@@ -1,7 +1,27 @@
 use std::time::SystemTime;
 
-use crate::schema::groups;
-use crate::schema::memberships;
+use tonic::{Code, Status};
+use diesel::*;
+
+use crate::db_connection::PgPooledConnection;
+use crate::schema::{groups, memberships};
+
+pub fn get_group(group_id: i32, conn: &mut PgPooledConnection,) -> Result<Group, Status> {
+    groups::table
+        .select(groups::all_columns)
+        .filter(groups::id.eq(group_id))
+        .first::<Group>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "group_not_found"))
+}
+
+pub fn get_membership(group_id: i32, user_id: i32, conn: &mut PgPooledConnection,) -> Result<Membership, Status> {
+    memberships::table
+        .select(memberships::all_columns)
+        .filter(memberships::user_id.eq(user_id))
+        .filter(memberships::group_id.eq(group_id))
+        .first::<Membership>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "membership_not_found"))
+}
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct Group {

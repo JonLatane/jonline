@@ -67,5 +67,12 @@ pub use get_members::get_members;
 mod create_post;
 pub use create_post::create_post;
 
+mod create_group_post;
+pub use create_group_post::create_group_post;
+mod update_group_post;
+pub use update_group_post::update_group_post;
+mod delete_group_post;
+pub use delete_group_post::delete_group_post;
+
 mod get_posts;
 pub use get_posts::get_posts;

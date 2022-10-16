@@ -29,19 +29,16 @@ pub fn create_group(
     let default_membership_moderation =
         match request.default_membership_moderation.to_proto_moderation() {
             Some(Moderation::Pending) => Moderation::Pending,
-            Some(Moderation::Unmoderated) => Moderation::Unmoderated,
             _ => Moderation::Unmoderated,
         }
         .to_string_moderation();
     let default_post_moderation = match request.default_post_moderation.to_proto_moderation() {
         Some(Moderation::Pending) => Moderation::Pending,
-        Some(Moderation::Unmoderated) => Moderation::Unmoderated,
         _ => Moderation::Unmoderated,
     }
     .to_string_moderation();
     let default_event_moderation = match request.default_event_moderation.to_proto_moderation() {
         Some(Moderation::Pending) => Moderation::Pending,
-        Some(Moderation::Unmoderated) => Moderation::Unmoderated,
         _ => Moderation::Unmoderated,
     }
     .to_string_moderation();

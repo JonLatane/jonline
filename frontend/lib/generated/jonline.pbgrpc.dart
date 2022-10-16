@@ -134,6 +134,20 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/DeletePost',
       ($6.Post value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $6.Post.fromBuffer(value));
+  static final _$createGroupPost =
+      $grpc.ClientMethod<$6.GroupPost, $6.GroupPost>(
+          '/jonline.Jonline/CreateGroupPost',
+          ($6.GroupPost value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) => $6.GroupPost.fromBuffer(value));
+  static final _$updateGroupPost =
+      $grpc.ClientMethod<$6.GroupPost, $6.GroupPost>(
+          '/jonline.Jonline/UpdateGroupPost',
+          ($6.GroupPost value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) => $6.GroupPost.fromBuffer(value));
+  static final _$deleteGroupPost = $grpc.ClientMethod<$6.GroupPost, $0.Empty>(
+      '/jonline.Jonline/DeleteGroupPost',
+      ($6.GroupPost value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$configureServer =
       $grpc.ClientMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
           '/jonline.Jonline/ConfigureServer',
@@ -275,6 +289,21 @@ class JonlineClient extends $grpc.Client {
   $grpc.ResponseFuture<$6.Post> deletePost($6.Post request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deletePost, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$6.GroupPost> createGroupPost($6.GroupPost request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createGroupPost, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$6.GroupPost> updateGroupPost($6.GroupPost request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateGroupPost, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> deleteGroupPost($6.GroupPost request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteGroupPost, request, options: options);
   }
 
   $grpc.ResponseFuture<$2.ServerConfiguration> configureServer(
@@ -464,6 +493,27 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $6.Post.fromBuffer(value),
         ($6.Post value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.GroupPost, $6.GroupPost>(
+        'CreateGroupPost',
+        createGroupPost_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $6.GroupPost.fromBuffer(value),
+        ($6.GroupPost value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.GroupPost, $6.GroupPost>(
+        'UpdateGroupPost',
+        updateGroupPost_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $6.GroupPost.fromBuffer(value),
+        ($6.GroupPost value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.GroupPost, $0.Empty>(
+        'DeleteGroupPost',
+        deleteGroupPost_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $6.GroupPost.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod(
         $grpc.ServiceMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
             'ConfigureServer',
@@ -602,6 +652,21 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return deletePost(call, await request);
   }
 
+  $async.Future<$6.GroupPost> createGroupPost_Pre(
+      $grpc.ServiceCall call, $async.Future<$6.GroupPost> request) async {
+    return createGroupPost(call, await request);
+  }
+
+  $async.Future<$6.GroupPost> updateGroupPost_Pre(
+      $grpc.ServiceCall call, $async.Future<$6.GroupPost> request) async {
+    return updateGroupPost(call, await request);
+  }
+
+  $async.Future<$0.Empty> deleteGroupPost_Pre(
+      $grpc.ServiceCall call, $async.Future<$6.GroupPost> request) async {
+    return deleteGroupPost(call, await request);
+  }
+
   $async.Future<$2.ServerConfiguration> configureServer_Pre(
       $grpc.ServiceCall call,
       $async.Future<$2.ServerConfiguration> request) async {
@@ -655,6 +720,12 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $6.CreatePostRequest request);
   $async.Future<$6.Post> updatePost($grpc.ServiceCall call, $6.Post request);
   $async.Future<$6.Post> deletePost($grpc.ServiceCall call, $6.Post request);
+  $async.Future<$6.GroupPost> createGroupPost(
+      $grpc.ServiceCall call, $6.GroupPost request);
+  $async.Future<$6.GroupPost> updateGroupPost(
+      $grpc.ServiceCall call, $6.GroupPost request);
+  $async.Future<$0.Empty> deleteGroupPost(
+      $grpc.ServiceCall call, $6.GroupPost request);
   $async.Future<$2.ServerConfiguration> configureServer(
       $grpc.ServiceCall call, $2.ServerConfiguration request);
   $async.Future<$0.Empty> resetData($grpc.ServiceCall call, $0.Empty request);

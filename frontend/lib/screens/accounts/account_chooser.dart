@@ -1,5 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:jonline/jonline_state.dart';
 
 import '../../app_state.dart';
@@ -96,6 +98,16 @@ class AccountChooserState extends JonlineState<AccountChooser> {
                   ? 0.5
                   : 0,
               child: const Icon(Icons.admin_panel_settings_outlined),
+            )),
+            Center(
+                child: AnimatedOpacity(
+              duration: animationDuration,
+              opacity: JonlineAccount.selectedAccount?.permissions
+                          .contains(Permission.RUN_BOTS) ??
+                      false
+                  ? 0.5
+                  : 0,
+              child: const Iconify(FaSolid.robot),
             )),
             Column(
               children: [
@@ -337,6 +349,8 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
                     ],
                   ),
                 ),
+                if (a.permissions.contains(Permission.RUN_BOTS))
+                  const Iconify(FaSolid.robot, size: 12, color: Colors.white),
                 if (a.permissions.contains(Permission.ADMIN))
                   const Icon(Icons.admin_panel_settings_outlined, size: 16)
               ],

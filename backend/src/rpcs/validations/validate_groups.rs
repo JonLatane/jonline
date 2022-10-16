@@ -20,7 +20,7 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
         }
     };
     match group.visibility.to_proto_visibility().unwrap() {
-        Visibility::Unknown => return Err(Status::new(Code::NotFound, "invalid_visibility")),
+        Visibility::Unknown => return Err(Status::new(Code::InvalidArgument, "invalid_visibility")),
         _ => (),
     };
     for permission in group.default_membership_permissions.to_proto_permissions() {

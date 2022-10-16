@@ -46,7 +46,7 @@ pub fn update_membership(
                 ))
             }
             Some(membership) => {
-                validate_group_permission(&membership, Permission::ModerateUsers)?;
+                validate_group_permission(&membership, &current_user, Permission::ModerateUsers)?;
             }
         }
     }

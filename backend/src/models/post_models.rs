@@ -1,6 +1,26 @@
 use std::time::SystemTime;
 
-use crate::schema::{posts, user_posts, group_posts};
+use tonic::{Status, Code};
+use diesel::*;
+
+use crate::{schema::{posts, user_posts, group_posts}, db_connection::PgPooledConnection};
+
+pub fn get_post(post_id: i32, conn: &mut PgPooledConnection,) -> Result<Post, Status> {
+    posts::table
+        .select(posts::all_columns)
+        .filter(posts::id.eq(post_id))
+        .first::<Post>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "post_not_found"))
+}
+
+pub fn get_group_post(group_id: i32, post_id: i32, conn: &mut PgPooledConnection,) -> Result<GroupPost, Status> {
+    group_posts::table
+        .select(group_posts::all_columns)
+        .filter(group_posts::group_id.eq(group_id))
+        .filter(group_posts::post_id.eq(post_id))
+        .first::<GroupPost>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "group_post_not_found"))
+}
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct Post {

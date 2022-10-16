@@ -22,6 +22,7 @@ enum Permission {
   CREATE_GROUPS = 11;
   PUBLISH_GROUPS_LOCALLY = 12;
   PUBLISH_GROUPS_GLOBALLY = 13;
+  // The Moderate Groups permission makes a user effectively an admin of *any* group.
   MODERATE_GROUPS = 14;
   JOIN_GROUPS = 15;
 
