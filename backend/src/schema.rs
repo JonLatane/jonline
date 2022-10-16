@@ -26,6 +26,18 @@ table! {
 }
 
 table! {
+    group_posts (id) {
+        id -> Int4,
+        group_id -> Int4,
+        post_id -> Int4,
+        user_id -> Int4,
+        group_moderation -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
     groups (id) {
         id -> Int4,
         name -> Varchar,
@@ -34,6 +46,8 @@ table! {
         visibility -> Varchar,
         default_membership_permissions -> Jsonb,
         default_membership_moderation -> Varchar,
+        default_post_moderation -> Varchar,
+        default_event_moderation -> Varchar,
         moderation -> Varchar,
         member_count -> Int4,
         created_at -> Timestamp,
@@ -64,11 +78,11 @@ table! {
         content -> Nullable<Text>,
         visibility -> Varchar,
         moderation -> Varchar,
-        created_at -> Timestamp,
-        updated_at -> Nullable<Timestamp>,
         response_count -> Int4,
         reply_count -> Int4,
         preview -> Nullable<Bytea>,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -77,7 +91,9 @@ table! {
         id -> Int4,
         active -> Bool,
         server_info -> Jsonb,
+        anonymous_user_permissions -> Jsonb,
         default_user_permissions -> Jsonb,
+        basic_user_permissions -> Jsonb,
         people_settings -> Jsonb,
         group_settings -> Jsonb,
         post_settings -> Jsonb,
@@ -96,6 +112,16 @@ table! {
         token -> Varchar,
         created_at -> Timestamp,
         expires_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
+    user_posts (id) {
+        id -> Int4,
+        user_id -> Int4,
+        post_id -> Int4,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
@@ -130,21 +156,28 @@ table! {
 
 joinable!(federated_accounts -> federated_servers (federated_server_id));
 joinable!(federated_accounts -> users (user_id));
+joinable!(group_posts -> groups (group_id));
+joinable!(group_posts -> posts (post_id));
+joinable!(group_posts -> users (user_id));
 joinable!(memberships -> groups (group_id));
 joinable!(memberships -> users (user_id));
 joinable!(posts -> users (user_id));
 joinable!(user_auth_tokens -> users (user_id));
+joinable!(user_posts -> posts (post_id));
+joinable!(user_posts -> users (user_id));
 joinable!(user_refresh_tokens -> user_auth_tokens (auth_token_id));
 
 allow_tables_to_appear_in_same_query!(
     federated_accounts,
     federated_servers,
     follows,
+    group_posts,
     groups,
     memberships,
     posts,
     server_configurations,
     user_auth_tokens,
+    user_posts,
     user_refresh_tokens,
     users,
 );

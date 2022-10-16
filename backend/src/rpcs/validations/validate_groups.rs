@@ -1,5 +1,5 @@
 use super::OperationType;
-use super::string_length_validation::*;
+use super::validate_strings::*;
 use tonic::{Code, Status};
 
 use crate::conversions::*;

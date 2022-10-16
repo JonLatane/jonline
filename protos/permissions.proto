@@ -7,30 +7,37 @@ enum Permission {
   // Would "Create Users" ever make sense as a permission?
   reserved 1;
   // This generally only applies to the user's own profile, except for Admins.
-  GLOBALLY_PUBLISH_USERS = 2;
+  PUBLISH_USERS_LOCALLY = 2;
+  // This generally only applies to the user's own profile, except for Admins.
+  PUBLISH_USERS_GLOBALLY = 3;
   // "Moderate users" refers to granting VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS
   // and CREATE_EVENTS permissions to users.
-  MODERATE_USERS = 3;
-  FOLLOW_USERS = 4;
-  // "Basic Permissions" refers to VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS
-  // and CREATE_EVENTS.
-  GRANT_BASIC_PERMISSIONS = 5;
+  MODERATE_USERS = 4;
+  FOLLOW_USERS = 5;
+  // "Basic Permissions" are defined by your ServerConfiguration's
+  // basic_user_permissions.
+  GRANT_BASIC_PERMISSIONS = 6;
 
+  VIEW_GROUPS = 10;
   CREATE_GROUPS = 11;
-  GLOBALLY_PUBLISH_GROUPS = 12;
-  MODERATE_GROUPS = 13;
-  JOIN_GROUPS = 14;
+  PUBLISH_GROUPS_LOCALLY = 12;
+  PUBLISH_GROUPS_GLOBALLY = 13;
+  MODERATE_GROUPS = 14;
+  JOIN_GROUPS = 15;
 
   VIEW_POSTS = 20;
   CREATE_POSTS = 21;
-  GLOBALLY_PUBLISH_POSTS = 22;
-  MODERATE_POSTS = 23;
+  PUBLISH_POSTS_LOCALLY = 22;
+  PUBLISH_POSTS_GLOBALLY = 23;
+  MODERATE_POSTS = 24;
 
   VIEW_EVENTS = 30;
   CREATE_EVENTS = 31;
-  GLOBALLY_PUBLISH_EVENTS = 32;
-  MODERATE_EVENTS = 33;
+  PUBLISH_EVENTS_LOCALLY = 32;
+  PUBLISH_EVENTS_GLOBALLY = 33;
+  MODERATE_EVENTS = 34;
 
+  RUN_BOTS = 9999;
   ADMIN = 10000;
   VIEW_PRIVATE_CONTACT_METHODS = 10001;
 }

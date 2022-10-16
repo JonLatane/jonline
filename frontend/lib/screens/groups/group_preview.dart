@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/enum_conversions.dart';
+import 'package:jonline/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
@@ -66,9 +67,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
   List<Permission> get groupPermissions =>
       group.currentUserMembership.permissions;
 
-  bool get member =>
-      group.currentUserMembership.groupModeration.passes &&
-      group.currentUserMembership.userModeration.passes;
+  bool get member => group.member;
   bool get admin => userPermissions.contains(Permission.ADMIN);
   bool get moderator => userPermissions.contains(Permission.MODERATE_GROUPS);
   bool get groupAdmin => admin || groupPermissions.contains(Permission.ADMIN);

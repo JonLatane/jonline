@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_clients.dart';
+import 'package:jonline/screens/people/person_preview.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
@@ -210,153 +211,158 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
             constraints: const BoxConstraints(maxWidth: 600),
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Card(
-                color: appState.selectedAccount?.id == userData?.id
-                    ? appState.navColor
-                    : null,
-                child: InkWell(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Stack(
-                      children: [
-                        Column(
-                          children: [
-                            Row(
-                              children: [
-                                const SizedBox(
-                                  height: 48,
-                                  width: 48,
-                                  child: Icon(Icons.account_circle,
-                                      size: 32, color: Colors.white),
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                                '${JonlineServer.selectedServer.server}/',
-                                                style: textTheme.caption,
-                                                maxLines: 1,
-                                                overflow:
-                                                    TextOverflow.ellipsis),
-                                          ),
-                                        ],
-                                      ),
-                                      // Row(
-                                      //   children: [
-                                      //     Expanded(
-                                      //       child: Text(
-                                      //         userData?.username ?? '...',
-                                      //         style: textTheme.headline6
-                                      //             ?.copyWith(
-                                      //                 color: appState
-                                      //                             .selectedAccount
-                                      //                             ?.userId ==
-                                      //                         userData?.id
-                                      //                     ? appState
-                                      //                         .primaryColor
-                                      //                     : null),
-                                      //         maxLines: 1,
-                                      //         overflow: TextOverflow.ellipsis,
-                                      //       ),
-                                      //     ),
-                                      //   ],
-                                      // ),
-
-                                      TextField(
-                                        // focusNode: titleFocus,
-                                        controller: usernameController,
-                                        keyboardType: TextInputType.url,
-                                        textCapitalization:
-                                            TextCapitalization.words,
-                                        enableSuggestions: true,
-                                        autocorrect: true,
-                                        maxLines: 1,
-                                        cursorColor: Colors.white,
-                                        style: textTheme.headline6?.copyWith(
-                                            color: appState.selectedAccount
-                                                        ?.userId ==
-                                                    userData?.id
-                                                ? appState.primaryColor
-                                                : null),
-                                        enabled: ownProfile || admin,
-                                        decoration: const InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText: "Username",
-                                            isDense: true),
-                                        onChanged: (value) {},
-                                      ),
-                                      if (ownProfile || admin)
-                                        const Align(
-                                            alignment: Alignment.centerRight,
-                                            child: Text(
-                                              "Username may be updated.",
-                                              textAlign: TextAlign.right,
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w400,
-                                                  fontSize: 12),
-                                            )),
-                                    ],
-                                  ),
-                                ),
-                                if (userData?.permissions
-                                        .contains(Permission.ADMIN) ??
-                                    false)
-                                  Tooltip(
-                                    message:
-                                        "${userData!.username} is an admin",
-                                    child: const SizedBox(
-                                      height: 32,
-                                      width: 32,
-                                      child: Icon(
-                                          Icons.admin_panel_settings_outlined,
-                                          size: 24,
-                                          color: Colors.white),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: Row(
-                                      children: [
-                                        Text(
-                                          "User ID: ",
-                                          style: textTheme.caption,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        Expanded(
-                                          child: Text(
-                                            userData?.id ?? '...',
-                                            style: textTheme.caption,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // const SizedBox(height: 4),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              PersonPreview(
+                server: widget.server ?? JonlineServer.selectedServer.server,
+                person: Person(userData ?? User()),
+                navigable: false,
               ),
+              // Card(
+              //   color: appState.selectedAccount?.id == userData?.id
+              //       ? appState.navColor
+              //       : null,
+              //   child: InkWell(
+              //     child: Padding(
+              //       padding: const EdgeInsets.all(8.0),
+              //       child: Stack(
+              //         children: [
+              //           Column(
+              //             children: [
+              //               Row(
+              //                 children: [
+              //                   const SizedBox(
+              //                     height: 48,
+              //                     width: 48,
+              //                     child: Icon(Icons.account_circle,
+              //                         size: 32, color: Colors.white),
+              //                   ),
+              //                   Expanded(
+              //                     child: Column(
+              //                       children: [
+              //                         Row(
+              //                           children: [
+              //                             Expanded(
+              //                               child: Text(
+              //                                   '${JonlineServer.selectedServer.server}/',
+              //                                   style: textTheme.caption,
+              //                                   maxLines: 1,
+              //                                   overflow:
+              //                                       TextOverflow.ellipsis),
+              //                             ),
+              //                           ],
+              //                         ),
+              //                         // Row(
+              //                         //   children: [
+              //                         //     Expanded(
+              //                         //       child: Text(
+              //                         //         userData?.username ?? '...',
+              //                         //         style: textTheme.headline6
+              //                         //             ?.copyWith(
+              //                         //                 color: appState
+              //                         //                             .selectedAccount
+              //                         //                             ?.userId ==
+              //                         //                         userData?.id
+              //                         //                     ? appState
+              //                         //                         .primaryColor
+              //                         //                     : null),
+              //                         //         maxLines: 1,
+              //                         //         overflow: TextOverflow.ellipsis,
+              //                         //       ),
+              //                         //     ),
+              //                         //   ],
+              //                         // ),
+
+              //                         TextField(
+              //                           // focusNode: titleFocus,
+              //                           controller: usernameController,
+              //                           keyboardType: TextInputType.url,
+              //                           textCapitalization:
+              //                               TextCapitalization.words,
+              //                           enableSuggestions: true,
+              //                           autocorrect: true,
+              //                           maxLines: 1,
+              //                           cursorColor: Colors.white,
+              //                           style: textTheme.headline6?.copyWith(
+              //                               color: appState.selectedAccount
+              //                                           ?.userId ==
+              //                                       userData?.id
+              //                                   ? appState.primaryColor
+              //                                   : null),
+              //                           enabled: ownProfile || admin,
+              //                           decoration: const InputDecoration(
+              //                               border: InputBorder.none,
+              //                               hintText: "Username",
+              //                               isDense: true),
+              //                           onChanged: (value) {},
+              //                         ),
+              //                         if (ownProfile || admin)
+              //                           const Align(
+              //                               alignment: Alignment.centerRight,
+              //                               child: Text(
+              //                                 "Username may be updated.",
+              //                                 textAlign: TextAlign.right,
+              //                                 style: TextStyle(
+              //                                     color: Colors.white,
+              //                                     fontWeight: FontWeight.w400,
+              //                                     fontSize: 12),
+              //                               )),
+              //                       ],
+              //                     ),
+              //                   ),
+              //                   if (userData?.permissions
+              //                           .contains(Permission.ADMIN) ??
+              //                       false)
+              //                     Tooltip(
+              //                       message:
+              //                           "${userData!.username} is an admin",
+              //                       child: const SizedBox(
+              //                         height: 32,
+              //                         width: 32,
+              //                         child: Icon(
+              //                             Icons.admin_panel_settings_outlined,
+              //                             size: 24,
+              //                             color: Colors.white),
+              //                       ),
+              //                     ),
+              //                 ],
+              //               ),
+              //               const SizedBox(height: 4),
+              //               Padding(
+              //                 padding:
+              //                     const EdgeInsets.symmetric(horizontal: 4.0),
+              //                 child: Row(
+              //                   children: [
+              //                     Expanded(
+              //                       flex: 2,
+              //                       child: Row(
+              //                         children: [
+              //                           Text(
+              //                             "User ID: ",
+              //                             style: textTheme.caption,
+              //                             maxLines: 1,
+              //                             overflow: TextOverflow.ellipsis,
+              //                           ),
+              //                           Expanded(
+              //                             child: Text(
+              //                               userData?.id ?? '...',
+              //                               style: textTheme.caption,
+              //                               maxLines: 1,
+              //                               overflow: TextOverflow.ellipsis,
+              //                             ),
+              //                           ),
+              //                         ],
+              //                       ),
+              //                     ),
+              //                   ],
+              //                 ),
+              //               ),
+              //               // const SizedBox(height: 4),
+              //             ],
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //   ),
+              // ),
               const SizedBox(height: 16),
               // buildHeading("Avatar"),
               // Text('(TODO) 🚧🛠', style: textTheme.subtitle1),
@@ -387,7 +393,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
                               this.account ?? JonlineAccount.selectedAccount;
                           return v != vm.Visibility.VISIBILITY_UNKNOWN &&
                               (account?.permissions.contains(
-                                          Permission.GLOBALLY_PUBLISH_USERS) ==
+                                          Permission.PUBLISH_USERS_GLOBALLY) ==
                                       true ||
                                   account?.permissions
                                           .contains(Permission.ADMIN) ==

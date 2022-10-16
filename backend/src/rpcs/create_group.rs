@@ -33,6 +33,18 @@ pub fn create_group(
             _ => Moderation::Unmoderated,
         }
         .to_string_moderation();
+    let default_post_moderation = match request.default_post_moderation.to_proto_moderation() {
+        Some(Moderation::Pending) => Moderation::Pending,
+        Some(Moderation::Unmoderated) => Moderation::Unmoderated,
+        _ => Moderation::Unmoderated,
+    }
+    .to_string_moderation();
+    let default_event_moderation = match request.default_event_moderation.to_proto_moderation() {
+        Some(Moderation::Pending) => Moderation::Pending,
+        Some(Moderation::Unmoderated) => Moderation::Unmoderated,
+        _ => Moderation::Unmoderated,
+    }
+    .to_string_moderation();
     let mut default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();
     if request.default_membership_permissions.is_empty() {
@@ -50,6 +62,8 @@ pub fn create_group(
                     visibility: visibility,
                     default_membership_permissions: default_membership_permissions,
                     default_membership_moderation: default_membership_moderation,
+                    default_post_moderation: default_post_moderation,
+                    default_event_moderation: default_event_moderation,
                 })
                 .get_result::<models::Group>(conn)?;
 

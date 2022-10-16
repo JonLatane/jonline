@@ -12,7 +12,7 @@ import 'dart:core' as $core;
 import 'package:grpc/service_api.dart' as $grpc;
 import 'google/protobuf/empty.pb.dart' as $0;
 import 'federation.pb.dart' as $1;
-import 'admin.pb.dart' as $2;
+import 'server_configuration.pb.dart' as $2;
 import 'authentication.pb.dart' as $3;
 import 'users.pb.dart' as $4;
 import 'groups.pb.dart' as $5;

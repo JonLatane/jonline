@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jonline/jonline_state.dart';
+import 'package:jonline/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
@@ -9,8 +10,14 @@ import '../../models/jonline_server.dart';
 // import 'package:jonline/db.dart';
 
 class GroupChooser extends StatefulWidget {
+  final Function(Group)? onGroupSelected;
+  // Group filter should return null if the group
+  // can be selected, or an error message if it can't.
+  final String? Function(Group)? groupFilter;
   const GroupChooser({
     Key? key,
+    this.onGroupSelected,
+    this.groupFilter,
   }) : super(key: key);
 
   @override
@@ -110,6 +117,9 @@ Future<Object> showGroupsMenu(
   // TextTheme textTheme = theme.textTheme;
   ThemeData darkTheme = theme;
   final groups = context.findRootAncestorStateOfType<AppState>()!.groups.value;
+  final myGroups = groups.where((g) => g.member);
+  final pendingGroups = groups.where((g) => g.wantsToJoinGroup);
+  final otherGroups = groups.where((g) => !g.member && !g.wantsToJoinGroup);
   return showMenu(
       context: context,
       position: position,
@@ -141,8 +151,8 @@ Future<Object> showGroupsMenu(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    groups.isEmpty ? 'No Groups on ' : 'Groups on ',
-                    style: groups.isEmpty
+                    myGroups.isEmpty ? 'No Groups Joined on ' : 'My Groups on ',
+                    style: myGroups.isEmpty
                         ? darkTheme.textTheme.titleMedium
                         : darkTheme.textTheme.titleLarge,
                   ),
@@ -153,7 +163,46 @@ Future<Object> showGroupsMenu(
                 ],
               ),
             ),
-            ...groups.map((a) => _groupItem(a, context)),
+            ...myGroups.map((a) => _groupItem(a, context)),
+            if (pendingGroups.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Requested Memberships',
+                      style: darkTheme.textTheme.titleLarge,
+                    ),
+                    // Text(
+                    //   "${JonlineServer.selectedServer.server}/",
+                    //   style: darkTheme.textTheme.caption,
+                    // ),
+                  ],
+                ),
+              ),
+            ...pendingGroups.map((a) => _groupItem(a, context)),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    otherGroups.isEmpty
+                        ? 'No Other Groups on '
+                        : 'Other Groups on ',
+                    style: otherGroups.isEmpty
+                        ? darkTheme.textTheme.titleMedium
+                        : darkTheme.textTheme.titleLarge,
+                  ),
+                  Text(
+                    "${JonlineServer.selectedServer.server}/",
+                    style: darkTheme.textTheme.caption,
+                  ),
+                ],
+              ),
+            ),
+            ...otherGroups.map((a) => _groupItem(a, context)),
           ]),
         ),
       ]);

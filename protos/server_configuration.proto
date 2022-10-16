@@ -9,24 +9,27 @@ import "permissions.proto";
 message ServerConfiguration {
   // The name of the server.
   optional ServerInfo server_info = 1;
+
+  repeated Permission anonymous_user_permissions = 10;
   // Default user permissions given to a user. Valid values are VIEW_POSTS,
-  // CREATE_POSTS, GLOBALLY_PUBLISH_POSTS, VIEW_EVENTS, CREATE_EVENTS, and
-  // GLOBALLY_PUBLISH_EVENTS. Users with MODERATE_USERS permission can
+  // CREATE_POSTS, PUBLISH_POSTS_GLOBALLY, VIEW_EVENTS, CREATE_EVENTS, and
+  // PUBLISH_EVENTS_GLOBALLY. Users with MODERATE_USERS permission can
   // grant these permissions to other users. Only users with ADMIN can grant
   // MODERATE_USERS, MODERATE_POSTS, and MODERATE_EVENTS.
-  repeated Permission default_user_permissions = 10;
+  repeated Permission default_user_permissions = 11;
+  repeated Permission basic_user_permissions = 12;
 
   // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain GLOBALLY_PUBLISH_USERS.
+  // contain PUBLISH_USERS_GLOBALLY.
   FeatureSettings people_settings = 20;
   // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain GLOBALLY_PUBLISH_GROUPS.
+  // contain PUBLISH_GROUPS_GLOBALLY.
   FeatureSettings group_settings = 21;
   // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain GLOBALLY_PUBLISH_POSTS.
+  // contain PUBLISH_POSTS_GLOBALLY.
   FeatureSettings post_settings = 22;
   // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain GLOBALLY_PUBLISH_EVENTS.
+  // contain PUBLISH_EVENTS_GLOBALLY.
   FeatureSettings event_settings = 23;
 
   // Strategy when a user sets their visibility to PRIVATE. Defaults to ACCOUNT_IS_FROZEN.

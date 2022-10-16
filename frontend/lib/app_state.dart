@@ -6,7 +6,7 @@ import '../models/jonline_account_operations.dart';
 import '../screens/accounts/server_configuration_page.dart';
 import '../screens/login_page.dart';
 import 'db.dart';
-import 'generated/admin.pb.dart';
+import 'generated/server_configuration.pb.dart';
 import 'generated/groups.pb.dart';
 import 'generated/posts.pb.dart';
 import 'generated/users.pb.dart';

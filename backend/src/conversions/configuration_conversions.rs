@@ -11,7 +11,9 @@ impl ToDbServerConfiguration for ServerConfiguration {
     fn to_db(&self) -> NewServerConfiguration {
         NewServerConfiguration {
             server_info: serde_json::to_value(self.server_info.to_owned()).unwrap(),
+            anonymous_user_permissions: self.anonymous_user_permissions.to_json_permissions(),
             default_user_permissions: self.default_user_permissions.to_json_permissions(),
+            basic_user_permissions: self.basic_user_permissions.to_json_permissions(),
             people_settings: serde_json::to_value(self.people_settings.to_owned()).unwrap(),
             group_settings: serde_json::to_value(self.group_settings.to_owned()).unwrap(),
             post_settings: serde_json::to_value(self.post_settings.to_owned()).unwrap(),
@@ -38,17 +40,11 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             serde_json::from_value(self.post_settings.to_owned()).unwrap();
         let event_settings: FeatureSettings =
             serde_json::from_value(self.event_settings.to_owned()).unwrap();
-        let permissions: Vec<String> =
-            serde_json::from_value(self.default_user_permissions.to_owned()).unwrap();
-        let mapped_permissions: Vec<i32> = permissions
-            .iter()
-            .map(|permission| permission.to_proto_permission())
-            .filter(|permission| permission.is_some())
-            .map(|permission| permission.unwrap() as i32)
-            .collect();
         ServerConfiguration {
             server_info: Some(server_info),
-            default_user_permissions: mapped_permissions,
+            anonymous_user_permissions: self.anonymous_user_permissions.to_i32_permissions(),
+            default_user_permissions: self.default_user_permissions.to_i32_permissions(),
+            basic_user_permissions: self.basic_user_permissions.to_i32_permissions(),
             people_settings: Some(people_settings),
             group_settings: Some(group_settings),
             post_settings: Some(post_settings),

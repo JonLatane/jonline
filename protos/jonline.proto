@@ -11,7 +11,7 @@ import "post_query.proto";
 import "users.proto";
 import "groups.proto";
 import "federation.proto";
-import "admin.proto";
+import "server_configuration.proto";
 
 // Authenticated calls require a Refresh Token in request metadata, retrieved from
 // the RefreshToken RPC. The CreateAccount or Login RPC should first be used to fetch

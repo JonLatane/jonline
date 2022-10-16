@@ -9,6 +9,7 @@ import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/enum_conversions.dart';
+import 'package:jonline/utils/moderation_accessors.dart';
 import 'package:recase/recase.dart';
 
 import '../../app_state.dart';
@@ -232,28 +233,16 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
         // The cached data (appState.users.value) is fine.
         break;
       case PeopleListingType.following:
-        result = result
-            .where((p) => p.user.currentUserFollow.targetUserModeration.passes)
-            .toList();
+        result = result.where((p) => p.user.following).toList();
         break;
       case PeopleListingType.friends:
-        result = result
-            .where((p) =>
-                p.user.currentUserFollow.targetUserModeration.passes &&
-                p.user.targetCurrentUserFollow.targetUserModeration.passes)
-            .toList();
+        result = result.where((p) => p.user.friends).toList();
         break;
       case PeopleListingType.followers:
-        result = result
-            .where((p) =>
-                p.user.targetCurrentUserFollow.targetUserModeration.passes)
-            .toList();
+        result = result.where((p) => p.user.followsYou).toList();
         break;
       case PeopleListingType.followRequests:
-        result = result
-            .where((p) =>
-                p.user.targetCurrentUserFollow.targetUserModeration.pending)
-            .toList();
+        result = result.where((p) => p.user.wantsToFollowYou).toList();
         break;
       // default:
       // result = appState.users.value;

@@ -15,13 +15,15 @@ message Group {
   repeated Permission default_membership_permissions = 5;
   // Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
   Moderation default_membership_moderation = 6;
+  Moderation default_post_moderation = 7;
+  Moderation default_event_moderation = 8;
   // LIMITED visibility groups are only visible to members. PRIVATE groups are only
   // visibile to users with the ADMIN group permission.
-  Visibility visibility = 7;
-  uint32 member_count = 8;
-  optional Membership current_user_membership = 9;
-  google.protobuf.Timestamp created_at = 10;
-  optional google.protobuf.Timestamp updated_at = 11;
+  Visibility visibility = 9;
+  uint32 member_count = 10;
+  optional Membership current_user_membership = 11;
+  google.protobuf.Timestamp created_at = 12;
+  optional google.protobuf.Timestamp updated_at = 13;
 }
 
 message Membership {

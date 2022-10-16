@@ -6,7 +6,7 @@ import '../generated/visibility_moderation.pbenum.dart';
 extension PermissionConversions on Permission {
   String get displayName {
     switch (this) {
-      case Permission.GLOBALLY_PUBLISH_USERS:
+      case Permission.PUBLISH_USERS_GLOBALLY:
         return 'Globally Publish Profile';
       default:
         return name.replaceAll('_', ' ').titleCase;
@@ -17,7 +17,7 @@ extension PermissionConversions on Permission {
 extension VisibilityDisplayName on Visibility {
   String get displayName {
     switch (this) {
-      // case Permission.GLOBALLY_PUBLISH_USERS:
+      // case Permission.PUBLISH_USERS_GLOBALLY:
       //   return 'Globally Publish Profile';
       default:
         return name.replaceAll('_', ' ').titleCase;
@@ -32,8 +32,4 @@ extension ModerationConversions on Moderation {
         return name.replaceAll('_', ' ').titleCase;
     }
   }
-
-  bool get passes =>
-      this == Moderation.UNMODERATED || this == Moderation.APPROVED;
-  bool get pending => this == Moderation.PENDING;
 }

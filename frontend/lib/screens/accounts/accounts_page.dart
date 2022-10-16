@@ -471,7 +471,13 @@ class AccountsPageState extends JonlineState<AccountsPage> {
   Widget buildAccountList() {
     return RefreshIndicator(
         displacement: mq.padding.top + 80,
-        onRefresh: () async => await appState.updateServersAndAccounts(),
+        onRefresh: () async {
+          return await appState
+              .updateServersAndAccounts()
+              .timeout(const Duration(seconds: 30), onTimeout: () {
+            showSnackBar('Failed to update accounts.');
+          });
+        },
         child: ScrollConfiguration(
             // key: Key("postListScrollConfiguration-${postList.length}"),
             behavior: ScrollConfiguration.of(context).copyWith(

@@ -10,6 +10,7 @@ import 'package:jonline/jonline_state.dart';
 import 'package:jonline/screens/groups/group_preview.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
+import 'package:jonline/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
@@ -92,23 +93,13 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
       case GroupListingType.ALL_GROUPS:
         break;
       case GroupListingType.MY_GROUPS:
-        result = result
-            .where((u) =>
-                u.currentUserMembership.groupModeration.passes &&
-                u.currentUserMembership.userModeration.passes)
-            .toList();
+        result = result.where((g) => g.member).toList();
         break;
       case GroupListingType.REQUESTED:
-        result = result
-            .where((u) =>
-                u.currentUserMembership.groupModeration.pending &&
-                u.currentUserMembership.userModeration.passes)
-            .toList();
+        result = result.where((g) => g.requested).toList();
         break;
       case GroupListingType.INVITED:
-        result = result
-            .where((u) => u.currentUserMembership.userModeration.pending)
-            .toList();
+        result = result.where((g) => g.invited).toList();
         break;
     }
     if (homePage.peopleSearch.value &&

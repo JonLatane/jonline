@@ -225,8 +225,10 @@ release_be_push_local: local_registry_create release_be_build_binary release_web
 release_be_push_cloud: release_be_build_binary release_web_build
 	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
+	docker tag $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) $(CLOUD_REGISTRY)/jonline:latest
 	docker build . -t $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION) -f backend/docker/preview_generator/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION)
+	docker tag $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION) $(CLOUD_REGISTRY)/jonline_preview_generator:latest
 
 # Full-Stack dev targets
 clean:

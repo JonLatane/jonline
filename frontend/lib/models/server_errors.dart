@@ -7,7 +7,7 @@ final grpcErrorConversions = {
       "${_capitalize(matches[1])} must be less than ${matches[2]} character${_sIfPlural(matches[2])}.",
   RegExp(r'^[\w]+$'): (matches) =>
       "${_capitalize(matches[0]).replaceAll('_', ' ')}.",
-  RegExp(r'^global_public_users_require_globally_publish_users_permission$'):
+  RegExp(r'^global_public_users_require_PUBLISH_USERS_GLOBALLY_permission$'):
       (matches) =>
           '"Global Public" user visibility requires "Globally Publish Profile" permission.',
 };

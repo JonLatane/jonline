@@ -1,0 +1,9 @@
+# Jonline Permissions, Visibility and Moderation Flows
+
+Jonline's primary source of Permissions documentation is [`permissions.proto`](https://github.com/JonLatane/jonline/blob/main/protos/permissions.proto) and [`visibility_moderation.proto`](https://github.com/JonLatane/jonline/blob/main/protos/visibility_moderation.proto). Effectively, permissions and moderation (and their use throughout [User](https://github.com/JonLatane/jonline/blob/main/protos/users.proto), [Group](https://github.com/JonLatane/jonline/blob/main/protos/groups.proto), and [Post](https://github.com/JonLatane/jonline/blob/main/protos/posts.proto)) models.
+
+## User moderation flow
+As the administrator of a Jonline instance/community (with or without many Groups), the [Server Configuration models](https://github.com/JonLatane/jonline/blob/main/protos/posts.proto) let you control user flows and actions remotely from the Jonline app. In "user story" order, (1) `anonymous_user_permissions`, (2) `authentication_features`, (3)`default_user_permissions`, (4) `basic_user_permissions` (with `Permission.GRANT_BASIC_PERMISSIONS`) let you control (1) what an anonymous user can see, (2) whether users can create accounts, sign in, and (eventually) use third-party auth, (3) what permissions new users have, and (4) a basic set of permissions that can be granted by "user moderator" type people (like creating Posts and Events)
+
+## Group member moderation flow
+As the administrator of a Jonline Group, the member moderation flow is a bit simpler, managed by the [Group models](https://github.com/JonLatane/jonline/blob/main/protos/groups.proto). If `default_membership_moderation` is `Moderation.PENDING`, anonymous users will not have access to Group Posts or Events. (They can see Group Users, though.) After joining (regardless of needing approval), let users only view posts with `default_membership_permissions`.

@@ -22,6 +22,7 @@ pub mod rpcs;
 pub mod schema;
 pub mod conversions;
 pub mod logic;
+pub mod web;
 
 #[cfg(test)]
 mod tests {

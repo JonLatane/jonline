@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 
+use crate::conversions::ToJsonPermissions;
 use crate::protos::*;
 use crate::schema::server_configurations;
 
@@ -10,11 +11,16 @@ pub struct ServerConfiguration {
     pub active: bool,
 
     pub server_info: serde_json::Value,
+
+    pub anonymous_user_permissions: serde_json::Value,
     pub default_user_permissions: serde_json::Value,
+    pub basic_user_permissions: serde_json::Value,
+
     pub people_settings: serde_json::Value,
     pub group_settings: serde_json::Value,
     pub post_settings: serde_json::Value,
     pub event_settings: serde_json::Value,
+    
     pub private_user_strategy: String,
     pub authentication_features: serde_json::Value,
 
@@ -25,7 +31,9 @@ pub struct ServerConfiguration {
 #[diesel(table_name = server_configurations)]
 pub struct NewServerConfiguration {
     pub server_info: serde_json::Value,
+    pub anonymous_user_permissions: serde_json::Value,
     pub default_user_permissions: serde_json::Value,
+    pub basic_user_permissions: serde_json::Value,
     pub people_settings: serde_json::Value,
     pub group_settings: serde_json::Value,
     pub post_settings: serde_json::Value,
@@ -35,6 +43,18 @@ pub struct NewServerConfiguration {
 }
 
 pub fn default_server_configuration() -> NewServerConfiguration {
+    let basic_user_permissions = vec![
+        Permission::FollowUsers,
+        Permission::ViewGroups,
+        Permission::CreateGroups,
+        Permission::JoinGroups,
+        Permission::ViewPosts,
+        Permission::CreatePosts,
+        Permission::PublishPostsLocally,
+        Permission::ViewEvents,
+        Permission::CreateEvents,
+        Permission::PublishEventsLocally,
+    ].to_json_permissions();
     return NewServerConfiguration {
         server_info: serde_json::to_value(ServerInfo {
             name: None,
@@ -50,21 +70,16 @@ pub fn default_server_configuration() -> NewServerConfiguration {
             }),
         })
         .unwrap(),
-        default_user_permissions: serde_json::to_value(
-            [
-                Permission::FollowUsers,
-                Permission::CreateGroups,
-                Permission::JoinGroups,
-                Permission::ViewPosts,
-                Permission::CreatePosts,
-                Permission::ViewEvents,
-                Permission::CreateEvents,
-            ]
-            .iter()
-            .map(|it| it.as_str_name())
-            .collect::<Vec<&str>>(),
-        )
-        .unwrap(),
+        anonymous_user_permissions: vec![
+            Permission::ViewGroups,
+            Permission::ViewPosts,
+            Permission::PublishPostsLocally,
+            Permission::ViewEvents,
+            Permission::CreateEvents,
+            Permission::PublishEventsLocally,
+        ].to_json_permissions(),
+        default_user_permissions: basic_user_permissions.to_owned(),
+        basic_user_permissions: basic_user_permissions,
         people_settings: serde_json::to_value(FeatureSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,

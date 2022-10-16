@@ -12,6 +12,8 @@ pub struct Group {
     pub visibility: String,
     pub default_membership_permissions: serde_json::Value,
     pub default_membership_moderation: String,
+    pub default_post_moderation: String,
+    pub default_event_moderation: String,
     pub moderation: String,
     pub member_count: i32,
     pub created_at: SystemTime,
@@ -27,6 +29,8 @@ pub struct NewGroup {
     pub visibility: String,
     pub default_membership_permissions: serde_json::Value,
     pub default_membership_moderation: String,
+    pub default_post_moderation: String,
+    pub default_event_moderation: String,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]

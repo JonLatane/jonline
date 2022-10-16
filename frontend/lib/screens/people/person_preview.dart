@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/enum_conversions.dart';
+import 'package:jonline/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
@@ -47,6 +48,8 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   void initState() {
     super.initState();
     appState.accounts.addListener(updateState);
+    appState.users.addListener(updateState);
+    appState.selectedAccountChanged.addListener(updateState);
     widget.usernameController?.addListener(updateGroupName);
     widget.usernameController?.text = user.username;
   }
@@ -54,6 +57,8 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   @override
   dispose() {
     appState.accounts.removeListener(updateState);
+    appState.users.removeListener(updateState);
+    appState.selectedAccountChanged.removeListener(updateState);
     widget.usernameController?.removeListener(updateGroupName);
 
     super.dispose();
@@ -74,19 +79,14 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   bool get admin => userPermissions.contains(Permission.ADMIN);
   bool get moderator => userPermissions.contains(Permission.MODERATE_USERS);
 
-  bool get following => user.currentUserFollow.targetUserModeration.passes;
-  bool get followRequestPending =>
-      user.currentUserFollow.targetUserModeration.pending;
+  bool get following => user.following;
+  bool get followRequestPending => user.followRequestPending;
 
-  bool get followsYou =>
-      user.targetCurrentUserFollow.targetUserModeration.passes;
-  bool get wantsToFollowYou =>
-      user.targetCurrentUserFollow.targetUserModeration.pending;
+  bool get followsYou => user.followsYou;
+  bool get wantsToFollowYou => user.wantsToFollowYou;
 
-  bool get member =>
-      membership?.groupModeration.passes == true &&
-      membership?.userModeration.passes == true;
-  bool get wantsToJoinGroup => membership?.groupModeration.pending == true;
+  bool get member => membership?.member ?? false;
+  bool get wantsToJoinGroup => membership?.wantsToJoinGroup ?? false;
 
   bool get currentUserProfile => user.id == appState.selectedAccount?.userId;
 
@@ -101,8 +101,6 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
       // color: Colors.blue,
       color: backgroundColor,
       child: InkWell(
-        //    onTap: null, //TODO: Do we want to navigate the user somewhere?
-
         onTap: () {
           context.navigateNamedTo(
               'person/${JonlineServer.selectedServer.server}/${user.id}');
@@ -451,6 +449,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
           });
         }
       });
+      appState.users.notify();
       // showSnackBar('Followed ${user.username}.');
       showSnackBar(
           '${follow.targetUserModeration.pending ? "Requested to follow" : "Followed"} ${user.username}.');
@@ -483,6 +482,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
           });
         }
       });
+      appState.users.notify();
       showSnackBar(
           '${follow.targetUserModeration.pending ? "Canceled request to" : "Unfollowed"} ${user.username}.');
     } catch (e) {
@@ -515,6 +515,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
           });
         }
       });
+      appState.users.notify();
       showSnackBar('Approved request from ${user.username}.');
     } catch (e) {
       showSnackBar(formatServerError(e));
@@ -531,6 +532,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
       setState(() {
         user.targetCurrentUserFollow = Follow();
       });
+      appState.users.notify();
       showSnackBar('Rejected request from ${user.username}.');
     } catch (e) {
       showSnackBar(formatServerError(e));

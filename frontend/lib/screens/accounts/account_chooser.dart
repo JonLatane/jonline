@@ -199,7 +199,7 @@ Future<Object> showAccountsMenu(
           enabled: false,
           child: Column(children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
+              padding: const EdgeInsets.all(8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

@@ -3,24 +3,33 @@ use std::mem::transmute;
 use crate::itertools::Itertools;
 use crate::protos::*;
 
-pub const ALL_PERMISSIONS: [Permission; 19] = [
+pub const ALL_PERMISSIONS: [Permission; 23] = [
     Permission::Unknown,
-    Permission::GloballyPublishUsers,
+
+    Permission::PublishUsersLocally,
+    Permission::PublishUsersGlobally,
     Permission::ModerateUsers,
     Permission::FollowUsers,
+
     Permission::GrantBasicPermissions,
     Permission::CreateGroups,
-    Permission::GloballyPublishGroups,
+    Permission::PublishGroupsGlobally,
     Permission::ModerateGroups,
     Permission::JoinGroups,
+
     Permission::ViewPosts,
     Permission::CreatePosts,
-    Permission::GloballyPublishPosts,
+    Permission::PublishPostsLocally,
+    Permission::PublishPostsGlobally,
     Permission::ModeratePosts,
+
     Permission::ViewEvents,
     Permission::CreateEvents,
-    Permission::GloballyPublishEvents,
+    Permission::PublishEventsLocally,
+    Permission::PublishEventsGlobally,
     Permission::ModerateEvents,
+
+    Permission::RunBots,
     Permission::Admin,
     Permission::ViewPrivateContactMethods,
 ];

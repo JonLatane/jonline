@@ -219,7 +219,7 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
                                     return v !=
                                             vm.Visibility.VISIBILITY_UNKNOWN &&
                                         (account?.permissions.contains(Permission
-                                                    .GLOBALLY_PUBLISH_GROUPS) ==
+                                                    .PUBLISH_GROUPS_GLOBALLY) ==
                                                 true ||
                                             account?.permissions.contains(
                                                     Permission.ADMIN) ==

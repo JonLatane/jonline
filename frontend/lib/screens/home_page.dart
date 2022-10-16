@@ -70,7 +70,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   set titleServer(String? value) => titleServerNotifier.value = value;
   String? get titleUsername => titleUsernameNotifier.value;
   set titleUsername(String? value) => titleUsernameNotifier.value = value;
-  bool get sideNavExpanded => _sideNavExpanded;
+  bool get sideNavExpanded =>
+      (draggingSideNav && !Settings.keepSideNavExpanded) || _sideNavExpanded;
   bool _sideNavExpanded = false;
   NativeDeviceOrientation orientation = NativeDeviceOrientation.unknown;
 
@@ -299,7 +300,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           : sideNavBaseWidth
       : 0;
   double get sideNavWidth => useSideNav
-      ? _sideNavExpanded
+      ? sideNavExpanded
           ? sideNavExpandedWidth
           : sideNavBaseWidth
       : 0;
@@ -529,14 +530,19 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           );
   }
 
+  bool draggingSideNav = false;
   double _lastSideNavDragPosition = 0.0;
   static const double increment = 59.0;
   Widget buildSideNav(BuildContext context) {
     final tabsRouter = context.tabsRouter;
     final items = navigationItems;
     return GestureDetector(
-      onVerticalDragStart: (details) =>
-          _lastSideNavDragPosition = details.globalPosition.dy,
+      onVerticalDragStart: (details) {
+        setState(() {
+          draggingSideNav = true;
+        });
+        _lastSideNavDragPosition = details.globalPosition.dy;
+      },
       onVerticalDragUpdate: (details) {
         int lastTab = (_lastSideNavDragPosition / increment).floor();
         int tab = (details.globalPosition.dy / increment).floor();
@@ -553,6 +559,11 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             _lastSideNavDragPosition = details.globalPosition.dy;
           }
         }
+      },
+      onVerticalDragEnd: (details) {
+        setState(() {
+          draggingSideNav = false;
+        });
       },
       onHorizontalDragUpdate: (details) {
         if (details.primaryDelta != null) {
@@ -647,7 +658,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                               duration:
                                                                   animationDuration,
                                                               width:
-                                                                  _sideNavExpanded
+                                                                  sideNavExpanded
                                                                       ? 12
                                                                       : 0,
                                                             ),
@@ -655,7 +666,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                               child:
                                                                   AnimatedOpacity(
                                                                 opacity:
-                                                                    _sideNavExpanded
+                                                                    sideNavExpanded
                                                                         ? 1
                                                                         : 0,
                                                                 duration:
@@ -702,7 +713,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               children: [
                                 AnimatedRotation(
                                   duration: animationDuration,
-                                  turns: _sideNavExpanded ? 0 : -0.5,
+                                  turns: sideNavExpanded ? 0 : -0.5,
                                   child: const Icon(Icons.arrow_left,
                                       size: 32, color: Colors.grey),
                                 ),

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:jonline/my_platform.dart';
 import 'package:uuid/uuid.dart';
 
-import '../generated/admin.pb.dart';
+import '../generated/server_configuration.pb.dart';
 import '../generated/google/protobuf/empty.pb.dart';
 import 'jonline_account.dart';
 import 'jonline_clients.dart';

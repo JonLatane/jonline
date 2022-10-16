@@ -1,44 +1,41 @@
 #[macro_use]
 extern crate diesel;
-extern crate dotenv;
-extern crate diesel_migrations;
 extern crate bcrypt;
 extern crate bs58;
+extern crate diesel_migrations;
+extern crate dotenv;
+extern crate futures;
+extern crate itertools;
 extern crate prost_types;
 extern crate regex;
 extern crate ring;
-extern crate tonic_web;
-#[macro_use]
 extern crate rocket;
-extern crate futures;
+extern crate rocket_async_compression;
 extern crate serde;
 extern crate serde_json;
-extern crate rocket_async_compression;
-extern crate itertools;
+extern crate tonic_web;
 
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-};
+use std::{env, fs};
 
 pub mod auth;
 pub mod conversions;
 pub mod db_connection;
 pub mod jonline;
+pub mod logic;
 pub mod models;
 pub mod protos;
 pub mod rpcs;
 pub mod schema;
-pub mod logic;
+pub mod web;
 
 use crate::jonline::JonLineImpl;
 use ::jonline::{db_connection::PgPool, env_var, report_error};
 use futures::future::join_all;
 use protos::jonline_server::JonlineServer;
-use rocket::fs::NamedFile;
+use rocket::*;
+use rocket_async_compression::Compression;
 use std::net::SocketAddr;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
-use rocket_async_compression::Compression;
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
@@ -128,45 +125,29 @@ fn create_rocket_secure() -> Option<rocket::Rocket<rocket::Build>> {
 
 fn create_rocket_unsecured(port: i32) -> rocket::Rocket<rocket::Build> {
     let figment = rocket::Config::figment()
-    .merge(("port", port))
-    .merge(("address", "0.0.0.0"));
+        .merge(("port", port))
+        .merge(("address", "0.0.0.0"));
     create_rocket(figment)
 }
 
 fn create_rocket<T: rocket::figment::Provider>(figment: T) -> rocket::Rocket<rocket::Build> {
-    let server = rocket::custom(figment).mount("/", routes![index, file]);
+    let server = rocket::custom(figment)
+        .mount(
+            "/",
+            routes![
+                web::flutter_web::index,
+                web::flutter_web::flutter_index,
+                web::flutter_web::file,
+                web::home_page::home
+            ],
+        )
+        .register("/", catchers![web::catchers::not_found]);
     if cfg!(debug_assertions) {
         server
     } else {
         server.attach(Compression::fairing())
     }
 }
-
-#[get("/<file..>")]
-pub async fn file(file: PathBuf) -> std::io::Result<NamedFile> {
-    match NamedFile::open(Path::new("opt/web/").join(file.to_owned())).await {
-        Ok(file) => Ok(file),
-        Err(_) => match NamedFile::open(Path::new("../frontend/build/web/").join(file)).await {
-            Ok(file) => Ok(file),
-            Err(e) => Err(e),
-        },
-    }
-}
-#[get("/")]
-pub async fn index() -> std::io::Result<NamedFile> {
-    match NamedFile::open("opt/web/index.html").await {
-        Ok(file) => Ok(file),
-        Err(_) => match NamedFile::open("../frontend/build/web/index.html").await {
-            Ok(file) => Ok(file),
-            Err(e) => Err(e),
-        },
-    }
-}
-// #[get("/<path..>")]
-// fn redirect(file: PathBuf) -> &'static str {
-//     "Hey, you're here."
-// }
-
 
 fn create_tonic_router(pool: PgPool) -> tonic::transport::server::Router {
     let jonline = JonLineImpl { pool };

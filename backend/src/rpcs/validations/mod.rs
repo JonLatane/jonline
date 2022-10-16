@@ -1,25 +1,25 @@
-mod matching_validation;
+mod validate_regexp;
 
 mod operation_type;
 pub use operation_type::*;
 
-mod string_length_validation;
-pub use string_length_validation::*;
+mod validate_strings;
+pub use validate_strings::*;
 
-mod field_validation;
-pub use field_validation::*;
+mod validate_fields;
+pub use validate_fields::*;
 
-mod permission_validation;
-pub use permission_validation::*;
+mod validate_permissions;
+pub use validate_permissions::*;
 
-mod moderation_validation;
-pub use moderation_validation::*;
+mod validate_moderation;
+pub use validate_moderation::*;
 
 mod configuration_validation;
 pub use configuration_validation::*;
 
-mod user_validation;
-pub use user_validation::*;
+mod validate_users;
+pub use validate_users::*;
 
-mod group_validation;
-pub use group_validation::*;
+mod validate_groups;
+pub use validate_groups::*;

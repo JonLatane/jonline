@@ -46,6 +46,8 @@ impl ToProtoGroup for models::Group {
                 .default_membership_permissions
                 .to_i32_permissions(),
             default_membership_moderation: self.default_membership_moderation.to_i32_moderation(),
+            default_post_moderation: self.default_post_moderation.to_i32_moderation(),
+            default_event_moderation: self.default_event_moderation.to_i32_moderation(),
             visibility: self.visibility.to_i32_visibility(),
             member_count: member_count as u32,
             current_user_membership: user_membership,

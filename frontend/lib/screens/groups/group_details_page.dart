@@ -13,6 +13,7 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
+import '../../utils/moderation_accessors.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../models/jonline_account.dart';
 import '../../models/jonline_account_operations.dart';
@@ -44,9 +45,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
   List<Permission> get groupPermissions =>
       group?.currentUserMembership.permissions ?? [];
 
-  bool get member =>
-      (group?.currentUserMembership.userModeration.passes ?? false) &&
-      (group?.currentUserMembership.groupModeration.passes ?? false);
+  bool get member => group?.member ?? false;
   bool get admin => userPermissions.contains(Permission.ADMIN);
   bool get moderator => userPermissions.contains(Permission.MODERATE_GROUPS);
   bool get groupAdmin => admin || groupPermissions.contains(Permission.ADMIN);
@@ -197,7 +196,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
                         .where((v) {
                           return v != vm.Visibility.VISIBILITY_UNKNOWN &&
                               (userPermissions.contains(
-                                      Permission.GLOBALLY_PUBLISH_GROUPS) ||
+                                      Permission.PUBLISH_GROUPS_GLOBALLY) ||
                                   userPermissions.contains(Permission.ADMIN) ||
                                   group?.visibility ==
                                       vm.Visibility.GLOBAL_PUBLIC ||

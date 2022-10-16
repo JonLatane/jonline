@@ -57,7 +57,7 @@ pub fn update_user(
                     && existing_user.visibility.to_proto_visibility().unwrap()
                         != Visibility::GlobalPublic
                 {
-                    validate_permission(&current_user, Permission::GloballyPublishUsers)
+                    validate_permission(&current_user, Permission::PublishUsersGlobally)
                         .map_err(|_| RollbackTransaction)?;
                 }
                 existing_user.visibility = request.visibility.to_string_visibility();

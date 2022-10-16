@@ -7,18 +7,6 @@ import "google/protobuf/timestamp.proto";
 // import "users.proto";
 import "visibility_moderation.proto";
 
-enum PostListingType {
-  // Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
-  // Also usable for getting replies anywhere.
-  PUBLIC_POSTS = 0;
-  // Returns posts from users the user is following.
-  FOLLOWING_POSTS = 1;
-  // Returns posts from any group the user is a member of.
-  MY_GROUPS_POSTS = 2;
-  // Returns LIMITED posts that are directly addressed to the user.
-  DIRECT_POSTS = 3;
-}
-
 // Valid GetPostsRequest combinations: 
 // - {}                           (get all posts)
 // - {listing_type:}              (get all posts)
@@ -39,18 +27,29 @@ message GetPostsRequest {
   PostListingType listing_type = 10;
 }
 
+enum PostListingType {
+  // Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
+  // Also usable for getting replies anywhere.
+  PUBLIC_POSTS = 0;
+  // Returns posts from users the user is following.
+  FOLLOWING_POSTS = 1;
+  // Returns posts from any group the user is a member of.
+  MY_GROUPS_POSTS = 2;
+  // Returns LIMITED posts that are directly addressed to the user.
+  DIRECT_POSTS = 3;
+  POSTS_PENDING_MODERATION = 4;
+
+  // group_id parameter is required for these.
+  GROUP_POSTS = 10;
+  GROUP_POSTS_PENDING_MODERATION = 11;
+}
+
+
 message CreatePostRequest {
   optional string title = 1;
   optional string link = 2;
   optional string content = 3;
   optional string reply_to_post_id = 4;
-}
-
-message UpdatePostRequest {
-  string id = 1;
-  string title = 2;
-  optional string link = 3;
-  optional string content = 4;
 }
 
 message Post {
@@ -78,4 +77,18 @@ message Post {
 
 message Posts {
   repeated Post posts = 1;
+}
+
+message GroupPost{
+  string group_id = 1;
+  string post_id = 2;
+  string user_id = 3;
+  Moderation group_moderation = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message UserPost{
+  string group_id = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp created_at = 3;
 }

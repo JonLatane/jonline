@@ -5,7 +5,9 @@ CREATE TABLE server_configurations (
 
   server_info JSONB NOT NULL DEFAULT '{}'::JSONB,
 
+  anonymous_user_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   default_user_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
+  basic_user_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
 
   people_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
   group_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
@@ -75,6 +77,8 @@ CREATE TABLE groups (
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
   default_membership_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   default_membership_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  default_post_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  default_event_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   member_count INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -106,14 +110,35 @@ CREATE TABLE posts (
   content TEXT NULL DEFAULT NULL,
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
   moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NULL DEFAULT NULL,
   response_count INTEGER NOT NULL DEFAULT 0,
   reply_count INTEGER NOT NULL DEFAULT 0,
-  preview BYTEA NULL DEFAULT NULL
+  preview BYTEA NULL DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NULL DEFAULT NULL
 );
 -- Speed up loading of posts by user.
 CREATE INDEX idx_post_vis_parent_created ON posts(visibility, parent_post_id, created_at);
+
+CREATE TABLE group_posts(
+  id SERIAL PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  post_id INTEGER NOT NULL REFERENCES posts ON DELETE CASCADE,
+  -- The user who shared the post to the group (not necessarily the author).
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  group_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX idx_group_post ON group_posts(group_id, post_id);
+
+CREATE TABLE user_posts(
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  post_id INTEGER NOT NULL REFERENCES posts ON DELETE CASCADE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX idx_user_post ON user_posts(user_id, post_id);
 
 -- FEDERATION MODELS
 CREATE TABLE federated_servers (

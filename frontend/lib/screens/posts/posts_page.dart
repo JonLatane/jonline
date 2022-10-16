@@ -7,9 +7,12 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/jonline_state.dart';
+import 'package:jonline/utils/colors.dart';
+import 'package:recase/recase.dart';
 
 import '../../app_state.dart';
 import '../../generated/posts.pb.dart';
+import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
 import '../../router/router.gr.dart';
 import 'post_preview.dart';
@@ -24,6 +27,7 @@ class PostsScreen extends StatefulWidget {
 class PostsScreenState extends JonlineState<PostsScreen>
     with AutoRouteAwareStateMixin<PostsScreen> {
   ScrollController scrollController = ScrollController();
+  PostListingType listingType = PostListingType.PUBLIC_POSTS;
 
   @override
   void didPushNext() {
@@ -200,6 +204,98 @@ class PostsScreenState extends JonlineState<PostsScreen>
                         },
                       )),
       ),
+    );
+  }
+  // bool get canShowPostRequests {
+  //   final group = appState.selectedGroup.value;
+  //   if (group == null) return false;
+  //   return (appState.selectedAccount?.permissions.contains(Permission.ADMIN) ??
+  //           false) ||
+  //       group.currentUserMembership.permissions.any(
+  //           (p) => [Permission.ADMIN, Permission.MODERATE_USERS].contains(p));
+  // }
+
+  Widget buildSectionSelector() {
+    final visibleSections = (!appState.viewingGroup)
+        ? [
+            PostListingType.PUBLIC_POSTS,
+            PostListingType.FOLLOWING_POSTS,
+            PostListingType.MY_GROUPS_POSTS,
+            PostListingType.DIRECT_POSTS,
+          ]
+        : [
+            PostListingType.GROUP_POSTS,
+            PostListingType.GROUP_POSTS_PENDING_MODERATION,
+          ];
+    final sectionCount = visibleSections.length;
+    final minSectionTabWidth = 110.0 * mq.textScaleFactor;
+    final evenSectionWidth =
+        (mq.size.width - homePage.sideNavPaddingWidth) / sectionCount;
+    final visibleSectionWidth = max(minSectionTabWidth, evenSectionWidth);
+    final selector = Row(
+      children: [
+        ...[
+          PostListingType.GROUP_POSTS,
+          PostListingType.PUBLIC_POSTS,
+          PostListingType.FOLLOWING_POSTS,
+          PostListingType.MY_GROUPS_POSTS,
+          PostListingType.DIRECT_POSTS,
+          PostListingType.GROUP_POSTS_PENDING_MODERATION
+        ]
+            // .where((l) => l != UserListingType.FRIENDS)
+            .map((l) {
+          bool usable =
+              JonlineAccount.loggedIn || l == PostListingType.PUBLIC_POSTS;
+          ;
+          // usable &= canShowMembershipRequests ||
+          //     l != PostListingType.membershipRequests;
+          var textButton = TextButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(l == listingType
+                      ? appState.primaryColor.textColor
+                      : null)),
+              onPressed: usable
+                  ? () {
+                      setState(() {
+                        listingType = l;
+                      });
+                    }
+                  : null,
+              child: Column(
+                children: [
+                  const Expanded(child: SizedBox()),
+                  Text(
+                    l.name.constantCase.replaceAll('_', '\n'),
+                    style: TextStyle(
+                        color: l == listingType
+                            ? null
+                            : usable
+                                ? Colors.white
+                                : Colors.grey),
+                    maxLines: l.name.constantCase.contains('_') ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                  const Expanded(child: SizedBox()),
+                ],
+              ));
+          bool visible = visibleSections.contains(l);
+          return AnimatedOpacity(
+            duration: animationDuration,
+            opacity: visible ? 1 : 0,
+            child: AnimatedContainer(
+                duration: animationDuration,
+                width: visible ? visibleSectionWidth : 0,
+                child: textButton),
+          );
+        })
+        // const SizedBox(width: 8)
+      ],
+    );
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: selector,
     );
   }
 

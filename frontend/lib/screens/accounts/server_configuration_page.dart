@@ -9,19 +9,18 @@ import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
+
+import '../../app_state.dart';
+import '../../generated/server_configuration.pb.dart';
 import '../../generated/google/protobuf/empty.pb.dart';
+import '../../generated/jonline.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
 import '../../models/demo_data.dart';
-import '../../models/jonline_server.dart';
-import '../../utils/proto_utils.dart';
-
-import '../../generated/admin.pb.dart';
-import '../../app_state.dart';
-import '../../generated/jonline.pbgrpc.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_clients.dart';
-import '../home_page.dart';
+import '../../models/jonline_server.dart';
+import '../../utils/proto_utils.dart';
 
 const Color defaultPrimaryColor = Color(0xFF2E86AB);
 const Color defaultNavColor = Color(0xFFA23B72);
@@ -338,7 +337,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                             this.account ?? JonlineAccount.selectedAccount;
                         return v != vm.Visibility.VISIBILITY_UNKNOWN &&
                             (account?.permissions.contains(
-                                        Permission.GLOBALLY_PUBLISH_USERS) ==
+                                        Permission.PUBLISH_USERS_GLOBALLY) ==
                                     true ||
                                 account?.permissions
                                         .contains(Permission.ADMIN) ==
@@ -363,18 +362,18 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                           values.first!);
                       if (values.first == vm.Visibility.GLOBAL_PUBLIC &&
                           !config!.defaultUserPermissions
-                              .contains(Permission.GLOBALLY_PUBLISH_USERS) &&
+                              .contains(Permission.PUBLISH_USERS_GLOBALLY) &&
                           !addedGloballyPublishProfilePermissionToMeetInvariant) {
                         addedGloballyPublishProfilePermissionToMeetInvariant =
                             true;
                         config!.defaultUserPermissions
-                            .add(Permission.GLOBALLY_PUBLISH_USERS);
+                            .add(Permission.PUBLISH_USERS_GLOBALLY);
                       } else if (values.first != vm.Visibility.GLOBAL_PUBLIC &&
                           addedGloballyPublishProfilePermissionToMeetInvariant) {
                         addedGloballyPublishProfilePermissionToMeetInvariant =
                             false;
                         config!.defaultUserPermissions
-                            .remove(Permission.GLOBALLY_PUBLISH_USERS);
+                            .remove(Permission.PUBLISH_USERS_GLOBALLY);
                       }
                     } else {
                       values.add(config?.peopleSettings.defaultVisibility ??
@@ -410,7 +409,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                       config!.defaultUserPermissions
                         ..clear()
                         ..addAll(values.cast<Permission>());
-                      if (!values.contains(Permission.GLOBALLY_PUBLISH_USERS) &&
+                      if (!values.contains(Permission.PUBLISH_USERS_GLOBALLY) &&
                           config!.peopleSettings.defaultVisibility ==
                               vm.Visibility.GLOBAL_PUBLIC) {
                         addedGloballyPublishProfilePermissionToMeetInvariant =
