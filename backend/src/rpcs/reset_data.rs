@@ -15,8 +15,11 @@ pub fn reset_data(
     validate_permission(&user, Permission::Admin)?;
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
+        delete(user_posts::table).execute(conn)?;
+        delete(group_posts::table).execute(conn)?;
         delete(posts::table).execute(conn)?;
         delete(groups::table).execute(conn)?;
+        delete(follows::table).execute(conn)?;
         delete(users::table).filter(users::id.ne(user.id)).execute(conn)?;
         update(users::table).set((users::follower_count.eq(0), users::following_count.eq(0))).execute(conn)?;
         Ok(())

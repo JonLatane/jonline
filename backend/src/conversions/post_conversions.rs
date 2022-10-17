@@ -1,4 +1,6 @@
+use tonic::Code;
 use tonic::Status;
+use diesel::*;
 
 use super::id_conversions::ToProtoId;
 use super::visibility_moderation_conversions::ToProtoModeration;
@@ -8,6 +10,9 @@ use super::ToProtoTime;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::validations::PASSING_MODERATIONS;
+use crate::schema::group_posts;
+use crate::schema::groups;
 
 pub trait ToProtoPost {
     fn to_proto(&self, username: Option<String>) -> Post;
@@ -90,8 +95,19 @@ impl ToProtoGroupPost for models::GroupPost {
         };
     }
 
-    fn update_related_counts(&self, _conn: &mut PgPooledConnection) -> Result<(), Status> {
-        //Notthing to do here yet!
-                Ok(())
+    fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status> {
+        let post_count = group_posts::table
+            .count()
+            .filter(group_posts::group_id.eq(self.group_id))
+            .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
+            .first::<i64>(conn)
+            .unwrap() as i32;
+
+        diesel::update(groups::table)
+            .filter(groups::id.eq(self.group_id))
+            .set(groups::post_count.eq(post_count))
+            .execute(conn)
+            .map_err(|_| Status::new(Code::Internal, "error_updating_group_post_count"))?;
+        Ok(())
     }
 }

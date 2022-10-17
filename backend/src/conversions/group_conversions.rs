@@ -12,7 +12,7 @@ use crate::schema::groups;
 use crate::schema::memberships;
 
 pub trait ToProtoGroup {
-    fn to_proto_with(&self, member_count: i32, user_membership: Option<Membership>) -> Group;
+    fn to_proto_with(&self, user_membership: Option<Membership>) -> Group;
     fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> Group;
 }
 impl ToProtoGroup for models::Group {
@@ -34,9 +34,9 @@ impl ToProtoGroup for models::Group {
                 .ok(),
             None => None,
         };
-        self.to_proto_with(member_count as i32, user_membership.map(|m| m.to_proto()))
+        self.to_proto_with(user_membership.map(|m| m.to_proto()))
     }
-    fn to_proto_with(&self, member_count: i32, user_membership: Option<Membership>) -> Group {
+    fn to_proto_with(&self, user_membership: Option<Membership>) -> Group {
         let group = Group {
             id: self.id.to_proto_id().to_string(),
             name: self.name.to_owned(),
@@ -49,7 +49,8 @@ impl ToProtoGroup for models::Group {
             default_post_moderation: self.default_post_moderation.to_i32_moderation(),
             default_event_moderation: self.default_event_moderation.to_i32_moderation(),
             visibility: self.visibility.to_i32_visibility(),
-            member_count: member_count as u32,
+            member_count: self.member_count as u32,
+            post_count: self.post_count as u32,
             current_user_membership: user_membership,
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),

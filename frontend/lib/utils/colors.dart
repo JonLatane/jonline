@@ -6,10 +6,11 @@ extension JonlineColors on Color {
 
   double get luminance =>
       JonlineColors._luminanceCache.putIfAbsent(this, () => computeLuminance());
+  bool get bright => luminance > 0.5;
 
   /// With [this] as the background color, computes the appropriate text color.
   Color get textColor {
-    if (luminance > 0.5) {
+    if (bright) {
       return Colors.black;
     }
     return Colors.white;

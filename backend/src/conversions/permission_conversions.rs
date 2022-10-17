@@ -2,36 +2,40 @@ use std::mem::transmute;
 
 use crate::itertools::Itertools;
 use crate::protos::*;
+use crate::protos::Permission::*;
 
-pub const ALL_PERMISSIONS: [Permission; 23] = [
-    Permission::Unknown,
+pub const ALL_PERMISSIONS: [Permission; 26] = [
+    Unknown,
 
-    Permission::PublishUsersLocally,
-    Permission::PublishUsersGlobally,
-    Permission::ModerateUsers,
-    Permission::FollowUsers,
+    ViewUsers,
+    PublishUsersLocally,
+    PublishUsersGlobally,
+    ModerateUsers,
+    FollowUsers,
+    GrantBasicPermissions,
+    
+    ViewGroups,
+    CreateGroups,
+    PublishGroupsLocally,
+    PublishGroupsGlobally,
+    ModerateGroups,
+    JoinGroups,
 
-    Permission::GrantBasicPermissions,
-    Permission::CreateGroups,
-    Permission::PublishGroupsGlobally,
-    Permission::ModerateGroups,
-    Permission::JoinGroups,
+    ViewPosts,
+    CreatePosts,
+    PublishPostsLocally,
+    PublishPostsGlobally,
+    ModeratePosts,
 
-    Permission::ViewPosts,
-    Permission::CreatePosts,
-    Permission::PublishPostsLocally,
-    Permission::PublishPostsGlobally,
-    Permission::ModeratePosts,
+    ViewEvents,
+    CreateEvents,
+    PublishEventsLocally,
+    PublishEventsGlobally,
+    ModerateEvents,
 
-    Permission::ViewEvents,
-    Permission::CreateEvents,
-    Permission::PublishEventsLocally,
-    Permission::PublishEventsGlobally,
-    Permission::ModerateEvents,
-
-    Permission::RunBots,
-    Permission::Admin,
-    Permission::ViewPrivateContactMethods,
+    RunBots,
+    Admin,
+    ViewPrivateContactMethods,
 ];
 
 pub trait ToProtoPermission {

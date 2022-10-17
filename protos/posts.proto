@@ -11,7 +11,7 @@ import "visibility_moderation.proto";
 // - {}                           (get all posts)
 // - {listing_type:}              (get all posts)
 // - {post_id:}                   (get one post including preview data)
-// - {replies_to_post_id:}        (get replies to a post - to be replaced with PostQuery)
+// - {post_id:, reply_depth: 1}        (get replies to a post - only support for replyDepth=1 for now tho)
 // - {author_user_id:}            (get posts by a user)
 // - {group_id:}                  (get posts for a group)
 // - {author_user_id:, group_id:} (get posts by a user for a group)
@@ -19,11 +19,12 @@ message GetPostsRequest {
   // Returns the single post with the given ID.
   optional string post_id = 1;
   // Limits results to replies to the given post.
-  optional string replies_to_post_id = 2;
+  // optional string replies_to_post_id = 2;
   // Limits results to those by the given author user ID.
-  optional string author_user_id = 3;
-  // Limits
-  optional string group_id = 4;
+  optional string author_user_id = 2;
+  optional string group_id = 3;
+  // TODO: Implement support for this
+  optional uint32 reply_depth = 4;
   PostListingType listing_type = 10;
 }
 
@@ -75,7 +76,7 @@ message Post {
   }
 }
 
-message Posts {
+message GetPostsResponse {
   repeated Post posts = 1;
 }
 

@@ -2,7 +2,6 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
@@ -12,6 +11,7 @@ import 'package:jonline/utils/colors.dart';
 import 'package:recase/recase.dart';
 
 import '../../app_state.dart';
+import '../../generated/permissions.pbenum.dart';
 import '../../generated/posts.pb.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
@@ -28,7 +28,9 @@ class PostsScreen extends StatefulWidget {
 class PostsScreenState extends JonlineState<PostsScreen>
     with AutoRouteAwareStateMixin<PostsScreen> {
   ScrollController scrollController = ScrollController();
-  PostListingType listingType = PostListingType.PUBLIC_POSTS;
+  ScrollController emptyScrollController = ScrollController();
+  PostListingType get listingType => appState.posts.listingType;
+  set listingType(PostListingType value) => appState.posts.listingType = value;
 
   @override
   void didPushNext() {
@@ -39,14 +41,9 @@ class PostsScreenState extends JonlineState<PostsScreen>
   void initState() {
     // print("PostsPage.initState");
     super.initState();
-    appState.accounts.addListener(onAccountsChanged);
-    for (var n in [
-      appState.posts,
-      appState.updatingPosts,
-      appState.didUpdatePosts
-    ]) {
-      n.addListener(onPostsUpdated);
-    }
+    appState.accounts.addListener(updateState);
+    appState.posts.addStatusListener(updateState);
+    appState.selectedGroup.addListener(updateState);
     homePage.scrollToTop.addListener(scrollToTop);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => appState.updateAccountList());
@@ -55,24 +52,15 @@ class PostsScreenState extends JonlineState<PostsScreen>
   @override
   dispose() {
     // print("PostsPage.dispose");
-    appState.accounts.removeListener(onAccountsChanged);
-    for (var n in [
-      appState.posts,
-      appState.updatingPosts,
-      appState.didUpdatePosts
-    ]) {
-      n.removeListener(onPostsUpdated);
-    }
+    appState.accounts.removeListener(updateState);
+    appState.posts.removeStatusListener(updateState);
+    appState.selectedGroup.removeListener(updateState);
     homePage.scrollToTop.removeListener(scrollToTop);
     scrollController.dispose();
     super.dispose();
   }
 
-  onAccountsChanged() {
-    setState(() {});
-  }
-
-  onPostsUpdated() {
+  updateState() {
     setState(() {});
   }
 
@@ -87,9 +75,56 @@ class PostsScreenState extends JonlineState<PostsScreen>
 
   bool get useList => mq.size.width < 450;
   double get headerHeight => 48 * mq.textScaleFactor;
+  bool get viewingGroup => appState.viewingGroup;
+
+  List<Permission> get permissions =>
+      appState.selectedAccount?.permissions ?? [];
+  bool get canShowPendingModeration =>
+      !viewingGroup && permissions.contains(Permission.MODERATE_POSTS);
+  List<Permission> get groupPermissions =>
+      appState.selectedGroup.value?.currentUserMembership.permissions ?? [];
+  bool get canShowGroupPendingModeration =>
+      viewingGroup && groupPermissions.contains(Permission.MODERATE_POSTS);
+  adaptToInvariants() {
+    final initialListingType = listingType;
+    if (!viewingGroup &&
+        [
+          PostListingType.GROUP_POSTS,
+          PostListingType.GROUP_POSTS_PENDING_MODERATION
+        ].contains(listingType)) {
+      listingType = PostListingType.PUBLIC_POSTS;
+    } else if (viewingGroup &&
+        ![
+          PostListingType.GROUP_POSTS,
+          PostListingType.GROUP_POSTS_PENDING_MODERATION
+        ].contains(listingType)) {
+      listingType = PostListingType.GROUP_POSTS;
+      // resetMembers();
+    }
+
+    if (!JonlineAccount.loggedIn) {
+      listingType = viewingGroup
+          ? PostListingType.GROUP_POSTS
+          : PostListingType.PUBLIC_POSTS;
+    }
+    if (listingType == PostListingType.GROUP_POSTS_PENDING_MODERATION &&
+        !canShowGroupPendingModeration) {
+      listingType = PostListingType.GROUP_POSTS;
+    }
+    if (listingType == PostListingType.POSTS_PENDING_MODERATION &&
+        !canShowPendingModeration) {
+      listingType = PostListingType.PUBLIC_POSTS;
+    }
+    if (listingType != initialListingType) {
+      appState.posts.update();
+    }
+  }
+
+  List<Post> get postList => appState.posts.value.posts;
 
   @override
   Widget build(BuildContext context) {
+    adaptToInvariants();
     final List<Post> postList = appState.posts.value.posts;
     return Scaffold(
       // appBar: ,
@@ -98,7 +133,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
           RefreshIndicator(
             displacement: mq.padding.top + 40,
             onRefresh: () async =>
-                await appState.updatePosts(showMessage: showSnackBar),
+                await appState.posts.update(showMessage: showSnackBar),
             child: ScrollConfiguration(
                 // key: Key("postListScrollConfiguration-${postList.length}"),
                 behavior: ScrollConfiguration.of(context).copyWith(
@@ -109,50 +144,9 @@ class PostsScreenState extends JonlineState<PostsScreen>
                     PointerDeviceKind.stylus,
                   },
                 ),
-                child: postList.isEmpty && !appState.didUpdatePosts.value
-                    ? Column(
-                        children: [
-                          Expanded(
-                            child: SingleChildScrollView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                controller: scrollController,
-                                child: Column(
-                                  children: [
-                                    SizedBox(
-                                        height: (MediaQuery.of(context)
-                                                    .size
-                                                    .height -
-                                                200) /
-                                            2),
-                                    Row(
-                                      children: [
-                                        const Expanded(child: SizedBox()),
-                                        Column(
-                                          children: [
-                                            Text(
-                                                appState.updatingPosts.value
-                                                    ? "Loading Posts..."
-                                                    : appState
-                                                            .errorUpdatingPosts
-                                                            .value
-                                                        ? "Error Loading Posts"
-                                                        : "No Posts!",
-                                                style: textTheme.titleLarge),
-                                            Text(
-                                                JonlineServer
-                                                    .selectedServer.server,
-                                                style: textTheme.caption),
-                                          ],
-                                        ),
-                                        const Expanded(child: SizedBox()),
-                                      ],
-                                    ),
-                                  ],
-                                )),
-                          ),
-                        ],
-                      )
-                    : useList
+                child: Stack(
+                  children: [
+                    useList
                         ? ImplicitlyAnimatedList<Post>(
                             physics: const AlwaysScrollableScrollPhysics(),
                             controller: scrollController,
@@ -199,7 +193,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
                                 min(
                                         6,
                                         (MediaQuery.of(context).size.width) /
-                                            290)
+                                            350)
                                     .floor()),
                             mainAxisSpacing: 4,
                             crossAxisSpacing: 4,
@@ -218,7 +212,28 @@ class PostsScreenState extends JonlineState<PostsScreen>
                                 post: post,
                               );
                             },
-                          )),
+                          ),
+                    IgnorePointer(
+                        ignoring: postList.isNotEmpty,
+                        child: AnimatedOpacity(
+                            opacity: postList.isEmpty && appState.posts.updating
+                                ? 1
+                                : appState.posts.updating
+                                    ? 0.7
+                                    : 0,
+                            duration: animationDuration,
+                            child: buildLoadingView())),
+                    IgnorePointer(
+                        ignoring: postList.isNotEmpty,
+                        child: AnimatedOpacity(
+                            opacity:
+                                postList.isEmpty && !appState.posts.updating
+                                    ? 1
+                                    : 0,
+                            duration: animationDuration,
+                            child: buildEmptyView())),
+                  ],
+                )),
           ),
           Column(
             children: [
@@ -250,6 +265,105 @@ class PostsScreenState extends JonlineState<PostsScreen>
           )
         ],
       ),
+    );
+  }
+
+  Widget buildLoadingView() {
+    return Column(
+      children: [
+        AnimatedContainer(
+            duration: animationDuration,
+            height: appState.posts.updating
+                ? (MediaQuery.of(context).size.height - 200) / 2
+                : 120),
+        Center(
+          child: AnimatedContainer(
+            duration: animationDuration,
+            // color: Colors.black.withOpacity(0.6),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+                color: Colors.black.withOpacity(postList.isEmpty ? 0 : 0.6),
+                borderRadius: BorderRadius.circular(8)),
+            constraints: const BoxConstraints(maxWidth: 350),
+            child: Column(
+              children: [
+                Text("Loading Posts...", style: textTheme.titleLarge),
+                Text(
+                    "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                    style: textTheme.caption),
+                if (viewingGroup) Text(appState.selectedGroup.value!.name),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildEmptyView() {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: emptyScrollController,
+              child: Column(
+                children: [
+                  SizedBox(
+                      height: (MediaQuery.of(context).size.height - 200) / 2),
+                  Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 350),
+                      child: Column(
+                        children: [
+                          Text(
+                              appState.errorUpdatingUsers.value
+                                  ? "Error Loading Posts"
+                                  : "No Posts",
+                              style: textTheme.titleLarge),
+                          Text(
+                              "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                              style: textTheme.caption),
+                          if (viewingGroup)
+                            Text(appState.selectedGroup.value!.name),
+                          if (!appState.posts.updating &&
+                              !appState.posts.errorUpdating &&
+                              !appState.loggedIn)
+                            Column(
+                              children: [
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  style: ButtonStyle(
+                                      padding: MaterialStateProperty.all(
+                                          const EdgeInsets.all(16))),
+                                  onPressed: () =>
+                                      context.navigateNamedTo('/login'),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                            'Login/Create Account to see more Posts.',
+                                            textAlign: TextAlign.center,
+                                            style: textTheme.titleSmall
+                                                ?.copyWith(
+                                                    color:
+                                                        appState.primaryColor)),
+                                      ),
+                                      const Icon(Icons.arrow_right)
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              )),
+        ),
+      ],
     );
   }
   // bool get canShowPostRequests {
@@ -298,7 +412,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
           var textButton = TextButton(
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(l == listingType
-                      ? appState.primaryColor.textColor
+                      ? appState.primaryColor.textColor.withOpacity(0.8)
                       : null)),
               onPressed: usable
                   ? () {
@@ -311,9 +425,13 @@ class PostsScreenState extends JonlineState<PostsScreen>
                 children: [
                   const Expanded(child: SizedBox()),
                   Text(
-                    l.name.constantCase
-                        .replaceAll('_POSTS', '')
-                        .replaceAll('_', ' '),
+                    l.name == "GROUP_POSTS"
+                        ? "GROUP POSTS"
+                        : (l.name == "GROUP_POSTS_PENDING_MODERATION"
+                            ? "PENDING MODERATION"
+                            : l.name.constantCase
+                                .replaceAll('_POSTS', '')
+                                .replaceAll('_', ' ')),
                     style: TextStyle(
                         color: l == listingType
                             ? null

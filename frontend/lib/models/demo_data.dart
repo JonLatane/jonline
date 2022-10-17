@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:jonline/utils/proto_utils.dart';
 
 import '../app_state.dart';
@@ -279,8 +278,8 @@ final List<List<String>> _demoNameComponents = [
 enum DemoGroup {
   coolKidsClub,
   everyoneWelcome,
-  musicNerds,
-  sportsNerds,
+  music,
+  sports,
   makers,
   yoga,
   engineering,
@@ -292,6 +291,7 @@ enum DemoGroup {
   toolSharing,
   cooking,
   restaurants,
+  programming
 }
 
 final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
@@ -301,19 +301,20 @@ final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
       defaultMembershipModeration: Moderation.PENDING),
   DemoGroup.everyoneWelcome:
       Group(name: "Everyone Welcome", description: "Feel free to join!"),
-  DemoGroup.musicNerds: Group(
+  DemoGroup.music: Group(
       name: "Funktastic",
-      description: "Post your Spotify playlists or eventually videos n stuff"),
-  DemoGroup.sportsNerds: Group(
+      description:
+          "🎵 Post your Spotify playlists or eventually videos n stuff"),
+  DemoGroup.sports: Group(
       name: "Yoked",
       description:
-          "Climbing, biking, running, spikeball, other things involving balls"),
+          "Climbing, biking, running, spikeball, other things involving balls\n\nAlso barbells.\n\nAnd fuck it dance too!"),
   DemoGroup.makers: Group(
       name: "Makers",
       description:
           "Creators of art, music, furniture, knitting, software... just make stuff!"),
   DemoGroup.yoga:
-      Group(name: "Yoga", description: "Only the coolest ppl get in "),
+      Group(name: "Yoga", description: "🤸‍♀️🧘‍♀️🧘‍♂️🤸‍♂️🧘‍♀️🧘‍♂️🤸‍♀️"),
   DemoGroup.engineering: Group(
       name: "Real Engineering",
       description: "Like with real things not software 😂😭"),
@@ -326,7 +327,7 @@ final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
   DemoGroup.tech: Group(
       name: "Tech",
       description:
-          "Let's talk about the cool stuff I've done and also a lot of other cool tech 🤓💚"),
+          "General tech 🤓🤖💚\n\nNo billionaire-worship bullshit allowed."),
   DemoGroup.gamers: Group(
       name: "Gamers",
       description:
@@ -338,10 +339,20 @@ final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
   DemoGroup.cooking:
       Group(name: "Cooking", description: "😋 on the cheap and local"),
   DemoGroup.restaurants:
-      Group(name: "Restaurants", description: "😋 on the expensive and local"),
+      Group(name: "Restaurants", description: "Tasty food and good vibes"),
+  DemoGroup.programming: Group(
+      name: "Programming",
+      description:
+          "Math for people who want to make money, plus dealing with other people who want to make money without doing math"),
 }.map((key, value) => MapEntry(key, value.jonRebuild((e) {
       if (e.defaultMembershipModeration == Moderation.MODERATION_UNKNOWN) {
         e.defaultMembershipModeration = Moderation.UNMODERATED;
+      }
+      if (e.defaultPostModeration == Moderation.MODERATION_UNKNOWN) {
+        e.defaultPostModeration = Moderation.UNMODERATED;
+      }
+      if (e.defaultEventModeration == Moderation.MODERATION_UNKNOWN) {
+        e.defaultEventModeration = Moderation.UNMODERATED;
       }
       if (e.visibility == vm.Visibility.VISIBILITY_UNKNOWN) {
         e.visibility = vm.Visibility.GLOBAL_PUBLIC;
@@ -397,7 +408,7 @@ class DemoPost {
 
 final List<DemoPost> _demoData = [
   DemoPost(
-      [DemoGroup.musicNerds, DemoGroup.math, DemoGroup.tech],
+      [DemoGroup.music, DemoGroup.math, DemoGroup.tech, DemoGroup.programming],
       CreatePostRequest(
           title:
               "Topologica was my first app; here's an article about how it works!",
@@ -426,7 +437,7 @@ for iOS, macOS, Android and web.
 I plan to re-implement the Orbifold in BeatScratch, at which point this app will be deprecated.
 string''')),
   DemoPost(
-      [DemoGroup.musicNerds, DemoGroup.math],
+      [DemoGroup.music, DemoGroup.math],
       CreatePostRequest(
           title: "BeatScratch Legacy (formerly Topologica) on the Play Store",
           link:
@@ -444,13 +455,13 @@ string''')),
           title: "These burgers look soooo good 😋",
           link: "https://www.eatqueenburger.com")),
   DemoPost(
-      [DemoGroup.musicNerds],
+      [DemoGroup.music],
       CreatePostRequest(
           title: "BeatScratch on the App Store",
           link: "https://apps.apple.com/us/app/beatscratch/id1509788448",
           content: "The freshest, slickest way to scratch your beat!")),
   DemoPost(
-      [DemoGroup.musicNerds],
+      [DemoGroup.music],
       CreatePostRequest(
           title: "BeatScratch on the Play Store",
           link:
@@ -468,9 +479,7 @@ string''')),
           title: "These are cool! I want one",
           link: "https://www.fuell.us/products/fuell-fllow-e-motorcycle")),
   DemoPost(
-      [
-        DemoGroup.everyoneWelcome,
-      ],
+      [DemoGroup.everyoneWelcome, DemoGroup.sports, DemoGroup.music],
       CreatePostRequest(
           title:
               "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness.",
@@ -482,14 +491,14 @@ string''')),
         link: "https://www.linkedin.com/in/jonlatane/",
       )),
   DemoPost(
-      [DemoGroup.everyoneWelcome, DemoGroup.tech],
+      [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
       CreatePostRequest(
         title:
-            "Jonline images are on DockerHub so you can try/deploy it easily",
+            "Jonline images are on DockerHub so you can try/deploy it easily without touching anything Rust/Flutter",
         link: "https://hub.docker.com/r/jonlatane/jonline",
       )),
   DemoPost(
-      [DemoGroup.everyoneWelcome, DemoGroup.tech],
+      [DemoGroup.everyoneWelcome, DemoGroup.programming],
       CreatePostRequest(
           title: "Jonline on GitHub",
           link: "https://github.com/jonlatane/jonline",
@@ -518,18 +527,26 @@ is designed for groups like:
 * Online game clans
 
 Instances are designed to be maintainable by a *single person* in any of these groups,
-at a cost of no more than \$15/mo, *on any provider you choose or your own hardware*. 
-Jonline keeps things simple: there are only Users, Posts (with replies), (eventually) 
-Friendships, and (eventually) Events, along with visibility features like most 
-other social media apps, and easy-to-use admin and moderation tools. A Jonline 
-instance is much like a ListServ, Slack/Discord server, Reddit community, IRC 
-server or PHPBB/vBulletin/Wordpress forum if you're old, or a Facebook group if 
-you're *really* old. 
+at a cost of no more than \$15/mo, on any provider you choose or your own hardware. 
+Jonline keeps things simple: there are only Users/People (with follows/friendships),
+Groups (with memberships), Posts (with replies), and Events (TODO, but also with replies),
+along with visibility features like most other social media apps, and easy-to-use 
+admin and moderation tools. A Jonline  instance is much like a ListServ, 
+Slack/Discord server, Reddit community, IRC server or PHPBB/vBulletin/Wordpress 
+forum if you're old, or a Facebook group if you're *really* old.
+
+(If you want to pay me to host an instance and/or develop features for your needs, 
+get in touch! I work a real job making much more boring but profitable things than
+Jonline, but would love to get paid to do this kind of stuff for myself. There 
+will probably be a waitlist until I have at least 5-10 interested parties and have 
+developed the features everyone needs, though. And I will expect things like domain 
+ownership and moderating your instance to stay on your end, with me just providing 
+hosting.)
 
 Jonline is trustworthy, because you can literally look at the 
-[code where we store](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L30) 
-and [validate your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
-even [the code that was used to generate *this post you're reading right now*](https://github.com/JonLatane/jonline/blob/b64e41d6d66bc5258176276f06c9c42d0baed026/frontend/lib/models/demo_data.dart#L233) 🤯🙃
+[code where it stores](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L30) 
+and [validates your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
+even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontend/lib/models/demo_data.dart) 🤯🙃
 
 Importantly, to "run" a community like this one at [jonline.io](https://jonline.io), 
 you have to (or really, *get to*) run your own Jonline server. 

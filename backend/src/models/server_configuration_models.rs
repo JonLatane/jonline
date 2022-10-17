@@ -44,6 +44,7 @@ pub struct NewServerConfiguration {
 
 pub fn default_server_configuration() -> NewServerConfiguration {
     let basic_user_permissions = vec![
+        Permission::ViewUsers,
         Permission::FollowUsers,
         Permission::ViewGroups,
         Permission::CreateGroups,

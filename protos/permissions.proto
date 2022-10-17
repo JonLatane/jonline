@@ -4,8 +4,7 @@ package jonline;
 
 enum Permission {
   PERMISSION_UNKNOWN = 0;
-  // Would "Create Users" ever make sense as a permission?
-  reserved 1;
+  VIEW_USERS = 1;
   // This generally only applies to the user's own profile, except for Admins.
   PUBLISH_USERS_LOCALLY = 2;
   // This generally only applies to the user's own profile, except for Admins.

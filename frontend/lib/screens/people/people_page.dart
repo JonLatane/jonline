@@ -8,7 +8,6 @@ import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reord
 import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/utils/enum_conversions.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 import 'package:recase/recase.dart';
 
@@ -94,12 +93,13 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
     for (var n in [
       appState.users,
       appState.updatingUsers,
+      appState.errorUpdatingUsers,
       appState.didUpdateUsers
     ]) {
       n.addListener(updateState);
     }
     appState.selectedGroup.addListener(resetMembers);
-    appState.selectedAccountChanged.addListener(resetMembers);
+    appState.selectedAccountChanged.addListener(hardResetMembers);
     // appState.selectedGroup.addListener(updateState);
 
     homePage.scrollToTop.addListener(scrollToTop);
@@ -116,12 +116,13 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
     for (var n in [
       appState.users,
       appState.updatingUsers,
+      appState.errorUpdatingUsers,
       appState.didUpdateUsers
     ]) {
       n.removeListener(updateState);
     }
     appState.selectedGroup.removeListener(resetMembers);
-    appState.selectedAccountChanged.removeListener(resetMembers);
+    appState.selectedAccountChanged.removeListener(hardResetMembers);
     // appState.selectedGroup.addListener(updateState);
 
     homePage.scrollToTop.removeListener(scrollToTop);
@@ -144,7 +145,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
     }
   }
 
-  bool get showingMembers => appState.selectedGroup.value != null;
+  bool get viewingGroup => appState.viewingGroup;
   bool get canShowMembershipRequests {
     final group = appState.selectedGroup.value;
     if (group == null) return false;
@@ -154,23 +155,30 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
             (p) => [Permission.ADMIN, Permission.MODERATE_USERS].contains(p));
   }
 
-  String get people => showingMembers
+  String get people => viewingGroup
       ? listingType == PeopleListingType.membershipRequests
           ? "Membership Requests"
           : "Members"
       : "People";
-  resetMembers() async {
+
+  hardResetMembers() async => await resetMembers(hard: true);
+
+  resetMembers({bool hard = false}) async {
     // print("resetMembers");
     appState.updatingUsers.value = true;
     adaptToInvariants();
-    setState(() {
-      listingData = {};
-    });
+    if (hard) {
+      setState(() {
+        listingData = {};
+      });
+    }
     await updateMembers();
   }
 
   updateMembers({PeopleListingType? customListingType}) async {
-    appState.updatingUsers.value = true;
+    if (customListingType == null) {
+      appState.updatingUsers.value = true;
+    }
     final listingType = customListingType ?? this.listingType;
     final selectedGroup = appState.selectedGroup.value;
     if (selectedGroup == null) {
@@ -191,18 +199,25 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
         appState.updatingUsers.value = false;
         // showSnackBar
       });
-      updateOtherMembers();
+      if (customListingType == null) {
+        updateOtherMembers();
+      }
       return;
     }
-
-    appState.didUpdateUsers.value = true;
+    if (customListingType == null) {
+      appState.didUpdateUsers.value = true;
+      appState.didUpdateUsers.value = true;
+    }
     setState(() {
-      appState.updatingUsers.value = false;
+      if (customListingType == null) {
+        appState.updatingUsers.value = false;
+      }
       listingData[listingType] = PeopleListingResponse(members: response);
       // print("Set state: ${response.members.length}");
     });
-    appState.didUpdateUsers.value = false;
+
     if (customListingType == null) {
+      appState.didUpdateUsers.value = false;
       updateOtherMembers();
     }
   }
@@ -259,17 +274,16 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
   }
 
   adaptToInvariants() {
-    if (!showingMembers && listingType.userListingType == null) {
+    if (!viewingGroup && listingType.userListingType == null) {
       listingType = PeopleListingType.everyone;
-    } else if (showingMembers && listingType.userListingType != null) {
+    } else if (viewingGroup && listingType.userListingType != null) {
       listingType = PeopleListingType.members;
       // resetMembers();
     }
 
     if (!JonlineAccount.loggedIn) {
-      listingType = showingMembers
-          ? PeopleListingType.members
-          : PeopleListingType.everyone;
+      listingType =
+          viewingGroup ? PeopleListingType.members : PeopleListingType.everyone;
     }
     if (listingType == PeopleListingType.membershipRequests &&
         !canShowMembershipRequests) {
@@ -288,7 +302,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
           RefreshIndicator(
             displacement: mq.padding.top + 40,
             onRefresh: () async {
-              if (showingMembers) {
+              if (viewingGroup) {
                 await updateMembers();
               } else {
                 await appState.updateUsers(showMessage: showSnackBar);
@@ -304,93 +318,9 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                     PointerDeviceKind.stylus,
                   },
                 ),
-                child: userList.isEmpty && !appState.didUpdateUsers.value
-                    ? Column(
-                        children: [
-                          Expanded(
-                            child: SingleChildScrollView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                controller: scrollController,
-                                child: Column(
-                                  children: [
-                                    SizedBox(
-                                        height: (MediaQuery.of(context)
-                                                    .size
-                                                    .height -
-                                                200) /
-                                            2),
-                                    Center(
-                                      child: Container(
-                                        constraints:
-                                            const BoxConstraints(maxWidth: 350),
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                                appState.updatingUsers.value
-                                                    ? "Loading $people..."
-                                                    : appState
-                                                            .errorUpdatingUsers
-                                                            .value
-                                                        ? "Error Loading $people"
-                                                        : "No $people",
-                                                style: textTheme.titleLarge),
-                                            Text(
-                                                "${JonlineServer.selectedServer.server}/${showingMembers ? 'group/' : ''}",
-                                                style: textTheme.caption),
-                                            if (showingMembers)
-                                              Text(appState
-                                                  .selectedGroup.value!.name),
-                                            if (!appState.updatingUsers.value &&
-                                                !appState
-                                                    .errorUpdatingUsers.value &&
-                                                appState.selectedAccount ==
-                                                    null)
-                                              Column(
-                                                children: [
-                                                  const SizedBox(height: 8),
-                                                  TextButton(
-                                                    style: ButtonStyle(
-                                                        padding:
-                                                            MaterialStateProperty.all(
-                                                                const EdgeInsets
-                                                                    .all(16))),
-                                                    onPressed: () =>
-                                                        context.navigateNamedTo(
-                                                            '/login'),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: [
-                                                        Expanded(
-                                                          child: Text(
-                                                              'Login/Create Account to see more People.',
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              style: textTheme
-                                                                  .titleSmall
-                                                                  ?.copyWith(
-                                                                      color: appState
-                                                                          .primaryColor)),
-                                                        ),
-                                                        const Icon(
-                                                            Icons.arrow_right)
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                )),
-                          ),
-                        ],
-                      )
-                    : useList
+                child: Stack(
+                  children: [
+                    useList
                         ? ImplicitlyAnimatedList<Person>(
                             physics: const AlwaysScrollableScrollPhysics(),
                             controller: scrollController,
@@ -426,7 +356,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                                 min(
                                         6,
                                         (MediaQuery.of(context).size.width) /
-                                            250)
+                                            270)
                                     .floor()),
                             mainAxisSpacing: 4,
                             crossAxisSpacing: 4,
@@ -437,7 +367,30 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                                   person: person,
                                   server: JonlineServer.selectedServer.server);
                             },
-                          )),
+                          ),
+                    IgnorePointer(
+                      ignoring: userList.isNotEmpty,
+                      child: AnimatedOpacity(
+                          opacity:
+                              userList.isEmpty && appState.updatingUsers.value
+                                  ? 1
+                                  : appState.updatingUsers.value
+                                      ? 0.7
+                                      : 0,
+                          duration: animationDuration,
+                          child: buildLoadingView()),
+                    ),
+                    IgnorePointer(
+                        ignoring: userList.isNotEmpty,
+                        child: AnimatedOpacity(
+                            opacity: userList.isEmpty &&
+                                    !appState.updatingUsers.value
+                                ? 1
+                                : 0,
+                            duration: animationDuration,
+                            child: buildEmptyView())),
+                  ],
+                )),
           ),
           Column(
             children: [
@@ -472,8 +425,109 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
     );
   }
 
+  Widget buildLoadingView() {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: scrollController,
+              child: Column(
+                children: [
+                  SizedBox(
+                      height: (MediaQuery.of(context).size.height - 200) / 2),
+                  Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 350),
+                      child: Column(
+                        children: [
+                          Text("Loading $people...",
+                              style: textTheme.titleLarge),
+                          Text(
+                              "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                              style: textTheme.caption),
+                          if (viewingGroup)
+                            Text(appState.selectedGroup.value!.name),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              )),
+        ),
+      ],
+    );
+  }
+
+  Widget buildEmptyView() {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: scrollController,
+              child: Column(
+                children: [
+                  SizedBox(
+                      height: (MediaQuery.of(context).size.height - 200) / 2),
+                  Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 350),
+                      child: Column(
+                        children: [
+                          Text(
+                              appState.errorUpdatingUsers.value
+                                  ? "Error Loading $people"
+                                  : "No $people",
+                              style: textTheme.titleLarge),
+                          Text(
+                              "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                              style: textTheme.caption),
+                          if (viewingGroup)
+                            Text(appState.selectedGroup.value!.name),
+                          if (!appState.updatingUsers.value &&
+                              !appState.errorUpdatingUsers.value &&
+                              appState.selectedAccount == null)
+                            Column(
+                              children: [
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  style: ButtonStyle(
+                                      padding: MaterialStateProperty.all(
+                                          const EdgeInsets.all(16))),
+                                  onPressed: () =>
+                                      context.navigateNamedTo('/login'),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                            'Login/Create Account to see more People.',
+                                            textAlign: TextAlign.center,
+                                            style: textTheme.titleSmall
+                                                ?.copyWith(
+                                                    color:
+                                                        appState.primaryColor)),
+                                      ),
+                                      const Icon(Icons.arrow_right)
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              )),
+        ),
+      ],
+    );
+  }
+
   Widget buildSectionSelector() {
-    final visibleSections = (!showingMembers)
+    final visibleSections = (!viewingGroup)
         ? [
             PeopleListingType.everyone,
             PeopleListingType.following,
@@ -503,7 +557,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
           var textButton = TextButton(
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(l == listingType
-                      ? appState.primaryColor.textColor
+                      ? appState.primaryColor.textColor.withOpacity(0.8)
                       : null)),
               onPressed: usable
                   ? () {

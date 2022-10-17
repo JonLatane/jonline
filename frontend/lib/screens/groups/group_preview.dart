@@ -2,8 +2,8 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/utils/enum_conversions.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
@@ -121,7 +121,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                      '${JonlineServer.selectedServer.server}/group/',
+                                      '${JonlineServer.selectedServer.server}/group/${group.id}',
                                       style: textTheme.caption?.copyWith(
                                         color: textColor?.withOpacity(0.5),
                                       ),
@@ -197,18 +197,42 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                   ),
                   const SizedBox(height: 4),
                   Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      padding: EdgeInsets.zero,
                       child: Row(
                         children: [
                           Expanded(
                             child: Container(
-                              constraints: const BoxConstraints(maxHeight: 48),
+                              constraints: const BoxConstraints(maxHeight: 150),
                               child: Opacity(
                                 opacity: 0.5,
-                                child: Transform.scale(
-                                  scale: 0.8,
-                                  child: Markdown(
-                                    data: group.description,
+                                child: Transform.translate(
+                                  offset: const Offset(0, -2),
+                                  child: Transform.scale(
+                                    scale: 0.9,
+                                    child: Theme(
+                                        data: (backgroundColor?.bright == true
+                                                ? ThemeData.light()
+                                                : ThemeData.dark())
+                                            .copyWith(
+                                          colorScheme: ColorScheme.fromSeed(
+                                              seedColor: appState.primaryColor),
+                                        ),
+                                        child: MarkdownBody(
+                                          data: group.description,
+                                          selectable: false,
+                                          onTapLink: (text, href, title) {
+                                            if (href != null) {
+                                              try {
+                                                launchUrl(Uri.parse(href));
+                                              } catch (e) {
+                                                showSnackBar(
+                                                    "Invalid link. 😔");
+                                              }
+                                            } else {
+                                              showSnackBar("No link. 😔");
+                                            }
+                                          },
+                                        )),
                                   ),
                                 ),
                               ),
@@ -220,30 +244,36 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: Row(
                       children: [
-                        Expanded(
-                          flex: 2,
+                        TextButton(
+                          onPressed: () {
+                            context.navigateNamedTo('/posts');
+                            appState.selectedGroup.value = group;
+                          },
                           child: Row(
                             children: [
+                              Icon(
+                                Icons.chat_bubble,
+                                color: textColor ?? Colors.white,
+                              ),
+                              const SizedBox(width: 4),
                               Text(
-                                "Group ID: ",
+                                group.postCount.toString(),
                                 style: textTheme.caption?.copyWith(
                                   color: textColor?.withOpacity(0.5),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              Expanded(
-                                child: Text(
-                                  group.id,
-                                  style: textTheme.caption?.copyWith(
-                                    color: textColor?.withOpacity(0.5),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              Text(
+                                " post${group.postCount == 1 ? '' : 's'}",
+                                style: textTheme.caption?.copyWith(
+                                  color: textColor?.withOpacity(0.5),
                                 ),
                               ),
                             ],
                           ),
+                        ),
+                        const Expanded(
+                          flex: 2,
+                          child: SizedBox(),
                         ),
                         TextButton(
                           onPressed: () {

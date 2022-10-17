@@ -3,11 +3,9 @@ syntax = "proto3";
 package jonline;
 
 import "google/protobuf/empty.proto";
-// import "google/protobuf/timestamp.proto";
 
 import "authentication.proto";
 import "posts.proto";
-import "post_query.proto";
 import "users.proto";
 import "groups.proto";
 import "federation.proto";
@@ -71,11 +69,7 @@ service Jonline {
 
   // Gets Posts. Publicly accessible *or* authenticated.
   // Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.
-  rpc GetPosts(GetPostsRequest) returns (Posts) {}
-  // (TODO) Query for Posts. Publicly accessible *or* authenticated.
-  // Eventually I should replace GetPosts with this.
-  // Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.
-  rpc QueryPosts(PostQuery) returns (Posts) {}
+  rpc GetPosts(GetPostsRequest) returns (GetPostsResponse) {}
 
   // Creates a Post. Authenticated.
   rpc CreatePost(CreatePostRequest) returns (Post) {}

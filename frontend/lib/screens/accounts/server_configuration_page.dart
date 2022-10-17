@@ -54,7 +54,6 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
   JonlineClient? client;
   ServerConfiguration? config;
   ThemeData get theme => Theme.of(context);
-  TextTheme get textTheme => theme.textTheme;
   String? get serverHost => account?.server;
   bool get isAdmin =>
       account != null && account!.permissions.contains(Permission.ADMIN);
@@ -524,10 +523,10 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                                     if (account == null) {
                                       showSnackBar("Account not ready.");
                                     }
-                                    (await account!.getClient())!.resetData(
-                                        Empty(),
-                                        options:
-                                            account!.authenticatedCallOptions);
+                                    await (await account!.getClient())!
+                                        .resetData(Empty(),
+                                            options: account!
+                                                .authenticatedCallOptions);
                                     showSnackBar(
                                         "Server data reset. All Groups/Posts/Comments/Users (except ${account!.username}) deleted.");
                                     for (var a in appState.accounts.value) {

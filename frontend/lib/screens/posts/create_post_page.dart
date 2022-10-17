@@ -135,9 +135,10 @@ class CreatePostPageState extends JonlineState<CreatePostPage> {
     // context.navigateBack();
     context.replaceRoute(PostDetailsRoute(
         postId: post.id, server: JonlineServer.selectedServer.server));
-    appState.posts.value = Posts(posts: [post] + appState.posts.value.posts);
+    appState.posts.value =
+        GetPostsResponse(posts: [post] + appState.posts.value.posts);
     Future.delayed(const Duration(seconds: 3),
-        () => appState.updatePosts(showMessage: showSnackBar));
+        () => appState.posts.update(showMessage: showSnackBar));
 
     doingCreate = false;
   }

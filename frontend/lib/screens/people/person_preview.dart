@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:jonline/models/jonline_clients.dart';
-import 'package:jonline/utils/enum_conversions.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
@@ -139,19 +138,53 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                   ),
                                 ],
                               ),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      user.username,
-                                      style: textTheme.headline6
-                                          ?.copyWith(color: textColor),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                              if (widget.usernameController == null)
+                                Tooltip(
+                                  message: user.username,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          user.username,
+                                          style: textTheme.headline6
+                                              ?.copyWith(color: textColor),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              if (widget.usernameController != null)
+                                TextField(
+                                  // focusNode: titleFocus,
+                                  controller: widget.usernameController,
+                                  keyboardType: TextInputType.url,
+                                  textCapitalization: TextCapitalization.words,
+                                  enableSuggestions: true,
+                                  autocorrect: true,
+                                  maxLines: 1,
+                                  cursorColor: Colors.white,
+                                  style: textTheme.headline6
+                                      ?.copyWith(color: textColor),
+                                  enabled: member || admin,
+                                  decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      hintText: "Group Name",
+                                      isDense: true),
+                                  onChanged: (value) {},
+                                ),
+                              if (widget.usernameController != null)
+                                Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      "Username may be updated.",
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                          color: textColor ?? Colors.white,
+                                          fontWeight: FontWeight.w400,
+                                          fontSize: 12),
+                                    )),
                             ],
                           ),
                         ),

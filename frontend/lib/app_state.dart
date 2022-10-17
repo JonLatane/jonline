@@ -10,7 +10,7 @@ import 'generated/server_configuration.pb.dart';
 import 'generated/groups.pb.dart';
 import 'generated/posts.pb.dart';
 import 'generated/users.pb.dart';
-import 'generated/users.pb.dart' as users_pb;
+import 'generated/users.pb.dart' as u;
 import 'jonotifier.dart';
 import 'main.dart';
 import 'models/jonline_account.dart';
@@ -18,6 +18,7 @@ import 'models/jonline_operations.dart';
 import 'models/jonline_server.dart';
 import 'models/settings.dart';
 import 'my_platform.dart';
+import 'data_cache.dart';
 import 'router/auth_guard.dart';
 import 'router/router.gr.dart';
 import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
@@ -41,9 +42,9 @@ class AppState extends State<MyApp> {
       ValueJonotifier(<JonlineAccount>[]);
   final ValueJonotifier<List<JonlineServer>> servers =
       ValueJonotifier(<JonlineServer>[]);
-  final ValueJonotifier<Posts> posts = ValueJonotifier(Posts());
-  final ValueJonotifier<List<users_pb.User>> users =
-      ValueJonotifier(<users_pb.User>[]);
+  final PostCache posts = PostCache();
+
+  final ValueJonotifier<List<u.User>> users = ValueJonotifier(<u.User>[]);
   bool get viewingGroup => selectedGroup.value != null;
   final ValueJonotifier<Group?> selectedGroup = ValueJonotifier(null);
   final ValueJonotifier<List<Group>> groups = ValueJonotifier(<Group>[]);
@@ -54,33 +55,6 @@ class AppState extends State<MyApp> {
   final _rootRouter = RootRouter(
     authGuard: AuthGuard(),
   );
-
-  ValueNotifier<bool> updatingPosts = ValueNotifier(true);
-  ValueNotifier<bool> errorUpdatingPosts = ValueNotifier(false);
-  ValueNotifier<bool> didUpdatePosts = ValueNotifier(false);
-  Future<void> updatePosts({Function(String)? showMessage}) async {
-    updatingPosts.value = true;
-    final Posts? posts = await JonlineOperations.getPosts();
-    if (posts == null) {
-      setState(() {
-        errorUpdatingPosts.value = true;
-        updatingPosts.value = false;
-        // showSnackBar
-      });
-      return;
-    }
-
-    didUpdatePosts.value = true;
-    // await animationDelay;
-
-    setState(() {
-      updatingPosts.value = false;
-      this.posts.value = posts;
-    });
-    didUpdatePosts.value = false;
-    // await communicationDelay;
-    // showMessage?.call("Posts updated! 🎉");
-  }
 
   ValueNotifier<bool> updatingUsers = ValueNotifier(true);
   ValueNotifier<bool> errorUpdatingUsers = ValueNotifier(false);
@@ -137,6 +111,7 @@ class AppState extends State<MyApp> {
     // showMessage?.call("Groups updated! 🎉");
   }
 
+  bool get loggedIn => JonlineAccount.loggedIn;
   JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
   set selectedAccount(JonlineAccount? account) {
     if (account != null) {
@@ -151,23 +126,15 @@ class AppState extends State<MyApp> {
     }
     JonlineAccount.selectedAccount = account;
     updateAccountList();
-    resetPosts();
+    posts.hardReset();
     resetPeople();
     resetGroups();
-  }
-
-  resetPosts() {
-    setState(() {
-      updatingPosts.value = true;
-      posts.value = Posts();
-    });
-    updatePosts();
   }
 
   resetPeople() {
     setState(() {
       updatingUsers.value = true;
-      users.value = <users_pb.User>[];
+      users.value = <u.User>[];
     });
     updateUsers();
   }
@@ -266,7 +233,26 @@ class AppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    accounts.addListener(updatePosts);
+    posts.getCurrentKey =
+        () => PostDataKey(selectedGroup.value?.id, posts.listingType);
+    posts.getCurrentData = () async {
+      switch (posts.listingType) {
+        case PostListingType.PUBLIC_POSTS:
+        case PostListingType.DIRECT_POSTS:
+        case PostListingType.FOLLOWING_POSTS:
+        case PostListingType.MY_GROUPS_POSTS:
+        case PostListingType.POSTS_PENDING_MODERATION:
+          return await JonlineOperations.getPosts(
+              request: GetPostsRequest(listingType: posts.listingType));
+        case PostListingType.GROUP_POSTS:
+        case PostListingType.GROUP_POSTS_PENDING_MODERATION:
+          return await JonlineOperations.getPosts(
+              request: GetPostsRequest(
+                  listingType: posts.listingType,
+                  groupId: selectedGroup.value?.id));
+      }
+    };
+    accounts.addListener(posts.update);
     accounts.addListener(updateUsers);
     accounts.addListener(updateGroups);
     accounts.addListener(monitorAccountChange);
@@ -287,9 +273,6 @@ class AppState extends State<MyApp> {
           JonlineServer.selectedServer = server;
         }
       }
-      updatingPosts.addListener(() {
-        if (updatingPosts.value) errorUpdatingPosts.value = false;
-      });
       updatingUsers.addListener(() {
         if (updatingUsers.value) errorUpdatingUsers.value = false;
       });
@@ -297,7 +280,7 @@ class AppState extends State<MyApp> {
         if (updatingGroups.value) errorUpdatingGroups.value = false;
       });
       await updateServersAndAccounts();
-      await Future.wait([updatePosts(), updateUsers(), updateGroups()]);
+      await Future.wait([posts.update(), updateUsers(), updateGroups()]);
     });
   }
 
@@ -317,7 +300,7 @@ class AppState extends State<MyApp> {
     selectedServerChanged.removeListener(updateColorTheme);
     colorTheme.removeListener(updateColors);
     colorTheme.removeListener(updateColors);
-    accounts.removeListener(updatePosts);
+    accounts.removeListener(posts.update);
     accounts.removeListener(updateUsers);
     accounts.dispose();
     updateReplies.dispose();

@@ -82,7 +82,7 @@ deploy_db_update:
 	kubectl apply -f backend/k8s/k8s-postgres.yaml -n $(NAMESPACE)
 
 deploy_db_delete:
-	kubectl delete -f backend/k8s/k8s-postgres.yaml -n $(NAMESPACE)
+	- kubectl delete -f backend/k8s/k8s-postgres.yaml -n $(NAMESPACE)
 
 deploy_db_restart:
 	kubectl rollout restart deployment jonline-postgres -n $(NAMESPACE)
@@ -95,7 +95,7 @@ deploy_minio_update:
 	kubectl apply -f backend/k8s/k8s-minio.yaml -n $(NAMESPACE)
 
 deploy_minio_delete:
-	kubectl delete -f backend/k8s/k8s-minio.yaml -n $(NAMESPACE)
+	- kubectl delete -f backend/k8s/k8s-minio.yaml -n $(NAMESPACE)
 
 deploy_minio_restart:
 	kubectl rollout restart deployment jonline-minio -n $(NAMESPACE)

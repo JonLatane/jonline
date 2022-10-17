@@ -9,7 +9,6 @@ import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/screens/groups/group_preview.dart';
 import 'package:jonline/utils/colors.dart';
-import 'package:jonline/utils/enum_conversions.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
@@ -317,7 +316,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
           var textButton = TextButton(
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(l == listingType
-                      ? appState.primaryColor.textColor
+                      ? appState.primaryColor.textColor.withOpacity(0.8)
                       : null)),
               // bac: ,
               onPressed: usable

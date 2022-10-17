@@ -4,13 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/jonline_operations.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
+import '../../generated/permissions.pbenum.dart';
 import '../../generated/posts.pb.dart';
+import '../../generated/users.pb.dart';
 import '../../models/settings.dart';
 
 // import 'package:jonline/db.dart';
@@ -40,26 +44,28 @@ class PostPreview extends StatefulWidget {
 }
 
 class PostPreviewState extends JonlineBaseState<PostPreview> {
-  String? get title => widget.post.title;
-  String? get link => widget.post.link.isEmpty
+  Post get post => widget.post;
+  String? get title => post.title;
+  String? get link => post.link.isEmpty
       ? null
-      : widget.post.link.startsWith(RegExp(r'https?://'))
-          ? widget.post.link
-          : 'http://${widget.post.link}';
+      : post.link.startsWith(RegExp(r'https?://'))
+          ? post.link
+          : 'http://${post.link}';
   List<int>? previewImage;
-  String? get content =>
-      widget.post.content.isEmpty ? null : widget.post.content;
+  String? get content => post.content.isEmpty ? null : post.content;
   String? get username =>
-      widget.post.author.username.isEmpty ? null : widget.post.author.username;
-  int get responseCount => widget.post.responseCount;
+      post.author.username.isEmpty ? null : post.author.username;
+  int get responseCount => post.responseCount;
 
   bool _hasLoadedServerPreview = false;
+  User? get author =>
+      appState.users.value.where((u) => u.id == post.author.userId).firstOrNull;
 
   @override
   void initState() {
     super.initState();
 
-    if (widget.post.link.isNotEmpty) {
+    if (post.link.isNotEmpty) {
       loadServerPreview();
     }
   }
@@ -71,14 +77,14 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
 
   loadServerPreview() async {
     if (_hasLoadedServerPreview) return;
-    final key = "${widget.server}:${widget.post.id}";
+    final key = "${widget.server}:${post.id}";
     List<int>? previewData;
     if (previewStorage.hasData(key)) {
       previewData = previewStorage.read(key).cast<int>();
     }
     if (previewData == null) {
       previewData = (await JonlineOperations.getPosts(
-              request: GetPostsRequest(postId: widget.post.id),
+              request: GetPostsRequest(postId: post.id),
               showMessage: showSnackBar))
           ?.posts
           .firstOrNull
@@ -196,6 +202,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
           Row(
             children: [
               Expanded(
+                flex: 5,
                 child: TextButton(
                   style: ButtonStyle(
                       padding: MaterialStateProperty.all(
@@ -203,7 +210,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                   )),
                   onPressed: () {
                     context.navigateNamedTo(
-                        '/posts/author/${widget.server}/${widget.post.author.userId}');
+                        '/posts/author/${widget.server}/${post.author.userId}');
                   },
                   child: Row(
                     children: [
@@ -216,6 +223,26 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                             fontWeight: FontWeight.w300,
                             color: Colors.grey),
                       ),
+                      if (author?.permissions.contains(Permission.RUN_BOTS) ??
+                          false)
+                        Tooltip(
+                          message: "${author?.username} may run (or be) a bot",
+                          child: const Padding(
+                            padding: EdgeInsets.only(right: 4.0),
+                            child: Iconify(FaSolid.robot,
+                                size: 12, color: Colors.white),
+                          ),
+                        ),
+                      if (author?.permissions.contains(Permission.ADMIN) ??
+                          false)
+                        Tooltip(
+                          message: "${author?.username} is an admin",
+                          child: const Padding(
+                            padding: EdgeInsets.only(right: 4.0),
+                            child: Icon(Icons.admin_panel_settings_outlined,
+                                size: 16, color: Colors.white),
+                          ),
+                        ),
                       Expanded(
                         child: Text(
                           username ?? noOne,
@@ -263,7 +290,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
             child: Container(
               color: Colors.black.withOpacity(0.7),
               padding: const EdgeInsets.all(8.0),
-              child: Text(widget.post.id, style: textTheme.caption),
+              child: Text(post.id, style: textTheme.caption),
             ),
           )
         ],

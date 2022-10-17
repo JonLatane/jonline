@@ -41,16 +41,33 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
             }
         };
     }
-    match group
-        .default_membership_moderation
-        .to_proto_moderation()
-        .unwrap()
+    match group.default_membership_moderation()
     {
         Moderation::Unmoderated | Moderation::Pending => {}
         _ => {
             return Err(Status::new(
                 Code::Internal,
                 "invalid_default_membership_moderation",
+            ))
+        }
+    };
+    match group .default_post_moderation()
+    {
+        Moderation::Unmoderated | Moderation::Pending => {}
+        _ => {
+            return Err(Status::new(
+                Code::Internal,
+                "invalid_default_post_moderation",
+            ))
+        }
+    };
+    match group.default_event_moderation()
+    {
+        Moderation::Unmoderated | Moderation::Pending => {}
+        _ => {
+            return Err(Status::new(
+                Code::Internal,
+                "invalid_default_event_moderation",
             ))
         }
     };

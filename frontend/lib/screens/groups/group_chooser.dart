@@ -60,53 +60,56 @@ class GroupChooserState extends JonlineState<GroupChooser> {
         appState.selectedGroup.value!.name != currentGroupName) {
       currentGroupName = appState.selectedGroup.value!.name;
     }
-    return AnimatedContainer(
-      duration: animationDuration,
-      width: width * mq.textScaleFactor,
-      child: TextButton(
-        style: ButtonStyle(
-            padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-            foregroundColor:
-                MaterialStateProperty.all(Colors.white.withAlpha(255)),
-            overlayColor:
-                MaterialStateProperty.all(Colors.white.withAlpha(100)),
-            splashFactory: InkSparkle.splashFactory),
-        onPressed: () {
-          // HapticFeedback.lightImpact();
-          final RenderBox button = context.findRenderObject() as RenderBox;
-          final RenderBox? overlay =
-              Overlay.of(context)?.context.findRenderObject() as RenderBox?;
-          final RelativeRect position = RelativeRect.fromRect(
-            Rect.fromPoints(
-              button.localToGlobal(Offset.zero, ancestor: overlay),
-              button.localToGlobal(button.size.bottomRight(Offset.zero),
-                  ancestor: overlay),
-            ),
-            Offset.zero & (overlay?.size ?? Size.zero),
-          );
-          showGroupsMenu(context, position);
-          // context.router.pop();
-        },
-        child: Stack(
-          children: [
-            AnimatedOpacity(
-                opacity: appState.selectedGroup.value == null ? 1 : 0.5,
-                duration: animationDuration,
-                child: const Center(child: Icon(Icons.group_work_outlined))),
-            ...groupNames.map(
-              (name) => AnimatedOpacity(
-                opacity: appState.selectedGroup.value?.name == name ? 1 : 0,
-                duration: animationDuration,
-                child: Center(
-                    child: Text(
-                  name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                )),
+    return Tooltip(
+      message: 'Select Group',
+      child: AnimatedContainer(
+        duration: animationDuration,
+        width: width * mq.textScaleFactor,
+        child: TextButton(
+          style: ButtonStyle(
+              padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
+              foregroundColor:
+                  MaterialStateProperty.all(Colors.white.withAlpha(255)),
+              overlayColor:
+                  MaterialStateProperty.all(Colors.white.withAlpha(100)),
+              splashFactory: InkSparkle.splashFactory),
+          onPressed: () {
+            // HapticFeedback.lightImpact();
+            final RenderBox button = context.findRenderObject() as RenderBox;
+            final RenderBox? overlay =
+                Overlay.of(context)?.context.findRenderObject() as RenderBox?;
+            final RelativeRect position = RelativeRect.fromRect(
+              Rect.fromPoints(
+                button.localToGlobal(Offset.zero, ancestor: overlay),
+                button.localToGlobal(button.size.bottomRight(Offset.zero),
+                    ancestor: overlay),
               ),
-            )
-          ],
+              Offset.zero & (overlay?.size ?? Size.zero),
+            );
+            showGroupsMenu(context, position);
+            // context.router.pop();
+          },
+          child: Stack(
+            children: [
+              AnimatedOpacity(
+                  opacity: appState.selectedGroup.value == null ? 1 : 0.5,
+                  duration: animationDuration,
+                  child: const Center(child: Icon(Icons.group_work_outlined))),
+              ...groupNames.map(
+                (name) => AnimatedOpacity(
+                  opacity: appState.selectedGroup.value?.name == name ? 1 : 0,
+                  duration: animationDuration,
+                  child: Center(
+                      child: Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  )),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -118,7 +121,12 @@ Future<Object> showGroupsMenu(
   ThemeData theme = Theme.of(context);
   // TextTheme textTheme = theme.textTheme;
   ThemeData darkTheme = theme;
-  final groups = context.findRootAncestorStateOfType<AppState>()!.groups.value;
+  final appState = context.findRootAncestorStateOfType<AppState>()!;
+  final groups = appState.groups.value;
+  if (appState.selectedGroup.value != null &&
+      !groups.any((g) => appState.selectedGroup.value?.id == g.id)) {
+    appState.selectedGroup.value = null;
+  }
   final myGroups = groups.where((g) => g.member);
   final pendingGroups = groups.where((g) => g.wantsToJoinGroup);
   final otherGroups = groups.where((g) => !g.member && !g.wantsToJoinGroup);
@@ -259,7 +267,8 @@ Widget _groupItem(Group g, BuildContext context) {
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Text("${JonlineServer.selectedServer.server}/",
+                        child: Text(
+                            "${JonlineServer.selectedServer.server}/g/${g.id}",
                             textAlign: TextAlign.left,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

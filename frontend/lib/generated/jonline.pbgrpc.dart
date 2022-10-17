@@ -17,7 +17,6 @@ import 'authentication.pb.dart' as $3;
 import 'users.pb.dart' as $4;
 import 'groups.pb.dart' as $5;
 import 'posts.pb.dart' as $6;
-import 'post_query.pb.dart' as $7;
 export 'jonline.pb.dart';
 
 class JonlineClient extends $grpc.Client {
@@ -114,14 +113,12 @@ class JonlineClient extends $grpc.Client {
           ($5.GetMembersRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
               $5.GetMembersResponse.fromBuffer(value));
-  static final _$getPosts = $grpc.ClientMethod<$6.GetPostsRequest, $6.Posts>(
-      '/jonline.Jonline/GetPosts',
-      ($6.GetPostsRequest value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $6.Posts.fromBuffer(value));
-  static final _$queryPosts = $grpc.ClientMethod<$7.PostQuery, $6.Posts>(
-      '/jonline.Jonline/QueryPosts',
-      ($7.PostQuery value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $6.Posts.fromBuffer(value));
+  static final _$getPosts =
+      $grpc.ClientMethod<$6.GetPostsRequest, $6.GetPostsResponse>(
+          '/jonline.Jonline/GetPosts',
+          ($6.GetPostsRequest value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) =>
+              $6.GetPostsResponse.fromBuffer(value));
   static final _$createPost = $grpc.ClientMethod<$6.CreatePostRequest, $6.Post>(
       '/jonline.Jonline/CreatePost',
       ($6.CreatePostRequest value) => value.writeToBuffer(),
@@ -266,14 +263,9 @@ class JonlineClient extends $grpc.Client {
     return $createUnaryCall(_$getMembers, request, options: options);
   }
 
-  $grpc.ResponseFuture<$6.Posts> getPosts($6.GetPostsRequest request,
+  $grpc.ResponseFuture<$6.GetPostsResponse> getPosts($6.GetPostsRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getPosts, request, options: options);
-  }
-
-  $grpc.ResponseFuture<$6.Posts> queryPosts($7.PostQuery request,
-      {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$queryPosts, request, options: options);
   }
 
   $grpc.ResponseFuture<$6.Post> createPost($6.CreatePostRequest request,
@@ -458,20 +450,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $5.GetMembersRequest.fromBuffer(value),
         ($5.GetMembersResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$6.GetPostsRequest, $6.Posts>(
+    $addMethod($grpc.ServiceMethod<$6.GetPostsRequest, $6.GetPostsResponse>(
         'GetPosts',
         getPosts_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $6.GetPostsRequest.fromBuffer(value),
-        ($6.Posts value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$7.PostQuery, $6.Posts>(
-        'QueryPosts',
-        queryPosts_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) => $7.PostQuery.fromBuffer(value),
-        ($6.Posts value) => value.writeToBuffer()));
+        ($6.GetPostsResponse value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$6.CreatePostRequest, $6.Post>(
         'CreatePost',
         createPost_Pre,
@@ -627,14 +612,9 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getMembers(call, await request);
   }
 
-  $async.Future<$6.Posts> getPosts_Pre(
+  $async.Future<$6.GetPostsResponse> getPosts_Pre(
       $grpc.ServiceCall call, $async.Future<$6.GetPostsRequest> request) async {
     return getPosts(call, await request);
-  }
-
-  $async.Future<$6.Posts> queryPosts_Pre(
-      $grpc.ServiceCall call, $async.Future<$7.PostQuery> request) async {
-    return queryPosts(call, await request);
   }
 
   $async.Future<$6.Post> createPost_Pre($grpc.ServiceCall call,
@@ -712,10 +692,8 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $5.Membership request);
   $async.Future<$5.GetMembersResponse> getMembers(
       $grpc.ServiceCall call, $5.GetMembersRequest request);
-  $async.Future<$6.Posts> getPosts(
+  $async.Future<$6.GetPostsResponse> getPosts(
       $grpc.ServiceCall call, $6.GetPostsRequest request);
-  $async.Future<$6.Posts> queryPosts(
-      $grpc.ServiceCall call, $7.PostQuery request);
   $async.Future<$6.Post> createPost(
       $grpc.ServiceCall call, $6.CreatePostRequest request);
   $async.Future<$6.Post> updatePost($grpc.ServiceCall call, $6.Post request);

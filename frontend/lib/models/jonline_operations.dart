@@ -88,7 +88,7 @@ extension JonlineOperations on JonlineAccount {
     return response;
   }
 
-  static Future<Posts?> getPosts(
+  static Future<GetPostsResponse?> getPosts(
       {GetPostsRequest? request,
       Function(String)? showMessage,
       bool forReplies = false}) async {
@@ -102,7 +102,7 @@ extension JonlineOperations on JonlineAccount {
     }
     await communicationDelay;
     // showMessage?.call("Loading posts...");
-    final Posts posts;
+    final GetPostsResponse posts;
     try {
       posts = await client.getPosts(request ?? GetPostsRequest(),
           options: JonlineAccount.selectedAccount?.authenticatedCallOptions);

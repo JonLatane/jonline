@@ -38,7 +38,7 @@ class Settings {
     }
   }
 
-  static int _replyLayersToLoad = 2;
+  static int _replyLayersToLoad = 1;
   static int get replyLayersToLoad => _replyLayersToLoad;
   static set replyLayersToLoad(int v) {
     {
@@ -97,7 +97,7 @@ class Settings {
   static initialize(VoidCallback onComplete) async {
     _powerUserMode = appStorage.getBool("power_user_mode") ?? false;
     _developerMode = appStorage.getBool("developer_mode") ?? false;
-    _replyLayersToLoad = appStorage.getInt("reply_layers_to_load") ?? 2;
+    _replyLayersToLoad = appStorage.getInt("reply_layers_to_load") ?? 1;
     _preferServerPreviews =
         appStorage.getBool("prefer_server_previews") ?? MyPlatform.isWeb;
     showSettingsTabListener.value =

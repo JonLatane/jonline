@@ -789,10 +789,11 @@ class AccountsPageState extends JonlineState<AccountsPage> {
             if (appState.selectedAccount != null &&
                 appState.selectedAccount!.server != server.server) {
               appState.selectedAccount = null;
+              appState.selectedGroup.value = null;
             } else {
               appState.notifyAccountsListeners();
             }
-            appState.resetPosts();
+            appState.posts.hardReset();
             showSnackBar("Browsing anonymously on ${server.server}.");
           }
         : null;

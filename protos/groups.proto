@@ -21,9 +21,10 @@ message Group {
   // visibile to users with the ADMIN group permission.
   Visibility visibility = 9;
   uint32 member_count = 10;
-  optional Membership current_user_membership = 11;
-  google.protobuf.Timestamp created_at = 12;
-  optional google.protobuf.Timestamp updated_at = 13;
+  uint32 post_count = 11;
+  optional Membership current_user_membership = 12;
+  google.protobuf.Timestamp created_at = 13;
+  optional google.protobuf.Timestamp updated_at = 14;
 }
 
 message Membership {

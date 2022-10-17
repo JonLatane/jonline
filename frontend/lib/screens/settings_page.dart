@@ -207,7 +207,7 @@ class _SettingsPageState extends JonlineState<SettingsPage>
                                   setState(
                                       () => Settings.preferServerPreviews = v);
                                   appState
-                                    ..updatePosts()
+                                    ..posts.update()
                                     ..notifyAccountsListeners();
                                 }),
                           ],

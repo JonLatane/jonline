@@ -212,6 +212,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               PersonPreview(
+                usernameController: usernameController,
                 server: widget.server ?? JonlineServer.selectedServer.server,
                 person: Person(userData ?? User()),
                 navigable: false,
@@ -513,6 +514,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
                       showSnackBar("User Data Updated 🎉");
                       homePage.titleUsername = account.username;
                       await appState.updateAccounts();
+                      await appState.updateUsers();
                     } catch (e) {
                       showSnackBar(formatServerError(e));
                       await communicationDelay;

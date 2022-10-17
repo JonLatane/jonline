@@ -9,6 +9,7 @@ import '../../generated/groups.pb.dart';
 import '../../generated/jonline.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
+import '../../generated/visibility_moderation.pbenum.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_account_operations.dart';
 import '../../models/jonline_clients.dart';
@@ -99,10 +100,13 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
     try {
       group = await client!.createGroup(
           Group(
-              name: name,
-              description: description.isNotEmpty ? description : null,
-              visibility: visibility,
-              defaultMembershipModeration: defaultMembershipModeration),
+            name: name,
+            description: description.isNotEmpty ? description : null,
+            visibility: visibility,
+            defaultMembershipModeration: defaultMembershipModeration,
+            defaultPostModeration: Moderation.UNMODERATED,
+            defaultEventModeration: Moderation.UNMODERATED,
+          ),
           options: account.authenticatedCallOptions);
     } catch (e) {
       await communicationDelay;

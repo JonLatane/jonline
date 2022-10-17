@@ -1,3 +1,5 @@
+// This module contains Rocket routes and handlers for the web interface.
+
 pub mod catchers;
 pub use catchers::*;
 

@@ -61,112 +61,116 @@ class AccountChooserState extends JonlineState<AccountChooser> {
     if ((appState.selectedAccount?.username ?? noOne) != currentUsername) {
       currentUsername = appState.selectedAccount?.username ?? noOne;
     }
-    return SizedBox(
-      width: 72 * mq.textScaleFactor,
-      child: TextButton(
-        style: ButtonStyle(
-            padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-            foregroundColor:
-                MaterialStateProperty.all(Colors.white.withAlpha(255)),
-            overlayColor:
-                MaterialStateProperty.all(Colors.white.withAlpha(100)),
-            splashFactory: InkSparkle.splashFactory),
-        onPressed: () {
-          // HapticFeedback.lightImpact();
-          final RenderBox button = context.findRenderObject() as RenderBox;
-          final RenderBox? overlay =
-              Overlay.of(context)?.context.findRenderObject() as RenderBox?;
-          final RelativeRect position = RelativeRect.fromRect(
-            Rect.fromPoints(
-              button.localToGlobal(Offset.zero, ancestor: overlay),
-              button.localToGlobal(button.size.bottomRight(Offset.zero),
-                  ancestor: overlay),
-            ),
-            Offset.zero & (overlay?.size ?? Size.zero),
-          );
-          showAccountsMenu(context, position);
-          // context.router.pop();
-        },
-        child: Stack(
-          children: [
-            Center(
-                child: AnimatedOpacity(
-              duration: animationDuration,
-              opacity: JonlineAccount.selectedAccount?.permissions
-                          .contains(Permission.ADMIN) ??
-                      false
-                  ? 0.5
-                  : 0,
-              child: const Icon(Icons.admin_panel_settings_outlined),
-            )),
-            Center(
-                child: AnimatedOpacity(
-              duration: animationDuration,
-              opacity: JonlineAccount.selectedAccount?.permissions
-                          .contains(Permission.RUN_BOTS) ??
-                      false
-                  ? 0.5
-                  : 0,
-              child: const Iconify(FaSolid.robot),
-            )),
-            Column(
-              children: [
-                const Expanded(child: SizedBox()),
-                Stack(
-                  children: [
-                    ...servers.map(
-                      (name) => AnimatedOpacity(
-                        opacity:
-                            "${JonlineServer.selectedServer.server}/" == name
-                                ? 1
-                                : 0,
-                        duration: animationDuration,
-                        child: Center(
-                            child: Text(
-                          name,
-                          style: textTheme.caption,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          // textAlign: TextAlign.center,
-                        )),
-                      ),
-                    )
-                  ],
-                ),
-                Stack(
-                  children: [
-                    ...usernames.map(
-                      (name) => AnimatedOpacity(
-                        opacity:
-                            (appState.selectedAccount?.username ?? noOne) ==
-                                    name
-                                ? 1
-                                : 0,
-                        duration: animationDuration,
-                        child: Center(
-                            child: Text(
-                          name,
-                          style: textTheme.subtitle2,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          // textAlign: TextAlign.center,
-                        )),
-                      ),
-                    )
-                  ],
-                ),
-                // Text('${JonlineServer.selectedServer.server}/',
-                //     maxLines: 1,
-                //     overflow: TextOverflow.ellipsis,
-                //     style: textTheme.caption),
-                // Text(JonlineAccount.selectedAccount?.username ?? noOne,
-                //     maxLines: 1,
-                //     overflow: TextOverflow.ellipsis,
-                //     style: textTheme.subtitle2),
-                const Expanded(child: SizedBox()),
-              ],
-            ),
-          ],
+    return Tooltip(
+      message: "Select Account",
+      child: SizedBox(
+        width: 72 * mq.textScaleFactor,
+        child: TextButton(
+          style: ButtonStyle(
+              padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
+              foregroundColor:
+                  MaterialStateProperty.all(Colors.white.withAlpha(255)),
+              overlayColor:
+                  MaterialStateProperty.all(Colors.white.withAlpha(100)),
+              splashFactory: InkSparkle.splashFactory),
+          onPressed: () {
+            // HapticFeedback.lightImpact();
+            final RenderBox button = context.findRenderObject() as RenderBox;
+            final RenderBox? overlay =
+                Overlay.of(context)?.context.findRenderObject() as RenderBox?;
+            final RelativeRect position = RelativeRect.fromRect(
+              Rect.fromPoints(
+                button.localToGlobal(Offset.zero, ancestor: overlay),
+                button.localToGlobal(button.size.bottomRight(Offset.zero),
+                    ancestor: overlay),
+              ),
+              Offset.zero & (overlay?.size ?? Size.zero),
+            );
+            showAccountsMenu(context, position);
+            // context.router.pop();
+          },
+          child: Stack(
+            children: [
+              Center(
+                  child: AnimatedOpacity(
+                duration: animationDuration,
+                opacity: JonlineAccount.selectedAccount?.permissions
+                            .contains(Permission.ADMIN) ??
+                        false
+                    ? 0.5
+                    : 0,
+                child: const Icon(Icons.admin_panel_settings_outlined),
+              )),
+              Center(
+                  child: AnimatedOpacity(
+                duration: animationDuration,
+                opacity: JonlineAccount.selectedAccount?.permissions
+                            .contains(Permission.RUN_BOTS) ??
+                        false
+                    ? 0.5
+                    : 0,
+                child:
+                    const Iconify(FaSolid.robot, color: Colors.white, size: 18),
+              )),
+              Column(
+                children: [
+                  const Expanded(child: SizedBox()),
+                  Stack(
+                    children: [
+                      ...servers.map(
+                        (name) => AnimatedOpacity(
+                          opacity:
+                              "${JonlineServer.selectedServer.server}/" == name
+                                  ? 1
+                                  : 0,
+                          duration: animationDuration,
+                          child: Center(
+                              child: Text(
+                            name,
+                            style: textTheme.caption,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            // textAlign: TextAlign.center,
+                          )),
+                        ),
+                      )
+                    ],
+                  ),
+                  Stack(
+                    children: [
+                      ...usernames.map(
+                        (name) => AnimatedOpacity(
+                          opacity:
+                              (appState.selectedAccount?.username ?? noOne) ==
+                                      name
+                                  ? 1
+                                  : 0,
+                          duration: animationDuration,
+                          child: Center(
+                              child: Text(
+                            name,
+                            style: textTheme.subtitle2,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            // textAlign: TextAlign.center,
+                          )),
+                        ),
+                      )
+                    ],
+                  ),
+                  // Text('${JonlineServer.selectedServer.server}/',
+                  //     maxLines: 1,
+                  //     overflow: TextOverflow.ellipsis,
+                  //     style: textTheme.caption),
+                  // Text(JonlineAccount.selectedAccount?.username ?? noOne,
+                  //     maxLines: 1,
+                  //     overflow: TextOverflow.ellipsis,
+                  //     style: textTheme.subtitle2),
+                  const Expanded(child: SizedBox()),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

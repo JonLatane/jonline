@@ -50,6 +50,7 @@ table! {
         default_event_moderation -> Varchar,
         moderation -> Varchar,
         member_count -> Int4,
+        post_count -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
