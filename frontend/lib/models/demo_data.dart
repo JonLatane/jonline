@@ -408,10 +408,48 @@ class DemoPost {
 
 final List<DemoPost> _demoData = [
   DemoPost(
+      [DemoGroup.yoga, DemoGroup.sports],
+      CreatePostRequest(
+        title: "Magical fountain of kinesthetic knowledge",
+        link: "https://www.triangleintegratedyoga.com",
+      )),
+  DemoPost(
+      [DemoGroup.yoga, DemoGroup.sports],
+      CreatePostRequest(
+        title: "Homegirl know how to make you work n have fun",
+        link: "https://www.laurenaliviayoga.com",
+      )),
+  DemoPost(
+      [DemoGroup.gamers],
+      CreatePostRequest(
+        title: "Gonna play this with my lil second cousin",
+        link: "https://frontiers.sonicthehedgehog.com",
+      )),
+  DemoPost(
+      [DemoGroup.sports],
+      CreatePostRequest(
+          title: "Not having fear is aid",
+          link: "https://www.disneyplus.com/movies/free-solo/3ibzvuU6iPlE",
+          content: "Nah but fr Alexa Handhold is one of the GOAT")),
+  DemoPost(
+      [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
+      CreatePostRequest(
+          title: "ChordCalc, my first indie app, on the Play Store",
+          link:
+              "https://play.google.com/store/apps/details?id=com.jonlatane.composer&hl=en_US&gl=US",
+          content:
+              "Not maintained, but still available on the Play Store. For the time (around 2011) I wrote a pretty novel algorithm for naming chords that I've reused in BeatScratch.")),
+  DemoPost(
+      [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
+      CreatePostRequest(
+          title: "ChordCalc on GitHub",
+          link: "https://github.com/falrm/ChordCalcComposer",
+          content: "Use or improve my algorithms 💚")),
+  DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.tech, DemoGroup.programming],
       CreatePostRequest(
           title:
-              "Topologica was my first app; here's an article about how it works!",
+              "Topologica was my second app; here's an article about how it works!",
           link:
               "https://medium.com/fully-automated-luxury-robot-music/topologica-jazz-orbifolds-and-your-event-sourced-flux-driven-dream-code-f8e24443a941",
           content:
@@ -443,6 +481,13 @@ string''')),
           link:
               "https://play.google.com/store/apps/details?id=com.jonlatane.beatpad.free&hl=en_US&gl=US",
           content: "Not maintained, but still available on the Play Store.")),
+  DemoPost(
+      [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
+      CreatePostRequest(
+          title: "BeatScratch Legacy (formerly Topologica) on GitHub",
+          link: "https://github.com/falrm/BeatPad",
+          content:
+              "Again, not maintained, but still available on the Play Store. Anko (which the UI's built with) is also not maintained 🥲")),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.makers, DemoGroup.toolSharing],
       CreatePostRequest(

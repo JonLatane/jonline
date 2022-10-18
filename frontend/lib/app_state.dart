@@ -251,6 +251,8 @@ class AppState extends State<MyApp> {
                   listingType: posts.listingType,
                   groupId: selectedGroup.value?.id));
       }
+      print("Unknown PostListingType: ${posts.listingType}");
+      return null;
     };
     accounts.addListener(posts.update);
     accounts.addListener(updateUsers);

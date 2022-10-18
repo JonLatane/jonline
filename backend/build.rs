@@ -7,13 +7,19 @@ fn main() {
     let _ = fs::create_dir("./target/compiled_protos");
     tonic_build::configure()
         .build_server(true)
-        .type_attribute("ServerInfo", "#[derive(serde::Serialize, serde::Deserialize)]")
-        .type_attribute("ServerColors", "#[derive(serde::Serialize, serde::Deserialize)]")
-        .type_attribute("FeatureSettings", "#[derive(serde::Serialize, serde::Deserialize)]")
-        .type_attribute("ContactMethod", "#[derive(serde::Serialize, serde::Deserialize)]")
-        .type_attribute("AuthenticationFeature", "#[derive(serde::Serialize, serde::Deserialize)]")
-        .type_attribute("PrivateUserStrategy", "#[derive(serde::Serialize, serde::Deserialize)]")
-
+        .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
+        .extern_path(
+            ".google.protobuf.Any",
+            "::prost_wkt_types::Any"
+        )
+        .extern_path(
+            ".google.protobuf.Timestamp",
+            "::prost_wkt_types::Timestamp"
+        )
+        .extern_path(
+            ".google.protobuf.Value",
+            "::prost_wkt_types::Value"
+        )
         .file_descriptor_set_path(out_dir.join("greeter_descriptor.bin"))
         .out_dir("./src/protos")
         .compile(&[proto_file], &["../protos"])

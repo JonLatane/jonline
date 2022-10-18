@@ -1,23 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/jonline_account_operations.dart';
-import '../screens/accounts/server_configuration_page.dart';
-import '../screens/login_page.dart';
-import 'db.dart';
-import 'generated/server_configuration.pb.dart';
-import 'generated/groups.pb.dart';
 import 'generated/posts.pb.dart';
-import 'generated/users.pb.dart';
-import 'generated/users.pb.dart' as u;
 import 'jonotifier.dart';
-import 'main.dart';
-import 'models/jonline_account.dart';
-import 'models/jonline_operations.dart';
-import 'models/jonline_server.dart';
-import 'models/settings.dart';
-import 'my_platform.dart';
-import 'router/auth_guard.dart';
-import 'router/router.gr.dart';
 
 abstract class DataCache<ListingType, DataKeyType, ResultType>
     implements Listenable {
@@ -37,8 +21,13 @@ abstract class DataCache<ListingType, DataKeyType, ResultType>
       return emptyResult;
     }
     final key = getCurrentKey!();
-    _data.value[key] ??= emptyResult;
-    return _data.value[key]!;
+    var result = _data.value[key];
+    if (result == null) {
+      result = emptyResult!;
+      _data.value[key] = result;
+      Future.microtask(update);
+    }
+    return result;
   }
 
   set value(ResultType value) {

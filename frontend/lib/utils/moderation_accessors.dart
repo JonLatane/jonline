@@ -1,7 +1,4 @@
-import 'package:recase/recase.dart';
-
 import '../generated/groups.pb.dart';
-
 import '../generated/users.pb.dart';
 import '../generated/visibility_moderation.pbenum.dart';
 

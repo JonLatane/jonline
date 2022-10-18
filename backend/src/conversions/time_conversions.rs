@@ -1,5 +1,5 @@
 use std::time::{SystemTime, UNIX_EPOCH};
-use prost_types::Timestamp;
+use prost_wkt_types::Timestamp;
 
 pub trait ToProtoTime {
     fn to_proto(&self) -> Timestamp;

@@ -11,6 +11,9 @@ extern crate regex;
 extern crate ring;
 extern crate rocket;
 extern crate rocket_async_compression;
+extern crate rocket_dyn_templates;
+extern crate prost_wkt_types;
+extern crate markdown;
 extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
@@ -34,6 +37,7 @@ use futures::future::join_all;
 use protos::jonline_server::JonlineServer;
 use rocket::*;
 use rocket_async_compression::Compression;
+use rocket_dyn_templates::Template;
 use std::net::SocketAddr;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
 
@@ -132,6 +136,8 @@ fn create_rocket_unsecured(port: i32) -> rocket::Rocket<rocket::Build> {
 
 fn create_rocket<T: rocket::figment::Provider>(figment: T) -> rocket::Rocket<rocket::Build> {
     let server = rocket::custom(figment)
+    .manage(web::RocketState { pool: db_connection::establish_pool() })
+
         .mount(
             "/",
             routes![
@@ -141,6 +147,7 @@ fn create_rocket<T: rocket::figment::Provider>(figment: T) -> rocket::Rocket<roc
                 web::home_page::home
             ],
         )
+        .attach(Template::fairing())
         .register("/", catchers![web::catchers::not_found]);
     if cfg!(debug_assertions) {
         server

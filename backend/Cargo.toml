@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.154"
+version = "0.1.166"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -15,12 +15,15 @@ tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
 tonic = { version = "0.8.1", features = ["tls", "tls-roots", "tls-webpki-roots", "gzip"] }
 tonic-reflection = "0.5.0"
 tonic-web = "0.4.0"
-rocket = { version= "0.5.0-rc.2", features = [ "tls" ] }
+rocket = { version = "0.5.0-rc.2", features = [ "tls" ] }
 rocket_async_compression = "0.1.2"
+rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars", "tera"]}
 futures = "0.3.24"
 prost = "0.11.0"
 prost-build = "0.11.1"
 prost-types = { version = "0.11.1", features = ["std"] }
+prost-wkt = "0.3"
+prost-wkt-types = "0.3"
 diesel = { version = "2.0.2", features = ["postgres", "r2d2", "serde_json"] }
 diesel_migrations = "2.0.0"
 serde = "1.0.144"
@@ -31,13 +34,14 @@ bs58 = "0.4.0"
 ring = "0.16.20"
 regex = "1.6.0"
 itertools = "0.10.5"
-
-headless_chrome = { git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"], rev = "f8012ec4ed867ccc0efa6b262723363afd775011" }
 anyhow = "1.0.65"
-
 # security fixes
 websocket = "0.26.5"
 which = "4.3.0"
+markdown = "0.3"
+
+headless_chrome = { git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"], rev = "f8012ec4ed867ccc0efa6b262723363afd775011" }
 
 [build-dependencies]
 tonic-build = "0.8.0"
+prost-wkt-build = "0.3"

@@ -2,7 +2,7 @@ use std::option::Option;
 use std::time::SystemTime;
 
 use diesel::*;
-use prost_types::*;
+use prost_wkt_types::*;
 use ring::rand::*;
 
 use crate::db_connection::*;

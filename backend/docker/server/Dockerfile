@@ -9,7 +9,8 @@ RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/
 COPY frontend/build/web/ /opt/flutter_web
 
 # Copy the Jonline web templates.
-COPY web/ /opt/web
+# COPY web/ /opt/web
+COPY web/ /templates
 
 # Jonline server binary (runs Rocket/FE/Web and Tonic/BE/gRPC services, all in one)
 COPY backend/target/release/jonline__server_release /opt/jonline

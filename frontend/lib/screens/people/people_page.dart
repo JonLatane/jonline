@@ -76,7 +76,10 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
     with AutoRouteAwareStateMixin<PeopleScreen> {
   PeopleListingType listingType = PeopleListingType.everyone;
   Map<PeopleListingType, PeopleListingResponse> listingData = {};
-  ScrollController scrollController = ScrollController();
+  ScrollController listScrollController = ScrollController();
+  ScrollController gridScrollController = ScrollController();
+  ScrollController emptyScrollController = ScrollController();
+  ScrollController sectionScrollController = ScrollController();
 
   bool get useList => mq.size.width < 450;
   double get headerHeight => 48 * mq.textScaleFactor;
@@ -128,7 +131,10 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
     homePage.scrollToTop.removeListener(scrollToTop);
     homePage.peopleSearch.removeListener(updateState);
     homePage.peopleSearchController.removeListener(updateState);
-    scrollController.dispose();
+    listScrollController.dispose();
+    gridScrollController.dispose();
+    emptyScrollController.dispose();
+    sectionScrollController.dispose();
     super.dispose();
   }
 
@@ -137,11 +143,21 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
   }
 
   scrollToTop() {
+    ScrollController scrollController =
+        useList ? listScrollController : gridScrollController;
     if (context.topRoute.name == 'PeopleRoute') {
-      scrollController.animateTo(0,
-          duration: animationDuration, curve: Curves.easeInOut);
-      // gridScrollController.animateTo(0,
-      //     duration: animationDuration, curve: Curves.easeInOut);
+      if (scrollController.offset > 0) {
+        scrollController.animateTo(0,
+            duration: animationDuration, curve: Curves.easeInOut);
+      } else {
+        setState(() {
+          listingType = viewingGroup
+              ? PeopleListingType.members
+              : PeopleListingType.everyone;
+          sectionScrollController.animateTo(0,
+              duration: animationDuration, curve: Curves.easeInOut);
+        });
+      }
     }
   }
 
@@ -323,7 +339,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                     useList
                         ? ImplicitlyAnimatedList<Person>(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            controller: scrollController,
+                            controller: listScrollController,
                             items: userList,
                             areItemsTheSame: (a, b) => a.user.id == b.user.id,
                             padding: EdgeInsets.only(
@@ -334,6 +350,8 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                                   sizeFraction: 0.7,
                                   curve: Curves.easeInOut,
                                   animation: animation,
+                                  key: Key(
+                                      "personPage-person-${JonlineServer.selectedServer.server}-${person.user.id}"),
                                   child: Row(
                                     children: [
                                       Expanded(
@@ -347,7 +365,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                           )
                         : MasonryGridView.count(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            controller: scrollController,
+                            controller: gridScrollController,
                             padding: EdgeInsets.only(
                                 top: mq.padding.top + headerHeight,
                                 bottom: mq.padding.bottom),
@@ -364,6 +382,8 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                             itemBuilder: (context, index) {
                               final person = userList[index];
                               return PersonPreview(
+                                  key: Key(
+                                      "personPage-person-griditem-${JonlineServer.selectedServer.server}-${person.user.id}"),
                                   person: person,
                                   server: JonlineServer.selectedServer.server);
                             },
@@ -429,32 +449,25 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
     return Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              controller: scrollController,
-              child: Column(
-                children: [
-                  SizedBox(
-                      height: (MediaQuery.of(context).size.height - 200) / 2),
-                  Center(
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 350),
-                      child: Column(
-                        children: [
-                          Text("Loading $people...",
-                              style: textTheme.titleLarge),
-                          Text(
-                              "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
-                              style: textTheme.caption),
-                          if (viewingGroup)
-                            Text(appState.selectedGroup.value!.name),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              )),
-        ),
+            child: Column(
+          children: [
+            SizedBox(height: (MediaQuery.of(context).size.height - 200) / 2),
+            Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 350),
+                child: Column(
+                  children: [
+                    Text("Loading $people...", style: textTheme.titleLarge),
+                    Text(
+                        "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
+                        style: textTheme.caption),
+                    if (viewingGroup) Text(appState.selectedGroup.value!.name),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        )),
       ],
     );
   }
@@ -465,7 +478,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
         Expanded(
           child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              controller: scrollController,
+              controller: emptyScrollController,
               child: Column(
                 children: [
                   SizedBox(
@@ -599,6 +612,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
     );
 
     return SingleChildScrollView(
+      controller: sectionScrollController,
       scrollDirection: Axis.horizontal,
       child: selector,
     );

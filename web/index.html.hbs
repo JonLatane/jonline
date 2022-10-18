@@ -1,0 +1,18 @@
+<html>
+  <title>Jonline Web - Placeholder Page</title>
+  <body>
+    <p>This is just the beginning of Jonline's Web interface. It's built with Rust, Rocket, and Handlebars for a templating engine.</p>
+    <p>The for-now-unstyled content below was generated dynamically from "Global Public" visibility posts on the Jonline instance on this server.</p>
+    <ul class="post_list">
+      {{#each top_posts}}
+        {{#with this}}
+          <li>
+            <h1 class="post_title">{{title}}</h1>
+            <h6 class="post_link"><a href="{{link}}">{{link}}</a></h6>
+            <div class"post_content">{{{content}}}</div>
+          </li>
+      {{/with}}
+      {{/each}}
+    </ul>
+  </body>
+</html>

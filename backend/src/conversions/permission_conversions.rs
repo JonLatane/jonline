@@ -56,6 +56,19 @@ impl ToProtoPermission for i32 {
         Some(unsafe { transmute::<i32, Permission>(*self) })
     }
 }
+pub trait ToStringPermission {
+    fn to_string_permission(&self) -> String;
+}
+impl ToStringPermission for Permission {
+    fn to_string_permission(&self) -> String {
+        self.as_str_name().to_string()
+    }
+}
+impl ToStringPermission for i32 {
+    fn to_string_permission(&self) -> String {
+        self.to_proto_permission().unwrap().to_string_permission()
+    }
+}
 
 pub trait ToProtoPermissions {
     fn to_proto_permissions(&self) -> Vec<Permission>;
@@ -124,5 +137,14 @@ impl ToI32Permissions for Vec<Permission> {
 impl ToI32Permissions for serde_json::Value {
     fn to_i32_permissions(&self) -> Vec<i32> {
         self.to_proto_permissions().to_i32_permissions()
+    }
+}
+
+pub trait ToStringPermissions {
+    fn to_string_permissions(&self) -> Vec<String>;
+}
+impl ToStringPermissions for Vec<Permission> {
+    fn to_string_permissions(&self) -> Vec<String> {
+        self.iter().map(|v| v.to_string_permission()).collect::<Vec<String>>()
     }
 }

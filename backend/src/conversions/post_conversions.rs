@@ -50,7 +50,7 @@ impl ToProtoPost for models::Post {
             title: self.title.to_owned(),
             link: self.link.to_link(),
             content: self.content.to_owned(),
-            created_at: Some(::prost_types::Timestamp {
+            created_at: Some(::prost_wkt_types::Timestamp {
                 seconds: 1,
                 nanos: 1,
             }),

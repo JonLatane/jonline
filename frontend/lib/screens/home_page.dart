@@ -162,6 +162,51 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     setState(() {});
   }
 
+  final List<Future<dynamic> Function()> setupOtherShaders = [];
+  bool _shadersSetup = false;
+  Future<void> setupShaders(TabsRouter tabsRouter) async {
+    if (_shadersSetup) return;
+    final initialTab = tabsRouter.activeIndex;
+    // Web doesn't need this and is slow enough!
+    if (MyPlatform.isWeb) {
+      _shadersSetup = true;
+      if (initialTab != 2 && initialTab != 0) {
+        tabsRouter.setActiveIndex(initialTab);
+      }
+      return;
+    }
+    const animationDuration = Duration(milliseconds: 800);
+    const longAnimationDuration = Duration(milliseconds: 1200);
+    tabsRouter.setActiveIndex(0); // Groups
+    await Future.delayed(animationDuration, () async {
+      tabsRouter.setActiveIndex(1); // People
+      await Future.delayed(animationDuration, () async {
+        tabsRouter.setActiveIndex(2); // Posts
+        await Future.delayed(longAnimationDuration, () async {
+          tabsRouter.setActiveIndex(3); // Events
+          await Future.delayed(animationDuration, () async {
+            tabsRouter.setActiveIndex(4); // Me
+            await Future.delayed(longAnimationDuration, () async {
+              tabsRouter.setActiveIndex(5); // Settings
+              await Future.delayed(animationDuration, () async {
+                tabsRouter.setActiveIndex(2); // Posts
+                await animationDelay;
+                await Future.wait(setupOtherShaders.map((s) => s()));
+                if (initialTab != 2 && initialTab != 0) {
+                  tabsRouter.setActiveIndex(initialTab);
+                }
+                setState(() {
+                  _shadersSetup = true;
+                });
+                //Maybe restore user's last open tab+listing type here?
+              });
+            });
+          });
+        });
+      });
+    });
+  }
+
   RouteData? _lastRoute;
 
   bool isFirstBuild = true;
@@ -232,12 +277,14 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         const AccountsTab(),
         SettingsTab(tab: 'tab'),
       ],
+      homeIndex: 2,
       builder: (context, child, animation) {
         TabsRouter tabsRouter = context.tabsRouter;
 
-        if (isFirstBuild && context.topRoute.path == "groups") {
+        // handleWebShaderSetup(tabsRouter);
+        if (isFirstBuild) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            tabsRouter.setActiveIndex(2);
+            setupShaders(tabsRouter);
           });
         }
         isFirstBuild = false;
@@ -245,32 +292,70 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             onScrollsToTop: (ScrollsToTopEvent event) async {
               scrollToTop();
             },
-            child: Scaffold(
-              appBar: appBar,
-              extendBodyBehindAppBar: true,
-              extendBody: true,
-              body: Stack(
-                children: [
-                  Row(
+            child: Stack(
+              children: [
+                Scaffold(
+                  appBar: appBar,
+                  extendBodyBehindAppBar: true,
+                  extendBody: true,
+                  body: Stack(
                     children: [
-                      buildLeftPadding(),
-                      AnimatedContainer(
-                          duration: animationDuration,
-                          width: sideNavPaddingWidth),
-                      Expanded(child: child),
-                      buildRightPadding(),
+                      Row(
+                        children: [
+                          buildLeftPadding(),
+                          AnimatedContainer(
+                              duration: animationDuration,
+                              width: sideNavPaddingWidth),
+                          Expanded(child: child),
+                          buildRightPadding(),
+                        ],
+                      ),
+                      if (useSideNav)
+                        Row(
+                          children: [
+                            buildLeftPadding(),
+                            buildSideNav(context),
+                          ],
+                        )
                     ],
                   ),
-                  if (useSideNav)
-                    Row(
-                      children: [
-                        buildLeftPadding(),
-                        buildSideNav(context),
-                      ],
-                    )
-                ],
-              ),
-              bottomNavigationBar: useSideNav ? null : buildBottomNav(context),
+                  bottomNavigationBar:
+                      useSideNav ? null : buildBottomNav(context),
+                ),
+                // if (!_shadersSetup)
+                IgnorePointer(
+                    ignoring: _shadersSetup,
+                    child: AnimatedOpacity(
+                        opacity: _shadersSetup ? 0 : 1,
+                        duration: animationDuration,
+                        child: Container(
+                            color: Colors.black.withOpacity(0.7),
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Text("Starting Up...",
+                                    textAlign: TextAlign.center,
+                                    style: textTheme.displaySmall),
+                              ),
+                            )))),
+                // if (!_shadersSetup)
+                IgnorePointer(
+                  ignoring: _shadersSetup,
+                  child: AnimatedOpacity(
+                      opacity: _shadersSetup ? 0 : 0.7,
+                      duration: animationDuration,
+                      child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text("Starting Up...",
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.displaySmall),
+                            ),
+                          ))),
+                )
+              ],
             ));
       },
     );
@@ -342,11 +427,18 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         case "CreatePostRoute":
         case "CreateReplyRoute":
         case "CreateDeepReplyRoute":
+        case "AuthorProfileRoute":
           // context.popRoute();
           context.replaceRoute(const PostsRoute());
           break;
         case "EventDetailsRoute":
           context.replaceRoute(const EventListRoute());
+          break;
+        case "UserProfileRoute":
+          context.replaceRoute(const PeopleRoute());
+          break;
+        case "GroupDetailsRoute":
+          context.replaceRoute(const GroupsRoute());
           break;
         case "MyProfileRoute":
         case "ServerConfigurationRoute":

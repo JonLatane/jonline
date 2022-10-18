@@ -27,7 +27,9 @@ class PostsScreen extends StatefulWidget {
 
 class PostsScreenState extends JonlineState<PostsScreen>
     with AutoRouteAwareStateMixin<PostsScreen> {
-  ScrollController scrollController = ScrollController();
+  ScrollController listScrollController = ScrollController();
+  ScrollController gridScrollController = ScrollController();
+  ScrollController sectionScrollController = ScrollController();
   ScrollController emptyScrollController = ScrollController();
   PostListingType get listingType => appState.posts.listingType;
   set listingType(PostListingType value) => appState.posts.listingType = value;
@@ -45,6 +47,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
     appState.posts.addStatusListener(updateState);
     appState.selectedGroup.addListener(updateState);
     homePage.scrollToTop.addListener(scrollToTop);
+    homePage.setupOtherShaders.add(setupShaders);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => appState.updateAccountList());
   }
@@ -56,7 +59,10 @@ class PostsScreenState extends JonlineState<PostsScreen>
     appState.posts.removeStatusListener(updateState);
     appState.selectedGroup.removeListener(updateState);
     homePage.scrollToTop.removeListener(scrollToTop);
-    scrollController.dispose();
+    listScrollController.dispose();
+    gridScrollController.dispose();
+    emptyScrollController.dispose();
+    sectionScrollController.dispose();
     super.dispose();
   }
 
@@ -65,11 +71,21 @@ class PostsScreenState extends JonlineState<PostsScreen>
   }
 
   scrollToTop() {
+    final scrollController =
+        useList ? listScrollController : gridScrollController;
     if (context.topRoute.name == 'PostsRoute') {
-      scrollController.animateTo(0,
-          duration: animationDuration, curve: Curves.easeInOut);
-      // gridScrollController.animateTo(0,
-      //     duration: animationDuration, curve: Curves.easeInOut);
+      if (scrollController.offset > 0) {
+        scrollController.animateTo(0,
+            duration: animationDuration, curve: Curves.easeInOut);
+      } else {
+        setState(() {
+          listingType = viewingGroup
+              ? PostListingType.GROUP_POSTS
+              : PostListingType.PUBLIC_POSTS;
+          sectionScrollController.animateTo(0,
+              duration: animationDuration, curve: Curves.easeInOut);
+        });
+      }
     }
   }
 
@@ -121,6 +137,18 @@ class PostsScreenState extends JonlineState<PostsScreen>
   }
 
   List<Post> get postList => appState.posts.value.posts;
+  Future<void> setupShaders() async {
+    const animationDuration = Duration(milliseconds: 800);
+    final scrollController =
+        useList ? listScrollController : gridScrollController;
+    scrollController.animateTo(5000,
+        duration: animationDuration, curve: Curves.easeInOut);
+    await Future.delayed(animationDuration, () {
+      scrollController.animateTo(0,
+          duration: animationDuration, curve: Curves.easeInOut);
+    });
+    await Future.delayed(animationDuration);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +177,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
                     useList
                         ? ImplicitlyAnimatedList<Post>(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            controller: scrollController,
+                            controller: listScrollController,
                             // controller: PrimaryScrollController.of(context),
                             // The current items in the list.
                             items: postList,
@@ -169,6 +197,8 @@ class PostsScreenState extends JonlineState<PostsScreen>
                                 sizeFraction: 0.7,
                                 curve: Curves.easeInOut,
                                 animation: animation,
+                                key: Key(
+                                    "post-post-${JonlineServer.selectedServer.server}-${post.id}"),
                                 child: PostPreview(
                                   server: JonlineServer.selectedServer.server,
                                   onTap: () {
@@ -184,7 +214,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
                           )
                         : MasonryGridView.count(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            controller: scrollController,
+                            controller: gridScrollController,
                             padding: EdgeInsets.only(
                                 top: mq.padding.top + headerHeight,
                                 bottom: mq.padding.bottom + 48),
@@ -201,6 +231,8 @@ class PostsScreenState extends JonlineState<PostsScreen>
                             itemBuilder: (context, index) {
                               final post = postList[index];
                               return PostPreview(
+                                key: Key(
+                                    "post-post-griditem-${JonlineServer.selectedServer.server}-${post.id}"),
                                 server: JonlineServer.selectedServer.server,
                                 maxContentHeight: 400,
                                 onTap: () {
@@ -460,6 +492,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
     );
 
     return SingleChildScrollView(
+      controller: sectionScrollController,
       scrollDirection: Axis.horizontal,
       child: selector,
     );

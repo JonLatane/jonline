@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use diesel_migrations::{MigrationHarness, embed_migrations, EmbeddedMigrations};
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 // embed_migrations!("./migrations");
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();

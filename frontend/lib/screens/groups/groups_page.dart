@@ -27,7 +27,11 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
     with AutoRouteAwareStateMixin<GroupsScreen> {
   GroupListingType listingType = GroupListingType.ALL_GROUPS;
   Map<GroupListingType, GetGroupsResponse> listingData = {};
-  ScrollController scrollController = ScrollController();
+  ScrollController listScrollController = ScrollController();
+  ScrollController gridScrollController = ScrollController();
+  ScrollController emptyScrollController = ScrollController();
+  ScrollController sectionScrollController = ScrollController();
+
   bool get useList => mq.size.width < 450;
   double get headerHeight => 48 * mq.textScaleFactor;
 
@@ -69,7 +73,11 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
     homePage.scrollToTop.removeListener(scrollToTop);
     homePage.groupsSearch.removeListener(updateState);
     homePage.groupsSearchController.removeListener(updateState);
-    scrollController.dispose();
+    gridScrollController.dispose();
+    listScrollController.dispose();
+    emptyScrollController.dispose();
+    sectionScrollController.dispose();
+
     super.dispose();
   }
 
@@ -79,10 +87,18 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
 
   scrollToTop() {
     if (context.topRoute.name == 'GroupsRoute') {
-      scrollController.animateTo(0,
-          duration: animationDuration, curve: Curves.easeInOut);
-      // gridScrollController.animateTo(0,
-      //     duration: animationDuration, curve: Curves.easeInOut);
+      final scrollController =
+          useList ? listScrollController : gridScrollController;
+      if (scrollController.offset > 0) {
+        scrollController.animateTo(0,
+            duration: animationDuration, curve: Curves.easeInOut);
+      } else {
+        setState(() {
+          listingType = GroupListingType.ALL_GROUPS;
+        });
+        sectionScrollController.animateTo(0,
+            duration: animationDuration, curve: Curves.easeInOut);
+      }
     }
   }
 
@@ -141,7 +157,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                           Expanded(
                             child: SingleChildScrollView(
                                 physics: const AlwaysScrollableScrollPhysics(),
-                                controller: scrollController,
+                                controller: emptyScrollController,
                                 child: Column(
                                   children: [
                                     SizedBox(
@@ -223,7 +239,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                     : useList
                         ? ImplicitlyAnimatedList<Group>(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            controller: scrollController,
+                            controller: listScrollController,
                             items: groupList,
                             areItemsTheSame: (a, b) => a.id == b.id,
                             padding: EdgeInsets.only(
@@ -234,6 +250,8 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                                   sizeFraction: 0.7,
                                   curve: Curves.easeInOut,
                                   animation: animation,
+                                  key: Key(
+                                      "groupsPage-group-${JonlineServer.selectedServer.server}-${group.id}"),
                                   child: Row(
                                     children: [
                                       Expanded(child: buildGroupItem(group)),
@@ -243,7 +261,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                           )
                         : MasonryGridView.count(
                             physics: const AlwaysScrollableScrollPhysics(),
-                            controller: scrollController,
+                            controller: gridScrollController,
                             padding: EdgeInsets.only(
                                 top: mq.padding.top + headerHeight,
                                 bottom: mq.padding.bottom + 48),
@@ -351,6 +369,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
       ],
     );
     return SingleChildScrollView(
+      controller: sectionScrollController,
       scrollDirection: Axis.horizontal,
       child: selector,
     );
@@ -358,7 +377,10 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
 
   Widget buildGroupItem(Group group) {
     return GroupPreview(
-        server: JonlineServer.selectedServer.server, group: group);
+        key: Key(
+            "groupsPage-group-item-${JonlineServer.selectedServer.server}-${group.id}"),
+        server: JonlineServer.selectedServer.server,
+        group: group);
   }
 
   showSnackBar(String message) {

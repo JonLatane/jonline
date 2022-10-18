@@ -21,9 +21,9 @@ import '../screens/user-data/routes.dart';
       guards: [AuthGuard],
       deferredLoading: false,
       children: [
+        postsTab,
         groupsTab,
         peopleTab,
-        postsTab,
         eventsTab,
         accountsTab,
         AutoRoute(

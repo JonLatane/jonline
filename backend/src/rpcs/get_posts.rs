@@ -105,6 +105,28 @@ fn get_all_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> 
 }
 
 fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec<Post> {
+    let is_admin = user.permissions.to_proto_permissions().contains(&Permission::Admin);
+    if is_admin {
+        return memberships::table
+            .inner_join(groups::table.on(memberships::group_id.eq(groups::id)))
+            .inner_join(group_posts::table.on(group_posts::group_id.eq(groups::id)))
+            .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
+            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+            .select((models::MINIMAL_POST_COLUMNS, users::username.nullable()))
+            .filter(memberships::user_id.eq(user.id))
+            .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
+            .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
+            .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
+            .filter(posts::visibility.ne("PRIVATE"))
+            .order(posts::id.desc())
+            .distinct_on(posts::id)
+            .limit(100)
+            .load::<(models::MinimalPost, Option<String>)>(conn)
+            .unwrap()
+            .iter()
+            .map(|(post, username)| post.to_proto(username.to_owned()))
+            .collect();
+    }
     memberships::table
         .inner_join(groups::table.on(memberships::group_id.eq(groups::id)))
         .inner_join(group_posts::table.on(group_posts::group_id.eq(groups::id)))
@@ -112,11 +134,13 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((models::MINIMAL_POST_COLUMNS, users::username.nullable()))
         .filter(memberships::user_id.eq(user.id))
+        .filter(memberships::permissions.has_any_key(vec![Permission::ViewPosts, Permission::Admin].to_string_permissions()))
         .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
         .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
         .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
         .filter(posts::visibility.ne("PRIVATE"))
-        .order(posts::created_at.desc())
+        .order(posts::id.desc())
+        .distinct_on(posts::id)
         .limit(100)
         .load::<(models::MinimalPost, Option<String>)>(conn)
         .unwrap()
