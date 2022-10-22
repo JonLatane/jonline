@@ -15,6 +15,7 @@ import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
+import '../../router/router.gr.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({Key? key}) : super(key: key);
@@ -86,7 +87,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
   }
 
   scrollToTop() {
-    if (context.topRoute.name == 'GroupsRoute') {
+    if (context.topRoute.name == GroupsRoute.name) {
       final scrollController =
           useList ? listScrollController : gridScrollController;
       if (scrollController.offset > 0) {
@@ -285,7 +286,8 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
             children: [
               ClipRRect(
                   child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      filter: ImageFilter.blur(
+                          sigmaX: blurSigma, sigmaY: blurSigma),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [

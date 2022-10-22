@@ -27,7 +27,7 @@ pub fn get_membership(group_id: i32, user_id: i32, conn: &mut PgPooledConnection
 pub struct Group {
     pub id: i32,
     pub name: String,
-    pub description: Option<String>,
+    pub description: String,
     pub avatar: Option<Vec<u8>>,
     pub visibility: String,
     pub default_membership_permissions: serde_json::Value,
@@ -45,7 +45,7 @@ pub struct Group {
 #[diesel(table_name = groups)]
 pub struct NewGroup {
     pub name: String,
-    pub description: Option<String>,
+    pub description: String,
     pub avatar: Option<Vec<u8>>,
     pub visibility: String,
     pub default_membership_permissions: serde_json::Value,

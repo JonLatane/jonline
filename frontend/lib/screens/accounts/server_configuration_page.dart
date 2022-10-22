@@ -113,7 +113,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
 
   applyServerConfiguration() async {
     try {
-      await account!.ensureRefreshToken(showMessage: showSnackBar);
+      await account!.ensureAccessToken(showMessage: showSnackBar);
       final response = await client!
           .configureServer(config!, options: account!.authenticatedCallOptions);
       server!.configuration = response;
@@ -219,6 +219,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Server Info', style: textTheme.subtitle1),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -226,6 +227,41 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                         Text("Jonline Version", style: textTheme.labelLarge)),
                 Text("v${server?.serviceVersion}", style: textTheme.caption),
               ],
+            ),
+            const SizedBox(height: 24),
+            Text('Default Web UI', style: textTheme.subtitle1),
+            const SizedBox(height: 8),
+            RadioListTile<WebUserInterface>(
+              value: WebUserInterface.FLUTTER_WEB,
+              groupValue: config?.serverInfo.webUserInterface,
+              title: const Text("Flutter Web UI"),
+              subtitle: Text(
+                  "Full Flutter app with sign-in, etc. Slower to load in browsers. Always accessible from ${server?.server}/app."),
+              onChanged: account != null
+                  ? (WebUserInterface? value) {
+                      if (value == null) return;
+
+                      setState(() {
+                        config!.serverInfo.webUserInterface = value;
+                      });
+                    }
+                  : null,
+            ),
+            RadioListTile<WebUserInterface>(
+              value: WebUserInterface.HANDLEBARS_TEMPLATES,
+              groupValue: config?.serverInfo.webUserInterface,
+              title: const Text("HTML/CSS/JS Web UI [WIP]"),
+              subtitle: Text(
+                  "Minimal web page interface serving Global Public posts using Handlebars templates. Fast to load in browsers. Will eventually support customization. Always accessible from ${server?.server}/home."),
+              onChanged: account != null
+                  ? (WebUserInterface? value) {
+                      if (value == null) return;
+
+                      setState(() {
+                        config!.serverInfo.webUserInterface = value;
+                      });
+                    }
+                  : null,
             ),
             const SizedBox(height: 24),
             Text('Feature Settings', style: textTheme.subtitle1),

@@ -9,7 +9,7 @@ import 'server_errors.dart';
 
 extension JonlineAccountOperations on JonlineAccount {
   Future<User?> getUser({Function(String)? showMessage}) async {
-    if (!await ensureRefreshToken()) return null;
+    if (!await ensureAccessToken()) return null;
 
     final User? user;
     try {
@@ -34,29 +34,29 @@ extension JonlineAccountOperations on JonlineAccount {
     return user;
   }
 
-  Future<bool> ensureRefreshToken({Function(String)? showMessage}) async {
+  Future<bool> ensureAccessToken({Function(String)? showMessage}) async {
     final now = DateTime.now().millisecondsSinceEpoch / 1000;
-    if (refreshTokenExpiresAt - now < 60) {
-      return await _updateRefreshToken(showMessage: showMessage);
+    if (accessTokenExpiresAt - now < 60) {
+      return await _updateAccessToken(showMessage: showMessage);
     }
     return true;
   }
 
-  Future<bool> _updateRefreshToken({Function(String)? showMessage}) async {
-    ExpirableToken? newRefreshToken;
+  Future<bool> _updateAccessToken({Function(String)? showMessage}) async {
+    ExpirableToken? newAccessToken;
     try {
-      newRefreshToken = await (await getClient(showMessage: showMessage))
-          ?.refreshToken(RefreshTokenRequest(authToken: authorizationToken));
+      newAccessToken = await (await getClient(showMessage: showMessage))
+          ?.accessToken(AccessTokenRequest(refreshToken: authorizationToken));
     } catch (e) {
       showMessage?.call(formatServerError(e));
       return false;
     }
-    if (newRefreshToken == null || newRefreshToken.token.isEmpty) {
+    if (newAccessToken == null || newAccessToken.token.isEmpty) {
       showMessage?.call('No refresh token received.');
       return false;
     }
-    refreshToken = newRefreshToken.token;
-    refreshTokenExpiresAt = newRefreshToken.expiresAt.seconds.toInt();
+    accessToken = newAccessToken.token;
+    accessTokenExpiresAt = newAccessToken.expiresAt.seconds.toInt();
     await save();
     return true;
   }

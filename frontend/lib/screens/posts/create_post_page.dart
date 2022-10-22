@@ -97,7 +97,7 @@ class CreatePostPageState extends JonlineState<CreatePostPage> {
     final account = JonlineAccount.selectedAccount!;
 
     // showSnackBar("Updating refresh token...");
-    await account.ensureRefreshToken(showMessage: showSnackBar);
+    await account.ensureAccessToken(showMessage: showSnackBar);
     // await communicationDelay;
     final JonlineClient? client =
         await (account.getClient(showMessage: showSnackBar));

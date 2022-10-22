@@ -162,43 +162,59 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     setState(() {});
   }
 
+  bool get shadersSetup => appState.shadersSetup;
+  set shadersSetup(bool value) => appState.shadersSetup = value;
+  bool get shadersFullySetup => appState.shadersSetup;
+  set shadersFullySetup(bool value) => appState.shadersFullySetup = value;
   final List<Future<dynamic> Function()> setupOtherShaders = [];
-  bool _shadersSetup = false;
   Future<void> setupShaders(TabsRouter tabsRouter) async {
-    if (_shadersSetup) return;
+    if (shadersSetup) return;
+
+    const animationDuration = Duration(milliseconds: 800);
+    const longAnimationDuration = Duration(milliseconds: 1200);
     final initialTab = tabsRouter.activeIndex;
     // Web doesn't need this and is slow enough!
     if (MyPlatform.isWeb) {
-      _shadersSetup = true;
-      if (initialTab != 2 && initialTab != 0) {
-        tabsRouter.setActiveIndex(initialTab);
+      shadersSetup = true;
+      if (initialTab < 1) {
+        tabsRouter.setActiveIndex(2);
       }
+      Future.delayed(longAnimationDuration, () async {
+        setState(
+          () => shadersFullySetup = true,
+        );
+      });
       return;
     }
-    const animationDuration = Duration(milliseconds: 800);
-    const longAnimationDuration = Duration(milliseconds: 1200);
-    tabsRouter.setActiveIndex(0); // Groups
-    await Future.delayed(animationDuration, () async {
-      tabsRouter.setActiveIndex(1); // People
+    await Future.delayed(longAnimationDuration, () async {
+      tabsRouter.setActiveIndex(0); // Groups
       await Future.delayed(animationDuration, () async {
-        tabsRouter.setActiveIndex(2); // Posts
-        await Future.delayed(longAnimationDuration, () async {
-          tabsRouter.setActiveIndex(3); // Events
-          await Future.delayed(animationDuration, () async {
-            tabsRouter.setActiveIndex(4); // Me
-            await Future.delayed(longAnimationDuration, () async {
-              tabsRouter.setActiveIndex(5); // Settings
-              await Future.delayed(animationDuration, () async {
-                tabsRouter.setActiveIndex(2); // Posts
-                await animationDelay;
-                await Future.wait(setupOtherShaders.map((s) => s()));
-                if (initialTab != 2 && initialTab != 0) {
-                  tabsRouter.setActiveIndex(initialTab);
-                }
-                setState(() {
-                  _shadersSetup = true;
+        tabsRouter.setActiveIndex(1); // People
+        await Future.delayed(animationDuration, () async {
+          tabsRouter.setActiveIndex(2); // Posts
+          await Future.delayed(longAnimationDuration, () async {
+            tabsRouter.setActiveIndex(3); // Events
+            await Future.delayed(animationDuration, () async {
+              tabsRouter.setActiveIndex(4); // Me
+              await Future.delayed(longAnimationDuration, () async {
+                tabsRouter.setActiveIndex(5); // Settings
+                await Future.delayed(animationDuration, () async {
+                  tabsRouter.setActiveIndex(2); // Posts
+                  await animationDelay;
+                  await Future.wait(setupOtherShaders.map((s) => s()));
+                  if (initialTab != 2 && initialTab != 0) {
+                    tabsRouter.setActiveIndex(initialTab);
+                  }
+                  setState(() {
+                    shadersSetup = true;
+                  });
+                  Future.delayed(longAnimationDuration, () async {
+                    setState(
+                      () => shadersFullySetup = true,
+                    );
+                  });
+                  //Maybe restore user's last open tab+listing type here?
                 });
-                //Maybe restore user's last open tab+listing type here?
               });
             });
           });
@@ -322,14 +338,34 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   bottomNavigationBar:
                       useSideNav ? null : buildBottomNav(context),
                 ),
-                // if (!_shadersSetup)
-                IgnorePointer(
-                    ignoring: _shadersSetup,
+                if (!shadersFullySetup)
+                  IgnorePointer(
+                      ignoring: shadersSetup,
+                      child: AnimatedOpacity(
+                          opacity: shadersSetup ? 0 : 1,
+                          duration: animationDuration,
+                          child: Container(
+                              color: Colors.black.withOpacity(0.7),
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Transform.scale(
+                                    scale: 7,
+                                    child: const Opacity(
+                                        opacity: 0.7,
+                                        child: CircularProgressIndicator()),
+                                  ),
+                                ),
+                              )))),
+                if (!shadersFullySetup)
+                  IgnorePointer(
+                    ignoring: shadersSetup,
                     child: AnimatedOpacity(
-                        opacity: _shadersSetup ? 0 : 1,
+                        opacity: shadersSetup ? 0 : 0.7,
                         duration: animationDuration,
-                        child: Container(
-                            color: Colors.black.withOpacity(0.7),
+                        child: BackdropFilter(
+                            filter: ImageFilter.blur(
+                                sigmaX: blurSigma, sigmaY: blurSigma),
                             child: Center(
                               child: Padding(
                                 padding: const EdgeInsets.all(16.0),
@@ -337,24 +373,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                     textAlign: TextAlign.center,
                                     style: textTheme.displaySmall),
                               ),
-                            )))),
-                // if (!_shadersSetup)
-                IgnorePointer(
-                  ignoring: _shadersSetup,
-                  child: AnimatedOpacity(
-                      opacity: _shadersSetup ? 0 : 0.7,
-                      duration: animationDuration,
-                      child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Text("Starting Up...",
-                                  textAlign: TextAlign.center,
-                                  style: textTheme.displaySmall),
-                            ),
-                          ))),
-                )
+                            ))),
+                  )
               ],
             ));
       },
@@ -391,11 +411,15 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       : 0;
 
   bool get showPeople =>
-      Settings.showPeopleTab || context.topRoute.name == "PeopleRoute";
+      Settings.showPeopleTab ||
+      [PeopleRoute.name, UserProfileRoute.name].contains(context.topRoute.name);
   bool get showGroups =>
-      Settings.showGroupsTab || context.topRoute.name == "GroupsRoute";
+      Settings.showGroupsTab ||
+      [GroupsRoute.name, GroupDetailsRoute.name]
+          .contains(context.topRoute.name);
   bool get showSettings =>
-      Settings.showSettingsTab || context.topRoute.name == 'SettingsTab';
+      Settings.showSettingsTab ||
+      [SettingsTab.name].contains(context.topRoute.name);
   List<BottomNavigationBarItem> get navigationItems => [
         const BottomNavigationBarItem(
             icon: Icon(Icons.group_work_outlined), label: 'Groups'),
@@ -410,7 +434,6 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           icon: Icon(Icons.person),
           label: 'Me',
         ),
-        // if (Settings.showSettingsTab || context.topRoute.name == 'SettingsTab')
         const BottomNavigationBarItem(
           icon: Icon(Icons.settings),
           label: 'Settings',
@@ -423,25 +446,25 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         DateTime.now().difference(lastActiveNavTapTime!) <
             const Duration(milliseconds: 500)) {
       switch (context.topRoute.name) {
-        case "PostDetailsRoute":
-        case "CreatePostRoute":
-        case "CreateReplyRoute":
-        case "CreateDeepReplyRoute":
-        case "AuthorProfileRoute":
+        case PostDetailsRoute.name:
+        case CreatePostRoute.name:
+        case CreateReplyRoute.name:
+        case CreateDeepReplyRoute.name:
+        case AuthorProfileRoute.name:
           // context.popRoute();
           context.replaceRoute(const PostsRoute());
           break;
-        case "EventDetailsRoute":
+        case EventDetailsRoute.name:
           context.replaceRoute(const EventListRoute());
           break;
-        case "UserProfileRoute":
+        case UserProfileRoute.name:
           context.replaceRoute(const PeopleRoute());
           break;
-        case "GroupDetailsRoute":
+        case GroupDetailsRoute.name:
           context.replaceRoute(const GroupsRoute());
           break;
-        case "MyProfileRoute":
-        case "ServerConfigurationRoute":
+        case MyProfileRoute.name:
+        case ServerConfigurationRoute.name:
           context.replaceRoute(const AccountsRoute());
           break;
         default:
@@ -489,7 +512,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
             },
             child: ClipRRect(
                 child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    filter:
+                        ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
                     child: AnimatedContainer(
                       color: Theme.of(context).canvasColor.withOpacity(0.7),
                       duration: animationDuration,
@@ -672,7 +696,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
       },
       child: ClipRRect(
           child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
               child: AnimatedContainer(
                 color: Theme.of(context).canvasColor.withOpacity(0.7),
                 duration: animationDuration,

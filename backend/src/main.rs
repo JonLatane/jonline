@@ -18,7 +18,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
 
-use std::{env, fs};
+use std::{env, fs, sync::Arc};
 
 pub mod auth;
 pub mod conversions;
@@ -46,11 +46,14 @@ const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db_connection::migrate_database();
-    let pool = db_connection::establish_pool();
+    let pool1 = Arc::new(db_connection::establish_pool());
+    let pool2 = pool1.clone();
+    let pool3 = pool1.clone();
+    let pool4 = pool1.clone();
 
     tokio::spawn(async {
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], 27707));
-        let tonic_router = create_tonic_router(pool);
+        let tonic_router = create_tonic_router(pool1);
         match tonic_router.serve(tonic_addr).await {
             Ok(_) => println!("Tonic server started on {}", tonic_addr),
             Err(e) => {
@@ -62,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let rocket_unsecure_8000_server = rocket::tokio::spawn(async {
-        match create_rocket_unsecured(8000).launch().await {
+        match create_rocket_unsecured(8000, pool2).launch().await {
             Ok(_) => (),
             Err(e) => {
                 println!("Unable to start Rocket server on port 8000");
@@ -72,7 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ()
     });
     let rocket_unsecure_80_server = rocket::tokio::spawn(async {
-        match create_rocket_unsecured(80).launch().await {
+        match create_rocket_unsecured(80, pool3).launch().await {
             Ok(_) => (),
             Err(e) => {
                 println!("Unable to start Rocket server on port 80");
@@ -82,7 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ()
     });
     let rocket_secure_server = rocket::tokio::spawn(async {
-        match create_rocket_secure() {
+        match create_rocket_secure(pool4) {
             None => (),
             Some(rocket) => match rocket.launch().await {
                 Ok(_) => (),
@@ -106,7 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn create_rocket_secure() -> Option<rocket::Rocket<rocket::Build>> {
+fn create_rocket_secure(pool: Arc<PgPool>) -> Option<rocket::Rocket<rocket::Build>> {
     let cert = env_var("TLS_CERT");
     let key = env_var("TLS_KEY");
 
@@ -121,30 +124,32 @@ fn create_rocket_secure() -> Option<rocket::Rocket<rocket::Build>> {
                 .merge(("address", "0.0.0.0"))
                 .merge(("tls.certs", ".tls.crt"))
                 .merge(("tls.key", ".tls.key"));
-            Some(create_rocket(figment))
+            Some(create_rocket(figment, pool))
         }
         _ => None,
     }
 }
 
-fn create_rocket_unsecured(port: i32) -> rocket::Rocket<rocket::Build> {
+fn create_rocket_unsecured(port: i32, pool: Arc<PgPool>) -> rocket::Rocket<rocket::Build> {
     let figment = rocket::Config::figment()
         .merge(("port", port))
         .merge(("address", "0.0.0.0"));
-    create_rocket(figment)
+    create_rocket(figment, pool)
 }
 
-fn create_rocket<T: rocket::figment::Provider>(figment: T) -> rocket::Rocket<rocket::Build> {
+fn create_rocket<T: rocket::figment::Provider>(figment: T, pool: Arc<PgPool>) -> rocket::Rocket<rocket::Build> {
     let server = rocket::custom(figment)
-    .manage(web::RocketState { pool: db_connection::establish_pool() })
+    .manage(web::RocketState { pool })
 
         .mount(
             "/",
             routes![
-                web::flutter_web::index,
+                web::main_index::index,
                 web::flutter_web::flutter_index,
-                web::flutter_web::file,
-                web::home_page::home
+                web::flutter_web::flutter_file,
+                web::native_web::home,
+                web::native_web::web_asset,
+                web::native_web::web_image
             ],
         )
         .attach(Template::fairing())
@@ -156,7 +161,7 @@ fn create_rocket<T: rocket::figment::Provider>(figment: T) -> rocket::Rocket<roc
     }
 }
 
-fn create_tonic_router(pool: PgPool) -> tonic::transport::server::Router {
+fn create_tonic_router(pool: Arc<PgPool>) -> tonic::transport::server::Router {
     let jonline = JonLineImpl { pool };
 
     let reflection_service = tonic_reflection::server::Builder::configure()

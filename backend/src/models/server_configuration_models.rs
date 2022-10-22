@@ -63,12 +63,13 @@ pub fn default_server_configuration() -> NewServerConfiguration {
             description: None,
             privacy_policy_link: None,
             about_link: None,
-            logo: None,
+            web_user_interface: Some(WebUserInterface::FlutterWeb as i32),
             colors: Some(ServerColors {
                 primary: Some(0xFF2E86AB),
                 navigation: Some(0xFFA23B72),
                 ..Default::default()
             }),
+            logo: None,
         })
         .unwrap(),
         anonymous_user_permissions: vec![

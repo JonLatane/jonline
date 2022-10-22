@@ -55,7 +55,11 @@ class GroupChooserState extends JonlineState<GroupChooser> {
 
   @override
   Widget build(BuildContext context) {
-    double width = appState.selectedGroup.value == null ? 40 : 72;
+    double width = appState.selectedGroup.value == null
+        ? 40
+        : mq.size.width > 450
+            ? 96
+            : 72;
     if (appState.selectedGroup.value != null &&
         appState.selectedGroup.value!.name != currentGroupName) {
       currentGroupName = appState.selectedGroup.value!.name;

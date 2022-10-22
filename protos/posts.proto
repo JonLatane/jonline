@@ -7,14 +7,16 @@ import "google/protobuf/timestamp.proto";
 // import "users.proto";
 import "visibility_moderation.proto";
 
-// Valid GetPostsRequest combinations: 
-// - {}                           (get all posts)
-// - {listing_type:}              (get all posts)
-// - {post_id:}                   (get one post including preview data)
-// - {post_id:, reply_depth: 1}        (get replies to a post - only support for replyDepth=1 for now tho)
-// - {author_user_id:}            (get posts by a user)
-// - {group_id:}                  (get posts for a group)
-// - {author_user_id:, group_id:} (get posts by a user for a group)
+// Valid GetPostsRequest formats:
+// - {[listing_type: PublicPosts]}                  (get ServerPublic/GlobalPublic posts you can see)
+// - {listing_type:MyGroupsPosts|FollowingPosts}    (auth required)
+// - {post_id:}                                     (get one post including preview data)
+// - {post_id:, reply_depth: 1}                     (get replies to a post - only support for replyDepth=1 for now tho)
+// - {listing_type: MyGroupsPosts|
+//      GroupPostsPendingModeration,
+//      group_id:}                                  (get posts/posts needing moderation for a group)
+// - {author_user_id:, group_id:}                   (get posts by a user for a group)
+// - {listing_type: AuthorPosts, author_user_id:}   (TODO: get posts by a user)
 message GetPostsRequest {
   // Returns the single post with the given ID.
   optional string post_id = 1;
@@ -56,24 +58,31 @@ message CreatePostRequest {
 message Post {
   string id = 1;
   optional Author author = 2;
-  google.protobuf.Timestamp created_at = 3;
-  optional google.protobuf.Timestamp updated_at = 4;
-  optional string reply_to_post_id = 5;
-  // Title may not be set if reply_to_post_id is set.
-  optional string title = 6;
-  optional string link = 7;
-  optional string content = 8;
-  int32 response_count = 9;
-  int32 reply_count = 10;
-  repeated Post replies = 11;
-  optional bytes preview_image = 12;
-  Visibility visibility = 13;
-  Moderation moderation = 14;
+  optional string reply_to_post_id = 3;
+  optional string title = 4;
+  optional string link = 5;
+  optional string content = 6;
+  int32 response_count = 7;
+  int32 reply_count = 8;
+  repeated Post replies = 9;
+  optional bytes preview_image = 10;
+  Visibility visibility = 11;
+  Moderation moderation = 12;
+  // When the post is returned in the context of a group_id parameter,
+  // this can be returned. It lets the UI know whether the post can be
+  // cross-posted to a group, and of course, *about* the cross-post
+  // (time, moderation) if that's relevant.
+  optional GroupPost current_group_post = 15;
 
-  message Author {
-    string user_id = 1;
-    optional string username = 2;
-  }
+  google.protobuf.Timestamp created_at = 20;
+  optional google.protobuf.Timestamp updated_at = 21;
+}
+
+// Post-centric version of User. UI can cross-reference user details
+// from its own cache (for things like admin/bot icons).
+message Author {
+  string user_id = 1;
+  optional string username = 2;
 }
 
 message GetPostsResponse {

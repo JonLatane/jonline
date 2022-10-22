@@ -14,7 +14,7 @@ extension JonlineOperations on JonlineAccount {
   static Future<GetMembersResponse?> getMembers(
       {GetMembersRequest? request, Function(String)? showMessage}) async {
     await JonlineAccount.selectedAccount
-        ?.ensureRefreshToken(showMessage: showMessage);
+        ?.ensureAccessToken(showMessage: showMessage);
     final client = await JonlineClients.getSelectedOrDefaultClient(
         showMessage: showMessage);
     if (client == null) {
@@ -39,7 +39,7 @@ extension JonlineOperations on JonlineAccount {
   static Future<GetUsersResponse?> getUsers(
       {GetUsersRequest? request, Function(String)? showMessage}) async {
     await JonlineAccount.selectedAccount
-        ?.ensureRefreshToken(showMessage: showMessage);
+        ?.ensureAccessToken(showMessage: showMessage);
     final client = await JonlineClients.getSelectedOrDefaultClient(
         showMessage: showMessage);
     if (client == null) {
@@ -61,12 +61,12 @@ extension JonlineOperations on JonlineAccount {
     return response;
   }
 
-  static Future<GetGroupsResponse?> getGroups(
-      {GetGroupsRequest? request,
-      Function(String)? showMessage,
-      bool forReplies = false}) async {
+  static Future<GetGroupsResponse?> getGroups({
+    GetGroupsRequest? request,
+    Function(String)? showMessage,
+  }) async {
     await JonlineAccount.selectedAccount
-        ?.ensureRefreshToken(showMessage: showMessage);
+        ?.ensureAccessToken(showMessage: showMessage);
     final client = await JonlineClients.getSelectedOrDefaultClient(
         showMessage: showMessage);
     if (client == null) {
@@ -80,7 +80,7 @@ extension JonlineOperations on JonlineAccount {
       response = await client.getGroups(request ?? GetGroupsRequest(),
           options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
     } catch (e) {
-      showMessage?.call('Error loading ${forReplies ? "replies" : "posts"}.');
+      showMessage?.call('Error loading groups"}.');
       if (showMessage != null) await communicationDelay;
       showMessage?.call(formatServerError(e));
       return null;
@@ -93,7 +93,7 @@ extension JonlineOperations on JonlineAccount {
       Function(String)? showMessage,
       bool forReplies = false}) async {
     await JonlineAccount.selectedAccount
-        ?.ensureRefreshToken(showMessage: showMessage);
+        ?.ensureAccessToken(showMessage: showMessage);
     final client = await JonlineClients.getSelectedOrDefaultClient(
         showMessage: showMessage);
     if (client == null) {

@@ -12,8 +12,8 @@ DROP TABLE groups;
 
 DROP TABLE follows;
 
+DROP TABLE user_access_tokens;
 DROP TABLE user_refresh_tokens;
-DROP TABLE user_auth_tokens;
 DROP TABLE users;
 
 DROP TABLE server_configurations;

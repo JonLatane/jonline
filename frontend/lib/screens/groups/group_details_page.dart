@@ -315,7 +315,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
                   onPressed: () async {
                     try {
                       final account = JonlineAccount.selectedAccount;
-                      await account!.ensureRefreshToken();
+                      await account!.ensureAccessToken();
                       await (await account.getClient())!.updateGroup(group!,
                           options: account.authenticatedCallOptions);
                       showSnackBar("Group Data Updated 🎉");

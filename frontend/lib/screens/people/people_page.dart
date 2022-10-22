@@ -20,6 +20,7 @@ import '../../models/jonline_account.dart';
 import '../../models/jonline_operations.dart';
 import '../../models/jonline_server.dart';
 import '../../models/server_errors.dart';
+import '../../router/router.gr.dart';
 import '../../utils/colors.dart';
 import 'person_preview.dart';
 // import 'user_preview.dart';
@@ -145,7 +146,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
   scrollToTop() {
     ScrollController scrollController =
         useList ? listScrollController : gridScrollController;
-    if (context.topRoute.name == 'PeopleRoute') {
+    if (context.topRoute.name == PeopleRoute.name) {
       if (scrollController.offset > 0) {
         scrollController.animateTo(0,
             duration: animationDuration, curve: Curves.easeInOut);
@@ -416,7 +417,8 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
             children: [
               ClipRRect(
                   child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      filter: ImageFilter.blur(
+                          sigmaX: blurSigma, sigmaY: blurSigma),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [

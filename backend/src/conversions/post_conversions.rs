@@ -13,10 +13,11 @@ use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::group_posts;
 use crate::schema::groups;
+use crate::schema::posts;
 
 pub trait ToProtoPost {
     fn to_proto(&self, username: Option<String>) -> Post;
-    fn proto_author(&self, username: Option<String>) -> Option<post::Author>;
+    fn proto_author(&self, username: Option<String>) -> Option<Author>;
 }
 impl ToProtoPost for models::MinimalPost {
     fn to_proto(&self, username: Option<String>) -> Post {
@@ -34,8 +35,8 @@ impl ToProtoPost for models::MinimalPost {
             ..Default::default()
         }
     }
-    fn proto_author(&self, username: Option<String>) -> Option<post::Author> {
-        self.user_id.map(|user_id| post::Author {
+    fn proto_author(&self, username: Option<String>) -> Option<Author> {
+        self.user_id.map(|user_id| Author {
             user_id: user_id.to_proto_id(),
             username: username,
         })
@@ -68,10 +69,11 @@ impl ToProtoPost for models::Post {
                 .to_proto_moderation()
                 .unwrap_or(Moderation::Unknown) as i32,
             replies: vec![], //TODO update this
+            current_group_post: None, //TODO update this
         }
     }
-    fn proto_author(&self, username: Option<String>) -> Option<post::Author> {
-        self.user_id.map(|user_id| post::Author {
+    fn proto_author(&self, username: Option<String>) -> Option<Author> {
+        self.user_id.map(|user_id| Author {
             user_id: user_id.to_proto_id(),
             username: username,
         })
@@ -102,12 +104,24 @@ impl ToProtoGroupPost for models::GroupPost {
             .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
             .first::<i64>(conn)
             .unwrap() as i32;
-
         diesel::update(groups::table)
             .filter(groups::id.eq(self.group_id))
             .set(groups::post_count.eq(post_count))
             .execute(conn)
             .map_err(|_| Status::new(Code::Internal, "error_updating_group_post_count"))?;
+
+        let group_count = group_posts::table
+            .count()
+            .filter(group_posts::post_id.eq(self.post_id))
+            .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
+            .first::<i64>(conn)
+            .unwrap() as i32;
+        diesel::update(posts::table)
+            .filter(posts::id.eq(self.post_id))
+            .set(posts::group_count.eq(group_count))
+            .execute(conn)
+            .map_err(|_| Status::new(Code::Internal, "error_updating_post_group_count"))?;
+
         Ok(())
     }
 }

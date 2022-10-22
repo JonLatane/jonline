@@ -13,24 +13,35 @@ message User {
   optional ContactMethod phone = 4;
   repeated Permission permissions = 5;
   optional bytes avatar = 6;
+  string bio = 7;
+
   // User visibility is a bit different from Post visibility.
   // LIMITED means the user can only be seen by users they follow
   // (as opposed to Posts' individualized visibilities).
-  // PRIVATE visibility means no one can see the user
-  Visibility visibility = 7;
-  Moderation moderation = 8;
+  // PRIVATE visibility means no one can see the user.
+  // See server_configuration.proto for details about PRIVATE
+  // users' ability to creep.
+  Visibility visibility = 20;
+  Moderation moderation = 21;
+
   // Only PENDING or UNMODERATED are valid.
-  Moderation default_follow_moderation = 9;
-  optional int32 follower_count = 10;
-  optional int32 following_count = 11;
+  Moderation default_follow_moderation = 30;
+  optional int32 follower_count = 31;
+  optional int32 following_count = 32;
+  optional int32 group_count = 33;
+  optional int32 post_count = 34;
+  optional int32 response_count = 35;
+
   // Presence indicates the current user is following
   // or has a pending follow request for this user.
-  optional Follow current_user_follow = 12;
+  optional Follow current_user_follow = 50;
   // Presence indicates this user is following or has
   // a pending follow request for the current user.
-  optional Follow target_current_user_follow = 13;
-  google.protobuf.Timestamp created_at = 14;
-  optional google.protobuf.Timestamp updated_at = 15;
+  optional Follow target_current_user_follow = 51;
+  optional Membership current_group_membership = 52;
+
+  google.protobuf.Timestamp created_at = 100;
+  optional google.protobuf.Timestamp updated_at = 101;
 }
 
 message Follow {
@@ -39,6 +50,22 @@ message Follow {
   Moderation target_user_moderation = 3;
   google.protobuf.Timestamp created_at = 4;
   optional google.protobuf.Timestamp updated_at = 5;
+}
+
+message Membership {
+  string user_id = 1;
+  string group_id = 2;
+  // Valid Membership Permissions are:
+  // * VIEW_POSTS, CREATE_POSTS, MODERATE_POSTS
+  // * VIEW_EVENTS, CREATE_EVENTS, MODERATE_EVENTS
+  // * ADMIN and MODERATE_USERS
+  repeated Permission permissions = 3;
+  // Tracks whether group moderators need to approve the membership.
+  Moderation group_moderation = 4;
+  // Tracks whether the user needs to approve the membership.
+  Moderation user_moderation = 5;
+  google.protobuf.Timestamp created_at = 6;
+  optional google.protobuf.Timestamp updated_at = 7;
 }
 
 message ContactMethod {

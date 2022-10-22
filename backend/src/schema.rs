@@ -41,7 +41,7 @@ table! {
     groups (id) {
         id -> Int4,
         name -> Varchar,
-        description -> Nullable<Varchar>,
+        description -> Text,
         avatar -> Nullable<Bytea>,
         visibility -> Varchar,
         default_membership_permissions -> Jsonb,
@@ -81,6 +81,7 @@ table! {
         moderation -> Varchar,
         response_count -> Int4,
         reply_count -> Int4,
+        group_count -> Int4,
         preview -> Nullable<Bytea>,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
@@ -107,7 +108,7 @@ table! {
 }
 
 table! {
-    user_auth_tokens (id) {
+    user_refresh_tokens (id) {
         id -> Int4,
         user_id -> Int4,
         token -> Varchar,
@@ -127,9 +128,9 @@ table! {
 }
 
 table! {
-    user_refresh_tokens (id) {
+    user_access_tokens (id) {
         id -> Int4,
-        auth_token_id -> Int4,
+        refresh_token_id -> Int4,
         token -> Varchar,
         created_at -> Timestamp,
         expires_at -> Timestamp,
@@ -145,11 +146,15 @@ table! {
         phone -> Nullable<Jsonb>,
         permissions -> Jsonb,
         avatar -> Nullable<Bytea>,
+        bio -> Text,
         visibility -> Varchar,
         moderation -> Varchar,
         default_follow_moderation -> Varchar,
         follower_count -> Int4,
         following_count -> Int4,
+        group_count -> Int4,
+        post_count -> Int4,
+        response_count -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
@@ -163,10 +168,10 @@ joinable!(group_posts -> users (user_id));
 joinable!(memberships -> groups (group_id));
 joinable!(memberships -> users (user_id));
 joinable!(posts -> users (user_id));
-joinable!(user_auth_tokens -> users (user_id));
+joinable!(user_refresh_tokens -> users (user_id));
 joinable!(user_posts -> posts (post_id));
 joinable!(user_posts -> users (user_id));
-joinable!(user_refresh_tokens -> user_auth_tokens (auth_token_id));
+joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
 
 allow_tables_to_appear_in_same_query!(
     federated_accounts,
@@ -177,8 +182,8 @@ allow_tables_to_appear_in_same_query!(
     memberships,
     posts,
     server_configurations,
-    user_auth_tokens,
-    user_posts,
     user_refresh_tokens,
+    user_posts,
+    user_access_tokens,
     users,
 );

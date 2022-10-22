@@ -219,7 +219,7 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
                       title: title,
                       content: content,
                       link: link,
-                      author: Post_Author(
+                      author: Author(
                           username: JonlineAccount.selectedAccount?.username ??
                               "jonline.io/jon"))),
             ),
@@ -239,7 +239,7 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
                 title: title,
                 content: content,
                 link: link,
-                author: Post_Author(
+                author: Author(
                     username: JonlineAccount.selectedAccount?.username ??
                         "jonline.io/jon"))),
         const Expanded(

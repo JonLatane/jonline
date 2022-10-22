@@ -8,6 +8,7 @@ import 'package:jonline/app_state.dart';
 import 'package:jonline/screens/groups/group_chooser.dart';
 
 import '../models/jonline_account.dart';
+import '../router/router.gr.dart';
 import '../screens/accounts/account_chooser.dart';
 import '../screens/home_page.dart';
 
@@ -17,7 +18,7 @@ extension HomePageAppBar on HomePageState {
       preferredSize: Size(MediaQuery.of(context).size.width, 48),
       child: ClipRRect(
           child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
               child: AppBar(
                 backgroundColor:
                     Theme.of(context).colorScheme.primary.withOpacity(0.7),
@@ -45,12 +46,12 @@ extension HomePageAppBar on HomePageState {
 
   bool get showLeadingNav {
     switch (context.topRoute.name) {
-      case 'PostsRoute':
-      case 'PostsTab':
-      case 'EventListRoute':
-      case 'EventsTab':
-      case 'AccountsRoute':
-      case 'AccountsTab':
+      case PostsRoute.name:
+      case PostsTab.name:
+      case EventListRoute.name:
+      case EventsTab.name:
+      case AccountsRoute.name:
+      case AccountsTab.name:
         return false;
     }
     return true;
@@ -59,7 +60,7 @@ extension HomePageAppBar on HomePageState {
   Widget? get leadingNavWidget {
     if (!showLeadingNav) return null;
     switch (context.topRoute.name) {
-      case 'PeopleRoute':
+      case PeopleRoute.name:
         return peopleSearch.value == false
             ? Tooltip(
                 message: "Search People",
@@ -76,7 +77,7 @@ extension HomePageAppBar on HomePageState {
                   },
                 ))
             : null;
-      case 'GroupsRoute':
+      case GroupsRoute.name:
         return groupsSearch.value == false
             ? Tooltip(
                 message: "Search Groups",
@@ -104,7 +105,7 @@ extension HomePageAppBar on HomePageState {
 
   Widget? get titleWidget {
     switch (context.topRoute.name) {
-      case 'PeopleRoute':
+      case PeopleRoute.name:
         if (peopleSearch.value == true) {
           return TextField(
             autofocus: true,
@@ -123,7 +124,7 @@ extension HomePageAppBar on HomePageState {
         } else {
           return null;
         }
-      case 'GroupsRoute':
+      case GroupsRoute.name:
         if (groupsSearch.value == true) {
           return TextField(
             autofocus: true,
@@ -213,43 +214,41 @@ extension HomePageAppBar on HomePageState {
   String get person => !showingMembers ? 'Person' : 'Member';
   String get title {
     switch (context.topRoute.name) {
-      case 'GroupsRoute':
-      case 'GroupsTab':
+      case GroupsRoute.name:
+      case GroupsTab.name:
         return 'Groups';
-      case 'GroupDetailsRoute':
+      case GroupDetailsRoute.name:
         return 'Group Details';
-      case 'CreateGroupRoute':
+      case CreateGroupRoute.name:
         return 'Create Group';
-      case 'PeopleRoute':
+      case PeopleRoute.name:
       case 'PeopleTab':
         return people;
-      case 'AuthorProfileRoute':
+      case AuthorProfileRoute.name:
         return 'Author Details';
-      case 'UserProfileRoute':
+      case UserProfileRoute.name:
         return '$person Details';
-      case 'PersonDetailsRoute':
-        return 'Person Details [Mock]';
-      case 'PostsRoute':
-      case 'PostsTab':
+      case PostsRoute.name:
+      case PostsTab.name:
         return 'Posts';
-      case 'PostDetailsRoute':
+      case PostDetailsRoute.name:
         return 'Post Details';
-      case 'EventListRoute':
-      case 'EventsTab':
+      case EventListRoute.name:
+      case EventsTab.name:
         return 'Events [Mock]';
-      case 'EventDetailsRoute':
+      case EventDetailsRoute.name:
         return 'Event Details [Mock]';
-      case 'ProfileRoute':
-      case 'AccountsRoute':
-      case 'AccountsTab':
+      case MyProfileRoute.name:
+      case AccountsRoute.name:
+      case AccountsTab.name:
         return 'Accounts';
-      case 'CreatePostRoute':
+      case CreatePostRoute.name:
         return 'Create Post';
-      case 'CreateReplyRoute':
-      case 'CreateDeepReplyRoute':
+      case CreateReplyRoute.name:
+      case CreateDeepReplyRoute.name:
         return 'Create Reply';
-      case 'SettingsRoute':
-      case 'SettingsTab':
+      // case SettingsRoute.name:
+      case SettingsTab.name:
         return 'Settings';
     }
     return context.topRoute.name;
@@ -257,7 +256,7 @@ extension HomePageAppBar on HomePageState {
 
   List<Widget>? get actions {
     switch (context.topRoute.name) {
-      case 'PeopleRoute':
+      case PeopleRoute.name:
         return [
           if (peopleSearch.value == true)
             TextButton(
@@ -274,8 +273,8 @@ extension HomePageAppBar on HomePageState {
           const GroupChooser(),
           const AccountChooser(),
         ];
-      case 'GroupsRoute':
-      case 'GroupsTab':
+      case GroupsRoute.name:
+      case GroupsTab.name:
         bool showSearch = groupsSearch.value;
         bool showAddButton = !showSearch && JonlineAccount.loggedIn;
         return [
@@ -304,7 +303,7 @@ extension HomePageAppBar on HomePageState {
           const GroupChooser(),
           const AccountChooser(),
         ];
-      case 'CreateGroupRoute':
+      case CreateGroupRoute.name:
         return [
           if (JonlineAccount.loggedIn)
             SizedBox(
@@ -340,14 +339,14 @@ extension HomePageAppBar on HomePageState {
             ),
           const AccountChooser(),
         ];
-      case 'GroupDetailsRoute':
-      case 'AccountsRoute':
+      case GroupDetailsRoute.name:
+      case AccountsRoute.name:
         return [const GroupChooser(), const AccountChooser()];
-      case 'UserProfileRoute':
-      case 'PostDetailsRoute':
+      case UserProfileRoute.name:
+      case PostDetailsRoute.name:
         return [const AccountChooser()];
-      case 'PostsRoute':
-      case 'PostsTab':
+      case PostsRoute.name:
+      case PostsTab.name:
         return [
           if (JonlineAccount.loggedIn)
             TextButton(
@@ -362,8 +361,8 @@ extension HomePageAppBar on HomePageState {
           const GroupChooser(),
           const AccountChooser(),
         ];
-      case 'EventListRoute':
-      case 'EventsTab':
+      case EventListRoute.name:
+      case EventsTab.name:
         return [
           if (JonlineAccount.loggedIn)
             const TextButton(
@@ -376,7 +375,7 @@ extension HomePageAppBar on HomePageState {
           const GroupChooser(),
           const AccountChooser(),
         ];
-      case 'CreatePostRoute':
+      case CreatePostRoute.name:
         return [
           if (JonlineAccount.loggedIn)
             SizedBox(
@@ -412,8 +411,8 @@ extension HomePageAppBar on HomePageState {
             ),
           const AccountChooser(),
         ];
-      case 'CreateDeepReplyRoute':
-      case 'CreateReplyRoute':
+      case CreateDeepReplyRoute.name:
+      case CreateReplyRoute.name:
         return [
           if (JonlineAccount.loggedIn)
             SizedBox(
@@ -449,11 +448,11 @@ extension HomePageAppBar on HomePageState {
             ),
           const AccountChooser(),
         ];
-      case 'ProfileRoute':
-      case 'AccountsTab':
+      case MyProfileRoute.name:
+      case AccountsTab.name:
         return null;
-      case 'SettingsRoute':
-      case 'SettingsTab':
+      // case SettingsRoute.name:
+      case SettingsTab.name:
         return null;
     }
     return null;

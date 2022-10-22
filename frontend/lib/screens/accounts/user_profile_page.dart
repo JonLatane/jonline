@@ -508,7 +508,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
                       final account = (widget.accountId != null)
                           ? this.account
                           : JonlineAccount.selectedAccount;
-                      await account!.ensureRefreshToken();
+                      await account!.ensureAccessToken();
                       await (await account.getClient())!.updateUser(userData!,
                           options: account.authenticatedCallOptions);
                       showSnackBar("User Data Updated 🎉");

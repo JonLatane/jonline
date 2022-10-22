@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import 'generated/posts.pb.dart';
 import 'jonotifier.dart';
 
 abstract class DataCache<ListingType, DataKeyType, ResultType>
@@ -13,7 +12,6 @@ abstract class DataCache<ListingType, DataKeyType, ResultType>
       ValueJonotifier(<DataKeyType, ResultType>{});
 
   DataKeyType Function()? getCurrentKey;
-  Future<ResultType?> Function()? getCurrentData;
 
   ResultType get value {
     if (getCurrentKey == null) {
@@ -61,10 +59,8 @@ abstract class DataCache<ListingType, DataKeyType, ResultType>
   }
 
   Future<void> update({Function(String)? showMessage}) async {
-    if (getCurrentData == null) return;
-
     _updatingNotifier.value = true;
-    final ResultType? result = await getCurrentData!();
+    final ResultType? result = await getCurrentData();
     if (result == null) {
       _errorUpdatingNotifier.value = true;
       _updatingNotifier.value = false;
@@ -81,7 +77,9 @@ abstract class DataCache<ListingType, DataKeyType, ResultType>
     // showMessage?.call("Posts updated! 🎉");
   }
 
-  ResultType get mainValue;
+  ResultType get mainValue => _data.value[mainKey] ?? emptyResult;
+  DataKeyType get mainKey;
+  Future<ResultType?> getCurrentData();
 
   DataCache(this.listingTypeNotifier) {
     _updatingNotifier.addListener(() {
@@ -115,30 +113,4 @@ abstract class DataCache<ListingType, DataKeyType, ResultType>
     _errorUpdatingNotifier.removeListener(listener);
     _didUpdateNotifier.removeListener(listener);
   }
-}
-
-class PostDataKey {
-  final String? groupId;
-  final PostListingType postListingType;
-  PostDataKey(this.groupId, this.postListingType);
-  @override
-  int get hashCode => groupId.hashCode + postListingType.hashCode;
-  @override
-  bool operator ==(other) =>
-      other is PostDataKey &&
-      other.groupId == groupId &&
-      other.postListingType == postListingType;
-}
-
-class PostCache
-    extends DataCache<PostListingType, PostDataKey, GetPostsResponse> {
-  PostCache() : super(ValueNotifier(PostListingType.PUBLIC_POSTS));
-
-  @override
-  GetPostsResponse get emptyResult => GetPostsResponse();
-
-  @override
-  GetPostsResponse get mainValue =>
-      _data.value[PostDataKey(null, PostListingType.PUBLIC_POSTS)] ??
-      emptyResult;
 }

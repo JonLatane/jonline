@@ -34,6 +34,7 @@ pub struct Post {
     pub moderation: String,
     pub response_count: i32,
     pub reply_count: i32,
+    pub group_count: i32,
     pub preview: Option<Vec<u8>>,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
@@ -50,6 +51,7 @@ pub struct MinimalPost {
     pub content: Option<String>,
     pub response_count: i32,
     pub reply_count: i32,
+    pub group_count: i32,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
 }
@@ -63,6 +65,7 @@ pub static MINIMAL_POST_COLUMNS: (
     posts::content,
     posts::response_count,
     posts::reply_count,
+    posts::group_count,
     posts::created_at,
     posts::updated_at,
 ) = (
@@ -74,6 +77,7 @@ pub static MINIMAL_POST_COLUMNS: (
     posts::content,
     posts::response_count,
     posts::reply_count,
+    posts::group_count,
     posts::created_at,
     posts::updated_at,
 );

@@ -24,9 +24,9 @@ message LoginRequest {
 }
 
 // Returned when creating an account or logging in.
-message AuthTokenResponse {
-  ExpirableToken auth_token = 1;
-  ExpirableToken refresh_token = 2;
+message RefreshTokenResponse {
+  ExpirableToken refresh_token = 1;
+  ExpirableToken access_token = 2;
   User user = 3;
 }
 
@@ -35,12 +35,12 @@ message ExpirableToken {
   optional google.protobuf.Timestamp expires_at = 2;
 }
 
-message RefreshTokenRequest {
-  string auth_token = 1;
+message AccessTokenRequest {
+  string refresh_token = 1;
   optional google.protobuf.Timestamp expires_at = 3;
 }
 
-message RefreshTokenResponse {
-  optional string refresh_token = 2;
+message AccessTokenResponse {
+  optional string access_token = 2;
   optional google.protobuf.Timestamp expires_at = 3;
 }

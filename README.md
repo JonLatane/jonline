@@ -150,7 +150,7 @@ jonline.Jonline.CreateAccount
 jonline.Jonline.GetCurrentUser
 jonline.Jonline.GetServiceVersion
 jonline.Jonline.Login
-jonline.Jonline.RefreshToken
+jonline.Jonline.AccessToken
 ```
 
 That's it! You're up and running, although again, *it's an unsecured instance* where ***passwords and auth tokens will be sent in plain text***. Get that thing secured before you go telling people to use it!
@@ -191,7 +191,7 @@ To keep things straightforward, all Posts in Jonline have global visibility. Twi
 Events may be public, private, or private with friend invitations.
 
 ### Multi-server usage
-Suppose you have two accounts with friends, say, on `jonline.io` and `bobline.com`. To federate your accounts, you may simply pass an `auth_token` from your `bobline.com` account that you use to talk to Bob (who I don't know) into `jonline.io`. The general idea is that users can choose to keep their primary account with the person they trust the most. Maybe it's not me 😭 But that's fine; I won't even know!
+Suppose you have two accounts with friends, say, on `jonline.io` and `bobline.com`. To federate your accounts, you may simply pass an `refresh_token` from your `bobline.com` account that you use to talk to Bob (who I don't know) into `jonline.io`. The general idea is that users can choose to keep their primary account with the person they trust the most. Maybe it's not me 😭 But that's fine; I won't even know!
 
 ## Technical stuff
 You can create a Jonline account right now! I will probably delete it eventually though

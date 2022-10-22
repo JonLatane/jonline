@@ -53,7 +53,7 @@ class JonlineAccount {
     // if (client == null) return null;
     // await communicationDelay;
 
-    // AuthTokenResponse authResponse;
+    // RefreshTokenResponse authResponse;
     // try {
     //   authResponse = await client
     //       .login(LoginRequest(username: username, password: password));
@@ -68,7 +68,7 @@ class JonlineAccount {
     // showMessage("Logged in to $server as $username!");
 
     // final account = JonlineAccount._fromAuth(server,
-    //     authResponse.authToken.token, authResponse.refreshToken.token, username,
+    //     authResponse.refreshToken.token, authResponse.accessToken.token, username,
     //     allowInsecure: allowInsecure);
     // await account.saveNew(atBeginning: selectAccount);
     // if (selectAccount) {
@@ -97,7 +97,7 @@ class JonlineAccount {
   }
 
   static Future<JonlineAccount?> _authAccount(
-      Future<AuthTokenResponse> Function(JonlineClient) authenticator,
+      Future<RefreshTokenResponse> Function(JonlineClient) authenticator,
       List<String> verbs,
       String server,
       String username,
@@ -112,7 +112,7 @@ class JonlineAccount {
       await communicationDelay;
     }
     // showMessage("Connected to $server! ${verbs[0]}...");
-    AuthTokenResponse authResponse;
+    RefreshTokenResponse authResponse;
     try {
       authResponse = await authenticator(client);
     } catch (e) {
@@ -128,7 +128,7 @@ class JonlineAccount {
     showMessage("${verbs[2]} $username on $server!");
 
     final account = JonlineAccount._fromAuth(
-        server, authResponse.authToken.token, authResponse.refreshToken.token,
+        server, authResponse.refreshToken.token, authResponse.accessToken.token,
         allowInsecure: allowInsecure);
     await account.saveNew(atBeginning: selectAccount);
     if (selectAccount) {
@@ -145,8 +145,8 @@ class JonlineAccount {
   final String server;
   final String authorizationToken;
   String serviceVersion;
-  String refreshToken;
-  int refreshTokenExpiresAt;
+  String accessToken;
+  int accessTokenExpiresAt;
   bool allowInsecure;
   User? user;
   String get userId => user?.id ?? '';
@@ -155,12 +155,12 @@ class JonlineAccount {
 
   /// Used by [loginToAccount] and [createAccount] when creating a new account.
   JonlineAccount._fromAuth(
-      this.server, this.authorizationToken, this.refreshToken,
+      this.server, this.authorizationToken, this.accessToken,
       {this.allowInsecure = false})
       : id = uuid.v4(),
         // userId = "",
         serviceVersion = "",
-        refreshTokenExpiresAt = 0; //permissions = [];
+        accessTokenExpiresAt = 0; //permissions = [];
 
   /// Used by [accounts] to load data.
   JonlineAccount._fromJson(Map<String, dynamic> json)
@@ -169,10 +169,10 @@ class JonlineAccount {
         // userId = json['userId'] ?? '',
         server = json['server'],
         authorizationToken = json['authorizationToken'],
-        refreshToken = json['refreshToken'],
+        accessToken = json['accessToken'],
         allowInsecure = json['allowInsecure'],
         serviceVersion = json['serviceVersion'] ?? "",
-        refreshTokenExpiresAt = json['refreshTokenExpiresAt'] ?? 0,
+        accessTokenExpiresAt = json['accessTokenExpiresAt'] ?? 0,
         // permissions = json['permissions'] == null
         //     ? []
         //     : (json['permissions'] as List<dynamic>)
@@ -182,7 +182,16 @@ class JonlineAccount {
         //         .toList(),
         user = json['user'] == null
             ? null
-            : User.fromJson(jsonEncode(json['user']));
+            : _userFromJson(jsonEncode(json['user']));
+
+  static User? _userFromJson(String json) {
+    try {
+      return User.fromJson(json);
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -190,8 +199,8 @@ class JonlineAccount {
         // 'userId': userId,
         'server': server,
         'authorizationToken': authorizationToken,
-        'refreshToken': refreshToken,
-        'refreshTokenExpiresAt': refreshTokenExpiresAt,
+        'accessToken': accessToken,
+        'accessTokenExpiresAt': accessTokenExpiresAt,
         'allowInsecure': allowInsecure,
         'serviceVersion': serviceVersion,
         // 'permissions': permissions.map((e) => e.name).toList(),
@@ -233,8 +242,18 @@ class JonlineAccount {
         .map((e) => jsonDecode(e) as Map<String, dynamic>)
         .toList();
     // List<Map<String, dynamic>> jsonArray = await accountsJson;
-    final accounts =
-        accountsJson.map((e) => JonlineAccount._fromJson(e)).toList();
+    final accounts = accountsJson
+        .map((e) {
+          try {
+            return JonlineAccount._fromJson(e);
+          } catch (e) {
+            // print(e);
+            return null;
+          }
+        })
+        .where((e) => e != null)
+        .toList()
+        .cast<JonlineAccount>();
 
     if (selectedAccount != null) {
       selectedAccount = accounts.firstWhere((a) => a.id == selectedAccount?.id,

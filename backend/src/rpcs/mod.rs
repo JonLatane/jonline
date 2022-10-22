@@ -19,8 +19,8 @@ pub use create_account::create_account;
 mod login;
 pub use login::login;
 
-mod refresh_token;
-pub use refresh_token::refresh_token;
+mod access_token;
+pub use access_token::access_token;
 
 mod get_current_user;
 pub use get_current_user::get_current_user;

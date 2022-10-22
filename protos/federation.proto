@@ -24,7 +24,7 @@ message FederateRequest {
   optional string password = 4;
   // When preexisting_account = true, will attempt to federate using that password.
   // When preexisting_account = false, will create a new account using that password.
-  optional string auth_token = 5;
+  optional string refresh_token = 5;
   // Request whether to store only the auth token, or the auth token and password.
   FederationCredentials stored_credentials = 6;
   // Request whether to return nothing, the auth token, or the auth token and password.
@@ -32,7 +32,7 @@ message FederateRequest {
 }
 
 message FederateResponse {
-  optional string auth_token = 1;
+  optional string refresh_token = 1;
   optional string password = 2;
 }
 
@@ -49,11 +49,11 @@ message FederatedAccount {
   string server = 2;
   string username = 3;
   optional string password = 4;
-  optional string auth_token = 5;
+  optional string refresh_token = 5;
 }
 
 
 enum FederationCredentials {
-  AUTH_TOKEN_ONLY = 0;
-  AUTH_TOKEN_AND_PASSWORD = 1;
+  REFRESH_TOKEN_ONLY = 0;
+  REFRESH_TOKEN_AND_PASSWORD = 1;
 }

@@ -8,7 +8,6 @@ import '../screens/login_page.dart';
 import 'db.dart';
 import 'generated/server_configuration.pb.dart';
 import 'generated/groups.pb.dart';
-import 'generated/posts.pb.dart';
 import 'generated/users.pb.dart';
 import 'generated/users.pb.dart' as u;
 import 'jonotifier.dart';
@@ -18,12 +17,13 @@ import 'models/jonline_operations.dart';
 import 'models/jonline_server.dart';
 import 'models/settings.dart';
 import 'my_platform.dart';
-import 'data_cache.dart';
+import 'models/post_cache.dart';
 import 'router/auth_guard.dart';
 import 'router/router.gr.dart';
 import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
 
 const noOne = 'no one';
+const blurSigma = 10.0;
 const animationDuration = Duration(milliseconds: 300);
 const communicationDuration = Duration(milliseconds: 1000);
 get animationDelay => Future.delayed(animationDuration);
@@ -111,6 +111,8 @@ class AppState extends State<MyApp> {
     // showMessage?.call("Groups updated! 🎉");
   }
 
+  bool shadersSetup = false;
+  bool shadersFullySetup = false;
   bool get loggedIn => JonlineAccount.loggedIn;
   JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
   set selectedAccount(JonlineAccount? account) {
@@ -235,25 +237,6 @@ class AppState extends State<MyApp> {
     super.initState();
     posts.getCurrentKey =
         () => PostDataKey(selectedGroup.value?.id, posts.listingType);
-    posts.getCurrentData = () async {
-      switch (posts.listingType) {
-        case PostListingType.PUBLIC_POSTS:
-        case PostListingType.DIRECT_POSTS:
-        case PostListingType.FOLLOWING_POSTS:
-        case PostListingType.MY_GROUPS_POSTS:
-        case PostListingType.POSTS_PENDING_MODERATION:
-          return await JonlineOperations.getPosts(
-              request: GetPostsRequest(listingType: posts.listingType));
-        case PostListingType.GROUP_POSTS:
-        case PostListingType.GROUP_POSTS_PENDING_MODERATION:
-          return await JonlineOperations.getPosts(
-              request: GetPostsRequest(
-                  listingType: posts.listingType,
-                  groupId: selectedGroup.value?.id));
-      }
-      print("Unknown PostListingType: ${posts.listingType}");
-      return null;
-    };
     accounts.addListener(posts.update);
     accounts.addListener(updateUsers);
     accounts.addListener(updateGroups);

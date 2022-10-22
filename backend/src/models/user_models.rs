@@ -24,11 +24,15 @@ pub struct User {
     /// A serialized (by name) list of [crate::protos::Permission]s.
     pub permissions: serde_json::Value,
     pub avatar: Option<Vec<u8>>,
+    pub bio: String,
     pub visibility: String,
     pub moderation: String,
     pub default_follow_moderation: String,
     pub follower_count: i32,
     pub following_count: i32,
+    pub group_count: i32,
+    pub post_count: i32,
+    pub response_count: i32,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }

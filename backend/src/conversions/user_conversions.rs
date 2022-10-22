@@ -45,17 +45,22 @@ impl ToProtoUser for models::User {
             email: email,
             phone: phone,
             permissions: self.permissions.to_i32_permissions(),
+            bio: self.bio.to_owned(),
             avatar: self.avatar.to_owned(),
             visibility: self.visibility.to_proto_visibility().unwrap() as i32,
             moderation: self.moderation.to_proto_moderation().unwrap() as i32,
             follower_count: Some(self.follower_count),
             following_count: Some(self.following_count),
+            group_count: Some(self.group_count),
+            post_count: Some(self.post_count),
+            response_count: Some(self.response_count),
             default_follow_moderation: self
                 .default_follow_moderation
                 .to_proto_moderation()
                 .unwrap() as i32,
             current_user_follow: follow.as_ref().map(|f| f.to_proto()),
             target_current_user_follow: target_follow.as_ref().map(|f| f.to_proto()),
+            current_group_membership: None, // TODO
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
         };

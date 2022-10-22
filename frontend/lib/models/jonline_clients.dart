@@ -127,7 +127,7 @@ extension JonlineClients on JonlineAccount {
 
   // Gets authenticated call headers for this account.
   CallOptions get authenticatedCallOptions =>
-      CallOptions(metadata: {'authorization': refreshToken});
+      CallOptions(metadata: {'authorization': accessToken});
 }
 
 final Map<String, JonlineClient> _secureClients = {};

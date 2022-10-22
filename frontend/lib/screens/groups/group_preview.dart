@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
+import '../../generated/users.pb.dart';
 import '../../jonline_state.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';

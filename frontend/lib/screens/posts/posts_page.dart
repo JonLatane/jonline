@@ -73,7 +73,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
   scrollToTop() {
     final scrollController =
         useList ? listScrollController : gridScrollController;
-    if (context.topRoute.name == 'PostsRoute') {
+    if (context.topRoute.name == PostsRoute.name) {
       if (scrollController.offset > 0) {
         scrollController.animateTo(0,
             duration: animationDuration, curve: Curves.easeInOut);
@@ -100,7 +100,10 @@ class PostsScreenState extends JonlineState<PostsScreen>
   List<Permission> get groupPermissions =>
       appState.selectedGroup.value?.currentUserMembership.permissions ?? [];
   bool get canShowGroupPendingModeration =>
-      viewingGroup && groupPermissions.contains(Permission.MODERATE_POSTS);
+      viewingGroup &&
+      (groupPermissions.any((p) =>
+              [Permission.MODERATE_POSTS, Permission.ADMIN].contains(p)) ||
+          userPermissions.contains(Permission.ADMIN));
   adaptToInvariants() {
     final initialListingType = listingType;
     if (!viewingGroup &&
@@ -271,7 +274,8 @@ class PostsScreenState extends JonlineState<PostsScreen>
             children: [
               ClipRRect(
                   child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      filter: ImageFilter.blur(
+                          sigmaX: blurSigma, sigmaY: blurSigma),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
@@ -438,9 +442,8 @@ class PostsScreenState extends JonlineState<PostsScreen>
             .map((l) {
           bool usable =
               JonlineAccount.loggedIn || l == PostListingType.PUBLIC_POSTS;
-          ;
-          // usable &= canShowMembershipRequests ||
-          //     l != PostListingType.membershipRequests;
+          usable &= canShowGroupPendingModeration ||
+              l != PostListingType.GROUP_POSTS_PENDING_MODERATION;
           var textButton = TextButton(
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(l == listingType

@@ -93,7 +93,7 @@ class PostDetailsPageState extends JonlineState<PostDetailsPage> {
   }
 
   scrollToTop() {
-    if (context.topRoute.name == 'PostDetailsRoute') {
+    if (context.topRoute.name == PostDetailsRoute.name) {
       scrollController.animateTo(0,
           duration: animationDuration, curve: Curves.easeInOut);
       // gridScrollController.animateTo(0,

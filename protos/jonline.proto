@@ -12,8 +12,8 @@ import "federation.proto";
 import "server_configuration.proto";
 
 // Authenticated calls require a Refresh Token in request metadata, retrieved from
-// the RefreshToken RPC. The CreateAccount or Login RPC should first be used to fetch
-// (and store) an Authentication Token to use when calling RefreshToken.
+// the AccessToken RPC. The CreateAccount or Login RPC should first be used to fetch
+// (and store) an Authentication Token to use when calling AccessToken.
 service Jonline {
   // Get the version (from Cargo) of the Jonline service. Publicly accessible.
   rpc GetServiceVersion(google.protobuf.Empty) returns (GetServiceVersionResponse) {}
@@ -22,11 +22,11 @@ service Jonline {
   rpc GetServerConfiguration(google.protobuf.Empty) returns (ServerConfiguration) {}
 
   // Creates a user account and provides an auth token. Publicly accessible.
-  rpc CreateAccount(CreateAccountRequest) returns (AuthTokenResponse) {}
+  rpc CreateAccount(CreateAccountRequest) returns (RefreshTokenResponse) {}
   // Logs in a user and provides an Auth Token (along with a Refresh Token).
-  rpc Login(LoginRequest) returns (AuthTokenResponse) {}
+  rpc Login(LoginRequest) returns (RefreshTokenResponse) {}
   // Gets a new Refresh Token (given an Auth Token).
-  rpc RefreshToken(RefreshTokenRequest) returns (ExpirableToken) {}
+  rpc AccessToken(AccessTokenRequest) returns (ExpirableToken) {}
 
   // Gets the current user. Authenticated.
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}

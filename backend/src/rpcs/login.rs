@@ -13,7 +13,7 @@ use crate::schema::users::dsl::*;
 pub fn login(
     request: Request<LoginRequest>,
     conn: &mut PgPooledConnection,
-) -> Result<Response<AuthTokenResponse>, Status> {
+) -> Result<Response<RefreshTokenResponse>, Status> {
     let req = request.into_inner();
     validate_username(&req.username)?;
     validate_password(&req.password)?;
@@ -30,14 +30,14 @@ pub fn login(
     let tokens = match verify(req.password, &user.password_salted_hash) {
         Err(_) => return Err(permission_denied),
         Ok(false) => return Err(permission_denied),
-        Ok(true) => auth::generate_auth_and_refresh_token(user.id, conn, req.expires_at),
+        Ok(true) => auth::generate_auth_and_access_token(user.id, conn, req.expires_at),
     };
 
     println!("Logged in user {}, user_id={}", &req.username, user.id);
 
-    Ok(Response::new(AuthTokenResponse {
-        auth_token: tokens.auth_token,
+    Ok(Response::new(RefreshTokenResponse {
         refresh_token: tokens.refresh_token,
+        access_token: tokens.access_token,
         user: Some(user.to_proto()),
     }))
 }

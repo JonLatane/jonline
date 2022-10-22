@@ -6,7 +6,7 @@ use crate::auth;
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
-use crate::protos::{AuthTokenResponse, CreateAccountRequest};
+use crate::protos::{RefreshTokenResponse, CreateAccountRequest};
 use crate::schema::users::dsl::*;
 
 use super::{validations::*, get_server_configuration};
@@ -14,7 +14,7 @@ use super::{validations::*, get_server_configuration};
 pub fn create_account(
     request: CreateAccountRequest,
     conn: &mut PgPooledConnection,
-) -> Result<AuthTokenResponse, Status> {
+) -> Result<RefreshTokenResponse, Status> {
     validate_username(&request.username)?;
     validate_password(&request.password)?;
     match request.email.to_owned() {
@@ -54,10 +54,10 @@ pub fn create_account(
     match insert_result {
         Err(_) => Err(Status::new(Code::AlreadyExists, "username_already_exists")),
         Ok(user) => {
-            let tokens = auth::generate_auth_and_refresh_token(user.id, conn, request.expires_at);
-            Ok(AuthTokenResponse {
-                auth_token: tokens.auth_token,
+            let tokens = auth::generate_auth_and_access_token(user.id, conn, request.expires_at);
+            Ok(RefreshTokenResponse {
                 refresh_token: tokens.refresh_token,
+                access_token: tokens.access_token,
                 user: Some(user.to_proto()),
             })
         }

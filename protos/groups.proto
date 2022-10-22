@@ -10,7 +10,7 @@ import "visibility_moderation.proto";
 message Group {
   string id = 1;
   string name = 2;
-  optional string description = 3;
+  string description = 3;
   optional bytes avatar = 4;
   repeated Permission default_membership_permissions = 5;
   // Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
@@ -25,22 +25,6 @@ message Group {
   optional Membership current_user_membership = 12;
   google.protobuf.Timestamp created_at = 13;
   optional google.protobuf.Timestamp updated_at = 14;
-}
-
-message Membership {
-  string user_id = 1;
-  string group_id = 2;
-  // Valid Membership Permissions are:
-  // * VIEW_POSTS, CREATE_POSTS, MODERATE_POSTS
-  // * VIEW_EVENTS, CREATE_EVENTS, MODERATE_EVENTS
-  // * ADMIN and MODERATE_USERS
-  repeated Permission permissions = 3;
-  // Tracks whether group moderators need to approve the membership.
-  Moderation group_moderation = 4;
-  // Tracks whether the user needs to approve the membership.
-  Moderation user_moderation = 5;
-  google.protobuf.Timestamp created_at = 6;
-  optional google.protobuf.Timestamp updated_at = 7;
 }
 
 message GetGroupsRequest {

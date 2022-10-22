@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::models;
 use crate::protos::*;
 use jonline_server::Jonline;
@@ -8,13 +9,13 @@ use crate::db_connection::*;
 use crate::rpcs;
 
 pub struct JonLineImpl {
-    pub pool: PgPool,
+    pub pool: Arc<PgPool>,
 }
 
 impl Clone for JonLineImpl {
     fn clone(&self) -> Self {
         JonLineImpl {
-            pool: establish_pool(),
+            pool: self.pool.clone(),
         }
     }
 }
@@ -31,7 +32,7 @@ impl Jonline for JonLineImpl {
     async fn create_account(
         &self,
         request: Request<CreateAccountRequest>,
-    ) -> Result<Response<AuthTokenResponse>, Status> {
+    ) -> Result<Response<RefreshTokenResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         rpcs::create_account(request.into_inner(), &mut conn).map(Response::new)
     }
@@ -39,17 +40,17 @@ impl Jonline for JonLineImpl {
     async fn login(
         &self,
         request: Request<LoginRequest>,
-    ) -> Result<Response<AuthTokenResponse>, Status> {
+    ) -> Result<Response<RefreshTokenResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         rpcs::login(request, &mut conn)
     }
 
-    async fn refresh_token(
+    async fn access_token(
         &self,
-        request: Request<RefreshTokenRequest>,
+        request: Request<AccessTokenRequest>,
     ) -> Result<Response<ExpirableToken>, Status> {
         let mut conn = get_connection(&self.pool)?;
-        rpcs::refresh_token(request, &mut conn)
+        rpcs::access_token(request, &mut conn)
     }
 
     async fn get_current_user(&self, request: Request<()>) -> Result<Response<User>, Status> {

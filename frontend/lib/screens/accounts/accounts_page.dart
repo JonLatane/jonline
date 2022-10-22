@@ -101,7 +101,8 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                 children: [
                   ClipRRect(
                       child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          filter: ImageFilter.blur(
+                              sigmaX: blurSigma, sigmaY: blurSigma),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
@@ -391,7 +392,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
   }
 
   refreshAccount(JonlineAccount account) async {
-    if (!await account.ensureRefreshToken(showMessage: showSnackBar)) {
+    if (!await account.ensureAccessToken(showMessage: showSnackBar)) {
       await communicationDelay;
       showSnackBar('Failed to update account details.');
       return;
@@ -695,7 +696,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                             if (Settings.developerMode)
                               Expanded(
                                 flex: 1,
-                                child: Text(account.refreshToken,
+                                child: Text(account.accessToken,
                                     style: textTheme.caption?.copyWith(
                                         color: textColor?.withOpacity(0.5)),
                                     maxLines: 1,

@@ -24,7 +24,7 @@ postDemoData(
     return;
   }
   // showSnackBar("Updating refresh token...");
-  await account.ensureRefreshToken(showMessage: showSnackBar);
+  await account.ensureAccessToken(showMessage: showSnackBar);
 
   final demoGroups =
       await generateDemoGroups(client, account, showSnackBar, appState);
@@ -123,6 +123,7 @@ Future<Map<DemoGroup, Group>> generateDemoGroups(
   }
   if (generatedGroups > 0) {
     showSnackBar('Created $generatedGroups new groups.');
+    await communicationDelay;
   }
   return result;
 }
@@ -472,8 +473,7 @@ Topologica was renamed, open-sourced, and lives on as "BeatScratch Legacy" on th
 Large parts of Topologica/BeatScratch Legacy live on in my current app, BeatScratch, available 
 for iOS, macOS, Android and web.
 
-I plan to re-implement the Orbifold in BeatScratch, at which point this app will be deprecated.
-string''')),
+I plan to re-implement the Orbifold in BeatScratch, at which point this app will be deprecated.''')),
   DemoPost(
       [DemoGroup.music, DemoGroup.math],
       CreatePostRequest(

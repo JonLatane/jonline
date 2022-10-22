@@ -84,8 +84,14 @@ message ServerInfo {
   optional string description = 3;
   optional string privacy_policy_link = 4;
   optional string about_link = 5;
-  optional bytes logo = 6;
+  optional WebUserInterface web_user_interface = 6;
   optional ServerColors colors = 7;
+  optional bytes logo = 8;
+}
+
+enum WebUserInterface {
+  FLUTTER_WEB = 0;
+  HANDLEBARS_TEMPLATES = 1;
 }
 
 // Color in ARGB hex format (i.e 0xAARRGGBB).

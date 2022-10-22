@@ -33,21 +33,21 @@ class JonlineClient extends $grpc.Client {
           ($core.List<$core.int> value) =>
               $2.ServerConfiguration.fromBuffer(value));
   static final _$createAccount =
-      $grpc.ClientMethod<$3.CreateAccountRequest, $3.AuthTokenResponse>(
+      $grpc.ClientMethod<$3.CreateAccountRequest, $3.RefreshTokenResponse>(
           '/jonline.Jonline/CreateAccount',
           ($3.CreateAccountRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
-              $3.AuthTokenResponse.fromBuffer(value));
+              $3.RefreshTokenResponse.fromBuffer(value));
   static final _$login =
-      $grpc.ClientMethod<$3.LoginRequest, $3.AuthTokenResponse>(
+      $grpc.ClientMethod<$3.LoginRequest, $3.RefreshTokenResponse>(
           '/jonline.Jonline/Login',
           ($3.LoginRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
-              $3.AuthTokenResponse.fromBuffer(value));
-  static final _$refreshToken =
-      $grpc.ClientMethod<$3.RefreshTokenRequest, $3.ExpirableToken>(
-          '/jonline.Jonline/RefreshToken',
-          ($3.RefreshTokenRequest value) => value.writeToBuffer(),
+              $3.RefreshTokenResponse.fromBuffer(value));
+  static final _$accessToken =
+      $grpc.ClientMethod<$3.AccessTokenRequest, $3.ExpirableToken>(
+          '/jonline.Jonline/AccessToken',
+          ($3.AccessTokenRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) => $3.ExpirableToken.fromBuffer(value));
   static final _$getCurrentUser = $grpc.ClientMethod<$0.Empty, $4.User>(
       '/jonline.Jonline/GetCurrentUser',
@@ -94,18 +94,18 @@ class JonlineClient extends $grpc.Client {
       ($5.Group value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$createMembership =
-      $grpc.ClientMethod<$5.Membership, $5.Membership>(
+      $grpc.ClientMethod<$4.Membership, $4.Membership>(
           '/jonline.Jonline/CreateMembership',
-          ($5.Membership value) => value.writeToBuffer(),
-          ($core.List<$core.int> value) => $5.Membership.fromBuffer(value));
+          ($4.Membership value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) => $4.Membership.fromBuffer(value));
   static final _$updateMembership =
-      $grpc.ClientMethod<$5.Membership, $5.Membership>(
+      $grpc.ClientMethod<$4.Membership, $4.Membership>(
           '/jonline.Jonline/UpdateMembership',
-          ($5.Membership value) => value.writeToBuffer(),
-          ($core.List<$core.int> value) => $5.Membership.fromBuffer(value));
-  static final _$deleteMembership = $grpc.ClientMethod<$5.Membership, $0.Empty>(
+          ($4.Membership value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) => $4.Membership.fromBuffer(value));
+  static final _$deleteMembership = $grpc.ClientMethod<$4.Membership, $0.Empty>(
       '/jonline.Jonline/DeleteMembership',
-      ($5.Membership value) => value.writeToBuffer(),
+      ($4.Membership value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$getMembers =
       $grpc.ClientMethod<$5.GetMembersRequest, $5.GetMembersResponse>(
@@ -174,21 +174,21 @@ class JonlineClient extends $grpc.Client {
         options: options);
   }
 
-  $grpc.ResponseFuture<$3.AuthTokenResponse> createAccount(
+  $grpc.ResponseFuture<$3.RefreshTokenResponse> createAccount(
       $3.CreateAccountRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createAccount, request, options: options);
   }
 
-  $grpc.ResponseFuture<$3.AuthTokenResponse> login($3.LoginRequest request,
+  $grpc.ResponseFuture<$3.RefreshTokenResponse> login($3.LoginRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$login, request, options: options);
   }
 
-  $grpc.ResponseFuture<$3.ExpirableToken> refreshToken(
-      $3.RefreshTokenRequest request,
+  $grpc.ResponseFuture<$3.ExpirableToken> accessToken(
+      $3.AccessTokenRequest request,
       {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$refreshToken, request, options: options);
+    return $createUnaryCall(_$accessToken, request, options: options);
   }
 
   $grpc.ResponseFuture<$4.User> getCurrentUser($0.Empty request,
@@ -242,17 +242,17 @@ class JonlineClient extends $grpc.Client {
     return $createUnaryCall(_$deleteGroup, request, options: options);
   }
 
-  $grpc.ResponseFuture<$5.Membership> createMembership($5.Membership request,
+  $grpc.ResponseFuture<$4.Membership> createMembership($4.Membership request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createMembership, request, options: options);
   }
 
-  $grpc.ResponseFuture<$5.Membership> updateMembership($5.Membership request,
+  $grpc.ResponseFuture<$4.Membership> updateMembership($4.Membership request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateMembership, request, options: options);
   }
 
-  $grpc.ResponseFuture<$0.Empty> deleteMembership($5.Membership request,
+  $grpc.ResponseFuture<$0.Empty> deleteMembership($4.Membership request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteMembership, request, options: options);
   }
@@ -329,28 +329,28 @@ abstract class JonlineServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) => $0.Empty.fromBuffer(value),
         ($2.ServerConfiguration value) => value.writeToBuffer()));
     $addMethod(
-        $grpc.ServiceMethod<$3.CreateAccountRequest, $3.AuthTokenResponse>(
+        $grpc.ServiceMethod<$3.CreateAccountRequest, $3.RefreshTokenResponse>(
             'CreateAccount',
             createAccount_Pre,
             false,
             false,
             ($core.List<$core.int> value) =>
                 $3.CreateAccountRequest.fromBuffer(value),
-            ($3.AuthTokenResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$3.LoginRequest, $3.AuthTokenResponse>(
+            ($3.RefreshTokenResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$3.LoginRequest, $3.RefreshTokenResponse>(
         'Login',
         login_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $3.LoginRequest.fromBuffer(value),
-        ($3.AuthTokenResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$3.RefreshTokenRequest, $3.ExpirableToken>(
-        'RefreshToken',
-        refreshToken_Pre,
+        ($3.RefreshTokenResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$3.AccessTokenRequest, $3.ExpirableToken>(
+        'AccessToken',
+        accessToken_Pre,
         false,
         false,
         ($core.List<$core.int> value) =>
-            $3.RefreshTokenRequest.fromBuffer(value),
+            $3.AccessTokenRequest.fromBuffer(value),
         ($3.ExpirableToken value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.Empty, $4.User>(
         'GetCurrentUser',
@@ -422,26 +422,26 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $5.Group.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$5.Membership, $5.Membership>(
+    $addMethod($grpc.ServiceMethod<$4.Membership, $4.Membership>(
         'CreateMembership',
         createMembership_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $5.Membership.fromBuffer(value),
-        ($5.Membership value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$5.Membership, $5.Membership>(
+        ($core.List<$core.int> value) => $4.Membership.fromBuffer(value),
+        ($4.Membership value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.Membership, $4.Membership>(
         'UpdateMembership',
         updateMembership_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $5.Membership.fromBuffer(value),
-        ($5.Membership value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$5.Membership, $0.Empty>(
+        ($core.List<$core.int> value) => $4.Membership.fromBuffer(value),
+        ($4.Membership value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.Membership, $0.Empty>(
         'DeleteMembership',
         deleteMembership_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $5.Membership.fromBuffer(value),
+        ($core.List<$core.int> value) => $4.Membership.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$5.GetMembersRequest, $5.GetMembersResponse>(
         'GetMembers',
@@ -527,19 +527,20 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getServerConfiguration(call, await request);
   }
 
-  $async.Future<$3.AuthTokenResponse> createAccount_Pre($grpc.ServiceCall call,
+  $async.Future<$3.RefreshTokenResponse> createAccount_Pre(
+      $grpc.ServiceCall call,
       $async.Future<$3.CreateAccountRequest> request) async {
     return createAccount(call, await request);
   }
 
-  $async.Future<$3.AuthTokenResponse> login_Pre(
+  $async.Future<$3.RefreshTokenResponse> login_Pre(
       $grpc.ServiceCall call, $async.Future<$3.LoginRequest> request) async {
     return login(call, await request);
   }
 
-  $async.Future<$3.ExpirableToken> refreshToken_Pre($grpc.ServiceCall call,
-      $async.Future<$3.RefreshTokenRequest> request) async {
-    return refreshToken(call, await request);
+  $async.Future<$3.ExpirableToken> accessToken_Pre($grpc.ServiceCall call,
+      $async.Future<$3.AccessTokenRequest> request) async {
+    return accessToken(call, await request);
   }
 
   $async.Future<$4.User> getCurrentUser_Pre(
@@ -592,18 +593,18 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return deleteGroup(call, await request);
   }
 
-  $async.Future<$5.Membership> createMembership_Pre(
-      $grpc.ServiceCall call, $async.Future<$5.Membership> request) async {
+  $async.Future<$4.Membership> createMembership_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.Membership> request) async {
     return createMembership(call, await request);
   }
 
-  $async.Future<$5.Membership> updateMembership_Pre(
-      $grpc.ServiceCall call, $async.Future<$5.Membership> request) async {
+  $async.Future<$4.Membership> updateMembership_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.Membership> request) async {
     return updateMembership(call, await request);
   }
 
   $async.Future<$0.Empty> deleteMembership_Pre(
-      $grpc.ServiceCall call, $async.Future<$5.Membership> request) async {
+      $grpc.ServiceCall call, $async.Future<$4.Membership> request) async {
     return deleteMembership(call, await request);
   }
 
@@ -662,12 +663,12 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $0.Empty request);
   $async.Future<$2.ServerConfiguration> getServerConfiguration(
       $grpc.ServiceCall call, $0.Empty request);
-  $async.Future<$3.AuthTokenResponse> createAccount(
+  $async.Future<$3.RefreshTokenResponse> createAccount(
       $grpc.ServiceCall call, $3.CreateAccountRequest request);
-  $async.Future<$3.AuthTokenResponse> login(
+  $async.Future<$3.RefreshTokenResponse> login(
       $grpc.ServiceCall call, $3.LoginRequest request);
-  $async.Future<$3.ExpirableToken> refreshToken(
-      $grpc.ServiceCall call, $3.RefreshTokenRequest request);
+  $async.Future<$3.ExpirableToken> accessToken(
+      $grpc.ServiceCall call, $3.AccessTokenRequest request);
   $async.Future<$4.User> getCurrentUser(
       $grpc.ServiceCall call, $0.Empty request);
   $async.Future<$4.GetUsersResponse> getUsers(
@@ -684,12 +685,12 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$5.Group> createGroup($grpc.ServiceCall call, $5.Group request);
   $async.Future<$5.Group> updateGroup($grpc.ServiceCall call, $5.Group request);
   $async.Future<$0.Empty> deleteGroup($grpc.ServiceCall call, $5.Group request);
-  $async.Future<$5.Membership> createMembership(
-      $grpc.ServiceCall call, $5.Membership request);
-  $async.Future<$5.Membership> updateMembership(
-      $grpc.ServiceCall call, $5.Membership request);
+  $async.Future<$4.Membership> createMembership(
+      $grpc.ServiceCall call, $4.Membership request);
+  $async.Future<$4.Membership> updateMembership(
+      $grpc.ServiceCall call, $4.Membership request);
   $async.Future<$0.Empty> deleteMembership(
-      $grpc.ServiceCall call, $5.Membership request);
+      $grpc.ServiceCall call, $4.Membership request);
   $async.Future<$5.GetMembersResponse> getMembers(
       $grpc.ServiceCall call, $5.GetMembersRequest request);
   $async.Future<$6.GetPostsResponse> getPosts(

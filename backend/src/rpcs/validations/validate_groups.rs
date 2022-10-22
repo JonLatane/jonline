@@ -7,7 +7,7 @@ use crate::protos::*;
 
 pub fn validate_group(group: &Group) -> Result<(), Status> {
     validate_length(&group.name, "name", 1, 128)?;
-    validate_max_length(group.description.to_owned(), "description", 10000)?;
+    validate_max_length(Some(group.description.to_owned()), "description", 10000)?;
     match group.avatar {
         None => {}
         Some(ref avatar) => {

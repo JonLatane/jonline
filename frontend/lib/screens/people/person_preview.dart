@@ -6,7 +6,6 @@ import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
-import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/users.pb.dart';
 import '../../generated/visibility_moderation.pbenum.dart';
@@ -559,6 +558,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
           user.followingCount += 1;
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
             u.followingCount += 1;
+            u.targetCurrentUserFollow = follow;
           });
           JonlineAccount.selectedAccount?.user?.followerCount += 1;
           appState.users.value

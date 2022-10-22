@@ -30,6 +30,7 @@ CREATE TABLE users (
   phone JSONB NULL DEFAULT NULL,
   permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   avatar BYTEA NULL DEFAULT NULL,
+  bio TEXT NOT NULL DEFAULT '',
   -- For user visibilities, PRIVATE is equivalent to a "frozen" account.
   -- LIMITED will be visible only to user the user is following.
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
@@ -37,12 +38,15 @@ CREATE TABLE users (
   default_follow_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   follower_count INTEGER NOT NULL DEFAULT 0,
   following_count INTEGER NOT NULL DEFAULT 0,
+  group_count INTEGER NOT NULL DEFAULT 0,
+  post_count INTEGER NOT NULL DEFAULT 0,
+  response_count INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 -- CREATE INDEX idx_users_username ON users(username);
 
-CREATE TABLE user_auth_tokens (
+CREATE TABLE user_refresh_tokens (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   token VARCHAR NOT NULL UNIQUE,
@@ -50,15 +54,14 @@ CREATE TABLE user_auth_tokens (
   expires_at TIMESTAMP NULL DEFAULT NOW() + INTERVAL '1 day'
 );
 
-CREATE TABLE user_refresh_tokens (
+CREATE TABLE user_access_tokens (
   id SERIAL PRIMARY KEY,
-  auth_token_id INTEGER NOT NULL REFERENCES user_auth_tokens ON DELETE CASCADE,
+  refresh_token_id INTEGER NOT NULL REFERENCES user_refresh_tokens ON DELETE CASCADE,
   token VARCHAR NOT NULL UNIQUE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMP NOT NULL DEFAULT NOW() + INTERVAL '1 hour'
 );
-CREATE INDEX idx_refresh_tokens ON user_refresh_tokens(token);
-
+CREATE INDEX idx_access_tokens ON user_access_tokens(token);
 
 CREATE TABLE follows (
   id SERIAL PRIMARY KEY,
@@ -72,7 +75,7 @@ CREATE TABLE follows (
 CREATE TABLE groups (
   id SERIAL PRIMARY KEY,
   name VARCHAR NOT NULL UNIQUE,
-  description VARCHAR NULL DEFAULT NULL,
+  description TEXT NOT NULL DEFAULT '',
   avatar BYTEA NULL DEFAULT NULL,
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
   default_membership_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
@@ -113,6 +116,7 @@ CREATE TABLE posts (
   moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   response_count INTEGER NOT NULL DEFAULT 0,
   reply_count INTEGER NOT NULL DEFAULT 0,
+  group_count INTEGER NOT NULL DEFAULT 0,
   preview BYTEA NULL DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL
