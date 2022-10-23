@@ -8,6 +8,7 @@ import 'package:jonline/app_state.dart';
 import 'package:jonline/screens/groups/group_chooser.dart';
 
 import '../models/jonline_account.dart';
+import '../my_platform.dart';
 import '../router/router.gr.dart';
 import '../screens/accounts/account_chooser.dart';
 import '../screens/home_page.dart';
@@ -15,10 +16,19 @@ import '../screens/home_page.dart';
 extension HomePageAppBar on HomePageState {
   PreferredSizeWidget get appBar {
     return PreferredSize(
-      preferredSize: Size(MediaQuery.of(context).size.width, 48),
+      preferredSize: Size(MediaQuery.of(context).size.width,
+          HomePageState.appBarHeight + HomePageState.appBarPadding),
       child: ClipRRect(
           child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        child: Column(
+          children: [
+            Container(
+                height: HomePageState.appBarPadding,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
+            PreferredSize(
+              preferredSize: Size(MediaQuery.of(context).size.width,
+                  HomePageState.appBarHeight),
               child: AppBar(
                 backgroundColor:
                     Theme.of(context).colorScheme.primary.withOpacity(0.7),
@@ -27,7 +37,11 @@ extension HomePageAppBar on HomePageState {
                 leading: leadingNavWidget,
                 automaticallyImplyLeading: false,
                 actions: actions,
-              ))),
+              ),
+            ),
+          ],
+        ),
+      )),
     );
     // return AppBar(
     //   title: titleWidget ?? Text(title),

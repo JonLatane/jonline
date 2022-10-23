@@ -647,6 +647,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
           );
   }
 
+  static final appBarHeight = MyPlatform.isMacOS ? 56.0 : 48.0;
+  static final appBarPadding = MyPlatform.isMacOS ? 10.0 : 0.0;
+
   bool draggingSideNav = false;
   double _lastSideNavDragPosition = 0.0;
   static const double increment = 59.0;
@@ -704,8 +707,8 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 width: sideNavWidth,
                 child: Column(
                   children: [
-                    const SizedBox(
-                      height: 48,
+                    SizedBox(
+                      height: appBarHeight + appBarPadding,
                     ),
                     Expanded(
                         child: SingleChildScrollView(
