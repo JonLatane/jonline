@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/jonline_state.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../models/settings.dart';
@@ -140,6 +141,35 @@ class _SettingsPageState extends JonlineState<SettingsPage>
                         const SizedBox(height: 25),
                         Text('Performance Settings',
                             style: textTheme.subtitle1),
+                        Row(
+                          key: const Key('startupSequenceSetting'),
+                          children: [
+                            Expanded(
+                                child: Text("Run Startup Sequence",
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                activeColor: appState.primaryColor,
+                                value: Settings.useStartupSequence,
+                                onChanged: (v) {
+                                  setState(
+                                      () => Settings.useStartupSequence = v);
+                                }),
+                          ],
+                        ),
+                        Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () async => await launchUrl(Uri.parse(
+                                  'https://docs.flutter.dev/perf/shader')),
+                              child: const Text(
+                                'The startup sequence may improve performance on iOS by preloading Flutter shaders. See https://docs.flutter.dev/perf/shader for information on Flutter shader jank. Future optimizations to how blur effects are used in Jonline could also improve performance and obviate the need for the sequence.',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 12),
+                              ),
+                            )),
                         Row(
                           children: [
                             Expanded(

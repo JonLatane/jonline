@@ -173,9 +173,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     const animationDuration = Duration(milliseconds: 800);
     const longAnimationDuration = Duration(milliseconds: 1200);
     final initialTab = tabsRouter.activeIndex;
-    // Web doesn't need this and is slow enough!
-    if (MyPlatform.isWeb) {
+    if (!Settings.useStartupSequence) {
       shadersSetup = true;
+      //TODO this is still a hacky way to default the user to the "Posts" tab.
       if (initialTab < 1) {
         tabsRouter.setActiveIndex(2);
       }
@@ -202,6 +202,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   tabsRouter.setActiveIndex(2); // Posts
                   await animationDelay;
                   await Future.wait(setupOtherShaders.map((s) => s()));
+                  //TODO this is still a hacky way to default the user to the "Posts" tab.
                   if (initialTab != 2 && initialTab != 0) {
                     tabsRouter.setActiveIndex(initialTab);
                   }
