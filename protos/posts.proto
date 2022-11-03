@@ -30,6 +30,10 @@ message GetPostsRequest {
   PostListingType listing_type = 10;
 }
 
+message GetPostsResponse {
+  repeated Post posts = 1;
+}
+
 enum PostListingType {
   // Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
   // Also usable for getting replies anywhere.
@@ -83,10 +87,6 @@ message Post {
 message Author {
   string user_id = 1;
   optional string username = 2;
-}
-
-message GetPostsResponse {
-  repeated Post posts = 1;
 }
 
 message GroupPost{

@@ -145,6 +145,24 @@ CREATE TABLE user_posts(
 );
 CREATE UNIQUE INDEX idx_user_post ON user_posts(user_id, post_id);
 
+-- Event Models
+CREATE TABLE events(
+  id SERIAL PRIMARY KEY,
+  post_id INTEGER NOT NULL REFERENCES posts ON DELETE CASCADE,
+  info JSONB NOT NULL DEFAULT '{}'::JSONB,
+);
+CREATE UNIQUE INDEX idx_event_post ON events(id, post_id);
+
+CREATE TABLE event_instances(
+  id SERIAL PRIMARY KEY,
+  event_id INTEGER NOT NULL REFERENCES events ON DELETE CASCADE,
+  -- Event Instances can fallback to the event's post_id if there is none on the instance.
+  post_id INTEGER NULL DEFAULT NULL REFERENCES posts ON DELETE SET NULL,
+  info JSONB NOT NULL DEFAULT '{}'::JSONB,
+  starts_at TIMESTAMP NOT NULL,
+  ends_at TIMESTAMP NOT NULL,
+);
+
 -- FEDERATION MODELS
 CREATE TABLE federated_servers (
   id SERIAL PRIMARY KEY,

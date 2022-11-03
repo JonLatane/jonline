@@ -15,32 +15,35 @@ import '../screens/home_page.dart';
 
 extension HomePageAppBar on HomePageState {
   PreferredSizeWidget get appBar {
+    Widget bar = AppBar(
+      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+      title: titleWidget ?? Text(title),
+      key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
+      leading: leadingNavWidget,
+      automaticallyImplyLeading: false,
+      actions: actions,
+    );
+    if (MyPlatform.isMacOS) {
+      bar = Column(
+        children: [
+          Container(
+              height: HomePageState.appBarPadding,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
+          PreferredSize(
+            preferredSize: Size(
+                MediaQuery.of(context).size.width, HomePageState.appBarHeight),
+            child: bar,
+          ),
+        ],
+      );
+    }
     return PreferredSize(
       preferredSize: Size(MediaQuery.of(context).size.width,
           HomePageState.appBarHeight + HomePageState.appBarPadding),
       child: ClipRRect(
           child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: Column(
-          children: [
-            Container(
-                height: HomePageState.appBarPadding,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
-            PreferredSize(
-              preferredSize: Size(MediaQuery.of(context).size.width,
-                  HomePageState.appBarHeight),
-              child: AppBar(
-                backgroundColor:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                title: titleWidget ?? Text(title),
-                key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
-                leading: leadingNavWidget,
-                automaticallyImplyLeading: false,
-                actions: actions,
-              ),
-            ),
-          ],
-        ),
+        child: bar,
       )),
     );
     // return AppBar(

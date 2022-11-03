@@ -11,8 +11,19 @@ pub struct RocketState {
 pub mod catchers;
 pub use catchers::*;
 
-pub mod native_web;
-pub use native_web::*;
+pub mod web_macros;
+pub use web_macros::*;
+
+pub mod styles;
+pub use styles::*;
+
+pub mod assets;
+pub use assets::*;
+
+pub mod home_page;
+pub use home_page::*;
+pub mod post_page;
+pub use post_page::*;
 
 pub mod flutter_web;
 pub use flutter_web::*;

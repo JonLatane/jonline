@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:jonline/jonline_state.dart';
+import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -212,10 +213,11 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
                             key: Key(
                                 "visibility-control-${(JonlineAccount.selectedAccount)?.id}"),
                             child: MultiSelectChipField<vm.Visibility?>(
-                              // title: const Text("Select Visibility"),
-                              // buttonText: const Text("Select Permissions"),
+                              decoration: const BoxDecoration(),
                               showHeader: false,
-                              // searchable: true,
+                              selectedChipColor: appState.navColor,
+                              selectedTextStyle:
+                                  TextStyle(color: appState.navColor.textColor),
                               items: vm.Visibility.values
                                   .where((v) {
                                     final account =
@@ -235,7 +237,6 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
                                   .map((v) => MultiSelectItem(v, v.displayName))
                                   .toList(),
                               initialValue: <vm.Visibility?>[visibility],
-
                               onTap: (List<vm.Visibility?> values) {
                                 if (values.length > 1) {
                                   values.remove(visibility);

@@ -42,6 +42,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
   // User? userData;
   bool get loaded => group != null;
   TextEditingController groupNameController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
   List<Permission> get groupPermissions =>
       group?.currentUserMembership.permissions ?? [];
 
@@ -61,6 +62,13 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
         });
       });
     });
+    descriptionController.addListener(() {
+      setState(() {
+        group = group?.jonRebuild((u) {
+          u.description = descriptionController.text;
+        });
+      });
+    });
     Future.microtask(refreshGroupData);
   }
 
@@ -68,6 +76,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
   dispose() {
     appState.accounts.removeListener(updateState);
     groupNameController.dispose();
+    descriptionController.dispose();
     super.dispose();
   }
 
@@ -86,6 +95,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
 
     setState(() {
       groupNameController.text = group?.name ?? '';
+      descriptionController.text = group?.description ?? '';
       this.group = group;
       loading = false;
     });
@@ -168,6 +178,8 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
                 navigable: false,
                 groupNameController:
                     (admin || groupAdmin) ? groupNameController : null,
+                descriptionController:
+                    (admin || groupAdmin) ? descriptionController : null,
               ),
               const SizedBox(height: 16),
               // buildHeading("Avatar"),
@@ -183,12 +195,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
                   key: Key("visibility-control-${group?.id}"),
                   child: MultiSelectChipField<vm.Visibility?>(
                     decoration: const BoxDecoration(),
-                    // decoration: null,
-                    // title: const Text("Select Visibility"),
-                    // buttonText: const Text("Select Permissions"),
-
                     showHeader: false,
-                    // searchable: true,
                     selectedChipColor: appState.navColor,
                     selectedTextStyle:
                         TextStyle(color: appState.navColor.textColor),

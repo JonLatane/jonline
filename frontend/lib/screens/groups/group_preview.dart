@@ -20,6 +20,7 @@ class GroupPreview extends StatefulWidget {
   final String server;
   final Group group;
   final TextEditingController? groupNameController;
+  final TextEditingController? descriptionController;
   final bool navigable;
 
   const GroupPreview(
@@ -27,7 +28,8 @@ class GroupPreview extends StatefulWidget {
       required this.server,
       required this.group,
       this.navigable = true,
-      this.groupNameController});
+      this.groupNameController,
+      this.descriptionController});
 
   @override
   State<GroupPreview> createState() => _GroupPreviewState();
@@ -35,6 +37,7 @@ class GroupPreview extends StatefulWidget {
 
 class _GroupPreviewState extends JonlineState<GroupPreview> {
   Group get group => widget.group;
+  bool editingDescription = false;
 
   @override
   void initState() {
@@ -42,6 +45,8 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
     appState.accounts.addListener(updateState);
     widget.groupNameController?.addListener(updateGroupName);
     widget.groupNameController?.text = group.name;
+    widget.descriptionController?.addListener(updateDescription);
+    widget.descriptionController?.text = group.description;
   }
 
   @override
@@ -56,6 +61,14 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
     if (widget.groupNameController != null) {
       setState(() {
         group.name = widget.groupNameController!.text;
+      });
+    }
+  }
+
+  updateDescription() {
+    if (widget.descriptionController != null) {
+      setState(() {
+        group.description = widget.descriptionController!.text;
       });
     }
   }
@@ -197,50 +210,89 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Padding(
-                      padding: EdgeInsets.zero,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              constraints: const BoxConstraints(maxHeight: 150),
-                              child: Opacity(
-                                opacity: 0.5,
-                                child: Transform.translate(
-                                  offset: const Offset(0, -2),
-                                  child: Transform.scale(
-                                    scale: 0.9,
-                                    child: Theme(
-                                        data: (backgroundColor?.bright == true
-                                                ? ThemeData.light()
-                                                : ThemeData.dark())
-                                            .copyWith(
-                                          colorScheme: ColorScheme.fromSeed(
-                                              seedColor: appState.primaryColor),
-                                        ),
-                                        child: MarkdownBody(
-                                          data: group.description,
-                                          selectable: false,
-                                          onTapLink: (text, href, title) {
-                                            if (href != null) {
-                                              try {
-                                                launchUrl(Uri.parse(href));
-                                              } catch (e) {
-                                                showSnackBar(
-                                                    "Invalid link. 😔");
+                  if (!editingDescription)
+                    Padding(
+                        padding: EdgeInsets.zero,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                constraints:
+                                    const BoxConstraints(maxHeight: 150),
+                                child: Opacity(
+                                  opacity: 0.5,
+                                  child: Transform.translate(
+                                    offset: const Offset(0, -2),
+                                    child: Transform.scale(
+                                      scale: 0.9,
+                                      child: Theme(
+                                          data: (backgroundColor?.bright == true
+                                                  ? ThemeData.light()
+                                                  : ThemeData.dark())
+                                              .copyWith(
+                                            colorScheme: ColorScheme.fromSeed(
+                                                seedColor:
+                                                    appState.primaryColor),
+                                          ),
+                                          child: MarkdownBody(
+                                            data: group.description,
+                                            selectable: false,
+                                            onTapLink: (text, href, title) {
+                                              if (href != null) {
+                                                try {
+                                                  launchUrl(Uri.parse(href));
+                                                } catch (e) {
+                                                  showSnackBar(
+                                                      "Invalid link. 😔");
+                                                }
+                                              } else {
+                                                showSnackBar("No link. 😔");
                                               }
-                                            } else {
-                                              showSnackBar("No link. 😔");
-                                            }
-                                          },
-                                        )),
+                                            },
+                                          )),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      )),
+                          ],
+                        )),
+                  if (editingDescription)
+                    Theme(
+                        data: (backgroundColor?.bright == true
+                                ? ThemeData.light()
+                                : ThemeData.dark())
+                            .copyWith(
+                          colorScheme: ColorScheme.fromSeed(
+                              seedColor: appState.primaryColor),
+                        ),
+                        child: TextField(
+                          controller: widget.descriptionController,
+                          keyboardType: TextInputType.multiline,
+                          textCapitalization: TextCapitalization.sentences,
+                          enableSuggestions: true,
+                          autocorrect: true,
+                          maxLines: null,
+                          cursorColor: Colors.white,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w400,
+                              fontSize: 14),
+                          // enabled: enabled.value,
+                          decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: "Description",
+                              isDense: true),
+                          onChanged: (value) {},
+                        )),
+                  if (widget.descriptionController != null)
+                    TextButton(
+                      onPressed: () => setState(() {
+                        editingDescription = !editingDescription;
+                      }),
+                      child: Text(
+                          editingDescription ? "DONE" : "EDIT DESCRIPTION"),
+                    ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: Row(

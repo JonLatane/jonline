@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package jonline;
+
+import "google/protobuf/timestamp.proto";
+import "posts.proto";
+
+// Valid GetEventsRequest formats:
+// - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
+// - {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
+// - {event_id:}                                     (TODO: get single event including preview data)
+// - {listing_type: GroupEvents|
+//      GroupEventsPendingModeration,
+//      group_id:}                                  (TODO: get events/events needing moderation for a group)
+// - {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
+// - {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+message GetEventsRequest {
+  // Returns the single event with the given ID.
+  optional string event_id = 1;
+  // Limits results to replies to the given event.
+  // optional string replies_to_event_id = 2;
+  // Limits results to those by the given author user ID.
+  optional string author_user_id = 2;
+  optional string group_id = 3;
+  EventListingType listing_type = 10;
+}
+
+enum EventListingType {
+  // Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible.
+  // Also usable for getting replies anywhere.
+  PUBLIC_EVENTS = 0;
+  // Returns events from users the user is following.
+  FOLLOWING_EVENTS = 1;
+  // Returns events from any group the user is a member of.
+  MY_GROUPS_EVENTS = 2;
+  // Returns LIMITED events that are directly addressed to the user.
+  DIRECT_EVENTS = 3;
+  EVENTS_PENDING_MODERATION = 4;
+
+  // group_id parameter is required for these.
+  GROUP_EVENTS = 10;
+  GROUP_EVENTS_PENDING_MODERATION = 11;
+}
+
+
+message GetEventsResponse {
+  repeated Event events = 1;
+}
+
+message Event {
+  string id = 1;
+  Post post = 2;
+  EventInfo info = 3;
+  repeated EventInstance instances = 4;
+}
+
+// To be used for ticketing, RSVPs, etc.
+message EventInfo {
+
+}
+
+message EventInstance {
+  string id = 1;
+  string event_id = 2;
+  optional Post post = 3;
+  EventInstanceInfo info = 4;
+  google.protobuf.Timestamp starts_at = 5;
+  google.protobuf.Timestamp ends_at = 6;
+}
+
+// To be used for ticketing, RSVPs, etc.
+message EventInstanceInfo {
+
+}

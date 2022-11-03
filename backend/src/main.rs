@@ -147,10 +147,10 @@ fn create_rocket<T: rocket::figment::Provider>(figment: T, pool: Arc<PgPool>) ->
                 web::main_index::index,
                 web::flutter_web::flutter_index,
                 web::flutter_web::flutter_file,
-                web::native_web::home,
-                web::native_web::styles,
-                web::native_web::web_asset,
-                web::native_web::web_image
+                web::home,
+                web::post_details,
+                web::styles::styles,
+                web::web_asset
             ],
         )
         .attach(Template::fairing())
