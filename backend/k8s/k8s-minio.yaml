@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: jonline-minio
 spec:
-  type: LoadBalancer
+  # type: LoadBalancer
   ports:
     - port: 9000
       targetPort: 9000

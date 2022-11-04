@@ -160,9 +160,9 @@ class _SettingsPageState extends JonlineState<SettingsPage>
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: () async => await launchUrl(Uri.parse(
-                                  'https://docs.flutter.dev/perf/shader')),
+                                  'https://github.com/flutter/flutter/issues/103847')),
                               child: const Text(
-                                'The startup sequence may improve performance on iOS by preloading Flutter shaders. See https://docs.flutter.dev/perf/shader for information on Flutter shader jank. Future optimizations to how blur effects are used in Jonline could also improve performance and obviate the need for the sequence.',
+                                'The startup sequence seems to improve performance on iOS. The issue it corrects for is described at https://github.com/flutter/flutter/issues/103847',
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
                                     color: Colors.white,
