@@ -11,12 +11,16 @@ extern crate regex;
 extern crate ring;
 extern crate rocket;
 extern crate rocket_async_compression;
+extern crate rocket_cache_response;
 extern crate rocket_dyn_templates;
 extern crate prost_wkt_types;
 extern crate markdown;
 extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
+// #[macro_use]
+extern crate lazy_static;
+
 
 use std::{env, fs, sync::Arc};
 
@@ -36,7 +40,6 @@ use ::jonline::{db_connection::PgPool, env_var, report_error};
 use futures::future::join_all;
 use protos::jonline_server::JonlineServer;
 use rocket::*;
-use rocket_async_compression::Compression;
 use rocket_dyn_templates::Template;
 use std::net::SocketAddr;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
@@ -158,7 +161,7 @@ fn create_rocket<T: rocket::figment::Provider>(figment: T, pool: Arc<PgPool>) ->
     if cfg!(debug_assertions) {
         server
     } else {
-        server.attach(Compression::fairing())
+        server.attach(web::CachedCompression::fairing())
     }
 }
 

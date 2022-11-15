@@ -54,7 +54,7 @@ pub fn get_posts(
         },
         (_, None) => get_all_posts(&user, conn),
     };
-    println!("GetPosts::request: {:?}, result: {:?}", request, result);
+    // println!("GetPosts::request: {:?}, result: {:?}", request, result);
     Ok(GetPostsResponse { posts: result })
 }
 
@@ -195,6 +195,7 @@ fn get_group_posts(
             {
                 Moderation::Pending => {
                     let membership = models::get_membership(group_id, user.id, conn).ok();
+                    println!("membership: {:?}", membership);
                     if !membership.map(|m| m.passes()).unwrap_or(false) {
                         return Err(Status::new(Code::PermissionDenied, "not_a_member"));
                     }

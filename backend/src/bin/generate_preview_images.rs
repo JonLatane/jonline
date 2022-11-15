@@ -8,51 +8,78 @@ use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
 use jonline::conversions::ToLink;
 use jonline::db_connection;
+use jonline::models::Post;
 use jonline::schema::posts::dsl::*;
 
 pub fn main() {
     println!("Generating preview images...");
     println!("Connecting to DB...");
     let mut conn = db_connection::establish_connection();
+
+    println!("Starting browser...");
+    let browser = start_browser().expect("Failed to start browser");
+
     let posts_to_update = posts
         .filter(preview.is_null())
         .filter(link.is_not_null())
         .limit(100)
-        .load::<jonline::models::Post>(&mut conn)
+        .load::<Post>(&mut conn)
         .unwrap();
     println!("Got {} posts to update.", posts_to_update.len());
 
     for post in posts_to_update {
-        println!("Generating preview image for post: {}", post.id);
-        match post.link.to_link() {
-            None => println!("Invalid link: {:?}", post.link),
-            Some(url) => {
-                match generate_preview(&url) {
-                    Ok(screenshot) => {
-                        println!(
-                            "Generated screenshot for link {}, post {}! {} bytes",
-                            url,
-                            post.id,
-                            screenshot.len()
-                        );
-                        update(posts)
-                            .filter(id.eq(post.id))
-                            .set(preview.eq(screenshot))
-                            .execute(&mut conn)
-                            .unwrap();
-                    }
-                    Err(e) => {
-                        println!("Failed to generate screenshot for link {}: {}", url, e);
-                    }
-                };
-            }
-        }
+        update_post(&post, &browser, &mut conn);
     }
 
     println!("Done generating preview images.");
 }
 
-fn generate_preview(url: &str) -> Result<Vec<u8>, anyhow::Error> {
+fn update_post(post: &Post, browser: &Browser, conn: &mut PgConnection) {
+    println!("Generating preview image for post: {}", post.id);
+    match post.link.to_link() {
+        None => println!("Invalid link: {:?}", post.link),
+        Some(url) => {
+            match generate_preview(&url, &browser) {
+                Ok(screenshot) => {
+                    println!(
+                        "Generated screenshot for link {}, post {}! {} bytes",
+                        url,
+                        post.id,
+                        screenshot.len()
+                    );
+                    update(posts)
+                        .filter(id.eq(post.id))
+                        .set(preview.eq(screenshot))
+                        .execute(conn)
+                        .unwrap();
+                }
+                Err(e) => {
+                    println!("Failed to generate screenshot for link {}: {}", url, e);
+                }
+            };
+        }
+    }
+
+}
+
+fn generate_preview(url: &str, browser: &Browser) -> Result<Vec<u8>, anyhow::Error> {
+    let tab = browser.new_tab_with_options(CreateTarget {
+        url: url.to_string(),
+        background: Some(true),
+        new_window: Some(true),
+        width: Some(400),
+        height: Some(400),
+        browser_context_id: None,
+        enable_begin_frame_control: None,
+    })?;
+    tab.navigate_to(&url)?;
+    tab.wait_until_navigated()?;
+    let result = tab.capture_screenshot(Png, None, None, false)?;
+    tab.close(true)?;
+    return Ok(result);
+}
+
+fn start_browser() -> Result<Browser, anyhow::Error> {
     let options = headless_chrome::LaunchOptionsBuilder::default()
         .headless(false)
         .disable_default_args(true)
@@ -101,17 +128,5 @@ fn generate_preview(url: &str) -> Result<Vec<u8>, anyhow::Error> {
         .window_size(Some((400, 400)))
         .build()
         .unwrap();
-    let browser = Browser::new(options)?;
-    let tab = browser.new_tab_with_options(CreateTarget {
-        url: url.to_string(),
-        background: Some(true),
-        new_window: Some(true),
-        width: Some(400),
-        height: Some(400),
-        browser_context_id: None,
-        enable_begin_frame_control: None,
-    })?;
-    tab.navigate_to(&url)?;
-    tab.wait_until_navigated()?;
-    return Ok(tab.capture_screenshot(Png, None, None, false)?);
+    Ok(Browser::new(options)?)
 }

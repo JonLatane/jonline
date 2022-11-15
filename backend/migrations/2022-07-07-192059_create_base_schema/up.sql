@@ -149,7 +149,7 @@ CREATE UNIQUE INDEX idx_user_post ON user_posts(user_id, post_id);
 CREATE TABLE events(
   id SERIAL PRIMARY KEY,
   post_id INTEGER NOT NULL REFERENCES posts ON DELETE CASCADE,
-  info JSONB NOT NULL DEFAULT '{}'::JSONB,
+  info JSONB NOT NULL DEFAULT '{}'::JSONB
 );
 CREATE UNIQUE INDEX idx_event_post ON events(id, post_id);
 
@@ -160,7 +160,7 @@ CREATE TABLE event_instances(
   post_id INTEGER NULL DEFAULT NULL REFERENCES posts ON DELETE SET NULL,
   info JSONB NOT NULL DEFAULT '{}'::JSONB,
   starts_at TIMESTAMP NOT NULL,
-  ends_at TIMESTAMP NOT NULL,
+  ends_at TIMESTAMP NOT NULL
 );
 
 -- FEDERATION MODELS

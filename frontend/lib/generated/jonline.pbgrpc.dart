@@ -119,6 +119,10 @@ class JonlineClient extends $grpc.Client {
           ($6.GetPostsRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
               $6.GetPostsResponse.fromBuffer(value));
+  static final _$getGroupPost = $grpc.ClientMethod<$6.GroupPost, $6.GroupPost>(
+      '/jonline.Jonline/GetGroupPost',
+      ($6.GroupPost value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $6.GroupPost.fromBuffer(value));
   static final _$createPost = $grpc.ClientMethod<$6.CreatePostRequest, $6.Post>(
       '/jonline.Jonline/CreatePost',
       ($6.CreatePostRequest value) => value.writeToBuffer(),
@@ -266,6 +270,11 @@ class JonlineClient extends $grpc.Client {
   $grpc.ResponseFuture<$6.GetPostsResponse> getPosts($6.GetPostsRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getPosts, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$6.GroupPost> getGroupPost($6.GroupPost request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getGroupPost, request, options: options);
   }
 
   $grpc.ResponseFuture<$6.Post> createPost($6.CreatePostRequest request,
@@ -457,6 +466,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $6.GetPostsRequest.fromBuffer(value),
         ($6.GetPostsResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.GroupPost, $6.GroupPost>(
+        'GetGroupPost',
+        getGroupPost_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $6.GroupPost.fromBuffer(value),
+        ($6.GroupPost value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$6.CreatePostRequest, $6.Post>(
         'CreatePost',
         createPost_Pre,
@@ -618,6 +634,11 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getPosts(call, await request);
   }
 
+  $async.Future<$6.GroupPost> getGroupPost_Pre(
+      $grpc.ServiceCall call, $async.Future<$6.GroupPost> request) async {
+    return getGroupPost(call, await request);
+  }
+
   $async.Future<$6.Post> createPost_Pre($grpc.ServiceCall call,
       $async.Future<$6.CreatePostRequest> request) async {
     return createPost(call, await request);
@@ -695,6 +716,8 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $5.GetMembersRequest request);
   $async.Future<$6.GetPostsResponse> getPosts(
       $grpc.ServiceCall call, $6.GetPostsRequest request);
+  $async.Future<$6.GroupPost> getGroupPost(
+      $grpc.ServiceCall call, $6.GroupPost request);
   $async.Future<$6.Post> createPost(
       $grpc.ServiceCall call, $6.CreatePostRequest request);
   $async.Future<$6.Post> updatePost($grpc.ServiceCall call, $6.Post request);

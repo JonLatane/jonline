@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:http/http.dart' as http;
+import 'package:image/image.dart';
 import 'package:jonline/utils/proto_utils.dart';
 
 import '../app_state.dart';
@@ -62,6 +64,7 @@ postDemoData(
   // JonlineAccount? sideAccount;
   List<JonlineAccount> sideAccounts = await generateSideAccounts(
       client, account, demoGroups, showSnackBar, appState, 7);
+
   List<JonlineAccount> replyAccounts = [
     account,
     ...sideAccounts,
@@ -155,6 +158,16 @@ Future<List<JonlineAccount>> generateSideAccounts(
         final User? user = await sideAccount.updateUserData();
         if (user != null) {
           user.permissions.add(Permission.RUN_BOTS);
+          // Source from https://thispersondoesnotexist.com/image
+          http.Response response = await http
+              .get(Uri.parse('https://thispersondoesnotexist.com/image'));
+          final image = decodeJpg(response.bodyBytes);
+          if (image != null) {
+            final avatar = copyResize(image, width: 128);
+            user.avatar = encodeJpg(avatar);
+          } else {
+            showSnackBar("Failed to generate avatar for $fakeAccountName.");
+          }
           await client.updateUser(user,
               options: account.authenticatedCallOptions);
           await sideAccount.updateUserData();
@@ -409,13 +422,13 @@ class DemoPost {
 
 final List<DemoPost> _demoData = [
   DemoPost(
-      [DemoGroup.yoga, DemoGroup.sports],
+      [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
       CreatePostRequest(
         title: "Magical fountain of kinesthetic knowledge",
         link: "https://www.triangleintegratedyoga.com",
       )),
   DemoPost(
-      [DemoGroup.yoga, DemoGroup.sports],
+      [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
       CreatePostRequest(
         title: "Homegirl know how to make you work n have fun",
         link: "https://www.laurenaliviayoga.com",
@@ -489,13 +502,18 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
           content:
               "Again, not maintained, but still available on the Play Store. Anko (which the UI's built with) is also not maintained 🥲")),
   DemoPost(
-      [DemoGroup.everyoneWelcome, DemoGroup.makers, DemoGroup.toolSharing],
+      [
+        DemoGroup.everyoneWelcome,
+        DemoGroup.makers,
+        DemoGroup.toolSharing,
+        DemoGroup.coolKidsClub
+      ],
       CreatePostRequest(
           title: "Yay socialism!",
           link: "https://www.dsanc.org",
           content: "I should go to more meetings but eh I pay my dues.")),
   DemoPost(
-      [DemoGroup.restaurants],
+      [DemoGroup.restaurants, DemoGroup.coolKidsClub],
       CreatePostRequest(
           title: "These burgers look soooo good 😋",
           link: "https://www.eatqueenburger.com")),
@@ -524,7 +542,12 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
           title: "These are cool! I want one",
           link: "https://www.fuell.us/products/fuell-fllow-e-motorcycle")),
   DemoPost(
-      [DemoGroup.everyoneWelcome, DemoGroup.sports, DemoGroup.music],
+      [
+        DemoGroup.everyoneWelcome,
+        DemoGroup.sports,
+        DemoGroup.music,
+        DemoGroup.coolKidsClub
+      ],
       CreatePostRequest(
           title:
               "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness.",

@@ -9,4 +9,4 @@ echo "#-----------------------------------------------------------------------" 
 flutter build appbundle --no-shrink | sed 's/.*/\[Android\] &/' && \
 echo "Manually upload appbundle to Google Play!" && \
 open "build/app/outputs/bundle/release/" && \
-open 'https://play.google.com/console/developers/8301034569696927852/app/4974878702686446069/tracks/internal-testing'
+open 'https://play.google.com/console/u/0/developers/8301034569696927852/app/4975897463331803995/tracks/internal-testing'

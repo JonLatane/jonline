@@ -48,7 +48,7 @@ class Settings {
     }
   }
 
-  static bool _useStartupSequence = !MyPlatform.isWeb;
+  static bool _useStartupSequence = MyPlatform.isIOS;
   static bool get useStartupSequence => _useStartupSequence;
   static set useStartupSequence(bool v) {
     {
@@ -109,7 +109,7 @@ class Settings {
     _developerMode = appStorage.getBool("developer_mode") ?? false;
     _replyLayersToLoad = appStorage.getInt("reply_layers_to_load") ?? 1;
     _useStartupSequence =
-        appStorage.getBool("use_startup_sequence") ?? !MyPlatform.isWeb;
+        appStorage.getBool("use_startup_sequence") ?? MyPlatform.isIOS;
     _preferServerPreviews =
         appStorage.getBool("prefer_server_previews") ?? MyPlatform.isWeb;
     showSettingsTabListener.value =

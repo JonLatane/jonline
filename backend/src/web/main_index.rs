@@ -7,6 +7,8 @@ use rocket_dyn_templates::Template;
 use super::RocketState;
 
 use rocket::response::Responder;
+use rocket_cache_response::CacheResponse;
+use std::io;
 
 use crate::protos::*;
 use crate::rpcs::get_server_configuration;
@@ -29,8 +31,8 @@ pub async fn index(state: &State<RocketState>) -> MainIndex {
 }
 
 pub struct MainIndex {
-    file: Option<std::io::Result<NamedFile>>,
-    template: Option<Template>,
+    file: Option<CacheResponse<io::Result<NamedFile>>>,
+    template: Option<CacheResponse<Template>>,
 }
 
 impl<'r> Responder<'r, 'static> for MainIndex {

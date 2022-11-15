@@ -1630,7 +1630,7 @@ checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 
 [[package]]
 name = "jonline"
-version = "0.1.189"
+version = "0.1.192"
 dependencies = [
  "anyhow",
  "bcrypt",
@@ -1641,6 +1641,7 @@ dependencies = [
  "futures 0.3.24",
  "headless_chrome",
  "itertools",
+ "lazy_static",
  "markdown",
  "prost",
  "prost-build",
@@ -1651,6 +1652,7 @@ dependencies = [
  "regex",
  "ring",
  "rocket",
+ "rocket-cache-response",
  "rocket_async_compression",
  "rocket_dyn_templates",
  "serde",
@@ -2907,6 +2909,15 @@ dependencies = [
  "ubyte",
  "version_check 0.9.4",
  "yansi",
+]
+
+[[package]]
+name = "rocket-cache-response"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1c61bb828cb5ed810b76c1f3a61c2ca9fc21df8b150edbde564e823bb63d1c1"
+dependencies = [
+ "rocket",
 ]
 
 [[package]]

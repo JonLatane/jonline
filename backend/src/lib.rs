@@ -12,6 +12,8 @@ extern crate futures;
 extern crate serde;
 extern crate serde_json;
 extern crate itertools;
+// #[macro_use]
+extern crate lazy_static;
 
 pub mod auth;
 pub mod db_connection;

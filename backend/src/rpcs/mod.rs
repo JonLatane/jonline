@@ -76,3 +76,6 @@ pub use delete_group_post::delete_group_post;
 
 mod get_posts;
 pub use get_posts::get_posts;
+
+mod get_group_post;
+pub use get_group_post::*;

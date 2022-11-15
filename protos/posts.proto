@@ -72,6 +72,8 @@ message Post {
   optional bytes preview_image = 10;
   Visibility visibility = 11;
   Moderation moderation = 12;
+
+  int32 group_count = 14;
   // When the post is returned in the context of a group_id parameter,
   // this can be returned. It lets the UI know whether the post can be
   // cross-posted to a group, and of course, *about* the cross-post

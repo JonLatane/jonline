@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.189"
+version = "0.1.192"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -17,6 +17,7 @@ tonic-reflection = "0.5.0"
 tonic-web = "0.4.0"
 rocket = { version = "0.5.0-rc.2", features = [ "tls" ] }
 rocket_async_compression = "0.1.2"
+rocket-cache-response = "0.6.2"
 rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars", "tera"]}
 futures = "0.3.24"
 prost = "0.11.0"
@@ -39,6 +40,7 @@ anyhow = "1.0.65"
 websocket = "0.26.5"
 which = "4.3.0"
 markdown = "0.3"
+lazy_static = "1.4.0"
 
 headless_chrome = { git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"], rev = "f8012ec4ed867ccc0efa6b262723363afd775011" }
 

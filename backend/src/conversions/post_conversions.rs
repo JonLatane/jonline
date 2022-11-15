@@ -31,6 +31,8 @@ impl ToProtoPost for models::MinimalPost {
             updated_at: self.updated_at.map(|t| t.to_proto()),
             author: self.proto_author(username),
             response_count: self.response_count,
+            reply_count: self.reply_count,
+            group_count: self.group_count,
             preview_image: None,
             ..Default::default()
         }
@@ -59,6 +61,7 @@ impl ToProtoPost for models::Post {
             author: self.proto_author(username),
             response_count: self.response_count,
             reply_count: self.reply_count,
+            group_count: self.group_count,
             preview_image: self.preview.to_owned(),
             visibility: self
                 .visibility

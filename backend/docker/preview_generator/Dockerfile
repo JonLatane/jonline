@@ -2,19 +2,25 @@ FROM debian:11.5
 
 RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 
-# Install headless Chrome and stuff needed for it
-RUN apt-get -y install chromium gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
+# grpcurl is useful to have on a jonline instance!
+RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt
+
+# Install Chrome-related dependencies
+RUN apt-get -y install gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 \
 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 \
 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
-ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget fonts-noto-color-emoji
+ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget gpg fonts-noto-color-emoji
 
 # Copy emoji-supporting fonts
 RUN mkdir -p /usr/local/share/fonts/truetype
 RUN cp -r /usr/share/fonts/truetype/noto /usr/local/share/fonts/truetype/noto
 
-# grpcurl is useful to have on a jonline instance!
-RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt
+# Install Chrome Beta (for --headless=chrome flag support, needed for extensions)
+RUN wget -qO - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg
+RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
+RUN apt update
+RUN apt-get -y install google-chrome-beta
 
 # Ad/cookie blockers for screenshot generator
 COPY backend/docker/preview_generator/preview_generator_extensions /opt/preview_generator_extensions

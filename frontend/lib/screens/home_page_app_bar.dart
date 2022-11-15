@@ -358,10 +358,10 @@ extension HomePageAppBar on HomePageState {
         ];
       case GroupDetailsRoute.name:
       case AccountsRoute.name:
-        return [const GroupChooser(), const AccountChooser()];
-      case UserProfileRoute.name:
       case PostDetailsRoute.name:
-        return [const AccountChooser()];
+      case UserProfileRoute.name:
+        return [const GroupChooser(), const AccountChooser()];
+      // return [const AccountChooser()];
       case PostsRoute.name:
       case PostsTab.name:
         return [

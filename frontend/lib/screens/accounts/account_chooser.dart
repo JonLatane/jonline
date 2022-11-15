@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
@@ -327,9 +329,25 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                Column(
-                  children: const [Icon(Icons.account_circle)],
-                ),
+                SizedBox(
+                    height: 36,
+                    width: 36,
+                    child: ((a.user?.avatar ?? []).isNotEmpty)
+                        ? CircleAvatar(
+                            key: Key('avatar-${a.id}'),
+                            backgroundImage:
+                                MemoryImage(Uint8List.fromList(a.user!.avatar)),
+                          )
+                        : const CircleAvatar(
+                            backgroundColor: Colors.black12,
+                            child: Icon(
+                              Icons.person,
+                              color: Colors.white,
+                            ),
+                          )
+                    // : Icon(Icons.account_circle,
+                    //     size: 32, color: textColor ?? Colors.white),
+                    ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(

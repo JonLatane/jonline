@@ -446,8 +446,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                       JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         group.currentUserMembership = membership;
-        if (membership.groupModeration.passes &&
-            membership.userModeration.passes) {
+        if (membership.member) {
           group.memberCount += 1;
         }
       });

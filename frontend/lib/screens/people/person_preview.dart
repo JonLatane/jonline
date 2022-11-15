@@ -1,7 +1,9 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
+import 'package:intl/intl.dart';
 import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 
@@ -43,6 +45,21 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   Person get person => widget.person;
   User get user => person.user;
   Membership? get membership => person.membership;
+  String get memberSince {
+    final membership = this.membership;
+    if (membership == null) return "";
+    return DateFormat('yyyy-dd-MM HH:mm').format(
+        DateTime.fromMillisecondsSinceEpoch(
+            (membership.updatedAt.seconds * 1000).toInt()));
+  }
+
+  String get requestedOrInvitedAt {
+    final membership = this.membership;
+    if (membership == null) return "";
+    return DateFormat('yyyy-dd-MM HH:mm').format(
+        DateTime.fromMillisecondsSinceEpoch(
+            (membership.createdAt.seconds * 1000).toInt()));
+  }
 
   @override
   void initState() {
@@ -52,6 +69,9 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
     appState.selectedAccountChanged.addListener(updateState);
     widget.usernameController?.addListener(updateGroupName);
     widget.usernameController?.text = user.username;
+    if (user.avatar.isNotEmpty) {
+      avatar = Uint8List.fromList(user.avatar);
+    }
   }
 
   @override
@@ -89,6 +109,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   bool get wantsToJoinGroup => membership?.wantsToJoinGroup ?? false;
 
   bool get currentUserProfile => user.id == appState.selectedAccount?.userId;
+  Uint8List? avatar;
 
   @override
   Widget build(BuildContext context) {
@@ -116,12 +137,43 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                   children: [
                     Row(
                       children: [
+                        // if (user.avatar.isNotEmpty)
+                        //   CircleAvatar(
+                        //     backgroundImage:
+                        //         MemoryImage(Uint8List.fromList(user.avatar)),
+                        //   )
+                        // else
+                        //   CircleAvatar(
+                        //     child: Icon(
+                        //       Icons.person,
+                        //       color: textColor,
+                        //     ),
+                        //   ),
+                        // const SizedBox(width: 8),
                         SizedBox(
-                          height: 48,
-                          width: 48,
-                          child: Icon(Icons.account_circle,
-                              size: 32, color: textColor ?? Colors.white),
-                        ),
+                            height: 48,
+                            width: 48,
+                            child: (avatar != null)
+                                ? CircleAvatar(
+                                    backgroundImage: MemoryImage(avatar!),
+                                  )
+                                : const CircleAvatar(
+                                    backgroundColor: Colors.black12,
+                                    child: Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                            // : Icon(Icons.account_circle,
+                            //     size: 32, color: textColor ?? Colors.white),
+                            ),
+                        const SizedBox(width: 6),
+                        // SizedBox(
+                        //   height: 48,
+                        //   width: 48,
+                        //   child: Icon(Icons.account_circle,
+                        //       size: 32, color: textColor ?? Colors.white),
+                        // ),
                         Expanded(
                           child: Column(
                             children: [
@@ -209,10 +261,21 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                           ),
                       ],
                     ),
+                    if (member) const SizedBox(height: 4),
+                    AnimatedContainer(
+                        duration: animationDuration,
+                        height: member ? 16 * mq.textScaleFactor : 0,
+                        child: AnimatedOpacity(
+                          duration: animationDuration,
+                          opacity: member ? 1 : 0,
+                          child: Text("member since $memberSince",
+                              style: textTheme.caption?.copyWith(
+                                  color: textColor?.withOpacity(0.5))),
+                        )),
                     const SizedBox(height: 4),
                     AnimatedContainer(
                         duration: animationDuration,
-                        height: wantsToJoinGroup ? 50 * mq.textScaleFactor : 0,
+                        height: wantsToJoinGroup ? 64 * mq.textScaleFactor : 0,
                         child: AnimatedOpacity(
                           duration: animationDuration,
                           opacity: wantsToJoinGroup ? 1 : 0,
@@ -220,6 +283,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                             children: [
                               Text(
                                   "wants to join ${appState.selectedGroup.value?.name}",
+                                  style: textTheme.caption?.copyWith(
+                                      color: textColor?.withOpacity(0.5))),
+                              const SizedBox(height: 4),
+                              Text("requested at $requestedOrInvitedAt",
                                   style: textTheme.caption?.copyWith(
                                       color: textColor?.withOpacity(0.5))),
                               Expanded(
@@ -344,7 +411,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                         child: AnimatedOpacity(
                           duration: animationDuration,
                           opacity: followsYou ? 1 : 0,
-                          child: Text("follows you",
+                          child: Text(following ? "friends" : "follows you",
                               style: textTheme.caption?.copyWith(
                                   color: textColor?.withOpacity(0.5))),
                         )),

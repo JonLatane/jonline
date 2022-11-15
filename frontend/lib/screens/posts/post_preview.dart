@@ -44,7 +44,10 @@ class PostPreview extends StatefulWidget {
 }
 
 class PostPreviewState extends JonlineBaseState<PostPreview> {
-  Post get post => widget.post;
+  Post? _post;
+  Post get post => _post ?? widget.post;
+  GroupPost? get groupPost =>
+      post.currentGroupPost.groupId.isNotEmpty ? post.currentGroupPost : null;
   String? get title => post.title;
   String? get link => post.link.isEmpty
       ? null
@@ -57,7 +60,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
       post.author.username.isEmpty ? null : post.author.username;
   int get responseCount => post.responseCount;
 
-  bool _hasLoadedServerPreview = false;
+  bool hasLoadedServerPreview = false;
   User? get author =>
       appState.users.value.where((u) => u.id == post.author.userId).firstOrNull;
 
@@ -76,7 +79,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
   }
 
   loadServerPreview() async {
-    if (_hasLoadedServerPreview) return;
+    if (hasLoadedServerPreview) return;
     final key = "${widget.server}:${post.id}";
     List<int>? previewData;
     if (previewStorage.hasData(key)) {
@@ -99,7 +102,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
     }
     if (!mounted) return;
     setState(() {
-      _hasLoadedServerPreview = true;
+      hasLoadedServerPreview = true;
     });
   }
 
@@ -154,7 +157,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                                 buildLocalPreview(context),
                               if (link != null &&
                                   (Settings.preferServerPreviews &&
-                                      (_hasLoadedServerPreview &&
+                                      (hasLoadedServerPreview &&
                                           previewImage == null)))
                                 SizedBox(
                                     height: previewHeight,
@@ -164,7 +167,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                                 buildServerPreview(context),
                               if (link != null &&
                                   Settings.preferServerPreviews &&
-                                  !_hasLoadedServerPreview)
+                                  !hasLoadedServerPreview)
                                 buildLoadingServerPreview(context),
                               if (content != null)
                                 Container(
@@ -275,6 +278,20 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+            ],
+          ),
+          Row(
+            children: [
+              if (post.groupCount > 0)
+                Expanded(
+                  child: Row(children: [
+                    Text(
+                      "to ${post.groupCount} group${post.groupCount == 1 ? "" : "s"}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ]),
+                )
             ],
           ),
         ],

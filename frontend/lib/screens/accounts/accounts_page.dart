@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
@@ -518,10 +519,16 @@ class AccountsPageState extends JonlineState<AccountsPage> {
             )));
   }
 
+  Map<String, Uint8List?> accountAvatars = {};
   Widget buildAccountItem(JonlineAccount account) {
     final backgroundColor =
         appState.selectedAccount?.id == account.id ? appState.navColor : null;
     final textColor = backgroundColor?.textColor;
+    final avatar = accountAvatars.putIfAbsent(
+        account.id,
+        () => (account.user?.avatar ?? []).isNotEmpty
+            ? Uint8List.fromList(account.user!.avatar)
+            : null);
     return AnimatedContainer(
       // constraints: const BoxConstraints(maxWidth: 600),
       duration: animationDuration,
@@ -564,15 +571,35 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                         children: [
                           SizedBox(
                             height: 48,
+                            width: 48,
                             child: TextButton(
-                              onPressed: () {
-                                context.navigateNamedTo(
-                                    'account/${account.id}/profile');
-                              },
-                              child: Icon(Icons.account_circle,
-                                  size: 32, color: textColor ?? Colors.white),
-                            ),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.all(0),
+                                  shape: const CircleBorder(),
+                                  backgroundColor: backgroundColor,
+                                ),
+                                onPressed: () {
+                                  context.navigateNamedTo(
+                                      'account/${account.id}/profile');
+                                },
+                                child: (avatar != null)
+                                    ? CircleAvatar(
+                                        key: Key('avatar-${account.id}'),
+                                        backgroundImage: MemoryImage(avatar),
+                                      )
+                                    : const CircleAvatar(
+                                        backgroundColor: Colors.black12,
+                                        child: Icon(
+                                          Icons.person,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                // : Icon(Icons.account_circle,
+                                //     size: 32,
+                                //     color: textColor ?? Colors.white),
+                                ),
                           ),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Column(
                               children: [
