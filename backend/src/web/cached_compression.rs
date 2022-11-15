@@ -49,7 +49,8 @@ impl Fairing for CachedCompression {
             });
 
         if cache_compressed_respones {
-            if let Some((cached_body, header)) = CACHED_FILES.lock().unwrap().get(&(path.clone(), accepts_gzip, accepts_br)) {
+            let guard = CACHED_FILES.lock().unwrap();
+            if let Some((cached_body, header)) = guard.get(&(path.clone(), accepts_gzip, accepts_br)) {
                 response.set_header(rocket::http::Header::new(
                     "content-encoding",
                     header.clone(),
@@ -57,6 +58,8 @@ impl Fairing for CachedCompression {
                 let body = cached_body.clone();
                 response.set_sized_body(body.len(), Cursor::new(body));
                 return;
+            } else {
+                drop(guard);
             }
         }
 
@@ -73,6 +76,8 @@ impl Fairing for CachedCompression {
         }
         response.set_sized_body(compressed_body.len(), Cursor::new(compressed_body.clone()));
         let header = response.headers().get_one("content-encoding").unwrap().to_string();
-        CACHED_FILES.lock().unwrap().insert((path, accepts_gzip, accepts_br), (compressed_body, header));
+        let mut guard = CACHED_FILES.lock().unwrap();
+        guard.insert((path, accepts_gzip, accepts_br), (compressed_body, header));
+        drop(guard);
     }
 }
