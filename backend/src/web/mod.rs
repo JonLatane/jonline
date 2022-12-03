@@ -11,9 +11,6 @@ pub struct RocketState {
 pub mod catchers;
 pub use catchers::*;
 
-pub mod cached_compression;
-pub use cached_compression::*;
-
 pub mod web_macros;
 pub use web_macros::*;
 

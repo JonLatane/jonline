@@ -161,7 +161,7 @@ fn create_rocket<T: rocket::figment::Provider>(figment: T, pool: Arc<PgPool>) ->
     if cfg!(debug_assertions) {
         server
     } else {
-        server.attach(web::CachedCompression::fairing())
+        server.attach(rocket_async_compression::CachedCompression::fairing(vec!["main.dart.js", ".otf"]))
     }
 }
 

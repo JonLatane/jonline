@@ -2922,13 +2922,14 @@ dependencies = [
 
 [[package]]
 name = "rocket_async_compression"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0235044563380a4153c806c2788d3c7a7eb585b870e0fde0bf3a29b5c8fc18d1"
+checksum = "b00d02d4cc15485485c160c1dcebd2d878bd04d56eefbbec1bd568d8b1c7916d"
 dependencies = [
  "async-compression",
  "futures 0.3.24",
  "lazy_static",
+ "log 0.4.17",
  "rocket",
 ]
 
