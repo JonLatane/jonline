@@ -9,6 +9,7 @@ import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:recase/recase.dart';
+// import 'package:smooth/smooth.dart';
 
 import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';

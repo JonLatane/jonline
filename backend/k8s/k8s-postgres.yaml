@@ -28,6 +28,10 @@ spec:
       labels:
         app: jonline-postgres
     spec:
+      volumes:
+      - name: pv-data
+        persistentVolumeClaim:
+          claimName: postgres-pv-claim
       containers:
         - image: postgres:14.5-alpine
           name: db
@@ -41,3 +45,21 @@ spec:
           ports:
             - containerPort: 5432
               name: db
+          volumeMounts:
+          - name: pv-data
+            mountPath: /var/lib/postgresql/data
+            subPath: postgres
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: postgres
+  name: postgres-pv-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: do-block-storage

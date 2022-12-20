@@ -21,6 +21,7 @@ import 'models/post_cache.dart';
 import 'router/auth_guard.dart';
 import 'router/router.gr.dart';
 import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
+// import 'package:smooth/smooth.dart';
 
 const noOne = 'no one';
 const blurSigma = 10.0;
@@ -320,6 +321,7 @@ class AppState extends State<MyApp> {
           create: (_) => authService,
           child: BooksDBProvider(
             child: router!,
+            // child: SmoothParent(child: router!),
           ),
         );
       },

@@ -33,7 +33,7 @@ spec:
       - name: storage
         persistentVolumeClaim:
           # Name of the PVC created earlier
-          claimName: jonline-minio-pv-claim
+          claimName: minio-pv-claim
       containers:
       - name: minio
         # Pulls the default Minio image from Docker Hub
@@ -58,16 +58,13 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  # This name uniquely identifies the PVC. Will be used in deployment below.
-  name: jonline-minio-pv-claim
   labels:
-    app: jonline-minio-storage-claim
+    app: minio
+  name: minio-pv-claim
 spec:
-  # Read more about access modes here: http://kubernetes.io/docs/user-guide/persistent-volumes/#access-modes
   accessModes:
     - ReadWriteOnce
-  storageClassName: standard
   resources:
-    # This is the request for storage. Should be available in the cluster.
     requests:
-      storage: 10Gi
+      storage: 5Gi
+  storageClassName: do-block-storage

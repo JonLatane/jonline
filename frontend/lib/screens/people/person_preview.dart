@@ -212,20 +212,21 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                   controller: widget.usernameController,
                                   keyboardType: TextInputType.url,
                                   textCapitalization: TextCapitalization.words,
-                                  enableSuggestions: true,
-                                  autocorrect: true,
+                                  enableSuggestions: false,
+                                  autocorrect: false,
                                   maxLines: 1,
                                   cursorColor: Colors.white,
                                   style: textTheme.headline6
                                       ?.copyWith(color: textColor),
-                                  enabled: member || admin,
+                                  enabled: currentUserProfile || admin,
                                   decoration: const InputDecoration(
                                       border: InputBorder.none,
                                       hintText: "Group Name",
                                       isDense: true),
                                   onChanged: (value) {},
                                 ),
-                              if (widget.usernameController != null)
+                              if (widget.usernameController != null &&
+                                  (currentUserProfile || admin))
                                 Align(
                                     alignment: Alignment.centerRight,
                                     child: Text(
@@ -556,7 +557,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
       setState(() {
         user.currentUserFollow = follow;
         if (follow.targetUserModeration.passes) {
-          user.followerCount += 1;
+          // user.followerCount += 1;
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
             u.followerCount += 1;
           });
@@ -589,7 +590,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
       setState(() {
         user.currentUserFollow = Follow();
         if (follow.targetUserModeration.passes) {
-          user.followerCount -= 1;
+          // user.followerCount -= 1;
           appState.users.value.where((u) => u.id == user.id).forEach((u) {
             u.followerCount -= 1;
           });
