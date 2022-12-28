@@ -23,7 +23,7 @@ macro_rules! generate_token {
     }};
 }
 
-pub fn generate_auth_and_access_token(
+pub fn generate_refresh_and_access_token(
     user_id: i32,
     conn: &mut PgPooledConnection,
     expires_at: Option<Timestamp>,
@@ -48,7 +48,7 @@ pub fn generate_auth_and_access_token(
         token: refresh_token.to_owned(),
         expires_at: expires_at.map(Timestamp::from),
     };
-    println!("Generated auth token for user_id={}", user_id);
+    println!("Generated refresh token for user_id={}", user_id);
 
     let refresh_exp_token = generate_access_token(refresh_token_id, conn);
     RefreshTokenResponse {
@@ -68,7 +68,7 @@ pub fn generate_access_token(refresh_token_id: i32, conn: &mut PgPooledConnectio
         .returning(user_access_tokens::expires_at)
         .get_result::<SystemTime>(conn)
         .unwrap();
-    println!("Generated refresh token for refresh_token_id={}", refresh_token_id);
+    println!("Generated access token for refresh_token_id={}", refresh_token_id);
     ExpirableToken {
         token: access_token.to_owned(),
         expires_at: Some(Timestamp::from(expires_at)),

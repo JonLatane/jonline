@@ -21,6 +21,28 @@ abstract class JonlineState<T extends StatefulWidget>
   }
 }
 
+abstract class JonlineStatelessWidget extends StatelessWidget {
+  late AppState appState;
+  late TextTheme textTheme;
+  late MediaQueryData mq;
+
+  List<Permission> get userPermissions =>
+      JonlineAccount.selectedAccount?.permissions ?? [];
+
+  JonlineStatelessWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    appState = context.findRootAncestorStateOfType<AppState>()!;
+    textTheme = Theme.of(context).textTheme;
+    mq = MediaQuery.of(context);
+
+    return buildWidget(context);
+  }
+
+  Widget buildWidget(BuildContext context);
+}
+
 abstract class JonlineBaseState<T extends StatefulWidget> extends State<T> {
   late AppState appState;
   TextTheme get textTheme => Theme.of(context).textTheme;

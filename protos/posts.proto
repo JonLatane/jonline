@@ -105,8 +105,9 @@ message UserPost{
   google.protobuf.Timestamp created_at = 3;
 }
 
+// Used for getting context about GroupPosts of an existing Post.
 message GetGroupPostsRequest {
-  optional string post_id = 1;
+  string post_id = 1;
   optional string group_id = 2;
 }
 

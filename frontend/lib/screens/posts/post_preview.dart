@@ -7,14 +7,21 @@ import 'package:get_storage/get_storage.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:jonline/jonline_state.dart';
+import 'package:jonline/models/jonline_account.dart';
 import 'package:jonline/models/jonline_operations.dart';
+import 'package:jonline/models/server_errors.dart';
+import 'package:jonline/utils/moderation_accessors.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
+import '../../generated/groups.pb.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/posts.pb.dart';
 import '../../generated/users.pb.dart';
+import '../../jonotifier.dart';
+import '../../models/jonline_clients.dart';
+import '../../models/jonline_server.dart';
 import '../../models/settings.dart';
 
 // import 'package:jonline/db.dart';
@@ -28,6 +35,9 @@ class PostPreview extends StatefulWidget {
   final VoidCallback? onTap;
   final bool isReply;
   final bool isReplyByAuthor;
+  final Function()? onPressResponseCount;
+  final Jonotifier? refreshContent;
+
   const PostPreview(
       {Key? key,
       required this.server,
@@ -36,7 +46,9 @@ class PostPreview extends StatefulWidget {
       this.onTap,
       this.allowScrollingContent = false,
       this.isReply = false,
-      this.isReplyByAuthor = false})
+      this.isReplyByAuthor = false,
+      this.onPressResponseCount,
+      this.refreshContent})
       : super(key: key);
 
   @override
@@ -51,11 +63,11 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
     if (post.currentGroupPost.groupId == groupId) {
       return post.currentGroupPost;
     }
-    if (_groupPosts == null) {
+    if (groupPosts == null) {
       loadGroupPosts();
       return null;
     }
-    return _groupPosts?.groupPosts
+    return groupPosts?.groupPosts
         .firstWhereOrNull((gp) => gp.groupId == groupId);
   }
 
@@ -75,7 +87,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
   User? get author =>
       appState.users.value.where((u) => u.id == post.author.userId).firstOrNull;
 
-  GetGroupPostsResponse? _groupPosts;
+  GetGroupPostsResponse? groupPosts;
 
   @override
   void initState() {
@@ -85,15 +97,26 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
       loadServerPreview();
     }
     loadGroupPosts();
+
+    widget.refreshContent?.addListener(refreshContent);
   }
 
   @override
   dispose() {
+    widget.refreshContent?.removeListener(refreshContent);
     super.dispose();
+  }
+
+  refreshContent() async {
+    await loadGroupPosts();
   }
 
   loadServerPreview() async {
     if (hasLoadedServerPreview) return;
+    await _loadServerPreview();
+  }
+
+  _loadServerPreview() async {
     final key = "${widget.server}:${post.id}";
     List<int>? previewData;
     if (previewStorage.hasData(key)) {
@@ -121,13 +144,15 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
   }
 
   loadGroupPosts() async {
-    if (_groupPosts != null) return;
+    // if (this.groupPosts != null) return;
+    if (widget.isReply) return;
+
     final groupPosts = await JonlineOperations.getGroupPosts(
         GetGroupPostsRequest(postId: post.id),
-        showMessage: showSnackBar);
+        showMessage: (e) => print(e));
     if (!mounted) return;
     setState(() {
-      _groupPosts = groupPosts;
+      this.groupPosts = groupPosts;
     });
   }
 
@@ -289,23 +314,51 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                 ),
               ),
               const Expanded(child: SizedBox()),
-              const Icon(
-                Icons.reply,
-                color: Colors.white,
-              ),
-              Text(
-                responseCount.toString(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                " response${responseCount == 1 ? "" : "s"}",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              TextButton(
+                onPressed: widget.onPressResponseCount,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.reply,
+                      color: Colors.white,
+                    ),
+                    Text(
+                      responseCount.toString(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white),
+                    ),
+                    Text(
+                      " response${responseCount == 1 ? "" : "s"}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          if (!widget.isReply) buildGroupPicker(context)
+          Row(
+            children: [
+              if (!widget.isReply)
+                PostPreviewGroupChooser(
+                  post: post,
+                  currentGroupPost: currentGroupPost,
+                  groupPosts: groupPosts,
+                  refreshNotifier: widget.refreshContent,
+                ),
+              const Expanded(
+                child: SizedBox(),
+              )
+            ],
+          )
         ],
       ),
     );
@@ -331,53 +384,6 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
             ? view
             : InkWell(onTap: widget.onTap, child: view));
     return card;
-  }
-
-  Widget buildGroupPicker(BuildContext context) {
-    Widget view;
-    if (appState.selectedGroup.value == null || currentGroupPost == null) {
-      view = Row(children: [
-        Text(
-            "posted in ${post.groupCount} group${post.groupCount == 1 ? "" : "s"}",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w300,
-                color: widget.isReplyByAuthor
-                    ? appState.authorColor
-                    : Colors.grey)),
-      ]);
-    } else {
-      final otherGroupCount = post.groupCount - 1;
-      final String groupName = appState.groups.value
-          .firstWhere((g) => g.id == currentGroupPost!.groupId)
-          .name;
-      view = Row(children: [
-        const Text("posted in ",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
-        Text(
-          groupName,
-          style: const TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Text(
-            " and $otherGroupCount other group${otherGroupCount == 1 ? "" : "s"}",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
-      ]);
-    }
-    return TextButton(
-      onPressed: () {},
-      child: view,
-    );
   }
 
   Widget buildServerPreview(BuildContext context) {
@@ -578,6 +584,397 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+    ));
+  }
+}
+
+class PostPreviewGroupChooser extends StatefulWidget {
+  final Post post;
+  final GroupPost? currentGroupPost;
+  final GetGroupPostsResponse? groupPosts;
+  final Jonotifier? refreshNotifier;
+
+  const PostPreviewGroupChooser(
+      {required this.post,
+      required this.currentGroupPost,
+      required this.groupPosts,
+      required this.refreshNotifier,
+      super.key});
+
+  @override
+  State<PostPreviewGroupChooser> createState() =>
+      _PostPreviewGroupChooserState();
+}
+
+class _PostPreviewGroupChooserState
+    extends JonlineState<PostPreviewGroupChooser> {
+  bool posting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget view;
+    if (appState.selectedGroup.value == null) {
+      view = Row(children: [
+        Text(
+            "posted in ${widget.post.groupCount} group${widget.post.groupCount == 1 ? "" : "s"}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
+      ]);
+    } else if (widget.currentGroupPost == null) {
+      final String groupName = appState.selectedGroup.value!.name;
+      view = Row(children: [
+        Text(
+            "posted in ${widget.post.groupCount} group${widget.post.groupCount == 1 ? "" : "s"}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
+        Text(posting ? ". Posting to " : ", but not ",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
+        Text(
+          groupName,
+          style: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (posting)
+          const Text("... ",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w300,
+                  color: Colors.grey)),
+      ]);
+    } else {
+      final otherGroupCount = widget.post.groupCount - 1;
+      final String groupName = appState.groups.value
+          .firstWhere((g) => g.id == widget.currentGroupPost!.groupId)
+          .name;
+      view = Row(children: [
+        const Text("posted in ",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
+        Text(
+          groupName,
+          style: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+            " and $otherGroupCount other group${otherGroupCount == 1 ? "" : "s"}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
+      ]);
+    }
+    return TextButton(
+      onPressed: () {
+        final RenderBox button = context.findRenderObject() as RenderBox;
+        final RenderBox? overlay =
+            Overlay.of(context)?.context.findRenderObject() as RenderBox?;
+        final RelativeRect position = RelativeRect.fromRect(
+          Rect.fromPoints(
+            button.localToGlobal(Offset.zero, ancestor: overlay),
+            button.localToGlobal(button.size.bottomRight(Offset.zero),
+                ancestor: overlay),
+          ),
+          Offset.zero & (overlay?.size ?? Size.zero),
+        );
+        showGroupChooser(context, position);
+      },
+      child: view,
+    );
+  }
+
+  Future<Object> showGroupChooser(
+      BuildContext context, RelativeRect position) async {
+    ThemeData theme = Theme.of(context);
+    // TextTheme textTheme = theme.textTheme;
+    ThemeData darkTheme = theme;
+    // final appState = context.findRootAncestorStateOfType<AppState>()!;
+    final groups = (widget.groupPosts?.groupPosts ?? [])
+        .map((e) => appState.groups.value.firstWhere((g) => g.id == e.groupId));
+    // if (appState.selectedGroup.value != null &&
+    //     !groups.any((g) => appState.selectedGroup.value?.id == g.id)) {
+    //   appState.selectedGroup.value = null;
+    // }
+    final myGroups = groups.where((g) => g.member);
+    final pendingGroups = groups.where((g) => g.wantsToJoinGroup);
+    final otherGroups = groups.where((g) => !g.member && !g.wantsToJoinGroup);
+    return showMenu(
+        context: context,
+        position: position,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        // color: (musicBackgroundColor.luminance < 0.5
+        //         ? subBackgroundColor
+        //         : musicBackgroundColor)
+        //     .withOpacity(0.95),
+        items: [
+          // PopupMenuItem(
+          //   padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
+          //   mouseCursor: SystemMouseCursors.basic,
+          //   value: null,
+          //   enabled: false,
+          //   child: Text(
+          //     'Accounts',
+          //     style: darkTheme.textTheme.titleLarge,
+          //   ),
+          // ),
+          PopupMenuItem(
+            padding: EdgeInsets.zero,
+            mouseCursor: SystemMouseCursors.basic,
+            value: null,
+            enabled: false,
+            child: Column(children: [
+              if (widget.currentGroupPost == null &&
+                  appState.selectedGroup.value != null)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: appState.selectedAccount == null
+                        ? null
+                        : () async {
+                            setState(() => posting = true);
+                            Navigator.pop(context);
+                            try {
+                              final client = await JonlineClients
+                                  .getSelectedOrDefaultClient();
+                              await client!.createGroupPost(
+                                  GroupPost(
+                                    groupId: appState.selectedGroup.value!.id,
+                                    postId: widget.post.id,
+                                  ),
+                                  options: JonlineAccount.selectedAccount!
+                                      .authenticatedCallOptions);
+                            } catch (e) {
+                              // showSnackBar("Error loading group posts.");
+                              showSnackBar(formatServerError(e));
+                            }
+
+                            widget.refreshNotifier?.call();
+                            // Kinda hacky :/
+                            await Future.delayed(const Duration(seconds: 2));
+
+                            if (!mounted) return;
+                            setState(() => posting = false);
+                          },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.add),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Text(
+                                  appState.selectedAccount == null
+                                      ? "Login to post to "
+                                      : 'Post to ',
+                                  style: darkTheme.textTheme.caption,
+                                ),
+                                Text(
+                                  appState.selectedGroup.value?.name ?? '',
+                                  style: darkTheme.textTheme.titleMedium!
+                                      .copyWith(
+                                          color:
+                                              appState.selectedAccount == null
+                                                  ? Colors.grey
+                                                  : null),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // if (post.title.isNotEmpty)
+                    //   Row(
+                    //     children: [
+                    //       Expanded(
+                    //         child: Text(
+                    //           post.title,
+                    //           style: darkTheme.textTheme.titleMedium,
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Currently posted to:",
+                      style: darkTheme.textTheme.caption,
+                    ),
+                  ],
+                ),
+              ),
+              if (myGroups.isNotEmpty &&
+                  (pendingGroups.isNotEmpty || otherGroups.isNotEmpty))
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'My Groups on ',
+                        style: myGroups.isEmpty
+                            ? darkTheme.textTheme.titleMedium
+                            : darkTheme.textTheme.titleLarge,
+                      ),
+                      Text(
+                        "${JonlineServer.selectedServer.server}/",
+                        style: darkTheme.textTheme.caption,
+                      ),
+                    ],
+                  ),
+                ),
+              ...myGroups.map((a) => _groupItem(a, context)),
+              if (pendingGroups
+                  .isNotEmpty /*&&
+                  (myGroups.isNotEmpty || otherGroups.isNotEmpty)*/
+              )
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Requested Memberships',
+                        style: darkTheme.textTheme.titleLarge,
+                      ),
+                      // Text(
+                      //   "${JonlineServer.selectedServer.server}/",
+                      //   style: darkTheme.textTheme.caption,
+                      // ),
+                    ],
+                  ),
+                ),
+              ...pendingGroups.map((a) => _groupItem(a, context)),
+              if (otherGroups.isNotEmpty &&
+                  (myGroups.isNotEmpty || pendingGroups.isNotEmpty))
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Other Groups on ',
+                        style: otherGroups.isEmpty
+                            ? darkTheme.textTheme.titleMedium
+                            : darkTheme.textTheme.titleLarge,
+                      ),
+                      Text(
+                        "${JonlineServer.selectedServer.server}/",
+                        style: darkTheme.textTheme.caption,
+                      ),
+                    ],
+                  ),
+                ),
+              ...otherGroups.map((a) => _groupItem(a, context)),
+            ]),
+          ),
+        ]);
+  }
+
+  Widget _groupItem(Group g, BuildContext context) {
+    ThemeData darkTheme = Theme.of(context);
+    ThemeData lightTheme = ThemeData.light();
+    bool selected = g.id ==
+        context
+            .findRootAncestorStateOfType<AppState>()!
+            .selectedGroup
+            .value
+            ?.id;
+    ThemeData theme = selected ? lightTheme : darkTheme;
+    TextTheme textTheme = theme.textTheme;
+    return Theme(
+      data: theme,
+      child: Material(
+        color: selected ? Colors.white : Colors.transparent,
+        child: InkWell(
+            mouseCursor: SystemMouseCursors.basic,
+            onTap: () {
+              Navigator.pop(context);
+              AppState appState =
+                  context.findRootAncestorStateOfType<AppState>()!;
+              if (selected) {
+                appState.selectedGroup.value = null;
+                showSnackBar(
+                    "Viewing all groups on ${JonlineServer.selectedServer.server}.");
+              } else {
+                appState.selectedGroup.value = g;
+                showSnackBar(
+                    "Viewing ${g.name} on ${JonlineServer.selectedServer.server}.");
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Column(
+                    children: const [Icon(Icons.group_work)],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                              "${JonlineServer.selectedServer.server}/g/${g.id}",
+                              textAlign: TextAlign.left,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.caption
+                              // style: const TextStyle(color: Colors.white)
+                              ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(g.name,
+                              textAlign: TextAlign.left,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.subtitle1),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (g.currentUserMembership.permissions
+                      .contains(Permission.RUN_BOTS))
+                    const Iconify(FaSolid.robot, size: 16),
+                  if (g.currentUserMembership.permissions
+                      .contains(Permission.ADMIN))
+                    const Icon(Icons.admin_panel_settings_outlined, size: 16)
+                ],
+              ),
+            )),
       ),
     );
   }

@@ -1,5 +1,5 @@
 use diesel::*;
-use tonic::{Code, Status};
+use tonic::Status;
 
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
@@ -19,6 +19,7 @@ pub fn get_group_posts(
     user: Option<models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetGroupPostsResponse, Status> {
+    let post_id = request.post_id.to_db_id_or_err("post_id")?;
     let query = group_posts::table
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
         .inner_join(groups::table.on(group_posts::group_id.eq(groups::id)))
@@ -28,27 +29,39 @@ pub fn get_group_posts(
             posts::visibility,
             memberships::all_columns.nullable(),
         ));
-    let results = match (request.group_id, request.post_id) {
-        (None, Some(post_id)) => {
-            let post_id = post_id.to_db_id_or_err("post_id")?;
+    let results = match (&user, request.group_id) {
+        (Some(user), None) => {
             query
                 .filter(group_posts::post_id.eq(post_id))
+                .filter(memberships::user_id.eq(user.id))
                 .load::<(models::GroupPost, String, Option<models::Membership>)>(conn)
                 .unwrap()
         }
-        (Some(group_id), Some(post_id)) => {
+        (Some(user), Some(group_id)) => {
             let group_id = group_id.to_db_id_or_err("group_id")?;
-            let post_id = post_id.to_db_id_or_err("post_id")?;
             query
-                .filter(
-                    group_posts::group_id
-                        .eq(group_id)
-                        .and(group_posts::post_id.eq(post_id)),
-                )
+                .filter(group_posts::group_id.eq(group_id))
+                .filter(group_posts::post_id.eq(post_id))
+                .filter(memberships::user_id.eq(user.id))
                 .load::<(models::GroupPost, String, Option<models::Membership>)>(conn)
                 .unwrap()
         }
-        _ => return Err(Status::new(Code::InvalidArgument, "invalid_request")),
+        (None, None) => {
+            query
+                .filter(group_posts::post_id.eq(post_id))
+                .filter(memberships::id.nullable().is_null())
+                .load::<(models::GroupPost, String, Option<models::Membership>)>(conn)
+                .unwrap()
+        }
+        (None, Some(group_id)) => {
+            let group_id = group_id.to_db_id_or_err("group_id")?;
+            query
+                .filter(group_posts::group_id.eq(group_id))
+                .filter(group_posts::post_id.eq(post_id))
+                .filter(memberships::id.nullable().is_null())
+                .load::<(models::GroupPost, String, Option<models::Membership>)>(conn)
+                .unwrap()
+        }
     };
     let filtered_results = results
         .iter()

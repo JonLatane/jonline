@@ -32,12 +32,14 @@ message RefreshTokenResponse {
 
 message ExpirableToken {
   string token = 1;
+  // Optional expiration time for the token. If not set, the token will not expire.
   optional google.protobuf.Timestamp expires_at = 2;
 }
 
 message AccessTokenRequest {
   string refresh_token = 1;
-  optional google.protobuf.Timestamp expires_at = 3;
+  // Optional *requested* expiration time for the token. Server may ignore this.
+  optional google.protobuf.Timestamp expires_at = 2;
 }
 
 message AccessTokenResponse {

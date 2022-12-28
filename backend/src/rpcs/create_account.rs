@@ -54,7 +54,7 @@ pub fn create_account(
     match insert_result {
         Err(_) => Err(Status::new(Code::AlreadyExists, "username_already_exists")),
         Ok(user) => {
-            let tokens = auth::generate_auth_and_access_token(user.id, conn, request.expires_at);
+            let tokens = auth::generate_refresh_and_access_token(user.id, conn, request.expires_at);
             Ok(RefreshTokenResponse {
                 refresh_token: tokens.refresh_token,
                 access_token: tokens.access_token,

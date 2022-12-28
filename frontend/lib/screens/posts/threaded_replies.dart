@@ -187,6 +187,17 @@ class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
   Widget buildReply(ThreadedReply reply, BuildContext context) {
     bool repliesLoaded = subRepliesLoaded.contains(reply);
     bool repliesLoading = subRepliesLoading.contains(reply);
+    final toggleReplies = reply.post.replyCount == 0 ||
+            repliesLoading ||
+            widget.updatingReplies.value
+        ? null
+        : repliesLoaded
+            ? () {
+                hideSubReplies(reply);
+              }
+            : () {
+                loadSubReplies(reply);
+              };
     Widget result = Column(
       children: [
         PostPreview(
@@ -196,20 +207,13 @@ class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
           isReply: true,
           isReplyByAuthor: reply.post.author.userId.isNotEmpty &&
               reply.post.author.userId == widget.post.author.userId,
+          onPressResponseCount: toggleReplies,
         ),
         Row(
           children: [
             Expanded(
               child: TextButton(
-                onPressed: repliesLoading || widget.updatingReplies.value
-                    ? null
-                    : repliesLoaded
-                        ? () {
-                            hideSubReplies(reply);
-                          }
-                        : () {
-                            loadSubReplies(reply);
-                          },
+                onPressed: toggleReplies,
                 child: Row(
                   children: [
                     AnimatedRotation(

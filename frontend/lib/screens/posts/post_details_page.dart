@@ -143,6 +143,7 @@ class PostDetailsPageState extends JonlineState<PostDetailsPage> {
                             server: widget.server,
                             post: subjectPost!,
                             maxContentHeight: null,
+                            refreshContent: updateReplies,
                           ),
                         ),
                         SliverPersistentHeader(
