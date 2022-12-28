@@ -104,3 +104,12 @@ message UserPost{
   string user_id = 2;
   google.protobuf.Timestamp created_at = 3;
 }
+
+message GetGroupPostsRequest {
+  optional string post_id = 1;
+  optional string group_id = 2;
+}
+
+message GetGroupPostsResponse {
+  repeated GroupPost group_posts = 1;
+}

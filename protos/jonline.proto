@@ -78,10 +78,12 @@ service Jonline {
   // (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. Authenticated.
   rpc DeletePost(Post) returns (Post) {}
 
-  rpc GetGroupPost(GroupPost) returns (GroupPost) {}
   rpc CreateGroupPost(GroupPost) returns (GroupPost) {}
   rpc UpdateGroupPost(GroupPost) returns (GroupPost) {}
   rpc DeleteGroupPost(GroupPost) returns (google.protobuf.Empty) {}
+  rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsResponse) {}
+  // Use GetGroupPosts instead.
+  rpc GetGroupPost(GroupPost) returns (GroupPost) { option deprecated=true; }
 
   // Configure the server (i.e. the response to GetServerConfiguration). Authenticated.
   // Requires ADMIN permissions.

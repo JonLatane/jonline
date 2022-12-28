@@ -172,6 +172,15 @@ impl Jonline for JonLineImpl {
         rpcs::delete_group_post(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
+    async fn get_group_posts(
+        &self,
+        request: Request<GetGroupPostsRequest>,
+    ) -> Result<Response<GetGroupPostsResponse>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
+        rpcs::get_group_posts(request.into_inner(), user, &mut conn).map(Response::new)
+    }
+
     async fn get_posts(
         &self,
         request: Request<GetPostsRequest>,

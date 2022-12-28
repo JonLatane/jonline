@@ -44,10 +44,21 @@ class PostPreview extends StatefulWidget {
 }
 
 class PostPreviewState extends JonlineBaseState<PostPreview> {
-  Post? _post;
-  Post get post => _post ?? widget.post;
-  GroupPost? get groupPost =>
-      post.currentGroupPost.groupId.isNotEmpty ? post.currentGroupPost : null;
+  Post get post => widget.post;
+  GroupPost? get currentGroupPost {
+    final groupId = appState.selectedGroup.value?.id;
+    if (groupId == null) return null;
+    if (post.currentGroupPost.groupId == groupId) {
+      return post.currentGroupPost;
+    }
+    if (_groupPosts == null) {
+      loadGroupPosts();
+      return null;
+    }
+    return _groupPosts?.groupPosts
+        .firstWhereOrNull((gp) => gp.groupId == groupId);
+  }
+
   String? get title => post.title;
   String? get link => post.link.isEmpty
       ? null
@@ -64,6 +75,8 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
   User? get author =>
       appState.users.value.where((u) => u.id == post.author.userId).firstOrNull;
 
+  GetGroupPostsResponse? _groupPosts;
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +84,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
     if (post.link.isNotEmpty) {
       loadServerPreview();
     }
+    loadGroupPosts();
   }
 
   @override
@@ -103,6 +117,17 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
     if (!mounted) return;
     setState(() {
       hasLoadedServerPreview = true;
+    });
+  }
+
+  loadGroupPosts() async {
+    if (_groupPosts != null) return;
+    final groupPosts = await JonlineOperations.getGroupPosts(
+        GetGroupPostsRequest(postId: post.id),
+        showMessage: showSnackBar);
+    if (!mounted) return;
+    setState(() {
+      _groupPosts = groupPosts;
     });
   }
 
@@ -280,20 +305,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
               ),
             ],
           ),
-          Row(
-            children: [
-              if (post.groupCount > 0)
-                Expanded(
-                  child: Row(children: [
-                    Text(
-                      "to ${post.groupCount} group${post.groupCount == 1 ? "" : "s"}",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ]),
-                )
-            ],
-          ),
+          if (!widget.isReply) buildGroupPicker(context)
         ],
       ),
     );
@@ -319,6 +331,53 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
             ? view
             : InkWell(onTap: widget.onTap, child: view));
     return card;
+  }
+
+  Widget buildGroupPicker(BuildContext context) {
+    Widget view;
+    if (appState.selectedGroup.value == null || currentGroupPost == null) {
+      view = Row(children: [
+        Text(
+            "posted in ${post.groupCount} group${post.groupCount == 1 ? "" : "s"}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w300,
+                color: widget.isReplyByAuthor
+                    ? appState.authorColor
+                    : Colors.grey)),
+      ]);
+    } else {
+      final otherGroupCount = post.groupCount - 1;
+      final String groupName = appState.groups.value
+          .firstWhere((g) => g.id == currentGroupPost!.groupId)
+          .name;
+      view = Row(children: [
+        const Text("posted in ",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
+        Text(
+          groupName,
+          style: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+            " and $otherGroupCount other group${otherGroupCount == 1 ? "" : "s"}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w300, color: Colors.grey)),
+      ]);
+    }
+    return TextButton(
+      onPressed: () {},
+      child: view,
+    );
   }
 
   Widget buildServerPreview(BuildContext context) {

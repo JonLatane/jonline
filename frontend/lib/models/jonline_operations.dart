@@ -1,3 +1,5 @@
+import 'package:jonline/generated/jonline.pbgrpc.dart';
+
 import '../app_state.dart';
 import '../generated/groups.pb.dart';
 import '../generated/posts.pb.dart';
@@ -13,85 +15,58 @@ import 'server_errors.dart';
 extension JonlineOperations on JonlineAccount {
   static Future<GetMembersResponse?> getMembers(
       {GetMembersRequest? request, Function(String)? showMessage}) async {
-    await JonlineAccount.selectedAccount
-        ?.ensureAccessToken(showMessage: showMessage);
-    final client = await JonlineClients.getSelectedOrDefaultClient(
-        showMessage: showMessage);
-    if (client == null) {
-      showMessage?.call("Error: No client");
-      return null;
-    }
-    await communicationDelay;
-    // showMessage?.call("Loading posts...");
-    final GetMembersResponse response;
-    try {
-      response = await client.getMembers(request ?? GetMembersRequest(),
-          options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
-    } catch (e) {
-      showMessage?.call('Error loading members.');
-      if (showMessage != null) await communicationDelay;
-      showMessage?.call(formatServerError(e));
-      return null;
-    }
-    return response;
+    return performOperation(
+        (client) => client.getMembers(request ?? GetMembersRequest(),
+            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+        showMessage: showMessage,
+        entityType: "members");
   }
 
   static Future<GetUsersResponse?> getUsers(
       {GetUsersRequest? request, Function(String)? showMessage}) async {
-    await JonlineAccount.selectedAccount
-        ?.ensureAccessToken(showMessage: showMessage);
-    final client = await JonlineClients.getSelectedOrDefaultClient(
-        showMessage: showMessage);
-    if (client == null) {
-      showMessage?.call("Error: No client");
-      return null;
-    }
-    await communicationDelay;
-    // showMessage?.call("Loading posts...");
-    final GetUsersResponse response;
-    try {
-      response = await client.getUsers(request ?? GetUsersRequest(),
-          options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
-    } catch (e) {
-      showMessage?.call('Error loading users');
-      if (showMessage != null) await communicationDelay;
-      showMessage?.call(formatServerError(e));
-      return null;
-    }
-    return response;
+    return performOperation(
+        (client) => client.getUsers(request ?? GetUsersRequest(),
+            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+        showMessage: showMessage,
+        entityType: "users");
   }
 
   static Future<GetGroupsResponse?> getGroups({
     GetGroupsRequest? request,
     Function(String)? showMessage,
   }) async {
-    await JonlineAccount.selectedAccount
-        ?.ensureAccessToken(showMessage: showMessage);
-    final client = await JonlineClients.getSelectedOrDefaultClient(
-        showMessage: showMessage);
-    if (client == null) {
-      showMessage?.call("Error: No client");
-      return null;
-    }
-    await communicationDelay;
-    // showMessage?.call("Loading posts...");
-    final GetGroupsResponse response;
-    try {
-      response = await client.getGroups(request ?? GetGroupsRequest(),
-          options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
-    } catch (e) {
-      showMessage?.call('Error loading groups"}.');
-      if (showMessage != null) await communicationDelay;
-      showMessage?.call(formatServerError(e));
-      return null;
-    }
-    return response;
+    return performOperation(
+        (client) => client.getGroups(request ?? GetGroupsRequest(),
+            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+        showMessage: showMessage,
+        entityType: "groups");
   }
 
   static Future<GetPostsResponse?> getPosts(
       {GetPostsRequest? request,
       Function(String)? showMessage,
       bool forReplies = false}) async {
+    return performOperation(
+        (client) => client.getPosts(request ?? GetPostsRequest(),
+            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+        showMessage: showMessage,
+        entityType: forReplies ? "replies" : "posts");
+  }
+
+  static Future<GetGroupPostsResponse?> getGroupPosts(
+      GetGroupPostsRequest request,
+      {Function(String)? showMessage}) async {
+    return performOperation(
+        (client) => client.getGroupPosts(request,
+            options: JonlineAccount.selectedAccount?.authenticatedCallOptions),
+        showMessage: showMessage,
+        entityType: "group posts");
+  }
+
+  static Future<Response?> performOperation<Response>(
+      Future<Response?> Function(JonlineClient) operation,
+      {Function(String)? showMessage,
+      String? entityType}) async {
     await JonlineAccount.selectedAccount
         ?.ensureAccessToken(showMessage: showMessage);
     final client = await JonlineClients.getSelectedOrDefaultClient(
@@ -100,18 +75,17 @@ extension JonlineOperations on JonlineAccount {
       showMessage?.call("Error: No client");
       return null;
     }
-    await communicationDelay;
-    // showMessage?.call("Loading posts...");
-    final GetPostsResponse posts;
+    // await communicationDelay;
+    // showMessage?.call("Loading $entityType...");
+    final Response? response;
     try {
-      posts = await client.getPosts(request ?? GetPostsRequest(),
-          options: JonlineAccount.selectedAccount?.authenticatedCallOptions);
+      response = await operation(client);
     } catch (e) {
-      showMessage?.call('Error loading ${forReplies ? "replies" : "posts"}.');
+      showMessage?.call('Error loading ${entityType ?? 'data'}.');
       if (showMessage != null) await communicationDelay;
       showMessage?.call(formatServerError(e));
       return null;
     }
-    return posts;
+    return response;
   }
 }
