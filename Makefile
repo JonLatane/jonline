@@ -242,3 +242,6 @@ build_local:
 
 lines_of_code:
 	git ls-files | xargs cloc
+
+documentation:
+	docker run --rm -v $(PWD)/docs/generated:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,docs.md
