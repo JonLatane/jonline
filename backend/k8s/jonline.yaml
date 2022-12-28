@@ -43,7 +43,7 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.1.196
+        - image: docker.io/jonlatane/jonline:0.1.197
           name: jonline
           env:
             - name: DATABASE_URL
@@ -95,7 +95,7 @@ spec:
         spec:
           containers:
           - name: delete-expired-tokens
-            image: docker.io/jonlatane/jonline:0.1.196
+            image: docker.io/jonlatane/jonline:0.1.197
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL
@@ -118,7 +118,7 @@ spec:
         spec:
           containers:
           - name: generate-preview-images
-            image: docker.io/jonlatane/jonline_preview_generator:0.1.196
+            image: docker.io/jonlatane/jonline_preview_generator:0.1.197
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL

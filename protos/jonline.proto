@@ -38,9 +38,11 @@ service Jonline {
   // Updating other users requires ADMIN permissions.
   rpc UpdateUser(User) returns (User) {}
 
+  // Follow (or request to follow) a user. Authenticated.
   rpc CreateFollow(Follow) returns (Follow) {}
-  // Used to approved follow requests. Authenticated.
+  // Used to approve follow requests. Authenticated.
   rpc UpdateFollow(Follow) returns (Follow) {}
+  // Unfollow (or unrequest) a user. Authenticated.
   rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
   
   // Gets Groups. Publicly accessible *or* authenticated.
@@ -64,7 +66,9 @@ service Jonline {
   // Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user.
   // Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group.
   rpc UpdateMembership(Membership) returns (Membership) {}
+  // Leave a group (or cancel membership request). Authenticated.
   rpc DeleteMembership(Membership) returns (google.protobuf.Empty) {}
+  // Get Members (User+Membership) of a Group. Authenticated.
   rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {}
 
   // Gets Posts. Publicly accessible *or* authenticated.
@@ -78,12 +82,14 @@ service Jonline {
   // (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. Authenticated.
   rpc DeletePost(Post) returns (Post) {}
 
+  // Cross-post a Post to a Group. Authenticated.
   rpc CreateGroupPost(GroupPost) returns (GroupPost) {}
+  // Group Moderators: Approve/Reject a GroupPost. Authenticated.
   rpc UpdateGroupPost(GroupPost) returns (GroupPost) {}
+  // Delete a GroupPost. Authenticated.
   rpc DeleteGroupPost(GroupPost) returns (google.protobuf.Empty) {}
+  // Get GroupPosts for a Post (and optional group). Publicly accessible *or* authenticated.
   rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsResponse) {}
-  // Use GetGroupPosts instead.
-  rpc GetGroupPost(GroupPost) returns (GroupPost) { option deprecated=true; }
 
   // Configure the server (i.e. the response to GetServerConfiguration). Authenticated.
   // Requires ADMIN permissions.

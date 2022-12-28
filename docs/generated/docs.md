@@ -645,26 +645,25 @@ the AccessToken RPC. The CreateAccount or Login RPC should first be used to fetc
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#jonline-User) | Gets the current user. Authenticated. |
 | GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. Publicly accessible *or* authenticated. Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility. |
 | UpdateUser | [User](#jonline-User) | [User](#jonline-User) | Update a user by ID. Authenticated. Updating other users requires ADMIN permissions. |
-| CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) |  |
-| UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approved follow requests. Authenticated. |
-| DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. Authenticated. |
+| UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. Authenticated. |
+| DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. Authenticated. |
 | GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. Publicly accessible *or* authenticated. Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility. |
 | CreateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Creates a group with the current user as its admin. Authenticated. Requires the CREATE_GROUPS permission. |
 | UpdateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Update a Groups&#39;s information, default membership permissions or moderation. Authenticated. Requires ADMIN permissions within the group, or ADMIN permissions for the user. |
 | DeleteGroup | [Group](#jonline-Group) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a Group. Authenticated. Requires ADMIN permissions within the group, or ADMIN permissions for the user. |
 | CreateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Requests to join a group (or joins it), or sends an invite to the user. Authenticated. Memberships and moderations are set to their defaults. |
 | UpdateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Update aspects of a user&#39;s membership. Authenticated. Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user. Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group. |
-| DeleteMembership | [Membership](#jonline-Membership) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| GetMembers | [GetMembersRequest](#jonline-GetMembersRequest) | [GetMembersResponse](#jonline-GetMembersResponse) |  |
+| DeleteMembership | [Membership](#jonline-Membership) | [.google.protobuf.Empty](#google-protobuf-Empty) | Leave a group (or cancel membership request). Authenticated. |
+| GetMembers | [GetMembersRequest](#jonline-GetMembersRequest) | [GetMembersResponse](#jonline-GetMembersResponse) | Get Members (User&#43;Membership) of a Group. Authenticated. |
 | GetPosts | [GetPostsRequest](#jonline-GetPostsRequest) | [GetPostsResponse](#jonline-GetPostsResponse) | Gets Posts. Publicly accessible *or* authenticated. Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility. |
 | CreatePost | [CreatePostRequest](#jonline-CreatePostRequest) | [Post](#jonline-Post) | Creates a Post. Authenticated. |
 | UpdatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) Updates a Post. Authenticated. |
 | DeletePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. Authenticated. |
-| CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) |  |
-| UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) |  |
-| DeleteGroupPost | [GroupPost](#jonline-GroupPost) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) |  |
-| GetGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Use GetGroupPosts instead. |
+| CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. Authenticated. |
+| UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Group Moderators: Approve/Reject a GroupPost. Authenticated. |
+| DeleteGroupPost | [GroupPost](#jonline-GroupPost) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a GroupPost. Authenticated. |
+| GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). Publicly accessible *or* authenticated. |
 | ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). Authenticated. Requires ADMIN permissions. |
 | ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | DELETE ALL Posts, Groups and Users except the one who performed the RPC. Authenticated. Requires ADMIN permissions. Note: Server Configuration is not deleted. |
 
