@@ -6,21 +6,20 @@ extern crate diesel_migrations;
 extern crate dotenv;
 extern crate futures;
 extern crate itertools;
+extern crate markdown;
 extern crate prost_types;
+extern crate prost_wkt_types;
 extern crate regex;
 extern crate ring;
 extern crate rocket;
 extern crate rocket_async_compression;
 extern crate rocket_cache_response;
 extern crate rocket_dyn_templates;
-extern crate prost_wkt_types;
-extern crate markdown;
 extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
 // #[macro_use]
 extern crate lazy_static;
-
 
 use std::{env, fs, sync::Arc};
 
@@ -140,10 +139,12 @@ fn create_rocket_unsecured(port: i32, pool: Arc<PgPool>) -> rocket::Rocket<rocke
     create_rocket(figment, pool)
 }
 
-fn create_rocket<T: rocket::figment::Provider>(figment: T, pool: Arc<PgPool>) -> rocket::Rocket<rocket::Build> {
+fn create_rocket<T: rocket::figment::Provider>(
+    figment: T,
+    pool: Arc<PgPool>,
+) -> rocket::Rocket<rocket::Build> {
     let server = rocket::custom(figment)
-    .manage(web::RocketState { pool })
-
+        .manage(web::RocketState { pool })
         .mount(
             "/",
             routes![
@@ -161,7 +162,13 @@ fn create_rocket<T: rocket::figment::Provider>(figment: T, pool: Arc<PgPool>) ->
     if cfg!(debug_assertions) {
         server
     } else {
-        server.attach(rocket_async_compression::CachedCompression::fairing(vec!["main.dart.js", ".otf"]))
+        server.attach(rocket_async_compression::CachedCompression::fairing(vec![
+            "main.dart.js",
+            ".otf",
+            "manifest.json",
+            "flutter.js",
+            "app",
+        ]))
     }
 }
 

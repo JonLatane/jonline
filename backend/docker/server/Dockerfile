@@ -22,9 +22,12 @@ COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_ex
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
 COPY backend/target/release/set_permission__server_release /opt/set_permission
 
+# Cache warmup for server
+COPY backend/docker/server/jonline_with_warmup.sh /opt/jonline_with_warmup.sh
+
 # No need for the preview generator though!
 # COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 
 EXPOSE 27707 8000 80 443 8001-9000
 
-ENTRYPOINT /opt/jonline
+ENTRYPOINT /opt/jonline_with_warmup.sh
