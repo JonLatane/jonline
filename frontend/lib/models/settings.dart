@@ -33,8 +33,24 @@ class Settings {
   static set preferServerPreviews(bool v) {
     {
       _preferServerPreviews = v;
+      if (!v && forceServerPreviews) {
+        forceServerPreviews = false;
+      }
       Future.microtask(
           () async => appStorage.setBool("prefer_server_previews", v));
+    }
+  }
+
+  static bool _forceServerPreviews = MyPlatform.isWeb;
+  static bool get forceServerPreviews => _forceServerPreviews;
+  static set forceServerPreviews(bool v) {
+    {
+      _forceServerPreviews = v;
+      if (v && !preferServerPreviews) {
+        preferServerPreviews = true;
+      }
+      Future.microtask(
+          () async => appStorage.setBool("force_server_previews", v));
     }
   }
 
@@ -112,6 +128,8 @@ class Settings {
         appStorage.getBool("use_startup_sequence") ?? MyPlatform.isIOS;
     _preferServerPreviews =
         appStorage.getBool("prefer_server_previews") ?? MyPlatform.isWeb;
+    _forceServerPreviews =
+        appStorage.getBool("force_server_previews") ?? MyPlatform.isWeb;
     showSettingsTabListener.value =
         appStorage.getBool("show_settings_tab") ?? false;
     showPeopleTabListener.value = appStorage.getBool("show_people_tab") ?? true;

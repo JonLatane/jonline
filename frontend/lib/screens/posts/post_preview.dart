@@ -315,6 +315,10 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
               ),
               const Expanded(child: SizedBox()),
               TextButton(
+                style: ButtonStyle(
+                    padding: MaterialStateProperty.all(
+                  const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                )),
                 onPressed: widget.onPressResponseCount,
                 child: Row(
                   children: [
@@ -688,6 +692,10 @@ class _PostPreviewGroupChooserState
       ]);
     }
     return TextButton(
+      style: ButtonStyle(
+          padding: MaterialStateProperty.all(
+        const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      )),
       onPressed: () {
         final RenderBox button = context.findRenderObject() as RenderBox;
         final RenderBox? overlay =

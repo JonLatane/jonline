@@ -12,6 +12,7 @@ import '../generated/permissions.pbenum.dart';
 import '../generated/posts.pb.dart';
 import '../generated/users.pb.dart';
 import '../generated/visibility_moderation.pbenum.dart';
+import '../my_platform.dart';
 import 'jonline_account.dart';
 import 'jonline_account_operations.dart';
 import 'jonline_clients.dart';
@@ -154,13 +155,18 @@ Future<List<JonlineAccount>> generateSideAccounts(
       }, allowInsecure: account.allowInsecure, selectAccount: false);
       // final JonlineClient? sideClient =
       //     await (sideAccount?.getClient(showMessage: showSnackBar));
+      final httpClient = http.Client();
       if (sideAccount != null) {
         final User? user = await sideAccount.updateUserData();
         if (user != null) {
           user.permissions.add(Permission.RUN_BOTS);
           // Source from https://thispersondoesnotexist.com/image
-          http.Response response = await http
-              .get(Uri.parse('https://thispersondoesnotexist.com/image'));
+          http.Response response = await httpClient.get(
+              Uri.parse('https://thispersondoesnotexist.com/image'),
+              headers: {
+                if (!MyPlatform.isWeb) "User-Agent": "Jonline",
+                if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
+              });
           final image = decodeJpg(response.bodyBytes);
           if (image != null) {
             final avatar = copyResize(image, width: 128);

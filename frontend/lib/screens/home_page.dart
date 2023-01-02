@@ -167,6 +167,15 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool get shadersFullySetup => appState.shadersSetup;
   set shadersFullySetup(bool value) => appState.shadersFullySetup = value;
   final List<Future<dynamic> Function()> setupOtherShaders = [];
+
+  //TODO this is still a hacky way to default the user to the "Posts" tab.
+  gotoDefaultTab(TabsRouter tabsRouter, {int? initialTab}) {
+    final initialTab2 = initialTab ?? tabsRouter.activeIndex;
+    if (initialTab2 < 1 && initialTab2 != 0) {
+      tabsRouter.setActiveIndex(2);
+    }
+  }
+
   Future<void> setupShaders(TabsRouter tabsRouter) async {
     if (shadersSetup) return;
 
@@ -175,10 +184,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final initialTab = tabsRouter.activeIndex;
     if (!Settings.useStartupSequence) {
       shadersSetup = true;
-      //TODO this is still a hacky way to default the user to the "Posts" tab.
-      if (initialTab < 1) {
-        tabsRouter.setActiveIndex(2);
-      }
+      gotoDefaultTab(tabsRouter);
       Future.delayed(longAnimationDuration, () async {
         setState(
           () => shadersFullySetup = true,
@@ -202,10 +208,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   tabsRouter.setActiveIndex(2); // Posts
                   await animationDelay;
                   await Future.wait(setupOtherShaders.map((s) => s()));
-                  //TODO this is still a hacky way to default the user to the "Posts" tab.
-                  if (initialTab != 2 && initialTab != 0) {
-                    tabsRouter.setActiveIndex(initialTab);
-                  }
+                  gotoDefaultTab(tabsRouter, initialTab: initialTab);
                   setState(() {
                     shadersSetup = true;
                   });

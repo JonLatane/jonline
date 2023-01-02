@@ -52,6 +52,7 @@ pub struct NewGroup {
     pub default_membership_moderation: String,
     pub default_post_moderation: String,
     pub default_event_moderation: String,
+    pub member_count: i32,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]

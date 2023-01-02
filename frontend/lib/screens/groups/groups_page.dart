@@ -34,7 +34,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
   ScrollController sectionScrollController = ScrollController();
 
   bool get useList => mq.size.width < 450;
-  double get headerHeight => 48 * mq.textScaleFactor;
+  double get headerHeight => 40 * mq.textScaleFactor;
 
   @override
   void didPushNext() {
@@ -284,31 +284,18 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
           ),
           Column(
             children: [
+              SizedBox(
+                height: mq.padding.top,
+              ),
               ClipRRect(
                   child: BackdropFilter(
-                      filter: ImageFilter.blur(
-                          sigmaX: blurSigma, sigmaY: blurSigma),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Container(
-                            height: mq.padding.top,
-                            color:
-                                Theme.of(context).canvasColor.withOpacity(0.5),
-                          ),
-                          Container(
-                            height: headerHeight,
-                            color:
-                                Theme.of(context).canvasColor.withOpacity(0.5),
-                            child: buildSectionSelector(),
-                          ),
-                          Container(
-                            height: 4,
-                            color:
-                                Theme.of(context).canvasColor.withOpacity(0.5),
-                          ),
-                        ],
-                      ))),
+                filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                child: Container(
+                  height: headerHeight,
+                  color: Theme.of(context).canvasColor.withOpacity(0.5),
+                  child: buildSectionSelector(),
+                ),
+              )),
             ],
           )
         ],
@@ -335,6 +322,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
 
           var textButton = TextButton(
               style: ButtonStyle(
+                  padding: MaterialStateProperty.all(EdgeInsets.zero),
                   backgroundColor: MaterialStateProperty.all(l == listingType
                       ? appState.primaryColor.textColor.withOpacity(0.8)
                       : null)),

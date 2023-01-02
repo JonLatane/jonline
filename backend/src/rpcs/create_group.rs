@@ -61,6 +61,7 @@ pub fn create_group(
                     default_membership_moderation: default_membership_moderation,
                     default_post_moderation: default_post_moderation,
                     default_event_moderation: default_event_moderation,
+                    member_count: 1,
                 })
                 .get_result::<models::Group>(conn)?;
 

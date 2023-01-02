@@ -242,10 +242,27 @@ class _SettingsPageState extends JonlineState<SettingsPage>
                                 }),
                           ],
                         ),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Text("Force Server Previews",
+                                    style: textTheme.labelLarge)),
+                            Switch(
+                                activeColor: appState.primaryColor,
+                                value: Settings.forceServerPreviews,
+                                onChanged: (v) {
+                                  setState(
+                                      () => Settings.forceServerPreviews = v);
+                                  appState
+                                    ..posts.update()
+                                    ..notifyAccountsListeners();
+                                }),
+                          ],
+                        ),
                         const Align(
                             alignment: Alignment.centerRight,
                             child: Text(
-                              "Server previews are useful for browsers due to CORS.",
+                              "Server previews are useful for browsers due to CORS. There is no reason for browsers to ever use client previews.",
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                   color: Colors.white,

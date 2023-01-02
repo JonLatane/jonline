@@ -77,8 +77,6 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
     setState(() {});
   }
 
-  List<Permission> get userPermissions =>
-      JonlineAccount.selectedAccount?.permissions ?? [];
   List<Permission> get groupPermissions =>
       group.currentUserMembership.permissions;
 

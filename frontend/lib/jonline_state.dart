@@ -21,6 +21,7 @@ abstract class JonlineState<T extends StatefulWidget>
   }
 }
 
+// ignore: must_be_immutable
 abstract class JonlineStatelessWidget extends StatelessWidget {
   late AppState appState;
   late TextTheme textTheme;

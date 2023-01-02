@@ -17,6 +17,7 @@ extension HomePageAppBar on HomePageState {
   PreferredSizeWidget get appBar {
     Widget bar = AppBar(
       backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+      // backgroundColor: Colors.transparent,
       title: titleWidget ?? Text(title),
       key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
       leading: leadingNavWidget,
