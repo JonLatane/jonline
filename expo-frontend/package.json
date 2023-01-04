@@ -1,0 +1,45 @@
+{
+  "name": "jonline",
+  "version": "1.0.0",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "protos": "protoc --plugin=\"./node_modules/.bin/protoc-gen-ts_proto\" -I ../protos/ --ts_proto_opt=esModuleInterop=true --ts_proto_opt=addGrpcMetadata=true --ts_proto_opt=outputClientImpl=grpc-web --ts_proto_opt=lowerCaseServiceMethods=true --ts_proto_out=\"./generated\" ../protos/jonline.proto"
+  },
+  "dependencies": {
+    "@babel/preset-env": "^7.20.2",
+    "@expo/webpack-config": "^0.17.3",
+    "@improbable-eng/grpc-web": "^0.15.0",
+    "@react-native-async-storage/async-storage": "^1.17.11",
+    "@react-navigation/bottom-tabs": "^6.5.2",
+    "@react-navigation/native": "^6.1.1",
+    "@types/react": "~18.0.24",
+    "@types/react-native": "~0.70.6",
+    "expo": "~47.0.10",
+    "expo-status-bar": "~1.4.2",
+    "google-protobuf": "^3.14.0",
+    "react": "18.1.0",
+    "react-dom": "18.1.0",
+    "react-native": "0.70.5",
+    "react-native-safe-area-context": "^4.4.1",
+    "react-native-screens": ">= 3.0.0",
+    "react-native-web": "~0.18.9",
+    "react-redux": "^8.0.5",
+    "redux-persist": "^6.0.0",
+    "tsc": "^2.0.4",
+    "typescript": "^4.9.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.7",
+    "@babel/plugin-proposal-numeric-separator": "^7.18.6",
+    "@redux-devtools/core": "^3.13.1",
+    "@reduxjs/toolkit": "^1.9.1",
+    "redux": "^4.2.0",
+    "ts-proto": "^1.137.0",
+    "ts-protoc-gen": "^0.15.0"
+  },
+  "private": true
+}
