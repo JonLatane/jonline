@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, Text } from "react-native";
 import * as Colors from "../styles/Colors";
 import * as Spacing from "../styles/Spacing";
 import FunFactCard from "../common/FunFactCard";
-import { useTypedSelector } from "../store";
+import { RootState, useTypedSelector } from "../store/store";
 import { selectAllFacts } from "../store/modules/Facts";
 
 const Styles = StyleSheet.create({
@@ -22,7 +22,7 @@ const Styles = StyleSheet.create({
 });
 
 const HistoryScreen: React.FC = () => {
-  const funFacts = useTypedSelector((state) => selectAllFacts(state.facts));
+  const funFacts = useTypedSelector((state: RootState) => selectAllFacts(state.facts));
 
   return (
     <FlatList

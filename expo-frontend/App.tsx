@@ -1,8 +1,11 @@
 import React from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
-import store from "./src/store";
-import Navigator from "./src/navigations";
+import store, { persistor } from "./src/store/store";
+import Navigator from "./src/navigations/navigations";
+import { PersistGate } from 'redux-persist/integration/react'
+
+// import 'localstorage-polyfill';
 
 const Styles = StyleSheet.create({
   statusBarContainer: {
@@ -15,10 +18,12 @@ const Styles = StyleSheet.create({
 export default function App() {
   return (
     <Provider store={store}>
-      <View style={Styles.statusBarContainer}>
-        <StatusBar barStyle="light-content" />
-      </View>
-      <Navigator />
+      <PersistGate loading={null} persistor={persistor}>
+        <View style={Styles.statusBarContainer}>
+          <StatusBar barStyle="light-content" />
+        </View>
+        <Navigator />
+      </PersistGate>
     </Provider>
   );
 }

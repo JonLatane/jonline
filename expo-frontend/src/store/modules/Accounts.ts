@@ -11,6 +11,7 @@ import {
 import { RefreshTokenResponse, AccessTokenResponse, CreateAccountRequest, LoginRequest } from "../../../generated/authentication"
 import { User } from "../../../generated/users"
 import { JonlineServer } from "./Servers";
+// import 'localstorage-polyfill';
 
 // The type used to store accounts locally.
 export type JonlineAccount = {
@@ -72,7 +73,7 @@ const initialState: AccountsState = {
 
 const AccountsSlice = createSlice({
   name: "accounts",
-  initialState: { ...initialState, ...JSON.parse(localStorage.getItem("accounts")) },
+  initialState: initialState,//{ ...initialState, ...JSON.parse(localStorage.getItem("accounts")) },
   reducers: {
     // upsertFact: AccountsAdapter.upsertOne,
     reset: () => initialState

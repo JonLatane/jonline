@@ -11,7 +11,7 @@ import {
 import * as Colors from "../styles/Colors";
 import * as Spacing from "../styles/Spacing";
 import FunFactCard from "../common/FunFactCard";
-import { useTypedDispatch, useTypedSelector } from "../store";
+import { RootState, useTypedDispatch, useTypedSelector } from "../store/store";
 import { upsertFact, getNewFact } from "../store/modules/Facts";
 import { useEffect } from "react";
 
@@ -55,8 +55,8 @@ const Styles = StyleSheet.create({
 const HomeScreen: React.FC = () => {
   // Store values
   const dispatch = useTypedDispatch();
-  const pendingFact = useTypedSelector((state) => state.facts.pendingFact);
-  const factError = useTypedSelector((state) => state.facts.error);
+  const pendingFact = useTypedSelector((state: RootState) => state.facts.pendingFact);
+  const factError = useTypedSelector((state: RootState) => state.facts.error);
 
   // State variables
   const [num, setNum] = useState(6);

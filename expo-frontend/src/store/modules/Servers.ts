@@ -12,6 +12,7 @@ import { GetServiceVersionResponse } from "../../../generated/federation";
 // import { User } from "../../../generated/users"
 import { GrpcWebImpl, JonlineClientImpl } from "../../../generated/jonline"
 import { ServerConfiguration } from "../../../generated/server_configuration"
+// import 'localstorage-polyfill';
 
 export type JonlineServer = {
   host: string;
@@ -38,6 +39,7 @@ interface ServersState {
   error?: Error;
   // Current server the app is pointing to.
   server: JonlineServer;
+  pendingServer?: JonlineServer;
   ids: EntityId[];
   entities: Dictionary<JonlineServer>;
 }
@@ -56,16 +58,17 @@ export const createServer = createAsyncThunk<JonlineServer, JonlineServer>(
   }
 );
 
+const initialServer: JonlineServer = { host: "localhost", allowInsecure: true };
 const initialState: ServersState = {
   status: "unloaded",
   error: null,
-  server: { host: "localhost", allowInsecure: true },
+  server: initialServer,
   ...ServersAdapter.getInitialState(),
 };
 
 const ServersSlice = createSlice({
   name: "servers",
-  initialState: { ...initialState, ...JSON.parse(localStorage.getItem("servers"))},
+  initialState: initialState,//{ ...initialState, ...JSON.parse(localStorage.getItem("servers"))},
   reducers: {
     upsertFact: ServersAdapter.upsertOne,
     reset: () => initialState
