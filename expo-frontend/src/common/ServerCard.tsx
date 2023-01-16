@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import store from "../store/store";
-import { JonlineServer } from "../store/modules/Servers";
+import store, { useTypedDispatch } from "../store/store";
+import { JonlineServer, selectServer } from "../store/modules/Servers";
 import * as Colors from "../styles/Colors";
 import * as Spacing from "../styles/Spacing";
 
@@ -31,18 +31,27 @@ const Styles = StyleSheet.create({
     color: "black",
     fontSize: 20,
   },
+  borderlessButton: {
+    padding: 0,
+    background: 'none',
+    border: 'none',
+    outline: 'none',
+  }
 });
 
 const ServerCard: React.FC<Props> = ({ server }) => {
-  let ratingBackground = {};
-  if (store.getState().servers.server.host == server.host) ratingBackground = Styles.selectedBackground;
-  // if (funFact.rating === 1) ratingBackground = Styles.likedBackground;
-  // else if (funFact.rating === -1) ratingBackground = Styles.dislikedBackground;
+  const dispatch = useTypedDispatch();
+  let background = {};
+  if (store.getState().servers.server.host == server.host) {
+    background = Styles.selectedBackground;
+  }
 
   return (
-    <View style={[Styles.cardBackground, ratingBackground]}>
-      <Text style={Styles.factText}>{server.host}</Text>
-    </View>
+    <a style={Styles.borderlessButton} onClick={() => dispatch(selectServer(server))}>
+      <View style={[Styles.cardBackground, background]}>
+        <Text style={Styles.factText}>{server.host}</Text>
+      </View>
+    </a>
   );
 };
 

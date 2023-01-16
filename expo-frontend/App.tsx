@@ -4,6 +4,8 @@ import { Provider } from "react-redux";
 import store, { persistor } from "./src/store/store";
 import Navigator from "./src/navigations/navigations";
 import { PersistGate } from 'redux-persist/integration/react'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { Toaster } from "react-hot-toast";
 
 // import 'localstorage-polyfill';
 
@@ -23,6 +25,16 @@ export default function App() {
           <StatusBar barStyle="light-content" />
         </View>
         <Navigator />
+        <div>
+          <Toaster position="bottom-right" 
+          containerStyle={{
+            top: 20,
+            left: 20,
+            bottom: 100,
+            right: 20,
+          }}
+        />
+        </div>
       </PersistGate>
     </Provider>
   );

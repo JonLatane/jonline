@@ -25,7 +25,7 @@ export type JonlineAccount = {
 interface AccountsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
   error?: Error;
-  pendingAccount?: JonlineAccount;
+  account?: JonlineAccount;
   ids: EntityId[];
   entities: Dictionary<JonlineAccount>;
 }
@@ -67,11 +67,11 @@ export const login = createAsyncThunk<JonlineAccount, Login>(
 const initialState: AccountsState = {
   status: "unloaded",
   error: null,
-  pendingAccount: undefined,
+  // pendingAccount: undefined,
   ...AccountsAdapter.getInitialState(),
 };
 
-const AccountsSlice = createSlice({
+const accountsSlice = createSlice({
   name: "accounts",
   initialState: initialState,//{ ...initialState, ...JSON.parse(localStorage.getItem("accounts")) },
   reducers: {
@@ -85,7 +85,7 @@ const AccountsSlice = createSlice({
     });
     builder.addCase(createAccount.fulfilled, (state, action) => {
       state.status = "loaded";
-      state.pendingAccount = action.payload;
+      // state.pendingAccount = action.payload;
     });
     builder.addCase(createAccount.rejected, (state, action) => {
       state.status = "errored";
@@ -97,7 +97,7 @@ const AccountsSlice = createSlice({
     });
     builder.addCase(login.fulfilled, (state, action) => {
       state.status = "loaded";
-      state.pendingAccount = action.payload;
+      // state.pendingAccount = action.payload;
     });
     builder.addCase(login.rejected, (state, action) => {
       state.status = "errored";
@@ -106,8 +106,8 @@ const AccountsSlice = createSlice({
   },
 });
 
-// export const { upsertFact } = AccountsSlice.actions;
+// export const { upsertFact } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts } = AccountsAdapter.getSelectors();
 
-export default AccountsSlice.reducer;
+export default accountsSlice.reducer;
