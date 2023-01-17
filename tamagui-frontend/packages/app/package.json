@@ -1,0 +1,23 @@
+{
+  "version": "0.0.0",
+  "name": "app",
+  "main": "index.ts",
+  "private": true,
+  "sideEffects": [
+    "*.css"
+  ],
+  "dependencies": {
+    "@improbable-eng/grpc-web": "^0.15.0",
+    "@my/ui": "*",
+    "@react-navigation/native": "^6.0.11",
+    "@react-navigation/native-stack": "^6.7.0",
+    "@tamagui/animations-react-native": "^1.0.15",
+    "@tamagui/colors": "^1.0.15",
+    "@tamagui/font-inter": "^1.0.15",
+    "@tamagui/lucide-icons": "^1.0.15",
+    "@tamagui/shorthands": "^1.0.15",
+    "@tamagui/theme-base": "^1.0.15",
+    "expo-linking": "^3.2.3",
+    "solito": "2.0.0-canary.4"
+  }
+}
