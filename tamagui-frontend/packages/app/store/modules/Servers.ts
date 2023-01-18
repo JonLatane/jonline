@@ -6,16 +6,11 @@ import {
   EntityId,
   PayloadAction,
 } from "@reduxjs/toolkit";
-import { toast } from "react-hot-toast";
-import { GetServiceVersionResponse } from "../../../generated/federation";
-// import { fetchFunFact } from "../../api";
-// import { FunFact } from "../../types";
-// import { RefreshTokenResponse, AccessTokenResponse, CreateAccountRequest, LoginRequest } from "../../../generated/authentication"
-// import { User } from "../../../generated/users"
-import { GrpcWebImpl, JonlineClientImpl } from "../../../generated/jonline"
-import { ServerConfiguration } from "../../../generated/server_configuration"
+// import { toast } from "react-hot-toast";
+import { GetServiceVersionResponse } from "@jonline/ui/src/generated/federation";
+import { GrpcWebImpl, JonlineClientImpl } from "@jonline/ui/src/generated/jonline"
+import { ServerConfiguration } from "@jonline/ui/src/generated/server_configuration"
 import { useTypedDispatch } from "../store";
-// import 'localstorage-polyfill';
 
 export type JonlineServer = {
   host: string;
@@ -30,7 +25,7 @@ export const timeout = async (time: number, label: string) => {
 }
 
 const clients = new Map<JonlineServer, JonlineClientImpl>();
-function getClient(server: JonlineServer) {
+function getClient(server: JonlineServer): JonlineClientImpl {
   if (!clients.has(server)) {
     let host = `http${server.allowInsecure ? "" : "s"}://${server.host}:27707`
     // debugger;
@@ -41,7 +36,7 @@ function getClient(server: JonlineServer) {
     clients.set(server, client);
     return client;
   }
-  return clients.get(server);
+  return clients.get(server)!;
 }
 
 interface ServersState {
@@ -70,7 +65,7 @@ export const createServer = createAsyncThunk<JonlineServer, JonlineServer>(
 const initialServer: JonlineServer = { host: "localhost", allowInsecure: true };
 const initialState: ServersState = {
   status: "unloaded",
-  error: null,
+  error: undefined,
   server: initialServer,
   ...serversAdapter.getInitialState(),
 };
@@ -89,17 +84,19 @@ const serversSlice = createSlice({
   extraReducers: (builder) => {
     builder.addCase(createServer.pending, (state) => {
       state.status = "loading";
-      state.error = null;
+      state.error = undefined;
     });
     builder.addCase(createServer.fulfilled, (state, action) => {
       state.status = "loaded";
       state.server = action.payload;
       serversAdapter.upsertOne(state, action.payload);
-      toast.success(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
+      console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
+      // toast.success(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
     });
     builder.addCase(createServer.rejected, (state, action) => {
       state.status = "errored";
-      toast.error(`Error connecting to ${action.meta.arg.host}.`);
+      console.error(`Error connecting to ${action.meta.arg.host}.`);
+      // toast.error(`Error connecting to ${action.meta.arg.host}.`);
       state.error = action.error as Error;
     });
   },

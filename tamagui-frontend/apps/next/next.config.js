@@ -44,7 +44,7 @@ const plugins = [
   withImages,
   withTamagui({
     config: './tamagui.config.ts',
-    components: ['tamagui', '@my/ui'],
+    components: ['tamagui', '@jonline/ui'],
     importsWhitelist: ['constants.js', 'colors.js'],
     logTimings: true,
     disableExtraction,

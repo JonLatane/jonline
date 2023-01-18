@@ -1,9 +1,34 @@
-import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack } from '@my/ui'
+import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack } from '@jonline/ui'
 import { ChevronDown, ChevronUp } from '@tamagui/lucide-icons'
+import { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
+import { createServer, selectAllServers } from "../../store/modules/Servers";
+import { selectAllAccounts } from "../../store/modules/Accounts";
+
 
 export function HomeScreen() {
+  const [newServerHost, setNewServerHost] = useState('');
+
+  const dispatch = useTypedDispatch();
+  const serversState = useTypedSelector((state: RootState) => state.servers);
+  const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
+
+  const newServer = React.createRef<HTMLInputElement>();
+  const newServerSecure = React.createRef<HTMLInputElement>();
+  function addServer() {
+    dispatch(createServer({
+      host: newServer.current!.value,
+      allowInsecure: !newServerSecure.current!.checked,
+    }));
+  }
+
+
+  const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
+
+  const serversLoading = serversState.status == 'loading';
+  const newServerValid = newServerHost != '';
+
   const linkProps = useLink({
     href: '/user/nate',
   })
@@ -11,13 +36,12 @@ export function HomeScreen() {
   return (
     <YStack f={1} jc="center" ai="center" p="$4" space>
       <YStack space="$4" maw={600}>
-        <H1 ta="center">Welcome to Tamagui.</H1>
+        <H1 ta="center">Welcome to Jonline.</H1>
         <Paragraph ta="center">
-          Here's a basic starter to show navigating from one screen to another. This screen uses the
-          same code on Next.js and React Native.
+          Login or choose a server to get started.
         </Paragraph>
 
-        <Separator />
+        {/* <Separator />
         <Paragraph ta="center">
           Made by{' '}
           <Anchor color="$color12" href="https://twitter.com/natebirdman" target="_blank">
@@ -32,19 +56,19 @@ export function HomeScreen() {
           >
             give it a ⭐️
           </Anchor>
-        </Paragraph>
+        </Paragraph> */}
       </YStack>
 
       <XStack>
         <Button {...linkProps}>Link to user</Button>
       </XStack>
 
-      <SheetDemo />
+      <ServerSheet />
     </YStack>
   )
 }
 
-function SheetDemo() {
+function ServerSheet() {
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState(0)
   return (
@@ -52,9 +76,11 @@ function SheetDemo() {
       <Button
         size="$6"
         icon={open ? ChevronDown : ChevronUp}
-        circular
+        // circular
         onPress={() => setOpen((x) => !x)}
-      />
+      >
+        Servers
+      </Button>
       <Sheet
         modal
         open={open}
