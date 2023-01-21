@@ -19,7 +19,7 @@ LOCAL_REGISTRY := kubernetes.docker.internal:5000
 
 # Versions are derived from TOML/YAML files, and should not be changed here.
 BE_VERSION := $$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
-FE_VERSION := $$(cat frontend/pubspec.yaml | grep 'version:' | sed -n 1p | awk '{print $$2;}' | sed 's/"//g')
+FE_VERSION := $$(cat flutter-frontend/pubspec.yaml | grep 'version:' | sed -n 1p | awk '{print $$2;}' | sed 's/"//g')
 
 show_be_version:
 	@echo $(BE_VERSION)
@@ -191,10 +191,10 @@ local_registry_destroy:
 
 # Flutter app release targets
 release_ios_push_testflight:
-	cd frontend && ./build-release ios
+	cd flutter-frontend && ./build-release ios
 
 release_web_build:
-	cd frontend && ./build-release web
+	cd flutter-frontend && ./build-release web
 
 # jonline-be-build image targets
 release_builder_push_local: local_registry_create
