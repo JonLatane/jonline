@@ -16,8 +16,8 @@ const disableExtraction =
   boolVals[process.env.DISABLE_EXTRACTION] ?? process.env.NODE_ENV === 'development'
 
 console.log(`
-
-Welcome to Tamagui!
+Launching Jonline Tamagui Frontend! Real distributions should be served by Rust/Rocket;
+this Next.js server is for dev only.
 
 You can update this monorepo to the latest Tamagui release just by running:
 
@@ -33,11 +33,6 @@ VirtualizedList, VirtualizedSectionList.
 Even better, enable "useReactNativeWebLite" and you can remove the
 excludeReactNativeWebExports setting altogether and get tree-shaking and
 concurrent mode support as well.
-
-🐣
-
-Remove this log in next.config.js.
-
 `)
 
 const plugins = [

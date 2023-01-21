@@ -5,30 +5,10 @@ import React, { useState } from 'react'
 import { useLink } from 'solito/link'
 import { createServer, selectAllServers } from "../../store/modules/Servers";
 import { selectAllAccounts } from "../../store/modules/Accounts";
+import { AccountsSheet } from '../accounts/server_sheet';
 
 
 export function HomeScreen() {
-  const [newServerHost, setNewServerHost] = useState('');
-
-  const dispatch = useTypedDispatch();
-  const serversState = useTypedSelector((state: RootState) => state.servers);
-  const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-
-  const newServer = React.createRef<HTMLInputElement>();
-  const newServerSecure = React.createRef<HTMLInputElement>();
-  function addServer() {
-    dispatch(createServer({
-      host: newServer.current!.value,
-      allowInsecure: !newServerSecure.current!.checked,
-    }));
-  }
-
-
-  const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
-
-  const serversLoading = serversState.status == 'loading';
-  const newServerValid = newServerHost != '';
-
   const linkProps = useLink({
     href: '/user/nate',
   })
@@ -63,46 +43,7 @@ export function HomeScreen() {
         <Button {...linkProps}>Link to user</Button>
       </XStack>
 
-      <ServerSheet />
+      <AccountsSheet />
     </YStack>
-  )
-}
-
-function ServerSheet() {
-  const [open, setOpen] = useState(false)
-  const [position, setPosition] = useState(0)
-  return (
-    <>
-      <Button
-        size="$6"
-        icon={open ? ChevronDown : ChevronUp}
-        // circular
-        onPress={() => setOpen((x) => !x)}
-      >
-        Servers
-      </Button>
-      <Sheet
-        modal
-        open={open}
-        onOpenChange={setOpen}
-        snapPoints={[80]}
-        position={position}
-        onPositionChange={setPosition}
-        dismissOnSnapToBottom
-      >
-        <Sheet.Overlay />
-        <Sheet.Frame ai="center" jc="center">
-          <Sheet.Handle />
-          <Button
-            size="$6"
-            circular
-            icon={ChevronDown}
-            onPress={() => {
-              setOpen(false)
-            }}
-          />
-        </Sheet.Frame>
-      </Sheet>
-    </>
   )
 }
