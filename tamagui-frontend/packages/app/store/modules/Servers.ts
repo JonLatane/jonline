@@ -11,6 +11,9 @@ import { GetServiceVersionResponse } from "@jonline/ui/src/generated/federation"
 import { GrpcWebImpl, JonlineClientImpl } from "@jonline/ui/src/generated/jonline"
 import { ServerConfiguration } from "@jonline/ui/src/generated/server_configuration"
 import { useTypedDispatch } from "../store";
+import { Platform } from 'react-native';
+import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
+
 
 export type JonlineServer = {
   host: string;
@@ -20,7 +23,7 @@ export type JonlineServer = {
 }
 
 export const timeout = async (time: number, label: string) => {
-	await new Promise((res) => setTimeout(res, time));
+  await new Promise((res) => setTimeout(res, time));
   throw `Timed out getting ${label}.`;
 }
 
@@ -30,7 +33,9 @@ function getClient(server: JonlineServer): JonlineClientImpl {
     let host = `http${server.secure ? "s" : ""}://${server.host}:27707`
     // debugger;
     let client = new JonlineClientImpl(
-      new GrpcWebImpl(host, {})
+      new GrpcWebImpl(host, {
+        transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
+      })
     );
     // debugger;
     clients.set(server, client);
@@ -58,7 +63,7 @@ export const createServer = createAsyncThunk<JonlineServer, JonlineServer>(
     let client = getClient(server);
     let serviceVersion: GetServiceVersionResponse = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
     let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
-    return {...server, serviceVersion, serverConfiguration};
+    return { ...server, serviceVersion, serverConfiguration };
   }
 );
 
@@ -95,6 +100,7 @@ const serversSlice = createSlice({
     builder.addCase(createServer.rejected, (state, action) => {
       state.status = "errored";
       console.error(`Error connecting to ${action.meta.arg.host}.`);
+      console.error(action.error);
       // toast.error(`Error connecting to ${action.meta.arg.host}.`);
       state.error = action.error as Error;
     });

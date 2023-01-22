@@ -2118,6 +2118,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@improbable-eng/grpc-web-react-native-transport@npm:^0.15.0":
+  version: 0.15.0
+  resolution: "@improbable-eng/grpc-web-react-native-transport@npm:0.15.0"
+  peerDependencies:
+    "@improbable-eng/grpc-web": ">=0.13.0"
+  checksum: 5e4b6c1127af302044494948378d6564721df71cdb273b1180c0d0b954dcda0d2a38d41408e54dc8bcb494d70d112d90dedab28ae6b9131e0cd98ce5b4fbc637
+  languageName: node
+  linkType: hard
+
 "@improbable-eng/grpc-web@npm:^0.15.0":
   version: 0.15.0
   resolution: "@improbable-eng/grpc-web@npm:0.15.0"
@@ -4512,6 +4521,7 @@ __metadata:
   resolution: "app@workspace:packages/app"
   dependencies:
     "@improbable-eng/grpc-web": ^0.15.0
+    "@improbable-eng/grpc-web-react-native-transport": ^0.15.0
     "@jonline/ui": "*"
     "@react-navigation/native": ^6.0.11
     "@react-navigation/native-stack": ^6.7.0

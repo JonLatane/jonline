@@ -119,13 +119,13 @@ export function AccountsSheet() {
                     <YStack space="$2">
                       <Heading size="$10" style={{ flex: 1 }}>Add Server</Heading>
                       <YStack>
-                        <Input textContentType="URL" keyboardType='url' autoCapitalize='none' placeholder="Server Hostname" disabled={serversLoading}
+                        <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname" disabled={serversLoading}
                           onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
                       </YStack>
                       <XStack>
                         <YStack style={{ flex: 1, marginLeft: 'auto', marginRight: 'auto' }}>
                           <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id="newServerSecure" aria-label='Secure' 
-                          value={newServerSecure.toString()}
+                          defaultChecked
                           onCheckedChange={(checked) => setNewServerSecure(checked)} disabled={serversLoading} />
 
                           <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor="newServerSecure" >
@@ -187,7 +187,7 @@ export function AccountsSheet() {
                     />
                     <Heading size="$10">Add Account for {serversState.server?.host}</Heading>
                     <YStack space="$2">
-                      <Input textContentType="username" placeholder="Username" keyboardType='twitter' autoCapitalize='none' disabled={accountsLoading}
+                      <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter' autoCapitalize='none' disabled={accountsLoading}
                         onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
                       <Input secureTextEntry textContentType="newPassword" placeholder="Password" disabled={accountsLoading}
                         onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
