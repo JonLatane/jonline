@@ -43,7 +43,7 @@ export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
       user: User.fromJSON({}),
       refreshToken: RefreshTokenResponse.fromJSON({}),
       accessToken: AccessTokenResponse.fromJSON({}),
-      server: { host: "localhost", allowInsecure: true }
+      server: { host: "localhost", secure: true }
     };
   }
 );
@@ -58,7 +58,7 @@ export const login = createAsyncThunk<JonlineAccount, Login>(
       user: User.fromJSON({}),
       refreshToken: RefreshTokenResponse.fromJSON({}),
       accessToken: AccessTokenResponse.fromJSON({}),
-      server: { host: "localhost", allowInsecure: true }
+      server: { host: "localhost", secure: true }
     };
   }
 );

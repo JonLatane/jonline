@@ -36,8 +36,8 @@ macro_rules! home_page {
         .unwrap()
         .web_user_interface()
     {
-        WebUserInterface::FlutterWeb => "/home",
         WebUserInterface::HandlebarsTemplates => "/",
+        _ => "/home",
     }
     }}
 }

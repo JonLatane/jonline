@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 import { useLink } from 'solito/link'
 import { createServer, selectAllServers } from "../../store/modules/Servers";
 import { selectAllAccounts } from "../../store/modules/Accounts";
-import { AccountsSheet } from '../accounts/server_sheet';
+import { AccountsSheet } from '../accounts/accounts_sheet';
 
 
 export function HomeScreen() {

@@ -89,9 +89,14 @@ message ServerInfo {
   optional bytes logo = 8;
 }
 
+// Offers a choice of web UIs. All
 enum WebUserInterface {
+  // Uses Flutter Web. Loaded from /app.
   FLUTTER_WEB = 0;
+  // Uses Handlebars templates. Will probably be discontinued.
   HANDLEBARS_TEMPLATES = 1;
+  // React UI using Tamagui (a React Native UI library).
+  REACT_TAMAGUI = 2;
 }
 
 // Color in ARGB hex format (i.e 0xAARRGGBB).

@@ -14,7 +14,7 @@ import { useTypedDispatch } from "../store";
 
 export type JonlineServer = {
   host: string;
-  allowInsecure: boolean;
+  secure: boolean;
   serviceVersion?: GetServiceVersionResponse;
   serverConfiguration?: ServerConfiguration;
 }
@@ -27,7 +27,7 @@ export const timeout = async (time: number, label: string) => {
 const clients = new Map<JonlineServer, JonlineClientImpl>();
 function getClient(server: JonlineServer): JonlineClientImpl {
   if (!clients.has(server)) {
-    let host = `http${server.allowInsecure ? "" : "s"}://${server.host}:27707`
+    let host = `http${server.secure ? "s" : ""}://${server.host}:27707`
     // debugger;
     let client = new JonlineClientImpl(
       new GrpcWebImpl(host, {})
@@ -62,11 +62,10 @@ export const createServer = createAsyncThunk<JonlineServer, JonlineServer>(
   }
 );
 
-const initialServer: JonlineServer = { host: "localhost", allowInsecure: true };
 const initialState: ServersState = {
   status: "unloaded",
   error: undefined,
-  server: initialServer,
+  server: undefined,
   ...serversAdapter.getInitialState(),
 };
 

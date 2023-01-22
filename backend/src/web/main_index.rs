@@ -27,6 +27,10 @@ pub async fn index(state: &State<RocketState>) -> MainIndex {
             template: Some(home(state).await),
             file: None
         },
+        WebUserInterface::ReactTamagui => MainIndex {
+            template: Some(home(state).await),
+            file: None
+        },
     }
 }
 
