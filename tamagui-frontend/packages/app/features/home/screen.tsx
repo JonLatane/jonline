@@ -7,7 +7,6 @@ import { createServer, selectAllServers } from "../../store/modules/Servers";
 import { selectAllAccounts } from "../../store/modules/Accounts";
 import { AccountsSheet } from '../accounts/accounts_sheet';
 
-
 export function HomeScreen() {
   const linkProps = useLink({
     href: '/user/nate',

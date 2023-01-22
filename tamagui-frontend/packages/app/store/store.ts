@@ -12,12 +12,12 @@ import storage from 'redux-persist/lib/storage' // defaults to localStorage for 
 const serversPersistConfig = {
   key: 'servers',
   storage: storage,
-  blacklist: ['status']
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error']
 }
 const accountsPersistConfig = {
   key: 'accounts',
   storage: storage,
-  blacklist: ['status']
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error']
 }
 
 const rootReducer = combineReducers({

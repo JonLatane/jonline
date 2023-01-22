@@ -14,7 +14,6 @@ import { useTypedDispatch } from "../store";
 import { Platform } from 'react-native';
 import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
 
-
 export type JonlineServer = {
   host: string;
   secure: boolean;
@@ -28,7 +27,7 @@ export const timeout = async (time: number, label: string) => {
 }
 
 const clients = new Map<JonlineServer, JonlineClientImpl>();
-function getClient(server: JonlineServer): JonlineClientImpl {
+export function getClient(server: JonlineServer): JonlineClientImpl {
   if (!clients.has(server)) {
     let host = `http${server.secure ? "s" : ""}://${server.host}:27707`
     // debugger;
@@ -47,6 +46,8 @@ function getClient(server: JonlineServer): JonlineClientImpl {
 interface ServersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
   error?: Error;
+  successMessage?: string;
+  errorMessage?: string;
   // Current server the app is pointing to.
   server?: JonlineServer;
   ids: EntityId[];
@@ -81,6 +82,11 @@ const serversSlice = createSlice({
     upsertServer: serversAdapter.upsertOne,
     removeServer: serversAdapter.removeOne,
     reset: () => initialState,
+    clearAlerts: (state) => {
+      state.errorMessage = undefined;
+      state.successMessage = undefined;
+      state.error = undefined;
+    },
     selectServer: (state, action: PayloadAction<JonlineServer>) => {
       state.server = action.payload;
     },
@@ -95,19 +101,18 @@ const serversSlice = createSlice({
       state.server = action.payload;
       serversAdapter.upsertOne(state, action.payload);
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
-      // toast.success(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
+      state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`;
     });
     builder.addCase(createServer.rejected, (state, action) => {
       state.status = "errored";
-      console.error(`Error connecting to ${action.meta.arg.host}.`);
-      console.error(action.error);
-      // toast.error(`Error connecting to ${action.meta.arg.host}.`);
+      console.error(`Error connecting to ${action.meta.arg.host}.`, action.error);
+      state.errorMessage = `Error connecting to ${action.meta.arg.host}.`;
       state.error = action.error as Error;
     });
   },
 });
 
-export const { selectServer, removeServer } = serversSlice.actions;
+export const { selectServer, removeServer, clearAlerts } = serversSlice.actions;
 
 export const { selectAll: selectAllServers } = serversAdapter.getSelectors();
 
