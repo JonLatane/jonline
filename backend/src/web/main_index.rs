@@ -1,13 +1,9 @@
-use super::flutter_index;
-use super::home;
-use super::tamagui_index;
+use super::*;
 use rocket::fs::*;
 use rocket::*;
-use rocket_dyn_templates::Template;
 
 use super::RocketState;
 
-use rocket::response::Responder;
 use rocket_cache_response::CacheResponse;
 use std::io;
 
@@ -15,36 +11,12 @@ use crate::protos::*;
 use crate::rpcs::get_server_configuration;
 
 #[rocket::get("/")]
-pub async fn index(state: &State<RocketState>) -> MainIndex {
+pub async fn main_index(state: &State<RocketState>) -> CacheResponse<io::Result<NamedFile>> {
     let mut conn = state.pool.get().unwrap();
     let configuration = get_server_configuration(&mut conn).unwrap();
 
     match configuration.server_info.unwrap().web_user_interface() {
-        WebUserInterface::FlutterWeb => MainIndex {
-            file: Some(flutter_index().await),
-            template: None
-        },
-        WebUserInterface::HandlebarsTemplates => MainIndex {
-            template: Some(home(state).await),
-            file: None
-        },
-        WebUserInterface::ReactTamagui => MainIndex {
-            file: Some(tamagui_index().await),
-            template: None
-        },
-    }
-}
-
-pub struct MainIndex {
-    file: Option<CacheResponse<io::Result<NamedFile>>>,
-    template: Option<CacheResponse<Template>>,
-}
-
-impl<'r> Responder<'r, 'static> for MainIndex {
-    fn respond_to(self, req: &rocket::Request<'_>) -> rocket::response::Result<'static> {
-        match self.file {
-            Some(file) => file.respond_to(req),
-            None => self.template.unwrap().respond_to(req),
-        }
+        WebUserInterface::FlutterWeb => flutter_index().await,
+        _ => tamagui_index().await,
     }
 }

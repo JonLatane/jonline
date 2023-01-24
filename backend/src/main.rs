@@ -14,7 +14,6 @@ extern crate ring;
 extern crate rocket;
 extern crate rocket_async_compression;
 extern crate rocket_cache_response;
-extern crate rocket_dyn_templates;
 extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
@@ -39,7 +38,6 @@ use ::jonline::{db_connection::PgPool, env_var, report_error};
 use futures::future::join_all;
 use protos::jonline_server::JonlineServer;
 use rocket::*;
-use rocket_dyn_templates::Template;
 use std::net::SocketAddr;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
 
@@ -148,18 +146,15 @@ fn create_rocket<T: rocket::figment::Provider>(
         .mount(
             "/",
             routes![
-                web::main_index::index,
-                web::flutter_web::flutter_index,
-                web::flutter_web::flutter_file,
-                web::tamagui_web::tamagui_index,
-                web::tamagui_web::tamagui_file,
-                web::home,
-                web::post_details,
-                web::styles::styles,
-                web::web_asset
+                web::main_index::main_index,
+                web::flutter_index,
+                web::flutter_file,
+                web::tamagui_index,
+                web::tamagui_post,
+                web::tamagui_user,
+                web::tamagui_file
             ],
         )
-        .attach(Template::fairing())
         .register("/", catchers![web::catchers::not_found]);
     if cfg!(debug_assertions) {
         server

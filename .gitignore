@@ -12,12 +12,3 @@
 
 # Generated YAML from deploy scripts. May contain emails, names, etc.
 *.generated.yaml
-
-# Generated Dart files from Protoc.
-*.pb.dart
-*.pbenum.dart
-*.pbjson.dart
-*.pbserver.dart
-
-# Generated Dart files from auto_route.
-*.gr.dart

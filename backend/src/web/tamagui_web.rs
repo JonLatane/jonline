@@ -29,9 +29,23 @@ pub async fn tamagui_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Stat
 
 #[rocket::get("/tamagui")]
 pub async fn tamagui_index() -> CacheResponse<io::Result<NamedFile>> {
-    let result = match NamedFile::open("opt/tamagui_web/index.html").await {
+    tamagui_path("index.html").await
+}
+
+#[rocket::get("/post/<_id_etc..>")]
+pub async fn tamagui_post(_id_etc: PathBuf) -> CacheResponse<io::Result<NamedFile>> {
+    tamagui_path("post/[id].html").await
+}
+
+#[rocket::get("/user/<_id_etc..>")]
+pub async fn tamagui_user(_id_etc: PathBuf) -> CacheResponse<io::Result<NamedFile>> {
+    tamagui_path("user/[id].html").await
+}
+
+async fn tamagui_path(path: &str) -> CacheResponse<io::Result<NamedFile>> {
+    let result = match NamedFile::open(format!("opt/tamagui_web/{}", path)).await {
         Ok(file) => Ok(file),
-        Err(_) => match NamedFile::open("../tamagui-frontend/apps/next/out/index.html").await {
+        Err(_) => match NamedFile::open(format!("../tamagui-frontend/apps/next/out/{}", path)).await {
             Ok(file) => Ok(file),
             Err(e) => Err(e),
         },

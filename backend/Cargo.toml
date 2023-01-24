@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.202"
+version = "0.1.203"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -18,7 +18,7 @@ tonic-web = "0.4.0"
 rocket = { version = "0.5.0-rc.2", features = [ "tls" ] }
 rocket_async_compression = "0.2.0"
 rocket-cache-response = "0.6.2"
-rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars", "tera"]}
+# rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars", "tera"]}
 futures = "0.3.24"
 prost = "0.11.0"
 prost-build = "0.11.1"

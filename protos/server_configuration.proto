@@ -93,8 +93,8 @@ message ServerInfo {
 enum WebUserInterface {
   // Uses Flutter Web. Loaded from /app.
   FLUTTER_WEB = 0;
-  // Uses Handlebars templates. Will probably be discontinued.
-  HANDLEBARS_TEMPLATES = 1;
+  // Uses Handlebars templates. Deprecated; will revert to Tamagui UI if chosen.
+  HANDLEBARS_TEMPLATES = 1 [deprecated = true];
   // React UI using Tamagui (a React Native UI library).
   REACT_TAMAGUI = 2;
 }

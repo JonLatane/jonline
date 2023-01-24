@@ -1,4 +1,11 @@
-# Tamagui + Solito + Next + Expo Monorepo
+# Jonline Tamagui FE
+
+The Tamagui FE was chosen for Jonline's web UI because it is performant and supports
+both React Native and React Web ergonomically. It should become an alternative FE to the
+existing Flutter one, to provide multiple options for the best user experience against any
+Jonline server.
+
+### Based on: Tamagui + Solito + Next + Expo Monorepo
 
 ```sh
 npm create tamagui
