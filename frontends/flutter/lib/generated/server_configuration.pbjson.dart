@@ -37,13 +37,17 @@ const WebUserInterface$json = const {
   '1': 'WebUserInterface',
   '2': const [
     const {'1': 'FLUTTER_WEB', '2': 0},
-    const {'1': 'HANDLEBARS_TEMPLATES', '2': 1},
+    const {
+      '1': 'HANDLEBARS_TEMPLATES',
+      '2': 1,
+      '3': const {'1': true},
+    },
     const {'1': 'REACT_TAMAGUI', '2': 2},
   ],
 };
 
 /// Descriptor for `WebUserInterface`. Decode as a `google.protobuf.EnumDescriptorProto`.
-final $typed_data.Uint8List webUserInterfaceDescriptor = $convert.base64Decode('ChBXZWJVc2VySW50ZXJmYWNlEg8KC0ZMVVRURVJfV0VCEAASGAoUSEFORExFQkFSU19URU1QTEFURVMQARIRCg1SRUFDVF9UQU1BR1VJEAI=');
+final $typed_data.Uint8List webUserInterfaceDescriptor = $convert.base64Decode('ChBXZWJVc2VySW50ZXJmYWNlEg8KC0ZMVVRURVJfV0VCEAASHAoUSEFORExFQkFSU19URU1QTEFURVMQARoCCAESEQoNUkVBQ1RfVEFNQUdVSRAC');
 @$core.Deprecated('Use serverConfigurationDescriptor instead')
 const ServerConfiguration$json = const {
   '1': 'ServerConfiguration',

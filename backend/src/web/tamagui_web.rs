@@ -15,7 +15,7 @@ pub async fn tamagui_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Stat
     };
     let result = match NamedFile::open(Path::new("opt/tamagui_web/").join(real_file.to_owned())).await {
         Ok(file) => Ok(file),
-        Err(_) => match NamedFile::open(Path::new("../tamagui-frontend/apps/next/out/").join(real_file)).await {
+        Err(_) => match NamedFile::open(Path::new("../frontends/tamagui/apps/next/out/").join(real_file)).await {
             Ok(file) => Ok(file),
             Err(_) => Err(Status::NotFound),
         },
@@ -45,7 +45,7 @@ pub async fn tamagui_user(_id_etc: PathBuf) -> CacheResponse<io::Result<NamedFil
 async fn tamagui_path(path: &str) -> CacheResponse<io::Result<NamedFile>> {
     let result = match NamedFile::open(format!("opt/tamagui_web/{}", path)).await {
         Ok(file) => Ok(file),
-        Err(_) => match NamedFile::open(format!("../tamagui-frontend/apps/next/out/{}", path)).await {
+        Err(_) => match NamedFile::open(format!("../frontends/tamagui/apps/next/out/{}", path)).await {
             Ok(file) => Ok(file),
             Err(e) => Err(e),
         },

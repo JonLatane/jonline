@@ -104,9 +104,18 @@ export function privateUserStrategyToJSON(object: PrivateUserStrategy): string {
   }
 }
 
+/** Offers a choice of web UIs. All */
 export enum WebUserInterface {
+  /** FLUTTER_WEB - Uses Flutter Web. Loaded from /app. */
   FLUTTER_WEB = 0,
+  /**
+   * HANDLEBARS_TEMPLATES - Uses Handlebars templates. Deprecated; will revert to Tamagui UI if chosen.
+   *
+   * @deprecated
+   */
   HANDLEBARS_TEMPLATES = 1,
+  /** REACT_TAMAGUI - React UI using Tamagui (a React Native UI library). */
+  REACT_TAMAGUI = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -118,6 +127,9 @@ export function webUserInterfaceFromJSON(object: any): WebUserInterface {
     case 1:
     case "HANDLEBARS_TEMPLATES":
       return WebUserInterface.HANDLEBARS_TEMPLATES;
+    case 2:
+    case "REACT_TAMAGUI":
+      return WebUserInterface.REACT_TAMAGUI;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -131,6 +143,8 @@ export function webUserInterfaceToJSON(object: WebUserInterface): string {
       return "FLUTTER_WEB";
     case WebUserInterface.HANDLEBARS_TEMPLATES:
       return "HANDLEBARS_TEMPLATES";
+    case WebUserInterface.REACT_TAMAGUI:
+      return "REACT_TAMAGUI";
     case WebUserInterface.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

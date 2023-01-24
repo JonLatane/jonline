@@ -134,6 +134,13 @@ export interface Post {
   content?: string | undefined;
   responseCount: number;
   replyCount: number;
+  /**
+   * There should never be more than reply_count replies. However,
+   * there may be fewer than reply_count replies if some replies are
+   * hidden by moderation or visibility.
+   * Replies are not generally loaded by default, but can be added to Posts
+   * in the frontend.
+   */
   replies: Post[];
   previewImage?: Uint8Array | undefined;
   visibility: Visibility;

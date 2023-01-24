@@ -15,7 +15,7 @@ pub async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Stat
     // };
     let result = match NamedFile::open(Path::new("opt/flutter_web/").join(file.to_owned())).await {
         Ok(file) => Ok(file),
-        Err(_) => match NamedFile::open(Path::new("../flutter-frontend/build/web/").join(file)).await {
+        Err(_) => match NamedFile::open(Path::new("../frontends/flutter/build/web/").join(file)).await {
             Ok(file) => Ok(file),
             Err(_) => Err(Status::NotFound),
         },
@@ -31,7 +31,7 @@ pub async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Stat
 pub async fn flutter_index() -> CacheResponse<io::Result<NamedFile>> {
     let result = match NamedFile::open("opt/flutter_web/index.html").await {
         Ok(file) => Ok(file),
-        Err(_) => match NamedFile::open("../flutter-frontend/build/web/index.html").await {
+        Err(_) => match NamedFile::open("../frontends/flutter/build/web/index.html").await {
             Ok(file) => Ok(file),
             Err(e) => Err(e),
         },
