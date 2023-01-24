@@ -151,6 +151,8 @@ fn create_rocket<T: rocket::figment::Provider>(
                 web::main_index::index,
                 web::flutter_web::flutter_index,
                 web::flutter_web::flutter_file,
+                web::tamagui_web::tamagui_index,
+                web::tamagui_web::tamagui_file,
                 web::home,
                 web::post_details,
                 web::styles::styles,

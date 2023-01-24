@@ -6,11 +6,9 @@ import {
   EntityId,
   PayloadAction,
 } from "@reduxjs/toolkit";
-// import { toast } from "react-hot-toast";
 import { GetServiceVersionResponse } from "@jonline/ui/src/generated/federation";
-import { GrpcWebImpl, JonlineClientImpl } from "@jonline/ui/src/generated/jonline"
+import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/ui/src/generated/jonline"
 import { ServerConfiguration } from "@jonline/ui/src/generated/server_configuration"
-import { useTypedDispatch } from "../store";
 import { Platform } from 'react-native';
 import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
 
@@ -27,7 +25,7 @@ export const timeout = async (time: number, label: string) => {
 }
 
 const clients = new Map<JonlineServer, JonlineClientImpl>();
-export function getClient(server: JonlineServer): JonlineClientImpl {
+export function getServerClient(server: JonlineServer): Jonline {
   if (!clients.has(server)) {
     let host = `http${server.secure ? "s" : ""}://${server.host}:27707`
     // debugger;
@@ -43,7 +41,7 @@ export function getClient(server: JonlineServer): JonlineClientImpl {
   return clients.get(server)!;
 }
 
-interface ServersState {
+export interface ServersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
   error?: Error;
   successMessage?: string;
@@ -61,7 +59,7 @@ const serversAdapter = createEntityAdapter<JonlineServer>({
 export const createServer = createAsyncThunk<JonlineServer, JonlineServer>(
   "servers/create",
   async (server) => {
-    let client = getClient(server);
+    let client = getServerClient(server);
     let serviceVersion: GetServiceVersionResponse = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
     let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
     return { ...server, serviceVersion, serverConfiguration };
@@ -75,19 +73,24 @@ const initialState: ServersState = {
   ...serversAdapter.getInitialState(),
 };
 
-const serversSlice = createSlice({
+export const serversSlice = createSlice({
   name: "servers",
-  initialState: initialState,//{ ...initialState, ...JSON.parse(localStorage.getItem("servers"))},
+  initialState: initialState,
   reducers: {
     upsertServer: serversAdapter.upsertOne,
-    removeServer: serversAdapter.removeOne,
+    removeServer: (state, action: PayloadAction<string>) => { 
+      if (state.server?.host === action.payload) {
+        state.server = state.entities.first;// undefined;
+      }
+      serversAdapter.removeOne(state, action);
+    },
     reset: () => initialState,
     clearAlerts: (state) => {
       state.errorMessage = undefined;
       state.successMessage = undefined;
       state.error = undefined;
     },
-    selectServer: (state, action: PayloadAction<JonlineServer>) => {
+    selectServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
       state.server = action.payload;
     },
   },

@@ -68,6 +68,11 @@ message Post {
   optional string content = 6;
   int32 response_count = 7;
   int32 reply_count = 8;
+  // There should never be more than reply_count replies. However,
+  // there may be fewer than reply_count replies if some replies are
+  // hidden by moderation or visibility.
+  // Replies are not generally loaded by default, but can be added to Posts
+  // in the frontend.
   repeated Post replies = 9;
   optional bytes preview_image = 10;
   Visibility visibility = 11;

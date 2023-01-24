@@ -27,6 +27,8 @@ pub use post_page::*;
 
 pub mod flutter_web;
 pub use flutter_web::*;
+pub mod tamagui_web;
+pub use tamagui_web::*;
 
 
 pub mod main_index;

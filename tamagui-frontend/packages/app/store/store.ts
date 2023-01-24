@@ -1,35 +1,40 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { createSelectorHook, useDispatch } from "react-redux";
 import thunkMiddleware from 'redux-thunk';
-import FactsReducer from "./modules/Facts";
-import accountsReducer from "./modules/Accounts";
-import serversReducer from "./modules/Servers";
+import accountsReducer from "./modules/accounts";
+import serversReducer from "./modules/servers";
+import postsReducer from "./modules/posts";
 import { persistStore, persistReducer } from 'redux-persist'
-import storage from 'redux-persist/lib/storage' // defaults to localStorage for web
-
-// import 'localstorage-polyfill';
+import storage from 'redux-persist/lib/storage'
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const serversPersistConfig = {
   key: 'servers',
-  storage: storage,
+  storage: Platform.OS == 'web' ? storage : AsyncStorage,
   blacklist: ['status', 'successMessage', 'errorMessage', 'error']
 }
 const accountsPersistConfig = {
   key: 'accounts',
-  storage: storage,
+  storage: Platform.OS == 'web' ? storage : AsyncStorage,
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error']
+}
+const postsPersistConfig = {
+  key: 'posts',
+  storage: Platform.OS == 'web' ? storage : AsyncStorage,
   blacklist: ['status', 'successMessage', 'errorMessage', 'error']
 }
 
 const rootReducer = combineReducers({
-  facts: FactsReducer,
   accounts: persistReducer(accountsPersistConfig, accountsReducer),
-  servers: persistReducer(serversPersistConfig, serversReducer)
+  servers: persistReducer(serversPersistConfig, serversReducer),
+  posts: persistReducer(postsPersistConfig, postsReducer)
 });
 
 const rootPersistConfig = {
   key: 'root',
-  storage,
-  blacklist: ['accounts', 'servers']
+  storage: Platform.OS == 'web' ? storage : AsyncStorage,
+  blacklist: ['accounts', 'servers', 'posts']
 }
 const persistedReducer = persistReducer(rootPersistConfig, rootReducer)
 

@@ -19,6 +19,8 @@
 # production
 /build
 
+apps/next/out
+
 # debug
 npm-debug.log*
 yarn-debug.log*

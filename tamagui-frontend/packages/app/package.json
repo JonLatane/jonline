@@ -10,6 +10,7 @@
     "@improbable-eng/grpc-web": "^0.15.0",
     "@improbable-eng/grpc-web-react-native-transport": "^0.15.0",
     "@jonline/ui": "*",
+    "@react-native-async-storage/async-storage": "^1.17.11",
     "@react-navigation/native": "^6.0.11",
     "@react-navigation/native-stack": "^6.7.0",
     "@reduxjs/toolkit": "^1.9.1",
@@ -20,9 +21,13 @@
     "@tamagui/shorthands": "^1.0.15",
     "@tamagui/theme-base": "^1.0.15",
     "expo-linking": "^3.2.3",
+    "react-native-get-random-values": "^1.8.0",
     "react-redux": "^8.0.5",
     "redux-persist": "^6.0.0",
     "solito": "2.0.0-canary.4",
     "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.0"
   }
 }

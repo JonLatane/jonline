@@ -1,5 +1,6 @@
 use super::flutter_index;
 use super::home;
+use super::tamagui_index;
 use rocket::fs::*;
 use rocket::*;
 use rocket_dyn_templates::Template;
@@ -28,8 +29,8 @@ pub async fn index(state: &State<RocketState>) -> MainIndex {
             file: None
         },
         WebUserInterface::ReactTamagui => MainIndex {
-            template: Some(home(state).await),
-            file: None
+            file: Some(tamagui_index().await),
+            template: None
         },
     }
 }

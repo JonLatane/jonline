@@ -3,8 +3,8 @@ import { ChevronDown, ChevronUp, Plus } from '@tamagui/lucide-icons'
 import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
-import { clearAlerts as clearServerAlerts, createServer, selectAllServers } from "../../store/modules/Servers";
-import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccounts } from "../../store/modules/Accounts";
+import { clearAlerts as clearServerAlerts, createServer, selectAllServers } from "../../store/modules/servers";
+import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccounts } from "../../store/modules/accounts";
 import { FlatList, View } from 'react-native';
 import ServerCard from './server_card';
 import AccountCard from './account_card';
@@ -25,6 +25,7 @@ export function AccountsSheet() {
 
   function addServer() {
     console.log(`Connecting to server ${newServerHost}`)
+    dispatch(clearServerAlerts());
     dispatch(createServer({
       host: newServerHost,
       secure: newServerSecure,
@@ -34,6 +35,7 @@ export function AccountsSheet() {
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
   function loginToServer() {
+    dispatch(clearAccountAlerts());
     dispatch(login({
       ...serversState.server!,
       username: newAccountUser,
@@ -41,6 +43,7 @@ export function AccountsSheet() {
     }));
   }
   function createServerAccount() {
+    dispatch(clearAccountAlerts());
     dispatch(createAccount({
       ...serversState.server!,
       username: newAccountUser,
@@ -56,16 +59,20 @@ export function AccountsSheet() {
   const [position, setPosition] = useState(0)
 
   if (serversState.successMessage) {
-    setAddingServer(false);
-    setNewServerHost('');
-    setNewServerSecure(true);
-    dispatch(clearServerAlerts())
+    setTimeout(() => {
+      setNewServerHost('');
+      setNewServerSecure(true);
+      dispatch(clearServerAlerts());
+      setAddingServer(false);
+    }, 1000);
   }
   if (accountsState.successMessage) {
-    setAddingAccount(false);
-    setNewAccountUser('');
-    setNewAccountPass('');
-    dispatch(clearAccountAlerts())
+    setTimeout(() => {
+      setNewAccountUser('');
+      setNewAccountPass('');
+      dispatch(clearAccountAlerts());
+      setAddingAccount(false);
+    }, 1000);
   }
   return (
     <>
@@ -100,7 +107,7 @@ export function AccountsSheet() {
             }}
           />
           <Sheet.ScrollView p="$4" space>
-            <YStack maxWidth='800px' width='100%' alignSelf='center'>
+            <YStack maxWidth={800} width='100%' alignSelf='center'>
               <YStack space="$2">
                 <XStack>
                   <Heading style={{ flex: 1 }}>Servers</Heading>
@@ -135,13 +142,14 @@ export function AccountsSheet() {
                           setAddingServer(false)
                         }}
                       />
-                      <YStack space="$2" maxWidth='600px' width='100%' alignSelf='center'>
+                      <YStack space="$2" maxWidth={600} width='100%' alignSelf='center'>
                         <Heading size="$10" style={{ flex: 1 }}>Add Server</Heading>
                         <YStack>
                           <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname" disabled={serversLoading}
+                            value={newServerHost}
                             onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
                         </YStack>
-                        {newServerHostNotBlank && newServerExists && <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading>}
+                        {newServerHostNotBlank && newServerExists && !serversState.successMessage && <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading>}
                         <XStack>
                           <YStack style={{ flex: 1, marginLeft: 'auto', marginRight: 'auto' }}>
                             <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id="newServerSecure" aria-label='Secure'
@@ -164,7 +172,10 @@ export function AccountsSheet() {
                 </XStack>
               </YStack>
 
+              {servers.length === 0 && <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading>}
+
               <FlatList
+                horizontal={true}
                 data={servers}
                 keyExtractor={(server) => server.host}
                 renderItem={({ item }) => {
@@ -180,10 +191,10 @@ export function AccountsSheet() {
                   <Button
                     size="$3"
                     icon={Plus}
-                    // circular
+                    disabled={serversState.server === undefined}
                     onPress={() => setAddingAccount((x) => !x)}
                   >
-                    Add
+                    Login/Create
                   </Button>
                   <Sheet
                     modal
@@ -207,11 +218,14 @@ export function AccountsSheet() {
                           setAddingAccount(false)
                         }}
                       />
-                      <Heading size="$10">Add Account for {serversState.server?.host}</Heading>
+                      <Heading size="$10">Add Account</Heading>
+                      <Heading size="$6">{serversState.server?.host}/</Heading>
                       <YStack space="$2">
                         <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter' autoCapitalize='none' disabled={accountsLoading}
+                          value={newAccountUser}
                           onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
                         <Input secureTextEntry textContentType="newPassword" placeholder="Password" disabled={accountsLoading}
+                          value={newAccountPass}
                           onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
 
                         <XStack>
@@ -222,12 +236,20 @@ export function AccountsSheet() {
                             Login
                           </Button>
                         </XStack>
+
+                        {accountsState.errorMessage && <Heading size="$2" color="red" alignSelf='center'>{accountsState.errorMessage}</Heading>}
+                        {accountsState.successMessage && <Heading size="$2" color="green" alignSelf='center'>{accountsState.successMessage}</Heading>}
+                     
                       </YStack>
                     </Sheet.Frame>
                   </Sheet>
                 </XStack>
               </YStack>
-              <FlatList
+
+              {accounts.length === 0 && <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading>}
+
+              {accounts.map((account) => <AccountCard account={account} />)}
+              {/* <FlatList
                 data={accounts}
                 keyExtractor={(account) => account.id}
                 renderItem={({ item }) => {
@@ -235,7 +257,7 @@ export function AccountsSheet() {
                 }}
               // style={Styles.trueBackground}
               // contentContainerStyle={Styles.contentBackground}
-              />
+              /> */}
             </YStack>
           </Sheet.ScrollView>
         </Sheet.Frame>

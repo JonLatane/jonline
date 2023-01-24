@@ -10,7 +10,7 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
   return (
     <ReduxProvider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <TamaguiProvider config={config} disableInjectCSS defaultTheme="light" {...rest}>
+        <TamaguiProvider config={config} disableInjectCSS {...rest}>
           <NavigationProvider>{children}</NavigationProvider>
         </TamaguiProvider>
       </PersistGate>

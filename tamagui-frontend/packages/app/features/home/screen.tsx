@@ -3,22 +3,28 @@ import { ChevronDown, ChevronUp } from '@tamagui/lucide-icons'
 import { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
-import { createServer, selectAllServers } from "../../store/modules/Servers";
-import { selectAllAccounts } from "../../store/modules/Accounts";
+import { createServer, selectAllServers } from "../../store/modules/servers";
+import { selectAllAccounts } from "../../store/modules/accounts";
 import { AccountsSheet } from '../accounts/accounts_sheet';
 
 export function HomeScreen() {
   const linkProps = useLink({
     href: '/user/nate',
   })
+  const postLinkProps = useLink({
+    href: '/post/asdf123',
+  })
+  const dispatch = useTypedDispatch();
+  const serversState = useTypedSelector((state: RootState) => state.servers);
+
 
   return (
     <YStack f={1} jc="center" ai="center" p="$4" space>
       <YStack space="$4" maw={600}>
         <H1 ta="center">Welcome to Jonline.</H1>
-        <Paragraph ta="center">
-          Login or choose a server to get started.
-        </Paragraph>
+        {serversState.server != undefined || <Paragraph ta="center">
+          Choose an account or server to get started.
+        </Paragraph>}
 
         {/* <Separator />
         <Paragraph ta="center">
@@ -40,6 +46,7 @@ export function HomeScreen() {
 
       <XStack>
         <Button {...linkProps}>Link to user</Button>
+        <Button {...postLinkProps}>Link to post</Button>
       </XStack>
 
       <AccountsSheet />

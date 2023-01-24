@@ -6,7 +6,10 @@ RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt
 
 # Flutter web app release (served from the filesystem by Rocket within Jonline)
-COPY frontend/build/web/ /opt/flutter_web
+COPY flutter-frontend/build/web/ /opt/flutter_web
+
+# Tamagui web app release (served from the filesystem by Rocket within Jonline)
+COPY tamagui-frontend/apps/next/out/ /opt/tamagui_web
 
 # Copy the Jonline web templates.
 # COPY web/ /opt/web

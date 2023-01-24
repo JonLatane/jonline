@@ -236,7 +236,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
               groupValue: config?.serverInfo.webUserInterface,
               title: const Text("Flutter Web UI"),
               subtitle: Text(
-                  "Full Flutter app with sign-in, etc. Slower to load in browsers. Always accessible from ${server?.server}/app."),
+                  "Full Flutter app with sign-in, etc. Slower to load in browsers. Always accessible from ${server?.server}/flutter."),
               onChanged: account != null
                   ? (WebUserInterface? value) {
                       if (value == null) return;
@@ -250,9 +250,25 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
             RadioListTile<WebUserInterface>(
               value: WebUserInterface.HANDLEBARS_TEMPLATES,
               groupValue: config?.serverInfo.webUserInterface,
-              title: const Text("HTML/CSS/JS Web UI [WIP]"),
+              title: const Text("Handlebars/Tera-based Web UI [WIP]"),
               subtitle: Text(
-                  "Minimal web page interface serving Global Public posts using Handlebars templates. Fast to load in browsers. Will eventually support customization. Always accessible from ${server?.server}/home."),
+                  "Minimal web page interface serving Global Public posts using Handlebars templates (i.e., server-templated plain old HTML+CSS with minimal JS). Fast to load in browsers. Will eventually support customization. Always accessible from ${server?.server}/home."),
+              onChanged: account != null
+                  ? (WebUserInterface? value) {
+                      if (value == null) return;
+
+                      setState(() {
+                        config!.serverInfo.webUserInterface = value;
+                      });
+                    }
+                  : null,
+            ),
+            RadioListTile<WebUserInterface>(
+              value: WebUserInterface.REACT_TAMAGUI,
+              groupValue: config?.serverInfo.webUserInterface,
+              title: const Text("React/Redux/Tamagui Web UI [WIP]"),
+              subtitle: Text(
+                  "React/Tamagui UI. Fast to load in browsers. Will eventually support customization. Always accessible from ${server?.server}/tamagui."),
               onChanged: account != null
                   ? (WebUserInterface? value) {
                       if (value == null) return;

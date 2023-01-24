@@ -193,8 +193,12 @@ local_registry_destroy:
 release_ios_push_testflight:
 	cd flutter-frontend && ./build-release ios
 
-release_web_build:
+# Flutter/React web UI release targets. Copied by backend/docker/server/Dockerfile
+release_web_builds: release_flutter_web_build release_tamagui_build
+release_flutter_web_build:
 	cd flutter-frontend && ./build-release web
+release_tamagui_build:
+	cd tamagui-frontend && yarn web:prod:export
 
 # jonline-be-build image targets
 release_builder_push_local: local_registry_create
@@ -216,13 +220,13 @@ backend/target/release/jonline__server_release: release_builder_push_local
 	mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release
 	mv backend/target/release/set_permission backend/target/release/set_permission__server_release
 
-release_be_push_local: local_registry_create release_be_build_binary release_web_build
+release_be_push_local: local_registry_create release_be_build_binary release_web_builds
 	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline
 	docker build . -t $(LOCAL_REGISTRY)/jonline_preview_generator -f backend/docker/preview_generator/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline_preview_generator
 
-release_be_push_cloud: release_be_build_binary release_web_build
+release_be_push_cloud: release_be_build_binary release_web_builds
 	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
 	docker tag $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) $(CLOUD_REGISTRY)/jonline:latest

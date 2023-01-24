@@ -16,7 +16,8 @@ export function NavigationProvider({
             initialRouteName: 'home',
             screens: {
               home: '',
-              'user-detail': 'user/:id',
+              userDetail: 'user/:id',
+              postDetail: 'post/:id',
             },
           },
         }),

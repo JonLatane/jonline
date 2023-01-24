@@ -6,13 +6,13 @@ import { useLink } from 'solito/link'
 
 const { useParam } = createParam<{ id: string }>()
 
-export function UserDetailScreen() {
+export function PostDetailsScreen() {
   const [id] = useParam('id')
   const linkProps = useLink({ href: '/' })
 
   return (
     <YStack f={1} jc="center" ai="center" space>
-      <Paragraph ta="center" fow="800">{`User ID: ${id}`}</Paragraph>
+      <Paragraph ta="center" fow="800">{`Post ID: ${id}`}</Paragraph>
       <Button {...linkProps} icon={ChevronLeft}>
         Go Home
       </Button>
