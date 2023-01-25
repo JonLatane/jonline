@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Plus } from '@tamagui/lucide-icons'
 import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
-import { clearAlerts as clearServerAlerts, createServer, selectAllServers } from "../../store/modules/servers";
+import { clearAlerts as clearServerAlerts, upsertServer, selectAllServers } from "../../store/modules/servers";
 import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccounts } from "../../store/modules/accounts";
 import { FlatList, View } from 'react-native';
 import ServerCard from './server_card';
@@ -14,6 +14,10 @@ export function AccountsSheet() {
   const [newServerSecure, setNewServerSecure] = useState(true);
   const [newAccountUser, setNewAccountUser] = useState('');
   const [newAccountPass, setNewAccountPass] = useState('');
+  const [open, setOpen] = useState(false)
+  const [addingServer, setAddingServer] = useState(false)
+  const [addingAccount, setAddingAccount] = useState(false)
+  const [position, setPosition] = useState(0)
 
   const dispatch = useTypedDispatch();
   const serversState = useTypedSelector((state: RootState) => state.servers);
@@ -26,7 +30,7 @@ export function AccountsSheet() {
   function addServer() {
     console.log(`Connecting to server ${newServerHost}`)
     dispatch(clearServerAlerts());
-    dispatch(createServer({
+    dispatch(upsertServer({
       host: newServerHost,
       secure: newServerSecure,
     }));
@@ -52,11 +56,6 @@ export function AccountsSheet() {
   }
   const accountsLoading = accountsState.status == 'loading';
   const newAccountValid = newAccountUser.length > 0 && newAccountPass.length >= 8;
-
-  const [open, setOpen] = useState(false)
-  const [addingServer, setAddingServer] = useState(false)
-  const [addingAccount, setAddingAccount] = useState(false)
-  const [position, setPosition] = useState(0)
 
   if (serversState.successMessage) {
     setTimeout(() => {
@@ -178,8 +177,8 @@ export function AccountsSheet() {
                 horizontal={true}
                 data={servers}
                 keyExtractor={(server) => server.host}
-                renderItem={({ item }) => {
-                  return <ServerCard server={item} />;
+                renderItem={({ item: server }) => {
+                  return <ServerCard server={server} />;
                 }}
               // style={Styles.trueBackground}
               // contentContainerStyle={Styles.contentBackground}
@@ -248,7 +247,7 @@ export function AccountsSheet() {
 
               {accounts.length === 0 && <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading>}
 
-              {accounts.map((account) => <AccountCard account={account} />)}
+              {accounts.map((account) => <AccountCard account={account} key={account.id} />)}
               {/* <FlatList
                 data={accounts}
                 keyExtractor={(account) => account.id}

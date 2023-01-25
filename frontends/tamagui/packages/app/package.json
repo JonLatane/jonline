@@ -21,6 +21,7 @@
     "@tamagui/shorthands": "^1.0.15",
     "@tamagui/theme-base": "^1.0.15",
     "expo-linking": "^3.2.3",
+    "react-markdown": "^8.0.5",
     "react-native-get-random-values": "^1.8.0",
     "react-redux": "^8.0.5",
     "redux-persist": "^6.0.0",

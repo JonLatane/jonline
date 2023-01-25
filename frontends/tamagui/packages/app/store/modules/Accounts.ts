@@ -29,9 +29,9 @@ export type AccountOrServer = JonlineAccount | JonlineServer;
 export type JonlineCredentialClient = Jonline & {
   credential?: grpc.Metadata;
 }
-export function getCredentialClient(accountOrServer: AccountOrServer): JonlineCredentialClient {
+export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
   if ('server' in accountOrServer) {
-    let client = getServerClient(accountOrServer.server);
+    let client = await getServerClient(accountOrServer.server);
     let metadata = new grpc.Metadata();
     metadata.append('authorization', accountOrServer.accessToken.accessToken!);
     return { ...client, credential: metadata };
@@ -58,7 +58,7 @@ export type CreateAccount = JonlineServer & CreateAccountRequest;
 export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
   "accounts/create",
   async (createAccountRequest) => {
-    let client = getServerClient(createAccountRequest);
+    let client = await getServerClient(createAccountRequest);
     let refreshToken = await client.createAccount(createAccountRequest);
     let accessToken = refreshToken.accessToken!;
     let metadata = new grpc.Metadata();
@@ -78,7 +78,8 @@ export type Login = JonlineServer & LoginRequest;
 export const login = createAsyncThunk<JonlineAccount, Login>(
   "accounts/login",
   async (loginRequest) => {
-    let client = getServerClient(loginRequest);
+    let client = await getServerClient(loginRequest);
+    // debugger;
     let refreshToken = await client.login(loginRequest);
     let accessToken = refreshToken.accessToken!;
     let metadata = new grpc.Metadata();

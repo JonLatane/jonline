@@ -1,22 +1,21 @@
 import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack } from '@jonline/ui'
 import { ChevronDown, ChevronUp } from '@tamagui/lucide-icons'
-import { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
+import { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
-import { createServer, selectAllServers } from "../../store/modules/servers";
+import { upsertServer, selectAllServers } from "../../store/modules/servers";
 import { selectAllAccounts } from "../../store/modules/accounts";
 import { AccountsSheet } from '../accounts/accounts_sheet';
 
 export function HomeScreen() {
+  const serversState = useTypedSelector((state: RootState) => state.servers);
   const linkProps = useLink({
     href: '/user/nate',
   })
   const postLinkProps = useLink({
     href: '/post/asdf123',
   })
-  const dispatch = useTypedDispatch();
-  const serversState = useTypedSelector((state: RootState) => state.servers);
-
+  // const { dispatch, account_or_server } = useCredentialDispatch();
 
   return (
     <YStack f={1} jc="center" ai="center" p="$4" space>

@@ -35,7 +35,7 @@ export type CreatePost = AccountOrServer & CreatePostRequest;
 export const createPost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, CreatePost>(
   "posts/create",
   async (createPostRequest) => {
-    let client = getCredentialClient(createPostRequest);
+    let client = await getCredentialClient(createPostRequest);
     return client.createPost(createPostRequest, client.credential);
   }
 );
@@ -44,7 +44,7 @@ export type UpdatePosts = AccountOrServer & GetPostsRequest;
 export const updatePosts: AsyncThunk<GetPostsResponse, UpdatePosts, any> = createAsyncThunk<GetPostsResponse, UpdatePosts>(
   "posts/update",
   async (getPostsRequest) => {
-    let client = getCredentialClient(getPostsRequest);
+    let client = await getCredentialClient(getPostsRequest);
     return client.getPosts(getPostsRequest, client.credential);
   }
 );
@@ -60,7 +60,7 @@ export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any>
       replyDepth: 1
     })
     
-    let client = getCredentialClient(repliesRequest);
+    let client = await getCredentialClient(repliesRequest);
     return client.getPosts(getPostsRequest, client.credential);
   }
 );

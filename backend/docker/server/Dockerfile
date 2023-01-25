@@ -11,10 +11,6 @@ COPY frontends/flutter/build/web/ /opt/flutter_web
 # Tamagui web app release (served from the filesystem by Rocket within Jonline)
 COPY frontends/tamagui/apps/next/out/ /opt/tamagui_web
 
-# Copy the Jonline web templates.
-# COPY web/ /opt/web
-COPY web/ /templates
-
 # Jonline server binary (runs Rocket/FE/Web and Tonic/BE/gRPC services, all in one)
 COPY backend/target/release/jonline__server_release /opt/jonline
 

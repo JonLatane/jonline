@@ -1,4 +1,5 @@
 import {
+  AnyAction,
   createAsyncThunk,
   createEntityAdapter,
   createSlice,
@@ -11,6 +12,8 @@ import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/ui/src/generat
 import { ServerConfiguration } from "@jonline/ui/src/generated/server_configuration"
 import { Platform } from 'react-native';
 import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
+import store, { AppDispatch, useTypedDispatch } from "../store";
+import { useEffect } from "react";
 
 export type JonlineServer = {
   host: string;
@@ -25,7 +28,7 @@ export const timeout = async (time: number, label: string) => {
 }
 
 const clients = new Map<JonlineServer, JonlineClientImpl>();
-export function getServerClient(server: JonlineServer): Jonline {
+export async function getServerClient(server: JonlineServer): Promise<Jonline> {
   if (!clients.has(server)) {
     let host = `http${server.secure ? "s" : ""}://${server.host}:27707`
     // debugger;
@@ -34,7 +37,9 @@ export function getServerClient(server: JonlineServer): Jonline {
         transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
       })
     );
-    // debugger;
+    server.serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
+    server.serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
+    store.dispatch(upsertServer(server));
     clients.set(server, client);
     return client;
   }
@@ -56,21 +61,32 @@ const serversAdapter = createEntityAdapter<JonlineServer>({
   selectId: (server) => server.host,
 });
 
-export const createServer = createAsyncThunk<JonlineServer, JonlineServer>(
+export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
   "servers/create",
   async (server) => {
-    let client = getServerClient(server);
+    let client = await getServerClient(server);
     let serviceVersion: GetServiceVersionResponse = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
     let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
     return { ...server, serviceVersion, serverConfiguration };
   }
 );
 
+const initialServer: JonlineServer | undefined = Platform.OS == 'web' && globalThis.window?.location ? {
+  host: window.location.hostname,
+  secure: window.location.protocol == 'https:',
+} : {
+  host: 'jonline.io',
+  secure: true,
+}
+
 const initialState: ServersState = {
   status: "unloaded",
   error: undefined,
-  server: undefined,
-  ...serversAdapter.getInitialState(),
+  server: initialServer,
+  ...serversAdapter.getInitialState({
+    ids: initialServer ? [initialServer.host] : [],
+    entities: initialServer ? { [initialServer.host]: initialServer } : {},
+  }),
 };
 
 export const serversSlice = createSlice({
@@ -95,18 +111,18 @@ export const serversSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(createServer.pending, (state) => {
+    builder.addCase(upsertServer.pending, (state) => {
       state.status = "loading";
       state.error = undefined;
     });
-    builder.addCase(createServer.fulfilled, (state, action) => {
+    builder.addCase(upsertServer.fulfilled, (state, action) => {
       state.status = "loaded";
       state.server = action.payload;
       serversAdapter.upsertOne(state, action.payload);
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
       state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`;
     });
-    builder.addCase(createServer.rejected, (state, action) => {
+    builder.addCase(upsertServer.rejected, (state, action) => {
       state.status = "errored";
       console.error(`Error connecting to ${action.meta.arg.host}.`, action.error);
       state.errorMessage = `Error connecting to ${action.meta.arg.host}.`;

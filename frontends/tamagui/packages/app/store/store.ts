@@ -1,8 +1,9 @@
-import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { AnyAction, combineReducers, configureStore, Dispatch, Store, ThunkDispatch } from "@reduxjs/toolkit";
 import { createSelectorHook, useDispatch } from "react-redux";
 import thunkMiddleware from 'redux-thunk';
-import accountsReducer from "./modules/accounts";
-import serversReducer from "./modules/servers";
+import accountsReducer, { AccountOrServer, JonlineAccount } from "./modules/accounts";
+import serversReducer, { JonlineServer } from "./modules/servers";
+import localAppReducer, { LocalAppConfiguration } from "./modules/local_app";
 import postsReducer from "./modules/posts";
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
@@ -26,6 +27,7 @@ const postsPersistConfig = {
 }
 
 const rootReducer = combineReducers({
+  app: localAppReducer,
   accounts: persistReducer(accountsPersistConfig, accountsReducer),
   servers: persistReducer(serversPersistConfig, serversReducer),
   posts: persistReducer(postsPersistConfig, postsReducer)
@@ -40,11 +42,36 @@ const persistedReducer = persistReducer(rootPersistConfig, rootReducer)
 
 export type RootState = ReturnType<typeof rootReducer>;
 export const useTypedSelector = createSelectorHook();
-export const useTypedDispatch = () => useDispatch<any>();
 
+export type AppDispatch = ThunkDispatch<RootState, any, AnyAction>;
+export function useTypedDispatch(): AppDispatch {
+  return useDispatch<AppDispatch>()
+};
 
-const store = configureStore({ reducer: persistedReducer, middleware: [thunkMiddleware] });
-export const persistor = persistStore(store);
+export type CredentialDispatch = {
+  dispatch: AppDispatch;
+  account_or_server: AccountOrServer;
+};
+export function useCredentialDispatch(): CredentialDispatch {
+  let dispatch: AppDispatch = useTypedDispatch();
+  let account: AccountOrServer | undefined = useTypedSelector((state: RootState) => state.accounts.account);
+  let server: JonlineServer = useTypedSelector((state: RootState) => state.servers.server)!;
+  if (account) {
+    return { dispatch, account_or_server: account };
+  }
+  return { dispatch, account_or_server: server };
+}
+
+export type AppStore = Omit<Store<RootState, AnyAction>, "dispatch"> & {
+  dispatch: AppDispatch;
+};
+const store: AppStore = configureStore({
+  reducer: persistedReducer, 
+  middleware: (getDefaultMiddleware) => [...getDefaultMiddleware(), thunkMiddleware]
+});
+export const persistor = persistStore(store, {
+
+});
 
 
 // store.subscribe(() => {
