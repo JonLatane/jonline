@@ -6,6 +6,7 @@ import { useLink } from 'solito/link'
 import { upsertServer, selectAllServers } from "../../store/modules/servers";
 import { selectAllAccounts } from "../../store/modules/accounts";
 import { AccountsSheet } from '../accounts/accounts_sheet';
+import { TabsNavigation } from '../tabs/tabs_navigation';
 
 export function HomeScreen() {
   const serversState = useTypedSelector((state: RootState) => state.servers);
@@ -21,11 +22,43 @@ export function HomeScreen() {
   // const { dispatch, account_or_server } = useCredentialDispatch();
 
   return (
+    <TabsNavigation>
     <YStack f={1} jc="center" ai="center" p="$4" space>
       <YStack space="$4" maw={600}>
-        <H1 ta="center">Welcome to Jonline.</H1>
+        <H1 ta="center">Let's Get Jonline 🙃</H1>
         <Paragraph ta="center">
-          This new UI for Jonline's Rust/gRPC backend is built with React and Tamagui. It's a work in progress (WIP).
+          <Anchor color="$color12" href="https://github.com/JonLatane/jonline" target="_blank">
+            Jonline (give it a ⭐️!)
+          </Anchor>{' '}
+          is a federated social network built with Rust/gRPC, originally with a{' '}
+          <Anchor color="$color12" href="https://github.com/JonLatane/jonline/tree/main/frontends/flutter" target="_blank">
+            Flutter UI
+          </Anchor>.
+          It's designed to let small businesses and communities run their own social network,
+          make it easy to link to posts and events from other networks, and be easy and fun for users.
+          Made by{' '}
+          <Anchor color="$color12" href="https://instagram.com/jon_luvs_ya" target="_blank">
+            Jon Latané
+          </Anchor>.
+        </Paragraph>
+        <Paragraph ta="center">
+          This{' '}
+          <Anchor color="$color12" href="https://github.com/JonLatane/jonline/tree/main/frontends/tamagui" target="_blank">
+            new UI
+          </Anchor> for Jonline's{' '}
+          <Anchor color="$color12" href="https://github.com/JonLatane/jonline/tree/main/backend" target="_blank">
+            Rust/gRPC backend
+          </Anchor> is built with React and{' '}
+          <Anchor
+            color="$color12"
+            href="https://github.com/tamagui/tamagui"
+            target="_blank"
+            rel="noreferrer"
+          >Tamagui</Anchor>. It's a work in progress (WIP).
+        </Paragraph>
+        <Paragraph ta="center">
+          If this is a new server, create an admin account and go to server configuration
+          to set up your server and hide this intro message.
         </Paragraph>
         <Button {...flutterLinkProps}>Switch to Flutter UI</Button>
         {serversState.server != undefined || <Paragraph ta="center">
@@ -55,7 +88,8 @@ export function HomeScreen() {
         <Button {...postLinkProps}>[WIP] Link to post</Button>
       </XStack>
 
-      <AccountsSheet />
+      {/* <AccountsSheet /> */}
     </YStack>
+    </TabsNavigation>
   )
 }

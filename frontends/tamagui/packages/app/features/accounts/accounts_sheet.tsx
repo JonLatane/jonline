@@ -1,5 +1,5 @@
 import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch } from '@jonline/ui'
-import { ChevronDown, ChevronUp, Plus } from '@tamagui/lucide-icons'
+import { ChevronDown, ChevronUp, Plus, X } from '@tamagui/lucide-icons'
 import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
@@ -76,12 +76,15 @@ export function AccountsSheet() {
   return (
     <>
       <Button
-        size="$6"
-        icon={open ? ChevronDown : ChevronUp}
+        size="$5"
+        icon={open ? X : ChevronDown }
         // circular
         onPress={() => setOpen((x) => !x)}
       >
-        Accounts
+        <YStack>
+          {serversState.server && <Heading size='$1'>{serversState.server.host}/</Heading>}
+          {accountsState.account && <Heading size='$7' space='$0'>{accountsState.account.user.username}</Heading>}
+        </YStack>
       </Button>
       <Sheet
         modal

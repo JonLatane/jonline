@@ -4,6 +4,7 @@ import { RootState, useCredentialDispatch, useTypedSelector } from 'app/store/st
 import React from 'react'
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
+import { TabsNavigation } from '../tabs/tabs_navigation'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -13,11 +14,13 @@ export function UserDetailsScreen() {
   const { dispatch, account_or_server } = useCredentialDispatch();
 
   return (
-    <YStack f={1} jc="center" ai="center" space>
-      <Paragraph ta="center" fow="800">{`User ID: ${id}`}</Paragraph>
-      <Button {...linkProps} icon={ChevronLeft}>
-        Go Home
-      </Button>
-    </YStack>
+    <TabsNavigation>
+      <YStack f={1} jc="center" ai="center" space>
+        <Paragraph ta="center" fow="800">{`User ID: ${id}`}</Paragraph>
+        <Button {...linkProps} icon={ChevronLeft}>
+          Go Home
+        </Button>
+      </YStack>
+    </TabsNavigation>
   )
 }
