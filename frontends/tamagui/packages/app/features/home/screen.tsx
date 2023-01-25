@@ -15,12 +15,19 @@ export function HomeScreen() {
   const postLinkProps = useLink({
     href: '/post/asdf123',
   })
+  const flutterLinkProps = useLink({
+    href: '/flutter',
+  })
   // const { dispatch, account_or_server } = useCredentialDispatch();
 
   return (
     <YStack f={1} jc="center" ai="center" p="$4" space>
       <YStack space="$4" maw={600}>
         <H1 ta="center">Welcome to Jonline.</H1>
+        <Paragraph ta="center">
+          This new UI for Jonline's Rust/gRPC backend is built with React and Tamagui. It's a work in progress (WIP).
+        </Paragraph>
+        <Button {...flutterLinkProps}>Switch to Flutter UI</Button>
         {serversState.server != undefined || <Paragraph ta="center">
           Choose an account or server to get started.
         </Paragraph>}
@@ -44,8 +51,8 @@ export function HomeScreen() {
       </YStack>
 
       <XStack>
-        <Button {...linkProps}>Link to user</Button>
-        <Button {...postLinkProps}>Link to post</Button>
+        <Button {...linkProps} marginRight='$1'>[WIP] Link to user</Button>
+        <Button {...postLinkProps}>[WIP] Link to post</Button>
       </XStack>
 
       <AccountsSheet />
