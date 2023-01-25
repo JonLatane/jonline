@@ -217,9 +217,9 @@ export function AccountsSheet() {
                           setAddingAccount(false)
                         }}
                       />
-                      <Heading size="$10">Add Account</Heading>
-                      <Heading size="$6">{serversState.server?.host}/</Heading>
                       <YStack space="$2">
+                        <Heading size="$10">Add Account</Heading>
+                        <Heading size="$6">{serversState.server?.host}/</Heading>
                         <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter' autoCapitalize='none' disabled={accountsLoading}
                           value={newAccountUser}
                           onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
@@ -228,10 +228,10 @@ export function AccountsSheet() {
                           onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
 
                         <XStack>
-                          <Button style={{ flex: 2 }} onClick={createServerAccount} disabled={accountsLoading || !newAccountValid}>
+                          <Button flex={2} marginRight='$1' onClick={createServerAccount} disabled={accountsLoading || !newAccountValid}>
                             Create Account
                           </Button>
-                          <Button style={{ flex: 1 }} onClick={loginToServer} disabled={accountsLoading || !newAccountValid}>
+                          <Button flex={1} onClick={loginToServer} disabled={accountsLoading || !newAccountValid}>
                             Login
                           </Button>
                         </XStack>

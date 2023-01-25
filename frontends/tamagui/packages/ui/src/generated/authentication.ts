@@ -13,7 +13,7 @@ export interface CreateAccountRequest {
     | ContactMethod
     | undefined;
   /** Request an expiration time for the Auth Token returned. By default it will not expire. */
-  expiresAt?: Date | undefined;
+  expiresAt?: string | undefined;
   deviceName?: string | undefined;
 }
 
@@ -21,7 +21,7 @@ export interface LoginRequest {
   username: string;
   password: string;
   /** Request an expiration time for the Auth Token returned. By default it will not expire. */
-  expiresAt?: Date | undefined;
+  expiresAt?: string | undefined;
   deviceName?: string | undefined;
 }
 
@@ -35,18 +35,18 @@ export interface RefreshTokenResponse {
 export interface ExpirableToken {
   token: string;
   /** Optional expiration time for the token. If not set, the token will not expire. */
-  expiresAt?: Date | undefined;
+  expiresAt?: string | undefined;
 }
 
 export interface AccessTokenRequest {
   refreshToken: string;
   /** Optional *requested* expiration time for the token. Server may ignore this. */
-  expiresAt?: Date | undefined;
+  expiresAt?: string | undefined;
 }
 
 export interface AccessTokenResponse {
   accessToken?: string | undefined;
-  expiresAt?: Date | undefined;
+  expiresAt?: string | undefined;
 }
 
 function createBaseCreateAccountRequest(): CreateAccountRequest {
@@ -122,7 +122,7 @@ export const CreateAccountRequest = {
       password: isSet(object.password) ? String(object.password) : "",
       email: isSet(object.email) ? ContactMethod.fromJSON(object.email) : undefined,
       phone: isSet(object.phone) ? ContactMethod.fromJSON(object.phone) : undefined,
-      expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
+      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
       deviceName: isSet(object.deviceName) ? String(object.deviceName) : undefined,
     };
   },
@@ -133,7 +133,7 @@ export const CreateAccountRequest = {
     message.password !== undefined && (obj.password = message.password);
     message.email !== undefined && (obj.email = message.email ? ContactMethod.toJSON(message.email) : undefined);
     message.phone !== undefined && (obj.phone = message.phone ? ContactMethod.toJSON(message.phone) : undefined);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
+    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
     message.deviceName !== undefined && (obj.deviceName = message.deviceName);
     return obj;
   },
@@ -210,7 +210,7 @@ export const LoginRequest = {
     return {
       username: isSet(object.username) ? String(object.username) : "",
       password: isSet(object.password) ? String(object.password) : "",
-      expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
+      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
       deviceName: isSet(object.deviceName) ? String(object.deviceName) : undefined,
     };
   },
@@ -219,7 +219,7 @@ export const LoginRequest = {
     const obj: any = {};
     message.username !== undefined && (obj.username = message.username);
     message.password !== undefined && (obj.password = message.password);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
+    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
     message.deviceName !== undefined && (obj.deviceName = message.deviceName);
     return obj;
   },
@@ -354,14 +354,14 @@ export const ExpirableToken = {
   fromJSON(object: any): ExpirableToken {
     return {
       token: isSet(object.token) ? String(object.token) : "",
-      expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
+      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
     };
   },
 
   toJSON(message: ExpirableToken): unknown {
     const obj: any = {};
     message.token !== undefined && (obj.token = message.token);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
+    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
     return obj;
   },
 
@@ -416,14 +416,14 @@ export const AccessTokenRequest = {
   fromJSON(object: any): AccessTokenRequest {
     return {
       refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : "",
-      expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
+      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
     };
   },
 
   toJSON(message: AccessTokenRequest): unknown {
     const obj: any = {};
     message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
+    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
     return obj;
   },
 
@@ -478,14 +478,14 @@ export const AccessTokenResponse = {
   fromJSON(object: any): AccessTokenResponse {
     return {
       accessToken: isSet(object.accessToken) ? String(object.accessToken) : undefined,
-      expiresAt: isSet(object.expiresAt) ? fromJsonTimestamp(object.expiresAt) : undefined,
+      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
     };
   },
 
   toJSON(message: AccessTokenResponse): unknown {
     const obj: any = {};
     message.accessToken !== undefined && (obj.accessToken = message.accessToken);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt.toISOString());
+    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
     return obj;
   },
 
@@ -512,26 +512,17 @@ type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
-function toTimestamp(date: Date): Timestamp {
+function toTimestamp(dateStr: string): Timestamp {
+  const date = new Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
+function fromTimestamp(t: Timestamp): string {
   let millis = t.seconds * 1_000;
   millis += t.nanos / 1_000_000;
-  return new Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
-    return o;
-  } else if (typeof o === "string") {
-    return new Date(o);
-  } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
-  }
+  return new Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {

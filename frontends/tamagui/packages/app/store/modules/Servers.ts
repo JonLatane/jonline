@@ -14,6 +14,7 @@ import { Platform } from 'react-native';
 import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
 import store, { AppDispatch, useTypedDispatch } from "../store";
 import { useEffect } from "react";
+import { selectAccount } from "./accounts";
 
 export type JonlineServer = {
   host: string;
@@ -21,17 +22,19 @@ export type JonlineServer = {
   serviceVersion?: GetServiceVersionResponse;
   serverConfiguration?: ServerConfiguration;
 }
+function serverUrl(server: JonlineServer): string {
+  return `http${server.secure ? "s" : ""}://${server.host}:27707`;
+}
 
 export const timeout = async (time: number, label: string) => {
   await new Promise((res) => setTimeout(res, time));
   throw `Timed out getting ${label}.`;
 }
 
-const clients = new Map<JonlineServer, JonlineClientImpl>();
+const clients = new Map<string, JonlineClientImpl>();
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {
-  if (!clients.has(server)) {
-    let host = `http${server.secure ? "s" : ""}://${server.host}:27707`
-    // debugger;
+  let host = serverUrl(server);
+  if (!clients.has(host)) {
     let client = new JonlineClientImpl(
       new GrpcWebImpl(host, {
         transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
@@ -39,11 +42,11 @@ export async function getServerClient(server: JonlineServer): Promise<Jonline> {
     );
     server.serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
     server.serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
+    clients.set(host, client);
     store.dispatch(upsertServer(server));
-    clients.set(server, client);
     return client;
   }
-  return clients.get(server)!;
+  return clients.get(host)!;
 }
 
 export interface ServersState {
@@ -58,16 +61,17 @@ export interface ServersState {
 }
 
 const serversAdapter = createEntityAdapter<JonlineServer>({
-  selectId: (server) => server.host,
+  selectId: serverUrl,
 });
 
 export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
   "servers/create",
   async (server) => {
+    // getServerClient will update/upsert the server as a side effect.
     let client = await getServerClient(server);
-    let serviceVersion: GetServiceVersionResponse = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
-    let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
-    return { ...server, serviceVersion, serverConfiguration };
+    // let serviceVersion: GetServiceVersionResponse = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
+    // let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
+    return server;
   }
 );
 
@@ -117,7 +121,12 @@ export const serversSlice = createSlice({
     });
     builder.addCase(upsertServer.fulfilled, (state, action) => {
       state.status = "loaded";
-      state.server = action.payload;
+      // let server = action.payload
+      // state.server = action.payload;
+      // if (store.getState().accounts.account?.server.host != server.host || store.getState().accounts.account?.server.secure != server.secure) {
+      //   store.dispatch(selectAccount(undefined));
+      // }
+      // getServerClient will update/upsert the server as a side effect.
       serversAdapter.upsertOne(state, action.payload);
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
       state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`;

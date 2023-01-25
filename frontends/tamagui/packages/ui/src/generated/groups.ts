@@ -77,8 +77,8 @@ export interface Group {
   memberCount: number;
   postCount: number;
   currentUserMembership?: Membership | undefined;
-  createdAt: Date | undefined;
-  updatedAt?: Date | undefined;
+  createdAt: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 export interface GetGroupsRequest {
@@ -268,8 +268,8 @@ export const Group = {
       currentUserMembership: isSet(object.currentUserMembership)
         ? Membership.fromJSON(object.currentUserMembership)
         : undefined,
-      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
   },
 
@@ -297,8 +297,8 @@ export const Group = {
     message.currentUserMembership !== undefined && (obj.currentUserMembership = message.currentUserMembership
       ? Membership.toJSON(message.currentUserMembership)
       : undefined);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
   },
 
@@ -743,26 +743,17 @@ type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
-function toTimestamp(date: Date): Timestamp {
+function toTimestamp(dateStr: string): Timestamp {
+  const date = new Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
+function fromTimestamp(t: Timestamp): string {
   let millis = t.seconds * 1_000;
   millis += t.nanos / 1_000_000;
-  return new Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
-    return o;
-  } else if (typeof o === "string") {
-    return new Date(o);
-  } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
-  }
+  return new Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {

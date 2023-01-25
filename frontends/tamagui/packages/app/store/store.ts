@@ -5,7 +5,7 @@ import accountsReducer, { AccountOrServer, JonlineAccount } from "./modules/acco
 import serversReducer, { JonlineServer } from "./modules/servers";
 import localAppReducer, { LocalAppConfiguration } from "./modules/local_app";
 import postsReducer from "./modules/posts";
-import { persistStore, persistReducer } from 'redux-persist'
+import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -67,7 +67,11 @@ export type AppStore = Omit<Store<RootState, AnyAction>, "dispatch"> & {
 };
 const store: AppStore = configureStore({
   reducer: persistedReducer, 
-  middleware: (getDefaultMiddleware) => [...getDefaultMiddleware(), thunkMiddleware]
+  middleware: (getDefaultMiddleware) => [...getDefaultMiddleware({
+    serializableCheck: {
+      ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+    }
+  }), thunkMiddleware]
 });
 export const persistor = persistStore(store, {
 

@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import store, { RootState, useTypedDispatch, useTypedSelector } from "../../store/store";
 import { JonlineServer, removeServer, selectServer } from "../../store/modules/servers";
-import { AlertDialog, Button, Card, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
+import { Dialog, Button, Card, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
 import { Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import Accounts, { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
 
@@ -55,19 +55,19 @@ const ServerCard: React.FC<Props> = ({ server }) => {
               <Heading size="$1" style={{ marginRight: 'auto' }}>{accounts.length || "No"} account{accounts.length == 1 ? '' : 's'}</Heading>
               {server.serviceVersion && <Heading size="$1" style={{ marginRight: 'auto' }}>{server.serviceVersion?.version}</Heading>}
             </YStack>
-            <AlertDialog native>
-              <AlertDialog.Trigger asChild>
-                <Button icon={<Trash />} color="red" />
-              </AlertDialog.Trigger>
-              <AlertDialog.Portal>
-                <AlertDialog.Overlay
+            <Dialog>
+              <Dialog.Trigger asChild>
+                <Button onClick={(e) => {e.stopPropagation();}} icon={<Trash />} color="red" />
+              </Dialog.Trigger>
+              <Dialog.Portal>
+                <Dialog.Overlay
                   key="overlay"
                   animation="quick"
                   o={0.5}
                   enterStyle={{ o: 0 }}
                   exitStyle={{ o: 0 }}
                 />
-                <AlertDialog.Content
+                <Dialog.Content
                   bordered
                   elevate
                   key="content"
@@ -87,25 +87,25 @@ const ServerCard: React.FC<Props> = ({ server }) => {
                   y={0}
                 >
                   <YStack space>
-                    <AlertDialog.Title>Remove Server</AlertDialog.Title>
-                    <AlertDialog.Description>
-                      <Paragraph>
+                    <Dialog.Title>Remove Server</Dialog.Title>
+                    <Dialog.Description>
+                      {/* <Paragraph> */}
                         Really remove {server.host}{accounts.length == 1 ? ' and one account' : accounts.length > 1 ? ` and ${accounts.length} accounts` : ''}?
-                      </Paragraph>
-                    </AlertDialog.Description>
+                      {/* </Paragraph> */}
+                    </Dialog.Description>
 
                     <XStack space="$3" jc="flex-end">
-                      <AlertDialog.Cancel asChild>
+                      <Dialog.Close asChild>
                         <Button>Cancel</Button>
-                      </AlertDialog.Cancel>
-                      <AlertDialog.Action asChild onClick={doRemoveServer}>
-                        <Button theme="active">Remove</Button>
-                      </AlertDialog.Action>
+                      </Dialog.Close>
+                      {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
+                        <Button theme="active" onClick={doRemoveServer}>Remove</Button>
+                      {/* </Dialog.Action> */}
                     </XStack>
                   </YStack>
-                </AlertDialog.Content>
-              </AlertDialog.Portal>
-            </AlertDialog>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog>
           </XStack>
         </Card.Footer>
         {/* <Card.Background backgroundColor={selected ? '#424242' : undefined} /> */}

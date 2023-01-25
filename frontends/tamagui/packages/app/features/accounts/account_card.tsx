@@ -21,6 +21,11 @@ const AccountCard: React.FC<Props> = ({ account }) => {
     }
     dispatch(selectAccount(account));
   }
+
+  function doLogout() {
+    dispatch(selectAccount(undefined));
+  }
+
   return (
     <Theme inverse={selected}>
       <Card theme="dark" elevate size="$4" bordered
@@ -31,7 +36,8 @@ const AccountCard: React.FC<Props> = ({ account }) => {
         scale={0.9}
         hoverStyle={{ scale: 0.925 }}
         pressStyle={{ scale: 0.875 }}
-        onClick={doSelectAccount}>
+        onClick={doSelectAccount}
+        >
         <Card.Header>
           <XStack>
             <YStack style={{ flex: 1 }}>
@@ -49,10 +55,10 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Paragraph size='$1' alignSelf="center">{account.user.id}</Paragraph>
             </YStack>
             <View style={{ flex: 1 }} />
-
+            {selected && <Button onClick={(e) => {e.stopPropagation(); doLogout();}} marginRight='$1'>Logout</Button>}
             <Dialog>
               <Dialog.Trigger asChild>
-                <Button icon={<Trash />} color="red" />
+                <Button icon={<Trash />} onClick={(e) => {e.stopPropagation();}} color="red" />
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay

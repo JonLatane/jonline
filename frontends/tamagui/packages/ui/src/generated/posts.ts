@@ -153,8 +153,8 @@ export interface Post {
    * (time, moderation) if that's relevant.
    */
   currentGroupPost?: GroupPost | undefined;
-  createdAt: Date | undefined;
-  updatedAt?: Date | undefined;
+  createdAt: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 /**
@@ -171,13 +171,13 @@ export interface GroupPost {
   postId: string;
   userId: string;
   groupModeration: Moderation;
-  createdAt: Date | undefined;
+  createdAt: string | undefined;
 }
 
 export interface UserPost {
   groupId: string;
   userId: string;
-  createdAt: Date | undefined;
+  createdAt: string | undefined;
 }
 
 /** Used for getting context about GroupPosts of an existing Post. */
@@ -567,8 +567,8 @@ export const Post = {
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
       groupCount: isSet(object.groupCount) ? Number(object.groupCount) : 0,
       currentGroupPost: isSet(object.currentGroupPost) ? GroupPost.fromJSON(object.currentGroupPost) : undefined,
-      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
   },
 
@@ -594,8 +594,8 @@ export const Post = {
     message.groupCount !== undefined && (obj.groupCount = Math.round(message.groupCount));
     message.currentGroupPost !== undefined &&
       (obj.currentGroupPost = message.currentGroupPost ? GroupPost.toJSON(message.currentGroupPost) : undefined);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
   },
 
@@ -751,7 +751,7 @@ export const GroupPost = {
       postId: isSet(object.postId) ? String(object.postId) : "",
       userId: isSet(object.userId) ? String(object.userId) : "",
       groupModeration: isSet(object.groupModeration) ? moderationFromJSON(object.groupModeration) : 0,
-      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
     };
   },
 
@@ -761,7 +761,7 @@ export const GroupPost = {
     message.postId !== undefined && (obj.postId = message.postId);
     message.userId !== undefined && (obj.userId = message.userId);
     message.groupModeration !== undefined && (obj.groupModeration = moderationToJSON(message.groupModeration));
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
     return obj;
   },
 
@@ -826,7 +826,7 @@ export const UserPost = {
     return {
       groupId: isSet(object.groupId) ? String(object.groupId) : "",
       userId: isSet(object.userId) ? String(object.userId) : "",
-      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
     };
   },
 
@@ -834,7 +834,7 @@ export const UserPost = {
     const obj: any = {};
     message.groupId !== undefined && (obj.groupId = message.groupId);
     message.userId !== undefined && (obj.userId = message.userId);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
     return obj;
   },
 
@@ -1025,26 +1025,17 @@ type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
-function toTimestamp(date: Date): Timestamp {
+function toTimestamp(dateStr: string): Timestamp {
+  const date = new Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
+function fromTimestamp(t: Timestamp): string {
   let millis = t.seconds * 1_000;
   millis += t.nanos / 1_000_000;
-  return new Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
-    return o;
-  } else if (typeof o === "string") {
-    return new Date(o);
-  } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
-  }
+  return new Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {

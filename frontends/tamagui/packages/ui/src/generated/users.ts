@@ -104,16 +104,16 @@ export interface User {
    */
   targetCurrentUserFollow?: Follow | undefined;
   currentGroupMembership?: Membership | undefined;
-  createdAt: Date | undefined;
-  updatedAt?: Date | undefined;
+  createdAt: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 export interface Follow {
   userId: string;
   targetUserId: string;
   targetUserModeration: Moderation;
-  createdAt: Date | undefined;
-  updatedAt?: Date | undefined;
+  createdAt: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 export interface Membership {
@@ -130,8 +130,8 @@ export interface Membership {
   groupModeration: Moderation;
   /** Tracks whether the user needs to approve the membership. */
   userModeration: Moderation;
-  createdAt: Date | undefined;
-  updatedAt?: Date | undefined;
+  createdAt: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 export interface ContactMethod {
@@ -358,8 +358,8 @@ export const User = {
       currentGroupMembership: isSet(object.currentGroupMembership)
         ? Membership.fromJSON(object.currentGroupMembership)
         : undefined,
-      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
   },
 
@@ -394,8 +394,8 @@ export const User = {
     message.currentGroupMembership !== undefined && (obj.currentGroupMembership = message.currentGroupMembership
       ? Membership.toJSON(message.currentGroupMembership)
       : undefined);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
   },
 
@@ -500,8 +500,8 @@ export const Follow = {
       userId: isSet(object.userId) ? String(object.userId) : "",
       targetUserId: isSet(object.targetUserId) ? String(object.targetUserId) : "",
       targetUserModeration: isSet(object.targetUserModeration) ? moderationFromJSON(object.targetUserModeration) : 0,
-      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
   },
 
@@ -511,8 +511,8 @@ export const Follow = {
     message.targetUserId !== undefined && (obj.targetUserId = message.targetUserId);
     message.targetUserModeration !== undefined &&
       (obj.targetUserModeration = moderationToJSON(message.targetUserModeration));
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
   },
 
@@ -621,8 +621,8 @@ export const Membership = {
       permissions: Array.isArray(object?.permissions) ? object.permissions.map((e: any) => permissionFromJSON(e)) : [],
       groupModeration: isSet(object.groupModeration) ? moderationFromJSON(object.groupModeration) : 0,
       userModeration: isSet(object.userModeration) ? moderationFromJSON(object.userModeration) : 0,
-      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
   },
 
@@ -637,8 +637,8 @@ export const Membership = {
     }
     message.groupModeration !== undefined && (obj.groupModeration = moderationToJSON(message.groupModeration));
     message.userModeration !== undefined && (obj.userModeration = moderationToJSON(message.userModeration));
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
   },
 
@@ -922,26 +922,17 @@ type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
-function toTimestamp(date: Date): Timestamp {
+function toTimestamp(dateStr: string): Timestamp {
+  const date = new Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
+function fromTimestamp(t: Timestamp): string {
   let millis = t.seconds * 1_000;
   millis += t.nanos / 1_000_000;
-  return new Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
-  if (o instanceof Date) {
-    return o;
-  } else if (typeof o === "string") {
-    return new Date(o);
-  } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
-  }
+  return new Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {
