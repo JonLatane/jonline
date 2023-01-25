@@ -88,8 +88,8 @@ const initialState: ServersState = {
   error: undefined,
   server: initialServer,
   ...serversAdapter.getInitialState({
-    ids: initialServer ? [initialServer.host] : [],
-    entities: initialServer ? { [initialServer.host]: initialServer } : {},
+    ids: initialServer ? [serverUrl(initialServer)] : [],
+    entities: initialServer ? { [serverUrl(initialServer)]: initialServer } : {},
   }),
 };
 
