@@ -45,7 +45,7 @@ export const updatePosts: AsyncThunk<GetPostsResponse, UpdatePosts, any> = creat
   "posts/update",
   async (getPostsRequest) => {
     let client = await getCredentialClient(getPostsRequest);
-    return client.getPosts(getPostsRequest, client.credential);
+    return await client.getPosts(getPostsRequest, client.credential);
   }
 );
 

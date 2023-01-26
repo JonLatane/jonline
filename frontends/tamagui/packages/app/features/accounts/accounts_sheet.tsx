@@ -1,5 +1,5 @@
-import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch } from '@jonline/ui'
-import { ChevronDown, ChevronUp, Plus, X } from '@tamagui/lucide-icons'
+import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens } from '@jonline/ui'
+import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon } from '@tamagui/lucide-icons'
 import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
@@ -9,7 +9,13 @@ import { FlatList, View } from 'react-native';
 import ServerCard from './server_card';
 import AccountCard from './account_card';
 
-export function AccountsSheet() {
+export type AccountSheetProps = {
+  size?: SizeTokens;
+  showIcon?: boolean;
+  circular?: boolean;
+}
+
+export function AccountsSheet({ size = '$5', circular = false }: AccountSheetProps) {
   const [newServerHost, setNewServerHost] = useState('');
   const [newServerSecure, setNewServerSecure] = useState(true);
   const [newAccountUser, setNewAccountUser] = useState('');
@@ -76,15 +82,15 @@ export function AccountsSheet() {
   return (
     <>
       <Button
-        size="$5"
-        icon={open ? X : ChevronDown }
-        // circular
+        size={size}
+        icon={circular ? UserIcon : open ? XIcon : ChevronDown}
+        circular={circular}
         onPress={() => setOpen((x) => !x)}
       >
-        <YStack>
-          {serversState.server && <Heading size='$1'>{serversState.server.host}/</Heading>}
-          {accountsState.account && <Heading size='$7' space='$0'>{accountsState.account.user.username}</Heading>}
-        </YStack>
+        {circular || <YStack>
+          {serversState.server && <Heading transform={[{translateY: serversState.server? 2 :0}]} size='$1'>{serversState.server.host}/</Heading>}
+          {accountsState.account && <Heading transform={[{translateY: -2}]} size='$7' space='$0'>{accountsState.account.user.username}</Heading>}
+        </YStack>}
       </Button>
       <Sheet
         modal
@@ -241,7 +247,7 @@ export function AccountsSheet() {
 
                         {accountsState.errorMessage && <Heading size="$2" color="red" alignSelf='center'>{accountsState.errorMessage}</Heading>}
                         {accountsState.successMessage && <Heading size="$2" color="green" alignSelf='center'>{accountsState.successMessage}</Heading>}
-                     
+
                       </YStack>
                     </Sheet.Frame>
                   </Sheet>

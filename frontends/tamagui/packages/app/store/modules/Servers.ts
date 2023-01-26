@@ -121,13 +121,11 @@ export const serversSlice = createSlice({
     });
     builder.addCase(upsertServer.fulfilled, (state, action) => {
       state.status = "loaded";
-      // let server = action.payload
-      // state.server = action.payload;
-      // if (store.getState().accounts.account?.server.host != server.host || store.getState().accounts.account?.server.secure != server.secure) {
-      //   store.dispatch(selectAccount(undefined));
-      // }
-      // getServerClient will update/upsert the server as a side effect.
+      let server = action.payload
       serversAdapter.upsertOne(state, action.payload);
+      if (!state.server || serverUrl(server) == serverUrl(state.server!)) {
+        state.server = server;
+      }
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
       state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`;
     });

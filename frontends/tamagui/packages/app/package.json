@@ -24,6 +24,7 @@
     "react-markdown": "^8.0.5",
     "react-native-get-random-values": "^1.8.0",
     "react-redux": "^8.0.5",
+    "react-sticky-box": "^1.0.2",
     "redux-persist": "^6.0.0",
     "solito": "2.0.0-canary.4",
     "uuid": "^9.0.0"
