@@ -12,9 +12,10 @@ import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/ui/src/generat
 import { ServerConfiguration } from "@jonline/ui/src/generated/server_configuration"
 import { Platform } from 'react-native';
 import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
-import store, { AppDispatch, useTypedDispatch } from "../store";
+import store, { AppDispatch, resetCredentialedData, useTypedDispatch } from "../store";
 import { useEffect } from "react";
 import { selectAccount } from "./accounts";
+import {resetPosts} from './posts';
 
 export type JonlineServer = {
   host: string;
@@ -40,11 +41,14 @@ export async function getServerClient(server: JonlineServer): Promise<Jonline> {
         transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
       })
     );
-    server.serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
-    server.serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
-    // debugger;
     clients.set(host, client);
-    store.dispatch(upsertServer(server));
+    try {
+      server.serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
+      server.serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
+      store.dispatch(upsertServer(server));
+    } catch (e) {
+      clients.delete(host);
+    }
     return client;
   }
   return clients.get(host)!;
@@ -99,7 +103,7 @@ export const serversSlice = createSlice({
   initialState: initialState,
   reducers: {
     upsertServer: serversAdapter.upsertOne,
-    removeServer: (state, action: PayloadAction<JonlineServer>) => { 
+    removeServer: (state, action: PayloadAction<JonlineServer>) => {
       if (state.server && serverUrl(state.server) == serverUrl(action.payload)) {
         state.server = undefined;
       }
@@ -112,6 +116,10 @@ export const serversSlice = createSlice({
       state.error = undefined;
     },
     selectServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
+      let currentUrl = state.server ? serverUrl(state.server) : undefined;
+      if (currentUrl != serverUrl(action.payload!)) {
+        resetCredentialedData();
+      }
       state.server = action.payload;
     },
   },

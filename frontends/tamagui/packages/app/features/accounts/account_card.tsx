@@ -45,7 +45,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Heading size="$7" style={{ marginRight: 'auto' }}>{account.user.username}</Heading>
             </YStack>
             {/* {account.server.secure ? <Lock/> : <Unlock/>} */}
-            {account.user.permissions.includes(Permission.ADMIN) && <Shield />}
+            {account.user.permissions.includes(Permission.ADMIN) ? <Shield /> : undefined}
           </XStack>
         </Card.Header>
         <Card.Footer>
@@ -55,7 +55,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Paragraph size='$1' alignSelf="center">{account.user.id}</Paragraph>
             </YStack>
             <View style={{ flex: 1 }} />
-            {selected && <Button onClick={(e) => {e.stopPropagation(); doLogout();}} marginRight='$1'>Logout</Button>}
+            {selected ? <Button onClick={(e) => {e.stopPropagation(); doLogout();}} marginRight='$1'>Logout</Button> : undefined}
             <Dialog>
               <Dialog.Trigger asChild>
                 <Button icon={<Trash />} onClick={(e) => {e.stopPropagation();}} color="red" />

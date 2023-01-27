@@ -9,6 +9,7 @@ import { FlatList, View } from 'react-native';
 import ServerCard from './server_card';
 import AccountCard from './account_card';
 import { SettingsSheet } from '../settings_sheet';
+import {v4 as uuidv4} from 'uuid';
 
 export type AccountSheetProps = {
   size?: SizeTokens;
@@ -81,6 +82,8 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
       setAddingAccount(false);
     }, 1000);
   }
+  // bc react native may render multiple accounts sheets at a time
+  const secureLabelUuid = uuidv4();
   return (
     <>
       <Button
@@ -89,9 +92,9 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
         circular={circular}
         onPress={() => setOpen((x) => !x)}
       >
-        {circular || <YStack>
-          {serversState.server && <Heading transform={[{ translateY: serversState.server ? 2 : 0 }]} size='$1'>{serversState.server.host}/</Heading>}
-          {accountsState.account && <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{accountsState.account.user.username}</Heading>}
+        {circular ? undefined : <YStack>
+          {serversState.server ? <Heading transform={[{ translateY: serversState.server ? 2 : 0 }]} size='$1'>{serversState.server.host}/</Heading> : undefined}
+          {accountsState.account ? <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{accountsState.account.user.username}</Heading> : undefined}
         </YStack>}
       </Button>
       <Sheet
@@ -99,7 +102,7 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
         open={open}
         onOpenChange={setOpen}
         // snapPoints={[80]}
-        snapPoints={[90]}
+        snapPoints={[87]}
         position={position}
         onPositionChange={setPosition}
         dismissOnSnapToBottom
@@ -145,9 +148,9 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                   <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
 
                   <XStack f={1} />
-                  {!browsingServers && <Heading size='$3' marginTop='$2'>
-                    {serversState.server ? serversState.server.host : '<None>'}
-                  </Heading>}
+                  {!browsingServers 
+                    ? <Heading size='$3' marginTop='$2'>{serversState.server ? serversState.server.host : '<None>'}</Heading> 
+                    : undefined}
                   <XStack f={1} />
                   <Button
                     size="$3"
@@ -157,7 +160,7 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                   >
                     {browsingServers ? 'Back' : 'Select'}
                   </Button>
-                  {browsingServers && <Button
+                  {browsingServers ? <Button
                     size="$3"
                     icon={Plus}
                     marginLeft='$2'
@@ -165,13 +168,13 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                     onPress={() => setAddingServer((x) => !x)}
                   >
                     Add
-                  </Button>}
+                  </Button> : undefined}
                   <Sheet
                     modal
                     open={addingServer}
                     onOpenChange={setAddingServer}
                     // snapPoints={[80]}
-                    snapPoints={[90]} dismissOnSnapToBottom
+                    snapPoints={[82]} dismissOnSnapToBottom
                     position={position}
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
@@ -195,14 +198,14 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                             value={newServerHost}
                             onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
                         </YStack>
-                        {newServerHostNotBlank && newServerExists && !serversState.successMessage && <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading>}
+                        {(newServerHostNotBlank && newServerExists && !serversState.successMessage) ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading> : undefined}
                         <XStack>
                           <YStack style={{ flex: 1, marginLeft: 'auto', marginRight: 'auto' }}>
-                            <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id="newServerSecure" aria-label='Secure'
+                            <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
                               defaultChecked
                               onCheckedChange={(checked) => setNewServerSecure(checked)} disabled={serversLoading} />
 
-                            <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor="newServerSecure" >
+                            <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
                               <Heading size="$2">Secure</Heading>
                             </Label>
                           </YStack>
@@ -210,17 +213,17 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                             Add Server
                           </Button>
                         </XStack>
-                        {serversState.errorMessage && <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading>}
-                        {serversState.successMessage && <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading>}
+                        {serversState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading> : undefined}
+                        {serversState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading> : undefined}
                       </YStack>
                     </Sheet.Frame>
                   </Sheet>
                 </XStack>
               </YStack>
 
-              {servers.length === 0 && <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading>}
+              {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
 
-              {browsingServers && <FlatList
+              {browsingServers ? <FlatList
                 horizontal={true}
                 data={servers}
                 keyExtractor={(server) => server.host}
@@ -229,8 +232,8 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                 }}
               // style={Styles.trueBackground}
               // contentContainerStyle={Styles.contentBackground}
-              />}
-              {!browsingServers && <YStack h="$2"/>}
+              /> : undefined}
+              {!browsingServers ? <YStack h="$2" /> : undefined}
               <YStack space="$2">
                 <XStack>
                   <Heading style={{ flex: 1 }}>Accounts</Heading>
@@ -248,7 +251,7 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                     open={addingAccount}
                     onOpenChange={setAddingAccount}
                     // snapPoints={[80]}
-                    snapPoints={[90]} dismissOnSnapToBottom
+                    snapPoints={[82]} dismissOnSnapToBottom
                     position={position}
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
@@ -284,8 +287,8 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                           </Button>
                         </XStack>
 
-                        {accountsState.errorMessage && <Heading size="$2" color="red" alignSelf='center'>{accountsState.errorMessage}</Heading>}
-                        {accountsState.successMessage && <Heading size="$2" color="green" alignSelf='center'>{accountsState.successMessage}</Heading>}
+                        {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{accountsState.errorMessage}</Heading> : undefined}
+                        {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{accountsState.successMessage}</Heading> : undefined}
 
                       </YStack>
                     </Sheet.Frame>
@@ -293,7 +296,7 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                 </XStack>
               </YStack>
 
-              {accounts.length === 0 && <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading>}
+              {accounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
 
               {accounts.map((account) => <AccountCard account={account} key={account.id} />)}
               {/* <FlatList

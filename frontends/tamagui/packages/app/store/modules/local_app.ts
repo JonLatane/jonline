@@ -15,10 +15,14 @@ import store, { RootState, useTypedDispatch, useTypedSelector } from "../store";
 
 export type LocalAppConfiguration = {
   showIntro: boolean;
+  darkModeAuto: boolean;
+  darkMode: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
   showIntro: true,
+  darkModeAuto: true,
+  darkMode: false,
 };
 
 export const localAppSlice = createSlice({

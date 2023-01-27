@@ -4,7 +4,7 @@ import thunkMiddleware from 'redux-thunk';
 import accountsReducer, { AccountOrServer, JonlineAccount } from "./modules/accounts";
 import serversReducer, { JonlineServer } from "./modules/servers";
 import localAppReducer, { LocalAppConfiguration } from "./modules/local_app";
-import postsReducer, { RemovePostPreviews } from "./modules/posts";
+import postsReducer, { RemovePostPreviews, resetPosts } from "./modules/posts";
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import { Platform } from 'react-native';
@@ -68,27 +68,21 @@ export type AppStore = Omit<Store<RootState, AnyAction>, "dispatch"> & {
   dispatch: AppDispatch;
 };
 const store: AppStore = configureStore({
-  reducer: persistedReducer, 
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) => [...getDefaultMiddleware({
     serializableCheck: {
       ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
     }
   }), thunkMiddleware]
 });
-export const persistor = persistStore(store, {
 
-});
+export const persistor = persistStore(store);
 
-
-// store.subscribe(() => {
-//   localStorage.setItem("servers", JSON.stringify({ ...store.getState().servers }));
-//   localStorage.setItem("accounts", JSON.stringify({ ...store.getState().accounts }));
-// })
+// Reset store data that depends on selected server/account.
+export function resetCredentialedData() {
+  setTimeout(() => {
+    store.dispatch(resetPosts!());
+  }, 1);
+}
 
 export default store;
-// export default () => {
-//   let store = configureStore({ reducer: rootReducer, middleware: [thunkMiddleware] });
-//   let persistor = persistStore(store);
-//   return { store, persistor }
-// }
-

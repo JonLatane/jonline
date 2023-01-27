@@ -17,7 +17,7 @@ const ServerCard: React.FC<Props> = ({ server }) => {
     .filter(account => account.server.host == server.host);
 
   function doSelectServer() {
-    if (useTypedSelector((state: RootState) => state.accounts).account?.server.host != server.host) {
+    if (selected) {
       dispatch(selectAccount(undefined));
     }
     dispatch(selectServer(server));
@@ -52,8 +52,8 @@ const ServerCard: React.FC<Props> = ({ server }) => {
         <Card.Footer>
           <XStack width='100%'>
             <YStack style={{ flex: 10 }}>
-              <Heading size="$1" style={{ marginRight: 'auto' }}>{accounts.length || "No"} account{accounts.length == 1 ? '' : 's'}</Heading>
-              {server.serviceVersion && <Heading size="$1" style={{ marginRight: 'auto' }}>{server.serviceVersion?.version}</Heading>}
+              <Heading size="$1" style={{ marginRight: 'auto' }}>{accounts.length ? '' : "No "}account{accounts.length == 1 ? '' : 's'}</Heading>
+              {server.serviceVersion ? <Heading size="$1" style={{ marginRight: 'auto' }}>{server.serviceVersion?.version}</Heading> : undefined}
             </YStack>
             <Dialog>
               <Dialog.Trigger asChild>

@@ -1,6 +1,6 @@
 import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens } from '@jonline/ui'
-import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon, Settings as SettingsIcon } from '@tamagui/lucide-icons'
-import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
+import { ChevronDown, ChevronUp, Plus, Delete, X as XIcon, User as UserIcon, Settings as SettingsIcon } from '@tamagui/lucide-icons'
+import store, { resetCredentialedData, RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
 // import { clearAlerts as clearServerAlerts, upsertServer, selectAllServers } from "../../store/modules/servers";
@@ -18,21 +18,8 @@ export type SettingsSheetProps = {
 export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState(0)
-  // const [newServerHost, setNewServerHost] = useState('');
-  // const [newServerSecure, setNewServerSecure] = useState(true);
-  // const [newAccountUser, setNewAccountUser] = useState('');
-  // const [newAccountPass, setNewAccountPass] = useState('');
-  // const [addingServer, setAddingServer] = useState(false)
-  // const [addingAccount, setAddingAccount] = useState(false)
-
   const dispatch = useTypedDispatch();
   const app = useTypedSelector((state: RootState) => state.app);
-  // const serversState = useTypedSelector((state: RootState) => state.servers);
-  // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  // const serversLoading = serversState.status == 'loading';
-  // const newServerHostNotBlank = newServerHost != '';
-  // const newServerExists = servers.some(s => s.host == newServerHost);
-  // const newServerValid = newServerHostNotBlank && !newServerExists;
 
   return (
     <>
@@ -77,6 +64,11 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
                                 </Switch>
 
+              </XStack>
+              <XStack>
+                <Button f={1} icon={XIcon} onPress={resetCredentialedData}>
+                  Reset Credentialed Data (Posts etc)
+                </Button>
               </XStack>
             </YStack>
           </Sheet.ScrollView>

@@ -21,6 +21,7 @@ export interface PostsState {
   draftPost: Post;
   ids: EntityId[];
   entities: Dictionary<Post>;
+  previews: Dictionary<string>;
 }
 
 export interface PostsSlice {
@@ -50,14 +51,34 @@ export const updatePosts: AsyncThunk<GetPostsResponse, UpdatePosts, any> = creat
   }
 );
 
-const postPreviews = new Map<string, Uint8Array>();
-export type LoadPostPreview = AccountOrServer & Post;
-export const loadPostPreview: AsyncThunk<Post, LoadPostPreview, any> = createAsyncThunk<Post, LoadPostPreview>(
+export type LoadPostPreview = Post & AccountOrServer;
+export const loadPostPreview: AsyncThunk<string, LoadPostPreview, any> = createAsyncThunk<string, LoadPostPreview>(
   "posts/loadPreview",
   async (request) => {
     let client = await getCredentialClient(request);
     let response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
-    return response.posts[0]!;
+    let post = response.posts[0]!;
+    return post.previewImage
+      ? URL.createObjectURL(new Blob([post.previewImage!], { type: 'image/png' }))
+      : '';
+  }
+);
+
+export type LoadPost = { id: string } & AccountOrServer;
+export type LoadPostResult = {
+  post: Post;
+  preview: string;
+}
+export const loadPost: AsyncThunk<LoadPostResult, LoadPost, any> = createAsyncThunk<LoadPostResult, LoadPost>(
+  "posts/loadOne",
+  async (request) => {
+    let client = await getCredentialClient(request);
+    let response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
+    let post = response.posts[0]!;
+    let preview = post.previewImage
+      ? URL.createObjectURL(new Blob([post.previewImage!], { type: 'image/png' }))
+      : '';
+    return { post, preview };
   }
 );
 
@@ -80,6 +101,7 @@ export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any>
 const initialState: PostsState = {
   status: "unloaded",
   draftPost: Post.create(),
+  previews: {},
   ...postsAdapter.getInitialState(),
 };
 
@@ -89,8 +111,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   reducers: {
     upsertPost: postsAdapter.upsertOne,
     removePost: postsAdapter.removeOne,
-    reset: () => {
-      postPreviews.clear();
+    resetPosts: (state) => {
       return initialState;
     },
     clearAlerts: (state) => {
@@ -125,6 +146,22 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.successMessage = `Posts loaded.`;
     });
     builder.addCase(updatePosts.rejected, (state, action) => {
+      state.status = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
+    });
+    builder.addCase(loadPost.pending, (state) => {
+      state.status = "loading";
+      state.error = undefined;
+    });
+    builder.addCase(loadPost.fulfilled, (state, action) => {
+      state.status = "loaded";
+      postsAdapter.upsertOne(state, action.payload.post);
+      state.previews[action.meta.arg.id] = action.payload.preview;
+      state.successMessage = `Post data loaded.`;
+    });
+    builder.addCase(loadPost.rejected, (state, action) => {
       state.status = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
@@ -165,13 +202,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.error = action.error as Error;
     });
     builder.addCase(loadPostPreview.fulfilled, (state, action) => {
-      state.successMessage = `Posts loaded.`;
-      let rootPost = postsAdapter.getSelectors().selectById(state, action.meta.arg.id);
-      if (!rootPost) {
-        console.error(`Root post ID (${action.meta.arg.id}) not found.`);
-        return;
-      }
-      postPreviews[action.meta.arg.id] = action.payload.previewImage || Uint8Array.from([]);
+      state.previews[action.meta.arg.id] = action.payload;
       state.successMessage = `Preview image loaded.`;
     });
   },
@@ -196,9 +227,9 @@ export const RemovePostPreviews = createTransform(
 );
 
 // export const { upsertFact } = postsSlice.actions;
-export const { removePost, clearAlerts } = postsSlice.actions;
+export const { removePost, clearAlerts, resetPosts } = postsSlice.actions;
 
-export const { selectAll: selectAllPosts } = postsAdapter.getSelectors();
+export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();
 
 export const postsReducer = postsSlice.reducer;
 

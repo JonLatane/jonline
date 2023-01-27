@@ -14,6 +14,7 @@ import 'react-native-get-random-values';
 import {v4 as uuidv4} from 'uuid';
 import { Jonline } from "@jonline/ui/src";
 import { formatError } from "@jonline/ui/src";
+import { resetCredentialedData } from "../store";
 
 // The type used to store accounts locally.
 export type JonlineAccount = {
@@ -114,6 +115,9 @@ export const accountsSlice = createSlice({
     },
     reset: () => initialState,
     selectAccount: (state, action: PayloadAction<JonlineAccount | undefined>) => {
+      if (state.account?.id != action.payload?.id) {
+        resetCredentialedData();
+      }
       state.account = action.payload;
     },
     clearAlerts: (state) => {
