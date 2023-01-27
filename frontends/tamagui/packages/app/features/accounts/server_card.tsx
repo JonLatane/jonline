@@ -17,7 +17,7 @@ const ServerCard: React.FC<Props> = ({ server }) => {
     .filter(account => account.server.host == server.host);
 
   function doSelectServer() {
-    if (store.getState().accounts.account?.server.host != server.host) {
+    if (useTypedSelector((state: RootState) => state.accounts).account?.server.host != server.host) {
       dispatch(selectAccount(undefined));
     }
     dispatch(selectServer(server));
@@ -29,7 +29,7 @@ const ServerCard: React.FC<Props> = ({ server }) => {
         dispatch(removeAccount(account.id));
       }
     });
-    dispatch(removeServer(server.host));
+    dispatch(removeServer(server));
   }
 
   return (
@@ -57,7 +57,7 @@ const ServerCard: React.FC<Props> = ({ server }) => {
             </YStack>
             <Dialog>
               <Dialog.Trigger asChild>
-                <Button onClick={(e) => {e.stopPropagation();}} icon={<Trash />} color="red" />
+                <Button onClick={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" />
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay
@@ -90,7 +90,7 @@ const ServerCard: React.FC<Props> = ({ server }) => {
                     <Dialog.Title>Remove Server</Dialog.Title>
                     <Dialog.Description>
                       {/* <Paragraph> */}
-                        Really remove {server.host}{accounts.length == 1 ? ' and one account' : accounts.length > 1 ? ` and ${accounts.length} accounts` : ''}?
+                      Really remove {server.host}{accounts.length == 1 ? ' and one account' : accounts.length > 1 ? ` and ${accounts.length} accounts` : ''}?
                       {/* </Paragraph> */}
                     </Dialog.Description>
 
@@ -99,7 +99,7 @@ const ServerCard: React.FC<Props> = ({ server }) => {
                         <Button>Cancel</Button>
                       </Dialog.Close>
                       {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
-                        <Button theme="active" onClick={doRemoveServer}>Remove</Button>
+                      <Button theme="active" onClick={doRemoveServer}>Remove</Button>
                       {/* </Dialog.Action> */}
                     </XStack>
                   </YStack>

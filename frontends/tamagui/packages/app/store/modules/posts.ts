@@ -11,6 +11,7 @@ import {
 } from "@reduxjs/toolkit";
 import { CreatePostRequest, GetPostsRequest, GetPostsResponse, Post, formatError } from "@jonline/ui/src";
 import { AccountOrServer, getCredentialClient } from "./accounts";
+import { createTransform } from "redux-persist";
 
 export interface PostsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -49,6 +50,17 @@ export const updatePosts: AsyncThunk<GetPostsResponse, UpdatePosts, any> = creat
   }
 );
 
+const postPreviews = new Map<string, Uint8Array>();
+export type LoadPostPreview = AccountOrServer & Post;
+export const loadPostPreview: AsyncThunk<Post, LoadPostPreview, any> = createAsyncThunk<Post, LoadPostPreview>(
+  "posts/loadPreview",
+  async (request) => {
+    let client = await getCredentialClient(request);
+    let response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
+    return response.posts[0]!;
+  }
+);
+
 export type LoadPostReplies = AccountOrServer & {
   postIdPath: string[];
 }
@@ -59,7 +71,7 @@ export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any>
       postId: repliesRequest.postIdPath.at(-1),
       replyDepth: 1
     })
-    
+
     let client = await getCredentialClient(repliesRequest);
     return client.getPosts(getPostsRequest, client.credential);
   }
@@ -77,7 +89,10 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   reducers: {
     upsertPost: postsAdapter.upsertOne,
     removePost: postsAdapter.removeOne,
-    reset: () => initialState,
+    reset: () => {
+      postPreviews.clear();
+      return initialState;
+    },
     clearAlerts: (state) => {
       state.errorMessage = undefined;
       state.successMessage = undefined;
@@ -125,21 +140,21 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       // Load the replies into the post tree.
       let postIdPath = action.meta.arg.postIdPath;
       let rootPost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
-      if(!rootPost) { 
+      if (!rootPost) {
         console.error(`Root post ID (${postIdPath[0]}) not found.`);
         return;
       }
 
       let post: Post = rootPost;
-      for(let postId in postIdPath.slice(1)) {
+      for (let postId in postIdPath.slice(1)) {
         let nextPost = post.replies.find((reply) => reply.id === postId);
-        if(!nextPost) { 
+        if (!nextPost) {
           console.error(`Post ID (${postId}) not found along path ${postIdPath}.`);
           return;
         }
         post = nextPost;
       }
-      post.replies = action.payload.posts;
+      post = { ...post, replies: action.payload.posts };
       postsAdapter.upsertOne(state, rootPost);
       state.successMessage = `Replies loaded.`;
     });
@@ -149,8 +164,36 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.errorMessage = `Error loading replies: ${formatError(action.error as Error)}`;
       state.error = action.error as Error;
     });
+    builder.addCase(loadPostPreview.fulfilled, (state, action) => {
+      state.successMessage = `Posts loaded.`;
+      let rootPost = postsAdapter.getSelectors().selectById(state, action.meta.arg.id);
+      if (!rootPost) {
+        console.error(`Root post ID (${action.meta.arg.id}) not found.`);
+        return;
+      }
+      postPreviews[action.meta.arg.id] = action.payload.previewImage || Uint8Array.from([]);
+      state.successMessage = `Preview image loaded.`;
+    });
   },
 });
+
+export const RemovePostPreviews = createTransform(
+  (inboundState: any, key) => {
+    if ('previewImage' in inboundState) {
+      return {
+        ...inboundState,
+        previewImage: undefined,
+      };
+    }
+    return inboundState;
+  },
+  (outboundState: any, key) => {
+    // debugger;
+    return outboundState;
+  },
+  // { whitelist: ['posts', 'entities'] }
+  // { blacklist: ['previewImage'] }
+);
 
 // export const { upsertFact } = postsSlice.actions;
 export const { removePost, clearAlerts } = postsSlice.actions;

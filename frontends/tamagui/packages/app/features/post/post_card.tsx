@@ -2,11 +2,12 @@ import React from "react";
 import { StyleSheet, View, Text as NativeText } from "react-native";
 import store, { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from "../../store/store";
 import { JonlineServer, removeServer, selectServer } from "../../store/modules/servers";
-import { AlertDialog, Button, Card, Heading, Paragraph,Text, Post, Theme, XStack, YStack, useTheme, Anchor } from "@jonline/ui";
+import { AlertDialog, Button, Card, Heading, Image, Paragraph,Text, Post, Theme, XStack, YStack, useTheme, Anchor } from "@jonline/ui";
 import { Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import Accounts, { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
 import ReactMarkdown from 'react-markdown'
 import { useLink } from "solito/link";
+import { loadPostPreview } from "app/store/modules/posts";
 
 interface Props {
   post: Post;
@@ -14,33 +15,36 @@ interface Props {
 
 const PostCard: React.FC<Props> = ({ post }) => {
   const { dispatch, account_or_server } = useCredentialDispatch();
-  // let selected = store.getState().servers.server?.host == server.host;
-  // const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts))
-  // .filter(account => account.server.host == server.host);
 
   let theme = useTheme();
   let textColor: string = theme.color.val;
-  // let navColor: string = 
   const server = useTypedSelector((state: RootState) => state.servers.server);
   let navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
   let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
-
-  // debugger;
-  // function doOpenPost() {
-  //   useLink({
-  //     href: `/post/${post.id}`,
-  //   }).onPress();
-  //   // if (store.getState().accounts.account?.server.host != server.host) {
-  //   //   dispatch(selectAccount(undefined));
-  //   // }
-  //   // dispatch(selectServer(server));
+  let preview = post.previewImage 
+  ?  URL.createObjectURL(
+    new Blob([post.previewImage!], { type: 'image/png' })
+  ) : undefined;
+  // if(!preview) {
+  //   dispatch(loadPostPreview({...post, ...account_or_server}));
   // }
+
   const postLinkProps = useLink({
     href: `/post/${post.id}`,
   });
+  const postLinkOnPress = postLinkProps.onPress;
+  postLinkProps.onPress = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+    e.stopPropagation();
+    // postLinkOnPress();
+  };
   const authorLinkProps = post.author && useLink({
     href: `/user/${post.author!.userId}`,
-  });
+  }) || {};
+  // const authorLinkOnPress = authorLinkProps.onPress;
+  // authorLinkProps.onPress = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+  //   e.stopPropagation();
+  //   authorLinkOnPress();
+  // };
 
   // function doRemoveServer() {
   //   accounts.forEach(account => {
@@ -70,7 +74,9 @@ const PostCard: React.FC<Props> = ({ post }) => {
         // width={260}
         // hoverStyle={{ scale: 0.925 }}
         pressStyle={{ scale: 0.990 }}
-        {...postLinkProps}>
+        onPress={postLinkProps.onPress}
+        // {...postLinkProps}
+        >
         <Card.Header>
           <XStack>
             <View style={{ flex: 1 }}>
@@ -93,9 +99,9 @@ const PostCard: React.FC<Props> = ({ post }) => {
             {/* <Text fontFamily={"$body"} space='$3'> */}
             {post.content && <ReactMarkdown children={cleanedContent!}
               components={{
-                li: ({node, ...props}) => <li style={{ listStyleType: props.ordered ? 'number' : 'disc', marginLeft: 20 }} {...props} />,
+                li: ({node, ordered, ...props}) => <li style={{ listStyleType: ordered ? 'number' : 'disc', marginLeft: 20 }} {...props} />,
                 p: ({node, ...props}) => <p style={{ display: 'inline-block', marginBottom: 10 }} {...props} />,
-                a: ({node, ...props}) => <a style={{ color:navColor }} {...props} />,
+                a: ({node, ...props}) => <a style={{ color:navColor }} target='_blank' {...props} />,
                 // ul: ({node, ...props}) => <ul style={{ listStyleType: 'disc', marginLeft: 20 }} {...props} />,
               }}
             />}
@@ -109,12 +115,22 @@ const PostCard: React.FC<Props> = ({ post }) => {
                   : 'by anonymous'}
               </Heading>
               <XStack f={1} />
-              <Heading size="$1" style={{ marginRight: 'auto' }}>{post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}</Heading>
+              <Heading size="$1" style={{ marginRight: 'auto' }}>{post.responseCount} response{post.responseCount == 1 ? '' : 's'}</Heading>
             </XStack>
             </YStack>
           </XStack>
         </Card.Footer>
         {/* <Card.Background backgroundColor={selected ? '#424242' : undefined} /> */}
+      <Card.Background>
+        {preview && <Image
+          pos="absolute"
+          width={300}
+          height={300}
+          resizeMode="contain"
+          als="center"
+          src={preview}
+        />}
+      </Card.Background>
       </Card>
     </Theme>
   );

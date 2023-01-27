@@ -1,5 +1,5 @@
-import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens } from '@jonline/ui'
-import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon } from '@tamagui/lucide-icons'
+import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens, ZStack } from '@jonline/ui'
+import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon, ChevronLeft, Menu } from '@tamagui/lucide-icons'
 import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
@@ -8,6 +8,7 @@ import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccou
 import { FlatList, View } from 'react-native';
 import ServerCard from './server_card';
 import AccountCard from './account_card';
+import { SettingsSheet } from '../settings_sheet';
 
 export type AccountSheetProps = {
   size?: SizeTokens;
@@ -16,14 +17,15 @@ export type AccountSheetProps = {
 }
 
 export function AccountsSheet({ size = '$5', circular = false }: AccountSheetProps) {
+  const [open, setOpen] = useState(false);
+  const [browsingServers, setBrowsingServers] = useState(false);
+  const [addingServer, setAddingServer] = useState(false);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [position, setPosition] = useState(0);
   const [newServerHost, setNewServerHost] = useState('');
   const [newServerSecure, setNewServerSecure] = useState(true);
   const [newAccountUser, setNewAccountUser] = useState('');
   const [newAccountPass, setNewAccountPass] = useState('');
-  const [open, setOpen] = useState(false)
-  const [addingServer, setAddingServer] = useState(false)
-  const [addingAccount, setAddingAccount] = useState(false)
-  const [position, setPosition] = useState(0)
 
   const dispatch = useTypedDispatch();
   const serversState = useTypedSelector((state: RootState) => state.servers);
@@ -88,8 +90,8 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
         onPress={() => setOpen((x) => !x)}
       >
         {circular || <YStack>
-          {serversState.server && <Heading transform={[{translateY: serversState.server? 2 :0}]} size='$1'>{serversState.server.host}/</Heading>}
-          {accountsState.account && <Heading transform={[{translateY: -2}]} size='$7' space='$0'>{accountsState.account.user.username}</Heading>}
+          {serversState.server && <Heading transform={[{ translateY: serversState.server ? 2 : 0 }]} size='$1'>{serversState.server.host}/</Heading>}
+          {accountsState.account && <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{accountsState.account.user.username}</Heading>}
         </YStack>}
       </Button>
       <Sheet
@@ -105,6 +107,11 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
         <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
+          {/* <ZStack>
+            <XStack alignContent='flex-end' space='$2' p='$4'>
+              <SettingsSheet />
+            </XStack>
+
           <Button
             alignSelf='center'
             size="$6"
@@ -112,22 +119,53 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
             icon={ChevronDown}
             onPress={() => {
               setOpen(false)
-            }}
-          />
+            }}/>
+          </ZStack> */}
+          <XStack space='$4'>
+            <XStack w={2} />
+            <Button circular disabled size='$3' backgroundColor='$backgroundTransparent' />
+            {/* <XStack w={15} /> */}
+            <XStack f={1} />
+            <Button
+              alignSelf='center'
+              size="$6"
+              circular
+              icon={ChevronDown}
+              onPress={() => {
+                setOpen(false)
+              }} />
+            <XStack f={1} />
+            <SettingsSheet />
+            <XStack w={2} />
+          </XStack>
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center'>
               <YStack space="$2">
                 <XStack>
-                  <Heading style={{ flex: 1 }}>Servers</Heading>
+                  <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
 
+                  <XStack f={1} />
+                  {!browsingServers && <Heading size='$3' marginTop='$2'>
+                    {serversState.server ? serversState.server.host : '<None>'}
+                  </Heading>}
+                  <XStack f={1} />
                   <Button
                     size="$3"
+                    icon={browsingServers ? ChevronLeft : Menu}
+                    // circular
+                    onPress={() => setBrowsingServers((x) => !x)}
+                  >
+                    {browsingServers ? 'Back' : 'Select'}
+                  </Button>
+                  {browsingServers && <Button
+                    size="$3"
                     icon={Plus}
+                    marginLeft='$2'
                     // circular
                     onPress={() => setAddingServer((x) => !x)}
                   >
                     Add
-                  </Button>
+                  </Button>}
                   <Sheet
                     modal
                     open={addingServer}
@@ -182,7 +220,7 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
 
               {servers.length === 0 && <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading>}
 
-              <FlatList
+              {browsingServers && <FlatList
                 horizontal={true}
                 data={servers}
                 keyExtractor={(server) => server.host}
@@ -191,7 +229,8 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                 }}
               // style={Styles.trueBackground}
               // contentContainerStyle={Styles.contentBackground}
-              />
+              />}
+              {!browsingServers && <YStack h="$2"/>}
               <YStack space="$2">
                 <XStack>
                   <Heading style={{ flex: 1 }}>Accounts</Heading>

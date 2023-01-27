@@ -42,6 +42,7 @@ export async function getServerClient(server: JonlineServer): Promise<Jonline> {
     );
     server.serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
     server.serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
+    // debugger;
     clients.set(host, client);
     store.dispatch(upsertServer(server));
     return client;
@@ -98,11 +99,11 @@ export const serversSlice = createSlice({
   initialState: initialState,
   reducers: {
     upsertServer: serversAdapter.upsertOne,
-    removeServer: (state, action: PayloadAction<string>) => { 
-      if (state.server?.host === action.payload) {
-        state.server = state.entities.first;// undefined;
+    removeServer: (state, action: PayloadAction<JonlineServer>) => { 
+      if (state.server && serverUrl(state.server) == serverUrl(action.payload)) {
+        state.server = undefined;
       }
-      serversAdapter.removeOne(state, action);
+      serversAdapter.removeOne(state, serverUrl(action.payload));
     },
     reset: () => initialState,
     clearAlerts: (state) => {
@@ -126,6 +127,7 @@ export const serversSlice = createSlice({
       if (!state.server || serverUrl(server) == serverUrl(state.server!)) {
         state.server = server;
       }
+      // debugger;
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
       state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`;
     });

@@ -11,23 +11,36 @@ import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/ui/src/generat
 import { ServerConfiguration } from "@jonline/ui/src/generated/server_configuration"
 import { Platform } from 'react-native';
 import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
-import { upsertServer, JonlineServer, selectAllServers } from "./servers";
 import store, { RootState, useTypedDispatch, useTypedSelector } from "../store";
 
 export type LocalAppConfiguration = {
+  showIntro: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
+  showIntro: true,
 };
 
 export const localAppSlice = createSlice({
-  name: "servers",
+  name: "localApp",
   initialState: initialState,
   reducers: {
     reset: () => initialState,
+    setShowIntro: (state, action: PayloadAction<boolean>) => {
+      state.showIntro = action.payload;
+    }
   },
   extraReducers: (builder) => {
   },
 });
 
+// export const { removePost, clearAlerts } = postsSlice.actions;
+
+// export const { selectAll: selectAllPosts } = postsAdapter.getSelectors();
+
+// export const postsReducer = postsSlice.reducer;
+
+// export default postsSlice.reducer;
+
+export const { setShowIntro } = localAppSlice.actions;
 export default localAppSlice.reducer;

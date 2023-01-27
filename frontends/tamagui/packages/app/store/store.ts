@@ -4,7 +4,7 @@ import thunkMiddleware from 'redux-thunk';
 import accountsReducer, { AccountOrServer, JonlineAccount } from "./modules/accounts";
 import serversReducer, { JonlineServer } from "./modules/servers";
 import localAppReducer, { LocalAppConfiguration } from "./modules/local_app";
-import postsReducer from "./modules/posts";
+import postsReducer, { RemovePostPreviews } from "./modules/posts";
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import { Platform } from 'react-native';
@@ -23,7 +23,8 @@ const accountsPersistConfig = {
 const postsPersistConfig = {
   key: 'posts',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error']
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error'],
+  transforms: [RemovePostPreviews]
 }
 
 const rootReducer = combineReducers({
@@ -36,7 +37,8 @@ const rootReducer = combineReducers({
 const rootPersistConfig = {
   key: 'root',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['accounts', 'servers', 'posts']
+  blacklist: ['accounts', 'servers', 'posts'],
+  // transforms: [RemovePostPreviews]
 }
 const persistedReducer = persistReducer(rootPersistConfig, rootReducer)
 
