@@ -23,7 +23,7 @@ export type JonlineServer = {
   serviceVersion?: GetServiceVersionResponse;
   serverConfiguration?: ServerConfiguration;
 }
-function serverUrl(server: JonlineServer): string {
+export function serverUrl(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}://${server.host}:27707`;
 }
 
@@ -43,9 +43,9 @@ export async function getServerClient(server: JonlineServer): Promise<Jonline> {
     );
     clients.set(host, client);
     try {
-      server.serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
-      server.serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
-      store.dispatch(upsertServer(server));
+      let serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
+      let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
+      store.dispatch(upsertServer({ ...server, serviceVersion, serverConfiguration }));
     } catch (e) {
       clients.delete(host);
     }

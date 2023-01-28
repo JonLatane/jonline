@@ -89,7 +89,7 @@ export function HomeScreen() {
 
   return (
     <TabsNavigation>
-      <YStack f={1} jc="center" ai="center" p="$0" paddingHorizontal='$4' maw={800} space>
+      <YStack f={1} jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
         {(serversState.server == undefined || app.showIntro) ? intro : undefined}
         <FlatList data={posts}
           onRefresh={reloadPosts}

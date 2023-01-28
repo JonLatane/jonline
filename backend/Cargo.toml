@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.223"
+version = "0.1.226"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]

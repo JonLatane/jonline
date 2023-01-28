@@ -19,6 +19,12 @@ export default class Document extends NextDocument {
     const styles = [
       getStyleElement(),
       <style key="tamagui-css" dangerouslySetInnerHTML={{ __html: Tamagui.getCSS() }} />,
+      <style key='jonline-css'>{`
+        .blur {
+          backdrop-filter: blur(3px);
+          -webkit-backdrop-filter: blur(3px);
+        }
+      `}</style>
     ]
 
     return { ...page, styles: Children.toArray(styles) }

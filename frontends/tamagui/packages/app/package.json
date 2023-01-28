@@ -22,6 +22,7 @@
     "@tamagui/theme-base": "^1.0.15",
     "add": "^2.0.6",
     "expo-linking": "^3.2.3",
+    "moment": "^2.29.4",
     "react-markdown": "^8.0.5",
     "react-native-get-random-values": "^1.8.0",
     "react-native-markdown-renderer": "^3.2.8",

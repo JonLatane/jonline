@@ -25,17 +25,17 @@ export function TabsNavigation({ children }: TabsNavigationProps) {
 
   return Platform.select({
     web: <>
-      <StickyBox style={{ zIndex: 10 }}>
-        <YStack space="$1" backgroundColor={backgroundColor}>
-          <XStack h={5}></XStack>
-          <XStack space="$1">
+      <StickyBox style={{ zIndex: 10 }} className="blur">
+        <YStack space="$1" backgroundColor={backgroundColor} opacity={0.87}>
+          {/* <XStack h={5}></XStack> */}
+          <XStack space="$1" marginVertical={5}>
             <XStack w={5} />
             <Button size="$5" iconAfter={HomeIcon}  {...homeProps}><Heading>{serverName}</Heading></Button>
             <XStack f={1} />
             <AccountsSheet circular={!media.gtSm} />
             <XStack w={5} />
           </XStack>
-          <XStack h={5}></XStack>
+          {/* <XStack h={5}></XStack> */}
         </YStack>
       </StickyBox>
       <YStack f={1} jc="center" ai="center">

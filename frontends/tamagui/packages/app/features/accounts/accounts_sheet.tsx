@@ -3,21 +3,21 @@ import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon, ChevronLeft
 import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
-import { clearAlerts as clearServerAlerts, upsertServer, selectAllServers } from "../../store/modules/servers";
+import { clearAlerts as clearServerAlerts, upsertServer, selectAllServers, JonlineServer, serverUrl } from "../../store/modules/servers";
 import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccounts } from "../../store/modules/accounts";
 import { FlatList, View } from 'react-native';
 import ServerCard from './server_card';
 import AccountCard from './account_card';
 import { SettingsSheet } from '../settings_sheet';
-import {v4 as uuidv4} from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 export type AccountSheetProps = {
   size?: SizeTokens;
-  showIcon?: boolean;
   circular?: boolean;
+  onlyShowServer?: JonlineServer;
 }
 
-export function AccountsSheet({ size = '$5', circular = false }: AccountSheetProps) {
+export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }: AccountSheetProps) {
   const [open, setOpen] = useState(false);
   const [browsingServers, setBrowsingServers] = useState(false);
   const [addingServer, setAddingServer] = useState(false);
@@ -47,6 +47,9 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
 
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
+  const primaryServer = onlyShowServer || serversState.server;
+  const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverUrl(a.server) == serverUrl(serversState.server!)) : [];
+  const accountsElsewhere = accounts.filter(a => !accountsOnPrimaryServer.includes(a));
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
@@ -148,8 +151,8 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                   <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
 
                   <XStack f={1} />
-                  {!browsingServers 
-                    ? <Heading size='$3' marginTop='$2'>{serversState.server ? serversState.server.host : '<None>'}</Heading> 
+                  {!browsingServers
+                    ? <Heading size='$3' marginTop='$2'>{serversState.server ? serversState.server.host : '<None>'}</Heading>
                     : undefined}
                   <XStack f={1} />
                   <Button
@@ -296,9 +299,18 @@ export function AccountsSheet({ size = '$5', circular = false }: AccountSheetPro
                 </XStack>
               </YStack>
 
-              {accounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
+              {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on this server.</Heading> : undefined}
 
-              {accounts.map((account) => <AccountCard account={account} key={account.id} />)}
+              {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={account.id} />)}
+
+              {accountsElsewhere.length > 0 && !onlyShowServer && browsingServers
+                ? <>
+                  <Heading>Accounts Elsewhere</Heading>
+                  {accountsElsewhere.map((account) => <AccountCard account={account} key={account.id} />)}
+                </>
+                : undefined
+              }
+
               {/* <FlatList
                 data={accounts}
                 keyExtractor={(account) => account.id}

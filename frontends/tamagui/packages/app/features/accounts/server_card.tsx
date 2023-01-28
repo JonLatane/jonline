@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import store, { RootState, useTypedDispatch, useTypedSelector } from "../../store/store";
-import { JonlineServer, removeServer, selectServer } from "../../store/modules/servers";
+import { JonlineServer, removeServer, selectServer, serverUrl } from "../../store/modules/servers";
 import { Dialog, Button, Card, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
 import { Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import Accounts, { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
@@ -13,11 +13,14 @@ interface Props {
 const ServerCard: React.FC<Props> = ({ server }) => {
   const dispatch = useTypedDispatch();
   let selected = store.getState().servers.server?.host == server.host;
+  const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts))
     .filter(account => account.server.host == server.host);
 
   function doSelectServer() {
     if (selected) {
+      dispatch(selectAccount(undefined));
+    } else if (accountsState.account && serverUrl(accountsState.account.server) != serverUrl(server)) {
       dispatch(selectAccount(undefined));
     }
     dispatch(selectServer(server));

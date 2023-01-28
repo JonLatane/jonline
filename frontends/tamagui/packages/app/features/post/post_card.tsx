@@ -2,11 +2,12 @@ import React from "react";
 import { StyleSheet, View, Text as NativeText, Platform } from "react-native";
 import store, { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from "../../store/store";
 import { JonlineServer, removeServer, selectServer } from "../../store/modules/servers";
-import { AlertDialog, Button, Card, Heading, Image, Paragraph, Text, Post, Theme, XStack, YStack, useTheme, Anchor } from "@jonline/ui";
+import { AlertDialog, Button, Card, Heading, Image, Paragraph, Text, Post, Theme, XStack, YStack, useTheme, Anchor, Tooltip } from "@jonline/ui";
 import { Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import Accounts, { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
 import ReactMarkdown from 'react-markdown'
 import { useLink } from "solito/link";
+import moment from 'moment';
 import { loadPostPreview } from "app/store/modules/posts";
 import Markdown, {
   AstRenderer,
@@ -98,7 +99,7 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
                           components={{
                             li: ({ node, ordered, ...props }) => <li style={{ listStyleType: ordered ? 'number' : 'disc', marginLeft: 20 }} {...props} />,
                             p: ({ node, ...props }) => <p style={{ display: 'inline-block', marginBottom: 10 }} {...props} />,
-                            a: ({ node, ...props }) => <a style={{ color: navColor }} target='_blank' {...props} />,
+                            a: ({ node, ...props }) => linkToDetails ? <span style={{ color: navColor }} children={props.children} /> : <a style={{ color: navColor }} target='_blank' {...props} />,
                           }}
                         />
                       </NativeText>,
@@ -109,11 +110,21 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
               </YStack>
 
               <XStack marginTop={10}>
-                <Heading size="$1" style={{ marginRight: 'auto' }}>
-                  {post.author
-                    ? <>by{' '}<Anchor {...authorLinkProps} zIndex={1000}>{post.author?.username}</Anchor></>
-                    : 'by anonymous'}
-                </Heading>
+                <YStack mr='auto'>
+                  <Heading size="$1">
+                    {post.author
+                      ? <>by{' '}<Anchor {...authorLinkProps} zIndex={1000}>{post.author?.username}</Anchor></>
+                      : 'by anonymous'}
+                  </Heading>
+                  <Heading size="$1">
+                    <Tooltip placement="bottom-start">
+                      <Tooltip.Trigger>
+                        {moment.utc(post.createdAt).local().startOf('seconds').fromNow()}
+                      </Tooltip.Trigger>
+                      <Tooltip.Content><Heading size='$2'>{moment.utc(post.createdAt).local().format("ddd, MMM Do YYYY, h:mm:ss a")}</Heading></Tooltip.Content>
+                    </Tooltip>
+                  </Heading>
+                </YStack>
                 <XStack f={1} />
                 <Anchor {...postLinkProps}>
                   <Heading size="$1" style={{ marginRight: 'auto' }}>{post.responseCount} response{post.responseCount == 1 ? '' : 's'}</Heading>
