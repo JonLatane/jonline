@@ -19,12 +19,18 @@ export default class Document extends NextDocument {
     const styles = [
       getStyleElement(),
       <style key="tamagui-css" dangerouslySetInnerHTML={{ __html: Tamagui.getCSS() }} />,
-      <style key='jonline-css'>{`
+      <style key='jonline-css' dangerouslySetInnerHTML={{ __html: `
         .blur {
           backdrop-filter: blur(3px);
           -webkit-backdrop-filter: blur(3px);
         }
-      `}</style>
+        .postMarkdown ul li::before {
+          color:white;
+          content: "•";
+          margin-right: 0.5em;
+          margin-left: 0.5em;
+        }
+      `}}/>
     ]
 
     return { ...page, styles: Children.toArray(styles) }

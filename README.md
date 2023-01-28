@@ -21,6 +21,27 @@ A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to depl
 
 Why this goal for this project? The tl;dr is that it keeps our social media data decentralized and in the hands of people we at least kinda trust. See [Scaling Social Software via Federation](#scaling-social-software-via-federation) for more rants tho.
 
+## Why Jonline vs. Mastodon/OpenSocial?
+* Jonline's UI is hopefully designed to let users key into the federated features of the app much more easily.
+* Jonline deploy scripts are designed to be so easy to deploy to Kubernetess you can be braindead and get it up and running for your website. Further, it's all just `Makefile`s and `kubectl` commands (though maybe that's a con for the reader 😁).
+* Jonline's server images are structured so you only need one LoadBalancer (the things you typically pay for) per deploy/website, and really only one web-facing container (though it defaults to 2) per deploy.
+    * Within the containers themselves, everything is handled by a single Rust BE binary. No scripting runtime. So containers are small, even with useful Linux tools like `psql` and `grpcurl` built in. They start *really fast*, and Kubernetes failovers work very smoothly.
+    * And the Rust BE is, after all, Rust; it's *fast*.
+* The new Tamagui FE is also demonstrably lightweight.
+* A major feature I *hope* to differentiate on is Events, but it's not done yet.
+
+The goal of all this is to make it as easy as possible for local businesses to:
+* Engage with customers on a platform customers enjoy.
+* Use Jonline to share information about customers between each other, in a way customers can easily understand and consent to, without a central corporation being involved.
+    * Example: make it easy for Kathy to share her band's show with the folks at her yoga studio, by cross-posting it to her yoga studio profile
+
+### Why *not* Jonline?
+* It's not done.
+* There's 0% test coverage.
+* There's no CI/CD. I just randomly make releases as I'm doing stuff for now.
+* It's just my own (Jon) thing I'm doing in my spare time. 
+* There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
+
 ### Quick deploy to your own cluster
 If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) First make sure `kubectl` is setup correctly and your instance has the `jonline` namespace available with `kubectl get services` and `kubectl get namespace jonline`:
 

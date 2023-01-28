@@ -1,5 +1,5 @@
 import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens, ZStack } from '@jonline/ui'
-import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon, ChevronLeft, Menu } from '@tamagui/lucide-icons'
+import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon, ChevronLeft, Menu, Info} from '@tamagui/lucide-icons'
 import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
@@ -35,7 +35,6 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const newServerHostNotBlank = newServerHost != '';
   const newServerExists = servers.some(s => s.host == newServerHost);
   const newServerValid = newServerHostNotBlank && !newServerExists;
-
   function addServer() {
     console.log(`Connecting to server ${newServerHost}`)
     dispatch(clearServerAlerts());
@@ -53,7 +52,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
-      ...serversState.server!,
+      ...primaryServer!,
       username: newAccountUser,
       password: newAccountPass,
     }));
@@ -61,7 +60,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   function createServerAccount() {
     dispatch(clearAccountAlerts());
     dispatch(createAccount({
-      ...serversState.server!,
+      ...primaryServer!,
       username: newAccountUser,
       password: newAccountPass,
     }));
@@ -85,6 +84,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
       setAddingAccount(false);
     }, 1000);
   }
+  const serversDiffer = onlyShowServer && serversState.server && serverUrl(onlyShowServer) != serverUrl(serversState.server);
+  const currentServerInfoLink = serversState.server && useLink({ href: `/server/${serverUrl(serversState.server)}` });
   // bc react native may render multiple accounts sheets at a time
   const secureLabelUuid = uuidv4();
   return (
@@ -93,6 +94,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         size={size}
         icon={circular ? UserIcon : open ? XIcon : ChevronDown}
         circular={circular}
+        color={onlyShowServer && serversState.server && serverUrl(onlyShowServer) != serverUrl(serversState.server) ? 'yellow' : undefined}
         onPress={() => setOpen((x) => !x)}
       >
         {circular ? undefined : <YStack>
@@ -152,13 +154,25 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
                   <XStack f={1} />
                   {!browsingServers
-                    ? <Heading size='$3' marginTop='$2'>{serversState.server ? serversState.server.host : '<None>'}</Heading>
+                    ? <YStack>
+                      <Heading size='$3' als='center' marginTop='$2'>{serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}</Heading>
+                      {serversDiffer
+                        ? <Heading size='$3' marginTop='$2' color='yellow'>Viewing server configuration for {onlyShowServer.host}</Heading>
+                        : onlyShowServer
+                          ? <Heading size='$3' marginTop='$2' color='yellow'>Viewing server configuration</Heading>
+                          : undefined}
+                    </YStack>
+                    : undefined}
+                  {!browsingServers && currentServerInfoLink && !onlyShowServer
+                    ? <Button size='$3' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
                     : undefined}
                   <XStack f={1} />
                   <Button
                     size="$3"
                     icon={browsingServers ? ChevronLeft : Menu}
                     // circular
+                    opacity={onlyShowServer != undefined ? 0.5 : 1}
+                    disabled={onlyShowServer != undefined}
                     onPress={() => setBrowsingServers((x) => !x)}
                   >
                     {browsingServers ? 'Back' : 'Select'}
@@ -231,7 +245,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 data={servers}
                 keyExtractor={(server) => server.host}
                 renderItem={({ item: server }) => {
-                  return <ServerCard server={server} />;
+                  return <ServerCard server={server} isPreview />;
                 }}
               // style={Styles.trueBackground}
               // contentContainerStyle={Styles.contentBackground}
@@ -273,7 +287,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       />
                       <YStack space="$2">
                         <Heading size="$10">Add Account</Heading>
-                        <Heading size="$6">{serversState.server?.host}/</Heading>
+                        <Heading size="$6">{primaryServer?.host}/</Heading>
                         <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter' autoCapitalize='none' disabled={accountsLoading}
                           value={newAccountUser}
                           onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
@@ -303,7 +317,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
               {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={account.id} />)}
 
-              {accountsElsewhere.length > 0 && !onlyShowServer && browsingServers
+              {accountsElsewhere.length > 0 && !onlyShowServer
                 ? <>
                   <Heading>Accounts Elsewhere</Heading>
                   {accountsElsewhere.map((account) => <AccountCard account={account} key={account.id} />)}

@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, View, Text as NativeText, Platform } from "react-native";
 import store, { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from "../../store/store";
 import { JonlineServer, removeServer, selectServer } from "../../store/modules/servers";
-import { AlertDialog, Button, Card, Heading, Image, Paragraph, Text, Post, Theme, XStack, YStack, useTheme, Anchor, Tooltip } from "@jonline/ui";
+import { AlertDialog, Button, Card, Heading, Image, Paragraph, Text, Post, Theme, XStack, YStack, useTheme, Anchor, Tooltip, useMedia } from "@jonline/ui";
 import { Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import Accounts, { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
 import ReactMarkdown from 'react-markdown'
@@ -20,12 +20,13 @@ import Markdown, {
 interface Props {
   post: Post;
   maxContentHeight?: number;
-  linkToDetails?: boolean;
+  isPreview?: boolean;
 }
 
-const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = false }) => {
-  const { dispatch, account_or_server } = useCredentialDispatch();
+const PostCard: React.FC<Props> = ({ post, isPreview }) => {
+  const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
+  const media = useMedia();
 
   let theme = useTheme();
   let textColor: string = theme.color.val;
@@ -36,7 +37,7 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
   if (!preview && !loadingPreview) {
     setLoadingPreview(true);
     setTimeout(() =>
-      dispatch(loadPostPreview({ ...post, ...account_or_server })), 100);
+      dispatch(loadPostPreview({ ...post, ...accountOrServer })), 100);
   }
 
   const postLink = useLink({
@@ -45,16 +46,16 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
   const authorLink = useLink({
     href: `/user/${post.author?.userId}`,
   });
-  const postLinkProps = linkToDetails ? postLink : {};
+  const postLinkProps = isPreview ? postLink : {};
   const authorLinkProps = post.author ? authorLink : undefined;
-
-  // if (authorLinkProps) {
-  //   const authorLinkOnPress = authorLinkProps?.onPress;
-  //   authorLinkProps!.onPress = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-  //     e.stopPropagation();
-  //     authorLinkOnPress!();
-  //   };
-  // }
+  const showDetailsShadow = isPreview && post.content && post.content.length > 1000;
+  const detailsMargins = showDetailsShadow ? 20 : 0;
+  const detailsProps = showDetailsShadow ? {
+    marginHorizontal:-detailsMargins,
+    shadowOpacity:0.3,
+    shadowOffset:{width:-5, height:-5},
+    shadowRadius:10
+  } : {};
 
   let cleanedContent = post.content?.replace(
     /((?!  ).)\n([^\n*])/g,
@@ -63,18 +64,17 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
       return `${b}${c}`;
     }
   );
-  // debugger;
+
   return (
     <Theme inverse={false}>
       <Card theme="dark" elevate size="$4" bordered
         margin='$0'
         marginBottom='$3'
         padding='$0'
+        f={isPreview ? undefined : 1}
         animation="bouncy"
         pressStyle={{ scale: 0.990 }}
-        {...postLinkProps}
-      // onPress={postLinkProps.onPress}
-      >
+        {...postLinkProps}>
         <Card.Header>
           <XStack>
             <View style={{ flex: 1 }}>
@@ -90,16 +90,35 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
         <Card.Footer>
           <XStack width='100%' >
             <YStack style={{ flex: 10 }} zi={1000}>
-              <YStack maxHeight={maxContentHeight} overflow='hidden'>
+              <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden'>
+              {(!isPreview && preview && preview != '') ?
+                <Image
+                  // pos="absolute"
+                  // width={400}
+                  // opacity={0.25}
+                  // height={400}
+                  // minWidth={300}
+                  // minHeight={300}
+                  // width='100%'
+                  // height='100%'
+                  mb='$3'
+                  width={media.sm ? 300 : 400}
+                  height={media.sm ? 300 : 400}
+                  resizeMode="contain"
+                  als="center"
+                  src={preview}
+                  borderRadius={10}
+                  // borderBottomRightRadius={5}
+                /> : undefined}
                 {
                   post.content && post.content != '' ? Platform.select({
                     web: // web/cross-platform-ish
                       <NativeText style={{ color: textColor }}>
-                        <ReactMarkdown children={cleanedContent!}
+                        <ReactMarkdown className="postMarkdown" children={cleanedContent!}
                           components={{
-                            li: ({ node, ordered, ...props }) => <li style={{ listStyleType: ordered ? 'number' : 'disc', marginLeft: 20 }} {...props} />,
+                            // li: ({ node, ordered, ...props }) => <li }} {...props} />,
                             p: ({ node, ...props }) => <p style={{ display: 'inline-block', marginBottom: 10 }} {...props} />,
-                            a: ({ node, ...props }) => linkToDetails ? <span style={{ color: navColor }} children={props.children} /> : <a style={{ color: navColor }} target='_blank' {...props} />,
+                            a: ({ node, ...props }) => isPreview ? <span style={{ color: navColor }} children={props.children} /> : <a style={{ color: navColor }} target='_blank' {...props} />,
                           }}
                         />
                       </NativeText>,
@@ -109,24 +128,26 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
                 }
               </YStack>
 
-              <XStack marginTop={10}>
-                <YStack mr='auto'>
+              <XStack pt={10} {...detailsProps}>
+                <YStack mr='auto' marginLeft={detailsMargins}>
                   <Heading size="$1">
                     {post.author
                       ? <>by{' '}<Anchor {...authorLinkProps} zIndex={1000}>{post.author?.username}</Anchor></>
                       : 'by anonymous'}
                   </Heading>
-                  <Heading size="$1">
-                    <Tooltip placement="bottom-start">
-                      <Tooltip.Trigger>
+                  <Tooltip placement="bottom-start">
+                    <Tooltip.Trigger>
+                      <Heading size="$1">
                         {moment.utc(post.createdAt).local().startOf('seconds').fromNow()}
-                      </Tooltip.Trigger>
-                      <Tooltip.Content><Heading size='$2'>{moment.utc(post.createdAt).local().format("ddd, MMM Do YYYY, h:mm:ss a")}</Heading></Tooltip.Content>
-                    </Tooltip>
-                  </Heading>
+                      </Heading>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                      <Heading size='$2'>{moment.utc(post.createdAt).local().format("ddd, MMM Do YYYY, h:mm:ss a")}</Heading>
+                    </Tooltip.Content>
+                  </Tooltip>
                 </YStack>
                 <XStack f={1} />
-                <Anchor {...postLinkProps}>
+                <Anchor {...postLinkProps} marginRight={detailsMargins}>
                   <Heading size="$1" style={{ marginRight: 'auto' }}>{post.responseCount} response{post.responseCount == 1 ? '' : 's'}</Heading>
                 </Anchor>
               </XStack>
@@ -134,7 +155,7 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
           </XStack>
         </Card.Footer>
         <Card.Background>
-          {(preview && preview != '') ?
+          {(isPreview && preview && preview != '') ?
             <Image
               pos="absolute"
               width={300}
@@ -143,6 +164,7 @@ const PostCard: React.FC<Props> = ({ post, maxContentHeight, linkToDetails = fal
               resizeMode="contain"
               als="flex-start"
               src={preview}
+              blurRadius={1.5}
               // borderRadius={5}
               borderBottomRightRadius={5}
             /> : undefined}

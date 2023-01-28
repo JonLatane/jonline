@@ -4,7 +4,7 @@ import thunkMiddleware from 'redux-thunk';
 import accountsReducer, { AccountOrServer, JonlineAccount } from "./modules/accounts";
 import serversReducer, { JonlineServer } from "./modules/servers";
 import localAppReducer, { LocalAppConfiguration } from "./modules/local_app";
-import postsReducer, { RemovePostPreviews, resetPosts } from "./modules/posts";
+import postsReducer, { resetPosts } from "./modules/posts";
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import { Platform } from 'react-native';
@@ -24,7 +24,6 @@ const postsPersistConfig = {
   key: 'posts',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
   blacklist: ['status', 'successMessage', 'errorMessage', 'error'],
-  transforms: [RemovePostPreviews]
 }
 
 const rootReducer = combineReducers({
@@ -52,16 +51,15 @@ export function useTypedDispatch(): AppDispatch {
 
 export type CredentialDispatch = {
   dispatch: AppDispatch;
-  account_or_server: AccountOrServer;
+  accountOrServer: AccountOrServer;
 };
 export function useCredentialDispatch(): CredentialDispatch {
   let dispatch: AppDispatch = useTypedDispatch();
-  let account: AccountOrServer | undefined = useTypedSelector((state: RootState) => state.accounts.account);
-  let server: JonlineServer = useTypedSelector((state: RootState) => state.servers.server)!;
-  if (account) {
-    return { dispatch, account_or_server: account };
+  let accountOrServer = {
+    account: useTypedSelector((state: RootState) => state.accounts.account),
+    server: useTypedSelector((state: RootState) => state.servers.server)
   }
-  return { dispatch, account_or_server: server };
+  return { dispatch, accountOrServer };
 }
 
 export type AppStore = Omit<Store<RootState, AnyAction>, "dispatch"> & {

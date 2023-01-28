@@ -208,25 +208,6 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   },
 });
 
-export const RemovePostPreviews = createTransform(
-  (inboundState: any, key) => {
-    if ('previewImage' in inboundState) {
-      return {
-        ...inboundState,
-        previewImage: undefined,
-      };
-    }
-    return inboundState;
-  },
-  (outboundState: any, key) => {
-    // debugger;
-    return outboundState;
-  },
-  // { whitelist: ['posts', 'entities'] }
-  // { blacklist: ['previewImage'] }
-);
-
-// export const { upsertFact } = postsSlice.actions;
 export const { removePost, clearAlerts, resetPosts } = postsSlice.actions;
 
 export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();

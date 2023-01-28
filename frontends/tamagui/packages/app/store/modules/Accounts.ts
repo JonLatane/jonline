@@ -25,19 +25,23 @@ export type JonlineAccount = {
   server: JonlineServer;
 }
 
-export type AccountOrServer = JonlineAccount | JonlineServer;
+export type AccountOrServer = {
+  account?: JonlineAccount;
+  server?: JonlineServer;
+};
 // A Jonline client with an optional credentials field bolted on.
 export type JonlineCredentialClient = Jonline & {
   credential?: grpc.Metadata;
 }
 export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
-  if ('server' in accountOrServer) {
-    let client = await getServerClient(accountOrServer.server);
-    let metadata = new grpc.Metadata();
-    metadata.append('authorization', accountOrServer.accessToken.accessToken!);
-    return { ...client, credential: metadata };
+  let {account, server} = accountOrServer;
+  if (!account) {
+    return getServerClient(server!);
   } else {
-    return getServerClient(accountOrServer);
+    let client = await getServerClient(account.server);
+    let metadata = new grpc.Metadata();
+    metadata.append('authorization', account.accessToken.accessToken!);
+    return { ...client, credential: metadata };
   }
 }
 
@@ -80,7 +84,6 @@ export const login = createAsyncThunk<JonlineAccount, Login>(
   "accounts/login",
   async (loginRequest) => {
     let client = await getServerClient(loginRequest);
-    // debugger;
     let refreshToken = await client.login(loginRequest);
     let accessToken = refreshToken.accessToken!;
     let metadata = new grpc.Metadata();
@@ -90,7 +93,7 @@ export const login = createAsyncThunk<JonlineAccount, Login>(
       id: uuidv4(),
       user: user,
       refreshToken: refreshToken,
-      accessToken: accessToken,
+      accessToken: {accessToken: accessToken.token, expiresAt: accessToken.expiresAt},
       server: { ...loginRequest }
     };
   }

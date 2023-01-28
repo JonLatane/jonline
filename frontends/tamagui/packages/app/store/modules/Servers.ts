@@ -24,7 +24,7 @@ export type JonlineServer = {
   serverConfiguration?: ServerConfiguration;
 }
 export function serverUrl(server: JonlineServer): string {
-  return `http${server.secure ? "s" : ""}://${server.host}:27707`;
+  return `http${server.secure ? "s" : ""}:${server.host}`;
 }
 
 export const timeout = async (time: number, label: string) => {
@@ -34,7 +34,7 @@ export const timeout = async (time: number, label: string) => {
 
 const clients = new Map<string, JonlineClientImpl>();
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {
-  let host = serverUrl(server);
+  let host = `${serverUrl(server).replace(":", "://")}:27707`;
   if (!clients.has(host)) {
     let client = new JonlineClientImpl(
       new GrpcWebImpl(host, {
@@ -136,8 +136,8 @@ export const serversSlice = createSlice({
         state.server = server;
       }
       // debugger;
-      console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`);
-      state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion!.version} added.`;
+      console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`);
+      state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`;
     });
     builder.addCase(upsertServer.rejected, (state, action) => {
       state.status = "errored";
@@ -150,6 +150,6 @@ export const serversSlice = createSlice({
 
 export const { selectServer, removeServer, clearAlerts } = serversSlice.actions;
 
-export const { selectAll: selectAllServers } = serversAdapter.getSelectors();
+export const { selectAll: selectAllServers, selectById: selectServerById } = serversAdapter.getSelectors();
 
 export default serversSlice.reducer;

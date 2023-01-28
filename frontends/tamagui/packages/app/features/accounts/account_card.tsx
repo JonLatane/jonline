@@ -58,7 +58,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
             {selected ? <Button onClick={(e) => {e.stopPropagation(); doLogout();}} marginRight='$1'>Logout</Button> : undefined}
             <Dialog>
               <Dialog.Trigger asChild>
-                <Button icon={<Trash />} onClick={(e) => {e.stopPropagation();}} color="red" />
+                <Button icon={<Trash />} circular onClick={(e) => {e.stopPropagation();}} color="red" />
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay

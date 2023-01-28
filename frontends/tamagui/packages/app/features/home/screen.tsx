@@ -16,7 +16,7 @@ export function HomeScreen() {
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const app = useTypedSelector((state: RootState) => state.app);
   const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
-  let { dispatch, account_or_server } = useCredentialDispatch();
+  let { dispatch, accountOrServer } = useCredentialDispatch();
   let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
   let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
   let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
@@ -27,10 +27,10 @@ export function HomeScreen() {
   }
 
   function reloadPosts() {
-    if (account_or_server == null) return;
+    if (accountOrServer == null) return;
 
     setTimeout(() =>
-      dispatch(updatePosts({ ...account_or_server, ...GetPostsRequest.create() })), 1);
+      dispatch(updatePosts({ ...accountOrServer, ...GetPostsRequest.create() })), 1);
   }
 
   function hideIntro() {
@@ -96,7 +96,7 @@ export function HomeScreen() {
           refreshing={postsState.status == 'loading'}
           keyExtractor={(post) => post.id}
           renderItem={({ item: post }) => {
-            return <PostCard post={post} maxContentHeight={300} linkToDetails />;
+            return <PostCard post={post} isPreview />;
           }} />
       </YStack>
     </TabsNavigation>
