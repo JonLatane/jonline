@@ -202,7 +202,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
   }
 
   buildHeading(String name) =>
-      Text(ownProfile ? 'Your $name' : name, style: textTheme.subtitle1);
+      Text(ownProfile ? 'Your $name' : name, style: textTheme.titleMedium);
 
   Widget buildConfiguration() {
     if (!loaded) return const SizedBox();
@@ -244,7 +244,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
               //                             Expanded(
               //                               child: Text(
               //                                   '${JonlineServer.selectedServer.server}/',
-              //                                   style: textTheme.caption,
+              //                                   style: textTheme.bodySmall,
               //                                   maxLines: 1,
               //                                   overflow:
               //                                       TextOverflow.ellipsis),
@@ -256,7 +256,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
               //                         //     Expanded(
               //                         //       child: Text(
               //                         //         userData?.username ?? '...',
-              //                         //         style: textTheme.headline6
+              //                         //         style: textTheme.titleLarge
               //                         //             ?.copyWith(
               //                         //                 color: appState
               //                         //                             .selectedAccount
@@ -282,7 +282,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
               //                           autocorrect: true,
               //                           maxLines: 1,
               //                           cursorColor: Colors.white,
-              //                           style: textTheme.headline6?.copyWith(
+              //                           style: textTheme.titleLarge?.copyWith(
               //                               color: appState.selectedAccount
               //                                           ?.userId ==
               //                                       userData?.id
@@ -338,14 +338,14 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
               //                         children: [
               //                           Text(
               //                             "User ID: ",
-              //                             style: textTheme.caption,
+              //                             style: textTheme.bodySmall,
               //                             maxLines: 1,
               //                             overflow: TextOverflow.ellipsis,
               //                           ),
               //                           Expanded(
               //                             child: Text(
               //                               userData?.id ?? '...',
-              //                               style: textTheme.caption,
+              //                               style: textTheme.bodySmall,
               //                               maxLines: 1,
               //                               overflow: TextOverflow.ellipsis,
               //                             ),
@@ -366,10 +366,10 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
               // ),
               const SizedBox(height: 16),
               // buildHeading("Avatar"),
-              // Text('(TODO) 🚧🛠', style: textTheme.subtitle1),
+              // Text('(TODO) 🚧🛠', style: textTheme.titleMedium),
               // const SizedBox(height: 16),
               // buildHeading("Contact Information"),
-              // Text('(TODO) 🚧🛠', style: textTheme.subtitle1),
+              // Text('(TODO) 🚧🛠', style: textTheme.titleMedium),
               // const SizedBox(height: 16),
               buildHeading("Visibility"),
               const SizedBox(height: 8),

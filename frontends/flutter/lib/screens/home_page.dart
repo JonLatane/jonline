@@ -162,69 +162,16 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     setState(() {});
   }
 
-  bool get shadersSetup => appState.shadersSetup;
-  set shadersSetup(bool value) => appState.shadersSetup = value;
-  bool get shadersFullySetup => appState.shadersSetup;
-  set shadersFullySetup(bool value) => appState.shadersFullySetup = value;
   final List<Future<dynamic> Function()> setupOtherShaders = [];
 
   //TODO this is still a hacky way to default the user to the "Posts" tab.
-  gotoDefaultTab(TabsRouter tabsRouter, {int? initialTab}) {
+  gotoDefaultTab(TabsRouter tabsRouter, {int? initialTab}) async {
     final initialTab2 = initialTab ?? tabsRouter.activeIndex;
-    if (initialTab2 < 1 && initialTab2 != 0) {
-      tabsRouter.setActiveIndex(2);
-    }
-  }
-
-  Future<void> setupShaders(TabsRouter tabsRouter) async {
-    if (shadersSetup) return;
-
-    const animationDuration = Duration(milliseconds: 800);
-    const longAnimationDuration = Duration(milliseconds: 1200);
-    final initialTab = tabsRouter.activeIndex;
-    if (!Settings.useStartupSequence) {
-      shadersSetup = true;
-      gotoDefaultTab(tabsRouter);
-      Future.delayed(longAnimationDuration, () async {
-        setState(
-          () => shadersFullySetup = true,
-        );
-      });
-      return;
-    }
-    await Future.delayed(longAnimationDuration, () async {
-      tabsRouter.setActiveIndex(0); // Groups
+    if (initialTab2 == 0) {
       await Future.delayed(animationDuration, () async {
-        tabsRouter.setActiveIndex(1); // People
-        await Future.delayed(animationDuration, () async {
-          tabsRouter.setActiveIndex(2); // Posts
-          await Future.delayed(longAnimationDuration, () async {
-            tabsRouter.setActiveIndex(3); // Events
-            await Future.delayed(animationDuration, () async {
-              tabsRouter.setActiveIndex(4); // Me
-              await Future.delayed(longAnimationDuration, () async {
-                tabsRouter.setActiveIndex(5); // Settings
-                await Future.delayed(animationDuration, () async {
-                  tabsRouter.setActiveIndex(2); // Posts
-                  await animationDelay;
-                  await Future.wait(setupOtherShaders.map((s) => s()));
-                  gotoDefaultTab(tabsRouter, initialTab: initialTab);
-                  setState(() {
-                    shadersSetup = true;
-                  });
-                  Future.delayed(longAnimationDuration, () async {
-                    setState(
-                      () => shadersFullySetup = true,
-                    );
-                  });
-                  //Maybe restore user's last open tab+listing type here?
-                });
-              });
-            });
-          });
-        });
+        tabsRouter.setActiveIndex(2);
       });
-    });
+    }
   }
 
   RouteData? _lastRoute;
@@ -304,7 +251,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
         // handleWebShaderSetup(tabsRouter);
         if (isFirstBuild) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            setupShaders(tabsRouter);
+            tabsRouter.setActiveIndex(2);
           });
         }
         isFirstBuild = false;
@@ -341,44 +288,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ),
                   bottomNavigationBar:
                       useSideNav ? null : buildBottomNav(context),
-                ),
-                if (!shadersFullySetup)
-                  IgnorePointer(
-                      ignoring: shadersSetup,
-                      child: AnimatedOpacity(
-                          opacity: shadersSetup ? 0 : 1,
-                          duration: animationDuration,
-                          child: Container(
-                              color: Colors.black.withOpacity(0.7),
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Transform.scale(
-                                    scale: 7,
-                                    child: const Opacity(
-                                        opacity: 0.7,
-                                        child: CircularProgressIndicator()),
-                                  ),
-                                ),
-                              )))),
-                if (!shadersFullySetup)
-                  IgnorePointer(
-                    ignoring: shadersSetup,
-                    child: AnimatedOpacity(
-                        opacity: shadersSetup ? 0 : 0.7,
-                        duration: animationDuration,
-                        child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                                sigmaX: blurSigma, sigmaY: blurSigma),
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Text("Starting Up...",
-                                    textAlign: TextAlign.center,
-                                    style: textTheme.displaySmall),
-                              ),
-                            ))),
-                  )
+                )
               ],
             ));
       },
@@ -623,7 +533,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                                         TextOverflow
                                                                             .ellipsis,
                                                                     style: textTheme
-                                                                        .caption!
+                                                                        .bodySmall!
                                                                         .copyWith(
                                                                             color: active
                                                                                 ? appState.navColor
@@ -801,7 +711,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                                         TextOverflow
                                                                             .clip,
                                                                     style: textTheme
-                                                                        .subtitle1!
+                                                                        .titleMedium!
                                                                         .copyWith(
                                                                             color: active
                                                                                 ? appState.navColor

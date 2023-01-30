@@ -47,7 +47,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
   const primaryServer = onlyShowServer || serversState.server;
-  const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverUrl(a.server) == serverUrl(serversState.server!)) : [];
+  const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverUrl(a.server) == serverUrl(primaryServer!)) : [];
   const accountsElsewhere = accounts.filter(a => !accountsOnPrimaryServer.includes(a));
   function loginToServer() {
     dispatch(clearAccountAlerts());

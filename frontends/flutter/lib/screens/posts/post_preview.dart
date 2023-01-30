@@ -376,7 +376,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
             child: Container(
               color: Colors.black.withOpacity(0.7),
               padding: const EdgeInsets.all(8.0),
-              child: Text(post.id, style: textTheme.caption),
+              child: Text(post.id, style: textTheme.bodySmall),
             ),
           )
         ],
@@ -433,7 +433,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context)
                                   .textTheme
-                                  .caption!
+                                  .bodySmall!
                                   .copyWith(color: appState.primaryColor),
                             ),
                           ),
@@ -699,7 +699,7 @@ class _PostPreviewGroupChooserState
       onPressed: () {
         final RenderBox button = context.findRenderObject() as RenderBox;
         final RenderBox? overlay =
-            Overlay.of(context)?.context.findRenderObject() as RenderBox?;
+            Overlay.of(context).context.findRenderObject() as RenderBox?;
         final RelativeRect position = RelativeRect.fromRect(
           Rect.fromPoints(
             button.localToGlobal(Offset.zero, ancestor: overlay),
@@ -799,7 +799,7 @@ class _PostPreviewGroupChooserState
                                   appState.selectedAccount == null
                                       ? "Login to post to "
                                       : 'Post to ',
-                                  style: darkTheme.textTheme.caption,
+                                  style: darkTheme.textTheme.bodySmall,
                                 ),
                                 Text(
                                   appState.selectedGroup.value?.name ?? '',
@@ -837,7 +837,7 @@ class _PostPreviewGroupChooserState
                     const SizedBox(height: 8),
                     Text(
                       "Currently posted to:",
-                      style: darkTheme.textTheme.caption,
+                      style: darkTheme.textTheme.bodySmall,
                     ),
                   ],
                 ),
@@ -857,7 +857,7 @@ class _PostPreviewGroupChooserState
                       ),
                       Text(
                         "${JonlineServer.selectedServer.server}/",
-                        style: darkTheme.textTheme.caption,
+                        style: darkTheme.textTheme.bodySmall,
                       ),
                     ],
                   ),
@@ -878,7 +878,7 @@ class _PostPreviewGroupChooserState
                       ),
                       // Text(
                       //   "${JonlineServer.selectedServer.server}/",
-                      //   style: darkTheme.textTheme.caption,
+                      //   style: darkTheme.textTheme.bodySmall,
                       // ),
                     ],
                   ),
@@ -899,7 +899,7 @@ class _PostPreviewGroupChooserState
                       ),
                       Text(
                         "${JonlineServer.selectedServer.server}/",
-                        style: darkTheme.textTheme.caption,
+                        style: darkTheme.textTheme.bodySmall,
                       ),
                     ],
                   ),
@@ -959,7 +959,7 @@ class _PostPreviewGroupChooserState
                               textAlign: TextAlign.left,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: textTheme.caption
+                              style: textTheme.bodySmall
                               // style: const TextStyle(color: Colors.white)
                               ),
                         ),
@@ -969,7 +969,7 @@ class _PostPreviewGroupChooserState
                               textAlign: TextAlign.left,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: textTheme.subtitle1),
+                              style: textTheme.titleMedium),
                         ),
                       ],
                     ),

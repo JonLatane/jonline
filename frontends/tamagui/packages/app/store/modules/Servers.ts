@@ -135,7 +135,6 @@ export const serversSlice = createSlice({
       if (!state.server || serverUrl(server) == serverUrl(state.server!)) {
         state.server = server;
       }
-      // debugger;
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`);
       state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`;
     });

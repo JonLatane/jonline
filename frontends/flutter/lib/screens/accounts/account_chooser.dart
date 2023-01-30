@@ -129,7 +129,7 @@ class AccountChooserState extends JonlineState<AccountChooser> {
                           child: Center(
                               child: Text(
                             name,
-                            style: textTheme.caption,
+                            style: textTheme.bodySmall,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             // textAlign: TextAlign.center,
@@ -151,7 +151,7 @@ class AccountChooserState extends JonlineState<AccountChooser> {
                           child: Center(
                               child: Text(
                             name,
-                            style: textTheme.subtitle2,
+                            style: textTheme.titleSmall,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             // textAlign: TextAlign.center,
@@ -163,11 +163,11 @@ class AccountChooserState extends JonlineState<AccountChooser> {
                   // Text('${JonlineServer.selectedServer.server}/',
                   //     maxLines: 1,
                   //     overflow: TextOverflow.ellipsis,
-                  //     style: textTheme.caption),
+                  //     style: textTheme.bodySmall),
                   // Text(JonlineAccount.selectedAccount?.username ?? noOne,
                   //     maxLines: 1,
                   //     overflow: TextOverflow.ellipsis,
-                  //     style: textTheme.subtitle2),
+                  //     style: textTheme.titleSmall),
                   const Expanded(child: SizedBox()),
                 ],
               ),
@@ -229,7 +229,7 @@ Future<Object> showAccountsMenu(
                   ),
                   Text(
                     "${JonlineServer.selectedServer.server}/",
-                    style: darkTheme.textTheme.caption,
+                    style: darkTheme.textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -276,7 +276,7 @@ Future<Object> showAccountsMenu(
                                   textAlign: TextAlign.left,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: textTheme.subtitle2),
+                                  style: textTheme.titleSmall),
                             ),
                             const Icon(Icons.arrow_right, color: Colors.white)
                           ],
@@ -358,7 +358,7 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
                             textAlign: TextAlign.left,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: textTheme.caption),
+                            style: textTheme.bodySmall),
                       ),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -366,7 +366,7 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
                             textAlign: TextAlign.left,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: textTheme.subtitle1),
+                            style: textTheme.titleMedium),
                       ),
                     ],
                   ),
@@ -424,7 +424,7 @@ Widget _serverItem(JonlineServer s, BuildContext context) {
                           textAlign: TextAlign.left,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: textTheme.caption),
+                          style: textTheme.bodySmall),
                     ),
                   ],
                 ),

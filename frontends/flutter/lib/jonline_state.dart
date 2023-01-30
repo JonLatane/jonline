@@ -14,11 +14,6 @@ abstract class JonlineState<T extends StatefulWidget>
     super.initState();
     homePage = context.findRootAncestorStateOfType<HomePageState>()!;
   }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
 
 // ignore: must_be_immutable

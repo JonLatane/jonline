@@ -185,7 +185,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                                             Text(
                                                 JonlineServer
                                                     .selectedServer.server,
-                                                style: textTheme.caption),
+                                                style: textTheme.bodySmall),
                                             if (!appState
                                                     .updatingGroups.value &&
                                                 !appState.errorUpdatingGroups

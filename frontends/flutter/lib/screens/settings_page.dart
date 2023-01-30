@@ -41,7 +41,7 @@ class _SettingsPageState extends JonlineState<SettingsPage>
                     constraints: const BoxConstraints(maxWidth: 600),
                     child: Column(
                       children: [
-                        Text('App Settings', style: textTheme.subtitle1),
+                        Text('App Settings', style: textTheme.titleMedium),
                         Row(
                           children: [
                             Expanded(
@@ -140,22 +140,7 @@ class _SettingsPageState extends JonlineState<SettingsPage>
                         ),
                         const SizedBox(height: 25),
                         Text('Performance Settings',
-                            style: textTheme.subtitle1),
-                        Row(
-                          key: const Key('startupSequenceSetting'),
-                          children: [
-                            Expanded(
-                                child: Text("Run Startup Sequence",
-                                    style: textTheme.labelLarge)),
-                            Switch(
-                                activeColor: appState.primaryColor,
-                                value: Settings.useStartupSequence,
-                                onChanged: (v) {
-                                  setState(
-                                      () => Settings.useStartupSequence = v);
-                                }),
-                          ],
-                        ),
+                            style: textTheme.titleMedium),
                         Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -224,7 +209,7 @@ class _SettingsPageState extends JonlineState<SettingsPage>
                                   fontSize: 12),
                             )),
                         const SizedBox(height: 35),
-                        Text('Advanced Settings', style: textTheme.subtitle1),
+                        Text('Advanced Settings', style: textTheme.titleMedium),
                         Row(
                           children: [
                             Expanded(

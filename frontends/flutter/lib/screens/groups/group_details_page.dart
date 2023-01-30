@@ -163,7 +163,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
     ));
   }
 
-  buildHeading(String name) => Text(name, style: textTheme.subtitle1);
+  buildHeading(String name) => Text(name, style: textTheme.titleMedium);
 
   Widget buildConfiguration() {
     if (!loaded) return const SizedBox();
@@ -183,10 +183,10 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
               ),
               const SizedBox(height: 16),
               // buildHeading("Avatar"),
-              // Text('(TODO) 🚧🛠', style: textTheme.subtitle1),
+              // Text('(TODO) 🚧🛠', style: textTheme.titleMedium),
               // const SizedBox(height: 16),
               // buildHeading("Contact Information"),
-              // Text('(TODO) 🚧🛠', style: textTheme.subtitle1),
+              // Text('(TODO) 🚧🛠', style: textTheme.titleMedium),
               // const SizedBox(height: 16),
               buildHeading("Visibility"),
               const SizedBox(height: 8),

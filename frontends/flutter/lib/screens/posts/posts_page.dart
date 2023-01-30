@@ -321,7 +321,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
                 Text("Loading Posts...", style: textTheme.titleLarge),
                 Text(
                     "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
-                    style: textTheme.caption),
+                    style: textTheme.bodySmall),
                 if (viewingGroup) Text(appState.selectedGroup.value!.name),
               ],
             ),
@@ -354,7 +354,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
                               style: textTheme.titleLarge),
                           Text(
                               "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
-                              style: textTheme.caption),
+                              style: textTheme.bodySmall),
                           if (viewingGroup)
                             Text(appState.selectedGroup.value!.name),
                           if (!appState.posts.updating &&

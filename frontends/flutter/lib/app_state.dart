@@ -112,8 +112,6 @@ class AppState extends State<MyApp> {
     // showMessage?.call("Groups updated! 🎉");
   }
 
-  bool shadersSetup = false;
-  bool shadersFullySetup = false;
   bool get loggedIn => JonlineAccount.loggedIn;
   JonlineAccount? get selectedAccount => JonlineAccount.selectedAccount;
   set selectedAccount(JonlineAccount? account) {

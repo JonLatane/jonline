@@ -24,7 +24,8 @@ const grpcErrorConversions: RegExpErrorMatcher[] = [
 ];
 
 export function formatError ( error : Error ) : string { 
-  var message = error.message;
+  let message = error.message;
+  if (!message) message = error.toString();
   grpcErrorConversions.forEach(({regex, handler}) => {
     let matches = message.match(regex);
     if (matches) {

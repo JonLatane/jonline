@@ -178,16 +178,16 @@ extension HomePageAppBar on HomePageState {
         }
         return Row(
           children: [
-            Text("${titleServer ?? '...'}/", style: textTheme.caption),
-            Text(titleUsername ?? '...', style: textTheme.subtitle2),
+            Text("${titleServer ?? '...'}/", style: textTheme.bodySmall),
+            Text(titleUsername ?? '...', style: textTheme.titleSmall),
           ],
         );
       case 'ServerConfigurationRoute':
         final String server = context.topRoute.pathParams.get('server');
         return Row(
           children: [
-            Text('Server Configuration: ', style: textTheme.subtitle2),
-            Text("$server/", style: textTheme.caption),
+            Text('Server Configuration: ', style: textTheme.titleSmall),
+            Text("$server/", style: textTheme.bodySmall),
           ],
         );
       case 'AdminRoute':
@@ -207,11 +207,11 @@ extension HomePageAppBar on HomePageState {
         }
         return Row(
           children: [
-            Text('Admin: ', style: textTheme.subtitle2),
+            Text('Admin: ', style: textTheme.titleSmall),
             // Text(' for ', style: textTheme.bodyText2),
             // SizedBox(width: 7 *mq.textScaleFactor),
-            Text("${titleServer ?? '...'}/", style: textTheme.caption),
-            Text(titleUsername ?? '...', style: textTheme.subtitle2),
+            Text("${titleServer ?? '...'}/", style: textTheme.bodySmall),
+            Text(titleUsername ?? '...', style: textTheme.titleSmall),
           ],
         );
       default:

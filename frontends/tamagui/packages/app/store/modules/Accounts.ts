@@ -14,14 +14,16 @@ import 'react-native-get-random-values';
 import {v4 as uuidv4} from 'uuid';
 import { Jonline } from "@jonline/ui/src";
 import { formatError } from "@jonline/ui/src";
-import { resetCredentialedData } from "../store";
+import store, { resetCredentialedData } from "../store";
+import moment from "moment";
+import { ExpirableToken } from "@jonline/ui/types";
 
 // The type used to store accounts locally.
 export type JonlineAccount = {
   id: string;
   user: User;
   refreshToken: RefreshTokenResponse;
-  accessToken: AccessTokenResponse;
+  accessToken: ExpirableToken;
   server: JonlineServer;
 }
 
@@ -40,7 +42,15 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
   } else {
     let client = await getServerClient(account.server);
     let metadata = new grpc.Metadata();
-    metadata.append('authorization', account.accessToken.accessToken!);
+    let accessExpiresAt = moment.utc(account.accessToken.expiresAt);
+    let now = moment.utc();
+    let expired = accessExpiresAt.isBefore(now);
+    if (expired) {
+      let accessToken = await client.accessToken({ refreshToken: account.refreshToken.refreshToken!.token });
+      account = {...account, accessToken};
+      store.dispatch(accountsSlice.actions.upsertAccount(account));
+    }
+    metadata.append('authorization', account.accessToken.token);
     return { ...client, credential: metadata };
   }
 }
@@ -91,9 +101,9 @@ export const login = createAsyncThunk<JonlineAccount, Login>(
     let user = await client.getCurrentUser({}, metadata);
     return {
       id: uuidv4(),
-      user: user,
-      refreshToken: refreshToken,
-      accessToken: {accessToken: accessToken.token, expiresAt: accessToken.expiresAt},
+      user,
+      refreshToken,
+      accessToken,
       server: { ...loginRequest }
     };
   }

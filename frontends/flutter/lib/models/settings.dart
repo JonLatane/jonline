@@ -64,16 +64,6 @@ class Settings {
     }
   }
 
-  static bool _useStartupSequence = MyPlatform.isIOS;
-  static bool get useStartupSequence => _useStartupSequence;
-  static set useStartupSequence(bool v) {
-    {
-      _useStartupSequence = v;
-      Future.microtask(
-          () async => appStorage.setBool("use_startup_sequence", v));
-    }
-  }
-
   static ValueNotifier<bool> showSettingsTabListener = ValueNotifier(false);
   static bool get showSettingsTab => showSettingsTabListener.value;
   static set showSettingsTab(bool v) {
@@ -124,8 +114,6 @@ class Settings {
     _powerUserMode = appStorage.getBool("power_user_mode") ?? false;
     _developerMode = appStorage.getBool("developer_mode") ?? false;
     _replyLayersToLoad = appStorage.getInt("reply_layers_to_load") ?? 1;
-    _useStartupSequence =
-        appStorage.getBool("use_startup_sequence") ?? MyPlatform.isIOS;
     _preferServerPreviews =
         appStorage.getBool("prefer_server_previews") ?? MyPlatform.isWeb;
     _forceServerPreviews =

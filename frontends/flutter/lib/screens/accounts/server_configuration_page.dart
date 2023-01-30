@@ -218,18 +218,18 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Server Info', style: textTheme.subtitle1),
+            Text('Server Info', style: textTheme.titleMedium),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                     child:
                         Text("Jonline Version", style: textTheme.labelLarge)),
-                Text("v${server?.serviceVersion}", style: textTheme.caption),
+                Text("v${server?.serviceVersion}", style: textTheme.bodySmall),
               ],
             ),
             const SizedBox(height: 24),
-            Text('Default Web UI', style: textTheme.subtitle1),
+            Text('Default Web UI', style: textTheme.titleMedium),
             const SizedBox(height: 8),
             RadioListTile<WebUserInterface>(
               value: WebUserInterface.FLUTTER_WEB,
@@ -280,7 +280,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                   : null,
             ),
             const SizedBox(height: 24),
-            Text('Feature Settings', style: textTheme.subtitle1),
+            Text('Feature Settings', style: textTheme.titleMedium),
             // Row(
             //   children: [
             //     Expanded(
@@ -338,7 +338,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
               ],
             ),
             const SizedBox(height: 24),
-            Text('Appearance Settings', style: textTheme.subtitle1),
+            Text('Appearance Settings', style: textTheme.titleMedium),
             Row(
               children: [
                 Expanded(
@@ -371,7 +371,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
               ],
             ),
             const SizedBox(height: 24),
-            Text('Default User Visibility', style: textTheme.subtitle1),
+            Text('Default User Visibility', style: textTheme.titleMedium),
             const SizedBox(height: 8),
             if (isAdmin)
               Container(
@@ -437,7 +437,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 ),
               ),
             const SizedBox(height: 24),
-            Text('Default User Permissions', style: textTheme.subtitle1),
+            Text('Default User Permissions', style: textTheme.titleMedium),
             const SizedBox(height: 8),
             if (isAdmin)
               Container(
@@ -497,7 +497,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 ),
               ),
             if (isAdmin) const SizedBox(height: 16),
-            if (isAdmin) Text('Admin/Dev Tools', style: textTheme.subtitle1),
+            if (isAdmin) Text('Admin/Dev Tools', style: textTheme.titleMedium),
             if (isAdmin) const SizedBox(height: 8),
             if (isAdmin)
               TextButton(

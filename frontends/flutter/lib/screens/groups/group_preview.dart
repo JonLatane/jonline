@@ -134,7 +134,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                                 Expanded(
                                   child: Text(
                                       '${JonlineServer.selectedServer.server}/group/${group.id}',
-                                      style: textTheme.caption?.copyWith(
+                                      style: textTheme.bodySmall?.copyWith(
                                         color: textColor?.withOpacity(0.5),
                                       ),
                                       maxLines: 1,
@@ -154,7 +154,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                                               child: Text(
                                                 group.name,
                                                 textAlign: TextAlign.left,
-                                                style: textTheme.headline6
+                                                style: textTheme.titleLarge
                                                     ?.copyWith(
                                                   color: textColor,
                                                 ),
@@ -176,7 +176,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                                           autocorrect: true,
                                           maxLines: 1,
                                           cursorColor: Colors.white,
-                                          style: textTheme.headline6
+                                          style: textTheme.titleLarge
                                               ?.copyWith(color: textColor),
                                           enabled: member || admin,
                                           decoration: const InputDecoration(
@@ -309,13 +309,13 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                               const SizedBox(width: 4),
                               Text(
                                 group.postCount.toString(),
-                                style: textTheme.caption?.copyWith(
+                                style: textTheme.bodySmall?.copyWith(
                                   color: textColor?.withOpacity(0.5),
                                 ),
                               ),
                               Text(
                                 " post${group.postCount == 1 ? '' : 's'}",
-                                style: textTheme.caption?.copyWith(
+                                style: textTheme.bodySmall?.copyWith(
                                   color: textColor?.withOpacity(0.5),
                                 ),
                               ),
@@ -340,13 +340,13 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                               const SizedBox(width: 4),
                               Text(
                                 group.memberCount.toString(),
-                                style: textTheme.caption?.copyWith(
+                                style: textTheme.bodySmall?.copyWith(
                                   color: textColor?.withOpacity(0.5),
                                 ),
                               ),
                               Text(
                                 " member${group.memberCount == 1 ? '' : 's'}",
-                                style: textTheme.caption?.copyWith(
+                                style: textTheme.bodySmall?.copyWith(
                                   color: textColor?.withOpacity(0.5),
                                 ),
                               ),

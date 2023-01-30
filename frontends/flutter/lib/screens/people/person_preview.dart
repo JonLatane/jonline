@@ -182,7 +182,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                   Expanded(
                                     child: Text(
                                         '${JonlineServer.selectedServer.server}/',
-                                        style: textTheme.caption?.copyWith(
+                                        style: textTheme.bodySmall?.copyWith(
                                             color: textColor?.withOpacity(0.5)),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis),
@@ -197,7 +197,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                       Expanded(
                                         child: Text(
                                           user.username,
-                                          style: textTheme.headline6
+                                          style: textTheme.titleLarge
                                               ?.copyWith(color: textColor),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -216,7 +216,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                   autocorrect: false,
                                   maxLines: 1,
                                   cursorColor: Colors.white,
-                                  style: textTheme.headline6
+                                  style: textTheme.titleLarge
                                       ?.copyWith(color: textColor),
                                   enabled: currentUserProfile || admin,
                                   decoration: const InputDecoration(
@@ -270,7 +270,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                           duration: animationDuration,
                           opacity: member ? 1 : 0,
                           child: Text("member since $memberSince",
-                              style: textTheme.caption?.copyWith(
+                              style: textTheme.bodySmall?.copyWith(
                                   color: textColor?.withOpacity(0.5))),
                         )),
                     const SizedBox(height: 4),
@@ -284,11 +284,11 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                             children: [
                               Text(
                                   "wants to join ${appState.selectedGroup.value?.name}",
-                                  style: textTheme.caption?.copyWith(
+                                  style: textTheme.bodySmall?.copyWith(
                                       color: textColor?.withOpacity(0.5))),
                               const SizedBox(height: 4),
                               Text("requested at $requestedOrInvitedAt",
-                                  style: textTheme.caption?.copyWith(
+                                  style: textTheme.bodySmall?.copyWith(
                                       color: textColor?.withOpacity(0.5))),
                               Expanded(
                                 child: Row(children: [
@@ -351,7 +351,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                           child: Column(
                             children: [
                               Text("wants to follow you",
-                                  style: textTheme.caption?.copyWith(
+                                  style: textTheme.bodySmall?.copyWith(
                                       color: textColor?.withOpacity(0.5))),
                               Expanded(
                                 child: Row(children: [
@@ -413,7 +413,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                           duration: animationDuration,
                           opacity: followsYou ? 1 : 0,
                           child: Text(following ? "friends" : "follows you",
-                              style: textTheme.caption?.copyWith(
+                              style: textTheme.bodySmall?.copyWith(
                                   color: textColor?.withOpacity(0.5))),
                         )),
                     const SizedBox(height: 4),
@@ -427,7 +427,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                               children: [
                                 // Text(
                                 //   "User ID: ",
-                                //   style: textTheme.caption?.copyWith(
+                                //   style: textTheme.bodySmall?.copyWith(
                                 //       color: textColor?.withOpacity(0.5)),
                                 //   maxLines: 1,
                                 //   overflow: TextOverflow.ellipsis,
@@ -435,7 +435,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                 // Expanded(
                                 //   child: Text(
                                 //     user.id,
-                                //     style: textTheme.caption?.copyWith(
+                                //     style: textTheme.bodySmall?.copyWith(
                                 //         color: textColor?.withOpacity(0.5)),
                                 //     maxLines: 1,
                                 //     overflow: TextOverflow.ellipsis,
@@ -447,15 +447,15 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                 // ),
                                 // const SizedBox(width: 4),
                                 Text(user.followerCount.toString(),
-                                    style: textTheme.caption?.copyWith(
+                                    style: textTheme.bodySmall?.copyWith(
                                         color: textColor?.withOpacity(0.5))),
                                 Text(
                                     " follower${user.followerCount == 1 ? '' : 's'}",
-                                    style: textTheme.caption?.copyWith(
+                                    style: textTheme.bodySmall?.copyWith(
                                         color: textColor?.withOpacity(0.5))),
                                 const Expanded(child: SizedBox()),
                                 Text("following ${user.followingCount}",
-                                    style: textTheme.caption?.copyWith(
+                                    style: textTheme.bodySmall?.copyWith(
                                         color: textColor?.withOpacity(0.5))),
                               ],
                             ),

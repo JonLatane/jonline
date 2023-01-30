@@ -449,7 +449,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                     Text("Loading $people...", style: textTheme.titleLarge),
                     Text(
                         "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
-                        style: textTheme.caption),
+                        style: textTheme.bodySmall),
                     if (viewingGroup) Text(appState.selectedGroup.value!.name),
                   ],
                 ),
@@ -484,7 +484,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                               style: textTheme.titleLarge),
                           Text(
                               "${JonlineServer.selectedServer.server}/${viewingGroup ? 'g/${appState.selectedGroup.value!.id}' : ''}",
-                              style: textTheme.caption),
+                              style: textTheme.bodySmall),
                           if (viewingGroup)
                             Text(appState.selectedGroup.value!.name),
                           if (!appState.updatingUsers.value &&

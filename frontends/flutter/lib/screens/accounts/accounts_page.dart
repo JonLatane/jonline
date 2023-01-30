@@ -328,7 +328,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                           uiSelectedServer != null
                                               ? "${uiSelectedServer!.server}/"
                                               : '',
-                                          style: textTheme.caption),
+                                          style: textTheme.bodySmall),
                                     ],
                                   ),
                                 ),
@@ -450,14 +450,14 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                         if (showServers && uiSelectedServer != null)
                           Text(
                             'on',
-                            style: textTheme.headline6,
+                            style: textTheme.titleLarge,
                           ),
                         if (showServers && uiSelectedServer != null)
                           const SizedBox(height: 4),
                         if (showServers && uiSelectedServer != null)
                           Text(
                             uiSelectedServer!.server,
-                            style: textTheme.caption,
+                            style: textTheme.bodySmall,
                           ),
                       ],
                     ),
@@ -607,7 +607,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                   children: [
                                     Expanded(
                                       child: Text('${account.server}/',
-                                          style: textTheme.caption?.copyWith(
+                                          style: textTheme.bodySmall?.copyWith(
                                               color:
                                                   textColor?.withOpacity(0.5)),
                                           maxLines: 1,
@@ -620,9 +620,9 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                     Expanded(
                                       child: Text(
                                         account.username,
-                                        style: textTheme.headline6
+                                        style: textTheme.titleLarge
                                             ?.copyWith(color: textColor),
-                                        // style: textTheme.headline6,
+                                        // style: textTheme.titleLarge,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -695,7 +695,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                 children: [
                                   Text(
                                     "User ID: ",
-                                    style: textTheme.caption?.copyWith(
+                                    style: textTheme.bodySmall?.copyWith(
                                         color: textColor?.withOpacity(0.5)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -703,7 +703,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                   Expanded(
                                     child: Text(
                                       account.userId,
-                                      style: textTheme.caption?.copyWith(
+                                      style: textTheme.bodySmall?.copyWith(
                                           color: textColor?.withOpacity(0.5)),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -716,7 +716,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                               const SizedBox(width: 4),
                             if (Settings.developerMode)
                               Text('Refresh Token: ',
-                                  style: textTheme.caption?.copyWith(
+                                  style: textTheme.bodySmall?.copyWith(
                                       color: textColor?.withOpacity(0.5)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
@@ -724,7 +724,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                               Expanded(
                                 flex: 1,
                                 child: Text(account.accessToken,
-                                    style: textTheme.caption?.copyWith(
+                                    style: textTheme.bodySmall?.copyWith(
                                         color: textColor?.withOpacity(0.5)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis),
@@ -920,7 +920,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                   child: Text(
                                     server.server,
                                     textAlign: TextAlign.center,
-                                    style: textTheme.caption
+                                    style: textTheme.bodySmall
                                         ?.copyWith(color: textColor),
                                     overflow: TextOverflow.ellipsis,
                                   ),
