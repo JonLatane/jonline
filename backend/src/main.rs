@@ -152,6 +152,7 @@ fn create_rocket<T: rocket::figment::Provider>(
                 web::tamagui_index,
                 web::tamagui_post,
                 web::tamagui_user,
+                web::tamagui_server,
                 web::tamagui_file
             ],
         )

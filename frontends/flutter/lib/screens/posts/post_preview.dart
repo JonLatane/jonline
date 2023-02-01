@@ -202,21 +202,21 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                                 Container(
                                   height: 8,
                                 ),
-                              if (link != null &&
-                                  !Settings.preferServerPreviews)
-                                buildLocalPreview(context),
-                              if (link != null &&
-                                  (Settings.preferServerPreviews &&
-                                      (hasLoadedServerPreview &&
-                                          previewImage == null)))
-                                SizedBox(
-                                    height: previewHeight,
-                                    child: buildLocalPreview(context)),
-                              if (previewImage != null &&
-                                  Settings.preferServerPreviews)
+                              // if (link != null &&
+                              //     !Settings.preferServerPreviews)
+                              //   buildLocalPreview(context),
+                              // if (link != null &&
+                              //     (Settings.preferServerPreviews &&
+                              //         (hasLoadedServerPreview &&
+                              //             previewImage == null)))
+                              //   SizedBox(
+                              //       height: previewHeight,
+                              //       child: buildLocalPreview(context)),
+                              if (previewImage != null) //&&
+                                // Settings.preferServerPreviews)
                                 buildServerPreview(context),
                               if (link != null &&
-                                  Settings.preferServerPreviews &&
+                                  // Settings.preferServerPreviews &&
                                   !hasLoadedServerPreview)
                                 buildLoadingServerPreview(context),
                               if (content != null)

@@ -29,6 +29,8 @@ export function TabsNavigation({ children, onlyShowServer }: TabsNavigationProps
   let backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}`;
   let navColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.navigation;
   let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
+  let wrapTitle = serverName.length > 20;
+  let maxWidth=media.gtXs ? 350 : 250;
   return Platform.select({
     web: <>
       <StickyBox style={{ zIndex: 10 }} className="blur">
@@ -36,9 +38,16 @@ export function TabsNavigation({ children, onlyShowServer }: TabsNavigationProps
           {/* <XStack h={5}></XStack> */}
           <XStack space="$1" marginVertical={5}>
             <XStack w={5} />
-            <Button size="$5" iconAfter={serverNameContainsEmoji ? undefined : HomeIcon}  {...homeProps}><Heading>{serverName}</Heading></Button>
+            <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
+              iconAfter={serverNameContainsEmoji ? undefined : HomeIcon}
+              {...homeProps}>
+                <XStack maw={maxWidth - (serverNameContainsEmoji ? 50 : 0)}>
+                <Heading whiteSpace="nowrap">{serverName}</Heading>
+                </XStack>
+            </Button>
             <XStack f={1} />
-            <AccountsSheet circular={!media.gtSm} onlyShowServer={onlyShowServer} />
+
+            <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />
             <XStack w={5} />
           </XStack>
           {/* <XStack h={5}></XStack> */}

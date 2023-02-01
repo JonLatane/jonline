@@ -435,22 +435,22 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
 
 class AccessTokenResponse extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'AccessTokenResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'accessToken')
-    ..aOM<$7.Timestamp>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $7.Timestamp.create)
+    ..aOM<ExpirableToken>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'refreshToken', subBuilder: ExpirableToken.create)
+    ..aOM<ExpirableToken>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'accessToken', subBuilder: ExpirableToken.create)
     ..hasRequiredFields = false
   ;
 
   AccessTokenResponse._() : super();
   factory AccessTokenResponse({
-    $core.String? accessToken,
-    $7.Timestamp? expiresAt,
+    ExpirableToken? refreshToken,
+    ExpirableToken? accessToken,
   }) {
     final _result = create();
+    if (refreshToken != null) {
+      _result.refreshToken = refreshToken;
+    }
     if (accessToken != null) {
       _result.accessToken = accessToken;
-    }
-    if (expiresAt != null) {
-      _result.expiresAt = expiresAt;
     }
     return _result;
   }
@@ -475,24 +475,26 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   static AccessTokenResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AccessTokenResponse>(create);
   static AccessTokenResponse? _defaultInstance;
 
+  @$pb.TagNumber(1)
+  ExpirableToken get refreshToken => $_getN(0);
+  @$pb.TagNumber(1)
+  set refreshToken(ExpirableToken v) { setField(1, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasRefreshToken() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRefreshToken() => clearField(1);
+  @$pb.TagNumber(1)
+  ExpirableToken ensureRefreshToken() => $_ensure(0);
+
   @$pb.TagNumber(2)
-  $core.String get accessToken => $_getSZ(0);
+  ExpirableToken get accessToken => $_getN(1);
   @$pb.TagNumber(2)
-  set accessToken($core.String v) { $_setString(0, v); }
+  set accessToken(ExpirableToken v) { setField(2, v); }
   @$pb.TagNumber(2)
-  $core.bool hasAccessToken() => $_has(0);
+  $core.bool hasAccessToken() => $_has(1);
   @$pb.TagNumber(2)
   void clearAccessToken() => clearField(2);
-
-  @$pb.TagNumber(3)
-  $7.Timestamp get expiresAt => $_getN(1);
-  @$pb.TagNumber(3)
-  set expiresAt($7.Timestamp v) { setField(3, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasExpiresAt() => $_has(1);
-  @$pb.TagNumber(3)
-  void clearExpiresAt() => clearField(3);
-  @$pb.TagNumber(3)
-  $7.Timestamp ensureExpiresAt() => $_ensure(1);
+  @$pb.TagNumber(2)
+  ExpirableToken ensureAccessToken() => $_ensure(1);
 }
 

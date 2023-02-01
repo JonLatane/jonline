@@ -49,9 +49,10 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
         onClick={doSelectServer}>
         <Card.Header>
           <XStack>
-            <View style={{ flex: 1 }}>
-              <Heading size="$5" style={{ marginRight: 'auto' }}>{server.host}</Heading>
-            </View>
+            <YStack style={{ flex: 1 }}>
+              <Heading marginRight='auto' whiteSpace="nowrap" opacity={server.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>{server.serverConfiguration?.serverInfo?.name || 'Unnamed'}</Heading>
+              <Heading size="$5" marginRight='auto'>{server.host}</Heading>
+            </YStack>
             {isPreview ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined}
           </XStack>
         </Card.Header>

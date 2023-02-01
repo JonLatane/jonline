@@ -171,6 +171,12 @@ certs_gen_test_pass_openssl_verify:
 # Core release targets (for general use, CI/CD, etc.)
 release_ios: release_ios_push_testflight
 release_be_cloud: release_be_push_cloud
+# This target rebuilds the Flutter+React apps, but does not rebuild the Rust BE
+# before pushing the new image. The server Docker image is structured so that this will
+# result in a very small push of only it first layer. Useful for iteration (~55s to deploy
+# to two namespaces in my cluster from my old MBP), but note that
+# the BE GetServiceVersion call will not match the version of the Docker image.
+release_be_fe_only_cloud: release_be_fe_only_push_cloud
 release_be_local: release_be_push_local
 
 # Local registry targets for build
@@ -209,11 +215,24 @@ release_builder_push_cloud:
 	docker build . -t $(CLOUD_REGISTRY)/jonline-be-build -f backend/docker/build/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline-be-build
 
+
+# Build environment targets for build
+build_environment_start:
+	docker start jonline-build-environment
+build_environment_stop:
+	docker stop jonline-build-environment
+	docker rm jonline-build-environment
+build_environment_create: local_registry_create
+	$(MAKE) build_environment_start || docker run -dit --name jonline-build-environment -v $$(pwd):/opt $(LOCAL_REGISTRY)/jonline-be-build:latest
+build_environment_destroy:
+	$(MAKE) build_environment_stop; rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
+
 # Server image build targets
 release_be_build_binary: backend/target/release/jonline__server_release
 
-backend/target/release/jonline__server_release: release_builder_push_local
-	docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-be-build:latest /bin/bash -c "cargo build --release"
+backend/target/release/jonline__server_release: release_builder_push_local build_environment_create
+# docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-be-build:latest /bin/bash -c "cargo build --release"
+	docker exec -it -w /opt/backend/src jonline-build-environment /bin/bash -c "cargo build --release"
 	mv backend/target/release/jonline backend/target/release/jonline__server_release
 	mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release
 	mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release
@@ -226,13 +245,16 @@ release_be_push_local: local_registry_create release_be_build_binary release_web
 	docker build . -t $(LOCAL_REGISTRY)/jonline_preview_generator -f backend/docker/preview_generator/Dockerfile
 	docker push $(LOCAL_REGISTRY)/jonline_preview_generator
 
-release_be_push_cloud: release_web_builds#release_be_build_binary release_web_builds
+release_be_push_cloud: release_be_build_binary release_web_builds _push_be_cloud_release
+release_be_fe_only_push_cloud: release_web_builds _push_be_cloud_release
+_push_be_cloud_release:
 	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
 	docker tag $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) $(CLOUD_REGISTRY)/jonline:latest
 	docker build . -t $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION) -f backend/docker/preview_generator/Dockerfile
 	docker push $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION)
 	docker tag $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION) $(CLOUD_REGISTRY)/jonline_preview_generator:latest
+
 
 # Full-Stack dev targets
 clean:
@@ -247,5 +269,6 @@ build_local:
 lines_of_code:
 	git ls-files | xargs cloc
 
+docs: documentation
 documentation:
 	docker run --rm -v $(PWD)/docs/generated:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,docs.md

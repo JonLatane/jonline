@@ -1,40 +1,21 @@
+import { grpc } from "@improbable-eng/grpc-web";
+import { formatError } from "@jonline/ui/src";
+import { CreateAccountRequest, LoginRequest } from "@jonline/ui/src/generated/authentication";
 import {
   createAsyncThunk,
   createEntityAdapter,
   createSlice,
   Dictionary,
   EntityId,
-  PayloadAction,
+  PayloadAction
 } from "@reduxjs/toolkit";
-import { RefreshTokenResponse, AccessTokenResponse, CreateAccountRequest, LoginRequest } from "@jonline/ui/src/generated/authentication"
-import { User } from "@jonline/ui/src/generated/users"
-import { getServerClient, JonlineServer } from "./servers";
-import { grpc } from "@improbable-eng/grpc-web";
-import 'react-native-get-random-values';
-import {v4 as uuidv4} from 'uuid';
-import { Jonline } from "@jonline/ui/src";
-import { formatError } from "@jonline/ui/src";
-import store, { resetCredentialedData } from "../store";
+import { Server } from "@tamagui/lucide-icons";
 import moment from "moment";
-import { ExpirableToken } from "@jonline/ui/types";
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
+import store, { getServerClient, resetCredentialedData } from "../store";
+import { AccountOrServer, JonlineAccount, JonlineCredentialClient, JonlineServer } from "../types";
 
-// The type used to store accounts locally.
-export type JonlineAccount = {
-  id: string;
-  user: User;
-  refreshToken: RefreshTokenResponse;
-  accessToken: ExpirableToken;
-  server: JonlineServer;
-}
-
-export type AccountOrServer = {
-  account?: JonlineAccount;
-  server?: JonlineServer;
-};
-// A Jonline client with an optional credentials field bolted on.
-export type JonlineCredentialClient = Jonline & {
-  credential?: grpc.Metadata;
-}
 export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
   let {account, server} = accountOrServer;
   if (!account) {
@@ -44,10 +25,10 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
     let metadata = new grpc.Metadata();
     let accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     let now = moment.utc();
-    let expired = accessExpiresAt.isBefore(now);
+    let expired = accessExpiresAt.subtract(2, 'minutes').isBefore(now);
     if (expired) {
-      let accessToken = await client.accessToken({ refreshToken: account.refreshToken.refreshToken!.token });
-      account = {...account, accessToken};
+      let {accessToken, refreshToken} = await client.accessToken({ refreshToken: account.refreshToken!.token });
+      account = {...account, accessToken: accessToken!};
       store.dispatch(accountsSlice.actions.upsertAccount(account));
     }
     metadata.append('authorization', account.accessToken.token);
@@ -74,16 +55,15 @@ export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
   "accounts/create",
   async (createAccountRequest) => {
     let client = await getServerClient(createAccountRequest);
-    let refreshToken = await client.createAccount(createAccountRequest);
-    let accessToken = refreshToken.accessToken!;
+    let {refreshToken, accessToken, user} = await client.createAccount(createAccountRequest);
     let metadata = new grpc.Metadata();
-    metadata.append('authorization', accessToken.token)
-    let user = await client.getCurrentUser({}, metadata);
+    metadata.append('authorization', accessToken!.token)
+    user = user || await client.getCurrentUser({}, metadata);
     return {
       id: uuidv4(),
-      user: user,
-      refreshToken: refreshToken,
-      accessToken: accessToken,
+      user: user!,
+      refreshToken: refreshToken!,
+      accessToken: accessToken!,
       server: { ...createAccountRequest }
     };
   }
@@ -94,16 +74,15 @@ export const login = createAsyncThunk<JonlineAccount, Login>(
   "accounts/login",
   async (loginRequest) => {
     let client = await getServerClient(loginRequest);
-    let refreshToken = await client.login(loginRequest);
-    let accessToken = refreshToken.accessToken!;
+    let {refreshToken, accessToken, user} = await client.login(loginRequest);
     let metadata = new grpc.Metadata();
-    metadata.append('authorization', accessToken.token)
-    let user = await client.getCurrentUser({}, metadata);
+    metadata.append('authorization', accessToken!.token)
+    user = user || await client.getCurrentUser({}, metadata);
     return {
       id: uuidv4(),
-      user,
-      refreshToken,
-      accessToken,
+      user: user!,
+      refreshToken: refreshToken!,
+      accessToken: accessToken!,
       server: { ...loginRequest }
     };
   }
@@ -126,7 +105,7 @@ export const accountsSlice = createSlice({
       }
       accountsAdapter.removeOne(state, action);
     },
-    reset: () => initialState,
+    resetAccounts: () => initialState,
     selectAccount: (state, action: PayloadAction<JonlineAccount | undefined>) => {
       if (state.account?.id != action.payload?.id) {
         resetCredentialedData();
@@ -177,8 +156,8 @@ export const accountsSlice = createSlice({
   },
 });
 
-export const { selectAccount, removeAccount, clearAlerts } = accountsSlice.actions;
+export const { selectAccount, removeAccount, clearAlerts, resetAccounts } = accountsSlice.actions;
 
-export const { selectAll: selectAllAccounts } = accountsAdapter.getSelectors();
+export const { selectAll: selectAllAccounts, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 
 export default accountsSlice.reducer;

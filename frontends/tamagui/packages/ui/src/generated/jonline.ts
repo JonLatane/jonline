@@ -3,8 +3,8 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import {
   AccessTokenRequest,
+  AccessTokenResponse,
   CreateAccountRequest,
-  ExpirableToken,
   LoginRequest,
   RefreshTokenResponse,
 } from "./authentication";
@@ -40,7 +40,7 @@ export interface Jonline {
   /** Logs in a user and provides an Auth Token (along with a Refresh Token). */
   login(request: DeepPartial<LoginRequest>, metadata?: grpc.Metadata): Promise<RefreshTokenResponse>;
   /** Gets a new Refresh Token (given an Auth Token). */
-  accessToken(request: DeepPartial<AccessTokenRequest>, metadata?: grpc.Metadata): Promise<ExpirableToken>;
+  accessToken(request: DeepPartial<AccessTokenRequest>, metadata?: grpc.Metadata): Promise<AccessTokenResponse>;
   /** Gets the current user. Authenticated. */
   getCurrentUser(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<User>;
   /**
@@ -178,7 +178,7 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineLoginDesc, LoginRequest.fromPartial(request), metadata);
   }
 
-  accessToken(request: DeepPartial<AccessTokenRequest>, metadata?: grpc.Metadata): Promise<ExpirableToken> {
+  accessToken(request: DeepPartial<AccessTokenRequest>, metadata?: grpc.Metadata): Promise<AccessTokenResponse> {
     return this.rpc.unary(JonlineAccessTokenDesc, AccessTokenRequest.fromPartial(request), metadata);
   }
 
@@ -385,7 +385,7 @@ export const JonlineAccessTokenDesc: UnaryMethodDefinitionish = {
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = ExpirableToken.decode(data);
+      const value = AccessTokenResponse.decode(data);
       return {
         ...value,
         toObject() {

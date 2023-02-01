@@ -45,14 +45,16 @@ extension JonlineAccountOperations on JonlineAccount {
   Future<bool> _updateAccessToken({Function(String)? showMessage}) async {
     ExpirableToken? newAccessToken;
     try {
-      newAccessToken = await (await getClient(showMessage: showMessage))
+      final client = await getClient(showMessage: showMessage);
+      final response = await client
           ?.accessToken(AccessTokenRequest(refreshToken: authorizationToken));
+      newAccessToken = response?.accessToken;
     } catch (e) {
       showMessage?.call(formatServerError(e));
       return false;
     }
     if (newAccessToken == null || newAccessToken.token.isEmpty) {
-      showMessage?.call('No refresh token received.');
+      showMessage?.call('No access token received.');
       return false;
     }
     accessToken = newAccessToken.token;

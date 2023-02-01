@@ -4,7 +4,6 @@ use rocket_cache_response::CacheResponse;
 
 
 use rocket::http::Status;
-use std::io;
 
 #[rocket::get("/flutter/<file..>")]
 pub async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
@@ -28,7 +27,7 @@ pub async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Stat
 }
 
 #[rocket::get("/flutter")]
-pub async fn flutter_index() -> CacheResponse<io::Result<NamedFile>> {
+pub async fn flutter_index() -> CacheResponse<Result<NamedFile, Status>> {
     let result = match NamedFile::open("opt/flutter_web/index.html").await {
         Ok(file) => Ok(file),
         Err(_) => match NamedFile::open("../frontends/flutter/build/web/index.html").await {
@@ -37,7 +36,10 @@ pub async fn flutter_index() -> CacheResponse<io::Result<NamedFile>> {
         },
     };
     CacheResponse::Public {
-        responder: result,
+        responder: result.map_err(|e| {
+            println!("flutter: {:?}", e);
+            Status::NotFound
+        }),
         max_age: 60,
         must_revalidate: false,
     }

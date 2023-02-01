@@ -1,13 +1,13 @@
-import React from "react";
-import { StyleSheet, View, Text as NativeText, Platform } from "react-native";
+import React, {useState, useEffect, PropsWithChildren} from "react";
+import { View, Text as NativeText, Platform, Animated, ViewStyle } from "react-native";
 import store, { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from "../../store/store";
-import { JonlineServer, removeServer, selectServer } from "../../store/modules/servers";
+
 import { AlertDialog, Button, Card, Heading, Image, Paragraph, Text, Post, Theme, XStack, YStack, useTheme, Anchor, Tooltip, useMedia } from "@jonline/ui";
-import { Lock, Trash, Unlock } from "@tamagui/lucide-icons";
+import { Lock, Trash, Unlock, SidebarOpen } from "@tamagui/lucide-icons";
 import Accounts, { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
 import ReactMarkdown from 'react-markdown'
 import { useLink } from "solito/link";
-import moment from 'moment';
+import moment, { min } from 'moment';
 import { loadPostPreview } from "app/store/modules/posts";
 import Markdown, {
   AstRenderer,
@@ -16,6 +16,7 @@ import Markdown, {
   renderRules,
   styles,
 } from 'react-native-markdown-renderer';
+import NativeMarkdownShim from "./native_markdown_shim";
 
 interface Props {
   post: Post;
@@ -28,36 +29,42 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
 
-  let theme = useTheme();
-  let textColor: string = theme.color.val;
+  const theme = useTheme();
+  const textColor: string = theme.color.val;
   const server = useTypedSelector((state: RootState) => state.servers.server);
-  let navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
-  let preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
-  if (!preview && !loadingPreview) {
+  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
+  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
+  const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
+  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  // Call the hook passing in ref and root margin
+  // In this case it would only be considered onScreen if more ...
+  // ... than 300px of element is visible.
+  const onScreen = useOnScreen(ref, "-1px");
+  if (!preview && !loadingPreview && onScreen) {
     setLoadingPreview(true);
-    setTimeout(() =>
-      dispatch(loadPostPreview({ ...post, ...accountOrServer })), 100);
+    setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
   }
 
   const postLink = useLink({
     href: `/post/${post.id}`,
   });
   const authorLink = useLink({
-    href: `/user/${post.author?.userId}`,
+    href: post.author?.username
+      ? `/${post.author?.username}`
+      : `/user/${post.author?.userId}`
   });
-  const postLinkProps = isPreview ? postLink : {};
+  const postLinkProps = isPreview ? postLink : { onPress: undefined };
   const authorLinkProps = post.author ? authorLink : undefined;
   const showDetailsShadow = isPreview && post.content && post.content.length > 1000;
   const detailsMargins = showDetailsShadow ? 20 : 0;
   const detailsProps = showDetailsShadow ? {
-    marginHorizontal:-detailsMargins,
-    shadowOpacity:0.3,
-    shadowOffset:{width:-5, height:-5},
-    shadowRadius:10
+    marginHorizontal: -detailsMargins,
+    shadowOpacity: 0.3,
+    shadowOffset: { width: -5, height: -5 },
+    shadowRadius: 10
   } : {};
 
-  let cleanedContent = post.content?.replace(
+  const cleanedContent = post.content?.replace(
     /((?!  ).)\n([^\n*])/g,
     (_, b, c) => {
       if (b[1] != ' ') b = `${b} `
@@ -66,7 +73,8 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
   );
 
   return (
-    <Theme inverse={false}>
+    // <Theme inverse={false}>
+    <>
       <Card theme="dark" elevate size="$4" bordered
         margin='$0'
         marginBottom='$3'
@@ -74,42 +82,47 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
         f={isPreview ? undefined : 1}
         animation="bouncy"
         pressStyle={{ scale: 0.990 }}
-        {...postLinkProps}>
+        ref={ref!}
+        {...postLinkProps}
+      >
         <Card.Header>
           <XStack>
             <View style={{ flex: 1 }}>
               {post.link
-                ? <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                  color={navColor}
-                ><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                : <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+                ? isPreview
+                  ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
+                  : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
+                    color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
+                :
+                <Heading size="$7" marginRight='auto'>{post.title}</Heading>
               }
             </View>
           </XStack>
         </Card.Header>
         <Card.Footer>
           <XStack width='100%' >
+            {/* {...postLinkProps}> */}
             <YStack style={{ flex: 10 }} zi={1000}>
               <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden'>
-              {(!isPreview && preview && preview != '') ?
-                <Image
-                  // pos="absolute"
-                  // width={400}
-                  // opacity={0.25}
-                  // height={400}
-                  // minWidth={300}
-                  // minHeight={300}
-                  // width='100%'
-                  // height='100%'
-                  mb='$3'
-                  width={media.sm ? 300 : 400}
-                  height={media.sm ? 300 : 400}
-                  resizeMode="contain"
-                  als="center"
-                  src={preview}
-                  borderRadius={10}
+                {(!isPreview && preview && preview != '') ?
+                  <Image
+                    // pos="absolute"
+                    // width={400}
+                    // opacity={0.25}
+                    // height={400}
+                    // minWidth={300}
+                    // minHeight={300}
+                    // width='100%'
+                    // height='100%'
+                    mb='$3'
+                    width={media.sm ? 300 : 400}
+                    height={media.sm ? 300 : 400}
+                    resizeMode="contain"
+                    als="center"
+                    src={preview}
+                    borderRadius={10}
                   // borderBottomRightRadius={5}
-                /> : undefined}
+                  /> : undefined}
                 {
                   post.content && post.content != '' ? Platform.select({
                     web: // web/cross-platform-ish
@@ -122,17 +135,19 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
                           }}
                         />
                       </NativeText>,
-                    // default: post.content ? <Markdown /> : undefined
+                    //TODO: Find a way to render markdown on native that doesn't break web.
+                    // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
                     default: <Heading size='$1'>Native Markdown support pending!</Heading>
                   }) : undefined
                 }
               </YStack>
-
               <XStack pt={10} {...detailsProps}>
                 <YStack mr='auto' marginLeft={detailsMargins}>
                   <Heading size="$1">
                     {post.author
-                      ? <>by{' '}<Anchor {...authorLinkProps} zIndex={1000}>{post.author?.username}</Anchor></>
+                      ? isPreview
+                        ? `by ${post.author?.username}`
+                        : <>by <Anchor {...authorLinkProps}>{post.author?.username}</Anchor></>
                       : 'by anonymous'}
                   </Heading>
                   <Tooltip placement="bottom-start">
@@ -147,15 +162,16 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
                   </Tooltip>
                 </YStack>
                 <XStack f={1} />
-                <Anchor {...postLinkProps} marginRight={detailsMargins}>
-                  <Heading size="$1" style={{ marginRight: 'auto' }}>{post.responseCount} response{post.responseCount == 1 ? '' : 's'}</Heading>
-                </Anchor>
+                <YStack h='100%'>
+                  <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>{post.responseCount} response{post.responseCount == 1 ? '' : 's'}</Heading>
+                </YStack>
               </XStack>
             </YStack>
           </XStack>
         </Card.Footer>
         <Card.Background>
           {(isPreview && preview && preview != '') ?
+          <FadeInView>
             <Image
               pos="absolute"
               width={300}
@@ -167,10 +183,87 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
               blurRadius={1.5}
               // borderRadius={5}
               borderBottomRightRadius={5}
-            /> : undefined}
+            />
+            </FadeInView> : undefined}
         </Card.Background>
       </Card>
-    </Theme>
+      {isPreview ?
+        <Anchor {...authorLinkProps}>
+          <XStack w={180} h={70}
+            // backgroundColor='#42424277' 
+            position='absolute' bottom={15} />
+        </Anchor>
+        : undefined}
+      {isPreview && post.link ?
+        <Anchor href={post.link} target='_blank'>
+          <XStack w='100%' h={
+            Math.max(1, (post.title?.length ?? 0) / Math.round(
+              (media.xxxxxxs ? 15
+                : media.xxxxxs ? 20
+                  : media.xxxxs ? 25
+                    : media.xxxs ? 30
+                      : media.xxs ? 35
+                        : media.xs ? 40
+                          : media.sm ? 45
+                            : media.md ? 50
+                              : media.lg ? 55
+                                : 70
+              )
+            )) * 36}
+            // backgroundColor='#42424277' 
+            position='absolute' top={15} />
+        </Anchor>
+        : undefined}
+    </>
+    // </Theme>
+  );
+};
+
+
+// Hook
+function useOnScreen(ref, rootMargin = "0px") {
+  // State and setter for storing whether element is visible
+  const [isIntersecting, setIntersecting] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Update our state when observer callback fires
+        setIntersecting(entry?.isIntersecting || false);
+      },
+      {
+        rootMargin,
+      }
+    );
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+    return () => {
+      ref.current && observer.unobserve(ref.current);
+    };
+  }, []); // Empty array ensures that effect is only run on mount and unmount
+  return isIntersecting;
+}
+type FadeInViewProps = PropsWithChildren<{style?: ViewStyle}>;
+
+const FadeInView: React.FC<FadeInViewProps> = props => {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  return (
+    <Animated.View // Special animatable View
+      style={{
+        ...props.style,
+        opacity: fadeAnim, // Bind opacity to animated value
+      }}>
+      {props.children}
+    </Animated.View>
   );
 };
 

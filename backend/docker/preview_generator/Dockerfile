@@ -16,14 +16,21 @@ ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils 
 RUN mkdir -p /usr/local/share/fonts/truetype
 RUN cp -r /usr/share/fonts/truetype/noto /usr/local/share/fonts/truetype/noto
 
-# Install Chrome Beta (for --headless=chrome flag support, needed for extensions)
-RUN wget -qO - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg
-RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
+# Install Brave browser and xvfb
+RUN apt-get -y install apt-transport-https curl gnupg xvfb
+RUN curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -
+RUN echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list
 RUN apt update
-RUN apt-get -y install google-chrome-beta
+RUN apt-get -y install brave-browser
 
-# Ad/cookie blockers for screenshot generator
-COPY backend/docker/preview_generator/preview_generator_extensions /opt/preview_generator_extensions
+# Install Chrome Beta (for --headless=chrome flag support, needed for extensions)
+# RUN wget -qO - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg
+# RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
+# RUN apt update
+# RUN apt-get -y install google-chrome-beta
+
+# Chrome ad/cookie blockers for screenshot generator
+# COPY backend/docker/preview_generator/preview_generator_extensions /opt/preview_generator_extensions
 
 # Background job binary
 COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
@@ -33,6 +40,6 @@ COPY backend/target/release/delete_preview_images__server_release /opt/delete_pr
 # the web app, which is not needed for the preview generator.
 COPY backend/target/release/jonline__server_release /opt/jonline
 
-EXPOSE 27707 8000 80 443 8001-9000
+EXPOSE 27707 8000 80 443 8001-9000 9222
 
-# ENTRYPOINT /opt/jonline
+ENTRYPOINT xvfb-run brave-browser --remote-debugging-port=9222 --disable-gpu --no-sandbox https://www.google.com

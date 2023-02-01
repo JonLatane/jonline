@@ -8,15 +8,21 @@ import "google/protobuf/timestamp.proto";
 import "visibility_moderation.proto";
 
 // Valid GetPostsRequest formats:
-// - {[listing_type: PublicPosts]}                  (get ServerPublic/GlobalPublic posts you can see)
-// - {listing_type:MyGroupsPosts|FollowingPosts}    (auth required)
-// - {post_id:}                                     (get one post including preview data)
-// - {post_id:, reply_depth: 1}                     (get replies to a post - only support for replyDepth=1 for now tho)
-// - {listing_type: MyGroupsPosts|
-//      GroupPostsPendingModeration,
-//      group_id:}                                  (get posts/posts needing moderation for a group)
-// - {author_user_id:, group_id:}                   (get posts by a user for a group)
-// - {listing_type: AuthorPosts, author_user_id:}   (TODO: get posts by a user)
+//
+// - `{[listing_type: PublicPosts]}`
+//     - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
+// - `{listing_type:MyGroupsPosts|FollowingPosts}`
+//     - Get posts from groups you're a member of or from users you're following. Authorization required.
+// - `{post_id:}`
+//     - Get one post ,including preview data/
+// - `{post_id:, reply_depth: 1}`
+//     - Get replies to a post - only support for replyDepth=1 is done for now though.
+// - `{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}`
+//     - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
+// - `{author_user_id:, group_id:}`
+//     - Get posts by a user for a group. (TODO)
+// - `{listing_type: AuthorPosts, author_user_id:}`
+//     - Get posts by a user. (TODO)
 message GetPostsRequest {
   // Returns the single post with the given ID.
   optional string post_id = 1;
@@ -34,6 +40,7 @@ message GetPostsResponse {
   repeated Post posts = 1;
 }
 
+// A high-level enumeration of general ways of requesting posts.
 enum PostListingType {
   // Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
   // Also usable for getting replies anywhere.
@@ -51,7 +58,7 @@ enum PostListingType {
   GROUP_POSTS_PENDING_MODERATION = 11;
 }
 
-
+// A request to create a post.
 message CreatePostRequest {
   optional string title = 1;
   optional string link = 2;
@@ -59,29 +66,48 @@ message CreatePostRequest {
   optional string reply_to_post_id = 4;
 }
 
+// A `Post` is a message that can be posted to the server. Its `visibility`
+// as well as any associated `GroupPost`s and `UserPost`s determine what users
+// see it and where.
+//
+// `Post`s are a fundamental unit of the system. `Event`s are a higher-level
+// concept that are built on top of `Post`s.
 message Post {
+  // Unique ID of the post.
   string id = 1;
+  // The author of the post. This is a smaller version of User.
   optional Author author = 2;
+  // If this is a reply, this is the ID of the post it's replying to.
   optional string reply_to_post_id = 3;
+  // The title of the post. This is invalid for replies.
   optional string title = 4;
+  // The link of the post. This is invalid for replies.
   optional string link = 5;
+  // The content of the post. This is required for replies.
   optional string content = 6;
+  // The number of responses (replies *and* replies to replies, etc.) to this post.
   int32 response_count = 7;
+  // The number of *direct* replies to this post.
   int32 reply_count = 8;
-  // There should never be more than reply_count replies. However,
-  // there may be fewer than reply_count replies if some replies are
+  // Hierarchical replies to this post.
+  //
+  // There will never be more than `reply_count` replies. However,
+  // there may be fewer than `reply_count` replies if some replies are
   // hidden by moderation or visibility.
   // Replies are not generally loaded by default, but can be added to Posts
   // in the frontend.
   repeated Post replies = 9;
+  // Preview image for the Post. Generally not returned by default.
   optional bytes preview_image = 10;
+  // The visibility of the Post.
   Visibility visibility = 11;
+  // The moderation of the Post.
   Moderation moderation = 12;
-
+  // The number of groups this post is in.
   int32 group_count = 14;
   // When the post is returned in the context of a group_id parameter,
-  // this can be returned. It lets the UI know whether the post can be
-  // cross-posted to a group, and of course, *about* the cross-post
+  // `current_group_post` is returned. It lets the UI know whether the post can be
+  // cross-posted to a group, and of course, information about the cross-post
   // (time, moderation) if that's relevant.
   optional GroupPost current_group_post = 15;
 
@@ -96,6 +122,9 @@ message Author {
   optional string username = 2;
 }
 
+// A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
+// information about the moderation of the post in the group, as well as
+// the time it was cross-posted and the user who did the cross-posting.
 message GroupPost{
   string group_id = 1;
   string post_id = 2;
@@ -104,6 +133,7 @@ message GroupPost{
   google.protobuf.Timestamp created_at = 5;
 }
 
+// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused.
 message UserPost{
   string group_id = 1;
   string user_id = 2;
@@ -116,6 +146,7 @@ message GetGroupPostsRequest {
   optional string group_id = 2;
 }
 
+// Used for getting context about GroupPosts of an existing Post.
 message GetGroupPostsResponse {
   repeated GroupPost group_posts = 1;
 }

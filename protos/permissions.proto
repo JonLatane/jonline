@@ -5,26 +5,40 @@ package jonline;
 enum Permission {
   PERMISSION_UNKNOWN = 0;
   VIEW_USERS = 1;
+  // Allow the user to publish profiles with `SERVER_PUBLIC` Visbility.
   // This generally only applies to the user's own profile, except for Admins.
   PUBLISH_USERS_LOCALLY = 2;
+  // Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility.
   // This generally only applies to the user's own profile, except for Admins.
   PUBLISH_USERS_GLOBALLY = 3;
-  // "Moderate users" refers to granting VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS
-  // and CREATE_EVENTS permissions to users.
+  // Allow the user to grant `VIEW_POSTS`, `CREATE_POSTS`, `VIEW_EVENTS`
+  // and `CREATE_EVENTS` permissions to users.
   MODERATE_USERS = 4;
+  // Allow the user to follow other users.
   FOLLOW_USERS = 5;
-  // "Basic Permissions" are defined by your ServerConfiguration's
-  // basic_user_permissions.
+  // Allow the user to grant Basic Permissions to other users. "Basic Permissions"
+  // are defined by your `ServerConfiguration`'s `basic_user_permissions`.
   GRANT_BASIC_PERMISSIONS = 6;
 
+  // Allow the user to view groups with `SERVER_PUBLIC` visibility.
   VIEW_GROUPS = 10;
+  // Allow the user to create groups.
   CREATE_GROUPS = 11;
+  // Allow the user to give groups `SERVER_PUBLIC` visibility.
   PUBLISH_GROUPS_LOCALLY = 12;
+  // Allow the user to give groups `GLOBAL_PUBLIC` visibility.
   PUBLISH_GROUPS_GLOBALLY = 13;
   // The Moderate Groups permission makes a user effectively an admin of *any* group.
   MODERATE_GROUPS = 14;
+  // Allow the user to (potentially request to) join groups of `SERVER_PUBLIC` or higher
+  // visibility.
   JOIN_GROUPS = 15;
 
+  // In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
+  // or higher visibility.
+  //
+  // In the context of group permissions, allow the user to view `GroupPost`s with `LIMITED`
+  // or higher visibility.
   VIEW_POSTS = 20;
   CREATE_POSTS = 21;
   PUBLISH_POSTS_LOCALLY = 22;
@@ -35,9 +49,23 @@ enum Permission {
   CREATE_EVENTS = 31;
   PUBLISH_EVENTS_LOCALLY = 32;
   PUBLISH_EVENTS_GLOBALLY = 33;
+  // Allow the user to moderate events.
   MODERATE_EVENTS = 34;
 
+  // Allow the user to run bots. There is no enforcement of this permission (yet),
+  // but it lets other users know that the user is allowed to run bots.
   RUN_BOTS = 9999;
+
+  // Marks the user as an admin.
+  //
+  // In the context of user permissions, allows the user to configure the server,
+  // moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`.
+  //
+  // In the context of group permissions, allows the user to configure the group,
+  // modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s.
   ADMIN = 10000;
+
+  // Allow the user to view the private contact methods of other users.
+  // Kept separate from `ADMIN` to allow for more fine-grained privacy control.
   VIEW_PRIVATE_CONTACT_METHODS = 10001;
 }

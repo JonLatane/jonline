@@ -1,15 +1,16 @@
-import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens, ZStack } from '@jonline/ui'
-import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon, ChevronLeft, Menu, Info} from '@tamagui/lucide-icons'
+import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens, ZStack, useMedia } from '@jonline/ui'
+import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon, ChevronLeft, Menu, Info } from '@tamagui/lucide-icons'
 import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
 import { useLink } from 'solito/link'
-import { clearAlerts as clearServerAlerts, upsertServer, selectAllServers, JonlineServer, serverUrl } from "../../store/modules/servers";
+import { clearAlerts as clearServerAlerts, upsertServer, selectAllServers, serverUrl } from "../../store/modules/servers";
 import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccounts } from "../../store/modules/accounts";
-import { FlatList, View } from 'react-native';
+import { FlatList, View, Platform } from 'react-native';
 import ServerCard from './server_card';
 import AccountCard from './account_card';
 import { SettingsSheet } from '../settings_sheet';
 import { v4 as uuidv4 } from 'uuid';
+import { JonlineServer } from 'app/store/types';
 
 export type AccountSheetProps = {
   size?: SizeTokens;
@@ -18,6 +19,7 @@ export type AccountSheetProps = {
 }
 
 export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }: AccountSheetProps) {
+  const media = useMedia();
   const [open, setOpen] = useState(false);
   const [browsingServers, setBrowsingServers] = useState(false);
   const [addingServer, setAddingServer] = useState(false);
@@ -29,12 +31,18 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const [newAccountPass, setNewAccountPass] = useState('');
 
   const dispatch = useTypedDispatch();
+  const app = useTypedSelector((state: RootState) => state.app);
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
   const serversLoading = serversState.status == 'loading';
   const newServerHostNotBlank = newServerHost != '';
   const newServerExists = servers.some(s => s.host == newServerHost);
   const newServerValid = newServerHostNotBlank && !newServerExists;
+  const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
+  const browsingOnDiffers = browsingOn && (
+    serversState.server && serversState.server.host != browsingOn ||
+    onlyShowServer && onlyShowServer.host != browsingOn
+  );
   function addServer() {
     console.log(`Connecting to server ${newServerHost}`)
     dispatch(clearServerAlerts());
@@ -94,7 +102,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         size={size}
         icon={circular ? UserIcon : open ? XIcon : ChevronDown}
         circular={circular}
-        color={onlyShowServer && serversState.server && serverUrl(onlyShowServer) != serverUrl(serversState.server) ? 'yellow' : undefined}
+        color={serversDiffer || browsingOnDiffers ? 'yellow' : undefined}
         onPress={() => setOpen((x) => !x)}
       >
         {circular ? undefined : <YStack>
@@ -148,35 +156,36 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
           </XStack>
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center'>
-              <YStack space="$2">
+              {onlyShowServer && serversDiffer ? undefined : <YStack space="$2">
                 <XStack>
-                  <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
+                  {app.allowServerSelection && (browsingServers || media.gtXs)
+                    ? <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
+                    : undefined}
 
                   <XStack f={1} />
                   {!browsingServers
-                    ? <YStack>
-                      <Heading size='$3' als='center' marginTop='$2'>{serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}</Heading>
-                      {serversDiffer
-                        ? <Heading size='$3' marginTop='$2' color='yellow'>Viewing server configuration for {onlyShowServer.host}</Heading>
-                        : onlyShowServer
-                          ? <Heading size='$3' marginTop='$2' color='yellow'>Viewing server configuration</Heading>
-                          : undefined}
+                    ? <YStack maw={media.gtXs ? 350 : 250}>
+                      <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading>
+                      <Heading size='$3' als='center' marginTop='$2'>
+                        {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
+                      </Heading>
                     </YStack>
                     : undefined}
                   {!browsingServers && currentServerInfoLink && !onlyShowServer
                     ? <Button size='$3' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
                     : undefined}
                   <XStack f={1} />
-                  <Button
+                  {app.allowServerSelection ? <Button
                     size="$3"
                     icon={browsingServers ? ChevronLeft : Menu}
                     // circular
                     opacity={onlyShowServer != undefined ? 0.5 : 1}
                     disabled={onlyShowServer != undefined}
+                    maw={100}
                     onPress={() => setBrowsingServers((x) => !x)}
                   >
                     {browsingServers ? 'Back' : 'Select'}
-                  </Button>
+                  </Button> : undefined}
                   {browsingServers ? <Button
                     size="$3"
                     icon={Plus}
@@ -220,7 +229,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           <YStack style={{ flex: 1, marginLeft: 'auto', marginRight: 'auto' }}>
                             <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
                               defaultChecked
-                              onCheckedChange={(checked) => setNewServerSecure(checked)} disabled={serversLoading} />
+                              onCheckedChange={(checked) => setNewServerSecure(checked)} 
+                              disabled={serversLoading || (Platform.OS == 'web' && window.location.protocol == 'https')} />
 
                             <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
                               <Heading size="$2">Secure</Heading>
@@ -236,7 +246,27 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     </Sheet.Frame>
                   </Sheet>
                 </XStack>
-              </YStack>
+              </YStack>}
+              {serversDiffer
+                ? <>
+                  <Heading color='yellow' whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>{primaryServer?.serverConfiguration?.serverInfo?.name}</Heading>
+                  <Heading color='yellow' size='$3' als='center' marginTop='$2' textAlign='center'>
+                    Viewing server configuration for {onlyShowServer.host}
+                  </Heading>
+                </>
+                : onlyShowServer
+                  ? <Heading size='$3' marginTop='$2' color='yellow' textAlign='center'>
+                    Viewing server configuration
+                  </Heading>
+                  : undefined}
+              {browsingOnDiffers
+                ? <><Heading color='yellow' size='$3' als='center' marginTop='$2' textAlign='center'>
+                  Browsing via {browsingOn}
+                </Heading>
+                </>
+                : browsingServers && Platform.OS == 'web'
+                  ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
+                  : undefined}
 
               {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
 
@@ -313,7 +343,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 </XStack>
               </YStack>
 
-              {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on this server.</Heading> : undefined}
+              {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on {primaryServer?.host}.</Heading> : undefined}
 
               {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={account.id} />)}
 

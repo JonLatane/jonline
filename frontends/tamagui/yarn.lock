@@ -4216,7 +4216,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*":
+"@types/react@npm:*, @types/react@npm:>=16.0.0":
   version: 18.0.27
   resolution: "@types/react@npm:18.0.27"
   dependencies:
@@ -9669,6 +9669,7 @@ __metadata:
     "@manypkg/cli": ^0.19.1
     eslint: ^8.21.0
     prettier: ^2.7.1
+    react-native-markdown-package: ^1.8.2
     ts-proto: ^1.138.0
     ts-protoc-gen: ^0.15.0
     turbo: ^1.4.2
@@ -12735,6 +12736,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-lightbox@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "react-native-lightbox@npm:0.7.0"
+  dependencies:
+    prop-types: ^15.5.10
+  checksum: b91965ec4cd2f74c037150868f09b3b028c7277435291c641af5d612e2cba622adf30d59d4a52b21977de23aba85f634f00696c8d63d7e8900ffdf84941b88fb
+  languageName: node
+  linkType: hard
+
+"react-native-markdown-package@npm:^1.8.2":
+  version: 1.8.2
+  resolution: "react-native-markdown-package@npm:1.8.2"
+  dependencies:
+    lodash: ^4.17.15
+    react-native-lightbox: ^0.7.0
+    simple-markdown: ^0.7.1
+  checksum: be0e07de4839eb6eba3fbd9aab1379d392ca697e04ddc8d28cfa7969655e2aeef1260a686bd7dd48ab6121279c9058cf7b35aca6a64f9463942d7ad8027a0177
+  languageName: node
+  linkType: hard
+
 "react-native-markdown-renderer@npm:^3.2.8":
   version: 3.2.8
   resolution: "react-native-markdown-renderer@npm:3.2.8"
@@ -13837,6 +13858,15 @@ __metadata:
   version: 3.0.7
   resolution: "signal-exit@npm:3.0.7"
   checksum: a2f098f247adc367dffc27845853e9959b9e88b01cb301658cfe4194352d8d2bb32e18467c786a7fe15f1d44b233ea35633d076d5e737870b7139949d1ab6318
+  languageName: node
+  linkType: hard
+
+"simple-markdown@npm:^0.7.1":
+  version: 0.7.3
+  resolution: "simple-markdown@npm:0.7.3"
+  dependencies:
+    "@types/react": ">=16.0.0"
+  checksum: 165941899fddfaa7c398410f8ce6941109bc86fbc9abb17f8b6be7a9ac8ae36c0af643a3e0adcba60053a9f1eaecdd4016d46d79eef39b8ae04982d2bd52bbc9
   languageName: node
   linkType: hard
 

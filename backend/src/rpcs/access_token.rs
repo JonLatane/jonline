@@ -11,7 +11,7 @@ use crate::schema::user_refresh_tokens::dsl::*;
 pub fn access_token(
     request: Request<AccessTokenRequest>,
     conn: &mut PgPooledConnection,
-) -> Result<Response<ExpirableToken>, Status> {
+) -> Result<Response<AccessTokenResponse>, Status> {
     println!("AccessToken called.");
     let token_and_user_id: Result<(i32, i32), _> = user_refresh_tokens
         .select((id, user_id))
@@ -24,7 +24,10 @@ pub fn access_token(
                 "Generating new refresh token for refresh_token_id={}, user_id={}",
                 t, u
             );
-            Ok(Response::new(auth::generate_access_token(t, conn)))
+            Ok(Response::new(AccessTokenResponse {
+                access_token: Some(auth::generate_access_token(t, conn)),
+                ..Default::default()
+            }))
         }
         Err(_) => {
             println!("Auth token not found.");

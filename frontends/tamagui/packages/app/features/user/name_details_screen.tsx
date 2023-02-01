@@ -8,15 +8,15 @@ import { TabsNavigation } from '../tabs/tabs_navigation'
 
 const { useParam } = createParam<{ id: string }>()
 
-export function UserDetailsScreen() {
-  const [id] = useParam('id')
+export function UsernameDetailsScreen() {
+  const [username] = useParam('id')
   const linkProps = useLink({ href: '/' })
   const { dispatch, accountOrServer } = useCredentialDispatch();
 
   return (
     <TabsNavigation>
       <YStack f={1} jc="center" ai="center" space>
-        <Paragraph ta="center" fow="800">{`User ID: ${id}`}</Paragraph>
+        <Paragraph ta="center" fow="800">{`Username: ${username}`}</Paragraph>
         <Button {...linkProps} icon={ChevronLeft}>
           Go Home
         </Button>

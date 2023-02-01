@@ -44,7 +44,7 @@ const plugins = [
     logTimings: true,
     disableExtraction,
     // experiment - reduced bundle size react-native-web
-    useReactNativeWebLite: false,
+    // useReactNativeWebLite: true,
     shouldExtract: (path) => {
       if (path.includes(join('packages', 'app'))) {
         return true

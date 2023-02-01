@@ -5,6 +5,7 @@ package jonline;
 import "google/protobuf/timestamp.proto";
 import "users.proto";
 
+// Request to create a new account.
 message CreateAccountRequest {
   string username = 1;
   string password = 2;
@@ -15,6 +16,7 @@ message CreateAccountRequest {
   optional string device_name = 6;
 }
 
+// Request to login to an existing account.
 message LoginRequest {
   string username = 1;
   string password = 2;
@@ -30,19 +32,24 @@ message RefreshTokenResponse {
   User user = 3;
 }
 
+// Generic type for refresh and access tokens.
 message ExpirableToken {
   string token = 1;
   // Optional expiration time for the token. If not set, the token will not expire.
   optional google.protobuf.Timestamp expires_at = 2;
 }
 
+// Request for a new access token using a refresh token.
 message AccessTokenRequest {
   string refresh_token = 1;
   // Optional *requested* expiration time for the token. Server may ignore this.
   optional google.protobuf.Timestamp expires_at = 2;
 }
 
+// Returned when requesting access tokens.
 message AccessTokenResponse {
-  optional string access_token = 2;
-  optional google.protobuf.Timestamp expires_at = 3;
+  // If a refresh token is returned, the old refresh token is no longer valid.
+  // See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
+  optional ExpirableToken refresh_token = 1;
+  ExpirableToken access_token = 2;
 }

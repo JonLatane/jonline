@@ -27,7 +27,8 @@
     "react-native-web": "0.18.9"
   },
   "dependencies": {
-    "@babel/runtime": "^7.18.9"
+    "@babel/runtime": "^7.18.9",
+    "react-native-markdown-package": "^1.8.2"
   },
   "devDependencies": {
     "@manypkg/cli": "^0.19.1",

@@ -10,8 +10,10 @@ import {
   Slice,
 } from "@reduxjs/toolkit";
 import { CreatePostRequest, GetPostsRequest, GetPostsResponse, Post, formatError } from "@jonline/ui/src";
-import { AccountOrServer, getCredentialClient } from "./accounts";
+import { getCredentialClient } from "./accounts";
 import { createTransform } from "redux-persist";
+import moment from "moment";
+import { AccountOrServer } from "../types";
 
 export interface PostsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -31,6 +33,7 @@ export interface PostsSlice {
 
 const postsAdapter: EntityAdapter<Post> = createEntityAdapter<Post>({
   selectId: (post) => post.id,
+  sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
 
 export type CreatePost = AccountOrServer & CreatePostRequest;
@@ -111,9 +114,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   reducers: {
     upsertPost: postsAdapter.upsertOne,
     removePost: postsAdapter.removeOne,
-    resetPosts: (state) => {
-      return initialState;
-    },
+    resetPosts: () => initialState,
     clearAlerts: (state) => {
       state.errorMessage = undefined;
       state.successMessage = undefined;

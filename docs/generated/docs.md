@@ -98,7 +98,7 @@
 <a name="jonline-AccessTokenRequest"></a>
 
 ### AccessTokenRequest
-
+Request for a new access token using a refresh token.
 
 
 | Field | Type | Label | Description |
@@ -114,13 +114,13 @@
 <a name="jonline-AccessTokenResponse"></a>
 
 ### AccessTokenResponse
-
+Returned when requesting access tokens.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| access_token | [string](#string) | optional |  |
-| expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| refresh_token | [ExpirableToken](#jonline-ExpirableToken) | optional | If a refresh token is returned, the old refresh token is no longer valid. See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation |
+| access_token | [ExpirableToken](#jonline-ExpirableToken) |  |  |
 
 
 
@@ -130,7 +130,7 @@
 <a name="jonline-CreateAccountRequest"></a>
 
 ### CreateAccountRequest
-
+Request to create a new account.
 
 
 | Field | Type | Label | Description |
@@ -150,7 +150,7 @@
 <a name="jonline-ExpirableToken"></a>
 
 ### ExpirableToken
-
+Generic type for refresh and access tokens.
 
 
 | Field | Type | Label | Description |
@@ -166,7 +166,7 @@
 <a name="jonline-LoginRequest"></a>
 
 ### LoginRequest
-
+Request to login to an existing account.
 
 
 | Field | Type | Label | Description |
@@ -637,35 +637,35 @@ the AccessToken RPC. The CreateAccount or Login RPC should first be used to fetc
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetServiceVersion | [.google.protobuf.Empty](#google-protobuf-Empty) | [GetServiceVersionResponse](#jonline-GetServiceVersionResponse) | Get the version (from Cargo) of the Jonline service. Publicly accessible. |
-| GetServerConfiguration | [.google.protobuf.Empty](#google-protobuf-Empty) | [ServerConfiguration](#jonline-ServerConfiguration) | (TODO) Gets the Jonline server&#39;s configuration. Publicly accessible. |
-| CreateAccount | [CreateAccountRequest](#jonline-CreateAccountRequest) | [RefreshTokenResponse](#jonline-RefreshTokenResponse) | Creates a user account and provides an auth token. Publicly accessible. |
-| Login | [LoginRequest](#jonline-LoginRequest) | [RefreshTokenResponse](#jonline-RefreshTokenResponse) | Logs in a user and provides an Auth Token (along with a Refresh Token). |
-| AccessToken | [AccessTokenRequest](#jonline-AccessTokenRequest) | [ExpirableToken](#jonline-ExpirableToken) | Gets a new Refresh Token (given an Auth Token). |
-| GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#jonline-User) | Gets the current user. Authenticated. |
-| GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. Publicly accessible *or* authenticated. Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility. |
-| UpdateUser | [User](#jonline-User) | [User](#jonline-User) | Update a user by ID. Authenticated. Updating other users requires ADMIN permissions. |
-| CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. Authenticated. |
-| UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. Authenticated. |
-| DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. Authenticated. |
-| GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. Publicly accessible *or* authenticated. Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility. |
-| CreateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Creates a group with the current user as its admin. Authenticated. Requires the CREATE_GROUPS permission. |
-| UpdateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Update a Groups&#39;s information, default membership permissions or moderation. Authenticated. Requires ADMIN permissions within the group, or ADMIN permissions for the user. |
-| DeleteGroup | [Group](#jonline-Group) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a Group. Authenticated. Requires ADMIN permissions within the group, or ADMIN permissions for the user. |
-| CreateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Requests to join a group (or joins it), or sends an invite to the user. Authenticated. Memberships and moderations are set to their defaults. |
-| UpdateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Update aspects of a user&#39;s membership. Authenticated. Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user. Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group. |
-| DeleteMembership | [Membership](#jonline-Membership) | [.google.protobuf.Empty](#google-protobuf-Empty) | Leave a group (or cancel membership request). Authenticated. |
-| GetMembers | [GetMembersRequest](#jonline-GetMembersRequest) | [GetMembersResponse](#jonline-GetMembersResponse) | Get Members (User&#43;Membership) of a Group. Authenticated. |
-| GetPosts | [GetPostsRequest](#jonline-GetPostsRequest) | [GetPostsResponse](#jonline-GetPostsResponse) | Gets Posts. Publicly accessible *or* authenticated. Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility. |
-| CreatePost | [CreatePostRequest](#jonline-CreatePostRequest) | [Post](#jonline-Post) | Creates a Post. Authenticated. |
-| UpdatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) Updates a Post. Authenticated. |
-| DeletePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. Authenticated. |
-| CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. Authenticated. |
-| UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Group Moderators: Approve/Reject a GroupPost. Authenticated. |
-| DeleteGroupPost | [GroupPost](#jonline-GroupPost) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a GroupPost. Authenticated. |
-| GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). Publicly accessible *or* authenticated. |
-| ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). Authenticated. Requires ADMIN permissions. |
-| ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | DELETE ALL Posts, Groups and Users except the one who performed the RPC. Authenticated. Requires ADMIN permissions. Note: Server Configuration is not deleted. |
+| GetServiceVersion | [.google.protobuf.Empty](#google-protobuf-Empty) | [GetServiceVersionResponse](#jonline-GetServiceVersionResponse) | Get the version (from Cargo) of the Jonline service. *Publicly accessible.* |
+| GetServerConfiguration | [.google.protobuf.Empty](#google-protobuf-Empty) | [ServerConfiguration](#jonline-ServerConfiguration) | Gets the Jonline server&#39;s configuration. *Publicly accessible.* |
+| CreateAccount | [CreateAccountRequest](#jonline-CreateAccountRequest) | [RefreshTokenResponse](#jonline-RefreshTokenResponse) | Creates a user account and provides a Refresh Token (along with an Access Token). *Publicly accessible.* |
+| Login | [LoginRequest](#jonline-LoginRequest) | [RefreshTokenResponse](#jonline-RefreshTokenResponse) | Logs in a user and provides a Refresh Token (along with an Access Token). *Publicly accessible.* |
+| AccessToken | [AccessTokenRequest](#jonline-AccessTokenRequest) | [AccessTokenResponse](#jonline-AccessTokenResponse) | Gets a new Access Token and optionally a new Refresh Token, given a Refresh Token. *Publicly accessible.* |
+| GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#jonline-User) | Gets the current user. *Authenticated.* |
+| GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility. |
+| UpdateUser | [User](#jonline-User) | [User](#jonline-User) | Update a user by ID. *Authenticated.* Updating other users requires ADMIN permissions. |
+| CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
+| UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
+| DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
+| GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility. |
+| CreateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Creates a group with the current user as its admin. *Authenticated.* Requires the CREATE_GROUPS permission. |
+| UpdateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Update a Groups&#39;s information, default membership permissions or moderation. *Authenticated.* Requires ADMIN permissions within the group, or ADMIN permissions for the user. |
+| DeleteGroup | [Group](#jonline-Group) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a Group. *Authenticated.* Requires ADMIN permissions within the group, or ADMIN permissions for the user. |
+| CreateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.* Memberships and moderations are set to their defaults. |
+| UpdateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Update aspects of a user&#39;s membership. *Authenticated.* Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user. Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group. |
+| DeleteMembership | [Membership](#jonline-Membership) | [.google.protobuf.Empty](#google-protobuf-Empty) | Leave a group (or cancel membership request). *Authenticated.* |
+| GetMembers | [GetMembersRequest](#jonline-GetMembersRequest) | [GetMembersResponse](#jonline-GetMembersResponse) | Get Members (User&#43;Membership) of a Group. *Authenticated.* |
+| GetPosts | [GetPostsRequest](#jonline-GetPostsRequest) | [GetPostsResponse](#jonline-GetPostsResponse) | Gets Posts. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility. |
+| CreatePost | [CreatePostRequest](#jonline-CreatePostRequest) | [Post](#jonline-Post) | Creates a Post. *Authenticated.* |
+| UpdatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Updates a Post. *Authenticated.* |
+| DeletePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* |
+| CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. *Authenticated.* |
+| UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Group Moderators: Approve/Reject a GroupPost. *Authenticated.* |
+| DeleteGroupPost | [GroupPost](#jonline-GroupPost) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a GroupPost. *Authenticated.* |
+| GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
+| ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires ADMIN permissions. |
+| ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.* Requires ADMIN permissions. Note: Server Configuration is not deleted. |
 
  
 
@@ -689,18 +689,20 @@ the AccessToken RPC. The CreateAccount or Login RPC should first be used to fetc
 | ---- | ------ | ----------- |
 | PERMISSION_UNKNOWN | 0 |  |
 | VIEW_USERS | 1 |  |
-| PUBLISH_USERS_LOCALLY | 2 | This generally only applies to the user&#39;s own profile, except for Admins. |
-| PUBLISH_USERS_GLOBALLY | 3 | This generally only applies to the user&#39;s own profile, except for Admins. |
-| MODERATE_USERS | 4 | &#34;Moderate users&#34; refers to granting VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS and CREATE_EVENTS permissions to users. |
-| FOLLOW_USERS | 5 |  |
-| GRANT_BASIC_PERMISSIONS | 6 | &#34;Basic Permissions&#34; are defined by your ServerConfiguration&#39;s basic_user_permissions. |
-| VIEW_GROUPS | 10 |  |
-| CREATE_GROUPS | 11 |  |
-| PUBLISH_GROUPS_LOCALLY | 12 |  |
-| PUBLISH_GROUPS_GLOBALLY | 13 |  |
+| PUBLISH_USERS_LOCALLY | 2 | Allow the user to publish profiles with `SERVER_PUBLIC` Visbility. This generally only applies to the user&#39;s own profile, except for Admins. |
+| PUBLISH_USERS_GLOBALLY | 3 | Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility. This generally only applies to the user&#39;s own profile, except for Admins. |
+| MODERATE_USERS | 4 | Allow the user to grant `VIEW_POSTS`, `CREATE_POSTS`, `VIEW_EVENTS` and `CREATE_EVENTS` permissions to users. |
+| FOLLOW_USERS | 5 | Allow the user to follow other users. |
+| GRANT_BASIC_PERMISSIONS | 6 | Allow the user to grant Basic Permissions to other users. &#34;Basic Permissions&#34; are defined by your `ServerConfiguration`&#39;s `basic_user_permissions`. |
+| VIEW_GROUPS | 10 | Allow the user to view groups with `SERVER_PUBLIC` visibility. |
+| CREATE_GROUPS | 11 | Allow the user to create groups. |
+| PUBLISH_GROUPS_LOCALLY | 12 | Allow the user to give groups `SERVER_PUBLIC` visibility. |
+| PUBLISH_GROUPS_GLOBALLY | 13 | Allow the user to give groups `GLOBAL_PUBLIC` visibility. |
 | MODERATE_GROUPS | 14 | The Moderate Groups permission makes a user effectively an admin of *any* group. |
-| JOIN_GROUPS | 15 |  |
-| VIEW_POSTS | 20 |  |
+| JOIN_GROUPS | 15 | Allow the user to (potentially request to) join groups of `SERVER_PUBLIC` or higher visibility. |
+| VIEW_POSTS | 20 | In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC` or higher visibility.
+
+In the context of group permissions, allow the user to view `GroupPost`s with `LIMITED` or higher visibility. |
 | CREATE_POSTS | 21 |  |
 | PUBLISH_POSTS_LOCALLY | 22 |  |
 | PUBLISH_POSTS_GLOBALLY | 23 |  |
@@ -709,10 +711,14 @@ the AccessToken RPC. The CreateAccount or Login RPC should first be used to fetc
 | CREATE_EVENTS | 31 |  |
 | PUBLISH_EVENTS_LOCALLY | 32 |  |
 | PUBLISH_EVENTS_GLOBALLY | 33 |  |
-| MODERATE_EVENTS | 34 |  |
-| RUN_BOTS | 9999 |  |
-| ADMIN | 10000 |  |
-| VIEW_PRIVATE_CONTACT_METHODS | 10001 |  |
+| MODERATE_EVENTS | 34 | Allow the user to moderate events. |
+| RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
+| ADMIN | 10000 | Marks the user as an admin.
+
+In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`.
+
+In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s. |
+| VIEW_PRIVATE_CONTACT_METHODS | 10001 | Allow the user to view the private contact methods of other users. Kept separate from `ADMIN` to allow for more fine-grained privacy control. |
 
 
  
@@ -750,7 +756,7 @@ from its own cache (for things like admin/bot icons).
 <a name="jonline-CreatePostRequest"></a>
 
 ### CreatePostRequest
-
+A request to create a post.
 
 
 | Field | Type | Label | Description |
@@ -784,7 +790,7 @@ Used for getting context about GroupPosts of an existing Post.
 <a name="jonline-GetGroupPostsResponse"></a>
 
 ### GetGroupPostsResponse
-
+Used for getting context about GroupPosts of an existing Post.
 
 
 | Field | Type | Label | Description |
@@ -800,15 +806,21 @@ Used for getting context about GroupPosts of an existing Post.
 
 ### GetPostsRequest
 Valid GetPostsRequest formats:
-- {[listing_type: PublicPosts]}                  (get ServerPublic/GlobalPublic posts you can see)
-- {listing_type:MyGroupsPosts|FollowingPosts}    (auth required)
-- {post_id:}                                     (get one post including preview data)
-- {post_id:, reply_depth: 1}                     (get replies to a post - only support for replyDepth=1 for now tho)
-- {listing_type: MyGroupsPosts|
-     GroupPostsPendingModeration,
-     group_id:}                                  (get posts/posts needing moderation for a group)
-- {author_user_id:, group_id:}                   (get posts by a user for a group)
-- {listing_type: AuthorPosts, author_user_id:}   (TODO: get posts by a user)
+
+- `{[listing_type: PublicPosts]}`
+    - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
+- `{listing_type:MyGroupsPosts|FollowingPosts}`
+    - Get posts from groups you&#39;re a member of or from users you&#39;re following. Authorization required.
+- `{post_id:}`
+    - Get one post ,including preview data/
+- `{post_id:, reply_depth: 1}`
+    - Get replies to a post - only support for replyDepth=1 is done for now though.
+- `{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}`
+    - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
+- `{author_user_id:, group_id:}`
+    - Get posts by a user for a group. (TODO)
+- `{listing_type: AuthorPosts, author_user_id:}`
+    - Get posts by a user. (TODO)
 
 
 | Field | Type | Label | Description |
@@ -842,7 +854,9 @@ Valid GetPostsRequest formats:
 <a name="jonline-GroupPost"></a>
 
 ### GroupPost
-
+A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
+information about the moderation of the post in the group, as well as
+the time it was cross-posted and the user who did the cross-posting.
 
 
 | Field | Type | Label | Description |
@@ -861,25 +875,32 @@ Valid GetPostsRequest formats:
 <a name="jonline-Post"></a>
 
 ### Post
+A `Post` is a message that can be posted to the server. Its `visibility`
+as well as any associated `GroupPost`s and `UserPost`s determine what users
+see it and where.
 
+`Post`s are a fundamental unit of the system. `Event`s are a higher-level
+concept that are built on top of `Post`s.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| author | [Author](#jonline-Author) | optional |  |
-| reply_to_post_id | [string](#string) | optional |  |
-| title | [string](#string) | optional |  |
-| link | [string](#string) | optional |  |
-| content | [string](#string) | optional |  |
-| response_count | [int32](#int32) |  |  |
-| reply_count | [int32](#int32) |  |  |
-| replies | [Post](#jonline-Post) | repeated |  |
-| preview_image | [bytes](#bytes) | optional |  |
-| visibility | [Visibility](#jonline-Visibility) |  |  |
-| moderation | [Moderation](#jonline-Moderation) |  |  |
-| group_count | [int32](#int32) |  |  |
-| current_group_post | [GroupPost](#jonline-GroupPost) | optional | When the post is returned in the context of a group_id parameter, this can be returned. It lets the UI know whether the post can be cross-posted to a group, and of course, *about* the cross-post (time, moderation) if that&#39;s relevant. |
+| id | [string](#string) |  | Unique ID of the post. |
+| author | [Author](#jonline-Author) | optional | The author of the post. This is a smaller version of User. |
+| reply_to_post_id | [string](#string) | optional | If this is a reply, this is the ID of the post it&#39;s replying to. |
+| title | [string](#string) | optional | The title of the post. This is invalid for replies. |
+| link | [string](#string) | optional | The link of the post. This is invalid for replies. |
+| content | [string](#string) | optional | The content of the post. This is required for replies. |
+| response_count | [int32](#int32) |  | The number of responses (replies *and* replies to replies, etc.) to this post. |
+| reply_count | [int32](#int32) |  | The number of *direct* replies to this post. |
+| replies | [Post](#jonline-Post) | repeated | Hierarchical replies to this post.
+
+There will never be more than `reply_count` replies. However, there may be fewer than `reply_count` replies if some replies are hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts in the frontend. |
+| preview_image | [bytes](#bytes) | optional | Preview image for the Post. Generally not returned by default. |
+| visibility | [Visibility](#jonline-Visibility) |  | The visibility of the Post. |
+| moderation | [Moderation](#jonline-Moderation) |  | The moderation of the Post. |
+| group_count | [int32](#int32) |  | The number of groups this post is in. |
+| current_group_post | [GroupPost](#jonline-GroupPost) | optional | When the post is returned in the context of a group_id parameter, `current_group_post` is returned. It lets the UI know whether the post can be cross-posted to a group, and of course, information about the cross-post (time, moderation) if that&#39;s relevant. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 
@@ -891,7 +912,7 @@ Valid GetPostsRequest formats:
 <a name="jonline-UserPost"></a>
 
 ### UserPost
-
+A `UserPost` is a &#34;direct share&#34; of a `Post` to a `User`. Currently unused.
 
 
 | Field | Type | Label | Description |
@@ -910,7 +931,7 @@ Valid GetPostsRequest formats:
 <a name="jonline-PostListingType"></a>
 
 ### PostListingType
-
+A high-level enumeration of general ways of requesting posts.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -1053,12 +1074,13 @@ Confuguration for a Jonline server instance.
 <a name="jonline-WebUserInterface"></a>
 
 ### WebUserInterface
-
+Offers a choice of web UIs. All
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| FLUTTER_WEB | 0 |  |
-| HANDLEBARS_TEMPLATES | 1 |  |
+| FLUTTER_WEB | 0 | Uses Flutter Web. Loaded from /app. |
+| HANDLEBARS_TEMPLATES | 1 | Uses Handlebars templates. Deprecated; will revert to Tamagui UI if chosen. |
+| REACT_TAMAGUI | 2 | React UI using Tamagui (a React Native UI library). |
 
 
  

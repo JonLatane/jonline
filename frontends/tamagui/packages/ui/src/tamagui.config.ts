@@ -62,6 +62,11 @@ export const config = createTamagui({
   themes,
   tokens,
   media: createMedia({
+    xxxxxxs: { maxWidth: 110 },
+    xxxxxs: { maxWidth: 220 },
+    xxxxs: { maxWidth: 330 },
+    xxxs: { maxWidth: 440 },
+    xxs: { maxWidth: 550 },
     xs: { maxWidth: 660 },
     sm: { maxWidth: 800 },
     md: { maxWidth: 1020 },

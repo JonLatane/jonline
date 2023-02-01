@@ -8,10 +8,14 @@ import { RootState, useTypedSelector } from 'app/store/store'
 import { Button, Heading, Theme } from '@jonline/ui/src'
 import { ChevronDown, User as UserIcon } from '@tamagui/lucide-icons'
 import { AccountsSheet } from 'app/features/accounts/accounts_sheet'
+import { UsernameDetailsScreen } from 'app/features/user/name_details_screen'
 
 const Stack = createNativeStackNavigator<{
   home: undefined,
   userDetails: {
+    id: string
+  },
+  usernameDetails: {
     id: string
   },
   accountDetails: {
@@ -57,6 +61,14 @@ export function NativeNavigation() {
       <Stack.Screen
         name="userDetails"
         component={UserDetailsScreen}
+        options={{
+          title: 'User Profile',
+          ...defaultOptions,
+        }}
+      />
+      <Stack.Screen
+        name="usernameDetails"
+        component={UsernameDetailsScreen}
         options={{
           title: 'User Profile',
           ...defaultOptions,

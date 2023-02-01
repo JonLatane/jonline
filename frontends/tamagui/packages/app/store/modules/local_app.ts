@@ -17,21 +17,26 @@ export type LocalAppConfiguration = {
   showIntro: boolean;
   darkModeAuto: boolean;
   darkMode: boolean;
+  allowServerSelection: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
   showIntro: true,
   darkModeAuto: true,
   darkMode: false,
+  allowServerSelection: Platform.OS != 'web',
 };
 
 export const localAppSlice = createSlice({
   name: "localApp",
   initialState: initialState,
   reducers: {
-    reset: () => initialState,
+    resetLocalApp: () => initialState,
     setShowIntro: (state, action: PayloadAction<boolean>) => {
       state.showIntro = action.payload;
+    },
+    setAllowServerSelection: (state, action: PayloadAction<boolean>) => {
+      state.allowServerSelection = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -46,5 +51,5 @@ export const localAppSlice = createSlice({
 
 // export default postsSlice.reducer;
 
-export const { setShowIntro } = localAppSlice.actions;
+export const { setShowIntro, setAllowServerSelection, resetLocalApp } = localAppSlice.actions;
 export default localAppSlice.reducer;

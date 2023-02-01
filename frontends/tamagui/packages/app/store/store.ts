@@ -1,14 +1,18 @@
 import { AnyAction, combineReducers, configureStore, Dispatch, Store, ThunkDispatch } from "@reduxjs/toolkit";
 import { createSelectorHook, useDispatch } from "react-redux";
 import thunkMiddleware from 'redux-thunk';
-import accountsReducer, { AccountOrServer, JonlineAccount } from "./modules/accounts";
-import serversReducer, { JonlineServer } from "./modules/servers";
-import localAppReducer, { LocalAppConfiguration } from "./modules/local_app";
+import {AccountOrServer, JonlineServer} from './types'
+import accountsReducer, { resetAccounts } from "./modules/accounts";
+import serversReducer, {resetServers, serverUrl, upsertServer} from "./modules/servers";
+import localAppReducer, {resetLocalApp} from "./modules/local_app";
 import postsReducer, { resetPosts } from "./modules/posts";
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Jonline, JonlineClientImpl } from "@jonline/ui/src";
+import { GrpcWebImpl } from "@jonline/ui/src/generated/jonline";
+import { ReactNativeTransport } from "@improbable-eng/grpc-web-react-native-transport";
 
 const serversPersistConfig = {
   key: 'servers',
@@ -23,7 +27,7 @@ const accountsPersistConfig = {
 const postsPersistConfig = {
   key: 'posts',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error'],
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'previews'],
 }
 
 const rootReducer = combineReducers({
@@ -82,5 +86,41 @@ export function resetCredentialedData() {
     store.dispatch(resetPosts!());
   }, 1);
 }
+// Reset store data that depends on selected server/account.
+export function resetAllData() {
+  // setTimeout(() => {
+    store.dispatch(resetServers());
+    store.dispatch(resetAccounts());
+    store.dispatch(resetPosts!());
+    store.dispatch(resetLocalApp());
+  // }, 1);
+}
 
 export default store;
+
+
+const clients = new Map<string, JonlineClientImpl>();
+export async function getServerClient(server: JonlineServer): Promise<Jonline> {
+  let host = `${serverUrl(server).replace(":", "://")}:27707`;
+  if (!clients.has(host)) {
+    let client = new JonlineClientImpl(
+      new GrpcWebImpl(host, {
+        transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
+      })
+    );
+    clients.set(host, client);
+    try {
+      let serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
+      let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
+      store.dispatch(upsertServer({ ...server, serviceVersion, serverConfiguration }));
+    } catch (e) {
+      clients.delete(host);
+    }
+    return client;
+  }
+  return clients.get(host)!;
+}
+const timeout = async (time: number, label: string) => {
+  await new Promise((res) => setTimeout(res, time));
+  throw `Timed out getting ${label}.`;
+}

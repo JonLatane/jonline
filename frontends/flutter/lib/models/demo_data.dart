@@ -620,7 +620,7 @@ hosting.)
 Jonline is trustworthy, because you can literally look at the 
 [code where it stores](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L30) 
 and [validates your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
-even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontend/lib/models/demo_data.dart) 🤯🙃
+even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/demo_data.dart) 🤯🙃
 
 Importantly, to "run" a community like this one at [jonline.io](https://jonline.io), 
 you have to (or really, *get to*) run your own Jonline server. 

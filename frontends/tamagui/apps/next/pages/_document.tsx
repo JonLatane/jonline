@@ -24,6 +24,9 @@ export default class Document extends NextDocument {
           backdrop-filter: blur(3px);
           -webkit-backdrop-filter: blur(3px);
         }
+        .postMarkdown {
+          color: white;
+        }
         .postMarkdown ul li::before {
           color:white;
           content: "•";

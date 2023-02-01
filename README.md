@@ -42,6 +42,9 @@ The goal of all this is to make it as easy as possible for local businesses to:
 * It's just my own (Jon) thing I'm doing in my spare time. 
 * There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
 
+## Protocol documentation
+A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is pretty readable](https://github.com/JonLatane/jonline/blob/main/docs/generated/docs.md#jonline-Jonline).
+
 ### Quick deploy to your own cluster
 If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) First make sure `kubectl` is setup correctly and your instance has the `jonline` namespace available with `kubectl get services` and `kubectl get namespace jonline`:
 

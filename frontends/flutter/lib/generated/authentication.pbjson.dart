@@ -90,14 +90,13 @@ final $typed_data.Uint8List accessTokenRequestDescriptor = $convert.base64Decode
 const AccessTokenResponse$json = const {
   '1': 'AccessTokenResponse',
   '2': const [
-    const {'1': 'access_token', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'accessToken', '17': true},
-    const {'1': 'expires_at', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'expiresAt', '17': true},
+    const {'1': 'refresh_token', '3': 1, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '9': 0, '10': 'refreshToken', '17': true},
+    const {'1': 'access_token', '3': 2, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '10': 'accessToken'},
   ],
   '8': const [
-    const {'1': '_access_token'},
-    const {'1': '_expires_at'},
+    const {'1': '_refresh_token'},
   ],
 };
 
 /// Descriptor for `AccessTokenResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List accessTokenResponseDescriptor = $convert.base64Decode('ChNBY2Nlc3NUb2tlblJlc3BvbnNlEiYKDGFjY2Vzc190b2tlbhgCIAEoCUgAUgthY2Nlc3NUb2tlbogBARI+CgpleHBpcmVzX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgBUglleHBpcmVzQXSIAQFCDwoNX2FjY2Vzc190b2tlbkINCgtfZXhwaXJlc19hdA==');
+final $typed_data.Uint8List accessTokenResponseDescriptor = $convert.base64Decode('ChNBY2Nlc3NUb2tlblJlc3BvbnNlEkEKDXJlZnJlc2hfdG9rZW4YASABKAsyFy5qb25saW5lLkV4cGlyYWJsZVRva2VuSABSDHJlZnJlc2hUb2tlbogBARI6CgxhY2Nlc3NfdG9rZW4YAiABKAsyFy5qb25saW5lLkV4cGlyYWJsZVRva2VuUgthY2Nlc3NUb2tlbkIQCg5fcmVmcmVzaF90b2tlbg==');

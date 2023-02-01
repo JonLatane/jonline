@@ -1,57 +1,17 @@
 import {
-  AnyAction,
   createAsyncThunk,
   createEntityAdapter,
   createSlice,
   Dictionary,
   EntityId,
-  PayloadAction,
+  PayloadAction
 } from "@reduxjs/toolkit";
-import { GetServiceVersionResponse } from "@jonline/ui/src/generated/federation";
-import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/ui/src/generated/jonline"
-import { ServerConfiguration } from "@jonline/ui/src/generated/server_configuration"
 import { Platform } from 'react-native';
-import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
-import store, { AppDispatch, resetCredentialedData, useTypedDispatch } from "../store";
-import { useEffect } from "react";
-import { selectAccount } from "./accounts";
-import {resetPosts} from './posts';
+import { getServerClient, resetCredentialedData } from "../store";
+import { JonlineServer } from "../types";
 
-export type JonlineServer = {
-  host: string;
-  secure: boolean;
-  serviceVersion?: GetServiceVersionResponse;
-  serverConfiguration?: ServerConfiguration;
-}
 export function serverUrl(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}:${server.host}`;
-}
-
-export const timeout = async (time: number, label: string) => {
-  await new Promise((res) => setTimeout(res, time));
-  throw `Timed out getting ${label}.`;
-}
-
-const clients = new Map<string, JonlineClientImpl>();
-export async function getServerClient(server: JonlineServer): Promise<Jonline> {
-  let host = `${serverUrl(server).replace(":", "://")}:27707`;
-  if (!clients.has(host)) {
-    let client = new JonlineClientImpl(
-      new GrpcWebImpl(host, {
-        transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
-      })
-    );
-    clients.set(host, client);
-    try {
-      let serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
-      let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
-      store.dispatch(upsertServer({ ...server, serviceVersion, serverConfiguration }));
-    } catch (e) {
-      clients.delete(host);
-    }
-    return client;
-  }
-  return clients.get(host)!;
 }
 
 export interface ServersState {
@@ -109,7 +69,7 @@ export const serversSlice = createSlice({
       }
       serversAdapter.removeOne(state, serverUrl(action.payload));
     },
-    reset: () => initialState,
+    resetServers: () => initialState,
     clearAlerts: (state) => {
       state.errorMessage = undefined;
       state.successMessage = undefined;
@@ -147,8 +107,8 @@ export const serversSlice = createSlice({
   },
 });
 
-export const { selectServer, removeServer, clearAlerts } = serversSlice.actions;
+export const { selectServer, removeServer, clearAlerts, resetServers } = serversSlice.actions;
 
-export const { selectAll: selectAllServers, selectById: selectServerById } = serversAdapter.getSelectors();
+export const { selectAll: selectAllServers, selectById: selectServerById, selectTotal: selectServerTotal } = serversAdapter.getSelectors();
 
 export default serversSlice.reducer;

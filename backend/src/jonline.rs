@@ -48,7 +48,7 @@ impl Jonline for JonLineImpl {
     async fn access_token(
         &self,
         request: Request<AccessTokenRequest>,
-    ) -> Result<Response<ExpirableToken>, Status> {
+    ) -> Result<Response<AccessTokenResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         rpcs::access_token(request, &mut conn)
     }

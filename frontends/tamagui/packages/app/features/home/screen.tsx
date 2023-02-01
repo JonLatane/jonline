@@ -1,4 +1,4 @@
-import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack } from '@jonline/ui'
+import { Anchor, Button, H1, Heading, Input, Paragraph, Separator, Sheet, XStack, YStack } from '@jonline/ui'
 import { ChevronDown, ChevronUp } from '@tamagui/lucide-icons'
 import { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import React, { useState } from 'react'
@@ -12,10 +12,12 @@ import PostCard from '../post/post_card';
 
 
 export function HomeScreen() {
+  const [showTechDetails, setShowTechDetails] = useState(false);
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const app = useTypedSelector((state: RootState) => state.app);
   const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
+  // const [showScrollPreserver, setShowScrollPreserver] = useState(true);
   let { dispatch, accountOrServer } = useCredentialDispatch();
   let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
   let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
@@ -24,10 +26,12 @@ export function HomeScreen() {
 
   if (postsState.status == 'unloaded') {
     reloadPosts();
+  } else if (posts.length > 0) {
+    // setTimeout(() => setShowScrollPreserver(false), 1500);
   }
 
   function reloadPosts() {
-    if (accountOrServer == null) return;
+    if (!accountOrServer.server) return;
 
     setTimeout(() =>
       dispatch(updatePosts({ ...accountOrServer, ...GetPostsRequest.create() })), 1);
@@ -41,45 +45,60 @@ export function HomeScreen() {
     <YStack space="$4" maw={600}>
       {app.showIntro ? <>
         <H1 ta="center">Let's Get Jonline 🙃</H1>
-        <Paragraph ta="left">
+        <Paragraph ta="left" mb='$2'>
           <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
             Jonline (give it a ⭐️!)
           </Anchor>{' '}
-          is a federated social network built with Rust/gRPC, originally with a{' '}
-          <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/flutter" target="_blank">
-            Flutter UI
-          </Anchor>.
-          It's designed to let small businesses and communities run their own social network,
-          make it easy to link to posts and events from other networks, and be easy and fun for users.
+          is a federated social network built with Rust/gRPC.
+          It's designed to let small businesses and communities run their own social network,{' '}
+          with minimal cost, effort, and no creepy data mining;{' '}
+          to make it easy to link to posts and events from other networks;{' '}
+          and to be intuitive and fun for customers, members, and administrators alike.
+        </Paragraph>
+        {showTechDetails
+          ? <Paragraph ta="left">
+            This{' '}
+            <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/tamagui" target="_blank">
+              new UI
+            </Anchor> for Jonline's{' '}
+            <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/backend" target="_blank">
+              Rust/gRPC backend
+            </Anchor> is built with React and{' '}
+            <Anchor
+              color={navColor}
+              href="https://github.com/tamagui/tamagui"
+              target="_blank"
+              rel="noreferrer"
+            >Tamagui</Anchor>. It's a work in progress to be sure! 👷🛠️🪲 The{' '}
+            <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/flutter" target="_blank">
+              original Flutter UI
+            </Anchor> is also available and compatible, with more features for now.
+          </Paragraph>
+          : <>
+          <Button onPress={() => setShowTechDetails(true)}>
+            More Tech Details
+          </Button>
+          <Heading size='$5' mt='$3' ta='center'>
+            Beta software. Expect bugs! 🛠️👷🏼‍♂️🪲
+          </Heading>
+          </>}
+        <Heading size='$3' mt='$3' ta='center'>
           Made by{' '}
           <Anchor color={navColor} href="https://instagram.com/jon_luvs_ya" target="_blank">
             Jon Latané
           </Anchor>.
-        </Paragraph>
-        <Paragraph ta="left">
-          This{' '}
-          <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/tamagui" target="_blank">
-            new UI
-          </Anchor> for Jonline's{' '}
-          <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/backend" target="_blank">
-            Rust/gRPC backend
-          </Anchor> is built with React and{' '}
-          <Anchor
-            color={navColor}
-            href="https://github.com/tamagui/tamagui"
-            target="_blank"
-            rel="noreferrer"
-          >Tamagui</Anchor>. It's a work in progress to be sure! 👷🛠️
-        </Paragraph>
+        </Heading>
         {/* <Paragraph ta="center">
         If this is a new server, create an admin account and go to server configuration
         to set up your server and hide this intro message.
       </Paragraph> */}
-        <Paragraph ta='center' mt='$3' size='$1'>(You can re-enable this message from your settings if you want to see it again!)</Paragraph>
+        <Paragraph ta='center' mt='$2' size='$1'>(You can re-enable this message from your settings if you want to see it again!)</Paragraph>
 
         <XStack justifyContent='center' marginTop={15} space='$2'>
-          {Platform.OS == 'web' ? <Button onPress={() => Linking.openURL('/flutter')}>Open Flutter Web UI</Button> : undefined}
-          <Button backgroundColor={primaryColor} onClick={hideIntro}>Got It!</Button>
+          {Platform.OS == 'web' && showTechDetails ? <Button onPress={() => Linking.openURL('/flutter')}>Open Flutter Web UI</Button> : undefined}
+          <Button backgroundColor={primaryColor} onClick={hideIntro}>
+            {Platform.OS == 'web' && showTechDetails ? 'Got It!' : 'Got It, Thanks!'}
+            </Button>
         </XStack>
       </> : undefined}
       {serversState.server == undefined ? <Paragraph ta="center">
@@ -92,8 +111,10 @@ export function HomeScreen() {
       <YStack f={1} jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
         {(serversState.server == undefined || app.showIntro) ? intro : undefined}
         <FlatList data={posts}
-          onRefresh={reloadPosts}
-          refreshing={postsState.status == 'loading'}
+          // onRefresh={reloadPosts}
+          // refreshing={postsState.status == 'loading'}
+          // Allow easy restoring of scroll position
+          // ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
           keyExtractor={(post) => post.id}
           renderItem={({ item: post }) => {
             return <PostCard post={post} isPreview />;

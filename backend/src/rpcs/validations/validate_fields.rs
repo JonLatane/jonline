@@ -13,7 +13,7 @@ pub fn validate_username(value: &str) -> Result<(), Status> {
         "username",
         &[
             "app", "home", "web", "events", "event", "e", "posts", "post", "p", "groups", "group",
-            "g", "people", "person", "author", "a", "member", "m",
+            "g", "people", "person", "author", "a", "member", "m", "server", "s", "servers",
         ],
     )
 }

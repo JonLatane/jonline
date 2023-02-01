@@ -45,10 +45,11 @@ class JonlineClient extends $grpc.Client {
           ($core.List<$core.int> value) =>
               $3.RefreshTokenResponse.fromBuffer(value));
   static final _$accessToken =
-      $grpc.ClientMethod<$3.AccessTokenRequest, $3.ExpirableToken>(
+      $grpc.ClientMethod<$3.AccessTokenRequest, $3.AccessTokenResponse>(
           '/jonline.Jonline/AccessToken',
           ($3.AccessTokenRequest value) => value.writeToBuffer(),
-          ($core.List<$core.int> value) => $3.ExpirableToken.fromBuffer(value));
+          ($core.List<$core.int> value) =>
+              $3.AccessTokenResponse.fromBuffer(value));
   static final _$getCurrentUser = $grpc.ClientMethod<$0.Empty, $4.User>(
       '/jonline.Jonline/GetCurrentUser',
       ($0.Empty value) => value.writeToBuffer(),
@@ -191,7 +192,7 @@ class JonlineClient extends $grpc.Client {
     return $createUnaryCall(_$login, request, options: options);
   }
 
-  $grpc.ResponseFuture<$3.ExpirableToken> accessToken(
+  $grpc.ResponseFuture<$3.AccessTokenResponse> accessToken(
       $3.AccessTokenRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$accessToken, request, options: options);
@@ -356,14 +357,15 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $3.LoginRequest.fromBuffer(value),
         ($3.RefreshTokenResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$3.AccessTokenRequest, $3.ExpirableToken>(
-        'AccessToken',
-        accessToken_Pre,
-        false,
-        false,
-        ($core.List<$core.int> value) =>
-            $3.AccessTokenRequest.fromBuffer(value),
-        ($3.ExpirableToken value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$3.AccessTokenRequest, $3.AccessTokenResponse>(
+            'AccessToken',
+            accessToken_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $3.AccessTokenRequest.fromBuffer(value),
+            ($3.AccessTokenResponse value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.Empty, $4.User>(
         'GetCurrentUser',
         getCurrentUser_Pre,
@@ -559,7 +561,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return login(call, await request);
   }
 
-  $async.Future<$3.ExpirableToken> accessToken_Pre($grpc.ServiceCall call,
+  $async.Future<$3.AccessTokenResponse> accessToken_Pre($grpc.ServiceCall call,
       $async.Future<$3.AccessTokenRequest> request) async {
     return accessToken(call, await request);
   }
@@ -694,7 +696,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $3.CreateAccountRequest request);
   $async.Future<$3.RefreshTokenResponse> login(
       $grpc.ServiceCall call, $3.LoginRequest request);
-  $async.Future<$3.ExpirableToken> accessToken(
+  $async.Future<$3.AccessTokenResponse> accessToken(
       $grpc.ServiceCall call, $3.AccessTokenRequest request);
   $async.Future<$4.User> getCurrentUser(
       $grpc.ServiceCall call, $0.Empty request);

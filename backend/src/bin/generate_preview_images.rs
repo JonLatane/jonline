@@ -2,6 +2,10 @@ extern crate anyhow;
 extern crate diesel;
 extern crate jonline;
 
+use std::path::PathBuf;
+use std::thread;
+use std::time::Duration;
+
 use diesel::*;
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
@@ -67,13 +71,15 @@ fn generate_preview(url: &str, browser: &Browser) -> Result<Vec<u8>, anyhow::Err
         url: url.to_string(),
         background: Some(true),
         new_window: Some(true),
-        width: Some(400),
-        height: Some(400),
+        width: Some(640),
+        height: Some(640),
         browser_context_id: None,
         enable_begin_frame_control: None,
     })?;
     tab.navigate_to(&url)?;
     tab.wait_until_navigated()?;
+    // Allow time for client-side page rendering and extensions to work.
+    thread::sleep(Duration::from_secs(10));
     let result = tab.capture_screenshot(Png, None, None, false)?;
     tab.close(true)?;
     return Ok(result);
@@ -81,6 +87,7 @@ fn generate_preview(url: &str, browser: &Browser) -> Result<Vec<u8>, anyhow::Err
 
 fn start_browser() -> Result<Browser, anyhow::Error> {
     let options = headless_chrome::LaunchOptionsBuilder::default()
+        .path(Some(PathBuf::from("/usr/bin/brave-browser")))
         .headless(false)
         .disable_default_args(true)
         .sandbox(false)
@@ -125,8 +132,9 @@ fn start_browser() -> Result<Browser, anyhow::Error> {
             ]
             .to_vec(),
         )
-        .window_size(Some((400, 400)))
+        .window_size(Some((640, 640)))
         .build()
         .unwrap();
     Ok(Browser::new(options)?)
+    // Browser::connect("ws://0.0.0.0:9222".to_string())
 }

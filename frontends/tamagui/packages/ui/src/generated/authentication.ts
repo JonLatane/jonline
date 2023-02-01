@@ -25,7 +25,7 @@ export interface LoginRequest {
   deviceName?: string | undefined;
 }
 
-/** Returned when creating an account or logging in. */
+/** Returned when creating an account, logging in, or requesting access tokens. */
 export interface RefreshTokenResponse {
   refreshToken: ExpirableToken | undefined;
   accessToken: ExpirableToken | undefined;
@@ -44,9 +44,14 @@ export interface AccessTokenRequest {
   expiresAt?: string | undefined;
 }
 
+/** Returned when creating an account, logging in, or requesting access tokens. */
 export interface AccessTokenResponse {
-  accessToken?: string | undefined;
-  expiresAt?: string | undefined;
+  /**
+   * If a refresh token is returned, the old refresh token is no longer valid.
+   * See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
+   */
+  refreshToken?: ExpirableToken | undefined;
+  accessToken: ExpirableToken | undefined;
 }
 
 function createBaseCreateAccountRequest(): CreateAccountRequest {
@@ -440,16 +445,16 @@ export const AccessTokenRequest = {
 };
 
 function createBaseAccessTokenResponse(): AccessTokenResponse {
-  return { accessToken: undefined, expiresAt: undefined };
+  return { refreshToken: undefined, accessToken: undefined };
 }
 
 export const AccessTokenResponse = {
   encode(message: AccessTokenResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.accessToken !== undefined) {
-      writer.uint32(18).string(message.accessToken);
+    if (message.refreshToken !== undefined) {
+      ExpirableToken.encode(message.refreshToken, writer.uint32(10).fork()).ldelim();
     }
-    if (message.expiresAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.expiresAt), writer.uint32(26).fork()).ldelim();
+    if (message.accessToken !== undefined) {
+      ExpirableToken.encode(message.accessToken, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -461,11 +466,11 @@ export const AccessTokenResponse = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 2:
-          message.accessToken = reader.string();
+        case 1:
+          message.refreshToken = ExpirableToken.decode(reader, reader.uint32());
           break;
-        case 3:
-          message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+        case 2:
+          message.accessToken = ExpirableToken.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -477,15 +482,17 @@ export const AccessTokenResponse = {
 
   fromJSON(object: any): AccessTokenResponse {
     return {
-      accessToken: isSet(object.accessToken) ? String(object.accessToken) : undefined,
-      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
+      refreshToken: isSet(object.refreshToken) ? ExpirableToken.fromJSON(object.refreshToken) : undefined,
+      accessToken: isSet(object.accessToken) ? ExpirableToken.fromJSON(object.accessToken) : undefined,
     };
   },
 
   toJSON(message: AccessTokenResponse): unknown {
     const obj: any = {};
-    message.accessToken !== undefined && (obj.accessToken = message.accessToken);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
+    message.refreshToken !== undefined &&
+      (obj.refreshToken = message.refreshToken ? ExpirableToken.toJSON(message.refreshToken) : undefined);
+    message.accessToken !== undefined &&
+      (obj.accessToken = message.accessToken ? ExpirableToken.toJSON(message.accessToken) : undefined);
     return obj;
   },
 
@@ -495,8 +502,12 @@ export const AccessTokenResponse = {
 
   fromPartial<I extends Exact<DeepPartial<AccessTokenResponse>, I>>(object: I): AccessTokenResponse {
     const message = createBaseAccessTokenResponse();
-    message.accessToken = object.accessToken ?? undefined;
-    message.expiresAt = object.expiresAt ?? undefined;
+    message.refreshToken = (object.refreshToken !== undefined && object.refreshToken !== null)
+      ? ExpirableToken.fromPartial(object.refreshToken)
+      : undefined;
+    message.accessToken = (object.accessToken !== undefined && object.accessToken !== null)
+      ? ExpirableToken.fromPartial(object.accessToken)
+      : undefined;
     return message;
   },
 };
