@@ -1,16 +1,16 @@
-import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens, ZStack, useMedia } from '@jonline/ui'
-import { ChevronDown, ChevronUp, Plus, X as XIcon, User as UserIcon, ChevronLeft, Menu, Info } from '@tamagui/lucide-icons'
-import store, { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
-import React, { useState } from 'react'
-import { useLink } from 'solito/link'
-import { clearAlerts as clearServerAlerts, upsertServer, selectAllServers, serverUrl } from "../../store/modules/servers";
-import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccounts } from "../../store/modules/accounts";
-import { FlatList, View, Platform } from 'react-native';
-import ServerCard from './server_card';
-import AccountCard from './account_card';
-import { SettingsSheet } from '../settings_sheet';
-import { v4 as uuidv4 } from 'uuid';
+import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
+import { ChevronDown, ChevronLeft, Info, Menu, Plus, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
 import { JonlineServer } from 'app/store/types';
+import React, { useState } from 'react';
+import { FlatList, Platform } from 'react-native';
+import { useLink } from 'solito/link';
+import { v4 as uuidv4 } from 'uuid';
+import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccounts } from "../../store/modules/accounts";
+import { clearAlerts as clearServerAlerts, selectAllServers, serverUrl, upsertServer } from "../../store/modules/servers";
+import { SettingsSheet } from '../settings_sheet';
+import AccountCard from './account_card';
+import ServerCard from './server_card';
 
 export type AccountSheetProps = {
   size?: SizeTokens;
@@ -91,6 +91,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
       dispatch(clearAccountAlerts());
       setAddingAccount(false);
     }, 1000);
+  }
+  if (!app.allowServerSelection && browsingServers) {
+    setBrowsingServers(false);
   }
   const serversDiffer = onlyShowServer && serversState.server && serverUrl(onlyShowServer) != serverUrl(serversState.server);
   const currentServerInfoLink = serversState.server && useLink({ href: `/server/${serverUrl(serversState.server)}` });
@@ -229,7 +232,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           <YStack style={{ flex: 1, marginLeft: 'auto', marginRight: 'auto' }}>
                             <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
                               defaultChecked
-                              onCheckedChange={(checked) => setNewServerSecure(checked)} 
+                              onCheckedChange={(checked) => setNewServerSecure(checked)}
                               disabled={serversLoading || (Platform.OS == 'web' && window.location.protocol == 'https')} />
 
                             <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
@@ -343,17 +346,23 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 </XStack>
               </YStack>
 
-              {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on {primaryServer?.host}.</Heading> : undefined}
 
-              {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={account.id} />)}
-
-              {accountsElsewhere.length > 0 && !onlyShowServer
+              {app.separateAccountsByServer
                 ? <>
-                  <Heading>Accounts Elsewhere</Heading>
-                  {accountsElsewhere.map((account) => <AccountCard account={account} key={account.id} />)}
+                  {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on {primaryServer?.host}.</Heading> : undefined}
+                  {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={account.id} />)}
+                  {accountsElsewhere.length > 0 && !onlyShowServer
+                    ? <>
+                      <Heading>Accounts Elsewhere</Heading>
+                      {accountsElsewhere.map((account) => <AccountCard account={account} key={account.id} />)}
+                    </>
+                    : undefined
+                  }
                 </>
-                : undefined
-              }
+                : <>
+                  {accounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
+                  {accounts.map((account) => <AccountCard account={account} key={account.id} />)}
+                </>}
 
               {/* <FlatList
                 data={accounts}

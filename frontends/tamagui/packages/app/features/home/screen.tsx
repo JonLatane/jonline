@@ -1,15 +1,12 @@
-import { Anchor, Button, H1, Heading, Input, Paragraph, Separator, Sheet, XStack, YStack } from '@jonline/ui'
-import { ChevronDown, ChevronUp } from '@tamagui/lucide-icons'
-import { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from 'app/store/store';
-import React, { useState } from 'react'
-import { Platform, FlatList, Linking } from 'react-native'
-import { useLink } from 'solito/link'
-import { setShowIntro } from "../../store/modules/local_app";
-import { TabsNavigation } from '../tabs/tabs_navigation';
-import { selectAllPosts, updatePosts } from 'app/store/modules/posts';
+import { Anchor, Button, H1, Heading, Paragraph, XStack, YStack } from '@jonline/ui';
 import { GetPostsRequest } from '@jonline/ui/src';
+import { selectAllPosts, updatePosts } from 'app/store/modules/posts';
+import { RootState, useCredentialDispatch, useTypedSelector } from 'app/store/store';
+import React, { useState } from 'react';
+import { FlatList, Linking, Platform } from 'react-native';
+import { setShowIntro } from "../../store/modules/local_app";
 import PostCard from '../post/post_card';
-
+import { TabsNavigation } from '../tabs/tabs_navigation';
 
 export function HomeScreen() {
   const [showTechDetails, setShowTechDetails] = useState(false);
@@ -17,7 +14,8 @@ export function HomeScreen() {
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const app = useTypedSelector((state: RootState) => state.app);
   const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
-  // const [showScrollPreserver, setShowScrollPreserver] = useState(true);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const [showScrollPreserver, setShowScrollPreserver] = useState(isSafari);
   let { dispatch, accountOrServer } = useCredentialDispatch();
   let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
   let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
@@ -27,7 +25,7 @@ export function HomeScreen() {
   if (postsState.status == 'unloaded') {
     reloadPosts();
   } else if (posts.length > 0) {
-    // setTimeout(() => setShowScrollPreserver(false), 1500);
+    setTimeout(() => setShowScrollPreserver(false), 1500);
   }
 
   function reloadPosts() {
@@ -75,12 +73,12 @@ export function HomeScreen() {
             </Anchor> is also available and compatible, with more features for now.
           </Paragraph>
           : <>
-          <Button onPress={() => setShowTechDetails(true)}>
-            More Tech Details
-          </Button>
-          <Heading size='$5' mt='$3' ta='center'>
-            Beta software. Expect bugs! 🛠️👷🏼‍♂️🪲
-          </Heading>
+            <Button onPress={() => setShowTechDetails(true)}>
+              More Tech Details
+            </Button>
+            <Heading size='$5' mt='$3' ta='center'>
+              Beta software. Expect bugs! 🛠️👷🏼‍♂️🪲
+            </Heading>
           </>}
         <Heading size='$3' mt='$3' ta='center'>
           Made by{' '}
@@ -98,7 +96,7 @@ export function HomeScreen() {
           {Platform.OS == 'web' && showTechDetails ? <Button onPress={() => Linking.openURL('/flutter')}>Open Flutter Web UI</Button> : undefined}
           <Button backgroundColor={primaryColor} onClick={hideIntro}>
             {Platform.OS == 'web' && showTechDetails ? 'Got It!' : 'Got It, Thanks!'}
-            </Button>
+          </Button>
         </XStack>
       </> : undefined}
       {serversState.server == undefined ? <Paragraph ta="center">
@@ -114,7 +112,7 @@ export function HomeScreen() {
           // onRefresh={reloadPosts}
           // refreshing={postsState.status == 'loading'}
           // Allow easy restoring of scroll position
-          // ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+          ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
           keyExtractor={(post) => post.id}
           renderItem={({ item: post }) => {
             return <PostCard post={post} isPreview />;

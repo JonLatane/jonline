@@ -35,11 +35,12 @@ enum Permission {
   JOIN_GROUPS = 15;
 
   // In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
-  // or higher visibility.
-  //
-  // In the context of group permissions, allow the user to view `GroupPost`s with `LIMITED`
+  // or higher visibility. In the context of group permissions, allow the user to view `GroupPost`s whose `Post`s have `LIMITED`
   // or higher visibility.
   VIEW_POSTS = 20;
+  // In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
+  // or higher visibility. In the context of group permissions, allow the user to create `GroupPost`s whose `Post`s have `LIMITED`
+  // or higher visibility.
   CREATE_POSTS = 21;
   PUBLISH_POSTS_LOCALLY = 22;
   PUBLISH_POSTS_GLOBALLY = 23;
@@ -56,12 +57,8 @@ enum Permission {
   // but it lets other users know that the user is allowed to run bots.
   RUN_BOTS = 9999;
 
-  // Marks the user as an admin.
-  //
-  // In the context of user permissions, allows the user to configure the server,
-  // moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`.
-  //
-  // In the context of group permissions, allows the user to configure the group,
+  // Marks the user as an admin. In the context of user permissions, allows the user to configure the server,
+  // moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group,
   // modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s.
   ADMIN = 10000;
 

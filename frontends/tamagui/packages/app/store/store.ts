@@ -1,18 +1,18 @@
-import { AnyAction, combineReducers, configureStore, Dispatch, Store, ThunkDispatch } from "@reduxjs/toolkit";
-import { createSelectorHook, useDispatch } from "react-redux";
-import thunkMiddleware from 'redux-thunk';
-import {AccountOrServer, JonlineServer} from './types'
-import accountsReducer, { resetAccounts } from "./modules/accounts";
-import serversReducer, {resetServers, serverUrl, upsertServer} from "./modules/servers";
-import localAppReducer, {resetLocalApp} from "./modules/local_app";
-import postsReducer, { resetPosts } from "./modules/posts";
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist'
-import storage from 'redux-persist/lib/storage'
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ReactNativeTransport } from "@improbable-eng/grpc-web-react-native-transport";
 import { Jonline, JonlineClientImpl } from "@jonline/ui/src";
 import { GrpcWebImpl } from "@jonline/ui/src/generated/jonline";
-import { ReactNativeTransport } from "@improbable-eng/grpc-web-react-native-transport";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AnyAction, combineReducers, configureStore, Store, ThunkDispatch } from "@reduxjs/toolkit";
+import { Platform } from 'react-native';
+import { createSelectorHook, useDispatch } from "react-redux";
+import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
+import thunkMiddleware from 'redux-thunk';
+import accountsReducer, { resetAccounts } from "./modules/accounts";
+import localAppReducer, { resetLocalApp } from "./modules/local_app";
+import postsReducer, { resetPosts } from "./modules/posts";
+import serversReducer, { resetServers, serverUrl, upsertServer } from "./modules/servers";
+import { AccountOrServer, JonlineServer } from './types';
 
 const serversPersistConfig = {
   key: 'servers',
@@ -85,14 +85,17 @@ export function resetCredentialedData() {
   setTimeout(() => {
     store.dispatch(resetPosts!());
   }, 1);
+  setTimeout(() => {
+    store.dispatch(resetPosts!());
+  }, 500);
 }
 // Reset store data that depends on selected server/account.
 export function resetAllData() {
   // setTimeout(() => {
-    store.dispatch(resetServers());
-    store.dispatch(resetAccounts());
-    store.dispatch(resetPosts!());
-    store.dispatch(resetLocalApp());
+  store.dispatch(resetServers());
+  store.dispatch(resetAccounts());
+  store.dispatch(resetPosts!());
+  store.dispatch(resetLocalApp());
   // }, 1);
 }
 

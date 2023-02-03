@@ -1,17 +1,15 @@
 import { Button, formatError, Heading, Input, Paragraph, ServerConfiguration, TextArea, XStack, YStack } from '@jonline/ui'
 import { Permission } from '@jonline/ui/src'
-import { ChevronLeft } from '@tamagui/lucide-icons'
 import { getCredentialClient } from 'app/store/modules/accounts'
-import {selectServer, selectServerById, serverUrl, upsertServer } from 'app/store/modules/servers'
-import { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from 'app/store/store'
+import { setAllowServerSelection } from 'app/store/modules/local_app'
+import { selectServer, selectServerById, serverUrl, upsertServer } from 'app/store/modules/servers'
+import { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store'
+import { JonlineServer } from 'app/store/types'
 import React, { useState } from 'react'
+import { HexColorPicker } from "react-colorful"
 import { createParam } from 'solito'
-import { useLink } from 'solito/link'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import ServerCard from './server_card'
-import { HexColorPicker } from "react-colorful";
-import { setAllowServerSelection } from 'app/store/modules/local_app'
-import { JonlineServer } from 'app/store/types'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -36,28 +34,28 @@ export function ServerDetailsScreen() {
 
   const { serviceVersion, serverConfiguration } = server || {};
 
-  let serverName = serverConfiguration?.serverInfo?.name;
+  const serverName = serverConfiguration?.serverInfo?.name;
   const [name, setName] = useState(serverName || '');
   if (serverName && name != serverName && name == '') {
     setName(serverName);
   }
 
-  let serverDescription = serverConfiguration?.serverInfo?.description;
+  const serverDescription = serverConfiguration?.serverInfo?.description;
   const [description, setDescription] = useState(serverDescription || '');
   if (serverDescription && description != serverDescription && description == '') {
     setDescription(serverDescription);
   }
 
-  let primaryColorInt = serverConfiguration?.serverInfo?.colors?.primary;
-  let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  let [primaryColorHex, setPrimaryColorHex] = useState(primaryColor);
+  const primaryColorInt = serverConfiguration?.serverInfo?.colors?.primary;
+  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
+  const [primaryColorHex, setPrimaryColorHex] = useState(primaryColor);
   if (primaryColorHex != primaryColor && primaryColorHex == '#424242') {
     setPrimaryColorHex(primaryColor);
   }
 
-  let navColorInt = serverConfiguration?.serverInfo?.colors?.navigation;
-  let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
-  let [navColorHex, setNavColorHex] = useState(navColor);
+  const navColorInt = serverConfiguration?.serverInfo?.colors?.navigation;
+  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+  const [navColorHex, setNavColorHex] = useState(navColor);
   if (navColorHex != navColor && navColorHex == '#FFFFFF') {
     setNavColorHex(navColor);
   }
@@ -73,8 +71,8 @@ export function ServerDetailsScreen() {
     let updatedConfiguration: ServerConfiguration = {
       ...serverConfiguration!,
       serverInfo: {
-        ...serverConfiguration!.serverInfo, 
-        name, 
+        ...serverConfiguration!.serverInfo,
+        name,
         description,
         colors: {
           ...serverConfiguration!.serverInfo!.colors,
@@ -111,7 +109,7 @@ export function ServerDetailsScreen() {
               </Heading>
               <Button onPress={() => dispatch(selectServer(server))} mt='$3' theme='active' size='$3'>
                 Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
-                </Button>
+              </Button>
             </>}
             <Heading size='$10' als='center' mt='$3'>Server Info</Heading>
             <ServerCard server={server!} />
@@ -165,17 +163,17 @@ export function ServerDetailsScreen() {
             }}>
               Autoconfigure Server <Heading size='$3'>{requestedServerUrl}</Heading>
             </Button>
-            : <>
-            <Heading color='yellow' size='$3' ta={'center'}>Server URL is invalid.</Heading>
-            <Heading color='yellow' size='$3' ta={'center'}>Server URL format: [http|https]:valid_hostname</Heading>
-            </>}
-            </> :
+              : <>
+                <Heading color='yellow' size='$3' ta={'center'}>Server URL is invalid.</Heading>
+                <Heading color='yellow' size='$3' ta={'center'}>Server URL format: [http|https]:valid_hostname</Heading>
+              </>}
+          </> :
             <>
-            <Heading ta="center" fow="800">Enable "Allow Server Selection" in your settings to continue.</Heading>
-            <Paragraph ta="center" fow="800">{`Server URL: ${requestedServerUrl}`}</Paragraph>
-            <Button theme='active' mt='$2' onPress={() => dispatch(setAllowServerSelection(true))}>
-              Enable "Allow Server Selection"
-            </Button>
+              <Heading ta="center" fow="800">Enable "Allow Server Selection" in your settings to continue.</Heading>
+              <Paragraph ta="center" fow="800">{`Server URL: ${requestedServerUrl}`}</Paragraph>
+              <Button theme='active' mt='$2' onPress={() => dispatch(setAllowServerSelection(true))}>
+                Enable "Allow Server Selection"
+              </Button>
             </>}
         {/* <Button {...linkProps} icon={ChevronLeft}>
           Go Home

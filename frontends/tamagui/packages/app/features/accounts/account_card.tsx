@@ -1,11 +1,13 @@
-import React from "react";
-import { StyleSheet, View } from "react-native";
-import store, { useTypedDispatch } from "../../store/store";
-import { JonlineServer, selectServer } from "../../store/modules/servers";
-import { JonlineAccount, removeAccount, selectAccount } from "../../store/modules/accounts";
-import { Card, Heading, XStack, YStack, Text, Paragraph, Dialog, Button, Theme } from "@jonline/ui";
-import { Lock, Shield, ShieldCheck, ShieldClose, Trash, Unlock } from "@tamagui/lucide-icons";
+import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
 import { Permission } from "@jonline/ui/src";
+import { Shield, Trash } from "@tamagui/lucide-icons";
+import { JonlineAccount } from "app/store/types";
+import React from "react";
+import { View } from "react-native";
+import { removeAccount, selectAccount } from "../../store/modules/accounts";
+import { selectServer } from "../../store/modules/servers";
+import store, { useTypedDispatch } from "../../store/store";
+import {v4 as uuidv4} from 'uuid';
 
 interface Props {
   account: JonlineAccount;
@@ -14,6 +16,9 @@ interface Props {
 const AccountCard: React.FC<Props> = ({ account }) => {
   const dispatch = useTypedDispatch();
   let selected = store.getState().accounts.account?.id == account.id;
+
+  const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
+  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
 
   function doSelectAccount() {
     if (store.getState().servers.server?.host != account.server.host) {
@@ -37,7 +42,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
         hoverStyle={{ scale: 0.925 }}
         pressStyle={{ scale: 0.875 }}
         onClick={doSelectAccount}
-        >
+      >
         <Card.Header>
           <XStack>
             <YStack style={{ flex: 1 }}>
@@ -55,10 +60,10 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Paragraph size='$1' alignSelf="center">{account.user.id}</Paragraph>
             </YStack>
             <View style={{ flex: 1 }} />
-            {selected ? <Button onClick={(e) => {e.stopPropagation(); doLogout();}} marginRight='$1'>Logout</Button> : undefined}
+            {selected ? <Button onClick={(e) => { e.stopPropagation(); doLogout(); }} marginRight='$1'>Logout</Button> : undefined}
             <Dialog>
               <Dialog.Trigger asChild>
-                <Button icon={<Trash />} circular onClick={(e) => {e.stopPropagation();}} color="red" />
+                <Button icon={<Trash />} circular onClick={(e) => { e.stopPropagation(); }} color="red" />
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay
@@ -98,7 +103,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
                         <Button>Cancel</Button>
                       </Dialog.Close>
                       {/* <Dialog.Action asChild> */}
-                        <Button theme="active" onClick={() => dispatch(removeAccount(account.id))}>Remove</Button>
+                      <Button theme="active" onClick={() => dispatch(removeAccount(account.id))}>Remove</Button>
                       {/* </Dialog.Action> */}
                     </XStack>
                   </YStack>
@@ -107,6 +112,9 @@ const AccountCard: React.FC<Props> = ({ account }) => {
             </Dialog>
           </XStack>
         </Card.Footer>
+        <Card.Background>
+          <YStack h='100%' w={5} backgroundColor={primaryColor}/>
+        </Card.Background>
       </Card>
     </Theme>
     // <a style={Styles.borderlessButton} onClick={() => dispatch(selectServer(server))}>

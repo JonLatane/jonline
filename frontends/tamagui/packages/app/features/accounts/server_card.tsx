@@ -1,11 +1,11 @@
+import { Button, Card, Dialog, Heading, Theme, XStack, YStack } from "@jonline/ui";
+import { Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
+import { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
+import { JonlineServer } from "app/store/types";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import store, { RootState, useTypedDispatch, useTypedSelector } from "../../store/store";
-import { JonlineServer, removeServer, selectServer, serverUrl } from "../../store/modules/servers";
-import { Dialog, Button, Card, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
-import { Lock, Trash, Unlock, Info } from "@tamagui/lucide-icons";
-import Accounts, { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
 import { useLink } from "solito/link";
+import { removeServer, selectServer, serverUrl } from "../../store/modules/servers";
+import store, { RootState, useTypedDispatch, useTypedSelector } from "../../store/store";
 
 interface Props {
   server: JonlineServer;
@@ -19,6 +19,8 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts))
     .filter(account => account.server.host == server.host);
   const infoLink = useLink({ href: `/server/${serverUrl(server)}` });
+  const primaryColorInt = server.serverConfiguration?.serverInfo?.colors?.primary;
+  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
 
   function doSelectServer() {
     if (selected) {
@@ -121,7 +123,9 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
             }
           </XStack>
         </Card.Footer>
-        {/* <Card.Background backgroundColor={selected ? '#424242' : undefined} /> */}
+        <Card.Background>
+          <YStack h='100%' w={5} backgroundColor={primaryColor}/>
+        </Card.Background>
       </Card>
     </Theme>
   );

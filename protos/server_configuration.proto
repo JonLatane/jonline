@@ -5,34 +5,43 @@ package jonline;
 import "visibility_moderation.proto";
 import "permissions.proto";
 
-// Confuguration for a Jonline server instance.
+// Configuration for a Jonline server instance.
 message ServerConfiguration {
-  // The name of the server.
+  // The name, description, logo, color scheme, etc. of the server.
   optional ServerInfo server_info = 1;
 
+  // Permissions for a user who isn't logged in to the server. Allows
+  // admins to disable certain features for anonymous users. Valid values are 
+  // `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`.
   repeated Permission anonymous_user_permissions = 10;
-  // Default user permissions given to a user. Valid values are VIEW_POSTS,
-  // CREATE_POSTS, PUBLISH_POSTS_GLOBALLY, VIEW_EVENTS, CREATE_EVENTS, and
-  // PUBLISH_EVENTS_GLOBALLY. Users with MODERATE_USERS permission can
-  // grant these permissions to other users. Only users with ADMIN can grant
-  // MODERATE_USERS, MODERATE_POSTS, and MODERATE_EVENTS.
+  // Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also 
+  // grant/revoke these permissions for others. Valid values are 
+  // `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, 
+  // `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, 
+  // `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, 
+  // `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   repeated Permission default_user_permissions = 11;
+  // Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are 
+  // `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, 
+  // `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, 
+  // `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, 
+  // `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   repeated Permission basic_user_permissions = 12;
 
-  // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain PUBLISH_USERS_GLOBALLY.
+  // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  // contain `PUBLISH_USERS_GLOBALLY`.
   FeatureSettings people_settings = 20;
-  // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain PUBLISH_GROUPS_GLOBALLY.
+  // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  // contain `PUBLISH_GROUPS_GLOBALLY`.
   FeatureSettings group_settings = 21;
-  // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain PUBLISH_POSTS_GLOBALLY.
+  // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  // contain `PUBLISH_POSTS_GLOBALLY`.
   FeatureSettings post_settings = 22;
-  // If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-  // contain PUBLISH_EVENTS_GLOBALLY.
+  // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  // contain `PUBLISH_EVENTS_GLOBALLY`.
   FeatureSettings event_settings = 23;
 
-  // Strategy when a user sets their visibility to PRIVATE. Defaults to ACCOUNT_IS_FROZEN.
+  // Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   PrivateUserStrategy private_user_strategy = 100;
 
   // Allows admins to enable/disable creating accounts and logging in.
@@ -52,28 +61,28 @@ enum AuthenticationFeature {
 message FeatureSettings {
   // Hide the Posts or Events tab from the user with this flag.
   bool visible = 1;
-  // Only UNMODERATED and PENDING are valid.
-  // When UNMODERATED, user reports may transition status to PENDING.
-  // When PENDING, users' SERVER_PUBLIC or GLOBAL_PUBLIC posts will not
-  // be visible until a moderator approves them. LIMITED visiblity
+  // Only `UNMODERATED` and `PENDING` are valid.
+  // When `UNMODERATED`, user reports may transition status to `PENDING`.
+  // When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+  // be visible until a moderator approves them. `LIMITED` visiblity
   // posts are always visible to targeted users (who have not blocked 
   // the author) regardless of default_moderation.
   Moderation default_moderation = 2;
-  // Only SERVER_PUBLIC and GLOBAL_PUBLIC are valid. GLOBAL_PUBLIC is only valid
-  // if default_user_permissions contains GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS] 
+  // Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+  // if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
   // as appropriate.
   Visibility default_visibility = 3;
   optional string custom_title = 4;
 }
 
 enum PrivateUserStrategy {
-  // PRIVATE Users can't see other Users (only PUBLIC_GLOBAL Visilibity Users/Posts/Events).
+  // `PRIVATE` Users can't see other Users (only `PUBLIC_GLOBAL` Visilibity Users/Posts/Events).
   // Other users can't see them.
   ACCOUNT_IS_FROZEN = 0;
-  // Users can see other users they follow, but only PUBLIC_GLOBAL Visilibity Posts/Events.
+  // Users can see other users they follow, but only `PUBLIC_GLOBAL` Visilibity Posts/Events.
   // Other users can't see them.
   LIMITED_CREEPINESS = 1;
-  // Users can see other users they follow, including their PUBLIC_SERVER Posts/Events,
+  // Users can see other users they follow, including their `PUBLIC_SERVER` Posts/Events.
   // Other users can't see them.
   LET_ME_CREEP_ON_PPL = 2;
 }
@@ -99,8 +108,7 @@ enum WebUserInterface {
   REACT_TAMAGUI = 2;
 }
 
-// Color in ARGB hex format (i.e 0xAARRGGBB).
-// Clients may override/modify colors that cause poor UX.
+// Color in ARGB hex format (i.e `0xAARRGGBB`).
 message ServerColors {
   // App Bar/primary accent color.
   optional uint32 primary = 1;
