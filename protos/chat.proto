@@ -4,6 +4,7 @@ package jonline;
 
 import "posts.proto";
 
+// User-to-user (or multi-user) conversation.
 message Conversation {
   string id = 1;
   optional string name = 2;
@@ -15,18 +16,43 @@ message ConversationPost {
   string post_id = 2;
 }
 
+// Conversation for a Group. Functionally 1:1 with its Group, and not actually
+// stored in the database. Just presented as an API type for clarity and consistency.
+message GroupConversation {
+  string group_id = 1;
+}
+
 message GroupConversationPost {
   string group_id = 1;
   string post_id = 2;
 }
 
-// Request to 
 message CreateConversationPostRequest {
   string conversation_id = 1;
-  Post post = 2;
+  CreatePostRequest post = 2;
 }
 
 message CreateGroupConversationPostRequest {
   string group_id = 1;
-  Post post = 2;
+  CreatePostRequest post = 2;
+}
+
+message GetConversationsRequest {
+  uint32 page = 10;
+}
+
+message GetConversationsResponse {
+  repeated Conversation conversations = 1;
+}
+
+message GetConversationRequest {
+  oneof requested_id {
+    string conversation_id = 1;
+    string group_id = 2;
+  }
+  uint32 page = 10;
+}
+
+message GetConversationResponse {
+  repeated Post conversation = 1;
 }

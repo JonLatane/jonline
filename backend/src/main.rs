@@ -20,7 +20,7 @@ extern crate tonic_web;
 // #[macro_use]
 extern crate lazy_static;
 
-use std::{env, fs, sync::Arc};
+use std::{env, fs, sync::Arc, thread, time::Duration};
 
 pub mod auth;
 pub mod conversions;
@@ -51,9 +51,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool3 = pool1.clone();
     let pool4 = pool1.clone();
 
+    let (tonic_router, secure_mode) = create_tonic_router(pool1);
     tokio::spawn(async {
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], 27707));
-        let tonic_router = create_tonic_router(pool1);
         match tonic_router.serve(tonic_addr).await {
             Ok(_) => println!("Tonic server started on {}", tonic_addr),
             Err(e) => {
@@ -64,8 +64,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ()
     });
 
-    let rocket_unsecure_8000_server = rocket::tokio::spawn(async {
-        match create_rocket_unsecured(8000, pool2).launch().await {
+    let rocket_unsecure_8000_server = rocket::tokio::spawn(async move {
+        match create_rocket_unsecured(8000, pool2, secure_mode).launch().await {
             Ok(_) => (),
             Err(e) => {
                 println!("Unable to start Rocket server on port 8000");
@@ -74,8 +74,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         ()
     });
-    let rocket_unsecure_80_server = rocket::tokio::spawn(async {
-        match create_rocket_unsecured(80, pool3).launch().await {
+    let rocket_unsecure_80_server = rocket::tokio::spawn(async move {
+        match create_rocket_unsecured(80, pool3, secure_mode).launch().await {
             Ok(_) => (),
             Err(e) => {
                 println!("Unable to start Rocket server on port 80");
@@ -130,11 +130,19 @@ fn create_rocket_secure(pool: Arc<PgPool>) -> Option<rocket::Rocket<rocket::Buil
     }
 }
 
-fn create_rocket_unsecured(port: i32, pool: Arc<PgPool>) -> rocket::Rocket<rocket::Build> {
+fn create_rocket_unsecured(
+    port: i32,
+    pool: Arc<PgPool>,
+    https_redirect: bool,
+) -> rocket::Rocket<rocket::Build> {
     let figment = rocket::Config::figment()
         .merge(("port", port))
         .merge(("address", "0.0.0.0"));
-    create_rocket(figment, pool)
+    if https_redirect {
+        create_rocket_secure_redirect(figment, pool)
+    } else {
+        create_rocket(figment, pool)
+    }
 }
 
 fn create_rocket<T: rocket::figment::Provider>(
@@ -169,8 +177,17 @@ fn create_rocket<T: rocket::figment::Provider>(
         ]))
     }
 }
+fn create_rocket_secure_redirect<T: rocket::figment::Provider>(
+    figment: T,
+    pool: Arc<PgPool>,
+) -> rocket::Rocket<rocket::Build> {
+    rocket::custom(figment)
+        .manage(web::RocketState { pool })
+        .mount("/", routes![web::redirect_to_secure,])
+        .register("/", catchers![web::catchers::not_found])
+}
 
-fn create_tonic_router(pool: Arc<PgPool>) -> tonic::transport::server::Router {
+fn create_tonic_router(pool: Arc<PgPool>) -> (tonic::transport::server::Router, bool) {
     let jonline = JonLineImpl { pool };
 
     let reflection_service = tonic_reflection::server::Builder::configure()
@@ -178,31 +195,34 @@ fn create_tonic_router(pool: Arc<PgPool>) -> tonic::transport::server::Router {
         .build()
         .unwrap();
 
-    let server = match get_tls_config() {
+    let (server, secure) = match get_tls_config() {
         Some(tls) => {
             println!("Configuring TLS...");
             match Server::builder().tls_config(tls) {
                 Ok(server) => {
                     println!("TLS successfully configured.");
-                    server
+                    (server, true)
                 }
                 Err(details) => {
                     println!("Error configuring TLS. Connections are not secure.");
                     report_error(details);
-                    Server::builder()
+                    (Server::builder(), false)
                 }
             }
         }
         _ => {
             println!("No TLS keys available. Connections are not secure.");
-            Server::builder()
+            (Server::builder(), false)
         }
     };
 
-    server
-        .accept_http1(true)
-        .add_service(tonic_web::enable(JonlineServer::new(jonline)))
-        .add_service(tonic_web::enable(reflection_service))
+    (
+        server
+            .accept_http1(true)
+            .add_service(tonic_web::enable(JonlineServer::new(jonline)))
+            .add_service(tonic_web::enable(reflection_service)),
+        secure,
+    )
 }
 
 fn get_tls_config() -> Option<ServerTlsConfig> {

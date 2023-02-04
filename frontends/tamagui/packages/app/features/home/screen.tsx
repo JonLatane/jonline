@@ -1,10 +1,8 @@
 import { Anchor, Button, H1, Heading, Paragraph, XStack, YStack } from '@jonline/ui';
 import { GetPostsRequest } from '@jonline/ui/src';
-import { selectAllPosts, updatePosts } from 'app/store/modules/posts';
-import { RootState, useCredentialDispatch, useTypedSelector } from 'app/store/store';
+import { RootState, selectAllPosts, setShowIntro, updatePosts, useCredentialDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
 import { FlatList, Linking, Platform } from 'react-native';
-import { setShowIntro } from "../../store/modules/local_app";
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 

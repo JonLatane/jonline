@@ -1,10 +1,6 @@
 import { Button, formatError, Heading, Input, Paragraph, ServerConfiguration, TextArea, XStack, YStack } from '@jonline/ui'
 import { Permission } from '@jonline/ui/src'
-import { getCredentialClient } from 'app/store/modules/accounts'
-import { setAllowServerSelection } from 'app/store/modules/local_app'
-import { selectServer, selectServerById, serverUrl, upsertServer } from 'app/store/modules/servers'
-import { RootState, useTypedDispatch, useTypedSelector } from 'app/store/store'
-import { JonlineServer } from 'app/store/types'
+import { getCredentialClient, JonlineServer, RootState, selectServer, selectServerById, serverUrl, setAllowServerSelection, upsertServer, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useState } from 'react'
 import { HexColorPicker } from "react-colorful"
 import { createParam } from 'solito'

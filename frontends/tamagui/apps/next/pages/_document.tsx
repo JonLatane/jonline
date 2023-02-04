@@ -21,8 +21,8 @@ export default class Document extends NextDocument {
       <style key="tamagui-css" dangerouslySetInnerHTML={{ __html: Tamagui.getCSS() }} />,
       <style key='jonline-css' dangerouslySetInnerHTML={{ __html: `
         .blur {
-          backdrop-filter: blur(3px);
-          -webkit-backdrop-filter: blur(3px);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
         }
         .postMarkdown {
           color: white;

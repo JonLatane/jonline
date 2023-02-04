@@ -1,11 +1,10 @@
-import { Button, useMedia, WebUserInterface, XStack, YStack, ZStack, ScrollView, Heading } from "@jonline/ui/src";
-import { RootState, useTypedSelector } from "app/store/store";
+import { Button, Heading, ScrollView, useMedia, WebUserInterface, XStack, YStack } from "@jonline/ui/src";
+import { Home as HomeIcon } from '@tamagui/lucide-icons';
+import { JonlineServer, RootState, useTypedSelector } from "app/store";
+import { Platform } from 'react-native';
+import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
-import { Platform } from 'react-native'
-import StickyBox from "react-sticky-box";
-import { Home as HomeIcon } from '@tamagui/lucide-icons'
-import { JonlineServer } from "app/store/modules/servers";
 
 
 export type TabsNavigationProps = {
@@ -26,7 +25,7 @@ export function TabsNavigation({ children, onlyShowServer }: TabsNavigationProps
   const serverNameContainsEmoji = /\p{Emoji}/u.test(serverName);
   let account = useTypedSelector((state: RootState) => state.accounts.account);
   let backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
-  let backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}`;
+  let backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}A6`;
   let navColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.navigation;
   let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   let wrapTitle = serverName.length > 20;
@@ -34,7 +33,7 @@ export function TabsNavigation({ children, onlyShowServer }: TabsNavigationProps
   return Platform.select({
     web: <>
       <StickyBox style={{ zIndex: 10 }} className="blur">
-        <YStack space="$1" backgroundColor={backgroundColor} opacity={0.87}>
+        <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
           {/* <XStack h={5}></XStack> */}
           <XStack space="$1" marginVertical={5}>
             <XStack w={5} />
@@ -66,4 +65,16 @@ export function TabsNavigation({ children, onlyShowServer }: TabsNavigationProps
         </ScrollView>
       </YStack>
   });
+}
+function hexToRgb(hex){
+  var c;
+  if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+      c= hex.substring(1).split('');
+      if(c.length== 3){
+          c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+      }
+      c= '0x'+c.join('');
+      return [(c>>16)&255, (c>>8)&255, c&255];
+  }
+  throw new Error('Bad Hex');
 }

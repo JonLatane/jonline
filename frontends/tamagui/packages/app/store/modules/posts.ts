@@ -26,11 +26,6 @@ export interface PostsState {
   previews: Dictionary<string>;
 }
 
-export interface PostsSlice {
-  adapter: EntityAdapter<Post>;
-
-}
-
 const postsAdapter: EntityAdapter<Post> = createEntityAdapter<Post>({
   selectId: (post) => post.id,
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
@@ -115,7 +110,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     upsertPost: postsAdapter.upsertOne,
     removePost: postsAdapter.removeOne,
     resetPosts: () => initialState,
-    clearAlerts: (state) => {
+    clearPostAlerts: (state) => {
       state.errorMessage = undefined;
       state.successMessage = undefined;
       state.error = undefined;
@@ -209,10 +204,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   },
 });
 
-export const { removePost, clearAlerts, resetPosts } = postsSlice.actions;
-
+export const { removePost, clearPostAlerts: clearPostAlerts, resetPosts } = postsSlice.actions;
 export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();
-
 export const postsReducer = postsSlice.reducer;
-
-export default postsSlice.reducer;
+export default postsReducer;

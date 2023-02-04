@@ -8,10 +8,7 @@ import { createSelectorHook, useDispatch } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import accountsReducer, { resetAccounts } from "./modules/accounts";
-import localAppReducer, { resetLocalApp } from "./modules/local_app";
-import postsReducer, { resetPosts } from "./modules/posts";
-import serversReducer, { resetServers, serverUrl, upsertServer } from "./modules/servers";
+import { accountsReducer, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, serversReducer, serverUrl, upsertServer } from "./modules";
 import { AccountOrServer, JonlineServer } from './types';
 
 const serversPersistConfig = {
@@ -69,7 +66,8 @@ export function useCredentialDispatch(): CredentialDispatch {
 export type AppStore = Omit<Store<RootState, AnyAction>, "dispatch"> & {
   dispatch: AppDispatch;
 };
-const store: AppStore = configureStore({
+
+export const store: AppStore = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) => [...getDefaultMiddleware({
     serializableCheck: {
@@ -84,9 +82,11 @@ export const persistor = persistStore(store);
 export function resetCredentialedData() {
   setTimeout(() => {
     store.dispatch(resetPosts!());
+    store.dispatch(resetGroups!());
   }, 1);
   setTimeout(() => {
     store.dispatch(resetPosts!());
+    store.dispatch(resetGroups!());
   }, 500);
 }
 // Reset store data that depends on selected server/account.
@@ -95,6 +95,7 @@ export function resetAllData() {
   store.dispatch(resetServers());
   store.dispatch(resetAccounts());
   store.dispatch(resetPosts!());
+  store.dispatch(resetGroups!());
   store.dispatch(resetLocalApp());
   // }, 1);
 }

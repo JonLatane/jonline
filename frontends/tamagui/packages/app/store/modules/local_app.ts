@@ -1,17 +1,7 @@
 import {
-  createAsyncThunk,
-  createEntityAdapter,
-  createSlice,
-  Dictionary,
-  EntityId,
-  PayloadAction,
+  createSlice, PayloadAction
 } from "@reduxjs/toolkit";
-import { GetServiceVersionResponse } from "@jonline/ui/src/generated/federation";
-import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/ui/src/generated/jonline"
-import { ServerConfiguration } from "@jonline/ui/src/generated/server_configuration"
 import { Platform } from 'react-native';
-import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport';
-import store, { RootState, useTypedDispatch, useTypedSelector } from "../store";
 
 export type LocalAppConfiguration = {
   showIntro: boolean;
@@ -37,6 +27,12 @@ export const localAppSlice = createSlice({
     setShowIntro: (state, action: PayloadAction<boolean>) => {
       state.showIntro = action.payload;
     },
+    setDarkMode: (state, action: PayloadAction<boolean>) => {
+      state.darkMode = action.payload;
+    },
+    setDarkModeAuto: (state, action: PayloadAction<boolean>) => {
+      state.darkModeAuto = action.payload;
+    },
     setAllowServerSelection: (state, action: PayloadAction<boolean>) => {
       state.allowServerSelection = action.payload;
     },
@@ -48,13 +44,6 @@ export const localAppSlice = createSlice({
   },
 });
 
-// export const { removePost, clearAlerts } = postsSlice.actions;
-
-// export const { selectAll: selectAllPosts } = postsAdapter.getSelectors();
-
-// export const postsReducer = postsSlice.reducer;
-
-// export default postsSlice.reducer;
-
-export const { setShowIntro, setAllowServerSelection, setSeparateAccountsByServer, resetLocalApp } = localAppSlice.actions;
-export default localAppSlice.reducer;
+export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection, setSeparateAccountsByServer, resetLocalApp } = localAppSlice.actions;
+export const localAppReducer = localAppSlice.reducer;
+export default localAppReducer;

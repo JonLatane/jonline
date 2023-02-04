@@ -12,7 +12,7 @@ import {
 import moment from "moment";
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import store, { getServerClient, resetCredentialedData } from "../store";
+import {store, getServerClient, resetCredentialedData } from "../store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient, JonlineServer } from "../types";
 
 export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
@@ -111,7 +111,7 @@ export const accountsSlice = createSlice({
       }
       state.account = action.payload;
     },
-    clearAlerts: (state) => {
+    clearAccountAlerts: (state) => {
       state.errorMessage = undefined;
       state.successMessage = undefined;
       state.error = undefined;
@@ -155,8 +155,8 @@ export const accountsSlice = createSlice({
   },
 });
 
-export const { selectAccount, removeAccount, clearAlerts, resetAccounts } = accountsSlice.actions;
+export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
-
-export default accountsSlice.reducer;
+export const accountsReducer = accountsSlice.reducer;
+export default accountsReducer;

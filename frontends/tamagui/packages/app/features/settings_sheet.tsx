@@ -1,14 +1,7 @@
-import { Anchor, Button, H1, Input, Paragraph, Separator, Sheet, XStack, YStack, Text, Heading, Label, Switch, SizeTokens, Dialog } from '@jonline/ui'
-import { ChevronDown, ChevronUp, Plus, Delete, X as XIcon, User as UserIcon, Settings as SettingsIcon, FileWarning, AlertTriangle } from '@tamagui/lucide-icons'
-import store, { resetCredentialedData, resetAllData, RootState, useTypedDispatch, useTypedSelector } from 'app/store/store';
-import React, { useState, useReducer } from 'react'
-import { useLink } from 'solito/link'
-// import { clearAlerts as clearServerAlerts, upsertServer, selectAllServers } from "../../store/modules/servers";
-// import { clearAlerts as clearAccountAlerts, createAccount, login, selectAllAccounts } from "../../store/modules/accounts";
-import { FlatList, View } from 'react-native';
-import { setAllowServerSelection, setSeparateAccountsByServer, setShowIntro } from 'app/store/modules/local_app';
-import { selectAccountTotal } from 'app/store/modules/accounts';
-import { selectServerTotal } from 'app/store/modules/servers';
+import { Button, Dialog, Heading, Label, Sheet, SizeTokens, Switch, XStack, YStack } from '@jonline/ui';
+import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setSeparateAccountsByServer, setShowIntro, useTypedDispatch, useTypedSelector } from 'app/store';
+import React, { useState } from 'react';
 
 
 export type SettingsSheetProps = {
@@ -34,7 +27,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
     setTimeout(forceUpdate, 2000);
   }
 
-  function toggleRow(name: string, value:boolean, setter: (value: boolean) => any) {
+  function toggleRow(name: string, value: boolean, setter: (value: boolean) => any) {
     return <XStack space='$3'>
       <Label f={1}>{name}</Label>
       <Switch size="$5" style={{ marginLeft: 'auto', marginRight: 'auto' }}

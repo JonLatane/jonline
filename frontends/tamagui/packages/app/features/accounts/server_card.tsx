@@ -1,11 +1,8 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack } from "@jonline/ui";
 import { Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
-import { JonlineServer } from "app/store/types";
+import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverUrl, useTypedDispatch, useTypedSelector } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
-import { removeServer, selectServer, serverUrl } from "../../store/modules/servers";
-import store, { RootState, useTypedDispatch, useTypedSelector } from "../../store/store";
 
 interface Props {
   server: JonlineServer;

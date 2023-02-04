@@ -1,6 +1,6 @@
 import { Button, Paragraph, YStack } from '@jonline/ui'
 import { ChevronLeft } from '@tamagui/lucide-icons'
-import { RootState, useCredentialDispatch, useTypedSelector } from 'app/store/store'
+import { useCredentialDispatch } from 'app/store'
 import React from 'react'
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'

@@ -1,22 +1,11 @@
-import React, {useState, useEffect, PropsWithChildren} from "react";
-import { View, Text as NativeText, Platform, Animated, ViewStyle } from "react-native";
-import store, { RootState, useCredentialDispatch, useTypedDispatch, useTypedSelector } from "../../store/store";
+import { RootState, useCredentialDispatch, useTypedSelector, loadPostPreview } from "app/store";
+import React, { PropsWithChildren, useEffect, useState } from "react";
+import { Animated, Platform, Text as NativeText, View, ViewStyle } from "react-native";
 
-import { AlertDialog, Button, Card, Heading, Image, Paragraph, Text, Post, Theme, XStack, YStack, useTheme, Anchor, Tooltip, useMedia } from "@jonline/ui";
-import { Lock, Trash, Unlock, SidebarOpen } from "@tamagui/lucide-icons";
-import Accounts, { removeAccount, selectAccount, selectAllAccounts } from "app/store/modules/accounts";
-import ReactMarkdown from 'react-markdown'
+import { Anchor, Card, Heading, Image, Post, Tooltip, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import moment from 'moment';
+import ReactMarkdown from 'react-markdown';
 import { useLink } from "solito/link";
-import moment, { min } from 'moment';
-import { loadPostPreview } from "app/store/modules/posts";
-import Markdown, {
-  AstRenderer,
-  getUniqueID,
-  PluginContainer,
-  renderRules,
-  styles,
-} from 'react-native-markdown-renderer';
-import NativeMarkdownShim from "./native_markdown_shim";
 
 interface Props {
   post: Post;

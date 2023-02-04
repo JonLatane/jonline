@@ -6,8 +6,8 @@ import {
   EntityId,
   PayloadAction
 } from "@reduxjs/toolkit";
-import { Platform } from 'react-native';
 import { getServerClient, resetCredentialedData } from "../store";
+import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 
 export function serverUrl(server: JonlineServer): string {
@@ -70,7 +70,7 @@ export const serversSlice = createSlice({
       serversAdapter.removeOne(state, serverUrl(action.payload));
     },
     resetServers: () => initialState,
-    clearAlerts: (state) => {
+    clearServerAlerts: (state) => {
       state.errorMessage = undefined;
       state.successMessage = undefined;
       state.error = undefined;
@@ -107,8 +107,9 @@ export const serversSlice = createSlice({
   },
 });
 
-export const { selectServer, removeServer, clearAlerts, resetServers } = serversSlice.actions;
+export const { selectServer, removeServer, clearServerAlerts, resetServers } = serversSlice.actions;
 
 export const { selectAll: selectAllServers, selectById: selectServerById, selectTotal: selectServerTotal } = serversAdapter.getSelectors();
 
-export default serversSlice.reducer;
+export const serversReducer = serversSlice.reducer;
+export default serversReducer;

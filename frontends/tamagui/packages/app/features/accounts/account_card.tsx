@@ -1,13 +1,9 @@
 import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
 import { Permission } from "@jonline/ui/src";
 import { Shield, Trash } from "@tamagui/lucide-icons";
-import { JonlineAccount } from "app/store/types";
+import { store, JonlineAccount, removeAccount, selectAccount, selectServer, useTypedDispatch } from "app/store";
 import React from "react";
 import { View } from "react-native";
-import { removeAccount, selectAccount } from "../../store/modules/accounts";
-import { selectServer } from "../../store/modules/servers";
-import store, { useTypedDispatch } from "../../store/store";
-import {v4 as uuidv4} from 'uuid';
 
 interface Props {
   account: JonlineAccount;

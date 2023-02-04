@@ -6,16 +6,16 @@ import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
 import { SettingsSheet } from '../settings_sheet';
-import AccountCard from './account_card';
-import ServerCard from './server_card';
+import AccountCard from '../accounts/account_card';
+import ServerCard from '../accounts/server_card';
 
-export type AccountsSheetProps = {
+export type GroupsSheetProps = {
   size?: SizeTokens;
   circular?: boolean;
   onlyShowServer?: JonlineServer;
 }
 
-export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }: AccountsSheetProps) {
+export function GroupsSheet({ size = '$5', circular = false, onlyShowServer }: GroupsSheetProps) {
   const media = useMedia();
   const [open, setOpen] = useState(false);
   const [browsingServers, setBrowsingServers] = useState(false);

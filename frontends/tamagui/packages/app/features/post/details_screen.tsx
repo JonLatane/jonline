@@ -1,10 +1,7 @@
-import { Button, GetPostsRequest, Paragraph, XStack, YStack } from '@jonline/ui'
-import { ChevronLeft } from '@tamagui/lucide-icons'
-import { loadPost, selectPostById, updatePosts } from 'app/store/modules/posts'
-import { RootState, useCredentialDispatch, useTypedSelector } from 'app/store/store'
+import { GetPostsRequest, Paragraph, XStack, YStack } from '@jonline/ui'
+import { loadPost, RootState, selectPostById, updatePosts, useCredentialDispatch, useTypedSelector } from 'app/store'
 import React from 'react'
 import { createParam } from 'solito'
-import { useLink } from 'solito/link'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import PostCard from './post_card'
 

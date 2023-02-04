@@ -1,14 +1,13 @@
-import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import React from 'react'
 
+import { Heading, Theme } from '@jonline/ui/src'
+import { AccountsSheet } from 'app/features/accounts/accounts_sheet'
+import { PostDetailsScreen } from 'app/features/post/details_screen'
+import { UsernameDetailsScreen } from 'app/features/user/name_details_screen'
+import { RootState, useTypedSelector } from 'app/store'
 import { HomeScreen } from '../../features/home/screen'
 import { UserDetailsScreen } from '../../features/user/details_screen'
-import { PostDetailsScreen } from 'app/features/post/details_screen'
-import { RootState, useTypedSelector } from 'app/store/store'
-import { Button, Heading, Theme } from '@jonline/ui/src'
-import { ChevronDown, User as UserIcon } from '@tamagui/lucide-icons'
-import { AccountsSheet } from 'app/features/accounts/accounts_sheet'
-import { UsernameDetailsScreen } from 'app/features/user/name_details_screen'
 
 const Stack = createNativeStackNavigator<{
   home: undefined,
