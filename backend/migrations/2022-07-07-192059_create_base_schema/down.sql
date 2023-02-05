@@ -3,6 +3,9 @@
 DROP TABLE federated_accounts;
 DROP TABLE federated_servers;
 
+DROP TABLE event_instances;
+DROP TABLE events;
+
 DROP TABLE group_posts;
 DROP TABLE user_posts;
 DROP TABLE posts;

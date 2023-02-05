@@ -62,6 +62,7 @@ export function groupListingTypeToJSON(object: GroupListingType): string {
 export interface Group {
   id: string;
   name: string;
+  shortname: string;
   description: string;
   avatar?: Uint8Array | undefined;
   defaultMembershipPermissions: Permission[];
@@ -118,6 +119,7 @@ function createBaseGroup(): Group {
   return {
     id: "",
     name: "",
+    shortname: "",
     description: "",
     avatar: undefined,
     defaultMembershipPermissions: [],
@@ -141,43 +143,46 @@ export const Group = {
     if (message.name !== "") {
       writer.uint32(18).string(message.name);
     }
+    if (message.shortname !== "") {
+      writer.uint32(26).string(message.shortname);
+    }
     if (message.description !== "") {
-      writer.uint32(26).string(message.description);
+      writer.uint32(34).string(message.description);
     }
     if (message.avatar !== undefined) {
-      writer.uint32(34).bytes(message.avatar);
+      writer.uint32(42).bytes(message.avatar);
     }
-    writer.uint32(42).fork();
+    writer.uint32(50).fork();
     for (const v of message.defaultMembershipPermissions) {
       writer.int32(v);
     }
     writer.ldelim();
     if (message.defaultMembershipModeration !== 0) {
-      writer.uint32(48).int32(message.defaultMembershipModeration);
+      writer.uint32(56).int32(message.defaultMembershipModeration);
     }
     if (message.defaultPostModeration !== 0) {
-      writer.uint32(56).int32(message.defaultPostModeration);
+      writer.uint32(64).int32(message.defaultPostModeration);
     }
     if (message.defaultEventModeration !== 0) {
-      writer.uint32(64).int32(message.defaultEventModeration);
+      writer.uint32(72).int32(message.defaultEventModeration);
     }
     if (message.visibility !== 0) {
-      writer.uint32(72).int32(message.visibility);
+      writer.uint32(80).int32(message.visibility);
     }
     if (message.memberCount !== 0) {
-      writer.uint32(80).uint32(message.memberCount);
+      writer.uint32(88).uint32(message.memberCount);
     }
     if (message.postCount !== 0) {
-      writer.uint32(88).uint32(message.postCount);
+      writer.uint32(96).uint32(message.postCount);
     }
     if (message.currentUserMembership !== undefined) {
-      Membership.encode(message.currentUserMembership, writer.uint32(98).fork()).ldelim();
+      Membership.encode(message.currentUserMembership, writer.uint32(106).fork()).ldelim();
     }
     if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(106).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(114).fork()).ldelim();
     }
     if (message.updatedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(114).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -196,12 +201,15 @@ export const Group = {
           message.name = reader.string();
           break;
         case 3:
-          message.description = reader.string();
+          message.shortname = reader.string();
           break;
         case 4:
-          message.avatar = reader.bytes();
+          message.description = reader.string();
           break;
         case 5:
+          message.avatar = reader.bytes();
+          break;
+        case 6:
           if ((tag & 7) === 2) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
@@ -211,31 +219,31 @@ export const Group = {
             message.defaultMembershipPermissions.push(reader.int32() as any);
           }
           break;
-        case 6:
+        case 7:
           message.defaultMembershipModeration = reader.int32() as any;
           break;
-        case 7:
+        case 8:
           message.defaultPostModeration = reader.int32() as any;
           break;
-        case 8:
+        case 9:
           message.defaultEventModeration = reader.int32() as any;
           break;
-        case 9:
+        case 10:
           message.visibility = reader.int32() as any;
           break;
-        case 10:
+        case 11:
           message.memberCount = reader.uint32();
           break;
-        case 11:
+        case 12:
           message.postCount = reader.uint32();
           break;
-        case 12:
+        case 13:
           message.currentUserMembership = Membership.decode(reader, reader.uint32());
           break;
-        case 13:
+        case 14:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
-        case 14:
+        case 15:
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
@@ -250,6 +258,7 @@ export const Group = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
+      shortname: isSet(object.shortname) ? String(object.shortname) : "",
       description: isSet(object.description) ? String(object.description) : "",
       avatar: isSet(object.avatar) ? bytesFromBase64(object.avatar) : undefined,
       defaultMembershipPermissions: Array.isArray(object?.defaultMembershipPermissions)
@@ -277,6 +286,7 @@ export const Group = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
+    message.shortname !== undefined && (obj.shortname = message.shortname);
     message.description !== undefined && (obj.description = message.description);
     message.avatar !== undefined &&
       (obj.avatar = message.avatar !== undefined ? base64FromBytes(message.avatar) : undefined);
@@ -310,6 +320,7 @@ export const Group = {
     const message = createBaseGroup();
     message.id = object.id ?? "";
     message.name = object.name ?? "";
+    message.shortname = object.shortname ?? "";
     message.description = object.description ?? "";
     message.avatar = object.avatar ?? undefined;
     message.defaultMembershipPermissions = object.defaultMembershipPermissions?.map((e) => e) || [];

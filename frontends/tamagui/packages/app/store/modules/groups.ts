@@ -23,7 +23,7 @@ export interface GroupsState {
   ids: EntityId[];
   entities: Dictionary<Group>;
   avatars: Dictionary<string>;
-
+  recentGroups: EntityId[];
 }
 
 const groupsAdapter: EntityAdapter<Group> = createEntityAdapter<Group>({
@@ -84,6 +84,7 @@ const initialState: GroupsState = {
   status: "unloaded",
   draftGroup: Group.create(),
   avatars: {},
+  recentGroups: [],
   ...groupsAdapter.getInitialState(),
 };
 

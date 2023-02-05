@@ -41,6 +41,7 @@ impl ToProtoGroup for models::Group {
         let group = Group {
             id: self.id.to_proto_id().to_string(),
             name: self.name.to_owned(),
+            shortname: self.shortname.to_owned(),
             description: self.description.to_owned(),
             avatar: self.avatar.to_owned(),
             default_membership_permissions: self

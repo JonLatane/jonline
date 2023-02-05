@@ -12,6 +12,7 @@ import {
 
 export const protobufPackage = "jonline";
 
+/** A high-level enumeration of general ways of requesting posts. */
 export enum PostListingType {
   /**
    * PUBLIC_POSTS - Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
@@ -85,15 +86,21 @@ export function postListingTypeToJSON(object: PostListingType): string {
 
 /**
  * Valid GetPostsRequest formats:
- * - {[listing_type: PublicPosts]}                  (get ServerPublic/GlobalPublic posts you can see)
- * - {listing_type:MyGroupsPosts|FollowingPosts}    (auth required)
- * - {post_id:}                                     (get one post including preview data)
- * - {post_id:, reply_depth: 1}                     (get replies to a post - only support for replyDepth=1 for now tho)
- * - {listing_type: MyGroupsPosts|
- *      GroupPostsPendingModeration,
- *      group_id:}                                  (get posts/posts needing moderation for a group)
- * - {author_user_id:, group_id:}                   (get posts by a user for a group)
- * - {listing_type: AuthorPosts, author_user_id:}   (TODO: get posts by a user)
+ *
+ * - `{[listing_type: PublicPosts]}`
+ *     - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
+ * - `{listing_type:MyGroupsPosts|FollowingPosts}`
+ *     - Get posts from groups you're a member of or from users you're following. Authorization required.
+ * - `{post_id:}`
+ *     - Get one post ,including preview data/
+ * - `{post_id:, reply_depth: 1}`
+ *     - Get replies to a post - only support for replyDepth=1 is done for now though.
+ * - `{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}`
+ *     - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
+ * - `{author_user_id:, group_id:}`
+ *     - Get posts by a user for a group. (TODO)
+ * - `{listing_type: AuthorPosts, author_user_id:}`
+ *     - Get posts by a user. (TODO)
  */
 export interface GetPostsRequest {
   /** Returns the single post with the given ID. */
@@ -118,6 +125,7 @@ export interface GetPostsResponse {
   posts: Post[];
 }
 
+/** A request to create a post. */
 export interface CreatePostRequest {
   title?: string | undefined;
   link?: string | undefined;
@@ -125,31 +133,65 @@ export interface CreatePostRequest {
   replyToPostId?: string | undefined;
 }
 
+/**
+ * A `Post` is a message that can be posted to the server. Its `visibility`
+ * as well as any associated `GroupPost`s and `UserPost`s determine what users
+ * see it and where.
+ *
+ * `Post`s are a fundamental unit of the system. `Event`s are a higher-level
+ * concept that are built on top of `Post`s.
+ */
 export interface Post {
+  /** Unique ID of the post. */
   id: string;
-  author?: Author | undefined;
-  replyToPostId?: string | undefined;
-  title?: string | undefined;
-  link?: string | undefined;
-  content?: string | undefined;
+  /** The author of the post. This is a smaller version of User. */
+  author?:
+    | Author
+    | undefined;
+  /** If this is a reply, this is the ID of the post it's replying to. */
+  replyToPostId?:
+    | string
+    | undefined;
+  /** The title of the post. This is invalid for replies. */
+  title?:
+    | string
+    | undefined;
+  /** The link of the post. This is invalid for replies. */
+  link?:
+    | string
+    | undefined;
+  /** The content of the post. This is required for replies. */
+  content?:
+    | string
+    | undefined;
+  /** The number of responses (replies *and* replies to replies, etc.) to this post. */
   responseCount: number;
+  /** The number of *direct* replies to this post. */
   replyCount: number;
   /**
-   * There should never be more than reply_count replies. However,
-   * there may be fewer than reply_count replies if some replies are
+   * Hierarchical replies to this post.
+   *
+   * There will never be more than `reply_count` replies. However,
+   * there may be fewer than `reply_count` replies if some replies are
    * hidden by moderation or visibility.
    * Replies are not generally loaded by default, but can be added to Posts
    * in the frontend.
    */
   replies: Post[];
-  previewImage?: Uint8Array | undefined;
+  /** Preview image for the Post. Generally not returned by default. */
+  previewImage?:
+    | Uint8Array
+    | undefined;
+  /** The visibility of the Post. */
   visibility: Visibility;
+  /** The moderation of the Post. */
   moderation: Moderation;
+  /** The number of groups this post is in. */
   groupCount: number;
   /**
    * When the post is returned in the context of a group_id parameter,
-   * this can be returned. It lets the UI know whether the post can be
-   * cross-posted to a group, and of course, *about* the cross-post
+   * `current_group_post` is returned. It lets the UI know whether the post can be
+   * cross-posted to a group, and of course, information about the cross-post
    * (time, moderation) if that's relevant.
    */
   currentGroupPost?: GroupPost | undefined;
@@ -166,6 +208,11 @@ export interface Author {
   username?: string | undefined;
 }
 
+/**
+ * A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
+ * information about the moderation of the post in the group, as well as
+ * the time it was cross-posted and the user who did the cross-posting.
+ */
 export interface GroupPost {
   groupId: string;
   postId: string;
@@ -174,6 +221,7 @@ export interface GroupPost {
   createdAt: string | undefined;
 }
 
+/** A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused. */
 export interface UserPost {
   groupId: string;
   userId: string;
@@ -186,6 +234,7 @@ export interface GetGroupPostsRequest {
   groupId?: string | undefined;
 }
 
+/** Used for getting context about GroupPosts of an existing Post. */
 export interface GetGroupPostsResponse {
   groupPosts: GroupPost[];
 }

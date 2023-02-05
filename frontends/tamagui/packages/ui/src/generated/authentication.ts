@@ -5,6 +5,7 @@ import { ContactMethod, User } from "./users";
 
 export const protobufPackage = "jonline";
 
+/** Request to create a new account. */
 export interface CreateAccountRequest {
   username: string;
   password: string;
@@ -17,6 +18,7 @@ export interface CreateAccountRequest {
   deviceName?: string | undefined;
 }
 
+/** Request to login to an existing account. */
 export interface LoginRequest {
   username: string;
   password: string;
@@ -25,26 +27,28 @@ export interface LoginRequest {
   deviceName?: string | undefined;
 }
 
-/** Returned when creating an account, logging in, or requesting access tokens. */
+/** Returned when creating an account or logging in. */
 export interface RefreshTokenResponse {
   refreshToken: ExpirableToken | undefined;
   accessToken: ExpirableToken | undefined;
   user: User | undefined;
 }
 
+/** Generic type for refresh and access tokens. */
 export interface ExpirableToken {
   token: string;
   /** Optional expiration time for the token. If not set, the token will not expire. */
   expiresAt?: string | undefined;
 }
 
+/** Request for a new access token using a refresh token. */
 export interface AccessTokenRequest {
   refreshToken: string;
   /** Optional *requested* expiration time for the token. Server may ignore this. */
   expiresAt?: string | undefined;
 }
 
-/** Returned when creating an account, logging in, or requesting access tokens. */
+/** Returned when requesting access tokens. */
 export interface AccessTokenResponse {
   /**
    * If a refresh token is returned, the old refresh token is no longer valid.

@@ -28,6 +28,7 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission PUBLISH_POSTS_LOCALLY = Permission._(22, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_POSTS_LOCALLY');
   static const Permission PUBLISH_POSTS_GLOBALLY = Permission._(23, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_POSTS_GLOBALLY');
   static const Permission MODERATE_POSTS = Permission._(24, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MODERATE_POSTS');
+  static const Permission REPLY_TO_POSTS = Permission._(25, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'REPLY_TO_POSTS');
   static const Permission VIEW_EVENTS = Permission._(30, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_EVENTS');
   static const Permission CREATE_EVENTS = Permission._(31, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'CREATE_EVENTS');
   static const Permission PUBLISH_EVENTS_LOCALLY = Permission._(32, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_EVENTS_LOCALLY');
@@ -56,6 +57,7 @@ class Permission extends $pb.ProtobufEnum {
     PUBLISH_POSTS_LOCALLY,
     PUBLISH_POSTS_GLOBALLY,
     MODERATE_POSTS,
+    REPLY_TO_POSTS,
     VIEW_EVENTS,
     CREATE_EVENTS,
     PUBLISH_EVENTS_LOCALLY,

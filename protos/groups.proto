@@ -10,21 +10,22 @@ import "visibility_moderation.proto";
 message Group {
   string id = 1;
   string name = 2;
-  string description = 3;
-  optional bytes avatar = 4;
-  repeated Permission default_membership_permissions = 5;
+  string shortname = 3;
+  string description = 4;
+  optional bytes avatar = 5;
+  repeated Permission default_membership_permissions = 6;
   // Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
-  Moderation default_membership_moderation = 6;
-  Moderation default_post_moderation = 7;
-  Moderation default_event_moderation = 8;
+  Moderation default_membership_moderation = 7;
+  Moderation default_post_moderation = 8;
+  Moderation default_event_moderation = 9;
   // LIMITED visibility groups are only visible to members. PRIVATE groups are only
   // visibile to users with the ADMIN group permission.
-  Visibility visibility = 9;
-  uint32 member_count = 10;
-  uint32 post_count = 11;
-  optional Membership current_user_membership = 12;
-  google.protobuf.Timestamp created_at = 13;
-  optional google.protobuf.Timestamp updated_at = 14;
+  Visibility visibility = 10;
+  uint32 member_count = 11;
+  uint32 post_count = 12;
+  optional Membership current_user_membership = 13;
+  google.protobuf.Timestamp created_at = 14;
+  optional google.protobuf.Timestamp updated_at = 15;
 }
 
 message GetGroupsRequest {

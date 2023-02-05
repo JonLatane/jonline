@@ -5,40 +5,80 @@ export const protobufPackage = "jonline";
 export enum Permission {
   PERMISSION_UNKNOWN = 0,
   VIEW_USERS = 1,
-  /** PUBLISH_USERS_LOCALLY - This generally only applies to the user's own profile, except for Admins. */
+  /**
+   * PUBLISH_USERS_LOCALLY - Allow the user to publish profiles with `SERVER_PUBLIC` Visbility.
+   * This generally only applies to the user's own profile, except for Admins.
+   */
   PUBLISH_USERS_LOCALLY = 2,
-  /** PUBLISH_USERS_GLOBALLY - This generally only applies to the user's own profile, except for Admins. */
+  /**
+   * PUBLISH_USERS_GLOBALLY - Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility.
+   * This generally only applies to the user's own profile, except for Admins.
+   */
   PUBLISH_USERS_GLOBALLY = 3,
   /**
-   * MODERATE_USERS - "Moderate users" refers to granting VIEW_POSTS, CREATE_POSTS, VIEW_EVENTS
-   * and CREATE_EVENTS permissions to users.
+   * MODERATE_USERS - Allow the user to grant `VIEW_POSTS`, `CREATE_POSTS`, `VIEW_EVENTS`
+   * and `CREATE_EVENTS` permissions to users.
    */
   MODERATE_USERS = 4,
+  /** FOLLOW_USERS - Allow the user to follow other users. */
   FOLLOW_USERS = 5,
   /**
-   * GRANT_BASIC_PERMISSIONS - "Basic Permissions" are defined by your ServerConfiguration's
-   * basic_user_permissions.
+   * GRANT_BASIC_PERMISSIONS - Allow the user to grant Basic Permissions to other users. "Basic Permissions"
+   * are defined by your `ServerConfiguration`'s `basic_user_permissions`.
    */
   GRANT_BASIC_PERMISSIONS = 6,
+  /** VIEW_GROUPS - Allow the user to view groups with `SERVER_PUBLIC` visibility. */
   VIEW_GROUPS = 10,
+  /** CREATE_GROUPS - Allow the user to create groups. */
   CREATE_GROUPS = 11,
+  /** PUBLISH_GROUPS_LOCALLY - Allow the user to give groups `SERVER_PUBLIC` visibility. */
   PUBLISH_GROUPS_LOCALLY = 12,
+  /** PUBLISH_GROUPS_GLOBALLY - Allow the user to give groups `GLOBAL_PUBLIC` visibility. */
   PUBLISH_GROUPS_GLOBALLY = 13,
   /** MODERATE_GROUPS - The Moderate Groups permission makes a user effectively an admin of *any* group. */
   MODERATE_GROUPS = 14,
+  /**
+   * JOIN_GROUPS - Allow the user to (potentially request to) join groups of `SERVER_PUBLIC` or higher
+   * visibility.
+   */
   JOIN_GROUPS = 15,
+  /**
+   * VIEW_POSTS - In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
+   * or higher visibility. In the context of group permissions, allow the user to view `GroupPost`s whose `Post`s have `LIMITED`
+   * or higher visibility.
+   */
   VIEW_POSTS = 20,
+  /**
+   * CREATE_POSTS - In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
+   * or higher visibility. In the context of group permissions, allow the user to create `GroupPost`s whose `Post`s have `LIMITED`
+   * or higher visibility.
+   */
   CREATE_POSTS = 21,
   PUBLISH_POSTS_LOCALLY = 22,
   PUBLISH_POSTS_GLOBALLY = 23,
   MODERATE_POSTS = 24,
+  REPLY_TO_POSTS = 25,
   VIEW_EVENTS = 30,
   CREATE_EVENTS = 31,
   PUBLISH_EVENTS_LOCALLY = 32,
   PUBLISH_EVENTS_GLOBALLY = 33,
+  /** MODERATE_EVENTS - Allow the user to moderate events. */
   MODERATE_EVENTS = 34,
+  /**
+   * RUN_BOTS - Allow the user to run bots. There is no enforcement of this permission (yet),
+   * but it lets other users know that the user is allowed to run bots.
+   */
   RUN_BOTS = 9999,
+  /**
+   * ADMIN - Marks the user as an admin. In the context of user permissions, allows the user to configure the server,
+   * moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group,
+   * modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s.
+   */
   ADMIN = 10000,
+  /**
+   * VIEW_PRIVATE_CONTACT_METHODS - Allow the user to view the private contact methods of other users.
+   * Kept separate from `ADMIN` to allow for more fine-grained privacy control.
+   */
   VIEW_PRIVATE_CONTACT_METHODS = 10001,
   UNRECOGNIZED = -1,
 }
@@ -99,6 +139,9 @@ export function permissionFromJSON(object: any): Permission {
     case 24:
     case "MODERATE_POSTS":
       return Permission.MODERATE_POSTS;
+    case 25:
+    case "REPLY_TO_POSTS":
+      return Permission.REPLY_TO_POSTS;
     case 30:
     case "VIEW_EVENTS":
       return Permission.VIEW_EVENTS;
@@ -168,6 +211,8 @@ export function permissionToJSON(object: Permission): string {
       return "PUBLISH_POSTS_GLOBALLY";
     case Permission.MODERATE_POSTS:
       return "MODERATE_POSTS";
+    case Permission.REPLY_TO_POSTS:
+      return "REPLY_TO_POSTS";
     case Permission.VIEW_EVENTS:
       return "VIEW_EVENTS";
     case Permission.CREATE_EVENTS:

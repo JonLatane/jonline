@@ -75,6 +75,7 @@ CREATE TABLE follows (
 CREATE TABLE groups (
   id SERIAL PRIMARY KEY,
   name VARCHAR NOT NULL UNIQUE,
+  shortname VARCHAR NOT NULL UNIQUE,
   description TEXT NOT NULL DEFAULT '',
   avatar BYTEA NULL DEFAULT NULL,
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
@@ -88,6 +89,7 @@ CREATE TABLE groups (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+CREATE UNIQUE INDEX group_shortname_lower ON groups (LOWER(shortname));
 
 CREATE TABLE memberships (
   id SERIAL PRIMARY KEY,

@@ -9,6 +9,7 @@ export type LocalAppConfiguration = {
   darkMode: boolean;
   allowServerSelection: boolean;
   separateAccountsByServer: boolean;
+  showBetaNavigation: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -17,6 +18,7 @@ const initialState: LocalAppConfiguration = {
   darkMode: false,
   allowServerSelection: Platform.OS != 'web',
   separateAccountsByServer: false,
+  showBetaNavigation: false,
 };
 
 export const localAppSlice = createSlice({
@@ -38,12 +40,17 @@ export const localAppSlice = createSlice({
     },
     setSeparateAccountsByServer: (state, action: PayloadAction<boolean>) => {
       state.separateAccountsByServer = action.payload;
-    }
+    },
+    setShowBetaNavigation: (state, action: PayloadAction<boolean>) => {
+      state.showBetaNavigation = action.payload;
+    },
   },
   extraReducers: (builder) => {
   },
 });
 
-export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection, setSeparateAccountsByServer, resetLocalApp } = localAppSlice.actions;
+export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection,
+  setSeparateAccountsByServer, setShowBetaNavigation, resetLocalApp,
+} = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

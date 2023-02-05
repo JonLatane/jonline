@@ -1,6 +1,6 @@
 import { Button, Dialog, Heading, Label, Sheet, SizeTokens, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setSeparateAccountsByServer, setShowIntro, useTypedDispatch, useTypedSelector } from 'app/store';
+import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
 
 
@@ -74,6 +74,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               {toggleRow('Show Intro', app.showIntro, setShowIntro)}
               {toggleRow('Allow Server Selection', app.allowServerSelection, setAllowServerSelection)}
               {toggleRow('Group Accounts by Server', app.separateAccountsByServer, setSeparateAccountsByServer)}
+              {toggleRow('Show Beta Navigation', app.showBetaNavigation, setShowBetaNavigation)}
 
               <XStack>
                 <Button f={1} icon={XIcon} onPress={resetCredentialedData}>

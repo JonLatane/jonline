@@ -55,17 +55,17 @@ export function authenticationFeatureToJSON(object: AuthenticationFeature): stri
 
 export enum PrivateUserStrategy {
   /**
-   * ACCOUNT_IS_FROZEN - PRIVATE Users can't see other Users (only PUBLIC_GLOBAL Visilibity Users/Posts/Events).
+   * ACCOUNT_IS_FROZEN - `PRIVATE` Users can't see other Users (only `PUBLIC_GLOBAL` Visilibity Users/Posts/Events).
    * Other users can't see them.
    */
   ACCOUNT_IS_FROZEN = 0,
   /**
-   * LIMITED_CREEPINESS - Users can see other users they follow, but only PUBLIC_GLOBAL Visilibity Posts/Events.
+   * LIMITED_CREEPINESS - Users can see other users they follow, but only `PUBLIC_GLOBAL` Visilibity Posts/Events.
    * Other users can't see them.
    */
   LIMITED_CREEPINESS = 1,
   /**
-   * LET_ME_CREEP_ON_PPL - Users can see other users they follow, including their PUBLIC_SERVER Posts/Events,
+   * LET_ME_CREEP_ON_PPL - Users can see other users they follow, including their `PUBLIC_SERVER` Posts/Events.
    * Other users can't see them.
    */
   LET_ME_CREEP_ON_PPL = 2,
@@ -151,49 +151,64 @@ export function webUserInterfaceToJSON(object: WebUserInterface): string {
   }
 }
 
-/** Confuguration for a Jonline server instance. */
+/** Configuration for a Jonline server instance. */
 export interface ServerConfiguration {
-  /** The name of the server. */
-  serverInfo?: ServerInfo | undefined;
+  /** The name, description, logo, color scheme, etc. of the server. */
+  serverInfo?:
+    | ServerInfo
+    | undefined;
+  /**
+   * Permissions for a user who isn't logged in to the server. Allows
+   * admins to disable certain features for anonymous users. Valid values are
+   * `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`.
+   */
   anonymousUserPermissions: Permission[];
   /**
-   * Default user permissions given to a user. Valid values are VIEW_POSTS,
-   * CREATE_POSTS, PUBLISH_POSTS_GLOBALLY, VIEW_EVENTS, CREATE_EVENTS, and
-   * PUBLISH_EVENTS_GLOBALLY. Users with MODERATE_USERS permission can
-   * grant these permissions to other users. Only users with ADMIN can grant
-   * MODERATE_USERS, MODERATE_POSTS, and MODERATE_EVENTS.
+   * Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also
+   * grant/revoke these permissions for others. Valid values are
+   * `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`,
+   * `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`,
+   * `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`,
+   * `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
    */
   defaultUserPermissions: Permission[];
+  /**
+   * Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are
+   * `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`,
+   * `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`,
+   * `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`,
+   * `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
+   */
   basicUserPermissions: Permission[];
   /**
-   * If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-   * contain PUBLISH_USERS_GLOBALLY.
+   * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+   * contain `PUBLISH_USERS_GLOBALLY`.
    */
   peopleSettings:
     | FeatureSettings
     | undefined;
   /**
-   * If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-   * contain PUBLISH_GROUPS_GLOBALLY.
+   * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+   * contain `PUBLISH_GROUPS_GLOBALLY`.
    */
   groupSettings:
     | FeatureSettings
     | undefined;
   /**
-   * If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-   * contain PUBLISH_POSTS_GLOBALLY.
+   * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+   * contain `PUBLISH_POSTS_GLOBALLY`.
    */
   postSettings:
-    | FeatureSettings
+    | PostSettings
     | undefined;
   /**
-   * If default visibility is GLOBAL_PUBLIC, default_user_permissions *must*
-   * contain PUBLISH_EVENTS_GLOBALLY.
+   * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+   * contain `PUBLISH_EVENTS_GLOBALLY`.
    */
   eventSettings:
     | FeatureSettings
     | undefined;
-  /** Strategy when a user sets their visibility to PRIVATE. Defaults to ACCOUNT_IS_FROZEN. */
+  /** Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. */
   privateUserStrategy: PrivateUserStrategy;
   /**
    * Allows admins to enable/disable creating accounts and logging in.
@@ -206,21 +221,49 @@ export interface FeatureSettings {
   /** Hide the Posts or Events tab from the user with this flag. */
   visible: boolean;
   /**
-   * Only UNMODERATED and PENDING are valid.
-   * When UNMODERATED, user reports may transition status to PENDING.
-   * When PENDING, users' SERVER_PUBLIC or GLOBAL_PUBLIC posts will not
-   * be visible until a moderator approves them. LIMITED visiblity
+   * Only `UNMODERATED` and `PENDING` are valid.
+   * When `UNMODERATED`, user reports may transition status to `PENDING`.
+   * When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+   * be visible until a moderator approves them. `LIMITED` visiblity
    * posts are always visible to targeted users (who have not blocked
    * the author) regardless of default_moderation.
    */
   defaultModeration: Moderation;
   /**
-   * Only SERVER_PUBLIC and GLOBAL_PUBLIC are valid. GLOBAL_PUBLIC is only valid
-   * if default_user_permissions contains GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]
+   * Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+   * if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
    * as appropriate.
    */
   defaultVisibility: Visibility;
   customTitle?: string | undefined;
+}
+
+export interface PostSettings {
+  /** Hide the Posts or Events tab from the user with this flag. */
+  visible: boolean;
+  /**
+   * Only `UNMODERATED` and `PENDING` are valid.
+   * When `UNMODERATED`, user reports may transition status to `PENDING`.
+   * When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+   * be visible until a moderator approves them. `LIMITED` visiblity
+   * posts are always visible to targeted users (who have not blocked
+   * the author) regardless of default_moderation.
+   */
+  defaultModeration: Moderation;
+  /**
+   * Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+   * if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
+   * as appropriate.
+   */
+  defaultVisibility: Visibility;
+  customTitle?:
+    | string
+    | undefined;
+  /**
+   * Controls whether replies are shown in the UI. Note that users' ability to reply
+   * is controlled by the `REPLY_TO_POSTS` permission.
+   */
+  enableReplies: boolean;
 }
 
 export interface ServerInfo {
@@ -234,10 +277,7 @@ export interface ServerInfo {
   logo?: Uint8Array | undefined;
 }
 
-/**
- * Color in ARGB hex format (i.e 0xAARRGGBB).
- * Clients may override/modify colors that cause poor UX.
- */
+/** Color in ARGB hex format (i.e `0xAARRGGBB`). */
 export interface ServerColors {
   /** App Bar/primary accent color. */
   primary?:
@@ -301,7 +341,7 @@ export const ServerConfiguration = {
       FeatureSettings.encode(message.groupSettings, writer.uint32(170).fork()).ldelim();
     }
     if (message.postSettings !== undefined) {
-      FeatureSettings.encode(message.postSettings, writer.uint32(178).fork()).ldelim();
+      PostSettings.encode(message.postSettings, writer.uint32(178).fork()).ldelim();
     }
     if (message.eventSettings !== undefined) {
       FeatureSettings.encode(message.eventSettings, writer.uint32(186).fork()).ldelim();
@@ -364,7 +404,7 @@ export const ServerConfiguration = {
           message.groupSettings = FeatureSettings.decode(reader, reader.uint32());
           break;
         case 22:
-          message.postSettings = FeatureSettings.decode(reader, reader.uint32());
+          message.postSettings = PostSettings.decode(reader, reader.uint32());
           break;
         case 23:
           message.eventSettings = FeatureSettings.decode(reader, reader.uint32());
@@ -404,7 +444,7 @@ export const ServerConfiguration = {
         : [],
       peopleSettings: isSet(object.peopleSettings) ? FeatureSettings.fromJSON(object.peopleSettings) : undefined,
       groupSettings: isSet(object.groupSettings) ? FeatureSettings.fromJSON(object.groupSettings) : undefined,
-      postSettings: isSet(object.postSettings) ? FeatureSettings.fromJSON(object.postSettings) : undefined,
+      postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
       eventSettings: isSet(object.eventSettings) ? FeatureSettings.fromJSON(object.eventSettings) : undefined,
       privateUserStrategy: isSet(object.privateUserStrategy)
         ? privateUserStrategyFromJSON(object.privateUserStrategy)
@@ -439,7 +479,7 @@ export const ServerConfiguration = {
     message.groupSettings !== undefined &&
       (obj.groupSettings = message.groupSettings ? FeatureSettings.toJSON(message.groupSettings) : undefined);
     message.postSettings !== undefined &&
-      (obj.postSettings = message.postSettings ? FeatureSettings.toJSON(message.postSettings) : undefined);
+      (obj.postSettings = message.postSettings ? PostSettings.toJSON(message.postSettings) : undefined);
     message.eventSettings !== undefined &&
       (obj.eventSettings = message.eventSettings ? FeatureSettings.toJSON(message.eventSettings) : undefined);
     message.privateUserStrategy !== undefined &&
@@ -471,7 +511,7 @@ export const ServerConfiguration = {
       ? FeatureSettings.fromPartial(object.groupSettings)
       : undefined;
     message.postSettings = (object.postSettings !== undefined && object.postSettings !== null)
-      ? FeatureSettings.fromPartial(object.postSettings)
+      ? PostSettings.fromPartial(object.postSettings)
       : undefined;
     message.eventSettings = (object.eventSettings !== undefined && object.eventSettings !== null)
       ? FeatureSettings.fromPartial(object.eventSettings)
@@ -558,6 +598,95 @@ export const FeatureSettings = {
     message.defaultModeration = object.defaultModeration ?? 0;
     message.defaultVisibility = object.defaultVisibility ?? 0;
     message.customTitle = object.customTitle ?? undefined;
+    return message;
+  },
+};
+
+function createBasePostSettings(): PostSettings {
+  return { visible: false, defaultModeration: 0, defaultVisibility: 0, customTitle: undefined, enableReplies: false };
+}
+
+export const PostSettings = {
+  encode(message: PostSettings, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.visible === true) {
+      writer.uint32(8).bool(message.visible);
+    }
+    if (message.defaultModeration !== 0) {
+      writer.uint32(16).int32(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      writer.uint32(24).int32(message.defaultVisibility);
+    }
+    if (message.customTitle !== undefined) {
+      writer.uint32(34).string(message.customTitle);
+    }
+    if (message.enableReplies === true) {
+      writer.uint32(40).bool(message.enableReplies);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PostSettings {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePostSettings();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.visible = reader.bool();
+          break;
+        case 2:
+          message.defaultModeration = reader.int32() as any;
+          break;
+        case 3:
+          message.defaultVisibility = reader.int32() as any;
+          break;
+        case 4:
+          message.customTitle = reader.string();
+          break;
+        case 5:
+          message.enableReplies = reader.bool();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PostSettings {
+    return {
+      visible: isSet(object.visible) ? Boolean(object.visible) : false,
+      defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
+      defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
+      customTitle: isSet(object.customTitle) ? String(object.customTitle) : undefined,
+      enableReplies: isSet(object.enableReplies) ? Boolean(object.enableReplies) : false,
+    };
+  },
+
+  toJSON(message: PostSettings): unknown {
+    const obj: any = {};
+    message.visible !== undefined && (obj.visible = message.visible);
+    message.defaultModeration !== undefined && (obj.defaultModeration = moderationToJSON(message.defaultModeration));
+    message.defaultVisibility !== undefined && (obj.defaultVisibility = visibilityToJSON(message.defaultVisibility));
+    message.customTitle !== undefined && (obj.customTitle = message.customTitle);
+    message.enableReplies !== undefined && (obj.enableReplies = message.enableReplies);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PostSettings>, I>>(base?: I): PostSettings {
+    return PostSettings.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PostSettings>, I>>(object: I): PostSettings {
+    const message = createBasePostSettings();
+    message.visible = object.visible ?? false;
+    message.defaultModeration = object.defaultModeration ?? 0;
+    message.defaultVisibility = object.defaultVisibility ?? 0;
+    message.customTitle = object.customTitle ?? undefined;
+    message.enableReplies = object.enableReplies ?? false;
     return message;
   },
 };

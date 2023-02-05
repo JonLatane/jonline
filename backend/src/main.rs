@@ -20,7 +20,7 @@ extern crate tonic_web;
 // #[macro_use]
 extern crate lazy_static;
 
-use std::{env, fs, sync::Arc, thread, time::Duration};
+use std::{env, fs, sync::Arc};
 
 pub mod auth;
 pub mod conversions;
@@ -139,7 +139,7 @@ fn create_rocket_unsecured(
         .merge(("port", port))
         .merge(("address", "0.0.0.0"));
     if https_redirect {
-        create_rocket_secure_redirect(figment, pool)
+        create_rocket_https_redirect(figment, pool)
     } else {
         create_rocket(figment, pool)
     }
@@ -177,7 +177,7 @@ fn create_rocket<T: rocket::figment::Provider>(
         ]))
     }
 }
-fn create_rocket_secure_redirect<T: rocket::figment::Provider>(
+fn create_rocket_https_redirect<T: rocket::figment::Provider>(
     figment: T,
     pool: Arc<PgPool>,
 ) -> rocket::Rocket<rocket::Build> {
@@ -221,7 +221,7 @@ fn create_tonic_router(pool: Arc<PgPool>) -> (tonic::transport::server::Router, 
             .accept_http1(true)
             .add_service(tonic_web::enable(JonlineServer::new(jonline)))
             .add_service(tonic_web::enable(reflection_service)),
-        secure,
+        secure
     )
 }
 

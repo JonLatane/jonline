@@ -8,7 +8,7 @@ import { createSelectorHook, useDispatch } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { accountsReducer, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, serversReducer, serverUrl, upsertServer } from "./modules";
+import { accountsReducer, groupsReducer, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
 import { AccountOrServer, JonlineServer } from './types';
 
 const serversPersistConfig = {
@@ -26,12 +26,24 @@ const postsPersistConfig = {
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
   blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'previews'],
 }
+const usersPersistConfig = {
+  key: 'users',
+  storage: Platform.OS == 'web' ? storage : AsyncStorage,
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars'],
+}
+const groupsPersistConfig = {
+  key: 'groups',
+  storage: Platform.OS == 'web' ? storage : AsyncStorage,
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars'],
+}
 
 const rootReducer = combineReducers({
   app: localAppReducer,
   accounts: persistReducer(accountsPersistConfig, accountsReducer),
   servers: persistReducer(serversPersistConfig, serversReducer),
-  posts: persistReducer(postsPersistConfig, postsReducer)
+  posts: persistReducer(postsPersistConfig, postsReducer),
+  users: persistReducer(usersPersistConfig, usersReducer),
+  groups: persistReducer(groupsPersistConfig, groupsReducer)
 });
 
 const rootPersistConfig = {

@@ -36,7 +36,7 @@ message ServerConfiguration {
   FeatureSettings group_settings = 21;
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_POSTS_GLOBALLY`.
-  FeatureSettings post_settings = 22;
+  PostSettings post_settings = 22;
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_EVENTS_GLOBALLY`.
   FeatureSettings event_settings = 23;
@@ -73,6 +73,26 @@ message FeatureSettings {
   // as appropriate.
   Visibility default_visibility = 3;
   optional string custom_title = 4;
+}
+
+message PostSettings {
+  // Hide the Posts or Events tab from the user with this flag.
+  bool visible = 1;
+  // Only `UNMODERATED` and `PENDING` are valid.
+  // When `UNMODERATED`, user reports may transition status to `PENDING`.
+  // When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+  // be visible until a moderator approves them. `LIMITED` visiblity
+  // posts are always visible to targeted users (who have not blocked 
+  // the author) regardless of default_moderation.
+  Moderation default_moderation = 2;
+  // Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+  // if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
+  // as appropriate.
+  Visibility default_visibility = 3;
+  optional string custom_title = 4;
+  // Controls whether replies are shown in the UI. Note that users' ability to reply
+  // is controlled by the `REPLY_TO_POSTS` permission.
+  bool enable_replies = 5;
 }
 
 enum PrivateUserStrategy {

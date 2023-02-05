@@ -22,18 +22,19 @@ class Group extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Group', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'id')
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'name')
-    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'description')
-    ..a<$core.List<$core.int>>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'avatar', $pb.PbFieldType.OY)
-    ..pc<$8.Permission>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $8.Permission.valueOf, enumValues: $8.Permission.values, defaultEnumValue: $8.Permission.PERMISSION_UNKNOWN)
-    ..e<$9.Moderation>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
-    ..e<$9.Moderation>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
-    ..e<$9.Moderation>(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultEventModeration', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
-    ..e<$9.Visibility>(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $9.Visibility.VISIBILITY_UNKNOWN, valueOf: $9.Visibility.valueOf, enumValues: $9.Visibility.values)
-    ..a<$core.int>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'memberCount', $pb.PbFieldType.OU3)
-    ..a<$core.int>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postCount', $pb.PbFieldType.OU3)
-    ..aOM<$4.Membership>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'currentUserMembership', subBuilder: $4.Membership.create)
-    ..aOM<$7.Timestamp>(13, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $7.Timestamp.create)
-    ..aOM<$7.Timestamp>(14, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $7.Timestamp.create)
+    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'shortname')
+    ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'description')
+    ..a<$core.List<$core.int>>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'avatar', $pb.PbFieldType.OY)
+    ..pc<$8.Permission>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $8.Permission.valueOf, enumValues: $8.Permission.values, defaultEnumValue: $8.Permission.PERMISSION_UNKNOWN)
+    ..e<$9.Moderation>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
+    ..e<$9.Moderation>(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
+    ..e<$9.Moderation>(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultEventModeration', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
+    ..e<$9.Visibility>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $9.Visibility.VISIBILITY_UNKNOWN, valueOf: $9.Visibility.valueOf, enumValues: $9.Visibility.values)
+    ..a<$core.int>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'memberCount', $pb.PbFieldType.OU3)
+    ..a<$core.int>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postCount', $pb.PbFieldType.OU3)
+    ..aOM<$4.Membership>(13, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'currentUserMembership', subBuilder: $4.Membership.create)
+    ..aOM<$7.Timestamp>(14, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $7.Timestamp.create)
+    ..aOM<$7.Timestamp>(15, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $7.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -41,6 +42,7 @@ class Group extends $pb.GeneratedMessage {
   factory Group({
     $core.String? id,
     $core.String? name,
+    $core.String? shortname,
     $core.String? description,
     $core.List<$core.int>? avatar,
     $core.Iterable<$8.Permission>? defaultMembershipPermissions,
@@ -60,6 +62,9 @@ class Group extends $pb.GeneratedMessage {
     }
     if (name != null) {
       _result.name = name;
+    }
+    if (shortname != null) {
+      _result.shortname = shortname;
     }
     if (description != null) {
       _result.description = description;
@@ -139,112 +144,121 @@ class Group extends $pb.GeneratedMessage {
   void clearName() => clearField(2);
 
   @$pb.TagNumber(3)
-  $core.String get description => $_getSZ(2);
+  $core.String get shortname => $_getSZ(2);
   @$pb.TagNumber(3)
-  set description($core.String v) { $_setString(2, v); }
+  set shortname($core.String v) { $_setString(2, v); }
   @$pb.TagNumber(3)
-  $core.bool hasDescription() => $_has(2);
+  $core.bool hasShortname() => $_has(2);
   @$pb.TagNumber(3)
-  void clearDescription() => clearField(3);
+  void clearShortname() => clearField(3);
 
   @$pb.TagNumber(4)
-  $core.List<$core.int> get avatar => $_getN(3);
+  $core.String get description => $_getSZ(3);
   @$pb.TagNumber(4)
-  set avatar($core.List<$core.int> v) { $_setBytes(3, v); }
+  set description($core.String v) { $_setString(3, v); }
   @$pb.TagNumber(4)
-  $core.bool hasAvatar() => $_has(3);
+  $core.bool hasDescription() => $_has(3);
   @$pb.TagNumber(4)
-  void clearAvatar() => clearField(4);
+  void clearDescription() => clearField(4);
 
   @$pb.TagNumber(5)
-  $core.List<$8.Permission> get defaultMembershipPermissions => $_getList(4);
+  $core.List<$core.int> get avatar => $_getN(4);
+  @$pb.TagNumber(5)
+  set avatar($core.List<$core.int> v) { $_setBytes(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasAvatar() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearAvatar() => clearField(5);
 
   @$pb.TagNumber(6)
-  $9.Moderation get defaultMembershipModeration => $_getN(5);
-  @$pb.TagNumber(6)
-  set defaultMembershipModeration($9.Moderation v) { setField(6, v); }
-  @$pb.TagNumber(6)
-  $core.bool hasDefaultMembershipModeration() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearDefaultMembershipModeration() => clearField(6);
+  $core.List<$8.Permission> get defaultMembershipPermissions => $_getList(5);
 
   @$pb.TagNumber(7)
-  $9.Moderation get defaultPostModeration => $_getN(6);
+  $9.Moderation get defaultMembershipModeration => $_getN(6);
   @$pb.TagNumber(7)
-  set defaultPostModeration($9.Moderation v) { setField(7, v); }
+  set defaultMembershipModeration($9.Moderation v) { setField(7, v); }
   @$pb.TagNumber(7)
-  $core.bool hasDefaultPostModeration() => $_has(6);
+  $core.bool hasDefaultMembershipModeration() => $_has(6);
   @$pb.TagNumber(7)
-  void clearDefaultPostModeration() => clearField(7);
+  void clearDefaultMembershipModeration() => clearField(7);
 
   @$pb.TagNumber(8)
-  $9.Moderation get defaultEventModeration => $_getN(7);
+  $9.Moderation get defaultPostModeration => $_getN(7);
   @$pb.TagNumber(8)
-  set defaultEventModeration($9.Moderation v) { setField(8, v); }
+  set defaultPostModeration($9.Moderation v) { setField(8, v); }
   @$pb.TagNumber(8)
-  $core.bool hasDefaultEventModeration() => $_has(7);
+  $core.bool hasDefaultPostModeration() => $_has(7);
   @$pb.TagNumber(8)
-  void clearDefaultEventModeration() => clearField(8);
+  void clearDefaultPostModeration() => clearField(8);
 
   @$pb.TagNumber(9)
-  $9.Visibility get visibility => $_getN(8);
+  $9.Moderation get defaultEventModeration => $_getN(8);
   @$pb.TagNumber(9)
-  set visibility($9.Visibility v) { setField(9, v); }
+  set defaultEventModeration($9.Moderation v) { setField(9, v); }
   @$pb.TagNumber(9)
-  $core.bool hasVisibility() => $_has(8);
+  $core.bool hasDefaultEventModeration() => $_has(8);
   @$pb.TagNumber(9)
-  void clearVisibility() => clearField(9);
+  void clearDefaultEventModeration() => clearField(9);
 
   @$pb.TagNumber(10)
-  $core.int get memberCount => $_getIZ(9);
+  $9.Visibility get visibility => $_getN(9);
   @$pb.TagNumber(10)
-  set memberCount($core.int v) { $_setUnsignedInt32(9, v); }
+  set visibility($9.Visibility v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasMemberCount() => $_has(9);
+  $core.bool hasVisibility() => $_has(9);
   @$pb.TagNumber(10)
-  void clearMemberCount() => clearField(10);
+  void clearVisibility() => clearField(10);
 
   @$pb.TagNumber(11)
-  $core.int get postCount => $_getIZ(10);
+  $core.int get memberCount => $_getIZ(10);
   @$pb.TagNumber(11)
-  set postCount($core.int v) { $_setUnsignedInt32(10, v); }
+  set memberCount($core.int v) { $_setUnsignedInt32(10, v); }
   @$pb.TagNumber(11)
-  $core.bool hasPostCount() => $_has(10);
+  $core.bool hasMemberCount() => $_has(10);
   @$pb.TagNumber(11)
-  void clearPostCount() => clearField(11);
+  void clearMemberCount() => clearField(11);
 
   @$pb.TagNumber(12)
-  $4.Membership get currentUserMembership => $_getN(11);
+  $core.int get postCount => $_getIZ(11);
   @$pb.TagNumber(12)
-  set currentUserMembership($4.Membership v) { setField(12, v); }
+  set postCount($core.int v) { $_setUnsignedInt32(11, v); }
   @$pb.TagNumber(12)
-  $core.bool hasCurrentUserMembership() => $_has(11);
+  $core.bool hasPostCount() => $_has(11);
   @$pb.TagNumber(12)
-  void clearCurrentUserMembership() => clearField(12);
-  @$pb.TagNumber(12)
-  $4.Membership ensureCurrentUserMembership() => $_ensure(11);
+  void clearPostCount() => clearField(12);
 
   @$pb.TagNumber(13)
-  $7.Timestamp get createdAt => $_getN(12);
+  $4.Membership get currentUserMembership => $_getN(12);
   @$pb.TagNumber(13)
-  set createdAt($7.Timestamp v) { setField(13, v); }
+  set currentUserMembership($4.Membership v) { setField(13, v); }
   @$pb.TagNumber(13)
-  $core.bool hasCreatedAt() => $_has(12);
+  $core.bool hasCurrentUserMembership() => $_has(12);
   @$pb.TagNumber(13)
-  void clearCreatedAt() => clearField(13);
+  void clearCurrentUserMembership() => clearField(13);
   @$pb.TagNumber(13)
-  $7.Timestamp ensureCreatedAt() => $_ensure(12);
+  $4.Membership ensureCurrentUserMembership() => $_ensure(12);
 
   @$pb.TagNumber(14)
-  $7.Timestamp get updatedAt => $_getN(13);
+  $7.Timestamp get createdAt => $_getN(13);
   @$pb.TagNumber(14)
-  set updatedAt($7.Timestamp v) { setField(14, v); }
+  set createdAt($7.Timestamp v) { setField(14, v); }
   @$pb.TagNumber(14)
-  $core.bool hasUpdatedAt() => $_has(13);
+  $core.bool hasCreatedAt() => $_has(13);
   @$pb.TagNumber(14)
-  void clearUpdatedAt() => clearField(14);
+  void clearCreatedAt() => clearField(14);
   @$pb.TagNumber(14)
-  $7.Timestamp ensureUpdatedAt() => $_ensure(13);
+  $7.Timestamp ensureCreatedAt() => $_ensure(13);
+
+  @$pb.TagNumber(15)
+  $7.Timestamp get updatedAt => $_getN(14);
+  @$pb.TagNumber(15)
+  set updatedAt($7.Timestamp v) { setField(15, v); }
+  @$pb.TagNumber(15)
+  $core.bool hasUpdatedAt() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearUpdatedAt() => clearField(15);
+  @$pb.TagNumber(15)
+  $7.Timestamp ensureUpdatedAt() => $_ensure(14);
 }
 
 class GetGroupsRequest extends $pb.GeneratedMessage {

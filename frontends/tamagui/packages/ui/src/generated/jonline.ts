@@ -31,95 +31,95 @@ export const protobufPackage = "jonline";
  * (and store) an Authentication Token to use when calling AccessToken.
  */
 export interface Jonline {
-  /** Get the version (from Cargo) of the Jonline service. Publicly accessible. */
+  /** Get the version (from Cargo) of the Jonline service. *Publicly accessible.* */
   getServiceVersion(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<GetServiceVersionResponse>;
-  /** (TODO) Gets the Jonline server's configuration. Publicly accessible. */
+  /** Gets the Jonline server's configuration. *Publicly accessible.* */
   getServerConfiguration(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<ServerConfiguration>;
-  /** Creates a user account and provides an auth token. Publicly accessible. */
+  /** Creates a user account and provides a Refresh Token (along with an Access Token). *Publicly accessible.* */
   createAccount(request: DeepPartial<CreateAccountRequest>, metadata?: grpc.Metadata): Promise<RefreshTokenResponse>;
-  /** Logs in a user and provides an Auth Token (along with a Refresh Token). */
+  /** Logs in a user and provides a Refresh Token (along with an Access Token). *Publicly accessible.* */
   login(request: DeepPartial<LoginRequest>, metadata?: grpc.Metadata): Promise<RefreshTokenResponse>;
-  /** Gets a new Refresh Token (given an Auth Token). */
+  /** Gets a new Access Token and optionally a new Refresh Token, given a Refresh Token. *Publicly accessible.* */
   accessToken(request: DeepPartial<AccessTokenRequest>, metadata?: grpc.Metadata): Promise<AccessTokenResponse>;
-  /** Gets the current user. Authenticated. */
+  /** Gets the current user. *Authenticated.* */
   getCurrentUser(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<User>;
   /**
-   * Gets Users. Publicly accessible *or* authenticated.
+   * Gets Users. *Publicly accessible **or** Authenticated.*
    * Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility.
    */
   getUsers(request: DeepPartial<GetUsersRequest>, metadata?: grpc.Metadata): Promise<GetUsersResponse>;
   /**
-   * Update a user by ID. Authenticated.
+   * Update a user by ID. *Authenticated.*
    * Updating other users requires ADMIN permissions.
    */
   updateUser(request: DeepPartial<User>, metadata?: grpc.Metadata): Promise<User>;
-  /** Follow (or request to follow) a user. Authenticated. */
+  /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow>;
-  /** Used to approve follow requests. Authenticated. */
+  /** Used to approve follow requests. *Authenticated.* */
   updateFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow>;
-  /** Unfollow (or unrequest) a user. Authenticated. */
+  /** Unfollow (or unrequest) a user. *Authenticated.* */
   deleteFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Empty>;
   /**
-   * Gets Groups. Publicly accessible *or* authenticated.
+   * Gets Groups. *Publicly accessible **or** Authenticated.*
    * Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility.
    */
   getGroups(request: DeepPartial<GetGroupsRequest>, metadata?: grpc.Metadata): Promise<GetGroupsResponse>;
   /**
-   * Creates a group with the current user as its admin. Authenticated.
+   * Creates a group with the current user as its admin. *Authenticated.*
    * Requires the CREATE_GROUPS permission.
    */
   createGroup(request: DeepPartial<Group>, metadata?: grpc.Metadata): Promise<Group>;
   /**
-   * Update a Groups's information, default membership permissions or moderation. Authenticated.
+   * Update a Groups's information, default membership permissions or moderation. *Authenticated.*
    * Requires ADMIN permissions within the group, or ADMIN permissions for the user.
    */
   updateGroup(request: DeepPartial<Group>, metadata?: grpc.Metadata): Promise<Group>;
   /**
-   * Delete a Group. Authenticated.
+   * Delete a Group. *Authenticated.*
    * Requires ADMIN permissions within the group, or ADMIN permissions for the user.
    */
   deleteGroup(request: DeepPartial<Group>, metadata?: grpc.Metadata): Promise<Empty>;
   /**
-   * Requests to join a group (or joins it), or sends an invite to the user. Authenticated.
+   * Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.*
    * Memberships and moderations are set to their defaults.
    */
   createMembership(request: DeepPartial<Membership>, metadata?: grpc.Metadata): Promise<Membership>;
   /**
-   * Update aspects of a user's membership. Authenticated.
+   * Update aspects of a user's membership. *Authenticated.*
    * Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user.
    * Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group.
    */
   updateMembership(request: DeepPartial<Membership>, metadata?: grpc.Metadata): Promise<Membership>;
-  /** Leave a group (or cancel membership request). Authenticated. */
+  /** Leave a group (or cancel membership request). *Authenticated.* */
   deleteMembership(request: DeepPartial<Membership>, metadata?: grpc.Metadata): Promise<Empty>;
-  /** Get Members (User+Membership) of a Group. Authenticated. */
+  /** Get Members (User+Membership) of a Group. *Authenticated.* */
   getMembers(request: DeepPartial<GetMembersRequest>, metadata?: grpc.Metadata): Promise<GetMembersResponse>;
   /**
-   * Gets Posts. Publicly accessible *or* authenticated.
+   * Gets Posts. *Publicly accessible **or** Authenticated.*
    * Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.
    */
   getPosts(request: DeepPartial<GetPostsRequest>, metadata?: grpc.Metadata): Promise<GetPostsResponse>;
-  /** Creates a Post. Authenticated. */
+  /** Creates a Post. *Authenticated.* */
   createPost(request: DeepPartial<CreatePostRequest>, metadata?: grpc.Metadata): Promise<Post>;
-  /** (TODO) Updates a Post. Authenticated. */
+  /** Updates a Post. *Authenticated.* */
   updatePost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post>;
-  /** (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. Authenticated. */
+  /** (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* */
   deletePost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post>;
-  /** Cross-post a Post to a Group. Authenticated. */
+  /** Cross-post a Post to a Group. *Authenticated.* */
   createGroupPost(request: DeepPartial<GroupPost>, metadata?: grpc.Metadata): Promise<GroupPost>;
-  /** Group Moderators: Approve/Reject a GroupPost. Authenticated. */
+  /** Group Moderators: Approve/Reject a GroupPost. *Authenticated.* */
   updateGroupPost(request: DeepPartial<GroupPost>, metadata?: grpc.Metadata): Promise<GroupPost>;
-  /** Delete a GroupPost. Authenticated. */
+  /** Delete a GroupPost. *Authenticated.* */
   deleteGroupPost(request: DeepPartial<GroupPost>, metadata?: grpc.Metadata): Promise<Empty>;
-  /** Get GroupPosts for a Post (and optional group). Publicly accessible *or* authenticated. */
+  /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
   getGroupPosts(request: DeepPartial<GetGroupPostsRequest>, metadata?: grpc.Metadata): Promise<GetGroupPostsResponse>;
   /**
-   * Configure the server (i.e. the response to GetServerConfiguration). Authenticated.
+   * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
    * Requires ADMIN permissions.
    */
   configureServer(request: DeepPartial<ServerConfiguration>, metadata?: grpc.Metadata): Promise<ServerConfiguration>;
   /**
-   * DELETE ALL Posts, Groups and Users except the one who performed the RPC. Authenticated.
+   * DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.*
    * Requires ADMIN permissions.
    * Note: Server Configuration is not deleted.
    */

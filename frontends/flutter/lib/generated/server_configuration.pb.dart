@@ -23,7 +23,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ..pc<$8.Permission>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $8.Permission.valueOf, enumValues: $8.Permission.values, defaultEnumValue: $8.Permission.PERMISSION_UNKNOWN)
     ..aOM<FeatureSettings>(20, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'peopleSettings', subBuilder: FeatureSettings.create)
     ..aOM<FeatureSettings>(21, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupSettings', subBuilder: FeatureSettings.create)
-    ..aOM<FeatureSettings>(22, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postSettings', subBuilder: FeatureSettings.create)
+    ..aOM<PostSettings>(22, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postSettings', subBuilder: PostSettings.create)
     ..aOM<FeatureSettings>(23, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'eventSettings', subBuilder: FeatureSettings.create)
     ..e<PrivateUserStrategy>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
     ..pc<AuthenticationFeature>(101, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'authenticationFeatures', $pb.PbFieldType.KE, valueOf: AuthenticationFeature.valueOf, enumValues: AuthenticationFeature.values, defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
@@ -38,7 +38,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     $core.Iterable<$8.Permission>? basicUserPermissions,
     FeatureSettings? peopleSettings,
     FeatureSettings? groupSettings,
-    FeatureSettings? postSettings,
+    PostSettings? postSettings,
     FeatureSettings? eventSettings,
     PrivateUserStrategy? privateUserStrategy,
     $core.Iterable<AuthenticationFeature>? authenticationFeatures,
@@ -140,15 +140,15 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   FeatureSettings ensureGroupSettings() => $_ensure(5);
 
   @$pb.TagNumber(22)
-  FeatureSettings get postSettings => $_getN(6);
+  PostSettings get postSettings => $_getN(6);
   @$pb.TagNumber(22)
-  set postSettings(FeatureSettings v) { setField(22, v); }
+  set postSettings(PostSettings v) { setField(22, v); }
   @$pb.TagNumber(22)
   $core.bool hasPostSettings() => $_has(6);
   @$pb.TagNumber(22)
   void clearPostSettings() => clearField(22);
   @$pb.TagNumber(22)
-  FeatureSettings ensurePostSettings() => $_ensure(6);
+  PostSettings ensurePostSettings() => $_ensure(6);
 
   @$pb.TagNumber(23)
   FeatureSettings get eventSettings => $_getN(7);
@@ -261,6 +261,109 @@ class FeatureSettings extends $pb.GeneratedMessage {
   $core.bool hasCustomTitle() => $_has(3);
   @$pb.TagNumber(4)
   void clearCustomTitle() => clearField(4);
+}
+
+class PostSettings extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PostSettings', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOB(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visible')
+    ..e<$9.Moderation>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
+    ..e<$9.Visibility>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $9.Visibility.VISIBILITY_UNKNOWN, valueOf: $9.Visibility.valueOf, enumValues: $9.Visibility.values)
+    ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'customTitle')
+    ..aOB(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'enableReplies')
+    ..hasRequiredFields = false
+  ;
+
+  PostSettings._() : super();
+  factory PostSettings({
+    $core.bool? visible,
+    $9.Moderation? defaultModeration,
+    $9.Visibility? defaultVisibility,
+    $core.String? customTitle,
+    $core.bool? enableReplies,
+  }) {
+    final _result = create();
+    if (visible != null) {
+      _result.visible = visible;
+    }
+    if (defaultModeration != null) {
+      _result.defaultModeration = defaultModeration;
+    }
+    if (defaultVisibility != null) {
+      _result.defaultVisibility = defaultVisibility;
+    }
+    if (customTitle != null) {
+      _result.customTitle = customTitle;
+    }
+    if (enableReplies != null) {
+      _result.enableReplies = enableReplies;
+    }
+    return _result;
+  }
+  factory PostSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory PostSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  PostSettings clone() => PostSettings()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  PostSettings copyWith(void Function(PostSettings) updates) => super.copyWith((message) => updates(message as PostSettings)) as PostSettings; // ignore: deprecated_member_use
+  $pb.BuilderInfo get info_ => _i;
+  @$core.pragma('dart2js:noInline')
+  static PostSettings create() => PostSettings._();
+  PostSettings createEmptyInstance() => create();
+  static $pb.PbList<PostSettings> createRepeated() => $pb.PbList<PostSettings>();
+  @$core.pragma('dart2js:noInline')
+  static PostSettings getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PostSettings>(create);
+  static PostSettings? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get visible => $_getBF(0);
+  @$pb.TagNumber(1)
+  set visible($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasVisible() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearVisible() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $9.Moderation get defaultModeration => $_getN(1);
+  @$pb.TagNumber(2)
+  set defaultModeration($9.Moderation v) { setField(2, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasDefaultModeration() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDefaultModeration() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $9.Visibility get defaultVisibility => $_getN(2);
+  @$pb.TagNumber(3)
+  set defaultVisibility($9.Visibility v) { setField(3, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasDefaultVisibility() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDefaultVisibility() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get customTitle => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set customTitle($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasCustomTitle() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCustomTitle() => clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get enableReplies => $_getBF(4);
+  @$pb.TagNumber(5)
+  set enableReplies($core.bool v) { $_setBool(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasEnableReplies() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearEnableReplies() => clearField(5);
 }
 
 class ServerInfo extends $pb.GeneratedMessage {

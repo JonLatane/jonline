@@ -1,4 +1,23 @@
 table! {
+    event_instances (id) {
+        id -> Int4,
+        event_id -> Int4,
+        post_id -> Nullable<Int4>,
+        info -> Jsonb,
+        starts_at -> Timestamp,
+        ends_at -> Timestamp,
+    }
+}
+
+table! {
+    events (id) {
+        id -> Int4,
+        post_id -> Int4,
+        info -> Jsonb,
+    }
+}
+
+table! {
     federated_accounts (id) {
         id -> Int4,
         federated_server_id -> Nullable<Int4>,
@@ -41,6 +60,7 @@ table! {
     groups (id) {
         id -> Int4,
         name -> Varchar,
+        shortname -> Varchar,
         description -> Text,
         avatar -> Nullable<Bytea>,
         visibility -> Varchar,
@@ -108,12 +128,12 @@ table! {
 }
 
 table! {
-    user_refresh_tokens (id) {
+    user_access_tokens (id) {
         id -> Int4,
-        user_id -> Int4,
+        refresh_token_id -> Int4,
         token -> Varchar,
         created_at -> Timestamp,
-        expires_at -> Nullable<Timestamp>,
+        expires_at -> Timestamp,
     }
 }
 
@@ -128,12 +148,12 @@ table! {
 }
 
 table! {
-    user_access_tokens (id) {
+    user_refresh_tokens (id) {
         id -> Int4,
-        refresh_token_id -> Int4,
+        user_id -> Int4,
         token -> Varchar,
         created_at -> Timestamp,
-        expires_at -> Timestamp,
+        expires_at -> Nullable<Timestamp>,
     }
 }
 
@@ -160,6 +180,9 @@ table! {
     }
 }
 
+joinable!(event_instances -> events (event_id));
+joinable!(event_instances -> posts (post_id));
+joinable!(events -> posts (post_id));
 joinable!(federated_accounts -> federated_servers (federated_server_id));
 joinable!(federated_accounts -> users (user_id));
 joinable!(group_posts -> groups (group_id));
@@ -168,12 +191,14 @@ joinable!(group_posts -> users (user_id));
 joinable!(memberships -> groups (group_id));
 joinable!(memberships -> users (user_id));
 joinable!(posts -> users (user_id));
-joinable!(user_refresh_tokens -> users (user_id));
+joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
 joinable!(user_posts -> posts (post_id));
 joinable!(user_posts -> users (user_id));
-joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
+joinable!(user_refresh_tokens -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
+    event_instances,
+    events,
     federated_accounts,
     federated_servers,
     follows,
@@ -182,8 +207,8 @@ allow_tables_to_appear_in_same_query!(
     memberships,
     posts,
     server_configurations,
-    user_refresh_tokens,
-    user_posts,
     user_access_tokens,
+    user_posts,
+    user_refresh_tokens,
     users,
 );

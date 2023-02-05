@@ -58,7 +58,7 @@ const ServerConfiguration$json = const {
     const {'1': 'basic_user_permissions', '3': 12, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'basicUserPermissions'},
     const {'1': 'people_settings', '3': 20, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'peopleSettings'},
     const {'1': 'group_settings', '3': 21, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'groupSettings'},
-    const {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'postSettings'},
+    const {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'postSettings'},
     const {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'eventSettings'},
     const {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.jonline.PrivateUserStrategy', '10': 'privateUserStrategy'},
     const {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.jonline.AuthenticationFeature', '10': 'authenticationFeatures'},
@@ -69,7 +69,7 @@ const ServerConfiguration$json = const {
 };
 
 /// Descriptor for `ServerConfiguration`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decode('ChNTZXJ2ZXJDb25maWd1cmF0aW9uEjkKC3NlcnZlcl9pbmZvGAEgASgLMhMuam9ubGluZS5TZXJ2ZXJJbmZvSABSCnNlcnZlckluZm+IAQESUQoaYW5vbnltb3VzX3VzZXJfcGVybWlzc2lvbnMYCiADKA4yEy5qb25saW5lLlBlcm1pc3Npb25SGGFub255bW91c1VzZXJQZXJtaXNzaW9ucxJNChhkZWZhdWx0X3VzZXJfcGVybWlzc2lvbnMYCyADKA4yEy5qb25saW5lLlBlcm1pc3Npb25SFmRlZmF1bHRVc2VyUGVybWlzc2lvbnMSSQoWYmFzaWNfdXNlcl9wZXJtaXNzaW9ucxgMIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblIUYmFzaWNVc2VyUGVybWlzc2lvbnMSQQoPcGVvcGxlX3NldHRpbmdzGBQgASgLMhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDnBlb3BsZVNldHRpbmdzEj8KDmdyb3VwX3NldHRpbmdzGBUgASgLMhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDWdyb3VwU2V0dGluZ3MSPQoNcG9zdF9zZXR0aW5ncxgWIAEoCzIYLmpvbmxpbmUuRmVhdHVyZVNldHRpbmdzUgxwb3N0U2V0dGluZ3MSPwoOZXZlbnRfc2V0dGluZ3MYFyABKAsyGC5qb25saW5lLkZlYXR1cmVTZXR0aW5nc1INZXZlbnRTZXR0aW5ncxJQChVwcml2YXRlX3VzZXJfc3RyYXRlZ3kYZCABKA4yHC5qb25saW5lLlByaXZhdGVVc2VyU3RyYXRlZ3lSE3ByaXZhdGVVc2VyU3RyYXRlZ3kSVwoXYXV0aGVudGljYXRpb25fZmVhdHVyZXMYZSADKA4yHi5qb25saW5lLkF1dGhlbnRpY2F0aW9uRmVhdHVyZVIWYXV0aGVudGljYXRpb25GZWF0dXJlc0IOCgxfc2VydmVyX2luZm8=');
+final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decode('ChNTZXJ2ZXJDb25maWd1cmF0aW9uEjkKC3NlcnZlcl9pbmZvGAEgASgLMhMuam9ubGluZS5TZXJ2ZXJJbmZvSABSCnNlcnZlckluZm+IAQESUQoaYW5vbnltb3VzX3VzZXJfcGVybWlzc2lvbnMYCiADKA4yEy5qb25saW5lLlBlcm1pc3Npb25SGGFub255bW91c1VzZXJQZXJtaXNzaW9ucxJNChhkZWZhdWx0X3VzZXJfcGVybWlzc2lvbnMYCyADKA4yEy5qb25saW5lLlBlcm1pc3Npb25SFmRlZmF1bHRVc2VyUGVybWlzc2lvbnMSSQoWYmFzaWNfdXNlcl9wZXJtaXNzaW9ucxgMIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblIUYmFzaWNVc2VyUGVybWlzc2lvbnMSQQoPcGVvcGxlX3NldHRpbmdzGBQgASgLMhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDnBlb3BsZVNldHRpbmdzEj8KDmdyb3VwX3NldHRpbmdzGBUgASgLMhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDWdyb3VwU2V0dGluZ3MSOgoNcG9zdF9zZXR0aW5ncxgWIAEoCzIVLmpvbmxpbmUuUG9zdFNldHRpbmdzUgxwb3N0U2V0dGluZ3MSPwoOZXZlbnRfc2V0dGluZ3MYFyABKAsyGC5qb25saW5lLkZlYXR1cmVTZXR0aW5nc1INZXZlbnRTZXR0aW5ncxJQChVwcml2YXRlX3VzZXJfc3RyYXRlZ3kYZCABKA4yHC5qb25saW5lLlByaXZhdGVVc2VyU3RyYXRlZ3lSE3ByaXZhdGVVc2VyU3RyYXRlZ3kSVwoXYXV0aGVudGljYXRpb25fZmVhdHVyZXMYZSADKA4yHi5qb25saW5lLkF1dGhlbnRpY2F0aW9uRmVhdHVyZVIWYXV0aGVudGljYXRpb25GZWF0dXJlc0IOCgxfc2VydmVyX2luZm8=');
 @$core.Deprecated('Use featureSettingsDescriptor instead')
 const FeatureSettings$json = const {
   '1': 'FeatureSettings',
@@ -86,6 +86,23 @@ const FeatureSettings$json = const {
 
 /// Descriptor for `FeatureSettings`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List featureSettingsDescriptor = $convert.base64Decode('Cg9GZWF0dXJlU2V0dGluZ3MSGAoHdmlzaWJsZRgBIAEoCFIHdmlzaWJsZRJCChJkZWZhdWx0X21vZGVyYXRpb24YAiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SEWRlZmF1bHRNb2RlcmF0aW9uEkIKEmRlZmF1bHRfdmlzaWJpbGl0eRgDIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIRZGVmYXVsdFZpc2liaWxpdHkSJgoMY3VzdG9tX3RpdGxlGAQgASgJSABSC2N1c3RvbVRpdGxliAEBQg8KDV9jdXN0b21fdGl0bGU=');
+@$core.Deprecated('Use postSettingsDescriptor instead')
+const PostSettings$json = const {
+  '1': 'PostSettings',
+  '2': const [
+    const {'1': 'visible', '3': 1, '4': 1, '5': 8, '10': 'visible'},
+    const {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultModeration'},
+    const {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'defaultVisibility'},
+    const {'1': 'custom_title', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'customTitle', '17': true},
+    const {'1': 'enable_replies', '3': 5, '4': 1, '5': 8, '10': 'enableReplies'},
+  ],
+  '8': const [
+    const {'1': '_custom_title'},
+  ],
+};
+
+/// Descriptor for `PostSettings`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List postSettingsDescriptor = $convert.base64Decode('CgxQb3N0U2V0dGluZ3MSGAoHdmlzaWJsZRgBIAEoCFIHdmlzaWJsZRJCChJkZWZhdWx0X21vZGVyYXRpb24YAiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SEWRlZmF1bHRNb2RlcmF0aW9uEkIKEmRlZmF1bHRfdmlzaWJpbGl0eRgDIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIRZGVmYXVsdFZpc2liaWxpdHkSJgoMY3VzdG9tX3RpdGxlGAQgASgJSABSC2N1c3RvbVRpdGxliAEBEiUKDmVuYWJsZV9yZXBsaWVzGAUgASgIUg1lbmFibGVSZXBsaWVzQg8KDV9jdXN0b21fdGl0bGU=');
 @$core.Deprecated('Use serverInfoDescriptor instead')
 const ServerInfo$json = const {
   '1': 'ServerInfo',
