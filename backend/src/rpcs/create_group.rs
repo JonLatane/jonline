@@ -52,16 +52,10 @@ pub fn create_group(
 
     let group: Result<models::Group, diesel::result::Error> = conn
         .transaction::<models::Group, diesel::result::Error, _>(|conn| {
-            let shortname = if request.shortname.is_empty() {
-                let re = regex::Regex::new(r"[^\w]").unwrap();
-                re.replace_all(&request.name, "").as_ref().to_lowercase()
-            } else {
-                request.shortname
-            };
             let group = insert_into(groups::table)
                 .values(&models::NewGroup {
-                    name: request.name,
-                    shortname: shortname,
+                    name: request.name.to_owned(),
+                    shortname: derive_shortname(&request),
                     description: request.description,
                     avatar: request.avatar,
                     visibility: visibility,

@@ -63,7 +63,7 @@ pub fn default_server_configuration() -> NewServerConfiguration {
             description: None,
             privacy_policy_link: None,
             about_link: None,
-            web_user_interface: Some(WebUserInterface::FlutterWeb as i32),
+            web_user_interface: Some(WebUserInterface::ReactTamagui as i32),
             colors: Some(ServerColors {
                 primary: Some(0xFF2E86AB),
                 navigation: Some(0xFFA23B72),
@@ -95,11 +95,12 @@ pub fn default_server_configuration() -> NewServerConfiguration {
             default_visibility: Visibility::ServerPublic as i32,
             custom_title: None,
         }).unwrap(),
-        post_settings: serde_json::to_value(FeatureSettings {
+        post_settings: serde_json::to_value(PostSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
             default_visibility: Visibility::ServerPublic as i32,
             custom_title: None,
+            enable_replies: true,
         })
         .unwrap(),
         event_settings: serde_json::to_value(FeatureSettings {

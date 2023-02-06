@@ -85,6 +85,7 @@ export interface Group {
 export interface GetGroupsRequest {
   groupId?: string | undefined;
   groupName?: string | undefined;
+  groupShortname?: string | undefined;
   listingType: GroupListingType;
   page?: number | undefined;
 }
@@ -341,7 +342,7 @@ export const Group = {
 };
 
 function createBaseGetGroupsRequest(): GetGroupsRequest {
-  return { groupId: undefined, groupName: undefined, listingType: 0, page: undefined };
+  return { groupId: undefined, groupName: undefined, groupShortname: undefined, listingType: 0, page: undefined };
 }
 
 export const GetGroupsRequest = {
@@ -352,11 +353,14 @@ export const GetGroupsRequest = {
     if (message.groupName !== undefined) {
       writer.uint32(18).string(message.groupName);
     }
+    if (message.groupShortname !== undefined) {
+      writer.uint32(26).string(message.groupShortname);
+    }
     if (message.listingType !== 0) {
-      writer.uint32(24).int32(message.listingType);
+      writer.uint32(80).int32(message.listingType);
     }
     if (message.page !== undefined) {
-      writer.uint32(32).int32(message.page);
+      writer.uint32(88).int32(message.page);
     }
     return writer;
   },
@@ -375,9 +379,12 @@ export const GetGroupsRequest = {
           message.groupName = reader.string();
           break;
         case 3:
+          message.groupShortname = reader.string();
+          break;
+        case 10:
           message.listingType = reader.int32() as any;
           break;
-        case 4:
+        case 11:
           message.page = reader.int32();
           break;
         default:
@@ -392,6 +399,7 @@ export const GetGroupsRequest = {
     return {
       groupId: isSet(object.groupId) ? String(object.groupId) : undefined,
       groupName: isSet(object.groupName) ? String(object.groupName) : undefined,
+      groupShortname: isSet(object.groupShortname) ? String(object.groupShortname) : undefined,
       listingType: isSet(object.listingType) ? groupListingTypeFromJSON(object.listingType) : 0,
       page: isSet(object.page) ? Number(object.page) : undefined,
     };
@@ -401,6 +409,7 @@ export const GetGroupsRequest = {
     const obj: any = {};
     message.groupId !== undefined && (obj.groupId = message.groupId);
     message.groupName !== undefined && (obj.groupName = message.groupName);
+    message.groupShortname !== undefined && (obj.groupShortname = message.groupShortname);
     message.listingType !== undefined && (obj.listingType = groupListingTypeToJSON(message.listingType));
     message.page !== undefined && (obj.page = Math.round(message.page));
     return obj;
@@ -414,6 +423,7 @@ export const GetGroupsRequest = {
     const message = createBaseGetGroupsRequest();
     message.groupId = object.groupId ?? undefined;
     message.groupName = object.groupName ?? undefined;
+    message.groupShortname = object.groupShortname ?? undefined;
     message.listingType = object.listingType ?? 0;
     message.page = object.page ?? undefined;
     return message;

@@ -265,8 +265,9 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetGroupsRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupName')
-    ..e<GroupListingType>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: GroupListingType.ALL_GROUPS, valueOf: GroupListingType.valueOf, enumValues: GroupListingType.values)
-    ..a<$core.int>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'page', $pb.PbFieldType.O3)
+    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupShortname')
+    ..e<GroupListingType>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: GroupListingType.ALL_GROUPS, valueOf: GroupListingType.valueOf, enumValues: GroupListingType.values)
+    ..a<$core.int>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'page', $pb.PbFieldType.O3)
     ..hasRequiredFields = false
   ;
 
@@ -274,6 +275,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   factory GetGroupsRequest({
     $core.String? groupId,
     $core.String? groupName,
+    $core.String? groupShortname,
     GroupListingType? listingType,
     $core.int? page,
   }) {
@@ -283,6 +285,9 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
     }
     if (groupName != null) {
       _result.groupName = groupName;
+    }
+    if (groupShortname != null) {
+      _result.groupShortname = groupShortname;
     }
     if (listingType != null) {
       _result.listingType = listingType;
@@ -332,22 +337,31 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   void clearGroupName() => clearField(2);
 
   @$pb.TagNumber(3)
-  GroupListingType get listingType => $_getN(2);
+  $core.String get groupShortname => $_getSZ(2);
   @$pb.TagNumber(3)
-  set listingType(GroupListingType v) { setField(3, v); }
+  set groupShortname($core.String v) { $_setString(2, v); }
   @$pb.TagNumber(3)
-  $core.bool hasListingType() => $_has(2);
+  $core.bool hasGroupShortname() => $_has(2);
   @$pb.TagNumber(3)
-  void clearListingType() => clearField(3);
+  void clearGroupShortname() => clearField(3);
 
-  @$pb.TagNumber(4)
-  $core.int get page => $_getIZ(3);
-  @$pb.TagNumber(4)
-  set page($core.int v) { $_setSignedInt32(3, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasPage() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearPage() => clearField(4);
+  @$pb.TagNumber(10)
+  GroupListingType get listingType => $_getN(3);
+  @$pb.TagNumber(10)
+  set listingType(GroupListingType v) { setField(10, v); }
+  @$pb.TagNumber(10)
+  $core.bool hasListingType() => $_has(3);
+  @$pb.TagNumber(10)
+  void clearListingType() => clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.int get page => $_getIZ(4);
+  @$pb.TagNumber(11)
+  set page($core.int v) { $_setSignedInt32(4, v); }
+  @$pb.TagNumber(11)
+  $core.bool hasPage() => $_has(4);
+  @$pb.TagNumber(11)
+  void clearPage() => clearField(11);
 }
 
 class GetGroupsResponse extends $pb.GeneratedMessage {

@@ -27,7 +27,7 @@ export interface GroupsState {
 }
 
 const groupsAdapter: EntityAdapter<Group> = createEntityAdapter<Group>({
-  selectId: (group) => group.id,
+  selectId: (group) => group.shortname,
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
 

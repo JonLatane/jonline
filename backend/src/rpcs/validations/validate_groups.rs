@@ -71,7 +71,20 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
             ))
         }
     };
+
+    if derive_shortname(group).is_empty() {
+        return Err(Status::new(Code::InvalidArgument, "blank_shortname"));
+    }
     Ok(())
+}
+
+pub fn derive_shortname(group: &Group) -> String {
+    let re = regex::Regex::new(r"[^\w]").unwrap();
+    let mut shortname = re.replace_all(&group.shortname, "");
+    if shortname.is_empty() {
+        shortname = re.replace_all(&group.name, "");
+    }
+    shortname.as_ref().to_string()
 }
 
 pub fn validate_membership(membership: &Membership, operation_type: OperationType) -> Result<(), Status> {
