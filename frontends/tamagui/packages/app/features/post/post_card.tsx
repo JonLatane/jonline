@@ -1,8 +1,8 @@
-import { RootState, useCredentialDispatch, useTypedSelector, loadPostPreview } from "app/store";
+import { loadPostPreview, loadPostReplies, RootState, useCredentialDispatch, useTypedSelector } from "app/store";
 import React, { PropsWithChildren, useEffect, useState } from "react";
 import { Animated, Platform, Text as NativeText, View, ViewStyle } from "react-native";
 
-import { Anchor, Card, Heading, Image, Post, Tooltip, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import { Anchor, Button, Card, Group, Heading, Image, Post, Tooltip, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
 import moment from 'moment';
 import ReactMarkdown from 'react-markdown';
 import { useLink } from "solito/link";
@@ -10,9 +10,11 @@ import { useLink } from "solito/link";
 interface Props {
   post: Post;
   isPreview?: boolean;
+  groupContext?: Group;
+  replyPostIdPath?: string[];
 }
 
-const PostCard: React.FC<Props> = ({ post, isPreview }) => {
+const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -34,7 +36,9 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
   }
 
   const postLink = useLink({
-    href: `/post/${post.id}`,
+    href: groupContext
+      ? `/g/${groupContext.shortname}/p/${post.id}`
+      : `/post/${post.id}`,
   });
   const authorLink = useLink({
     href: post.author?.username
@@ -73,20 +77,22 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
         ref={ref!}
         {...postLinkProps}
       >
-        <Card.Header>
-          <XStack>
-            <View style={{ flex: 1 }}>
-              {post.link
-                ? isPreview
-                  ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
-                  : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                    color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                :
-                <Heading size="$7" marginRight='auto'>{post.title}</Heading>
-              }
-            </View>
-          </XStack>
-        </Card.Header>
+        {post.link || post.title
+          ? <Card.Header>
+            <XStack>
+              <View style={{ flex: 1 }}>
+                {post.link
+                  ? isPreview
+                    ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
+                    : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
+                      color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
+                  :
+                  <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+                }
+              </View>
+            </XStack>
+          </Card.Header>
+          : undefined}
         <Card.Footer>
           <XStack width='100%' >
             {/* {...postLinkProps}> */}
@@ -151,7 +157,27 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
                 </YStack>
                 <XStack f={1} />
                 <YStack h='100%'>
-                  <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>{post.responseCount} response{post.responseCount == 1 ? '' : 's'}</Heading>
+                  <Button transparent disabled={!replyPostIdPath || post.replyCount == 0 || post.replies.length > 0} marginVertical='auto'
+                  // marginRight='$1'
+                  onPress={()=> {setTimeout(() =>
+                    dispatch(loadPostReplies({ ...accountOrServer, postIdPath: replyPostIdPath! })), 1);
+                  }}>
+                    <YStack>
+                      <Heading size="$1" ta='right'>
+                        {post.replyCount} repl{post.responseCount == 1 ? 'y' : 'ies'}
+                      </Heading>
+                      {post.responseCount != post.replyCount ? <Heading size="$1" ta='right'>
+                        {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                      </Heading> : undefined}
+                    </YStack>
+                  </Button>
+                  {/* {replyPostIdPath
+                    ? <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
+                      {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
+                    </Heading>
+                    : <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
+                      {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
+                    </Heading>} */}
                 </YStack>
               </XStack>
             </YStack>
@@ -159,19 +185,19 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
         </Card.Footer>
         <Card.Background>
           {(isPreview && preview && preview != '') ?
-          <FadeInView>
-            <Image
-              pos="absolute"
-              width={300}
-              opacity={0.25}
-              height={300}
-              resizeMode="contain"
-              als="flex-start"
-              src={preview}
-              blurRadius={1.5}
-              // borderRadius={5}
-              borderBottomRightRadius={5}
-            />
+            <FadeInView>
+              <Image
+                pos="absolute"
+                width={300}
+                opacity={0.25}
+                height={300}
+                resizeMode="contain"
+                als="flex-start"
+                src={preview}
+                blurRadius={1.5}
+                // borderRadius={5}
+                borderBottomRightRadius={5}
+              />
             </FadeInView> : undefined}
         </Card.Background>
       </Card>
@@ -231,7 +257,7 @@ function useOnScreen(ref, rootMargin = "0px") {
   }, []); // Empty array ensures that effect is only run on mount and unmount
   return isIntersecting;
 }
-type FadeInViewProps = PropsWithChildren<{style?: ViewStyle}>;
+type FadeInViewProps = PropsWithChildren<{ style?: ViewStyle }>;
 
 const FadeInView: React.FC<FadeInViewProps> = props => {
   const fadeAnim = React.useRef(new Animated.Value(0)).current; // Initial value for opacity: 0

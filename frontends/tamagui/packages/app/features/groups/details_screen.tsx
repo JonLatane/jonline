@@ -49,22 +49,21 @@ export function GroupDetailsScreen() {
           Go Home
         </Button> */}
         {(groupPosts || []).length > 0 ?
-        <FlatList data={groupPosts}
-          // onRefresh={reloadPosts}
-          // refreshing={postsState.status == 'loading'}
-          // Allow easy restoring of scroll position
-          ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-          keyExtractor={(gp) => gp.postId}
-          renderItem={({ item: groupPost }) => {
-            return <GroupPostCard key={`${groupPost.groupId}=${groupPost.postId}`}
-              group={group!} groupPost={groupPost} />;
-          }} />
+          <FlatList data={groupPosts}
+            // onRefresh={reloadPosts}
+            // refreshing={postsState.status == 'loading'}
+            // Allow easy restoring of scroll position
+            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+            keyExtractor={(gp) => gp.postId}
+            renderItem={({ item: groupPost }) => {
+              return <GroupPostCard key={`${groupPost.groupId}=${groupPost.postId}`}
+                group={group!} groupPost={groupPost} />;
+            }} />
           : <Heading size='$1' ta='center'>No posts yet</Heading>}
       </YStack>
     </TabsNavigation>
   )
 }
-
 
 type GroupPostCardProps = {
   group: Group;
@@ -72,5 +71,5 @@ type GroupPostCardProps = {
 }
 function GroupPostCard({ group, groupPost }: GroupPostCardProps) {
   const post = useTypedSelector((state: RootState) => selectPostById(state.posts, groupPost.postId!));
-  return post ? <PostCard post={post} isPreview /> : <></>;
+  return post ? <PostCard post={post} groupContext={group} isPreview /> : <></>;
 }

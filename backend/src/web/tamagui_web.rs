@@ -12,7 +12,7 @@ pub async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<Nam
         Ok(file) => Ok(file),
         Err(_) => match NamedFile::open(Path::new("../frontends/tamagui/apps/next/out/").join(file)).await {
             Ok(file) => Ok(file),
-            Err(_) => return tamagui_path("[id].html").await//Err(Status::NotFound),
+            Err(_) => return tamagui_path("[username].html").await
         },
     };
     CacheResponse::Public {
@@ -29,7 +29,7 @@ pub async fn tamagui_index() -> CacheResponse<Result<NamedFile, Status>> {
 
 #[rocket::get("/post/<_id_etc..>")]
 pub async fn tamagui_post(_id_etc: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("post/[id].html").await
+    tamagui_path("post/[postId].html").await
 }
 
 #[rocket::get("/user/<_id_etc..>")]
@@ -37,8 +37,13 @@ pub async fn tamagui_user(_id_etc: PathBuf) -> CacheResponse<Result<NamedFile, S
     tamagui_path("user/[id].html").await
 }
 
-#[rocket::get("/g/<_shortname_etc..>")]
-pub async fn tamagui_group_shortname(_shortname_etc: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+#[rocket::get("/g/<_shortname>/p/<_id_etc..>")]
+pub async fn tamagui_group_post(_shortname: PathBuf, _id_etc: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("g/[shortname]/p/[postId].html").await
+}
+
+#[rocket::get("/g/<_shortname>")]
+pub async fn tamagui_group_shortname(_shortname: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("g/[shortname].html").await
 }
 

@@ -262,7 +262,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 data={servers}
                 keyExtractor={(server) => server.host}
                 renderItem={({ item: server }) => {
-                  return <ServerCard server={server} isPreview />;
+                  return <ServerCard server={server} key={`serverCard-${serverUrl(server)}`} isPreview />;
                 }}
               // style={Styles.trueBackground}
               // contentContainerStyle={Styles.contentBackground}

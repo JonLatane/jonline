@@ -87,13 +87,15 @@ export type LoadPostReplies = AccountOrServer & {
 export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any> = createAsyncThunk<GetPostsResponse, LoadPostReplies>(
   "posts/loadReplies",
   async (repliesRequest) => {
+    console.log("loadPostReplies:", repliesRequest)
     let getPostsRequest = GetPostsRequest.create({
       postId: repliesRequest.postIdPath.at(-1),
-      replyDepth: 1
+      replyDepth: 1,
     })
 
-    let client = await getCredentialClient(repliesRequest);
-    return client.getPosts(getPostsRequest, client.credential);
+    const client = await getCredentialClient(repliesRequest);
+    const replies = await client.getPosts(getPostsRequest, client.credential);
+    return replies;
   }
 );
 
@@ -170,25 +172,26 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(loadPostReplies.fulfilled, (state, action) => {
       state.status = "loaded";
-
       // Load the replies into the post tree.
-      let postIdPath = action.meta.arg.postIdPath;
-      let rootPost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
-      if (!rootPost) {
+      const postIdPath = action.meta.arg.postIdPath;
+      const basePost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
+      if (!basePost) {
         console.error(`Root post ID (${postIdPath[0]}) not found.`);
         return;
       }
+      const rootPost: Post = { ...basePost }
 
       let post: Post = rootPost;
-      for (let postId in postIdPath.slice(1)) {
-        let nextPost = post.replies.find((reply) => reply.id === postId);
+      for (const postId of postIdPath.slice(1)) {
+        post.replies = post.replies.map(p=>({...p}));
+        const nextPost = post.replies.find((reply) => reply.id === postId);
         if (!nextPost) {
-          console.error(`Post ID (${postId}) not found along path ${postIdPath}.`);
+          console.error(`Post ID (${postId}) not found along path ${JSON.stringify(postIdPath)}.`);
           return;
         }
         post = nextPost;
       }
-      post = { ...post, replies: action.payload.posts };
+      post.replies = action.payload.posts;
       postsAdapter.upsertOne(state, rootPost);
       state.successMessage = `Replies loaded.`;
     });

@@ -18,9 +18,9 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
   const [searchText, setSearchText] = useState('');
   let { dispatch, accountOrServer } = useCredentialDispatch();
 
-  const app = useTypedSelector((state: RootState) => state.app);
-  const serversState = useTypedSelector((state: RootState) => state.servers);
-  const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
+  // const app = useTypedSelector((state: RootState) => state.app);
+  // const serversState = useTypedSelector((state: RootState) => state.servers);
+  // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
@@ -96,11 +96,13 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
 
           <Sheet.ScrollView p="$4" space>
             <YStack maw={600} als='center' width='100%'>
-              <FlatList data={matchedGroups}
+              {matchedGroups.length > 0
+?              <FlatList data={matchedGroups}
                 renderItem={({ item: group }) => {
-                  return <GroupButton group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
+                  return <GroupButton key={`groupButton-${group.id}`} group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
                 }}
               />
+            :<Heading size='$3' als='center'>No Groups {searchText == '' ? `Matched "${searchText}"`: 'Found'}</Heading>}
             </YStack>
           </Sheet.ScrollView>
         </Sheet.Frame>

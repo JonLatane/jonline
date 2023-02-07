@@ -6,10 +6,10 @@ import { createParam } from 'solito'
 import { useLink } from 'solito/link'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 
-const { useParam } = createParam<{ id: string }>()
+const { useParam } = createParam<{ username: string }>()
 
 export function UsernameDetailsScreen() {
-  const [username] = useParam('id')
+  const [username] = useParam('username')
   const linkProps = useLink({ href: '/' })
   const { dispatch, accountOrServer } = useCredentialDispatch();
 

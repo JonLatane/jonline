@@ -198,6 +198,7 @@ fn create_rocket<T: rocket::figment::Provider>(
                 web::tamagui_user,
                 web::tamagui_server,
                 web::tamagui_group_shortname,
+                web::tamagui_group_post,
                 web::tamagui_file_or_username
             ],
         )

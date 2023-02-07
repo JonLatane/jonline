@@ -17,9 +17,10 @@ export function NavigationProvider({
             screens: {
               home: '',
               userDetails: 'user/:id',
-              usernameDetails: ':id',
-              postDetails: 'post/:id',
+              usernameDetails: ':username',
+              postDetails: 'post/:postId',
               groupDetails: 'g/:shortname',
+              groupPostDetails: 'g/:shortname/p/:postId',
             },
           },
         }),

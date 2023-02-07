@@ -16,17 +16,21 @@ const Stack = createNativeStackNavigator<{
     id: string
   },
   usernameDetails: {
-    id: string
+    username: string
   },
   accountDetails: {
     id: string
   },
   postDetails: {
-    id: string
+    postId: string
   },
   groupDetails: {
     shortname: string
   },
+  groupPostDetails: {
+    shortname: string,
+    postId: string
+  }
 }>()
 
 export function NativeNavigation() {
@@ -98,6 +102,14 @@ export function NativeNavigation() {
         component={GroupDetailsScreen}
         options={{
           title: 'Group Details',
+          ...defaultOptions,
+        }}
+      />
+      <Stack.Screen
+        name="groupPostDetails"
+        component={PostDetailsScreen}
+        options={{
+          title: 'Group Post Details',
           ...defaultOptions,
         }}
       />

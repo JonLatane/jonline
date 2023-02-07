@@ -118,7 +118,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   >
                     <Popover.Arrow bw={1} boc="$borderColor" />
 
-                    <YGroup space="$3">
+                    <YStack space="$3">
                       {/* <XStack space="$3">
             <Label size="$3" htmlFor={'asdf'}>
               Name
@@ -139,7 +139,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                           </Button>
                         </Popover.Close>)
                       }
-                    </YGroup>
+                    </YStack>
                   </Popover.Content>
                 </Popover>
               </> : undefined}
