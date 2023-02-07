@@ -76,11 +76,11 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               {toggleRow('Group Accounts by Server', app.separateAccountsByServer, setSeparateAccountsByServer)}
               {toggleRow('Show Beta Navigation', app.showBetaNavigation, setShowBetaNavigation)}
 
-              <XStack>
+              {/* <XStack>
                 <Button f={1} icon={XIcon} onPress={resetCredentialedData}>
                   Reset/Refresh Credentialed Data (Posts etc)
                 </Button>
-              </XStack>
+              </XStack> */}
               <XStack>
                 <Dialog>
                   <Dialog.Trigger asChild>

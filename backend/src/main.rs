@@ -34,6 +34,8 @@ pub mod schema;
 pub mod web;
 
 use crate::jonline::JonLineImpl;
+// use crate::jonline::*;
+use tonic_web::*;
 use ::jonline::{db_connection::PgPool, env_var, report_error};
 use futures::future::join_all;
 use protos::jonline_server::JonlineServer;
@@ -51,7 +53,41 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool3 = pool1.clone();
     let pool4 = pool1.clone();
 
-    let (tonic_router, secure_mode) = create_tonic_router(pool1);
+
+    let jonline = JonLineImpl { pool: pool1 };
+
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+        .build()
+        .unwrap();
+
+    let (tonic_server, secure_mode) = match get_tls_config() {
+        Some(tls) => {
+            println!("Configuring TLS...");
+            match Server::builder().tls_config(tls) {
+                Ok(server) => {
+                    println!("TLS successfully configured.");
+                    (server, true)
+                }
+                Err(details) => {
+                    println!("Error configuring TLS. Connections are not secure.");
+                    report_error(details);
+                    (Server::builder(), false)
+                }
+            }
+        }
+        _ => {
+            println!("No TLS keys available. Connections are not secure.");
+            (Server::builder(), false)
+        }
+    };
+
+    let tonic_router = tonic_server
+            .accept_http1(true)
+            // .layer(GrpcWebLayer::new())
+            .add_service(enable(JonlineServer::new(jonline)))
+            .add_service(enable(reflection_service));
+
     tokio::spawn(async {
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], 27707));
         match tonic_router.serve(tonic_addr).await {
@@ -161,7 +197,8 @@ fn create_rocket<T: rocket::figment::Provider>(
                 web::tamagui_post,
                 web::tamagui_user,
                 web::tamagui_server,
-                web::tamagui_file
+                web::tamagui_group_shortname,
+                web::tamagui_file_or_username
             ],
         )
         .register("/", catchers![web::catchers::not_found]);
@@ -187,43 +224,8 @@ fn create_rocket_https_redirect<T: rocket::figment::Provider>(
         .register("/", catchers![web::catchers::not_found])
 }
 
-fn create_tonic_router(pool: Arc<PgPool>) -> (tonic::transport::server::Router, bool) {
-    let jonline = JonLineImpl { pool };
-
-    let reflection_service = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
-        .build()
-        .unwrap();
-
-    let (server, secure) = match get_tls_config() {
-        Some(tls) => {
-            println!("Configuring TLS...");
-            match Server::builder().tls_config(tls) {
-                Ok(server) => {
-                    println!("TLS successfully configured.");
-                    (server, true)
-                }
-                Err(details) => {
-                    println!("Error configuring TLS. Connections are not secure.");
-                    report_error(details);
-                    (Server::builder(), false)
-                }
-            }
-        }
-        _ => {
-            println!("No TLS keys available. Connections are not secure.");
-            (Server::builder(), false)
-        }
-    };
-
-    (
-        server
-            .accept_http1(true)
-            .add_service(tonic_web::enable(JonlineServer::new(jonline)))
-            .add_service(tonic_web::enable(reflection_service)),
-        secure
-    )
-}
+// fn create_tonic_router(pool: Arc<PgPool>) -> (tonic::transport::server::Router, bool) {
+// }
 
 fn get_tls_config() -> Option<ServerTlsConfig> {
     let cert = env_var("TLS_CERT");

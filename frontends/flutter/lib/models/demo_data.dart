@@ -318,7 +318,8 @@ final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
   DemoGroup.coolKidsClub: Group(
       name: "Cool Kids Club",
       description: "Only the coolest ppl get in. Approval required to join.",
-      defaultMembershipModeration: Moderation.PENDING),
+      defaultMembershipModeration: Moderation.PENDING,
+      visibility: Visibility.SERVER_PUBLIC),
   DemoGroup.everyoneWelcome:
       Group(name: "Everyone Welcome", description: "Feel free to join!"),
   DemoGroup.music: Group(

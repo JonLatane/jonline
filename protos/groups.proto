@@ -31,6 +31,7 @@ message Group {
 message GetGroupsRequest {
   optional string group_id = 1;
   optional string group_name = 2;
+  // Group shortname search is case-insensitive.
   optional string group_shortname = 3;
   GroupListingType listing_type = 10;
   optional int32 page = 11;

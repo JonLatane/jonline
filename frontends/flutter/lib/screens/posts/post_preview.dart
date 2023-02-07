@@ -212,7 +212,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                               //   SizedBox(
                               //       height: previewHeight,
                               //       child: buildLocalPreview(context)),
-                              if (previewImage != null) //&&
+                              if (previewImage != null) // &&
                                 // Settings.preferServerPreviews)
                                 buildServerPreview(context),
                               if (link != null &&

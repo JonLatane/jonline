@@ -8,6 +8,7 @@ import { UsernameDetailsScreen } from 'app/features/user/name_details_screen'
 import { RootState, useTypedSelector } from 'app/store'
 import { HomeScreen } from '../../features/home/screen'
 import { UserDetailsScreen } from '../../features/user/details_screen'
+import { GroupDetailsScreen } from 'app/features/groups/details_screen'
 
 const Stack = createNativeStackNavigator<{
   home: undefined,
@@ -22,7 +23,10 @@ const Stack = createNativeStackNavigator<{
   },
   postDetails: {
     id: string
-  }
+  },
+  groupDetails: {
+    shortname: string
+  },
 }>()
 
 export function NativeNavigation() {
@@ -86,6 +90,14 @@ export function NativeNavigation() {
         component={PostDetailsScreen}
         options={{
           title: 'Post Details',
+          ...defaultOptions,
+        }}
+      />
+      <Stack.Screen
+        name="groupDetails"
+        component={GroupDetailsScreen}
+        options={{
+          title: 'Group Details',
           ...defaultOptions,
         }}
       />

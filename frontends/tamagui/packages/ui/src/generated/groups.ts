@@ -84,7 +84,10 @@ export interface Group {
 
 export interface GetGroupsRequest {
   groupId?: string | undefined;
-  groupName?: string | undefined;
+  groupName?:
+    | string
+    | undefined;
+  /** Group shortname search is case-insensitive. */
   groupShortname?: string | undefined;
   listingType: GroupListingType;
   page?: number | undefined;

@@ -6,8 +6,8 @@ use rocket_cache_response::CacheResponse;
 use rocket::http::Status;
 
 #[rocket::get("/<file..>")]
-pub async fn tamagui_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
-    println!("tamagui_file: {:?}", file);
+pub async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+    println!("tamagui_file_or_username: {:?}", file);
     let result = match NamedFile::open(Path::new("opt/tamagui_web/").join(file.to_owned())).await {
         Ok(file) => Ok(file),
         Err(_) => match NamedFile::open(Path::new("../frontends/tamagui/apps/next/out/").join(file)).await {
@@ -37,6 +37,10 @@ pub async fn tamagui_user(_id_etc: PathBuf) -> CacheResponse<Result<NamedFile, S
     tamagui_path("user/[id].html").await
 }
 
+#[rocket::get("/g/<_shortname_etc..>")]
+pub async fn tamagui_group_shortname(_shortname_etc: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("g/[shortname].html").await
+}
 
 #[rocket::get("/server/<_id_etc..>")]
 pub async fn tamagui_server(_id_etc: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {

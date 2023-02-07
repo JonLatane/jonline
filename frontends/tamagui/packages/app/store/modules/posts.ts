@@ -45,7 +45,8 @@ export const updatePosts: AsyncThunk<GetPostsResponse, UpdatePosts, any> = creat
   "posts/update",
   async (getPostsRequest) => {
     let client = await getCredentialClient(getPostsRequest);
-    return await client.getPosts(getPostsRequest, client.credential);
+    let result = await client.getPosts(getPostsRequest, client.credential);
+    return result;
   }
 );
 
@@ -207,4 +208,6 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
 export const { removePost, clearPostAlerts: clearPostAlerts, resetPosts } = postsSlice.actions;
 export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();
 export const postsReducer = postsSlice.reducer;
+export const upsertPost = postsAdapter.upsertOne;
+export const upsertPosts = postsAdapter.upsertMany;
 export default postsReducer;

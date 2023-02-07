@@ -1,12 +1,12 @@
+use diesel::*;
 use tonic::Code;
 use tonic::Status;
-use diesel::*;
 
 use super::id_conversions::ToProtoId;
 use super::visibility_moderation_conversions::ToProtoModeration;
 use super::ToLink;
-use super::ToProtoVisibility;
 use super::ToProtoTime;
+use super::ToProtoVisibility;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
@@ -17,10 +17,22 @@ use crate::schema::posts;
 
 pub trait ToProtoPost {
     fn to_proto(&self, username: Option<String>) -> Post;
+    fn to_group_proto(
+        &self,
+        username: Option<String>,
+        group_post: Option<&models::GroupPost>,
+    ) -> Post;
     fn proto_author(&self, username: Option<String>) -> Option<Author>;
 }
 impl ToProtoPost for models::MinimalPost {
     fn to_proto(&self, username: Option<String>) -> Post {
+        self.to_group_proto(username, None)
+    }
+    fn to_group_proto(
+        &self,
+        username: Option<String>,
+        group_post: Option<&models::GroupPost>,
+    ) -> Post {
         Post {
             id: self.id.to_proto_id(),
             reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
@@ -34,6 +46,7 @@ impl ToProtoPost for models::MinimalPost {
             reply_count: self.reply_count,
             group_count: self.group_count,
             preview_image: None,
+            current_group_post: group_post.map(|gp| gp.to_proto()),
             ..Default::default()
         }
     }
@@ -47,6 +60,13 @@ impl ToProtoPost for models::MinimalPost {
 
 impl ToProtoPost for models::Post {
     fn to_proto(&self, username: Option<String>) -> Post {
+        self.to_group_proto(username, None)
+    }
+    fn to_group_proto(
+        &self,
+        username: Option<String>,
+        group_post: Option<&models::GroupPost>,
+    ) -> Post {
         Post {
             id: self.id.to_proto_id(),
             reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
@@ -71,8 +91,8 @@ impl ToProtoPost for models::Post {
                 .moderation
                 .to_proto_moderation()
                 .unwrap_or(Moderation::Unknown) as i32,
-            replies: vec![], //TODO update this
-            current_group_post: None, //TODO update this
+            replies: vec![],          //TODO update this
+            current_group_post: group_post.map(|gp| gp.to_proto()),
         }
     }
     fn proto_author(&self, username: Option<String>) -> Option<Author> {
@@ -82,7 +102,6 @@ impl ToProtoPost for models::Post {
         })
     }
 }
-
 
 pub trait ToProtoGroupPost {
     fn to_proto(&self) -> GroupPost;

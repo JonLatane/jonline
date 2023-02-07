@@ -10,9 +10,11 @@ use crate::{models, protos};
 pub fn get_server_configuration(
     conn: &mut PgPooledConnection,
 ) -> Result<protos::ServerConfiguration, Status> {
+    println!("GetServerConfiguration called");
     let server_configuration = server_configurations
         .filter(active.eq(true))
         .first::<models::ServerConfiguration>(conn);
+    println!("GetServerConfiguration called, found {:?}", server_configuration);
     match server_configuration {
         Ok(server_configuration) => {
             let result = server_configuration.to_proto();

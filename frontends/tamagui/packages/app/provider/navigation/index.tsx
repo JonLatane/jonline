@@ -19,6 +19,7 @@ export function NavigationProvider({
               userDetails: 'user/:id',
               usernameDetails: ':id',
               postDetails: 'post/:id',
+              groupDetails: 'g/:shortname',
             },
           },
         }),

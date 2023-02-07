@@ -9,7 +9,6 @@ import { useLink } from "solito/link";
 
 interface Props {
   post: Post;
-  maxContentHeight?: number;
   isPreview?: boolean;
 }
 
@@ -22,7 +21,7 @@ const PostCard: React.FC<Props> = ({ post, isPreview }) => {
   const textColor: string = theme.color.val;
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
+  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
   const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   // Call the hook passing in ref and root margin

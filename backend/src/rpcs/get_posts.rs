@@ -3,9 +3,9 @@ use tonic::{Code, Status};
 
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
+use crate::logic::*;
 use crate::models;
 use crate::protos::*;
-use crate::logic::*;
 use crate::schema::{follows, group_posts, groups, memberships, posts, users};
 
 use super::validations::PASSING_MODERATIONS;
@@ -105,7 +105,10 @@ fn get_all_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> 
 }
 
 fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec<Post> {
-    let is_admin = user.permissions.to_proto_permissions().contains(&Permission::Admin);
+    let is_admin = user
+        .permissions
+        .to_proto_permissions()
+        .contains(&Permission::Admin);
     if is_admin {
         return memberships::table
             .inner_join(groups::table.on(memberships::group_id.eq(groups::id)))
@@ -134,7 +137,11 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((models::MINIMAL_POST_COLUMNS, users::username.nullable()))
         .filter(memberships::user_id.eq(user.id))
-        .filter(memberships::permissions.has_any_key(vec![Permission::ViewPosts, Permission::Admin].to_string_permissions()))
+        .filter(
+            memberships::permissions.has_any_key(
+                vec![Permission::ViewPosts, Permission::Admin].to_string_permissions(),
+            ),
+        )
         .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
         .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
         .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
@@ -159,33 +166,37 @@ fn get_group_posts(
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))?;
     let result: Vec<Post> = match (group.visibility.to_proto_visibility().unwrap(), user) {
         (Visibility::GlobalPublic, None) => group_posts::table
-                                            .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
-                                            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-                                            .select((models::MINIMAL_POST_COLUMNS, users::username.nullable()))
-                                            .filter(group_posts::group_id.eq(group_id))
-                                            .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
-                                            .filter(posts::visibility.eq("GLOBAL_PUBLIC"))
-                                            .order(posts::created_at.desc())
-                                            .limit(100)
-                                            .load::<(models::MinimalPost, Option<String>)>(conn)
-                                            .unwrap()
-                                            .iter()
-                                            .map(|(post, username)| post.to_proto(username.to_owned()))
-                                            .collect::<Vec<Post>>(),
+            .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
+            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+            .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), group_posts::all_columns))
+            .filter(group_posts::group_id.eq(group_id))
+            .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
+            .filter(posts::visibility.eq("GLOBAL_PUBLIC"))
+            .order(posts::created_at.desc())
+            .limit(100)
+            .load::<(models::MinimalPost, Option<String>, models::GroupPost)>(conn)
+            .unwrap()
+            .iter()
+            .map(|(post, username, group_post)| {
+                post.to_group_proto(username.to_owned(), Some(group_post))
+            })
+            .collect::<Vec<Post>>(),
         (Visibility::GlobalPublic, Some(_)) => group_posts::table
-                                            .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
-                                            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-                                            .select((models::MINIMAL_POST_COLUMNS, users::username.nullable()))
-                                            .filter(group_posts::group_id.eq(group_id))
-                                            .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
-                                            .filter(posts::visibility.eq_any(vec!["GLOBAL_PUBLIC", "SERVER_PUBLIC"]))
-                                            .order(posts::created_at.desc())
-                                            .limit(100)
-                                            .load::<(models::MinimalPost, Option<String>)>(conn)
-                                            .unwrap()
-                                            .iter()
-                                            .map(|(post, username)| post.to_proto(username.to_owned()))
-                                            .collect::<Vec<Post>>(),
+            .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
+            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+            .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), group_posts::all_columns))
+            .filter(group_posts::group_id.eq(group_id))
+            .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
+            .filter(posts::visibility.eq_any(vec!["GLOBAL_PUBLIC", "SERVER_PUBLIC"]))
+            .order(posts::created_at.desc())
+            .limit(100)
+            .load::<(models::MinimalPost, Option<String>, models::GroupPost)>(conn)
+            .unwrap()
+            .iter()
+            .map(|(post, username, group_post)| {
+                post.to_group_proto(username.to_owned(), Some(group_post))
+            })
+            .collect::<Vec<Post>>(),
         (_, None) => return Err(Status::new(Code::NotFound, "group_not_found")),
         (Visibility::ServerPublic, Some(user)) => {
             match group
@@ -201,7 +212,7 @@ fn get_group_posts(
                     }
                     load_group_posts(group_id, moderations, conn)
                 }
-                _ => load_group_posts(group_id, moderations, conn)
+                _ => load_group_posts(group_id, moderations, conn),
             }
         }
         _ => return Err(Status::new(Code::NotFound, "group_not_found")),
@@ -212,21 +223,22 @@ fn get_group_posts(
 fn load_group_posts(
     group_id: i32,
     moderations: Vec<Moderation>,
-    conn: &mut PgPooledConnection,) -> Vec<Post> {
+    conn: &mut PgPooledConnection,
+) -> Vec<Post> {
     group_posts::table
-                                    .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
-                                    .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-                                    .select((models::MINIMAL_POST_COLUMNS, users::username.nullable()))
-                                    .filter(group_posts::group_id.eq(group_id))
-                                    .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
-                                    .filter(posts::visibility.ne("PRIVATE"))
-                                    .order(posts::created_at.desc())
-                                    .limit(100)
-                                    .load::<(models::MinimalPost, Option<String>)>(conn)
-                                    .unwrap()
-                                    .iter()
-                                    .map(|(post, username)| post.to_proto(username.to_owned()))
-                                    .collect::<Vec<Post>>()
+        .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .select((models::MINIMAL_POST_COLUMNS, users::username.nullable()))
+        .filter(group_posts::group_id.eq(group_id))
+        .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
+        .filter(posts::visibility.ne("PRIVATE"))
+        .order(posts::created_at.desc())
+        .limit(100)
+        .load::<(models::MinimalPost, Option<String>)>(conn)
+        .unwrap()
+        .iter()
+        .map(|(post, username)| post.to_proto(username.to_owned()))
+        .collect::<Vec<Post>>()
 }
 
 fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec<Post> {

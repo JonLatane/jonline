@@ -1,6 +1,6 @@
 import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, Info, Menu, Plus, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, login, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useTypedDispatch, useTypedSelector } from 'app/store';
+import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -96,6 +96,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const currentServerInfoLink = serversState.server && useLink({ href: `/server/${serverUrl(serversState.server)}` });
   // bc react native may render multiple accounts sheets at a time
   const secureLabelUuid = uuidv4();
+  const disableSecureSelection = serversLoading || (Platform.OS == 'web' && window.location.protocol == 'https');
   return (
     <>
       <Button
@@ -123,36 +124,19 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
-          {/* <ZStack>
-            <XStack alignContent='flex-end' space='$2' p='$4'>
-              <SettingsSheet />
-            </XStack>
+          <XStack space='$4' paddingHorizontal='$3'>
 
-          <Button
-            alignSelf='center'
-            size="$6"
-            circular
-            icon={ChevronDown}
-            onPress={() => {
-              setOpen(false)
-            }}/>
-          </ZStack> */}
-          <XStack space='$4'>
-            <XStack w={2} />
-            <Button circular disabled size='$3' backgroundColor='$backgroundTransparent' />
-            {/* <XStack w={15} /> */}
+            <Button size='$3' icon={RefreshCw} circular onPress={resetCredentialedData} />
             <XStack f={1} />
             <Button
               alignSelf='center'
               size="$6"
               circular
               icon={ChevronDown}
-              onPress={() => {
-                setOpen(false)
-              }} />
+              onPress={() => setOpen(false)} />
             <XStack f={1} />
-            <SettingsSheet />
-            <XStack w={2} />
+            <SettingsSheet size='$3' />
+
           </XStack>
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center'>
@@ -163,6 +147,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     : undefined}
 
                   <XStack f={1} />
+                  {!browsingServers && currentServerInfoLink && !onlyShowServer
+                    ? <Button size='$3' mr='$2' disabled icon={<Info />} circular opacity={0} />
+                    : undefined}
                   {!browsingServers
                     ? <YStack maw={media.gtXs ? 350 : 250}>
                       <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading>
@@ -226,11 +213,11 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                         </YStack>
                         {(newServerHostNotBlank && newServerExists && !serversState.successMessage) ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading> : undefined}
                         <XStack>
-                          <YStack style={{ flex: 1, marginLeft: 'auto', marginRight: 'auto' }}>
+                          <YStack style={{ flex: 1, marginLeft: 'auto', marginRight: 'auto' }} opacity={disableSecureSelection ? 0.5 : 1}>
                             <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
                               defaultChecked
                               onCheckedChange={(checked) => setNewServerSecure(checked)}
-                              disabled={serversLoading || (Platform.OS == 'web' && window.location.protocol == 'https')} />
+                              disabled={disableSecureSelection} />
 
                             <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
                               <Heading size="$2">Secure</Heading>

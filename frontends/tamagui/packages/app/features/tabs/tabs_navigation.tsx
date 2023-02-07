@@ -32,10 +32,10 @@ export type TabsNavigationProps = {
   children?: React.ReactNode;
   onlyShowServer?: JonlineServer;
   appSection?: AppSection;
-  group?: Group;
+  selectedGroup?: Group;
 };
 
-export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME }: TabsNavigationProps) {
+export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, selectedGroup }: TabsNavigationProps) {
   const media = useMedia()
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;
@@ -62,26 +62,34 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
           {/* <XStack h={5}></XStack> */}
           <XStack space="$1" marginVertical={5}>
             <XStack w={5} />
-            <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
-              iconAfter={serverNameEmoji ? undefined : HomeIcon}
-              {...homeProps}>
-              <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                <Heading whiteSpace="nowrap">{serverName}</Heading>
-              </XStack>
-            </Button>
-            {app.showBetaNavigation ? <>
+            {selectedGroup
+              ? <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
+                iconAfter={serverNameEmoji ? undefined : HomeIcon}
+                {...homeProps}>
+                <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                  <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+                </XStack>
+              </Button>
+              : <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
+                iconAfter={serverNameEmoji ? undefined : HomeIcon}
+                {...homeProps}>
+                <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                  <Heading whiteSpace="nowrap">{serverName}</Heading>
+                </XStack>
+              </Button>}
             <ScrollView horizontal>
-              <XStack w={1}/>
-              <GroupsSheet />
-              <XStack w={3.5}/>
-              <Popover size="$5">
-                <Popover.Trigger asChild>
-                  <Button transparent>
-                    <Heading size="$4">{sectionTitle(appSection)}</Heading>
-                  </Button>
-                </Popover.Trigger>
+              <XStack w={1} />
+              <GroupsSheet selectedGroup={selectedGroup} />
+              {app.showBetaNavigation ? <>
+                <XStack w={selectedGroup ? 11 : 3.5} />
+                <Popover size="$5">
+                  <Popover.Trigger asChild>
+                    <Button transparent>
+                      <Heading size="$4">{sectionTitle(appSection)}</Heading>
+                    </Button>
+                  </Popover.Trigger>
 
-                {/* <Adapt when="sm" platform="web">
+                  {/* <Adapt when="sm" platform="web">
         <Popover.Sheet modal dismissOnSnapToBottom>
           <Popover.Sheet.Frame padding="$4">
             <Adapt.Contents />
@@ -90,52 +98,52 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
         </Popover.Sheet>
       </Adapt> */}
 
-                <Popover.Content
-                  bw={1}
-                  boc="$borderColor"
-                  enterStyle={{ x: 0, y: -10, o: 0 }}
-                  exitStyle={{ x: 0, y: -10, o: 0 }}
-                  x={0}
-                  y={0}
-                  o={1}
-                  animation={[
-                    'quick',
-                    {
-                      opacity: {
-                        overshootClamping: true,
+                  <Popover.Content
+                    bw={1}
+                    boc="$borderColor"
+                    enterStyle={{ x: 0, y: -10, o: 0 }}
+                    exitStyle={{ x: 0, y: -10, o: 0 }}
+                    x={0}
+                    y={0}
+                    o={1}
+                    animation={[
+                      'quick',
+                      {
+                        opacity: {
+                          overshootClamping: true,
+                        },
                       },
-                    },
-                  ]}
-                  elevate
-                >
-                  <Popover.Arrow bw={1} boc="$borderColor" />
+                    ]}
+                    elevate
+                  >
+                    <Popover.Arrow bw={1} boc="$borderColor" />
 
-                  <YGroup space="$3">
-                    {/* <XStack space="$3">
+                    <YGroup space="$3">
+                      {/* <XStack space="$3">
             <Label size="$3" htmlFor={'asdf'}>
               Name
             </Label>
             <Input size="$3" id={'asdf'} />
           </XStack> */}
 
-                    {[AppSection.HOME, AppSection.POSTS, AppSection.EVENTS].map((section) =>
-                      <Popover.Close asChild>
-                        <Button
-                          // bordered={false}
-                          transparent
-                          size="$3"
-                          disabled={appSection == section}
-                          onPress={() => { }}
-                        >
-                          <Heading size="$4">{sectionTitle(section)}</Heading>
-                        </Button>
-                      </Popover.Close>)
-                    }
-                  </YGroup>
-                </Popover.Content>
-              </Popover>
+                      {[AppSection.HOME, AppSection.POSTS, AppSection.EVENTS].map((section) =>
+                        <Popover.Close asChild>
+                          <Button
+                            // bordered={false}
+                            transparent
+                            size="$3"
+                            disabled={appSection == section}
+                            onPress={() => { }}
+                          >
+                            <Heading size="$4">{sectionTitle(section)}</Heading>
+                          </Button>
+                        </Popover.Close>)
+                      }
+                    </YGroup>
+                  </Popover.Content>
+                </Popover>
+              </> : undefined}
             </ScrollView>
-            </> : undefined}
             <XStack f={1} />
 
             <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />
