@@ -1,8 +1,9 @@
 import { loadPostPreview, loadPostReplies, RootState, useCredentialDispatch, useTypedSelector } from "app/store";
 import React, { PropsWithChildren, useEffect, useState } from "react";
-import { Animated, Platform, Text as NativeText, View, ViewStyle } from "react-native";
+import { Animated, Platform, View, ViewStyle } from "react-native";
 
-import { Anchor, Button, Card, Group, Heading, Image, Post, Tooltip, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import { Anchor, Button, Card, Group, Heading, Image, ListItem, Paragraph, Post, Tooltip, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import { ChevronRight } from "@tamagui/lucide-icons";
 import moment from 'moment';
 import ReactMarkdown from 'react-markdown';
 import { useLink } from "solito/link";
@@ -12,9 +13,11 @@ interface Props {
   isPreview?: boolean;
   groupContext?: Group;
   replyPostIdPath?: string[];
+  collapseReplies?: boolean;
+  toggleCollapseReplies?: () => void;
 }
 
-const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath }) => {
+export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, collapseReplies }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -64,6 +67,8 @@ const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdP
     }
   );
 
+  const cannotToggleReplies = !replyPostIdPath || post.replyCount == 0 || (post.replies.length > 0 && !toggleCollapseReplies);
+  const collapsed = collapseReplies || post.replies?.length == 0;
   return (
     // <Theme inverse={false}>
     <>
@@ -119,19 +124,37 @@ const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdP
                   /> : undefined}
                 {
                   post.content && post.content != '' ? Platform.select({
-                    web: // web/cross-platform-ish
-                      <NativeText style={{ color: textColor }}>
-                        <ReactMarkdown className="postMarkdown" children={cleanedContent!}
-                          components={{
-                            // li: ({ node, ordered, ...props }) => <li }} {...props} />,
-                            p: ({ node, ...props }) => <p style={{ display: 'inline-block', marginBottom: 10 }} {...props} />,
-                            a: ({ node, ...props }) => isPreview ? <span style={{ color: navColor }} children={props.children} /> : <a style={{ color: navColor }} target='_blank' {...props} />,
-                          }}
-                        />
-                      </NativeText>,
+                    default: // web/cross-platform-ish
+                      // <NativeText style={{ color: textColor }}>
+                      //   <ReactMarkdown className="postMarkdown" children={cleanedContent!}
+                      //     components={{
+                      //       // li: ({ node, ordered, ...props }) => <li }} {...props} />,
+                      //       p: ({ node, ...props }) => <p style={{ display: 'inline-block', marginBottom: 10 }} {...props} />,
+                      //       a: ({ node, ...props }) => isPreview ? <span style={{ color: navColor }} children={props.children} /> : <a style={{ color: navColor }} target='_blank' {...props} />,
+                      //     }}
+                      //   />
+                      // </NativeText>,
+                      <TamaguiMarkdown text={cleanedContent!} />,
+
+                      // <ReactMarkdown children={cleanedContent!}
+                      //   components={{
+                      //     // li: ({ node, ordered, ...props }) => <li }} {...props} />,
+                      //     h1: ({ children, id }) => <Heading size='$9' {...{ children, id }} />,
+                      //     h2: ({ children, id }) => <Heading size='$8' {...{ children, id }} />,
+                      //     h3: ({ children, id }) => <Heading size='$7' {...{ children, id }} />,
+                      //     h4: ({ children, id }) => <Heading size='$6' {...{ children, id }} />,
+                      //     h5: ({ children, id }) => <Heading size='$5' {...{ children, id }} />,
+                      //     h6: ({ children, id }) => <Heading size='$4' {...{ children, id }} />,
+                      //     li: ({ ordered, index, children }) => <XStack ml='$3'>
+                      //       <Paragraph size='$3' mr='$4'>{ordered ? `${index}.` : '• '}</Paragraph>
+                      //       <Paragraph size='$3' {...{ children }} />
+                      //     </XStack>,
+                      //     p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,
+                      //     a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
+                      //   }} />,
                     //TODO: Find a way to render markdown on native that doesn't break web.
                     // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
-                    default: <Heading size='$1'>Native Markdown support pending!</Heading>
+                    // default: <Heading size='$1'>Native Markdown support pending!</Heading>
                   }) : undefined
                 }
               </YStack>
@@ -157,19 +180,37 @@ const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdP
                 </YStack>
                 <XStack f={1} />
                 <YStack h='100%'>
-                  <Button transparent disabled={!replyPostIdPath || post.replyCount == 0 || post.replies.length > 0} marginVertical='auto'
-                  // marginRight='$1'
-                  onPress={()=> {setTimeout(() =>
-                    dispatch(loadPostReplies({ ...accountOrServer, postIdPath: replyPostIdPath! })), 1);
-                  }}>
-                    <YStack>
-                      <Heading size="$1" ta='right'>
-                        {post.replyCount} repl{post.responseCount == 1 ? 'y' : 'ies'}
-                      </Heading>
-                      {post.responseCount != post.replyCount ? <Heading size="$1" ta='right'>
-                        {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
-                      </Heading> : undefined}
-                    </YStack>
+                  <Button transparent
+                    disabled={cannotToggleReplies}
+                    marginVertical='auto'
+                    onPress={() => {
+                      setTimeout(() => {
+                        if (post.replies.length == 0) {
+                          dispatch(loadPostReplies({ ...accountOrServer, postIdPath: replyPostIdPath! }));
+                        } else if (toggleCollapseReplies) {
+                          toggleCollapseReplies();
+                        }
+                      }, 1);
+                    }}>
+                    <XStack>
+                      <YStack marginVertical='auto'>
+                        {!post.replyToPostId ? <Heading size="$1" ta='right'>
+                          {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                        </Heading> : undefined}
+                        {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
+                          {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
+                        </Heading> : undefined}
+                        {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
+                          {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
+                        </Heading>}
+                      </YStack>
+                      {!cannotToggleReplies ? <XStack marginVertical='auto'
+                        animation='quick'
+                        rotate={collapsed ? '0deg' : '90deg'}
+                      >
+                        <ChevronRight />
+                      </XStack> : undefined}
+                    </XStack>
                   </Button>
                   {/* {replyPostIdPath
                     ? <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
@@ -280,5 +321,31 @@ const FadeInView: React.FC<FadeInViewProps> = props => {
     </Animated.View>
   );
 };
+
+export type MarkdownProps = {
+  text: string;
+}
+export const TamaguiMarkdown = ({ text }: MarkdownProps) => {
+  const server = useTypedSelector((state: RootState) => state.servers.server);
+  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
+  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+
+  return <ReactMarkdown children={text}
+    components={{
+      // li: ({ node, ordered, ...props }) => <li }} {...props} />,
+      h1: ({ children, id }) => <Heading size='$9' {...{ children, id }} />,
+      h2: ({ children, id }) => <Heading size='$8' {...{ children, id }} />,
+      h3: ({ children, id }) => <Heading size='$7' {...{ children, id }} />,
+      h4: ({ children, id }) => <Heading size='$6' {...{ children, id }} />,
+      h5: ({ children, id }) => <Heading size='$5' {...{ children, id }} />,
+      h6: ({ children, id }) => <Heading size='$4' {...{ children, id }} />,
+      li: ({ ordered, index, children }) => <XStack ml='$3'>
+        <Paragraph size='$3' mr='$4'>{ordered ? `${index}.` : '• '}</Paragraph>
+        <Paragraph size='$3' {...{ children }} />
+      </XStack>,
+      p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,
+      a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
+    }} />
+}
 
 export default PostCard;

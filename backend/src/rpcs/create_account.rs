@@ -52,7 +52,10 @@ pub fn create_account(
         .get_result::<models::User>(conn);
 
     match insert_result {
-        Err(_) => Err(Status::new(Code::AlreadyExists, "username_already_exists")),
+        Err(e) => {
+            print!("Username already exists {:?}", e);
+            Err(Status::new(Code::AlreadyExists, "username_already_exists"))
+        },
         Ok(user) => {
             let tokens = auth::generate_refresh_and_access_token(user.id, conn, request.expires_at);
             Ok(RefreshTokenResponse {

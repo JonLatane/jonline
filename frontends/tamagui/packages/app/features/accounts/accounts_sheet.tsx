@@ -1,7 +1,7 @@
 import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useTypedDispatch, useTypedSelector } from 'app/store';
-import React, { useState } from 'react';
+import { clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useTypedDispatch, useTypedSelector } from 'app/store';
+import React, { useState, useEffect } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
@@ -70,8 +70,18 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
       password: newAccountPass,
     }));
   }
+
   const accountsLoading = accountsState.status == 'loading';
   const newAccountValid = newAccountUser.length > 0 && newAccountPass.length >= 8;
+  const [forceDisableAccountButtons, setForceDisableAccountButtons] = useState(false);
+  const disableAccountInputs = accountsLoading || forceDisableAccountButtons;
+  const disableAccountButtons = accountsLoading || !newAccountValid || forceDisableAccountButtons;
+  const isLoadingCredentialedData = loadingCredentialedData();
+  useEffect(() => {
+    if (accountsLoading && !forceDisableAccountButtons) {
+      setForceDisableAccountButtons(true);
+    }
+  });
 
   if (serversState.successMessage) {
     setTimeout(() => {
@@ -83,11 +93,16 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   }
   if (accountsState.successMessage) {
     setTimeout(() => {
-      setNewAccountUser('');
-      setNewAccountPass('');
-      dispatch(clearAccountAlerts());
       setAddingAccount(false);
-    }, 1000);
+      setTimeout(() => {
+        dispatch(clearAccountAlerts());
+        setNewAccountUser('');
+        setNewAccountPass('');
+        setForceDisableAccountButtons(false);
+      }, 1000);
+    }, 3000);
+  } else if(accountsState.errorMessage && forceDisableAccountButtons) {
+    setForceDisableAccountButtons(false);
   }
   if (!app.allowServerSelection && browsingServers) {
     setBrowsingServers(false);
@@ -126,7 +141,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
 
-            <Button size='$3' icon={RefreshCw} circular onPress={resetCredentialedData} />
+            <Button size='$3' icon={RefreshCw} circular 
+            disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
+            onPress={resetCredentialedData} />
             <XStack f={1} />
             <Button
               alignSelf='center'
@@ -305,18 +322,21 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       <YStack space="$2">
                         <Heading size="$10">Add Account</Heading>
                         <Heading size="$6">{primaryServer?.host}/</Heading>
-                        <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter' autoCapitalize='none' disabled={accountsLoading}
+                        <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
+                          disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
+                          autoCapitalize='none'
                           value={newAccountUser}
                           onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
-                        <Input secureTextEntry textContentType="newPassword" placeholder="Password" disabled={accountsLoading}
+                        <Input secureTextEntry textContentType="newPassword" placeholder="Password"
+                          disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
                           value={newAccountPass}
                           onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
 
                         <XStack>
-                          <Button flex={2} marginRight='$1' onClick={createServerAccount} disabled={accountsLoading || !newAccountValid}>
+                          <Button flex={2} marginRight='$1' onClick={createServerAccount} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
                             Create Account
                           </Button>
-                          <Button flex={1} onClick={loginToServer} disabled={accountsLoading || !newAccountValid}>
+                          <Button flex={1} onClick={loginToServer} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
                             Login
                           </Button>
                         </XStack>

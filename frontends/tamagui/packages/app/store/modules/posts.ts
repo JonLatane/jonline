@@ -16,6 +16,7 @@ import moment from "moment";
 import { AccountOrServer } from "../types";
 
 export interface PostsState {
+  baseStatus: "unloaded" | "loading" | "loaded" | "errored";
   status: "unloaded" | "loading" | "loaded" | "errored";
   error?: Error;
   successMessage?: string;
@@ -71,10 +72,10 @@ export type LoadPostResult = {
 export const loadPost: AsyncThunk<LoadPostResult, LoadPost, any> = createAsyncThunk<LoadPostResult, LoadPost>(
   "posts/loadOne",
   async (request) => {
-    let client = await getCredentialClient(request);
-    let response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
-    let post = response.posts[0]!;
-    let preview = post.previewImage
+    const client = await getCredentialClient(request);
+    const response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
+    const post = response.posts[0]!;
+    const preview = post.previewImage
       ? URL.createObjectURL(new Blob([post.previewImage!], { type: 'image/png' }))
       : '';
     return { post, preview };
@@ -88,7 +89,7 @@ export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any>
   "posts/loadReplies",
   async (repliesRequest) => {
     console.log("loadPostReplies:", repliesRequest)
-    let getPostsRequest = GetPostsRequest.create({
+    const getPostsRequest = GetPostsRequest.create({
       postId: repliesRequest.postIdPath.at(-1),
       replyDepth: 1,
     })
@@ -101,6 +102,7 @@ export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any>
 
 const initialState: PostsState = {
   status: "unloaded",
+  baseStatus: "unloaded",
   draftPost: Post.create(),
   previews: {},
   ...postsAdapter.getInitialState(),
@@ -137,15 +139,21 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(updatePosts.pending, (state) => {
       state.status = "loading";
+      state.baseStatus = "loading";
       state.error = undefined;
     });
     builder.addCase(updatePosts.fulfilled, (state, action) => {
       state.status = "loaded";
-      postsAdapter.upsertMany(state, action.payload.posts);
+      state.baseStatus = "loaded";
+      action.payload.posts.forEach(post => {
+        const oldPost = selectPostById(state, post.id);
+        postsAdapter.upsertOne(state, {...post, replies: oldPost?.replies ?? post.replies});
+      });
       state.successMessage = `Posts loaded.`;
     });
     builder.addCase(updatePosts.rejected, (state, action) => {
       state.status = "errored";
+      state.baseStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
@@ -156,7 +164,8 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(loadPost.fulfilled, (state, action) => {
       state.status = "loaded";
-      postsAdapter.upsertOne(state, action.payload.post);
+      const oldPost = selectPostById(state, action.payload.post.id);
+      postsAdapter.upsertOne(state, {...action.payload.post, replies: oldPost?.replies ?? action.payload.post.replies});
       state.previews[action.meta.arg.id] = action.payload.preview;
       state.successMessage = `Post data loaded.`;
     });

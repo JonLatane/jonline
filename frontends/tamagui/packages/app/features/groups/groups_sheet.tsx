@@ -2,10 +2,11 @@ import { Button, Heading, Popover, useMedia } from '@jonline/ui';
 import { Adapt, Anchor, GetGroupsRequest, Group, Input, Label, Paragraph, ScrollView, Sheet, TamaguiElement, Theme, XStack, YGroup, YStack } from '@jonline/ui/src';
 import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
 import { RootState, selectAllGroups, selectAllServers, updateGroups, useCredentialDispatch, useTypedSelector } from 'app/store';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FlatList, View } from 'react-native';
 import { useLink } from 'solito/link';
+import { TamaguiMarkdown } from '../post/post_card';
 
 export type GroupsSheetProps = {
   selectedGroup?: Group;
@@ -28,9 +29,15 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
 
   const groups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
   const groupsState = useTypedSelector((state: RootState) => state.groups);
-  if (groupsState.status == 'unloaded') {
-    reloadGroups();
-  }
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  useEffect(() => {
+    if (groupsState.status == 'unloaded' && !loadingGroups) {
+      setLoadingGroups(true);
+      reloadGroups();
+    } else if (groupsState.status != 'unloaded') {
+      setLoadingGroups(false);
+    }
+  });
 
   function reloadGroups() {
     if (!accountOrServer.server) return;
@@ -97,12 +104,12 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
           <Sheet.ScrollView p="$4" space>
             <YStack maw={600} als='center' width='100%'>
               {matchedGroups.length > 0
-?              <FlatList data={matchedGroups}
-                renderItem={({ item: group }) => {
-                  return <GroupButton key={`groupButton-${group.id}`} group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
-                }}
-              />
-            :<Heading size='$3' als='center'>No Groups {searchText == '' ? `Matched "${searchText}"`: 'Found'}</Heading>}
+                ? <FlatList data={matchedGroups}
+                  renderItem={({ item: group }) => {
+                    return <GroupButton key={`groupButton-${group.id}`} group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
+                  }}
+                />
+                : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
             </YStack>
           </Sheet.ScrollView>
         </Sheet.Frame>
@@ -138,17 +145,24 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
 
               <YStack space="$3" mb='$2' p='$4' maw={800} als='center' width='100%'>
                 <Heading>{selectedGroup?.name}</Heading>
-                <Heading size='$2'>{server?.host}/g/{selectedGroup?.shortname}</Heading>
+                <XStack>
+                  <Heading size='$2'>{server?.host}/g/{selectedGroup?.shortname}</Heading>
+                  <XStack f={1} />
+                  <Heading size='$1' marginVertical='auto'>
+                    {selectedGroup?.memberCount} member{selectedGroup?.memberCount == 1 ? '' : 's'}
+                  </Heading>
+                </XStack>
               </YStack>
 
               <Sheet.ScrollView p="$4" space>
                 <YStack maw={600} als='center' width='100%'>
-                  <ReactMarkdown children={selectedGroup?.description ?? ''}
+                  {/* <ReactMarkdown children={selectedGroup?.description ?? ''}
                     components={{
                       // li: ({ node, ordered, ...props }) => <li }} {...props} />,
                       p: ({ node, ...props }) => <Paragraph children={props.children} size='$1' />,
                       a: ({ node, ...props }) => <Anchor color={navColor} target='_blank' href={props.href} children={props.children} />,
-                    }} />
+                    }} /> */}
+                      <TamaguiMarkdown text={selectedGroup?.description ?? ''} />,
                 </YStack>
               </Sheet.ScrollView>
             </Sheet.Frame>

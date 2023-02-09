@@ -1,7 +1,7 @@
 import { Anchor, Button, H1, Heading, Paragraph, XStack, YStack } from '@jonline/ui';
 import { GetPostsRequest } from '@jonline/ui/src';
 import { RootState, selectAllPosts, setShowIntro, updatePosts, useCredentialDispatch, useTypedSelector } from 'app/store';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FlatList, Linking, Platform } from 'react-native';
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
@@ -20,17 +20,22 @@ export function HomeScreen() {
   let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
   let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
 
-  if (postsState.status == 'unloaded') {
-    reloadPosts();
-  } else if (posts.length > 0) {
-    setTimeout(() => setShowScrollPreserver(false), 1500);
-  }
+
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  useEffect(() => {
+    if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
+      if (!accountOrServer.server) return;
+
+      setLoadingPosts(true);
+      reloadPosts();
+    } else if (postsState.baseStatus == 'loaded') {
+      setLoadingPosts(false);
+      setTimeout(() => setShowScrollPreserver(false), 1500);
+    }
+  });
 
   function reloadPosts() {
-    if (!accountOrServer.server) return;
-
-    setTimeout(() =>
-      dispatch(updatePosts({ ...accountOrServer, ...GetPostsRequest.create() })), 1);
+    setTimeout(() =>dispatch(updatePosts({ ...accountOrServer, ...GetPostsRequest.create() })), 1);
   }
 
   function hideIntro() {

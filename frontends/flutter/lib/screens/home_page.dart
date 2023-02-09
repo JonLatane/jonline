@@ -169,7 +169,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final initialTab2 = initialTab ?? tabsRouter.activeIndex;
     if (initialTab2 == 0) {
       await Future.delayed(animationDuration, () async {
-        // tabsRouter.setActiveIndex(2);
+        tabsRouter.setActiveIndex(2);
       });
     }
   }

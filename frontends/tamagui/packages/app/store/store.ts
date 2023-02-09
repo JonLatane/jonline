@@ -24,7 +24,7 @@ const accountsPersistConfig = {
 const postsPersistConfig = {
   key: 'posts',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'previews'],
+  blacklist: ['status', 'baseStatus', 'successMessage', 'errorMessage', 'error', 'previews'],
 }
 const usersPersistConfig = {
   key: 'users',
@@ -96,10 +96,15 @@ export function resetCredentialedData() {
     store.dispatch(resetPosts!());
     store.dispatch(resetGroups!());
   }, 1);
-  setTimeout(() => {
-    store.dispatch(resetPosts!());
-    store.dispatch(resetGroups!());
-  }, 500);
+  // setTimeout(() => {
+  //   store.dispatch(resetPosts!());
+  //   store.dispatch(resetGroups!());
+  // }, 500);
+}
+export function loadingCredentialedData() {
+  return useTypedSelector((state: RootState) => state.posts.status == 'loading'
+    || state.groups.status == 'loading'
+    || state.users.status == 'loading');
 }
 // Reset store data that depends on selected server/account.
 export function resetAllData() {

@@ -1,8 +1,8 @@
 import { GetPostsRequest, Heading, Paragraph, XStack, YStack } from '@jonline/ui'
 import { Post } from '@jonline/ui/src'
 import { clearPostAlerts, loadPost, loadPostReplies, RootState, selectGroupById, selectPostById, updatePosts, useCredentialDispatch, useTypedSelector } from 'app/store'
-import React, { useState } from 'react'
-import { FlatList } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { FlatList, } from 'react-native'
 import { createParam } from 'solito'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import PostCard from './post_card'
@@ -25,67 +25,67 @@ export function PostDetailsScreen() {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const post = useTypedSelector((state: RootState) => selectPostById(state.posts, postId!));
-  const [loadedPost, setLoadedPost] = useState(false);
-  if (!post && postsState.status != 'loading' && !loadedPost) {
-    setLoadedPost(true);
-    console.log('loadPost', postId!)
-    setTimeout(() =>
-      dispatch(loadPost({ ...accountOrServer, id: postId! })));
-  }
+  const [loadingPost, setLoadingPost] = useState(false);
   const [loadedReplies, setLoadedReplies] = useState(false);
-  if (post && postsState.status != 'loading' && post.replyCount > 0 &&
-    post.replies.length == 0 && !loadedReplies) {
-    setLoadedReplies(true);
-    console.log('loadReplies', post.id, post.replyCount, post.replies.length, loadedReplies);
-    setTimeout(() =>
-      dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [postId!] })), 1);
-  } else if (!post && loadedReplies) {
-    // setLoadedReplies(false);
+  const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());
+
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const [showScrollPreserver, setShowScrollPreserver] = useState(isSafari);
+  if (!post) {
+    // reloadPosts();
+  } else if (post.replyCount == 0 || post.replies.length > 0) {
+    setTimeout(() => setShowScrollPreserver(false), 1500);
+  }
+
+  useEffect(() => {
+    if ((!post || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
+      setLoadingPost(true);
+      // useEffect(() => {
+      console.log('loadPost', postId!)
+      setTimeout(() =>
+        dispatch(loadPost({ ...accountOrServer, id: postId! })));
+      // });
+    } else if (post && loadingPost) {
+      setLoadingPost(false);
+    }
+    if (post && postsState.status != 'loading' && post.replyCount > 0 &&
+      post.replies.length == 0 && !loadedReplies) {
+      setLoadedReplies(true);
+      console.log('loadReplies', post.id, post.replyCount, post.replies.length, loadedReplies);
+      setTimeout(() =>
+        dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [postId!] })), 1);
+    } else if (!post && loadedReplies) {
+      setLoadedReplies(false);
+    }
+  });
+
+  function toggleCollapseReplies(postId: string) {
+    if (collapsedReplies.has(postId)) {
+      collapsedReplies.delete(postId);
+    } else {
+      collapsedReplies.add(postId);
+    }
+    setCollapsedReplies(new Set(collapsedReplies));
   }
 
   type FlattenedReply = {
     postIdPath: string[];
     post: Post;
   }
-  // const [flattenedReplies, setFlattenedReplies] = useState<FlattenedReply[] | undefined>(undefined);
-  // const [updatingReplies, setUpdatingReplies] = useState(false);
-  // if (postsState.successMessage == 'Replies loaded.' && !updatingReplies) {
-  //   setTimeout(() => dispatch(clearPostAlerts!()), 1);
-  //   setUpdatingReplies(true);
-  //   setFlattenedReplies(undefined);
-  // } else if (postsState.successMessage != 'Replies loaded.' && updatingReplies) {
-  //   setUpdatingReplies(false);
-  // }
-  // if (postsState.status != 'loading' && !flattenedReplies && post && post.replies.length > 0 && !updatingReplies) {
-    // debugger;
-    const flattenedReplies: FlattenedReply[] = [];
-    function flattenReplies(post: Post, postIdPath: string[], includeSelf: boolean = false) {
-      if (includeSelf) {
-        flattenedReplies.push({ post, postIdPath });
-      }
-      for (const reply of post.replies) {
-        flattenReplies(reply, postIdPath.concat(reply.id), true);
-      }
+  
+  const flattenedReplies: FlattenedReply[] = [];
+  function flattenReplies(post: Post, postIdPath: string[], includeSelf: boolean = false) {
+    if (includeSelf) {
+      flattenedReplies.push({ post, postIdPath });
     }
-    if(post) {
-    flattenReplies(post, [post.id]);
-    }
-    // debugger;
-    // setFlattenedReplies(_flattenedReplies);
-  // }
+    if (collapsedReplies.has(post.id)) return;
 
-  const [loadedPosts, setLoadedPosts] = useState(false);
-  if (postsState.status == 'unloaded' && !loadedPosts) {
-    setLoadedPosts(true);
-    setTimeout(() =>
-      dispatch(updatePosts({ ...accountOrServer, ...GetPostsRequest.create() })), 5000);
+    for (const reply of post.replies) {
+      flattenReplies(reply, postIdPath.concat(reply.id), true);
+    }
   }
-
-  if (postsState.status == 'unloaded') {
-    // setLoadedPost(false);
-    // setLoadedPosts(false);
-    // setLoadedReplies(false);
-    // setFlattenedReplies(undefined);
+  if (post) {
+    flattenReplies(post, [post.id]);
   }
 
   return (
@@ -100,14 +100,33 @@ export function PostDetailsScreen() {
           <FlatList data={flattenedReplies}
             renderItem={({ item }) => {
               let stripeColor = navColor;
-              return <XStack>
+
+              return <XStack key={`reply-${item.post.id}`}
+                animation="bouncy"
+                opacity={1}
+                scale={1}
+                y={0}
+                enterStyle={{
+                  // scale: 1.5,
+                  y: -50,
+                  opacity: 0,
+                }}
+              // exitStyle={{
+              //   // scale: 1.5,
+              //   y: -50,
+              //   opacity: 0,
+              // }}
+              >
                 {item.postIdPath.slice(1).map(() => {
                   stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
                   return <YStack w={7} bg={stripeColor} />
                 })}
-                <PostCard post={item.post} replyPostIdPath={item.postIdPath} />
+                <PostCard post={item.post} replyPostIdPath={item.postIdPath}
+                  collapseReplies={collapsedReplies.has(item.post.id)}
+                  toggleCollapseReplies={() => toggleCollapseReplies(item.post.id)} />
               </XStack>
             }}
+            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
           />
         </XStack>
         {/* <Button {...linkProps} icon={ChevronLeft}>

@@ -126,7 +126,7 @@ export const accountsSlice = createSlice({
       state.status = "loaded";
       state.account = action.payload;
       accountsAdapter.upsertOne(state, action.payload);
-      state.successMessage = `Account ${action.payload.user.username} added.`;
+      state.successMessage = `Created account ${action.payload.user.username}`;
     });
     builder.addCase(createAccount.rejected, (state, action) => {
       state.status = "errored";
@@ -142,7 +142,7 @@ export const accountsSlice = createSlice({
       state.status = "loaded";
       state.account = action.payload;
       accountsAdapter.upsertOne(state, action.payload);
-      state.successMessage = `Account ${action.payload.user.username} added.`;
+      state.successMessage = `Logged in as ${action.payload.user.username}`;
     });
     builder.addCase(login.rejected, (state, action) => {
       state.status = "errored";
