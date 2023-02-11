@@ -14,6 +14,7 @@ extern crate serde_json;
 extern crate itertools;
 // #[macro_use]
 extern crate lazy_static;
+extern crate log;
 
 pub mod auth;
 pub mod db_connection;
@@ -42,12 +43,12 @@ where
     E: std::error::Error,
     E: Send + Sync,
 {
-    eprintln!("[ERROR] {}", err);
+    log::error!("[ERROR] {}", err);
     if let Some(cause) = err.source() {
-        eprintln!();
-        eprintln!("Caused by:");
+        log::error!("[ERROR] {}", err);
+        log::error!("Caused by:");
         for (i, e) in std::iter::successors(Some(cause), |e| e.source()).enumerate() {
-            eprintln!("   {}: {}", i, e);
+            log::error!("   {}: {}", i, e);
         }
     }
 }

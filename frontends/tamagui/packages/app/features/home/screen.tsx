@@ -1,6 +1,6 @@
 import { Anchor, Button, H1, Heading, Paragraph, XStack, YStack } from '@jonline/ui';
 import { GetPostsRequest } from '@jonline/ui/src';
-import { RootState, selectAllPosts, setShowIntro, updatePosts, useCredentialDispatch, useTypedSelector } from 'app/store';
+import { RootState, selectAllPosts, setShowIntro, loadPostsPage, useCredentialDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Linking, Platform } from 'react-native';
 import PostCard from '../post/post_card';
@@ -35,7 +35,7 @@ export function HomeScreen() {
   });
 
   function reloadPosts() {
-    setTimeout(() =>dispatch(updatePosts({ ...accountOrServer, ...GetPostsRequest.create() })), 1);
+    setTimeout(() =>dispatch(loadPostsPage({ ...accountOrServer, ...GetPostsRequest.create() })), 1);
   }
 
   function hideIntro() {

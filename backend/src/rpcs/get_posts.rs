@@ -17,7 +17,7 @@ pub fn get_posts(
     user: Option<models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetPostsResponse, Status> {
-    // println!("GetPosts called");
+    // log::info!("GetPosts called");
     // let req: GetPostsRequest = request.into_inner();
     let result = match (request.listing_type(), request.to_owned().post_id) {
         (PostListingType::MyGroupsPosts, _) => get_my_group_posts(
@@ -54,7 +54,7 @@ pub fn get_posts(
         },
         (_, None) => get_all_posts(&user, conn),
     };
-    // println!("GetPosts::request: {:?}, result: {:?}", request, result);
+    // log::info!("GetPosts::request: {:?}, result: {:?}", request, result);
     Ok(GetPostsResponse { posts: result })
 }
 
@@ -206,7 +206,7 @@ fn get_group_posts(
             {
                 Moderation::Pending => {
                     let membership = models::get_membership(group_id, user.id, conn).ok();
-                    println!("membership: {:?}", membership);
+                    // log::info!("membership: {:?}", membership);
                     if !membership.map(|m| m.passes()).unwrap_or(false) {
                         return Err(Status::new(Code::PermissionDenied, "not_a_member"));
                     }

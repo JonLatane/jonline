@@ -14,7 +14,7 @@ pub fn create_post(
     user: models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Response<Post>, Status> {
-    println!(
+    log::info!(
         "CreatePost called for user {}, user_id={}",
         &user.username, user.id
     );
@@ -104,11 +104,11 @@ pub fn create_post(
 
     match post {
         Ok(post) => {
-            println!("Post created! Result: {:?}", post);
+            log::info!("Post created! Result: {:?}", post);
             Ok(Response::new(post.to_proto(Some(user.username))))
         }
         Err(e) => {
-            println!("Error creating post! {:?}", e);
+            log::error!("Error creating post! {:?}", e);
             Err(Status::new(Code::Internal, "internal_error"))
         }
     }

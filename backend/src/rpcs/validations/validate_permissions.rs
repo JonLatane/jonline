@@ -51,8 +51,8 @@ pub fn validate_any_group_permission(
     permissions: Vec<Permission>,
 ) -> Result<(), Status> {
     let proto_permissions = membership.permissions.to_proto_permissions();
-    // println!("User permissions: {:?}", proto_permissions);
-    // println!("Needed: {:?}", permissions);
+    // log::info!("User permissions: {:?}", proto_permissions);
+    // log::info!("Needed: {:?}", permissions);
     let passes = permissions.iter().any(|p| proto_permissions.contains(p));
     if !passes {
         match validate_any_permission(user, vec![Admin, ModerateGroups]) {
@@ -77,8 +77,8 @@ pub fn validate_any_permission(
     permissions: Vec<Permission>,
 ) -> Result<(), Status> {
     let proto_permissions = user.permissions.to_proto_permissions();
-    // println!("User permissions: {:?}", proto_permissions);
-    // println!("Needed: {:?}", permissions);
+    // log::info!("User permissions: {:?}", proto_permissions);
+    // log::info!("Needed: {:?}", permissions);
     let passes = permissions.iter().any(|p| proto_permissions.contains(p));
     if !passes {
         return Err(Status::new(

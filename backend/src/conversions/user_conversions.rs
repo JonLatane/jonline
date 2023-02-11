@@ -64,7 +64,7 @@ impl ToProtoUser for models::User {
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
         };
-        // println!("Converted user: {:?}", user);
+        // log::info!("Converted user: {:?}", user);
         return user;
     }
 }

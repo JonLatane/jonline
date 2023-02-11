@@ -109,11 +109,11 @@ impl ToProtoAuthenticationFeatures for serde_json::Value {
         match self {
             serde_json::Value::Array(authentication_features) => {
                 let mut mapped_authentication_features: Vec<AuthenticationFeature> = Vec::new();
-                // println!("Converting authentication_features: {:?}", authentication_features);
+                // log::info!("Converting authentication_features: {:?}", authentication_features);
                 for feature in authentication_features {
                     let mapped_feature = feature.as_str().map(|s| s.to_string().to_proto_authentication_feature()).flatten();
 
-                    // println!("Mapped feature {:?} to {:?}", feature, mapped_feature);
+                    // log::info!("Mapped feature {:?} to {:?}", feature, mapped_feature);
                     if mapped_feature.is_some() {
                         mapped_authentication_features.push(mapped_feature.unwrap());
                     }

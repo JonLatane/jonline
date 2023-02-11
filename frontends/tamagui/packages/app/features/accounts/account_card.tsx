@@ -1,6 +1,6 @@
 import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
 import { Permission } from "@jonline/ui/src";
-import { Shield, Trash } from "@tamagui/lucide-icons";
+import { Bot, Shield, Trash } from "@tamagui/lucide-icons";
 import { store, JonlineAccount, removeAccount, selectAccount, selectServer, useTypedDispatch } from "app/store";
 import React from "react";
 import { View } from "react-native";
@@ -47,6 +47,8 @@ const AccountCard: React.FC<Props> = ({ account }) => {
             </YStack>
             {/* {account.server.secure ? <Lock/> : <Unlock/>} */}
             {account.user.permissions.includes(Permission.ADMIN) ? <Shield /> : undefined}
+            {account.user.permissions.includes(Permission.RUN_BOTS) ? <Bot /> : undefined}
+
           </XStack>
         </Card.Header>
         <Card.Footer>

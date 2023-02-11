@@ -16,11 +16,11 @@ use jonline::models::Post;
 use jonline::schema::posts::dsl::*;
 
 pub fn main() {
-    println!("Generating preview images...");
-    println!("Connecting to DB...");
+    log::info!("Generating preview images...");
+    log::info!("Connecting to DB...");
     let mut conn = db_connection::establish_connection();
 
-    println!("Starting browser...");
+    log::info!("Starting browser...");
     let browser = start_browser().expect("Failed to start browser");
 
     let posts_to_update = posts
@@ -29,23 +29,23 @@ pub fn main() {
         .limit(100)
         .load::<Post>(&mut conn)
         .unwrap();
-    println!("Got {} posts to update.", posts_to_update.len());
+    log::info!("Got {} posts to update.", posts_to_update.len());
 
     for post in posts_to_update {
         update_post(&post, &browser, &mut conn);
     }
 
-    println!("Done generating preview images.");
+    log::info!("Done generating preview images.");
 }
 
 fn update_post(post: &Post, browser: &Browser, conn: &mut PgConnection) {
-    println!("Generating preview image for post: {}", post.id);
+    log::info!("Generating preview image for post: {}", post.id);
     match post.link.to_link() {
-        None => println!("Invalid link: {:?}", post.link),
+        None => log::warn!("Invalid link: {:?}", post.link),
         Some(url) => {
             match generate_preview(&url, &browser) {
                 Ok(screenshot) => {
-                    println!(
+                    log::info!(
                         "Generated screenshot for link {}, post {}! {} bytes",
                         url,
                         post.id,
@@ -58,7 +58,7 @@ fn update_post(post: &Post, browser: &Browser, conn: &mut PgConnection) {
                         .unwrap();
                 }
                 Err(e) => {
-                    println!("Failed to generate screenshot for link {}: {}", url, e);
+                    log::error!("Failed to generate screenshot for link {}: {}", url, e);
                 }
             };
         }

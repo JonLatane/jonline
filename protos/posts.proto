@@ -34,6 +34,7 @@ message GetPostsRequest {
   // TODO: Implement support for this
   optional uint32 reply_depth = 4;
   PostListingType listing_type = 10;
+  uint32 page = 15;
 }
 
 message GetPostsResponse {

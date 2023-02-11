@@ -88,7 +88,7 @@ pub fn update_membership(
         }
         ,
         Err(e) => {
-            println!("Error updating membership: {:?}", e);
+            log::error!("Error updating membership: {:?}", e);
             Err(Status::new(Code::Internal, "error_updating_membership"))
         }
     }

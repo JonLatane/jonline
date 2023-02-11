@@ -68,7 +68,7 @@ pub fn get_members(
         ),
         // _ => return Err(Status::invalid_argument("invalid_request")),
     };
-    println!("GetMembers::request: {:?}\nresponse: {:?}", request, response);
+    log::info!("GetMembers::request: {:?}\nresponse: {:?}", request, response);
     Ok(response)
 }
 

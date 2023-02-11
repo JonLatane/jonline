@@ -8,7 +8,7 @@ import { createSelectorHook, useDispatch } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { accountsReducer, groupsReducer, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
+import { accountsReducer, groupsReducer, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, resetUsers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
 import { AccountOrServer, JonlineServer } from './types';
 
 const serversPersistConfig = {
@@ -29,12 +29,12 @@ const postsPersistConfig = {
 const usersPersistConfig = {
   key: 'users',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars'],
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'failedUsernames'],
 }
 const groupsPersistConfig = {
   key: 'groups',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars'],
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'failedShortnames'],
 }
 
 const rootReducer = combineReducers({
@@ -95,11 +95,8 @@ export function resetCredentialedData() {
   setTimeout(() => {
     store.dispatch(resetPosts!());
     store.dispatch(resetGroups!());
+    store.dispatch(resetUsers!());
   }, 1);
-  // setTimeout(() => {
-  //   store.dispatch(resetPosts!());
-  //   store.dispatch(resetGroups!());
-  // }, 500);
 }
 export function loadingCredentialedData() {
   return useTypedSelector((state: RootState) => state.posts.status == 'loading'
@@ -108,17 +105,15 @@ export function loadingCredentialedData() {
 }
 // Reset store data that depends on selected server/account.
 export function resetAllData() {
-  // setTimeout(() => {
   store.dispatch(resetServers());
   store.dispatch(resetAccounts());
   store.dispatch(resetPosts!());
   store.dispatch(resetGroups!());
+  store.dispatch(resetUsers!());
   store.dispatch(resetLocalApp());
-  // }, 1);
 }
 
 export default store;
-
 
 const clients = new Map<string, JonlineClientImpl>();
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {

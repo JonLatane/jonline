@@ -13,7 +13,7 @@ pub fn get_groups(
     user: Option<models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetGroupsResponse, Status> {
-    println!("GetGroups called");
+    log::info!("GetGroups called");
     let response = match (
         request
             .to_owned()
@@ -28,9 +28,13 @@ pub fn get_groups(
         (_, _, Some(_)) => get_by_name(request.to_owned(), user, conn),
         _ => get_all_groups(request.to_owned(), user, conn),
     };
-    println!(
-        "GetGroups::request: {:?}, response: {:?}",
-        request, response
+    // log::info!(
+    //     "GetGroups::request: {:?}, response: {:?}",
+    //     request, response
+    // );
+    log::info!(
+        "GetGroups::request: {:?}, response_length: {:?}",
+        request, response.groups.len()
     );
     Ok(response)
 }

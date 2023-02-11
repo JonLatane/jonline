@@ -33,6 +33,7 @@ const GetPostsRequest$json = const {
     const {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupId', '17': true},
     const {'1': 'reply_depth', '3': 4, '4': 1, '5': 13, '9': 3, '10': 'replyDepth', '17': true},
     const {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.PostListingType', '10': 'listingType'},
+    const {'1': 'page', '3': 15, '4': 1, '5': 13, '10': 'page'},
   ],
   '8': const [
     const {'1': '_post_id'},
@@ -43,7 +44,7 @@ const GetPostsRequest$json = const {
 };
 
 /// Descriptor for `GetPostsRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getPostsRequestDescriptor = $convert.base64Decode('Cg9HZXRQb3N0c1JlcXVlc3QSHAoHcG9zdF9pZBgBIAEoCUgAUgZwb3N0SWSIAQESKQoOYXV0aG9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEh4KCGdyb3VwX2lkGAMgASgJSAJSB2dyb3VwSWSIAQESJAoLcmVwbHlfZGVwdGgYBCABKA1IA1IKcmVwbHlEZXB0aIgBARI7CgxsaXN0aW5nX3R5cGUYCiABKA4yGC5qb25saW5lLlBvc3RMaXN0aW5nVHlwZVILbGlzdGluZ1R5cGVCCgoIX3Bvc3RfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIOCgxfcmVwbHlfZGVwdGg=');
+final $typed_data.Uint8List getPostsRequestDescriptor = $convert.base64Decode('Cg9HZXRQb3N0c1JlcXVlc3QSHAoHcG9zdF9pZBgBIAEoCUgAUgZwb3N0SWSIAQESKQoOYXV0aG9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEh4KCGdyb3VwX2lkGAMgASgJSAJSB2dyb3VwSWSIAQESJAoLcmVwbHlfZGVwdGgYBCABKA1IA1IKcmVwbHlEZXB0aIgBARI7CgxsaXN0aW5nX3R5cGUYCiABKA4yGC5qb25saW5lLlBvc3RMaXN0aW5nVHlwZVILbGlzdGluZ1R5cGUSEgoEcGFnZRgPIAEoDVIEcGFnZUIKCghfcG9zdF9pZEIRCg9fYXV0aG9yX3VzZXJfaWRCCwoJX2dyb3VwX2lkQg4KDF9yZXBseV9kZXB0aA==');
 @$core.Deprecated('Use getPostsResponseDescriptor instead')
 const GetPostsResponse$json = const {
   '1': 'GetPostsResponse',

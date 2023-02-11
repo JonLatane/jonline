@@ -7,7 +7,7 @@ use rocket::http::Status;
 
 #[rocket::get("/flutter/<file..>")]
 pub async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
-    println!("flutter_file: {:?}", file);
+    log::info!("flutter_file: {:?}", file);
     // let real_file = match file.strip_prefix("app/") {
     //     Ok(p) => p.to_path_buf(),
     //     Err(_) => file
@@ -37,7 +37,7 @@ pub async fn flutter_index() -> CacheResponse<Result<NamedFile, Status>> {
     };
     CacheResponse::Public {
         responder: result.map_err(|e| {
-            println!("flutter: {:?}", e);
+            log::info!("flutter: {:?}", e);
             Status::NotFound
         }),
         max_age: 60,

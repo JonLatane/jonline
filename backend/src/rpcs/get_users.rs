@@ -15,7 +15,7 @@ pub fn get_users(
     user: Option<models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
-    println!("GetUsers called");
+    log::info!("GetUsers::request: {:?}", request);
     let response = match (request.to_owned().listing_type.to_proto_user_listing_type(), request.to_owned().username, request.to_owned().user_id) {
         (Some(FollowRequests), _, _) => get_all_users(request.to_owned(), user, conn),
         (_, Some(_), _) => get_by_username(request.to_owned(), user, conn),
@@ -29,7 +29,8 @@ pub fn get_users(
     //         None => get_all_users(request.to_owned(), user, conn),
     //     },
     // };
-    println!("GetUsers::request: {:?}, response: {:?}", request, response);
+    // log::info!("GetUsers::request: {:?}, response: {:?}", request, response);
+    log::info!("GetUsers::request: {:?}, response_length: {:?}", request, response.users.len());
     Ok(response)
 }
 
@@ -92,6 +93,7 @@ fn get_by_username(
     .iter()
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
+    log::info!("GetUsers::get_by_username: {:?}, visibilities: {:?}", request.username, visibilities);
 
     let target_follows = alias!(follows as target_follows);
     let target_follows_user_id = target_follows.field(follows::user_id);
@@ -114,7 +116,8 @@ fn get_by_username(
                 .eq_any(visibilities)
                 .or(users::id.nullable().eq(user.map(|u| u.id))),
         )
-        .filter(users::username.ilike(format!("{}%", request.username.unwrap())))
+        // .filter(users::username.ilike(format!("{}%", request.username.unwrap())))
+        .filter(users::username.eq(request.username.unwrap()))
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())

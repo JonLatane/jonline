@@ -78,14 +78,14 @@ impl ToProtoPermissions for serde_json::Value {
         match self {
             serde_json::Value::Array(permissions) => {
                 let mut mapped_permissions: Vec<Permission> = Vec::new();
-                // println!("Converting permissions: {:?}", permissions);
+                // log::info!("Converting permissions: {:?}", permissions);
                 for permission in permissions {
                     let mapped_permission = permission
                         .as_str()
                         .map(|s| s.to_string().to_proto_permission())
                         .flatten();
 
-                    // println!("Mapped permission {:?} to {:?}", permission, mapped_permission);
+                    // log::info!("Mapped permission {:?} to {:?}", permission, mapped_permission);
                     if mapped_permission.is_some() {
                         mapped_permissions.push(mapped_permission.unwrap());
                     }

@@ -14,7 +14,7 @@ import moment from "moment";
 import store from "../store";
 import { AccountOrServer } from "../types";
 import { getCredentialClient } from "./accounts";
-import { UpdatePosts, upsertPosts } from "./posts";
+import { LoadPostsRequest, upsertPosts } from "./posts";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -27,6 +27,7 @@ export interface GroupsState {
   avatars: Dictionary<string>;
   shortnameIds: Dictionary<string>;
   idGroupPosts: Dictionary<GroupPost[]>;
+  failedShortnames: string[];
   recentGroups: EntityId[];
 }
 
@@ -91,7 +92,7 @@ export const loadGroup: AsyncThunk<LoadGroupResult, LoadGroup, any> = createAsyn
     let avatar = group.avatar
       ? URL.createObjectURL(new Blob([group.avatar!], { type: 'image/png' }))
       : '';
-    return { group, avatar };
+    return { group: { ...group, avatar: undefined }, avatar };
   }
 );
 
@@ -102,6 +103,7 @@ const initialState: GroupsState = {
   shortnameIds: {},
   idGroupPosts: {},
   recentGroups: [],
+  failedShortnames: [],
   ...groupsAdapter.getInitialState(),
 };
 

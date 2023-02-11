@@ -162,7 +162,7 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
                       p: ({ node, ...props }) => <Paragraph children={props.children} size='$1' />,
                       a: ({ node, ...props }) => <Anchor color={navColor} target='_blank' href={props.href} children={props.children} />,
                     }} /> */}
-                      <TamaguiMarkdown text={selectedGroup?.description ?? ''} />,
+                      <TamaguiMarkdown text={selectedGroup?.description ?? ''} />
                 </YStack>
               </Sheet.ScrollView>
             </Sheet.Frame>

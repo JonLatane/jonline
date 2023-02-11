@@ -33,7 +33,7 @@ pub fn login(
         Ok(true) => auth::generate_refresh_and_access_token(user.id, conn, req.expires_at),
     };
 
-    println!("Logged in user {}, user_id={}", &req.username, user.id);
+    log::info!("Logged in user {}, user_id={}", &req.username, user.id);
 
     Ok(Response::new(RefreshTokenResponse {
         refresh_token: tokens.refresh_token,

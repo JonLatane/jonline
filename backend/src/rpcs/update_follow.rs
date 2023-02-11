@@ -44,7 +44,7 @@ pub fn update_follow(
             Ok(existing_follow.to_proto())
         }
         Err(e) => {
-            println!("Error updating follow: {:?}", e);
+            log::error!("Error updating follow: {:?}", e);
             Err(Status::new(Code::Internal, "error_updating_follow"))
         }
     }

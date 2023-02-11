@@ -60,7 +60,7 @@ pub fn update_group(
             Err(Status::new(Code::NotFound, "duplicate_group_name"))
         }
         Err(e) => {
-            println!("Error updating group! {:?}", e);
+            log::error!("Error updating group! {:?}", e);
             Err(Status::new(Code::Internal, "data_error"))
         }
     }

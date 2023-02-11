@@ -23,6 +23,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
     ..a<$core.int>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'replyDepth', $pb.PbFieldType.OU3)
     ..e<PostListingType>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: PostListingType.PUBLIC_POSTS, valueOf: PostListingType.valueOf, enumValues: PostListingType.values)
+    ..a<$core.int>(15, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'page', $pb.PbFieldType.OU3)
     ..hasRequiredFields = false
   ;
 
@@ -33,6 +34,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     $core.String? groupId,
     $core.int? replyDepth,
     PostListingType? listingType,
+    $core.int? page,
   }) {
     final _result = create();
     if (postId != null) {
@@ -49,6 +51,9 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     }
     if (listingType != null) {
       _result.listingType = listingType;
+    }
+    if (page != null) {
+      _result.page = page;
     }
     return _result;
   }
@@ -117,6 +122,15 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   $core.bool hasListingType() => $_has(4);
   @$pb.TagNumber(10)
   void clearListingType() => clearField(10);
+
+  @$pb.TagNumber(15)
+  $core.int get page => $_getIZ(5);
+  @$pb.TagNumber(15)
+  set page($core.int v) { $_setUnsignedInt32(5, v); }
+  @$pb.TagNumber(15)
+  $core.bool hasPage() => $_has(5);
+  @$pb.TagNumber(15)
+  void clearPage() => clearField(15);
 }
 
 class GetPostsResponse extends $pb.GeneratedMessage {

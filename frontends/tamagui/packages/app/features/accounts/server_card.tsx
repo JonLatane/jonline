@@ -11,7 +11,7 @@ interface Props {
 
 const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
   const dispatch = useTypedDispatch();
-  let selected = store.getState().servers.server?.host == server.host;
+  const selected = store.getState().servers.server?.host == server.host;
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts))
     .filter(account => account.server.host == server.host);

@@ -7,7 +7,7 @@ use rocket::http::Status;
 
 #[rocket::get("/<file..>")]
 pub async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
-    println!("tamagui_file_or_username: {:?}", file);
+    log::info!("tamagui_file_or_username: {:?}", file);
     let result = match NamedFile::open(Path::new("opt/tamagui_web/").join(file.to_owned())).await {
         Ok(file) => Ok(file),
         Err(_) => match NamedFile::open(Path::new("../frontends/tamagui/apps/next/out/").join(file)).await {
@@ -62,7 +62,7 @@ async fn tamagui_path(path: &str) -> CacheResponse<Result<NamedFile, Status>> {
     };
     CacheResponse::Public {
         responder: result.map_err(|e| {
-            println!("tamagui_path: {:?}", e);
+            log::info!("tamagui_path: {:?}", e);
             Status::NotFound
         }),
         max_age: 60,

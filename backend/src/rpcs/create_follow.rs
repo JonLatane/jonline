@@ -35,7 +35,7 @@ pub fn create_follow(
             Ok(follow)
         });
     let follow = follow_result.map_err(|e| {
-        println!("Error creating follow! {:?}", e);
+        log::error!("Error creating follow! {:?}", e);
         Status::new(Code::Internal, "data_error")
     })?;
     follow.update_related_counts(conn)?;

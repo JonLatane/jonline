@@ -87,7 +87,7 @@ fn create_membership_for_self(
             Ok(membership)
         });
     membership.map_err(|e| {
-        println!("Error creating membership! {:?}", e);
+        log::error!("Error creating membership! {:?}", e);
         Status::new(Code::Internal, "data_error")
     })
 }
@@ -137,7 +137,7 @@ fn invite_other_user(
             Ok(membership)
         });
     membership.map_err(|e| {
-        println!("Error creating membership! {:?}", e);
+        log::error!("Error creating membership! {:?}", e);
         Status::new(Code::Internal, "data_error")
     })
 }

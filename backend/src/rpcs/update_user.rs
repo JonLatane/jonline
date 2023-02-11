@@ -39,7 +39,7 @@ pub fn update_user(
         Ok(_) => moderator = true,
         Err(_) => {}
     };
-    println!(
+    log::info!(
         "self_update: {}, admin: {}, moderator: {}",
         self_update, admin, moderator
     );
@@ -68,7 +68,7 @@ pub fn update_user(
             }
             existing_user.updated_at = SystemTime::now().into();
 
-            println!("Updating user: {:?}", existing_user);
+            log::info!("Updating user: {:?}", existing_user);
             match diesel::update(users::table)
                 .filter(users::id.eq(&existing_user.id))
                 .set(&existing_user)
@@ -90,11 +90,11 @@ pub fn update_user(
             Err(Status::new(Code::NotFound, "duplicate_username"))
         }
         Err(e) => {
-            println!("Error updating user: {:?}", e);
+            log::error!("Error updating user: {:?}", e);
             Err(Status::new(Code::Internal, "data_error"))
         }
     };
-    println!("UpdateUser::request: {:?}, result: {:?}", request, result);
+    log::info!("UpdateUser::request: {:?}, result: {:?}", request, result);
 
     result
 }

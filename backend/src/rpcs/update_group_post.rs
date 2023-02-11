@@ -38,7 +38,7 @@ pub fn update_group_post(
             Ok(existing_group_post.to_proto())
         }
         Err(e) => {
-            println!("Error updating group_post: {:?}", e);
+            log::error!("Error updating group_post: {:?}", e);
             Err(Status::new(Code::Internal, "error_updating_group_post"))
         }
     }

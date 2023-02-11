@@ -100,7 +100,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         setNewAccountPass('');
         setForceDisableAccountButtons(false);
       }, 1000);
-    }, 3000);
+    }, 1500);
   } else if(accountsState.errorMessage && forceDisableAccountButtons) {
     setForceDisableAccountButtons(false);
   }

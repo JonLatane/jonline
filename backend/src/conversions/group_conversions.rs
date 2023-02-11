@@ -25,7 +25,7 @@ impl ToProtoGroup for models::Group {
             .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
             .first::<i64>(conn)
             .unwrap();
-        println!("member count {}", member_count);
+        log::info!("member count {}", member_count);
         let user_membership = match user {
             Some(user) => memberships::table
                 .select(memberships::all_columns)
@@ -57,7 +57,7 @@ impl ToProtoGroup for models::Group {
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
         };
-        // println!("Converted Group: {:?}", group);
+        // log::info!("Converted Group: {:?}", group);
         return group;
     }
 }
@@ -78,7 +78,7 @@ impl ToProtoMembership for models::Membership {
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
         };
-        // println!("Converted Membership: {:?}", membership);
+        // log::info!("Converted Membership: {:?}", membership);
         return membership;
     }
 

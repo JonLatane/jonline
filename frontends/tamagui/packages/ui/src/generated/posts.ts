@@ -119,6 +119,7 @@ export interface GetPostsRequest {
   /** TODO: Implement support for this */
   replyDepth?: number | undefined;
   listingType: PostListingType;
+  page: number;
 }
 
 export interface GetPostsResponse {
@@ -240,7 +241,14 @@ export interface GetGroupPostsResponse {
 }
 
 function createBaseGetPostsRequest(): GetPostsRequest {
-  return { postId: undefined, authorUserId: undefined, groupId: undefined, replyDepth: undefined, listingType: 0 };
+  return {
+    postId: undefined,
+    authorUserId: undefined,
+    groupId: undefined,
+    replyDepth: undefined,
+    listingType: 0,
+    page: 0,
+  };
 }
 
 export const GetPostsRequest = {
@@ -259,6 +267,9 @@ export const GetPostsRequest = {
     }
     if (message.listingType !== 0) {
       writer.uint32(80).int32(message.listingType);
+    }
+    if (message.page !== 0) {
+      writer.uint32(120).uint32(message.page);
     }
     return writer;
   },
@@ -285,6 +296,9 @@ export const GetPostsRequest = {
         case 10:
           message.listingType = reader.int32() as any;
           break;
+        case 15:
+          message.page = reader.uint32();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -300,6 +314,7 @@ export const GetPostsRequest = {
       groupId: isSet(object.groupId) ? String(object.groupId) : undefined,
       replyDepth: isSet(object.replyDepth) ? Number(object.replyDepth) : undefined,
       listingType: isSet(object.listingType) ? postListingTypeFromJSON(object.listingType) : 0,
+      page: isSet(object.page) ? Number(object.page) : 0,
     };
   },
 
@@ -310,6 +325,7 @@ export const GetPostsRequest = {
     message.groupId !== undefined && (obj.groupId = message.groupId);
     message.replyDepth !== undefined && (obj.replyDepth = Math.round(message.replyDepth));
     message.listingType !== undefined && (obj.listingType = postListingTypeToJSON(message.listingType));
+    message.page !== undefined && (obj.page = Math.round(message.page));
     return obj;
   },
 
@@ -324,6 +340,7 @@ export const GetPostsRequest = {
     message.groupId = object.groupId ?? undefined;
     message.replyDepth = object.replyDepth ?? undefined;
     message.listingType = object.listingType ?? 0;
+    message.page = object.page ?? 0;
     return message;
   },
 };

@@ -10,15 +10,15 @@ use crate::{models, protos};
 pub fn get_server_configuration(
     conn: &mut PgPooledConnection,
 ) -> Result<protos::ServerConfiguration, Status> {
-    println!("GetServerConfiguration called");
+    log::info!("GetServerConfiguration called");
     let server_configuration = server_configurations
         .filter(active.eq(true))
         .first::<models::ServerConfiguration>(conn);
-    println!("GetServerConfiguration called, found {:?}", server_configuration);
+    log::info!("GetServerConfiguration called, found {:?}", server_configuration);
     match server_configuration {
         Ok(server_configuration) => {
             let result = server_configuration.to_proto();
-            println!("GetServerConfiguration called, returning {:?}", result);
+            log::info!("GetServerConfiguration called, returning {:?}", result);
             Ok(result)
         }
         Err(diesel::NotFound) => {
@@ -27,18 +27,18 @@ pub fn get_server_configuration(
                 .get_result::<models::ServerConfiguration>(conn) {
                 Ok(server_configuration) => server_configuration.to_proto(),
                 Err(e) => {
-                    println!("Error inserting default server configuration: {:?}", e);
+                    log::error!("Error inserting default server configuration: {:?}", e);
                     return Err(Status::new(Code::Internal, "error_inserting_default_server_configuration"));
                 }
             };
-            println!(
+            log::info!(
                 "GetServerConfiguration called, generated new one: {:?}",
                 result
             );
             Ok(result)
         }
         Err(e) => {
-            println!("GetServerConfiguration error: {:?}", e);
+            log::error!("GetServerConfiguration error: {:?}", e);
             Err(Status::new(Code::Unauthenticated, "data_error"))
         }
     }

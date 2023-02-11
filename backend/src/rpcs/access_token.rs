@@ -12,7 +12,7 @@ pub fn access_token(
     request: Request<AccessTokenRequest>,
     conn: &mut PgPooledConnection,
 ) -> Result<Response<AccessTokenResponse>, Status> {
-    println!("AccessToken called.");
+    log::info!("AccessToken called.");
     let token_and_user_id: Result<(i32, i32), _> = user_refresh_tokens
         .select((id, user_id))
         .filter(token.eq(request.into_inner().refresh_token))
@@ -20,7 +20,7 @@ pub fn access_token(
 
     match token_and_user_id {
         Ok((t, u)) => {
-            println!(
+            log::info!(
                 "Generating new refresh token for refresh_token_id={}, user_id={}",
                 t, u
             );
@@ -30,7 +30,7 @@ pub fn access_token(
             }))
         }
         Err(_) => {
-            println!("Auth token not found.");
+            log::warn!("Auth token not found.");
             Err(Status::new(Code::Unauthenticated, "not_authorized"))
         }
     }

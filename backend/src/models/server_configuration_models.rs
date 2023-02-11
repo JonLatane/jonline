@@ -85,7 +85,7 @@ pub fn default_server_configuration() -> NewServerConfiguration {
         people_settings: serde_json::to_value(FeatureSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
-            default_visibility: Visibility::ServerPublic as i32,
+            default_visibility: Visibility::GlobalPublic as i32,
             custom_title: None,
         })
         .unwrap(),

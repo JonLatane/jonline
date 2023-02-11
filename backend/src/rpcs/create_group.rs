@@ -89,14 +89,14 @@ pub fn create_group(
 
     match group {
         Ok(group) => {
-            println!("Group created! Result: {:?}", group);
+            log::info!("Group created! Result: {:?}", group);
             Ok(group.to_proto_with(membership.map(|m| m.to_proto())))
         }
         Err(DatabaseError(UniqueViolation, _)) => {
             Err(Status::new(Code::NotFound, "duplicate_group_name"))
         }
         Err(e) => {
-            println!("Error creating group! {:?}", e);
+            log::error!("Error creating group! {:?}", e);
             Err(Status::new(Code::Internal, "internal_error"))
         }
     }

@@ -9,7 +9,7 @@ import {
   EntityId,
   Slice,
 } from "@reduxjs/toolkit";
-import { CreatePostRequest, GetPostsRequest, GetPostsResponse, Post, formatError } from "@jonline/ui/src";
+import { CreatePostRequest, GetPostsRequest, GetPostsResponse, Post, formatError, PostListingType } from "@jonline/ui/src";
 import { getCredentialClient } from "./accounts";
 import { createTransform } from "redux-persist";
 import moment from "moment";
@@ -41,12 +41,15 @@ export const createPost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Po
   }
 );
 
-export type UpdatePosts = AccountOrServer & GetPostsRequest;
-export const updatePosts: AsyncThunk<GetPostsResponse, UpdatePosts, any> = createAsyncThunk<GetPostsResponse, UpdatePosts>(
-  "posts/update",
-  async (getPostsRequest) => {
-    let client = await getCredentialClient(getPostsRequest);
-    let result = await client.getPosts(getPostsRequest, client.credential);
+export type LoadPostsRequest = AccountOrServer & {
+  listingType?: PostListingType.PUBLIC_POSTS | PostListingType.FOLLOWING_POSTS | PostListingType.MY_GROUPS_POSTS,
+  page?: number
+};
+export const loadPostsPage: AsyncThunk<GetPostsResponse, LoadPostsRequest, any> = createAsyncThunk<GetPostsResponse, LoadPostsRequest>(
+  "posts/loadPage",
+  async (request) => {
+    let client = await getCredentialClient(request);
+    let result = await client.getPosts({ listingType: PostListingType.PUBLIC_POSTS, ...request }, client.credential);
     return result;
   }
 );
@@ -74,11 +77,12 @@ export const loadPost: AsyncThunk<LoadPostResult, LoadPost, any> = createAsyncTh
   async (request) => {
     const client = await getCredentialClient(request);
     const response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
+    if (response.posts.length == 0) throw 'Post not found';
     const post = response.posts[0]!;
     const preview = post.previewImage
       ? URL.createObjectURL(new Blob([post.previewImage!], { type: 'image/png' }))
       : '';
-    return { post, preview };
+    return { post: { ...post, previewImage: undefined }, preview };
   }
 );
 
@@ -137,21 +141,21 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
-    builder.addCase(updatePosts.pending, (state) => {
+    builder.addCase(loadPostsPage.pending, (state) => {
       state.status = "loading";
       state.baseStatus = "loading";
       state.error = undefined;
     });
-    builder.addCase(updatePosts.fulfilled, (state, action) => {
+    builder.addCase(loadPostsPage.fulfilled, (state, action) => {
       state.status = "loaded";
       state.baseStatus = "loaded";
       action.payload.posts.forEach(post => {
         const oldPost = selectPostById(state, post.id);
-        postsAdapter.upsertOne(state, {...post, replies: oldPost?.replies ?? post.replies});
+        postsAdapter.upsertOne(state, { ...post, replies: oldPost?.replies ?? post.replies });
       });
       state.successMessage = `Posts loaded.`;
     });
-    builder.addCase(updatePosts.rejected, (state, action) => {
+    builder.addCase(loadPostsPage.rejected, (state, action) => {
       state.status = "errored";
       state.baseStatus = "errored";
       state.error = action.error as Error;
@@ -165,7 +169,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     builder.addCase(loadPost.fulfilled, (state, action) => {
       state.status = "loaded";
       const oldPost = selectPostById(state, action.payload.post.id);
-      postsAdapter.upsertOne(state, {...action.payload.post, replies: oldPost?.replies ?? action.payload.post.replies});
+      postsAdapter.upsertOne(state, { ...action.payload.post, replies: oldPost?.replies ?? action.payload.post.replies });
       state.previews[action.meta.arg.id] = action.payload.preview;
       state.successMessage = `Post data loaded.`;
     });
@@ -192,7 +196,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
 
       let post: Post = rootPost;
       for (const postId of postIdPath.slice(1)) {
-        post.replies = post.replies.map(p=>({...p}));
+        post.replies = post.replies.map(p => ({ ...p }));
         const nextPost = post.replies.find((reply) => reply.id === postId);
         if (!nextPost) {
           console.error(`Post ID (${postId}) not found along path ${JSON.stringify(postIdPath)}.`);

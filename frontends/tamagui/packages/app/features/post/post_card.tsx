@@ -1,12 +1,13 @@
-import { loadPostPreview, loadPostReplies, RootState, useCredentialDispatch, useTypedSelector } from "app/store";
+import { loadPostPreview, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useTypedSelector } from "app/store";
 import React, { PropsWithChildren, useEffect, useState } from "react";
 import { Animated, Platform, View, ViewStyle } from "react-native";
 
-import { Anchor, Button, Card, Group, Heading, Image, ListItem, Paragraph, Post, Tooltip, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
-import { ChevronRight } from "@tamagui/lucide-icons";
+import { Anchor, Button, Card, Group, Heading, Image, ListItem, Paragraph, Post, Tooltip, useMedia, useTheme, XStack, YStack, Text, User } from "@jonline/ui";
+import { Bot, ChevronRight, Shield } from "@tamagui/lucide-icons";
 import moment from 'moment';
 import ReactMarkdown from 'react-markdown';
 import { useLink } from "solito/link";
+import { Permission } from "@jonline/ui/src";
 
 interface Props {
   post: Post;
@@ -38,15 +39,18 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
     setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
   }
 
+  const authorId = post.author?.userId;
+  const authorName = post.author?.username;
+
   const postLink = useLink({
     href: groupContext
       ? `/g/${groupContext.shortname}/p/${post.id}`
       : `/post/${post.id}`,
   });
   const authorLink = useLink({
-    href: post.author?.username
-      ? `/${post.author?.username}`
-      : `/user/${post.author?.userId}`
+    href: authorName
+      ? `/${authorName}`
+      : `/user/${authorId}`
   });
   const postLinkProps = isPreview ? postLink : { onPress: undefined };
   const authorLinkProps = post.author ? authorLink : undefined;
@@ -58,6 +62,20 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
     shadowOffset: { width: -5, height: -5 },
     shadowRadius: 10
   } : {};
+
+  const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
+  const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
+  const [loadingAuthor, setLoadingAuthor] = useState(false);
+  useEffect(() => {
+    if (authorId) {
+      if (!loadingAuthor && (!author || authorAvatar == undefined)) {
+        setLoadingAuthor(true);
+        setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
+      } else if (loadingAuthor && author && authorAvatar != undefined) {
+        setLoadingAuthor(false);
+      }
+    }
+  });
 
   const cleanedContent = post.content?.replace(
     /((?!  ).)\n([^\n*])/g,
@@ -134,24 +152,24 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                       //     }}
                       //   />
                       // </NativeText>,
-                      <TamaguiMarkdown text={cleanedContent!} />,
+                      <TamaguiMarkdown text={cleanedContent!} disableLinks={isPreview} />,
 
-                      // <ReactMarkdown children={cleanedContent!}
-                      //   components={{
-                      //     // li: ({ node, ordered, ...props }) => <li }} {...props} />,
-                      //     h1: ({ children, id }) => <Heading size='$9' {...{ children, id }} />,
-                      //     h2: ({ children, id }) => <Heading size='$8' {...{ children, id }} />,
-                      //     h3: ({ children, id }) => <Heading size='$7' {...{ children, id }} />,
-                      //     h4: ({ children, id }) => <Heading size='$6' {...{ children, id }} />,
-                      //     h5: ({ children, id }) => <Heading size='$5' {...{ children, id }} />,
-                      //     h6: ({ children, id }) => <Heading size='$4' {...{ children, id }} />,
-                      //     li: ({ ordered, index, children }) => <XStack ml='$3'>
-                      //       <Paragraph size='$3' mr='$4'>{ordered ? `${index}.` : '• '}</Paragraph>
-                      //       <Paragraph size='$3' {...{ children }} />
-                      //     </XStack>,
-                      //     p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,
-                      //     a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
-                      //   }} />,
+                    // <ReactMarkdown children={cleanedContent!}
+                    //   components={{
+                    //     // li: ({ node, ordered, ...props }) => <li }} {...props} />,
+                    //     h1: ({ children, id }) => <Heading size='$9' {...{ children, id }} />,
+                    //     h2: ({ children, id }) => <Heading size='$8' {...{ children, id }} />,
+                    //     h3: ({ children, id }) => <Heading size='$7' {...{ children, id }} />,
+                    //     h4: ({ children, id }) => <Heading size='$6' {...{ children, id }} />,
+                    //     h5: ({ children, id }) => <Heading size='$5' {...{ children, id }} />,
+                    //     h6: ({ children, id }) => <Heading size='$4' {...{ children, id }} />,
+                    //     li: ({ ordered, index, children }) => <XStack ml='$3'>
+                    //       <Paragraph size='$3' mr='$4'>{ordered ? `${index}.` : '• '}</Paragraph>
+                    //       <Paragraph size='$3' {...{ children }} />
+                    //     </XStack>,
+                    //     p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,
+                    //     a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
+                    //   }} />,
                     //TODO: Find a way to render markdown on native that doesn't break web.
                     // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
                     // default: <Heading size='$1'>Native Markdown support pending!</Heading>
@@ -160,13 +178,19 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               </YStack>
               <XStack pt={10} {...detailsProps}>
                 <YStack mr='auto' marginLeft={detailsMargins}>
-                  <Heading size="$1">
-                    {post.author
-                      ? isPreview
-                        ? `by ${post.author?.username}`
-                        : <>by <Anchor {...authorLinkProps}>{post.author?.username}</Anchor></>
-                      : 'by anonymous'}
-                  </Heading>
+                  <XStack>
+                    <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading>
+                    {author && author.permissions.includes(Permission.ADMIN) ? <Shield /> : undefined}
+                    {author && author.permissions.includes(Permission.RUN_BOTS) ? <Bot /> : undefined}
+                    <Heading size="$1" ml={author && author.permissions.includes(Permission.RUN_BOTS) ? '$2' : '$1'}
+                      marginVertical='auto'>
+                      {post.author
+                        ? isPreview
+                          ? `${post.author?.username}`
+                          : <Anchor {...authorLinkProps}>{post.author?.username}</Anchor>
+                        : 'anonymous'}
+                    </Heading>
+                  </XStack>
                   <Tooltip placement="bottom-start">
                     <Tooltip.Trigger>
                       <Heading size="$1">
@@ -178,6 +202,46 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     </Tooltip.Content>
                   </Tooltip>
                 </YStack>
+                {(authorAvatar && authorAvatar != '') ?
+                  isPreview
+                    ? <FadeInView>
+                      <Image
+                        pos="absolute"
+                        width={50}
+                        ml='$3'
+                        // opacity={0.25}
+                        height={50}
+                        borderRadius={25}
+                        resizeMode="contain"
+                        als="flex-start"
+                        src={authorAvatar}
+                        // blurRadius={1.5}
+                        // borderRadius={5}
+                        borderBottomRightRadius={5}
+                      />
+                    </FadeInView>
+                    :
+                    <FadeInView>
+                      <Anchor {...authorLinkProps}
+                        ml='$3'>
+                        <XStack w={50} h={50}>
+                          <Image
+                            pos="absolute"
+                            width={50}
+                            // opacity={0.25}
+                            height={50}
+                            borderRadius={25}
+                            resizeMode="contain"
+                            als="flex-start"
+                            src={authorAvatar}
+                            // blurRadius={1.5}
+                            // borderRadius={5}
+                            borderBottomRightRadius={5}
+                          />
+                        </XStack>
+                      </Anchor>
+                    </FadeInView>
+                  : undefined}
                 <XStack f={1} />
                 <YStack h='100%'>
                   <Button transparent
@@ -241,34 +305,38 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               />
             </FadeInView> : undefined}
         </Card.Background>
-      </Card>
-      {isPreview ?
-        <Anchor {...authorLinkProps}>
-          <XStack w={180} h={70}
-            // backgroundColor='#42424277' 
-            position='absolute' bottom={15} />
-        </Anchor>
-        : undefined}
-      {isPreview && post.link ?
-        <Anchor href={post.link} target='_blank'>
-          <XStack w='100%' h={
-            Math.max(1, (post.title?.length ?? 0) / Math.round(
-              (media.xxxxxxs ? 15
-                : media.xxxxxs ? 20
-                  : media.xxxxs ? 25
-                    : media.xxxs ? 30
-                      : media.xxs ? 35
-                        : media.xs ? 40
-                          : media.sm ? 45
-                            : media.md ? 50
-                              : media.lg ? 55
-                                : 70
-              )
-            )) * 36}
-            // backgroundColor='#42424277' 
-            position='absolute' top={15} />
-        </Anchor>
-        : undefined}
+      </Card >
+      {
+        isPreview ?
+          <Anchor {...authorLinkProps
+          } >
+            <XStack w={180} h={70}
+              // backgroundColor='#42424277' 
+              position='absolute' bottom={15} />
+          </Anchor >
+          : undefined}
+      {
+        isPreview && post.link ?
+          <Anchor href={post.link} target='_blank'>
+            <XStack w='100%' h={
+              Math.max(1, (post.title?.length ?? 0) / Math.round(
+                (media.xxxxxxs ? 15
+                  : media.xxxxxs ? 20
+                    : media.xxxxs ? 25
+                      : media.xxxs ? 30
+                        : media.xxs ? 35
+                          : media.xs ? 40
+                            : media.sm ? 45
+                              : media.md ? 50
+                                : media.lg ? 55
+                                  : 70
+                )
+              )) * 36}
+              // backgroundColor='#42424277' 
+              position='absolute' top={15} />
+          </Anchor>
+          : undefined
+      }
     </>
     // </Theme>
   );
@@ -298,9 +366,9 @@ function useOnScreen(ref, rootMargin = "0px") {
   }, []); // Empty array ensures that effect is only run on mount and unmount
   return isIntersecting;
 }
-type FadeInViewProps = PropsWithChildren<{ style?: ViewStyle }>;
+export type FadeInViewProps = PropsWithChildren<{ style?: ViewStyle }>;
 
-const FadeInView: React.FC<FadeInViewProps> = props => {
+export const FadeInView: React.FC<FadeInViewProps> = props => {
   const fadeAnim = React.useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
 
   useEffect(() => {
@@ -324,8 +392,9 @@ const FadeInView: React.FC<FadeInViewProps> = props => {
 
 export type MarkdownProps = {
   text: string;
+  disableLinks?: boolean;
 }
-export const TamaguiMarkdown = ({ text }: MarkdownProps) => {
+export const TamaguiMarkdown = ({ text, disableLinks }: MarkdownProps) => {
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
@@ -344,7 +413,10 @@ export const TamaguiMarkdown = ({ text }: MarkdownProps) => {
         <Paragraph size='$3' {...{ children }} />
       </XStack>,
       p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,
-      a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
+      // a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
+      a: ({ children, href }) => disableLinks
+        ? <Text fontFamily='$body' color={navColor} {...{ href, children }} />
+        : <Anchor color={navColor} target='_blank' {...{ href, children }} />,
     }} />
 }
 

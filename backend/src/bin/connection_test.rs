@@ -17,11 +17,11 @@ async fn main() {
     let endpoint = Channel::from_shared(route).expect("Failed to create channel");
     let endpoint = match get_tls_config() {
         Some(tls) => {
-            println!("Configuring custom CA_CERT in TLS...");
+            log::info!("Configuring custom CA_CERT in TLS...");
             match endpoint.tls_config(tls) {
                 Ok(endpoint) => endpoint,
                 Err(err) => {
-                    println!("Error configuring custom CA_CERT in TLS.");
+                    log::error!("Error configuring custom CA_CERT in TLS.");
                     report_error(err);
                     return;
                 }
@@ -43,7 +43,7 @@ async fn main() {
         .await
         .expect("Failed to get service version");
 
-    println!("Connection test complete!");
+    log::info!("Connection test complete!");
 }
 
 fn get_tls_config() -> Option<ClientTlsConfig> {

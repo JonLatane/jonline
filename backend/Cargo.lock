@@ -1256,7 +1256,7 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
 name = "jonline"
-version = "0.1.301"
+version = "0.1.305"
 dependencies = [
  "anyhow",
  "bcrypt",
@@ -1268,6 +1268,7 @@ dependencies = [
  "headless_chrome",
  "itertools",
  "lazy_static",
+ "log 0.4.17",
  "markdown",
  "prost",
  "prost-build",

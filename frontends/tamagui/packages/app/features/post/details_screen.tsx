@@ -1,6 +1,6 @@
 import { GetPostsRequest, Heading, Paragraph, XStack, YStack } from '@jonline/ui'
 import { Post } from '@jonline/ui/src'
-import { clearPostAlerts, loadPost, loadPostReplies, RootState, selectGroupById, selectPostById, updatePosts, useCredentialDispatch, useTypedSelector } from 'app/store'
+import { clearPostAlerts, loadPost, loadPostReplies, RootState, selectGroupById, selectPostById, loadPostsPage, useCredentialDispatch, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import { FlatList, } from 'react-native'
 import { createParam } from 'solito'
@@ -31,31 +31,30 @@ export function PostDetailsScreen() {
 
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const [showScrollPreserver, setShowScrollPreserver] = useState(isSafari);
-  if (!post) {
-    // reloadPosts();
-  } else if (post.replyCount == 0 || post.replies.length > 0) {
-    setTimeout(() => setShowScrollPreserver(false), 1500);
-  }
-
   useEffect(() => {
-    if ((!post || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
-      setLoadingPost(true);
-      // useEffect(() => {
-      console.log('loadPost', postId!)
-      setTimeout(() =>
-        dispatch(loadPost({ ...accountOrServer, id: postId! })));
-      // });
-    } else if (post && loadingPost) {
-      setLoadingPost(false);
-    }
-    if (post && postsState.status != 'loading' && post.replyCount > 0 &&
-      post.replies.length == 0 && !loadedReplies) {
-      setLoadedReplies(true);
-      console.log('loadReplies', post.id, post.replyCount, post.replies.length, loadedReplies);
-      setTimeout(() =>
-        dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [postId!] })), 1);
-    } else if (!post && loadedReplies) {
-      setLoadedReplies(false);
+    if (postId) {
+      if ((!post || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
+        setLoadingPost(true);
+        // useEffect(() => {
+        console.log('loadPost', postId!)
+        setTimeout(() =>
+          dispatch(loadPost({ ...accountOrServer, id: postId! })));
+        // });
+      } else if (post && loadingPost) {
+        setLoadingPost(false);
+      }
+      if (post && postsState.status != 'loading' && post.replyCount > 0 &&
+        post.replies.length == 0 && !loadedReplies) {
+        setLoadedReplies(true);
+        console.log('loadReplies', post.id, post.replyCount, post.replies.length, loadedReplies);
+        setTimeout(() =>
+          dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [postId!] })), 1);
+      } else if (!post && loadedReplies) {
+        setLoadedReplies(false);
+      }
+      if (post && (post.replyCount == 0 || post.replies.length > 0) && showScrollPreserver) {
+        setTimeout(() => setShowScrollPreserver(false), 1500);
+      }
     }
   });
 
@@ -72,7 +71,7 @@ export function PostDetailsScreen() {
     postIdPath: string[];
     post: Post;
   }
-  
+
   const flattenedReplies: FlattenedReply[] = [];
   function flattenReplies(post: Post, postIdPath: string[], includeSelf: boolean = false) {
     if (includeSelf) {
@@ -126,12 +125,9 @@ export function PostDetailsScreen() {
                   toggleCollapseReplies={() => toggleCollapseReplies(item.post.id)} />
               </XStack>
             }}
-            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : <YStack h={150} />}
           />
         </XStack>
-        {/* <Button {...linkProps} icon={ChevronLeft}>
-          Go Home
-        </Button> */}
       </YStack>
     </TabsNavigation>
   )

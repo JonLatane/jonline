@@ -17,6 +17,7 @@ extern crate rocket_cache_response;
 extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
+extern crate log;
 // #[macro_use]
 extern crate lazy_static;
 
@@ -63,21 +64,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (tonic_server, secure_mode) = match get_tls_config() {
         Some(tls) => {
-            println!("Configuring TLS...");
+            log::info!("Configuring TLS...");
             match Server::builder().tls_config(tls) {
                 Ok(server) => {
-                    println!("TLS successfully configured.");
+                    log::info!("TLS successfully configured.");
                     (server, true)
                 }
                 Err(details) => {
-                    println!("Error configuring TLS. Connections are not secure.");
+                    log::info!("Error configuring TLS. Connections are not secure.");
                     report_error(details);
                     (Server::builder(), false)
                 }
             }
         }
         _ => {
-            println!("No TLS keys available. Connections are not secure.");
+            log::warn!("No TLS keys available. Connections are not secure.");
             (Server::builder(), false)
         }
     };
@@ -91,9 +92,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(async {
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], 27707));
         match tonic_router.serve(tonic_addr).await {
-            Ok(_) => println!("Tonic server started on {}", tonic_addr),
+            Ok(_) => log::info!("Tonic server started on {}", tonic_addr),
             Err(e) => {
-                println!("Unable to start Rocket server on port 8000");
+                log::warn!("Unable to start Rocket server on port 8000");
                 report_error(e);
             }
         };
@@ -104,7 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match create_rocket_unsecured(8000, pool2, secure_mode).launch().await {
             Ok(_) => (),
             Err(e) => {
-                println!("Unable to start Rocket server on port 8000");
+                log::warn!("Unable to start Rocket server on port 8000");
                 report_error(e);
             }
         };
@@ -114,7 +115,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match create_rocket_unsecured(80, pool3, secure_mode).launch().await {
             Ok(_) => (),
             Err(e) => {
-                println!("Unable to start Rocket server on port 80");
+                log::warn!("Unable to start Rocket server on port 80");
                 report_error(e);
             }
         };
@@ -126,7 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(rocket) => match rocket.launch().await {
                 Ok(_) => (),
                 Err(e) => {
-                    println!("Unable to start secure Rocket server on port 443");
+                    log::warn!("Unable to start secure Rocket server on port 443");
                     report_error(e);
                 }
             },
@@ -151,7 +152,7 @@ fn create_rocket_secure(pool: Arc<PgPool>) -> Option<rocket::Rocket<rocket::Buil
 
     match (cert, key) {
         (Some(cert), Some(key)) => {
-            println!("Configuring Rocket TLS...");
+            log::info!("Configuring Rocket TLS...");
 
             fs::write(".tls.crt", cert).expect("Unable to write TLS certificate");
             fs::write(".tls.key", key).expect("Unable to write TLS key");
@@ -235,7 +236,7 @@ fn get_tls_config() -> Option<ServerTlsConfig> {
 
     match (cert, key, ca_cert) {
         (Some(cert), Some(key), Some(ca_cert)) => {
-            println!("Configuring TLS with custom CA...");
+            log::info!("Configuring TLS with custom CA...");
             Some(
                 ServerTlsConfig::new()
                     .identity(Identity::from_pem(cert, key))
@@ -243,7 +244,7 @@ fn get_tls_config() -> Option<ServerTlsConfig> {
             )
         }
         (Some(cert), Some(key), None) => {
-            println!("Configuring TLS with official CAs...");
+            log::info!("Configuring TLS with official CAs...");
             Some(ServerTlsConfig::new().identity(Identity::from_pem(cert, key)))
         }
         _ => None,

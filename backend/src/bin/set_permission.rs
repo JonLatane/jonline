@@ -27,12 +27,12 @@ pub fn main() {
         "on" | "true" | "off" | "false" => {}
         _ => return help(format!("Invalid status: {}.", status)),
     }
-    println!(
+    log::info!(
         "Setting '{}' permission to '{}' for user '{}'.",
         permission, status, username
     );
 
-    println!("Connecting to DB...");
+    log::info!("Connecting to DB...");
     let mut conn = db_connection::establish_connection();
     let mut user = match users::table
         .select(users::all_columns)
@@ -40,9 +40,9 @@ pub fn main() {
         .first::<jonline::models::User>(&mut conn)
     {
         Ok(user) => user,
-        Err(_) => return println!("Could not find user."),
+        Err(_) => return log::info!("Could not find user."),
     };
-    println!(
+    log::info!(
         "Found user {} with ID {}/{}.",
         username,
         user.id.to_proto_id(),
@@ -51,9 +51,9 @@ pub fn main() {
 
     let mut perms: Vec<String> = match serde_json::from_value(user.permissions.to_owned()) {
         Ok(it) => it,
-        Err(_) => return println!("Could not deserialize permissions."),
+        Err(_) => return log::info!("Could not deserialize permissions."),
     };
-    println!("Initial permissions: {:?}", perms);
+    log::info!("Initial permissions: {:?}", perms);
     match status.as_str() {
         "on" | "true" => {
             if !perms.contains(&permission.to_owned()) {
@@ -69,20 +69,20 @@ pub fn main() {
         }
         _ => return help(format!("Invalid status. Aborting.")),
     }
-    println!("Updated permissions: {:?}", perms);
+    log::info!("Updated permissions: {:?}", perms);
     user.permissions = perms.into();
     user.save_changes::<jonline::models::User>(&mut conn).unwrap();
-    println!("Updated user {}.", username);
+    log::info!("Updated user {}.", username);
 }
 
 fn help(error: String) {
     if error.len() > 0 {
-        println!("{}", error);
-        println!("");
+        log::info!("{}", error);
+        log::info!("");
     }
-    println!("This tool sets permissions for Jonline users.");
-    println!("Usage:      set_permission <username> <permission> <status>");
-    println!("Example:    set_permission jon admin off");
-    println!("Statuses:   on|off|true|false");
-    println!("Permissions (case insensitive): \n * {}", ALL_PERMISSIONS.map(|p| p.as_str_name().to_ascii_lowercase()).join("\n * "));
+    log::info!("This tool sets permissions for Jonline users.");
+    log::info!("Usage:      set_permission <username> <permission> <status>");
+    log::info!("Example:    set_permission jon admin off");
+    log::info!("Statuses:   on|off|true|false");
+    log::info!("Permissions (case insensitive): \n * {}", ALL_PERMISSIONS.map(|p| p.as_str_name().to_ascii_lowercase()).join("\n * "));
 }
