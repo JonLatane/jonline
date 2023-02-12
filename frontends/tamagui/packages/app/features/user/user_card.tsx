@@ -1,7 +1,7 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, Image, YStack, User, useMedia } from "@jonline/ui";
-import { Input, Permission } from "@jonline/ui/src";
+import { Input, Permission, Tooltip } from "@jonline/ui/src";
 import { Bot, Camera, Info, Lock, Shield, Trash, Unlock } from "@tamagui/lucide-icons";
-import { store, removeAccount, removeUser, RootState, selectAccount, selectAllAccounts, useTypedDispatch, useTypedSelector, useCredentialDispatch, loadUser } from "app/store";
+import { store, removeAccount, removeUser, RootState, selectAccount, selectAllAccounts, useTypedDispatch, useTypedSelector, useCredentialDispatch, loadUser, useServerInfo } from "app/store";
 import React, { useState, useEffect } from "react";
 import { useLink } from "solito/link";
 import { FadeInView } from "../post/post_card";
@@ -10,18 +10,15 @@ interface Props {
   user: User;
   isPreview?: boolean;
   setUsername?: (username: string) => void;
+  setAvatar?: (encodedBlob: string) => void;
 }
 
-const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername }) => {
+const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAvatar }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
 
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
-  const server = useTypedSelector((state: RootState) => state.servers.server);
-  const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary;
-  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+  const { server, primaryColor, navColor } = useServerInfo();
   const avatar = useTypedSelector((state: RootState) => state.users.avatars[user.id]);
   const [loadingAvatar, setLoadingAvatar] = React.useState(false);
 
@@ -54,8 +51,25 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername }) => 
               <Heading size="$7" marginRight='auto'>{user.username}</Heading>
             </YStack>
 
-            {user.permissions.includes(Permission.ADMIN) ? <Shield /> : undefined}
-            {user.permissions.includes(Permission.RUN_BOTS) ? <Bot /> : undefined}
+            {user.permissions.includes(Permission.ADMIN)
+              ? <Tooltip placement="bottom-end">
+                <Tooltip.Trigger>
+                  <Shield />
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <Heading size='$2'>User is an admin.</Heading>
+                </Tooltip.Content>
+              </Tooltip> : undefined}
+            {user.permissions.includes(Permission.RUN_BOTS)
+              ? <Tooltip placement="bottom-end">
+                <Tooltip.Trigger>
+                  <Bot />
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <Heading size='$2'>User may be (or run) a bot.</Heading>
+                  <Heading size='$1'>Posts may be written by an algorithm rather than a human.</Heading>
+                </Tooltip.Content>
+              </Tooltip> : undefined}
 
             {/* {isPreview ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined} */}
           </XStack>
@@ -85,7 +99,7 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername }) => 
               <XStack>
                 <Heading size='$1'>{user.id}</Heading>
                 <XStack f={1} />
-                {isCurrentUser ? <Camera /> : undefined}
+                {isCurrentUser && setAvatar ? <Camera /> : undefined}
               </XStack>
             </YStack>
           </XStack>

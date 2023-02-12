@@ -1,6 +1,6 @@
 import { Paragraph, YStack } from '@jonline/ui'
 import { Anchor, Group, GroupPost, Heading } from '@jonline/ui/src'
-import { loadPost, RootState, selectGroupById, selectPostById, updateGroupPosts, useCredentialDispatch, useTypedSelector } from 'app/store'
+import { loadPost, RootState, selectGroupById, selectPostById, updateGroupPosts, useCredentialDispatch, useServerInfo, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { FlatList } from 'react-native'
@@ -15,9 +15,7 @@ export function GroupDetailsScreen() {
   const [shortname] = useParam('shortname');
   // const [loadingPosts, setLoadingPosts] = React.useState(false);
   const linkProps = useLink({ href: '/' });
-  const server = useTypedSelector((state: RootState) => state.servers.server);
-  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+  const { server, primaryColor, navColor } = useServerInfo();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const groupId = useTypedSelector((state: RootState) => state.groups.shortnameIds[shortname!]);
   const group = useTypedSelector((state: RootState) =>

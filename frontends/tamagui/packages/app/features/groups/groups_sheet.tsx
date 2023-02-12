@@ -1,7 +1,7 @@
 import { Button, Heading, Popover, useMedia } from '@jonline/ui';
 import { Adapt, Anchor, GetGroupsRequest, Group, Input, Label, Paragraph, ScrollView, Sheet, TamaguiElement, Theme, XStack, YGroup, YStack } from '@jonline/ui/src';
 import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, selectAllGroups, selectAllServers, updateGroups, useCredentialDispatch, useTypedSelector } from 'app/store';
+import { RootState, selectAllGroups, selectAllServers, updateGroups, useCredentialDispatch, useServerInfo, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FlatList, View } from 'react-native';
@@ -22,9 +22,7 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
   // const app = useTypedSelector((state: RootState) => state.app);
   // const serversState = useTypedSelector((state: RootState) => state.servers);
   // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  const server = useTypedSelector((state: RootState) => state.servers.server);
-  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+  const { server, primaryColor, navColor } = useServerInfo();
   const searchInputRef = React.createRef() as React.MutableRefObject<HTMLElement | View>;
 
   const groups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
@@ -162,7 +160,7 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
                       p: ({ node, ...props }) => <Paragraph children={props.children} size='$1' />,
                       a: ({ node, ...props }) => <Anchor color={navColor} target='_blank' href={props.href} children={props.children} />,
                     }} /> */}
-                      <TamaguiMarkdown text={selectedGroup?.description ?? ''} />
+                  <TamaguiMarkdown text={selectedGroup?.description ?? ''} />
                 </YStack>
               </Sheet.ScrollView>
             </Sheet.Frame>
@@ -188,10 +186,7 @@ function GroupButton({ group, selected, setOpen }: GroupButtonProps) {
     setOpen(false);
     onPress?.(e);
   }
-
-  const server = useTypedSelector((state: RootState) => state.servers.server);
-  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+  const { server, primaryColor, navColor } = useServerInfo();
   return <Button
     // bordered={false}
     // href={`/g/${group.shortname}`}

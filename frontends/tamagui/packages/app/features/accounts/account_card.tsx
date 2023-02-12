@@ -60,9 +60,9 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Paragraph size='$1' alignSelf="center">{account.user.id}</Paragraph>
             </YStack>
             <View style={{ flex: 1 }} />
-            {selected ? <Button onClick={(e) => { e.stopPropagation(); doLogout(); }} marginRight='$1'>Logout</Button> : undefined}
+            {selected ? <Button onClick={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button> : undefined}
 
-            <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$2' />
+            <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$1' />
             <Dialog>
               <Dialog.Trigger asChild>
                 <Button icon={<Trash />} circular onClick={(e) => { e.stopPropagation(); }} color="red" />

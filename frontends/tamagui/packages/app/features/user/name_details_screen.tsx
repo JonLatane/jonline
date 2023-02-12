@@ -1,7 +1,7 @@
 import { Button, Heading, Text, Paragraph, YStack } from '@jonline/ui'
-import { isWeb, Permission, ScrollView, TextArea, useWindowDimensions } from '@jonline/ui/src'
-import { ChevronLeft } from '@tamagui/lucide-icons'
-import { loadUsername, RootState, selectUserById, useCredentialDispatch, useTypedSelector } from 'app/store'
+import { isWeb, Permission, ScrollView, TextArea, Tooltip, useWindowDimensions, XStack } from '@jonline/ui/src'
+import { ChevronLeft, Edit, Eye } from '@tamagui/lucide-icons'
+import { loadUsername, RootState, selectUserById, updateUser, useCredentialDispatch, useServerInfo, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
@@ -18,11 +18,7 @@ export function UsernameDetailsScreen() {
   const [username] = useParam('username')
   const linkProps = useLink({ href: '/' })
 
-  const server = useTypedSelector((state: RootState) => state.servers.server);
-  const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary;
-  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+  const { server, primaryColor, navColor } = useServerInfo();
   const userId = useTypedSelector((state: RootState) => username ? state.users.usernameIds[username] : undefined);
   const user = useTypedSelector((state: RootState) =>
     userId ? selectUserById(state.users, userId) : undefined);
@@ -35,9 +31,12 @@ export function UsernameDetailsScreen() {
     || accountOrServer.account?.user?.permissions?.includes(Permission.ADMIN);
   const [name, setName] = useState(user?.username);
   const [bio, setBio] = useState(user?.bio);
+  const avatar = useTypedSelector((state: RootState) => userId ? state.users.avatars[userId] : undefined);
+  const [updatedAvatar, setUpdatedAvatar] = useState(avatar);
   useEffect(() => {
     if (user && !name) setName(user.username);
     if (user && !bio) setBio(user.bio);
+    if (avatar && !updatedAvatar) setUpdatedAvatar(avatar);
   });
 
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -54,18 +53,28 @@ export function UsernameDetailsScreen() {
     }
   });
   const windowHeight = useWindowDimensions().height;
+  function saveUser() {
+    if (!canEdit && !user) return;
+
+    setTimeout(() => dispatch(updateUser({
+      ...accountOrServer,
+      user: { ...user!, bio: bio ?? '' },
+      avatar: avatar,
+    })));
+  }
+  const [editMode, setEditMode] = useState(false);
 
   return (
     <TabsNavigation>
       <YStack f={1} jc="center" ai="center" space margin='$3' w='100%'>
         {user ? <>
           <ScrollView w='100%'>
-            <YStack maw={800} w='100%' als='center'>
-              <UserCard user={user} setUsername={canEdit ? setName : undefined} />
+            <YStack maw={800} w='100%' als='center' marginHorizontal='auto'>
+              <UserCard user={user} setUsername={editMode ? setName : undefined} setAvatar={editMode ? setUpdatedAvatar : undefined} />
               <YStack als='center' w='100%' p='$3' space>
-                {canEdit ?
+                {editMode ?
                   <TextArea value={bio} onChangeText={t => setBio(t)}
-                    placeholder='Your user bio' />
+                    placeholder={`${isCurrentUser ? 'Your' : 'Their'} user bio`} />
                   : <TamaguiMarkdown text={bio!} />}
                 {/* {canEdit ?
                 <TextArea value={bio} onChangeText={t => setBio(t)}
@@ -90,10 +99,32 @@ export function UsernameDetailsScreen() {
           {canEdit ?
             isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
               <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-                <Button backgroundColor={primaryColor} als='center'>Save Changes</Button>
+                <XStack alignItems='center'>
+                  <XStack f={1} />
+                  <Tooltip placement="top-start">
+                        <Tooltip.Trigger>
+                        <Button backgroundColor={editMode ? undefined : navColor} color={editMode ? undefined : 'black'} als='center' onPress={() => setEditMode(false)} icon={Eye} circular mr='$2' />
+                          {/* <Shield /> */}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <Heading size='$2'>View {isCurrentUser ? 'your': 'this'} profile</Heading>
+                        </Tooltip.Content>
+                      </Tooltip>
+                  <Tooltip placement="top-start">
+                        <Tooltip.Trigger>
+                        <Button backgroundColor={!editMode ? undefined : navColor} color={!editMode ? undefined : 'black'} als='center' onPress={() => setEditMode(true)} icon={Edit} circular mr='$5' />
+                          {/* <Shield /> */}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <Heading size='$2'>Edit {isCurrentUser ? 'your': 'this'} profile</Heading>
+                        </Tooltip.Content>
+                      </Tooltip>
+                  <Button backgroundColor={primaryColor} als='center' onPress={saveUser}>Save Changes</Button>
+                  <XStack f={1} />
+                </XStack>
               </YStack>
             </StickyBox>
-              : <Button mt='$3' backgroundColor={primaryColor}>Save Changes</Button>
+              : <Button mt='$3' backgroundColor={primaryColor} onPress={saveUser}>Save Changes</Button>
             : undefined}
         </>
           : userLoadFailed

@@ -98,7 +98,7 @@ export function ServerDetailsScreen() {
         {server ?
           <YStack mb='$2' w='100%' jc="center" ai="center" >
             <ScrollView w='100%'>
-              <YStack space='$2' w='100%' maw={800} paddingHorizontal='$3' als='center'>
+              <YStack space='$2' w='100%' maw={800} paddingHorizontal='$3' als='center' marginHorizontal='auto'>
                 {serverIsSelected ? undefined : <>
                   <Heading mt='$3' size='$3' als='center' color='yellow' ta='center'>Currently browsing on a different server</Heading>
 

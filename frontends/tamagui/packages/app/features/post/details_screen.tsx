@@ -1,6 +1,6 @@
 import { GetPostsRequest, Heading, Paragraph, XStack, YStack } from '@jonline/ui'
 import { Post } from '@jonline/ui/src'
-import { clearPostAlerts, loadPost, loadPostReplies, RootState, selectGroupById, selectPostById, loadPostsPage, useCredentialDispatch, useTypedSelector } from 'app/store'
+import { clearPostAlerts, loadPost, loadPostReplies, RootState, selectGroupById, selectPostById, loadPostsPage, useCredentialDispatch, useTypedSelector, useServerInfo } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import { FlatList, } from 'react-native'
 import { createParam } from 'solito'
@@ -13,11 +13,7 @@ export function PostDetailsScreen() {
   const [postId] = useParam('postId');
   const [shortname] = useParam('shortname');
 
-  const server = useTypedSelector((state: RootState) => state.servers.server);
-  const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary;
-  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+  const { server, primaryColor, navColor } = useServerInfo();
   const groupId = useTypedSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
   const group = useTypedSelector((state: RootState) =>
@@ -69,18 +65,28 @@ export function PostDetailsScreen() {
 
   type FlattenedReply = {
     postIdPath: string[];
-    post: Post;
+    reply: Post;
+    parentPost?: Post;
+    lastReplyTo?: string;
   }
 
   const flattenedReplies: FlattenedReply[] = [];
-  function flattenReplies(post: Post, postIdPath: string[], includeSelf: boolean = false) {
+  function flattenReplies(reply: Post, postIdPath: string[], includeSelf: boolean = false, parentPost?: Post,
+    lastReplyTo?: string, isLastReply?: boolean) {
     if (includeSelf) {
-      flattenedReplies.push({ post, postIdPath });
+      flattenedReplies.push({
+        reply, postIdPath, parentPost,
+        lastReplyTo: isLastReply && (collapsedReplies.has(reply.id) || reply.replyCount == 0 || reply.replies.length == 0)
+          ? lastReplyTo : undefined,
+      });
     }
-    if (collapsedReplies.has(post.id)) return;
+    if (collapsedReplies.has(reply.id)) return;
 
-    for (const reply of post.replies) {
-      flattenReplies(reply, postIdPath.concat(reply.id), true);
+    for (const [index, child] of reply.replies.entries()) {
+      const isChildLastReply = (index == reply.replies.length - 1 && includeSelf)
+        || (!includeSelf && collapsedReplies.has(child.id) || child.replyCount == 0 || child.replies.length == 0);
+      const childIsLastReplyTo = isChildLastReply ? lastReplyTo ?? reply.id : undefined;
+      flattenReplies(child, postIdPath.concat(child.id), true, child, childIsLastReplyTo, isChildLastReply);
     }
   }
   if (post) {
@@ -97,10 +103,10 @@ export function PostDetailsScreen() {
         <Heading size='$4'>Discussion</Heading>
         <XStack w='100%'>
           <FlatList data={flattenedReplies}
-            renderItem={({ item }) => {
+            renderItem={({ item: { reply: post, postIdPath, parentPost, lastReplyTo } }) => {
               let stripeColor = navColor;
-
-              return <XStack key={`reply-${item.post.id}`}
+              const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
+              return <XStack key={`reply-${post.id}`} id={`reply-${post.id}`}
                 animation="bouncy"
                 opacity={1}
                 scale={1}
@@ -110,19 +116,33 @@ export function PostDetailsScreen() {
                   y: -50,
                   opacity: 0,
                 }}
-              // exitStyle={{
-              //   // scale: 1.5,
-              //   y: -50,
-              //   opacity: 0,
-              // }}
+                exitStyle={{
+                  // scale: 1.5,
+                  // y: 50,
+                  opacity: 0,
+                }}
               >
-                {item.postIdPath.slice(1).map(() => {
-                  stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                  return <YStack w={7} bg={stripeColor} />
-                })}
-                <PostCard post={item.post} replyPostIdPath={item.postIdPath}
-                  collapseReplies={collapsedReplies.has(item.post.id)}
-                  toggleCollapseReplies={() => toggleCollapseReplies(item.post.id)} />
+                {lastReplyToIndex == undefined && lastReplyToIndex != 0 ?
+                  postIdPath.slice(1).map(() => {
+                    stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
+                    return <YStack w={7} bg={stripeColor} />
+                  })
+                  : postIdPath.slice(1, lastReplyToIndex).map(() => {
+                    stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
+                    return <YStack w={7} bg={stripeColor} />
+                  })}
+                <XStack mb={lastReplyToIndex != undefined ? '$3' : 0} f={1}>
+                  {lastReplyToIndex != undefined
+                    ? postIdPath.slice(Math.max(1,lastReplyToIndex)).map(() => {
+                      stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
+                      return <YStack w={7} bg={stripeColor} />
+                    })
+                    : undefined}
+                  <PostCard post={post} replyPostIdPath={postIdPath}
+                    collapseReplies={collapsedReplies.has(post.id)}
+                    // previewParent={parentPost}
+                    toggleCollapseReplies={() => toggleCollapseReplies(post.id)} />
+                </XStack>
               </XStack>
             }}
             ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : <YStack h={150} />}

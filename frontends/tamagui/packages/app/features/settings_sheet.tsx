@@ -1,4 +1,4 @@
-import { Button, Dialog, Heading, Label, Sheet, SizeTokens, Switch, XStack, YStack } from '@jonline/ui';
+import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
@@ -27,11 +27,12 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
     setTimeout(forceUpdate, 2000);
   }
 
-  function toggleRow(name: string, value: boolean, setter: (value: boolean) => any) {
-    return <XStack space='$3'>
+  function toggleRow(name: string, value: boolean, setter: (value: boolean) => any, disabled: boolean = false) {
+    return <XStack space='$3' o={disabled ? 0.5 : 1}>
       <Label f={1}>{name}</Label>
       <Switch size="$5" style={{ marginLeft: 'auto', marginRight: 'auto' }}
         defaultChecked={value}
+        {...{ disabled }}
         onCheckedChange={(checked) => dispatch(setter(checked))}>
         <Switch.Thumb animation="quick" />
       </Switch>
@@ -70,10 +71,13 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
           />
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center' space='$3'>
-              <Heading style={{ flex: 1 }}>Settings</Heading>
-              {toggleRow('Show Intro', app.showIntro, setShowIntro)}
+              <Heading>Settings</Heading>
+              {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)}
+              <Heading size='$3' mt='$3'>Multi-Server</Heading>
               {toggleRow('Allow Server Selection', app.allowServerSelection, setAllowServerSelection)}
-              {toggleRow('Group Accounts by Server', app.separateAccountsByServer, setSeparateAccountsByServer)}
+              <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
+              {toggleRow('Group Accounts by Server', app.separateAccountsByServer, setSeparateAccountsByServer, !app.allowServerSelection)}
+              <Heading size='$3' mt='$3'>Testing</Heading>
               {toggleRow('Show Beta Navigation', app.showBetaNavigation, setShowBetaNavigation)}
 
               {/* <XStack>

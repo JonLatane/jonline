@@ -8,6 +8,7 @@ import {
   Draft,
   EntityAdapter,
   EntityId,
+  PayloadAction,
   Slice
 } from "@reduxjs/toolkit";
 import moment from "moment";
@@ -36,9 +37,9 @@ const usersAdapter: EntityAdapter<User> = createEntityAdapter<User>({
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
 
-export type UpdateUsers = AccountOrServer & { page: number };
-export const updateUsers: AsyncThunk<GetUsersResponse, UpdateUsers, any> = createAsyncThunk<GetUsersResponse, UpdateUsers>(
-  "users/update",
+export type LoadUsersRequest = AccountOrServer & { page: number };
+export const loadUsersPage: AsyncThunk<GetUsersResponse, LoadUsersRequest, any> = createAsyncThunk<GetUsersResponse, LoadUsersRequest>(
+  "users/loadPage",
   async (getUsersRequest) => {
     let client = await getCredentialClient(getUsersRequest);
     return await client.getUsers(getUsersRequest, client.credential);
@@ -81,22 +82,44 @@ export type LoadUsername = { username: string } & AccountOrServer;
 export const loadUsername: AsyncThunk<LoadUserResult, LoadUsername, any> = createAsyncThunk<LoadUserResult, LoadUsername>(
   "users/loadByName",
   async (request) => {
-    let client = await getCredentialClient(request);
-    let getUsersRequest = GetUsersRequest.create({ username: request.username });
-    // debugger;
-    let response = await client.getUsers(getUsersRequest, client.credential);
+    const client = await getCredentialClient(request);
+    const getUsersRequest = GetUsersRequest.create({ username: request.username });
+    const response = await client.getUsers(getUsersRequest, client.credential);
     if (response.users.length == 0) throw 'User not found';
 
-    // debugger;
-
-    let user = response.users[0]!;
-    let avatar = user.avatar
+    const user = response.users[0]!;
+    const avatar = user.avatar
       ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
       : '';
     return { user: { ...user, avatar: undefined }, avatar };
   }
 );
 
+export type UpdateUser = { user: User, avatar?: string } & AccountOrServer;
+// export type LoadUserResult = {
+//   user: User;
+//   avatar: string;
+// }
+export const updateUser: AsyncThunk<LoadUserResult, UpdateUser, any> = createAsyncThunk<LoadUserResult, UpdateUser>(
+  "users/update",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const updatedUser = { ...request.user };
+    if (request.avatar) {
+      const updatedAvatar = await (await fetch(request.avatar)).arrayBuffer().then(buffer => {
+        const uint = new Uint8Array(buffer);
+        console.log("Uint8Array", uint);
+        return uint;
+      });
+      updatedUser.avatar = updatedAvatar;
+    }
+    const user = await client.updateUser(updatedUser, client.credential);
+    const avatar = user.avatar
+      ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
+      : '';
+    return { user: { ...user, avatar: undefined }, avatar };
+  }
+);
 const initialState: UsersState = {
   status: "unloaded",
   avatars: {},
@@ -118,24 +141,27 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       state.successMessage = undefined;
       state.error = undefined;
     },
+    removeAvatarById: (state, action: PayloadAction<string>) => {
+      state.avatars[action.payload] = undefined;
+    },
   },
   extraReducers: (builder) => {
-    builder.addCase(updateUsers.pending, (state) => {
+    builder.addCase(loadUsersPage.pending, (state) => {
       state.status = "loading";
       state.error = undefined;
     });
-    builder.addCase(updateUsers.fulfilled, (state, action) => {
+    builder.addCase(loadUsersPage.fulfilled, (state, action) => {
       state.status = "loaded";
       usersAdapter.upsertMany(state, action.payload.users);
       state.successMessage = `Users loaded.`;
     });
-    builder.addCase(updateUsers.rejected, (state, action) => {
+    builder.addCase(loadUsersPage.rejected, (state, action) => {
       state.status = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
-    [loadUser, loadUsername].forEach((loader) => {
+    [loadUser, loadUsername, updateUser].forEach((loader) => {
       builder.addCase(loader.pending, (state) => {
         // debugger;
         state.status = "loading";

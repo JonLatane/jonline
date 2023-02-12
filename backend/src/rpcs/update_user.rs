@@ -52,6 +52,7 @@ pub fn update_user(
                 .first::<models::User>(conn)?;
             if admin || self_update {
                 existing_user.username = request.username.to_owned();
+                existing_user.bio = request.bio.to_owned();
                 existing_user.avatar = request.avatar.to_owned();
                 if request.visibility == Visibility::GlobalPublic as i32
                     && existing_user.visibility.to_proto_visibility().unwrap()

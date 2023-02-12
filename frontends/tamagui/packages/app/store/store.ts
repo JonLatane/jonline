@@ -21,6 +21,7 @@ const accountsPersistConfig = {
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
   blacklist: ['status', 'successMessage', 'errorMessage', 'error']
 }
+
 const postsPersistConfig = {
   key: 'posts',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
@@ -29,12 +30,13 @@ const postsPersistConfig = {
 const usersPersistConfig = {
   key: 'users',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'failedUsernames', 'failedUserIds'],
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'usernameIds', 'failedUsernames', 'failedUserIds'],
 }
+
 const groupsPersistConfig = {
   key: 'groups',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'failedShortnames'],
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'shortnameIds', 'failedShortnames'],
 }
 
 const rootReducer = combineReducers({
@@ -73,6 +75,48 @@ export function useCredentialDispatch(): CredentialDispatch {
     server: useTypedSelector((state: RootState) => state.servers.server)
   }
   return { dispatch, accountOrServer };
+}
+
+export type ServerInfo = {
+  server?: JonlineServer;
+  primaryColor: string;
+  navColor: string;
+  primaryTextColor: string;
+  navTextColor: string;
+}
+export function useServerInfo(): ServerInfo {
+
+  const server = useTypedSelector((state: RootState) => state.servers.server);
+  const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary;
+  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
+  const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
+  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+
+  const primaryTextColor = textColor(primaryColor);
+  const navTextColor = textColor(navColor);
+
+  return { server, primaryColor, navColor, primaryTextColor, navTextColor };
+}
+
+const _textColors = new Map<string, string>();
+function textColor(hex: string) {
+  if (_textColors.has(hex)) {
+    return _textColors[hex];
+  }
+  const parsed = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const rgb = parsed ? {
+    r: parseInt(parsed[1]!, 16),
+    g: parseInt(parsed[2]!, 16),
+    b: parseInt(parsed[3]!, 16)
+  } : null;
+  const { r, g, b } = rgb!;
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  const result = luma > 0.179 ? '#000000' : '#ffffff';
+  _textColors[hex] = result;
+  return result;
 }
 
 export type AppStore = Omit<Store<RootState, AnyAction>, "dispatch"> & {
