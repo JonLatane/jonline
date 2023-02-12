@@ -101,7 +101,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         setForceDisableAccountButtons(false);
       }, 1000);
     }, 1500);
-  } else if(accountsState.errorMessage && forceDisableAccountButtons) {
+  } else if (accountsState.errorMessage && forceDisableAccountButtons) {
     setForceDisableAccountButtons(false);
   }
   if (!app.allowServerSelection && browsingServers) {
@@ -141,9 +141,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
 
-            <Button size='$3' icon={RefreshCw} circular 
-            disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
-            onPress={resetCredentialedData} />
+            <Button size='$3' icon={RefreshCw} circular
+              disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
+              onPress={resetCredentialedData} />
             <XStack f={1} />
             <Button
               alignSelf='center'
@@ -234,13 +234,15 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                             <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
                               defaultChecked
                               onCheckedChange={(checked) => setNewServerSecure(checked)}
-                              disabled={disableSecureSelection} />
+                              disabled={disableSecureSelection} >
+                              <Switch.Thumb animation="quick" />
+                            </Switch>
 
                             <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
                               <Heading size="$2">Secure</Heading>
                             </Label>
                           </YStack>
-                          <Button style={{ flex: 2 }} onClick={addServer} disabled={serversLoading || !newServerValid}>
+                          <Button style={{ flex: 2 }} theme='active' onClick={addServer} disabled={serversLoading || !newServerValid}>
                             Add Server
                           </Button>
                         </XStack>
@@ -319,7 +321,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           setAddingAccount(false)
                         }}
                       />
-                      <YStack space="$2">
+                      <YStack space="$2" maw={600} w='100%' als='center'>
                         <Heading size="$10">Add Account</Heading>
                         <Heading size="$6">{primaryServer?.host}/</Heading>
                         <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
@@ -336,7 +338,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           <Button flex={2} marginRight='$1' onClick={createServerAccount} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
                             Create Account
                           </Button>
-                          <Button flex={1} onClick={loginToServer} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
+                          <Button flex={1} theme='active' onClick={loginToServer} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
                             Login
                           </Button>
                         </XStack>

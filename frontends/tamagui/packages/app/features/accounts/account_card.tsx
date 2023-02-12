@@ -1,9 +1,10 @@
 import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
 import { Permission } from "@jonline/ui/src";
-import { Bot, Shield, Trash } from "@tamagui/lucide-icons";
+import { Bot, Shield, Trash, User as UserIcon } from "@tamagui/lucide-icons";
 import { store, JonlineAccount, removeAccount, selectAccount, selectServer, useTypedDispatch } from "app/store";
 import React from "react";
 import { View } from "react-native";
+import { useLink } from "solito/link";
 
 interface Props {
   account: JonlineAccount;
@@ -15,6 +16,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
 
   const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
   const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
+  const profileLinkProps = useLink({ href: `/${account.user.username}` });
 
   function doSelectAccount() {
     if (store.getState().servers.server?.host != account.server.host) {
@@ -59,6 +61,8 @@ const AccountCard: React.FC<Props> = ({ account }) => {
             </YStack>
             <View style={{ flex: 1 }} />
             {selected ? <Button onClick={(e) => { e.stopPropagation(); doLogout(); }} marginRight='$1'>Logout</Button> : undefined}
+
+            <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$2' />
             <Dialog>
               <Dialog.Trigger asChild>
                 <Button icon={<Trash />} circular onClick={(e) => { e.stopPropagation(); }} color="red" />
@@ -111,7 +115,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
           </XStack>
         </Card.Footer>
         <Card.Background>
-          <YStack h='100%' w={5} backgroundColor={primaryColor}/>
+          <YStack h='100%' w={5} backgroundColor={primaryColor} />
         </Card.Background>
       </Card>
     </Theme>

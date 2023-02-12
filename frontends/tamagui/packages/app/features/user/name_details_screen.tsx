@@ -88,8 +88,8 @@ export function UsernameDetailsScreen() {
             </YStack>
           </ScrollView>
           {canEdit ?
-            isWeb ? <StickyBox bottom offsetBottom={0} style={{ width: '100%' }}>
-              <YStack w='100%' paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+            isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
+              <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
                 <Button backgroundColor={primaryColor} als='center'>Save Changes</Button>
               </YStack>
             </StickyBox>

@@ -149,8 +149,8 @@ export function ServerDetailsScreen() {
             </ScrollView>
 
             {isAdmin ?
-              isWeb ? <StickyBox bottom offsetBottom={0} style={{ width: '100%' }}>
-                <YStack w='100%' paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+              isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
+                <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
                   <Button maw={600} als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
                 </YStack>
               </StickyBox>
