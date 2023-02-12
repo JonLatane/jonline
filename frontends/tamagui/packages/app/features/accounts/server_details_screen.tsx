@@ -1,11 +1,13 @@
 import { Button, formatError, Heading, Input, Paragraph, ServerConfiguration, TextArea, XStack, YStack } from '@jonline/ui'
-import { Permission } from '@jonline/ui/src'
+import { isWeb, Permission, ScrollView, useWindowDimensions } from '@jonline/ui/src'
 import { getCredentialClient, JonlineServer, RootState, selectServer, selectServerById, serverUrl, setAllowServerSelection, upsertServer, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useState } from 'react'
 import { HexColorPicker } from "react-colorful"
+import { Dimensions } from 'react-native';
 import { createParam } from 'solito'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import ServerCard from './server_card'
+import StickyBox from "react-sticky-box";
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -89,60 +91,70 @@ export function ServerDetailsScreen() {
     }
   }
 
+  const windowHeight = useWindowDimensions().height;
   return (
     <TabsNavigation onlyShowServer={server}>
       <YStack f={1} jc="center" ai="center" space w='100%'>
         {server ?
-          <YStack w='100%' maw={800} space='$2' paddingHorizontal='$3'>
-            {serverIsSelected ? undefined : <>
-              <Heading mt='$3' size='$3' als='center' color='yellow' ta='center'>Currently browsing on a different server</Heading>
+          <YStack mb='$2' w='100%' jc="center" ai="center" >
+            <ScrollView w='100%'>
+              <YStack space='$2' w='100%' maw={800} paddingHorizontal='$3' als='center'>
+                {serverIsSelected ? undefined : <>
+                  <Heading mt='$3' size='$3' als='center' color='yellow' ta='center'>Currently browsing on a different server</Heading>
 
-              <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center' color='yellow' opacity={selectedServer?.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>
-                {selectedServer?.serverConfiguration?.serverInfo?.name || 'Unnamed'}
-              </Heading>
-              <Heading size='$3' als='center' marginTop='$2' color='yellow'>
-                {selectedServer?.host}
-              </Heading>
-              <Button onPress={() => dispatch(selectServer(server))} mt='$3' theme='active' size='$3'>
-                Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
-              </Button>
-            </>}
-            <Heading size='$10' als='center' mt='$3'>Server Info</Heading>
-            <ServerCard server={server!} />
-            <XStack mt='$4'>
-              <Heading size='$3' f={1}>Service Version</Heading>
-              <Paragraph>{serviceVersion?.version}</Paragraph>
-            </XStack>
-            <Heading size='$3'>Name</Heading>
-            {isAdmin
-              ? <Input value={name} placeholder='The name of your community.' onChangeText={t => setName(t)} />
-              : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
-            <Heading size='$3'>Description</Heading>
+                  <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center' color='yellow' opacity={selectedServer?.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>
+                    {selectedServer?.serverConfiguration?.serverInfo?.name || 'Unnamed'}
+                  </Heading>
+                  <Heading size='$3' als='center' marginTop='$2' color='yellow'>
+                    {selectedServer?.host}
+                  </Heading>
+                  <Button onPress={() => dispatch(selectServer(server))} mt='$3' theme='active' size='$3'>
+                    Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
+                  </Button>
+                </>}
+                <Heading size='$10' als='center' mt='$3'>Server Info</Heading>
+                <ServerCard server={server!} />
+                <XStack mt='$4'>
+                  <Heading size='$3' f={1}>Service Version</Heading>
+                  <Paragraph>{serviceVersion?.version}</Paragraph>
+                </XStack>
+                <Heading size='$3'>Name</Heading>
+                {isAdmin
+                  ? <Input value={name} placeholder='The name of your community.' onChangeText={t => setName(t)} />
+                  : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
+                <Heading size='$3'>Description</Heading>
+                {isAdmin ?
+                  <TextArea value={description} onChangeText={t => setDescription(t)}
+                    placeholder='A description of the purpose of your community, any general guidelines, etc.' />
+                  : <Paragraph opacity={name && name != '' ? 1 : 0.5}>{description || 'No description set.'}</Paragraph>}
+
+                <XStack>
+                  <Heading size='$3' f={1}>Primary Color</Heading>
+                  <XStack w={50} h={30} backgroundColor={primaryColorHex} />
+                </XStack>
+                {isAdmin ? <XStack als='center'>
+                  <HexColorPicker color={primaryColorHex} onChange={setPrimaryColorHex} />
+                </XStack> : undefined}
+
+                <XStack>
+                  <Heading size='$3' f={1}>Navigation Color</Heading>
+                  <XStack w={50} h={30} backgroundColor={navColorHex} />
+                </XStack>
+                {isAdmin ? <XStack als='center'>
+                  <HexColorPicker color={navColorHex} onChange={setNavColorHex} />
+                </XStack> : undefined}
+
+                {isWeb && isAdmin ? <YStack h={50} /> : undefined}
+              </YStack>
+            </ScrollView>
+
             {isAdmin ?
-              <TextArea value={description} onChangeText={t => setDescription(t)}
-                placeholder='A description of the purpose of your community, any general guidelines, etc.' />
-              : <Paragraph opacity={name && name != '' ? 1 : 0.5}>{description || 'No description set.'}</Paragraph>}
-
-            <XStack>
-              <Heading size='$3' f={1}>Primary Color</Heading>
-              <XStack w={50} h={30} backgroundColor={primaryColorHex} />
-            </XStack>
-            {isAdmin ? <XStack als='center'>
-              <HexColorPicker color={primaryColorHex} onChange={setPrimaryColorHex} />
-            </XStack> : undefined}
-
-            <XStack>
-              <Heading size='$3' f={1}>Navigation Color</Heading>
-              <XStack w={50} h={30} backgroundColor={navColorHex} />
-            </XStack>
-            {isAdmin ? <XStack als='center'>
-              <HexColorPicker color={navColorHex} onChange={setNavColorHex} />
-            </XStack> : undefined}
-
-            {isAdmin ? <>
-              <Button backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
-              <Heading size='$1' color='red'>{ }</Heading>
-            </>
+              isWeb ? <StickyBox bottom offsetBottom={0} style={{ width: '100%' }}>
+                <YStack w='100%' paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+                  <Button maw={600} als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
+                </YStack>
+              </StickyBox>
+                : <Button maw={600} mt='$3' als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
               : undefined}
 
           </YStack>

@@ -1,6 +1,6 @@
 import { loadPostPreview, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useTypedSelector } from "app/store";
 import React, { PropsWithChildren, useEffect, useState } from "react";
-import { Animated, Platform, View, ViewStyle } from "react-native";
+import { Animated, Platform, View, ViewStyle, Dimensions } from "react-native";
 
 import { Anchor, Button, Card, Group, Heading, Image, ListItem, Paragraph, Post, Tooltip, useMedia, useTheme, XStack, YStack, Text, User } from "@jonline/ui";
 import { Bot, ChevronRight, Shield } from "@tamagui/lucide-icons";
@@ -26,6 +26,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const theme = useTheme();
   const textColor: string = theme.color.val;
   const server = useTypedSelector((state: RootState) => state.servers.server);
+  const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
+  // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
   const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
@@ -65,27 +67,39 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
 
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
   const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
+  const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
+
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   useEffect(() => {
     if (authorId) {
-      if (!loadingAuthor && (!author || authorAvatar == undefined)) {
+      if (!loadingAuthor && (!author || authorAvatar == undefined) && !authorLoadFailed) {
         setLoadingAuthor(true);
         setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
-      } else if (loadingAuthor && author && authorAvatar != undefined) {
+      } else if (loadingAuthor && author) {
         setLoadingAuthor(false);
       }
     }
   });
 
-  const cleanedContent = post.content?.replace(
-    /((?!  ).)\n([^\n*])/g,
-    (_, b, c) => {
-      if (b[1] != ' ') b = `${b} `
-      return `${b}${c}`;
+  // const loadingReplies = postsStatus == 'loading';
+  const [loadingReplies, setLoadingReplies] = useState(false);
+  useEffect(() => {
+    if (loadingReplies && (post.replyCount == 0 || post.replies.length > 0 || postsStatus != 'loading')) {
+      setLoadingReplies(false);
     }
-  );
-
-  const cannotToggleReplies = !replyPostIdPath || post.replyCount == 0 || (post.replies.length > 0 && !toggleCollapseReplies);
+  });
+  function toggleReplies() {
+    setTimeout(() => {
+      if (post.replies.length == 0) {
+        setLoadingReplies(true);
+        dispatch(loadPostReplies({ ...accountOrServer, postIdPath: replyPostIdPath! }));
+      } else if (toggleCollapseReplies) {
+        toggleCollapseReplies();
+      }
+    }, 1);
+  }
+  const cannotToggleReplies = !replyPostIdPath || post.replyCount == 0
+    || (post.replies.length > 0 && !toggleCollapseReplies);
   const collapsed = collapseReplies || post.replies?.length == 0;
   return (
     // <Theme inverse={false}>
@@ -152,7 +166,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                       //     }}
                       //   />
                       // </NativeText>,
-                      <TamaguiMarkdown text={cleanedContent!} disableLinks={isPreview} />,
+                      <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
 
                     // <ReactMarkdown children={cleanedContent!}
                     //   components={{
@@ -245,17 +259,9 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 <XStack f={1} />
                 <YStack h='100%'>
                   <Button transparent
-                    disabled={cannotToggleReplies}
+                    disabled={cannotToggleReplies || loadingReplies}
                     marginVertical='auto'
-                    onPress={() => {
-                      setTimeout(() => {
-                        if (post.replies.length == 0) {
-                          dispatch(loadPostReplies({ ...accountOrServer, postIdPath: replyPostIdPath! }));
-                        } else if (toggleCollapseReplies) {
-                          toggleCollapseReplies();
-                        }
-                      }, 1);
-                    }}>
+                    onPress={toggleReplies}>
                     <XStack>
                       <YStack marginVertical='auto'>
                         {!post.replyToPostId ? <Heading size="$1" ta='right'>
@@ -272,7 +278,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                         animation='quick'
                         rotate={collapsed ? '0deg' : '90deg'}
                       >
-                        <ChevronRight />
+                        <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
                       </XStack> : undefined}
                     </XStack>
                   </Button>
@@ -399,7 +405,15 @@ export const TamaguiMarkdown = ({ text, disableLinks }: MarkdownProps) => {
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
 
-  return <ReactMarkdown children={text}
+  const cleanedText = text.replace(
+    /((?!  ).)\n([^\n*])/g,
+    (_, b, c) => {
+      if (b[1] != ' ') b = `${b} `
+      return `${b}${c}`;
+    }
+  );
+
+  return <ReactMarkdown children={cleanedText}
     components={{
       // li: ({ node, ordered, ...props }) => <li }} {...props} />,
       h1: ({ children, id }) => <Heading size='$9' {...{ children, id }} />,

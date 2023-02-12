@@ -29,7 +29,7 @@ const postsPersistConfig = {
 const usersPersistConfig = {
   key: 'users',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'failedUsernames'],
+  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'failedUsernames', 'failedUserIds'],
 }
 const groupsPersistConfig = {
   key: 'groups',

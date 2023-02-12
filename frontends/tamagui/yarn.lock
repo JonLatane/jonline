@@ -4668,6 +4668,7 @@ __metadata:
     react-native-get-random-values: ^1.8.0
     react-native-image-picker: ^5.0.1
     react-native-markdown-renderer: ^3.2.8
+    react-native-social-fab: ^1.0.2
     react-redux: ^8.0.5
     react-sticky-box: ^1.0.2
     redux-persist: ^6.0.0
@@ -12844,6 +12845,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 3a0116bf0628a735bdb87d7e4648f4bbac278152599a2bdd973e4dec92f87cb2c805dd7adb844d01236c7c92bab017ea8de59bea44d9f58397fddb6f9f3077c5
+  languageName: node
+  linkType: hard
+
+"react-native-social-fab@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "react-native-social-fab@npm:1.0.2"
+  peerDependencies:
+    react: ^16.0.0-beta.5
+    react-native: ^0.49.1
+  checksum: d402f294974eabe592ded53ba2eb76bec88a1ebf3cf01d2127d8a64deefe8c43a2c416060e0617f0fb3095d2fa6d25ea4888122c78e8f815c6a506bd035e2415
   languageName: node
   linkType: hard
 

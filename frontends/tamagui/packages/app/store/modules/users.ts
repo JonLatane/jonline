@@ -24,6 +24,7 @@ export interface UsersState {
   usernameIds: Dictionary<string>;
   avatars: Dictionary<string>;
   failedUsernames: string[];
+  failedUserIds: string[];
 }
 
 export interface UsersSlice {
@@ -101,6 +102,7 @@ const initialState: UsersState = {
   avatars: {},
   usernameIds: {},
   failedUsernames: [],
+  failedUserIds: [],
   ...usersAdapter.getInitialState(),
 };
 
@@ -150,6 +152,8 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
         state.status = "errored";
         if (loader === loadUsername) {
           state.failedUsernames = [...state.failedUsernames, (action.meta.arg as LoadUsername).username];
+        } else if (loader == loadUser) {
+          state.failedUserIds = [...state.failedUserIds, (action.meta.arg as LoadUser).id];
         }
         state.error = action.error as Error;
         state.errorMessage = formatError(action.error as Error);

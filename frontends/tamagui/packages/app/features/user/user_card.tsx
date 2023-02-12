@@ -9,9 +9,10 @@ import { FadeInView } from "../post/post_card";
 interface Props {
   user: User;
   isPreview?: boolean;
+  setUsername?: (username: string) => void;
 }
 
-const UserCard: React.FC<Props> = ({ user, isPreview = false }) => {
+const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
 
