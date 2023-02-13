@@ -66,8 +66,8 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
                   <Bot />
                 </Tooltip.Trigger>
                 <Tooltip.Content>
-                  <Heading size='$2'>User may be (or run) a bot.</Heading>
-                  <Heading size='$1'>Posts may be written by an algorithm rather than a human.</Heading>
+                  <Heading size='$2' ta='center' als='center'>User may be (or run) a bot.</Heading>
+                  <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading>
                 </Tooltip.Content>
               </Tooltip> : undefined}
 

@@ -105,7 +105,11 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
     <>
       <YStack w='100%'>
         {previewParent && post.replyToPostId
-          ? <XStack mt='-12%' ml='-28%' mb='-14%' scale={0.5}>
+          ? <XStack 
+          mt={media.gtXs ? '-5%' : '-12%'}
+          ml={media.gtXs ? '-28%' : '-28%'}
+          mb={media.gtXs ? '-5%' : '-14%'}
+          scale={0.5}>
             <PostCard post={previewParent} isPreview={true} />
           </XStack> : undefined}
         {/* {previewParent ? <PostCard post={post.parent!} isPreview={true}  /> : undefined} */}
@@ -215,8 +219,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                             <Bot />
                           </Tooltip.Trigger>
                           <Tooltip.Content>
-                            <Heading size='$2'>User may be (or run) a bot.</Heading>
-                            <Heading size='$1'>Posts may be written by an algorithm rather than a human.</Heading>
+                            <Heading size='$2' ta='center' als='center'>User may be (or run) a bot.</Heading>
+                            <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading>
                           </Tooltip.Content>
                         </Tooltip> : undefined}
                       <Heading size="$1" ml={author && author.permissions.includes(Permission.RUN_BOTS) ? '$2' : '$1'}
@@ -421,19 +425,20 @@ export const FadeInView: React.FC<FadeInViewProps> = props => {
 };
 
 export type MarkdownProps = {
-  text: string;
+  text?: string;
   disableLinks?: boolean;
+  cleanContent?: boolean;
 }
-export const TamaguiMarkdown = ({ text, disableLinks }: MarkdownProps) => {
+export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false }: MarkdownProps) => {
   const { server, primaryColor, navColor } = useServerInfo();
 
-  const cleanedText = (text ?? '').replace(
+  const cleanedText = cleanContent ? text.replace(
     /((?!  ).)\n([^\n*])/g,
     (_, b, c) => {
       if (b[1] != ' ') b = `${b} `
       return `${b}${c}`;
     }
-  );
+  ) : text;
 
   return <ReactMarkdown children={cleanedText}
     components={{
@@ -445,7 +450,7 @@ export const TamaguiMarkdown = ({ text, disableLinks }: MarkdownProps) => {
       h5: ({ children, id }) => <Heading size='$5' {...{ children, id }} />,
       h6: ({ children, id }) => <Heading size='$4' {...{ children, id }} />,
       li: ({ ordered, index, children }) => <XStack ml='$3'>
-        <Paragraph size='$3' mr='$4'>{ordered ? `${index}.` : '• '}</Paragraph>
+        <Paragraph size='$3' mr='$4'>{ordered ? `${index + 1}.` : '• '}</Paragraph>
         <Paragraph size='$3' {...{ children }} />
       </XStack>,
       p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,

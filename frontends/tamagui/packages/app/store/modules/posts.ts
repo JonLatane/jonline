@@ -18,6 +18,7 @@ import { AccountOrServer } from "../types";
 export interface PostsState {
   baseStatus: "unloaded" | "loading" | "loaded" | "errored";
   status: "unloaded" | "loading" | "loaded" | "errored";
+  sendReplyStatus: "sending" | "sent" | "errored" | undefined;
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -35,9 +36,24 @@ const postsAdapter: EntityAdapter<Post> = createEntityAdapter<Post>({
 export type CreatePost = AccountOrServer & CreatePostRequest;
 export const createPost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, CreatePost>(
   "posts/create",
-  async (createPostRequest) => {
-    let client = await getCredentialClient(createPostRequest);
-    return client.createPost(createPostRequest, client.credential);
+  async (request) => {
+    const client = await getCredentialClient(request);
+    return await client.createPost(request, client.credential);
+  }
+);
+
+export type ReplyToPost = AccountOrServer & { postIdPath: string[], content: string };
+export const replyToPost: AsyncThunk<Post, ReplyToPost, any> = createAsyncThunk<Post, ReplyToPost>(
+  "posts/reply",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const createPostRequest: CreatePostRequest = {
+      replyToPostId: request.postIdPath[request.postIdPath.length - 1],
+      content: request.content,
+    };
+    // TODO: Why doesn't the BE return the correct created date? We "estimate" it here.
+    const result = await client.createPost(createPostRequest, client.credential);
+    return {...result, createdAt: new Date().toISOString()}
   }
 );
 
@@ -108,6 +124,7 @@ const initialState: PostsState = {
   status: "unloaded",
   baseStatus: "unloaded",
   draftPost: Post.create(),
+  sendReplyStatus: undefined,
   previews: {},
   ...postsAdapter.getInitialState(),
 };
@@ -124,6 +141,9 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.successMessage = undefined;
       state.error = undefined;
     },
+    confirmReplySent: (state) => {
+      state.sendReplyStatus = undefined;
+    }
   },
   extraReducers: (builder) => {
     builder.addCase(createPost.pending, (state) => {
@@ -137,6 +157,42 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(createPost.rejected, (state, action) => {
       state.status = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
+    });
+    builder.addCase(replyToPost.pending, (state) => {
+      state.sendReplyStatus = "sending";
+      state.error = undefined;
+    });
+    builder.addCase(replyToPost.fulfilled, (state, action) => {
+      state.sendReplyStatus = "sent";
+      // postsAdapter.upsertOne(state, action.payload);
+      const reply = action.payload;
+      const postIdPath = action.meta.arg.postIdPath;
+      const basePost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
+      if (!basePost) {
+        console.error(`Root post ID (${postIdPath[0]}) not found.`);
+        return;
+      }
+      const rootPost: Post = { ...basePost }
+
+      let parentPost: Post = rootPost;
+      for (const postId of postIdPath.slice(1)) {
+        parentPost.replies = parentPost.replies.map(p => ({ ...p }));
+        const nextPost = parentPost.replies.find((reply) => reply.id === postId);
+        if (!nextPost) {
+          console.error(`Post ID (${postId}) not found along path ${JSON.stringify(postIdPath)}.`);
+          return;
+        }
+        parentPost = nextPost;
+      }
+      parentPost.replies = [reply].concat(...parentPost.replies);
+      postsAdapter.upsertOne(state, rootPost);
+      state.successMessage = `Reply created.`;
+    });
+    builder.addCase(replyToPost.rejected, (state, action) => {
+      state.sendReplyStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
@@ -204,7 +260,11 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         }
         post = nextPost;
       }
-      post.replies = action.payload.posts;
+      const mergedReplies = action.payload.posts.map(reply => {
+        const oldReply = post.replies.find(r => r.id === reply.id);
+        return { ...reply, replies: oldReply?.replies ?? reply.replies };
+      });
+      post.replies = mergedReplies;
       postsAdapter.upsertOne(state, rootPost);
       state.successMessage = `Replies loaded.`;
     });
@@ -221,7 +281,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   },
 });
 
-export const { removePost, clearPostAlerts: clearPostAlerts, resetPosts } = postsSlice.actions;
+export const { removePost, clearPostAlerts: clearPostAlerts, confirmReplySent, resetPosts } = postsSlice.actions;
 export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();
 export const postsReducer = postsSlice.reducer;
 export const upsertPost = postsAdapter.upsertOne;

@@ -35,7 +35,7 @@ export function HomeScreen() {
   });
 
   function reloadPosts() {
-    setTimeout(() =>dispatch(loadPostsPage({ ...accountOrServer, ...GetPostsRequest.create() })), 1);
+    setTimeout(() => dispatch(loadPostsPage({ ...accountOrServer })), 1);
   }
 
   function hideIntro() {

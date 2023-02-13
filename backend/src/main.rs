@@ -20,6 +20,7 @@ extern crate tonic_web;
 extern crate log;
 // #[macro_use]
 extern crate lazy_static;
+extern crate tokio_stream;
 
 use std::{env, fs, sync::Arc};
 

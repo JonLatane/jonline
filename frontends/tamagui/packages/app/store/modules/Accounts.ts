@@ -1,6 +1,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { formatError } from "@jonline/ui/src";
 import { CreateAccountRequest, LoginRequest } from "@jonline/ui/src/generated/authentication";
+import { ExpirableToken } from "@jonline/ui/types";
 import {
   createAsyncThunk,
   createEntityAdapter,
@@ -12,9 +13,11 @@ import {
 import moment from "moment";
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import {store, getServerClient, resetCredentialedData } from "../store";
+import { store, getServerClient, resetCredentialedData } from "../store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient, JonlineServer } from "../types";
 
+let _accessFetchLock = false;
+let _newAccessToken: ExpirableToken | undefined = undefined;
 export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
   let { account, server } = accountOrServer;
   if (!account) {
@@ -26,8 +29,18 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
     let now = moment.utc();
     let expired = accessExpiresAt.subtract(2, 'minutes').isBefore(now);
     if (expired) {
-      let { accessToken, refreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
-      account = { ...account, accessToken: accessToken! };
+      let newAccessToken: ExpirableToken | undefined = undefined;
+      while (_accessFetchLock) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        newAccessToken = _newAccessToken;
+      }
+      if(!newAccessToken) {
+        _accessFetchLock = true;
+        let { accessToken: fetchedAccessToken, refreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
+        newAccessToken = fetchedAccessToken!;
+        _accessFetchLock = false;
+      }
+      account = { ...account, accessToken: newAccessToken! };
       store.dispatch(accountsSlice.actions.upsertAccount(account));
     }
     metadata.append('authorization', account.accessToken.token);

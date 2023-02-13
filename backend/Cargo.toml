@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.321"
+version = "0.1.337"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -44,6 +44,7 @@ websocket = "0.26.5"
 which = "4.3.0"
 markdown = "0.3"
 lazy_static = "1.4.0"
+tokio-stream = "0.1.11"
 
 # headless_chrome = { git = "https://github.com/atroche/rust-headless-chrome", features = ["fetch"], rev = "f8012ec4ed867ccc0efa6b262723363afd775011" }
 

@@ -91,6 +91,9 @@ service Jonline {
   // Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.*
   rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsResponse) {}
 
+  // (TODO) Reply streaming interface
+  rpc StreamReplies(Post) returns (stream Post);
+
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
   // Requires ADMIN permissions.
   rpc ConfigureServer(ServerConfiguration) returns (ServerConfiguration) {}

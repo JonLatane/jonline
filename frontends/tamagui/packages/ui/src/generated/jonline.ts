@@ -1,6 +1,8 @@
 /* eslint-disable */
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
+import { Observable } from "rxjs";
+import { share } from "rxjs/operators";
 import {
   AccessTokenRequest,
   AccessTokenResponse,
@@ -113,6 +115,8 @@ export interface Jonline {
   deleteGroupPost(request: DeepPartial<GroupPost>, metadata?: grpc.Metadata): Promise<Empty>;
   /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
   getGroupPosts(request: DeepPartial<GetGroupPostsRequest>, metadata?: grpc.Metadata): Promise<GetGroupPostsResponse>;
+  /** (TODO) Reply streaming interface */
+  streamReplies(request: DeepPartial<Post>, metadata?: grpc.Metadata): Observable<Post>;
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
    * Requires ADMIN permissions.
@@ -158,6 +162,7 @@ export class JonlineClientImpl implements Jonline {
     this.updateGroupPost = this.updateGroupPost.bind(this);
     this.deleteGroupPost = this.deleteGroupPost.bind(this);
     this.getGroupPosts = this.getGroupPosts.bind(this);
+    this.streamReplies = this.streamReplies.bind(this);
     this.configureServer = this.configureServer.bind(this);
     this.resetData = this.resetData.bind(this);
   }
@@ -268,6 +273,10 @@ export class JonlineClientImpl implements Jonline {
 
   getGroupPosts(request: DeepPartial<GetGroupPostsRequest>, metadata?: grpc.Metadata): Promise<GetGroupPostsResponse> {
     return this.rpc.unary(JonlineGetGroupPostsDesc, GetGroupPostsRequest.fromPartial(request), metadata);
+  }
+
+  streamReplies(request: DeepPartial<Post>, metadata?: grpc.Metadata): Observable<Post> {
+    return this.rpc.invoke(JonlineStreamRepliesDesc, Post.fromPartial(request), metadata);
   }
 
   configureServer(request: DeepPartial<ServerConfiguration>, metadata?: grpc.Metadata): Promise<ServerConfiguration> {
@@ -902,6 +911,29 @@ export const JonlineGetGroupPostsDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
+export const JonlineStreamRepliesDesc: UnaryMethodDefinitionish = {
+  methodName: "StreamReplies",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: true,
+  requestType: {
+    serializeBinary() {
+      return Post.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Post.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
 export const JonlineConfigureServerDesc: UnaryMethodDefinitionish = {
   methodName: "ConfigureServer",
   service: JonlineDesc,
@@ -961,13 +993,18 @@ interface Rpc {
     request: any,
     metadata: grpc.Metadata | undefined,
   ): Promise<any>;
+  invoke<T extends UnaryMethodDefinitionish>(
+    methodDesc: T,
+    request: any,
+    metadata: grpc.Metadata | undefined,
+  ): Observable<any>;
 }
 
 export class GrpcWebImpl {
   private host: string;
   private options: {
     transport?: grpc.TransportFactory;
-
+    streamingTransport?: grpc.TransportFactory;
     debug?: boolean;
     metadata?: grpc.Metadata;
     upStreamRetryCodes?: number[];
@@ -977,7 +1014,7 @@ export class GrpcWebImpl {
     host: string,
     options: {
       transport?: grpc.TransportFactory;
-
+      streamingTransport?: grpc.TransportFactory;
       debug?: boolean;
       metadata?: grpc.Metadata;
       upStreamRetryCodes?: number[];
@@ -1013,6 +1050,45 @@ export class GrpcWebImpl {
         },
       });
     });
+  }
+
+  invoke<T extends UnaryMethodDefinitionish>(
+    methodDesc: T,
+    _request: any,
+    metadata: grpc.Metadata | undefined,
+  ): Observable<any> {
+    const upStreamCodes = this.options.upStreamRetryCodes || [];
+    const DEFAULT_TIMEOUT_TIME: number = 3_000;
+    const request = { ..._request, ...methodDesc.requestType };
+    const maybeCombinedMetadata = metadata && this.options.metadata
+      ? new BrowserHeaders({ ...this.options?.metadata.headersMap, ...metadata?.headersMap })
+      : metadata || this.options.metadata;
+    return new Observable((observer) => {
+      const upStream = (() => {
+        const client = grpc.invoke(methodDesc, {
+          host: this.host,
+          request,
+          transport: this.options.streamingTransport || this.options.transport,
+          metadata: maybeCombinedMetadata,
+          debug: this.options.debug,
+          onMessage: (next) => observer.next(next),
+          onEnd: (code: grpc.Code, message: string, trailers: grpc.Metadata) => {
+            if (code === 0) {
+              observer.complete();
+            } else if (upStreamCodes.includes(code)) {
+              setTimeout(upStream, DEFAULT_TIMEOUT_TIME);
+            } else {
+              const err = new Error(message) as any;
+              err.code = code;
+              err.metadata = trailers;
+              observer.error(err);
+            }
+          },
+        });
+        observer.add(() => client.close());
+      });
+      upStream();
+    }).pipe(share());
   }
 }
 

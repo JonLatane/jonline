@@ -2217,6 +2217,7 @@ __metadata:
     "@tamagui/react-native-media-driver": ^1.2.14
     "@tamagui/shorthands": ^1.2.14
     "@tamagui/theme-base": ^1.2.14
+    rxjs: ^7.8.0
     tamagui: ^1.2.14
   languageName: unknown
   linkType: soft
@@ -13621,6 +13622,15 @@ __metadata:
   dependencies:
     queue-microtask: ^1.2.2
   checksum: cb4f97ad25a75ebc11a8ef4e33bb962f8af8516bb2001082ceabd8902e15b98f4b84b4f8a9b222e5d57fc3bd1379c483886ed4619367a7680dad65316993021d
+  languageName: node
+  linkType: hard
+
+"rxjs@npm:^7.8.0":
+  version: 7.8.0
+  resolution: "rxjs@npm:7.8.0"
+  dependencies:
+    tslib: ^2.1.0
+  checksum: 61b4d4fd323c1043d8d6ceb91f24183b28bcf5def4f01ca111511d5c6b66755bc5578587fe714ef5d67cf4c9f2e26f4490d4e1d8cabf9bd5967687835e9866a2
   languageName: node
   linkType: hard
 

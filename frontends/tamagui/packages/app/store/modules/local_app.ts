@@ -10,6 +10,9 @@ export type LocalAppConfiguration = {
   allowServerSelection: boolean;
   separateAccountsByServer: boolean;
   showBetaNavigation: boolean;
+  discussionChatUI: boolean;
+  autoRefreshDiscussions: boolean;
+  discussionRefreshIntervalSeconds: number;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -19,6 +22,9 @@ const initialState: LocalAppConfiguration = {
   allowServerSelection: Platform.OS != 'web',
   separateAccountsByServer: false,
   showBetaNavigation: false,
+  discussionChatUI: true,
+  autoRefreshDiscussions: true,
+  discussionRefreshIntervalSeconds: 6,
 };
 
 export const localAppSlice = createSlice({
@@ -44,13 +50,23 @@ export const localAppSlice = createSlice({
     setShowBetaNavigation: (state, action: PayloadAction<boolean>) => {
       state.showBetaNavigation = action.payload;
     },
+    setDiscussionChatUI: (state, action: PayloadAction<boolean>) => {
+      state.discussionChatUI = action.payload;
+    },
+    setAutoRefreshDiscussions: (state, action: PayloadAction<boolean>) => {
+      state.autoRefreshDiscussions = action.payload;
+    },
+    setDiscussionRefreshIntervalSeconds: (state, action: PayloadAction<number>) => {
+      state.discussionRefreshIntervalSeconds = action.payload;
+    },
   },
   extraReducers: (builder) => {
   },
 });
 
 export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection,
-  setSeparateAccountsByServer, setShowBetaNavigation, resetLocalApp,
+  setSeparateAccountsByServer, setShowBetaNavigation, resetLocalApp, setDiscussionChatUI,
+  setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

@@ -15,6 +15,7 @@ extern crate itertools;
 // #[macro_use]
 extern crate lazy_static;
 extern crate log;
+extern crate tokio_stream;
 
 pub mod auth;
 pub mod db_connection;

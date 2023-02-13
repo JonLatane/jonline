@@ -8,7 +8,7 @@ import { createSelectorHook, useDispatch } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { accountsReducer, groupsReducer, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, resetUsers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
+import { accountsReducer, groupsReducer, LocalAppConfiguration, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, resetUsers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
 import { AccountOrServer, JonlineServer } from './types';
 
 const serversPersistConfig = {
@@ -43,9 +43,9 @@ const rootReducer = combineReducers({
   app: localAppReducer,
   accounts: persistReducer(accountsPersistConfig, accountsReducer),
   servers: persistReducer(serversPersistConfig, serversReducer),
-  posts: persistReducer(postsPersistConfig, postsReducer),
-  users: persistReducer(usersPersistConfig, usersReducer),
-  groups: persistReducer(groupsPersistConfig, groupsReducer)
+  posts: postsReducer, // persistReducer(postsPersistConfig, postsReducer),
+  users: usersReducer, // persistReducer(usersPersistConfig, usersReducer),
+  groups: groupsReducer, // persistReducer(groupsPersistConfig, groupsReducer)
 });
 
 const rootPersistConfig = {
@@ -85,7 +85,6 @@ export type ServerInfo = {
   navTextColor: string;
 }
 export function useServerInfo(): ServerInfo {
-
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary;
   const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
@@ -96,6 +95,10 @@ export function useServerInfo(): ServerInfo {
   const navTextColor = textColor(navColor);
 
   return { server, primaryColor, navColor, primaryTextColor, navTextColor };
+}
+
+export function useLocalApp(): LocalAppConfiguration {
+  return useTypedSelector((state: RootState) => state.app);
 }
 
 const _textColors = new Map<string, string>();
@@ -114,7 +117,7 @@ function textColor(hex: string) {
   const green = g / 255;
   const blue = b / 255;
   const luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-  const result = luma > 0.179 ? '#000000' : '#ffffff';
+  const result = luma > 0.5 ? '#000000' : '#ffffff';
   _textColors[hex] = result;
   return result;
 }

@@ -18,14 +18,6 @@ pub trait ToProtoGroup {
 }
 impl ToProtoGroup for models::Group {
     fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> Group {
-        let member_count = memberships::table
-            .count()
-            .filter(memberships::group_id.eq(self.id))
-            .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
-            .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
-            .first::<i64>(conn)
-            .unwrap();
-        log::info!("member count {}", member_count);
         let user_membership = match user {
             Some(user) => memberships::table
                 .select(memberships::all_columns)

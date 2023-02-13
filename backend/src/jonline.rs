@@ -1,12 +1,17 @@
-use std::sync::Arc;
 use crate::models;
 use crate::protos::*;
 use jonline_server::Jonline;
+use std::sync::Arc;
 use tonic::{Code, Request, Response, Status};
 
 use crate::auth;
 use crate::db_connection::*;
 use crate::rpcs;
+
+use futures::Stream;
+use std::{pin::Pin, time::Duration};
+use tokio::sync::mpsc;
+use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
 pub struct JonLineImpl {
     pub pool: Arc<PgPool>,
@@ -19,6 +24,10 @@ impl Clone for JonLineImpl {
         }
     }
 }
+
+type ReplyStreamResult<T> = Result<Response<T>, Status>;
+type ReplyStream = Pin<Box<dyn Stream<Item = Result<Post, Status>> + Send>>;
+
 
 #[tonic::async_trait]
 impl Jonline for JonLineImpl {
@@ -91,7 +100,10 @@ impl Jonline for JonLineImpl {
         rpcs::delete_follow(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
-    async fn get_groups(&self, request: Request<GetGroupsRequest>) -> Result<Response<GetGroupsResponse>, Status> {
+    async fn get_groups(
+        &self,
+        request: Request<GetGroupsRequest>,
+    ) -> Result<Response<GetGroupsResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
         rpcs::get_groups(request.into_inner(), user, &mut conn).map(Response::new)
@@ -114,22 +126,34 @@ impl Jonline for JonLineImpl {
         rpcs::delete_group(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
-    async fn create_membership(&self, request: Request<Membership>) -> Result<Response<Membership>, Status> {
+    async fn create_membership(
+        &self,
+        request: Request<Membership>,
+    ) -> Result<Response<Membership>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::create_membership(request.into_inner(), user, &mut conn).map(Response::new)
     }
-    async fn update_membership(&self, request: Request<Membership>) -> Result<Response<Membership>, Status> {
+    async fn update_membership(
+        &self,
+        request: Request<Membership>,
+    ) -> Result<Response<Membership>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::update_membership(request.into_inner(), user, &mut conn).map(Response::new)
     }
-    async fn delete_membership(&self, request: Request<Membership>) -> Result<Response<()>, Status> {
+    async fn delete_membership(
+        &self,
+        request: Request<Membership>,
+    ) -> Result<Response<()>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::delete_membership(request.into_inner(), user, &mut conn).map(Response::new)
     }
-    async fn get_members(&self, request: Request<GetMembersRequest>) -> Result<Response<GetMembersResponse>, Status> {
+    async fn get_members(
+        &self,
+        request: Request<GetMembersRequest>,
+    ) -> Result<Response<GetMembersResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::get_members(request.into_inner(), user, &mut conn).map(Response::new)
@@ -156,12 +180,18 @@ impl Jonline for JonLineImpl {
         }))
     }
 
-    async fn create_group_post(&self, request: Request<GroupPost>) -> Result<Response<GroupPost>, Status> {
+    async fn create_group_post(
+        &self,
+        request: Request<GroupPost>,
+    ) -> Result<Response<GroupPost>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::create_group_post(request.into_inner(), user, &mut conn).map(Response::new)
     }
-    async fn update_group_post(&self, request: Request<GroupPost>) -> Result<Response<GroupPost>, Status> {
+    async fn update_group_post(
+        &self,
+        request: Request<GroupPost>,
+    ) -> Result<Response<GroupPost>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::update_group_post(request.into_inner(), user, &mut conn).map(Response::new)
@@ -190,6 +220,50 @@ impl Jonline for JonLineImpl {
         rpcs::get_posts(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
+    // async fn stream_replies(
+    //     &self,
+    //     request: tonic::Request<Post>,
+    // ) -> Result<tonic::Response<ReplyStream>, tonic::Status> {
+    // }
+    type StreamRepliesStream = ReplyStream;
+    async fn stream_replies(
+        &self,
+        req: Request<Post>,
+    ) -> ReplyStreamResult<Self::StreamRepliesStream> {
+        println!("Jonline::stream_replies");
+        println!("\tclient connected from: {:?}", req.remote_addr());
+
+        // creating infinite stream with requested message
+        let repeat = std::iter::repeat(Post {
+            content: Some("Hello World!".to_string()),
+            ..Default::default()
+        });
+        let mut stream = Box::pin(tokio_stream::iter(repeat).throttle(Duration::from_millis(200)));
+
+        // spawn and channel are required if you want handle "disconnect" functionality
+        // the `out_stream` will not be polled after client disconnect
+        let (tx, rx) = mpsc::channel(128);
+        tokio::spawn(async move {
+            while let Some(item) = stream.next().await {
+                match tx.send(Result::<_, Status>::Ok(item)).await {
+                    Ok(_) => {
+                        // item (server response) was queued to be send to client
+                    }
+                    Err(_item) => {
+                        // output_stream was build from rx and both are dropped
+                        break;
+                    }
+                }
+            }
+            println!("\tclient disconnected");
+        });
+
+        let output_stream = ReceiverStream::new(rx);
+        Ok(Response::new(
+            Box::pin(output_stream) as Self::StreamRepliesStream
+        ))
+    }
+
     async fn get_server_configuration(
         &self,
         _request: Request<()>,
@@ -203,19 +277,15 @@ impl Jonline for JonLineImpl {
         request: Request<ServerConfiguration>,
     ) -> Result<Response<ServerConfiguration>, Status> {
         let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn) ?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::configure_server(request.into_inner(), user, &mut conn)
     }
 
-    async fn reset_data(
-        &self,
-        request: Request<()>,
-    ) -> Result<Response<()>, Status> {
+    async fn reset_data(&self, request: Request<()>) -> Result<Response<()>, Status> {
         let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn) ?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::reset_data(user, &mut conn).map(Response::new)
     }
-
 }
 
 fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {

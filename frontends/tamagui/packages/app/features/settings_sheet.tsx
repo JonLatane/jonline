@@ -1,6 +1,6 @@
-import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Switch, XStack, YStack } from '@jonline/ui';
+import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, useTypedDispatch, useTypedSelector } from 'app/store';
+import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
 
 
@@ -73,6 +73,26 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
             <YStack maxWidth={800} width='100%' alignSelf='center' space='$3'>
               <Heading>Settings</Heading>
               {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)}
+              {toggleRow('Auto-Refresh Discussion Chat', app.autoRefreshDiscussions, setAutoRefreshDiscussions)}
+              <Paragraph size='$1' mb='$1' ta='right' opacity={app.autoRefreshDiscussions ? 1 : 0.5}>Only supported in Chat Mode.</Paragraph>
+
+              <XStack opacity={app.autoRefreshDiscussions ? 1 : 0.5}>
+                <Slider size="$4" f={1} marginVertical='auto'
+                  disabled={!app.autoRefreshDiscussions}
+                  defaultValue={[app.discussionRefreshIntervalSeconds]}
+                  onValueChange={(value) => dispatch(setDiscussionRefreshIntervalSeconds(value[0]!))}
+                  min={5} max={30} step={1}>
+                  <Slider.Track>
+                    <Slider.TrackActive />
+                  </Slider.Track>
+                  <Slider.Thumb circular index={0} />
+                </Slider>
+                <YStack w={80} paddingHorizontal='$3'>
+                  <Heading size='$1' marginHorizontal='auto'>Every</Heading>
+                  <Heading size='$4' marginHorizontal='auto'>{app.discussionRefreshIntervalSeconds}s</Heading>
+                  {/* <Heading size='$1'>seconds</Heading> */}
+                </YStack>
+              </XStack>
               <Heading size='$3' mt='$3'>Multi-Server</Heading>
               {toggleRow('Allow Server Selection', app.allowServerSelection, setAllowServerSelection)}
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
