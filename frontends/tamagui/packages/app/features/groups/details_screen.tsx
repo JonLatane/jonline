@@ -1,5 +1,6 @@
 import { Paragraph, YStack } from '@jonline/ui'
 import { Anchor, Group, GroupPost, Heading } from '@jonline/ui/src'
+import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
 import { loadPost, RootState, selectGroupById, selectPostById, updateGroupPosts, useCredentialDispatch, useServerInfo, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -22,21 +23,7 @@ export function GroupDetailsScreen() {
     groupId ? selectGroupById(state.groups, groupId) : undefined);
   const groupPosts = useTypedSelector((state: RootState) =>
     (groupId ? state.groups.idGroupPosts[groupId] : undefined));
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  const [showScrollPreserver, setShowScrollPreserver] = useState(isSafari);
-
-
-  // const [loadingPosts, setLoadingPosts] = useState(false);
-  // useEffect(() => {
-  //   if (postsState.status == 'unloaded' && !loadingPosts) {
-  //     setLoadingPosts(true);
-  //     reloadPosts();
-  //   } else if (postsState.status == 'loaded') {//posts.length > 0) {
-  //     setLoadingPosts(false);
-  //     setTimeout(() => setShowScrollPreserver(false), 1500);
-  //   }
-  // });
-
+  const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
   const [loadingGroupPosts, setLoadingGroupPosts] = useState(false);
   useEffect(() => {
@@ -45,7 +32,7 @@ export function GroupDetailsScreen() {
       reloadPosts();
     } else if (groupPosts) {
       setLoadingGroupPosts(false);
-      setTimeout(() => setShowScrollPreserver(false), 1500);
+      dismissScrollPreserver(setShowScrollPreserver);
     }
   });
 

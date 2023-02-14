@@ -105,7 +105,7 @@ pub fn create_post(
     match post {
         Ok(post) => {
             log::info!("Post created! Result: {:?}", post);
-            Ok(Response::new(post.to_proto(Some(user.username))))
+            Ok(Response::new(post.to_proto(Some(user.username), &false)))
         }
         Err(e) => {
             log::error!("Error creating post! {:?}", e);

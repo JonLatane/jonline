@@ -33,14 +33,15 @@ export type TabsNavigationProps = {
   onlyShowServer?: JonlineServer;
   appSection?: AppSection;
   selectedGroup?: Group;
+  customHomeAction?: () => void;
 };
 
-export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, selectedGroup }: TabsNavigationProps) {
+export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, selectedGroup, customHomeAction }: TabsNavigationProps) {
   const media = useMedia()
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;
   const webUI = server?.serverConfiguration?.serverInfo?.webUserInterface;
-  const homeProps = useLink({
+  const homeProps = customHomeAction ? { onPress: customHomeAction } : useLink({
     href: webUI == WebUserInterface.REACT_TAMAGUI || webUI == WebUserInterface.HANDLEBARS_TEMPLATES
       ? '/'
       : '/tamagui'

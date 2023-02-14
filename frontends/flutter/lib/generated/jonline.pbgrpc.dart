@@ -152,6 +152,10 @@ class JonlineClient extends $grpc.Client {
           ($6.GetGroupPostsRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
               $6.GetGroupPostsResponse.fromBuffer(value));
+  static final _$streamReplies = $grpc.ClientMethod<$6.Post, $6.Post>(
+      '/jonline.Jonline/StreamReplies',
+      ($6.Post value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $6.Post.fromBuffer(value));
   static final _$configureServer =
       $grpc.ClientMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
           '/jonline.Jonline/ConfigureServer',
@@ -309,6 +313,13 @@ class JonlineClient extends $grpc.Client {
       $6.GetGroupPostsRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getGroupPosts, request, options: options);
+  }
+
+  $grpc.ResponseStream<$6.Post> streamReplies($6.Post request,
+      {$grpc.CallOptions? options}) {
+    return $createStreamingCall(
+        _$streamReplies, $async.Stream.fromIterable([request]),
+        options: options);
   }
 
   $grpc.ResponseFuture<$2.ServerConfiguration> configureServer(
@@ -522,6 +533,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
             ($core.List<$core.int> value) =>
                 $6.GetGroupPostsRequest.fromBuffer(value),
             ($6.GetGroupPostsResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$6.Post, $6.Post>(
+        'StreamReplies',
+        streamReplies_Pre,
+        false,
+        true,
+        ($core.List<$core.int> value) => $6.Post.fromBuffer(value),
+        ($6.Post value) => value.writeToBuffer()));
     $addMethod(
         $grpc.ServiceMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
             'ConfigureServer',
@@ -677,6 +695,11 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getGroupPosts(call, await request);
   }
 
+  $async.Stream<$6.Post> streamReplies_Pre(
+      $grpc.ServiceCall call, $async.Future<$6.Post> request) async* {
+    yield* streamReplies(call, await request);
+  }
+
   $async.Future<$2.ServerConfiguration> configureServer_Pre(
       $grpc.ServiceCall call,
       $async.Future<$2.ServerConfiguration> request) async {
@@ -736,6 +759,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $6.GroupPost request);
   $async.Future<$6.GetGroupPostsResponse> getGroupPosts(
       $grpc.ServiceCall call, $6.GetGroupPostsRequest request);
+  $async.Stream<$6.Post> streamReplies($grpc.ServiceCall call, $6.Post request);
   $async.Future<$2.ServerConfiguration> configureServer(
       $grpc.ServiceCall call, $2.ServerConfiguration request);
   $async.Future<$0.Empty> resetData($grpc.ServiceCall call, $0.Empty request);

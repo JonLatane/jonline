@@ -7,9 +7,13 @@ import "users.proto";
 
 // Request to create a new account.
 message CreateAccountRequest {
+  // Username for the account to be created. Must not exist.
   string username = 1;
+  // Password for the account to be created. Must be at least 8 characters.
   string password = 2;
+  // Email to be used as a contact method.
   optional ContactMethod email = 3;
+  // Phone number to be used as a contact method.
   optional ContactMethod phone = 4;
   // Request an expiration time for the Auth Token returned. By default it will not expire.
   optional google.protobuf.Timestamp expires_at = 5;
@@ -18,22 +22,30 @@ message CreateAccountRequest {
 
 // Request to login to an existing account.
 message LoginRequest {
+  // Username for the account to be logged into. Must exist.
   string username = 1;
+  // Password for the account to be logged into.
   string password = 2;
   // Request an expiration time for the Auth Token returned. By default it will not expire.
   optional google.protobuf.Timestamp expires_at = 3;
+  // (Not yet implemented.)
   optional string device_name = 4;
 }
 
 // Returned when creating an account or logging in.
 message RefreshTokenResponse {
+  // The persisted token the device should store and associate with the account.
+  // Used to request new access tokens.
   ExpirableToken refresh_token = 1;
+  // An initial access token provided for convenience.
   ExpirableToken access_token = 2;
+  // The user associated with the account that was created/logged into.
   User user = 3;
 }
 
 // Generic type for refresh and access tokens.
 message ExpirableToken {
+  // The secure token value.
   string token = 1;
   // Optional expiration time for the token. If not set, the token will not expire.
   optional google.protobuf.Timestamp expires_at = 2;
@@ -48,7 +60,8 @@ message AccessTokenRequest {
 
 // Returned when requesting access tokens.
 message AccessTokenResponse {
-  // If a refresh token is returned, the old refresh token is no longer valid.
+  // If a refresh token is returned, it should be stored. Old refresh tokens may expire *before*
+  // their indicated expiration.
   // See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
   optional ExpirableToken refresh_token = 1;
   ExpirableToken access_token = 2;

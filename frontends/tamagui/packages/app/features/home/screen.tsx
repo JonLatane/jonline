@@ -1,5 +1,6 @@
 import { Anchor, Button, H1, Heading, Paragraph, XStack, YStack } from '@jonline/ui';
 import { GetPostsRequest } from '@jonline/ui/src';
+import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global';
 import { RootState, selectAllPosts, setShowIntro, loadPostsPage, useCredentialDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Linking, Platform } from 'react-native';
@@ -12,8 +13,7 @@ export function HomeScreen() {
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const app = useTypedSelector((state: RootState) => state.app);
   const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  const [showScrollPreserver, setShowScrollPreserver] = useState(isSafari);
+  const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
   let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
   let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
@@ -25,12 +25,11 @@ export function HomeScreen() {
   useEffect(() => {
     if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
       if (!accountOrServer.server) return;
-
       setLoadingPosts(true);
       reloadPosts();
     } else if (postsState.baseStatus == 'loaded') {
       setLoadingPosts(false);
-      setTimeout(() => setShowScrollPreserver(false), 1500);
+      dismissScrollPreserver(setShowScrollPreserver);
     }
   });
 
@@ -108,7 +107,7 @@ export function HomeScreen() {
     </YStack>;
 
   return (
-    <TabsNavigation>
+    <TabsNavigation customHomeAction={reloadPosts}>
       <YStack f={1} jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
         {(serversState.server == undefined || app.showIntro) ? intro : undefined}
         <FlatList data={posts}

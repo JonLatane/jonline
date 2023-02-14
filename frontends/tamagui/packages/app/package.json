@@ -31,6 +31,7 @@
     "react-native-social-fab": "^1.0.2",
     "react-redux": "^8.0.5",
     "react-sticky-box": "^1.0.2",
+    "recyclerlistview": "^4.2.0",
     "redux-persist": "^6.0.0",
     "solito": "2.0.0-canary.4",
     "uuid": "^9.0.0",

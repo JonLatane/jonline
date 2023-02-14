@@ -4672,6 +4672,7 @@ __metadata:
     react-native-social-fab: ^1.0.2
     react-redux: ^8.0.5
     react-sticky-box: ^1.0.2
+    recyclerlistview: ^4.2.0
     redux-persist: ^6.0.0
     solito: 2.0.0-canary.4
     uuid: ^9.0.0
@@ -10110,7 +10111,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash.debounce@npm:^4.0.8":
+"lodash.debounce@npm:4.0.8, lodash.debounce@npm:^4.0.8":
   version: 4.0.8
   resolution: "lodash.debounce@npm:4.0.8"
   checksum: a3f527d22c548f43ae31c861ada88b2637eb48ac6aa3eb56e82d44917971b8aa96fbb37aa60efea674dc4ee8c42074f90f7b1f772e9db375435f6c83a19b3bc6
@@ -12485,7 +12486,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:^15.0.0, prop-types@npm:^15.5.10, prop-types@npm:^15.7.2, prop-types@npm:^15.8.1":
+"prop-types@npm:15.8.1, prop-types@npm:^15.0.0, prop-types@npm:^15.5.10, prop-types@npm:^15.7.2, prop-types@npm:^15.8.1":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -13158,6 +13159,20 @@ __metadata:
     source-map: ~0.6.1
     tslib: ^2.0.1
   checksum: 14c35115cd9965950724cb2968f069a247fa79ce890643ab6dc3795c705b363f7b92a45238e9f765387c306763be9955f72047bb9d15b5d60b0a55f9e7912d5a
+  languageName: node
+  linkType: hard
+
+"recyclerlistview@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "recyclerlistview@npm:4.2.0"
+  dependencies:
+    lodash.debounce: 4.0.8
+    prop-types: 15.8.1
+    ts-object-utils: 0.0.5
+  peerDependencies:
+    react: ">= 15.2.1"
+    react-native: ">= 0.30.0"
+  checksum: 6cba6a99fb487067c509112b94e3d4d3905d782bbcb7af2cffbd57c601a4650d670e4eee5fec18d195d58ff6ec01a47288c5510379a2f37da3c5fc0a58860441
   languageName: node
   linkType: hard
 
@@ -14871,6 +14886,13 @@ __metadata:
   version: 0.1.13
   resolution: "ts-interface-checker@npm:0.1.13"
   checksum: 20c29189c2dd6067a8775e07823ddf8d59a33e2ffc47a1bd59a5cb28bb0121a2969a816d5e77eda2ed85b18171aa5d1c4005a6b88ae8499ec7cc49f78571cb5e
+  languageName: node
+  linkType: hard
+
+"ts-object-utils@npm:0.0.5":
+  version: 0.0.5
+  resolution: "ts-object-utils@npm:0.0.5"
+  checksum: 83c48fbdaba392fb2c01cea53b267ed5538d2bb44fc6c3eecc10bcfabc1780bfa6ec8569b52bbf0140d9b521d9049d5f15884e12286918244d463d854dbc73cb
   languageName: node
   linkType: hard
 

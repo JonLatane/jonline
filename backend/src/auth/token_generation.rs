@@ -68,7 +68,7 @@ pub fn generate_access_token(refresh_token_id: i32, conn: &mut PgPooledConnectio
         .returning(user_access_tokens::expires_at)
         .get_result::<SystemTime>(conn)
         .unwrap();
-        log::info!("Generated access token for refresh_token_id={}", refresh_token_id);
+    log::info!("Generated access token for refresh_token_id={}, expires_at={:#?}", refresh_token_id, expires_at);
     ExpirableToken {
         token: access_token.to_owned(),
         expires_at: Some(Timestamp::from(expires_at)),

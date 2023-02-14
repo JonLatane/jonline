@@ -23,25 +23,31 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
   if (!account) {
     return getServerClient(server!);
   } else {
-    let client = await getServerClient(account.server);
-    let metadata = new grpc.Metadata();
-    let accessExpiresAt = moment.utc(account.accessToken.expiresAt);
-    let now = moment.utc();
-    let expired = accessExpiresAt.subtract(2, 'minutes').isBefore(now);
+    const client = await getServerClient(account.server);
+    const metadata = new grpc.Metadata();
+    const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
+    const now = moment.utc();
+    const expired = accessExpiresAt.subtract(1, 'minutes').isBefore(now);
     if (expired) {
+      console.log(`Access token expired, refreshing..., now=${now}, expiresAt=${accessExpiresAt}`)
       let newAccessToken: ExpirableToken | undefined = undefined;
       while (_accessFetchLock) {
         await new Promise(resolve => setTimeout(resolve, 100));
         newAccessToken = _newAccessToken;
       }
-      if(!newAccessToken) {
+      const newTokenExpired = !newAccessToken || 
+        moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
+      if(newTokenExpired) {
         _accessFetchLock = true;
         let { accessToken: fetchedAccessToken, refreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
         newAccessToken = fetchedAccessToken!;
+        _newAccessToken = newAccessToken;
         _accessFetchLock = false;
+        account = { ...account, accessToken: newAccessToken! };
+        store.dispatch(accountsSlice.actions.upsertAccount(account));
       }
-      account = { ...account, accessToken: newAccessToken! };
-      store.dispatch(accountsSlice.actions.upsertAccount(account));
+      // account = { ...account, accessToken: newAccessToken! };
+      // store.dispatch(accountsSlice.actions.upsertAccount(account));
     }
     metadata.append('authorization', account.accessToken.token);
     return { ...client, credential: metadata };
@@ -110,7 +116,12 @@ export const accountsSlice = createSlice({
   name: "accounts",
   initialState: initialState,//{ ...initialState, ...JSON.parse(localStorage.getItem("accounts")) },
   reducers: {
-    upsertAccount: accountsAdapter.upsertOne,
+    upsertAccount: (state, action: PayloadAction<JonlineAccount>) => {
+      accountsAdapter.upsertOne(state, action.payload);
+      if (state.account?.id === action.payload.id) {
+        state.account = action.payload;
+      }
+    },
     removeAccount: (state, action: PayloadAction<string>) => {
       if (state.account?.id === action.payload) {
         state.account = undefined;
@@ -122,6 +133,7 @@ export const accountsSlice = createSlice({
       if (state.account?.id != action.payload?.id) {
         resetCredentialedData();
       }
+      _newAccessToken = undefined;
       state.account = action.payload;
     },
     clearAccountAlerts: (state) => {

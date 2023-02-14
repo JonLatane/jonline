@@ -9,14 +9,14 @@ pub fn main() {
     log::info!("Cleaning Expired Tokens...");
     log::info!("Connecting to DB...");
     let mut conn = db_connection::establish_connection();
-    log::info!("Deleting Expired Refresh Tokens...");
+    log::info!("Deleting Expired Access Tokens...");
     delete(
         user_access_tokens::user_access_tokens
             .filter(user_access_tokens::expires_at.lt(diesel::dsl::now)),
     )
     .execute(&mut conn)
     .unwrap_or(0);
-    log::info!("Deleting Expired Auth Tokens...");
+    log::info!("Deleting Expired Refresh Tokens...");
     delete(
         user_refresh_tokens::user_refresh_tokens
             .filter(user_refresh_tokens::expires_at.lt(diesel::dsl::now)),

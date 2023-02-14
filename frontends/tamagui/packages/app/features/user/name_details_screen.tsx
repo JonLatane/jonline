@@ -10,6 +10,7 @@ import { TabsNavigation } from '../tabs/tabs_navigation'
 import UserCard from './user_card'
 import { Dimensions } from 'react-native';
 import StickyBox from "react-sticky-box";
+import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
 
 
 const { useParam } = createParam<{ username: string }>()
@@ -42,8 +43,7 @@ export function UsernameDetailsScreen() {
     if (editMode && !canEdit) setEditMode(false);
   });
 
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  const [showScrollPreserver, setShowScrollPreserver] = useState(isSafari);
+  const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   useEffect(() => {
     if (username && !loadingUser && (!user || usersState.status == 'unloaded') && !userLoadFailed) {
       setLoadingUser(true);
@@ -52,7 +52,7 @@ export function UsernameDetailsScreen() {
       setLoadingUser(false);
     }
     if (user && showScrollPreserver) {
-      setTimeout(() => setShowScrollPreserver(false), 1500);
+      dismissScrollPreserver(setShowScrollPreserver);
     }
   });
   const windowHeight = useWindowDimensions().height;

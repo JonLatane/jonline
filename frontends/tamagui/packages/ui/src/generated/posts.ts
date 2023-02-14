@@ -196,6 +196,7 @@ export interface Post {
    * (time, moderation) if that's relevant.
    */
   currentGroupPost?: GroupPost | undefined;
+  hasPreviewImage: boolean;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
 }
@@ -496,6 +497,7 @@ function createBasePost(): Post {
     moderation: 0,
     groupCount: 0,
     currentGroupPost: undefined,
+    hasPreviewImage: false,
     createdAt: undefined,
     updatedAt: undefined,
   };
@@ -544,6 +546,9 @@ export const Post = {
     }
     if (message.currentGroupPost !== undefined) {
       GroupPost.encode(message.currentGroupPost, writer.uint32(122).fork()).ldelim();
+    }
+    if (message.hasPreviewImage === true) {
+      writer.uint32(128).bool(message.hasPreviewImage);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(162).fork()).ldelim();
@@ -603,6 +608,9 @@ export const Post = {
         case 15:
           message.currentGroupPost = GroupPost.decode(reader, reader.uint32());
           break;
+        case 16:
+          message.hasPreviewImage = reader.bool();
+          break;
         case 20:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
@@ -633,6 +641,7 @@ export const Post = {
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
       groupCount: isSet(object.groupCount) ? Number(object.groupCount) : 0,
       currentGroupPost: isSet(object.currentGroupPost) ? GroupPost.fromJSON(object.currentGroupPost) : undefined,
+      hasPreviewImage: isSet(object.hasPreviewImage) ? Boolean(object.hasPreviewImage) : false,
       createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
@@ -660,6 +669,7 @@ export const Post = {
     message.groupCount !== undefined && (obj.groupCount = Math.round(message.groupCount));
     message.currentGroupPost !== undefined &&
       (obj.currentGroupPost = message.currentGroupPost ? GroupPost.toJSON(message.currentGroupPost) : undefined);
+    message.hasPreviewImage !== undefined && (obj.hasPreviewImage = message.hasPreviewImage);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
@@ -689,6 +699,7 @@ export const Post = {
     message.currentGroupPost = (object.currentGroupPost !== undefined && object.currentGroupPost !== null)
       ? GroupPost.fromPartial(object.currentGroupPost)
       : undefined;
+    message.hasPreviewImage = object.hasPreviewImage ?? false;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;

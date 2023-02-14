@@ -35,10 +35,13 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
   const onScreen = useOnScreen(ref, "-1px");
-  if (!preview && !loadingPreview && onScreen) {
-    setLoadingPreview(true);
-    setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
-  }
+  useEffect(() => {
+    if (!preview && !loadingPreview && onScreen && post.hasPreviewImage != false) {
+      post.content
+      setLoadingPreview(true);
+      setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
+    }
+  });
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
@@ -105,11 +108,11 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
     <>
       <YStack w='100%'>
         {previewParent && post.replyToPostId
-          ? <XStack 
-          mt={media.gtXs ? '-5%' : '-12%'}
-          ml={media.gtXs ? '-28%' : '-28%'}
-          mb={media.gtXs ? '-5%' : '-14%'}
-          scale={0.5}>
+          ? <XStack
+            mt={media.gtXs ? '-5%' : '-12%'}
+            ml={media.gtXs ? '-28%' : '-28%'}
+            mb={media.gtXs ? '-5%' : '-14%'}
+            scale={0.5}>
             <PostCard post={previewParent} isPreview={true} />
           </XStack> : undefined}
         {/* {previewParent ? <PostCard post={post.parent!} isPreview={true}  /> : undefined} */}
@@ -147,14 +150,6 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden'>
                   {(!isPreview && preview && preview != '') ?
                     <Image
-                      // pos="absolute"
-                      // width={400}
-                      // opacity={0.25}
-                      // height={400}
-                      // minWidth={300}
-                      // minHeight={300}
-                      // width='100%'
-                      // height='100%'
                       mb='$3'
                       width={media.sm ? 300 : 400}
                       height={media.sm ? 300 : 400}
@@ -162,39 +157,10 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                       als="center"
                       src={preview}
                       borderRadius={10}
-                    // borderBottomRightRadius={5}
                     /> : undefined}
                   {
                     post.content && post.content != '' ? Platform.select({
-                      default: // web/cross-platform-ish
-                        // <NativeText style={{ color: textColor }}>
-                        //   <ReactMarkdown className="postMarkdown" children={cleanedContent!}
-                        //     components={{
-                        //       // li: ({ node, ordered, ...props }) => <li }} {...props} />,
-                        //       p: ({ node, ...props }) => <p style={{ display: 'inline-block', marginBottom: 10 }} {...props} />,
-                        //       a: ({ node, ...props }) => isPreview ? <span style={{ color: navColor }} children={props.children} /> : <a style={{ color: navColor }} target='_blank' {...props} />,
-                        //     }}
-                        //   />
-                        // </NativeText>,
-                        <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
-
-                      // <ReactMarkdown children={cleanedContent!}
-                      //   components={{
-                      //     // li: ({ node, ordered, ...props }) => <li }} {...props} />,
-                      //     h1: ({ children, id }) => <Heading size='$9' {...{ children, id }} />,
-                      //     h2: ({ children, id }) => <Heading size='$8' {...{ children, id }} />,
-                      //     h3: ({ children, id }) => <Heading size='$7' {...{ children, id }} />,
-                      //     h4: ({ children, id }) => <Heading size='$6' {...{ children, id }} />,
-                      //     h5: ({ children, id }) => <Heading size='$5' {...{ children, id }} />,
-                      //     h6: ({ children, id }) => <Heading size='$4' {...{ children, id }} />,
-                      //     li: ({ ordered, index, children }) => <XStack ml='$3'>
-                      //       <Paragraph size='$3' mr='$4'>{ordered ? `${index}.` : '• '}</Paragraph>
-                      //       <Paragraph size='$3' {...{ children }} />
-                      //     </XStack>,
-                      //     p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,
-                      //     a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
-                      //   }} />,
-                      //TODO: Find a way to render markdown on native that doesn't break web.
+                      default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
                       // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
                       // default: <Heading size='$1'>Native Markdown support pending!</Heading>
                     }) : undefined
@@ -449,9 +415,11 @@ export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false 
       h4: ({ children, id }) => <Heading size='$6' {...{ children, id }} />,
       h5: ({ children, id }) => <Heading size='$5' {...{ children, id }} />,
       h6: ({ children, id }) => <Heading size='$4' {...{ children, id }} />,
-      li: ({ ordered, index, children }) => <XStack ml='$3'>
-        <Paragraph size='$3' mr='$4'>{ordered ? `${index + 1}.` : '• '}</Paragraph>
-        <Paragraph size='$3' {...{ children }} />
+      li: ({ ordered, index, children }) => <XStack ml='$3' mb='$2'>
+        {/* <Paragraph size='$3' mr='$4'>{ordered ? `${index + 1}.` : '• '}</Paragraph>
+        <Paragraph size='$3' {...{ children }} /> */}
+        <Text fontFamily='$body' fontSize='$3' mr='$4'>{ordered ? `${index + 1}.` : '• '}</Text>
+        <Text fontFamily='$body' fontSize='$3' {...{ children }} />
       </XStack>,
       p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,
       // a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,

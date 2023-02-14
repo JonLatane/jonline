@@ -271,4 +271,4 @@ lines_of_code:
 
 docs: documentation
 documentation:
-	docker run --rm -v $(PWD)/docs/generated:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,docs.md
+	docker run --rm -v $(PWD)/docs/generated:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,docs.md jonline.proto authentication.proto visibility_moderation.proto permissions.proto users.proto posts.proto server_configuration.proto

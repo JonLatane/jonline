@@ -21,7 +21,7 @@ pub fn access_token(
     match token_and_user_id {
         Ok((t, u)) => {
             log::info!(
-                "Generating new refresh token for refresh_token_id={}, user_id={}",
+                "Generating new access token for refresh_token_id={}, user_id={}",
                 t, u
             );
             Ok(Response::new(AccessTokenResponse {

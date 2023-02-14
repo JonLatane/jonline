@@ -4,16 +4,24 @@ package jonline;
 
 enum Visibility {
   VISIBILITY_UNKNOWN = 0;
+  // Subject is only visible to the user who owns it.
   PRIVATE = 1;
+  // Subject is only visible to explictly associated Groups and Users. See: [`GroupPost`](#jonline-GroupPost) and [`UserPost`](#jonline-UserPost).
   LIMITED = 2;
+  // Subject is visible to all authenticated users.
   SERVER_PUBLIC = 3;
+  // Subject is visible to all users on the internet.
   GLOBAL_PUBLIC = 4;
 }
 
 enum Moderation {
   MODERATION_UNKNOWN = 0;
+  // Subject has not been moderated and is visible to all users.
   UNMODERATED = 1;
+  // Subject is awaiting moderation and not visible to any users.
   PENDING = 2;
+  // Subject has been approved by moderators and is visible to all users.
   APPROVED = 3;
+  // Subject has been rejected by moderators and is not visible to any users.
   REJECTED = 4;
 }

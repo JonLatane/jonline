@@ -28,9 +28,12 @@ import { Follow, GetUsersRequest, GetUsersResponse, Membership, User } from "./u
 export const protobufPackage = "jonline";
 
 /**
- * Authenticated calls require a Refresh Token in request metadata, retrieved from
+ * The internet-facing Jonline service implementing the Jonline protocol,
+ * generally exposed on port 27707.
+ *
+ * Authenticated calls require an Access Token in request metadata, retrieved from
  * the AccessToken RPC. The CreateAccount or Login RPC should first be used to fetch
- * (and store) an Authentication Token to use when calling AccessToken.
+ * (and store) a Refresh Token to use when requesting new Access Tokens.
  */
 export interface Jonline {
   /** Get the version (from Cargo) of the Jonline service. *Publicly accessible.* */

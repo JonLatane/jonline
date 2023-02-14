@@ -12,6 +12,7 @@ import {
   Slice
 } from "@reduxjs/toolkit";
 import moment from "moment";
+import store from "../store";
 import { AccountOrServer } from "../types";
 import { getCredentialClient } from "./accounts";
 
@@ -46,52 +47,81 @@ export const loadUsersPage: AsyncThunk<GetUsersResponse, LoadUsersRequest, any> 
   }
 );
 
-export type LoadUserAvatar = User & AccountOrServer;
-export const loadUserAvatar: AsyncThunk<string, LoadUserAvatar, any> = createAsyncThunk<string, LoadUserAvatar>(
-  "users/loadAvatar",
-  async (request) => {
-    let client = await getCredentialClient(request);
-    let response = await client.getUsers(GetUsersRequest.create({ userId: request.id }), client.credential);
-    let user = response.users[0]!;
-    return user.avatar
-      ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
-      : '';
-  }
-);
+// export type LoadUserAvatar = User & AccountOrServer;
+// export const loadUserAvatar: AsyncThunk<string, LoadUserAvatar, any> = createAsyncThunk<string, LoadUserAvatar>(
+//   "users/loadAvatar",
+//   async (request) => {
+//     let client = await getCredentialClient(request);
+//     let response = await client.getUsers(GetUsersRequest.create({ userId: request.id }), client.credential);
+//     let user = response.users[0]!;
+//     return user.avatar
+//       ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
+//       : '';
+//   }
+// );
 
 export type LoadUser = { id: string } & AccountOrServer;
 export type LoadUserResult = {
   user: User;
   avatar: string;
 }
+const _loadingUserIds = new Set<string>();
 export const loadUser: AsyncThunk<LoadUserResult, LoadUser, any> = createAsyncThunk<LoadUserResult, LoadUser>(
   "users/loadById",
   async (request) => {
-    let client = await getCredentialClient(request);
-    let response = await client.getUsers(GetUsersRequest.create({ userId: request.id }), client.credential);
-    if (response.users.length == 0) throw 'User not found';
+    let user: User | undefined = undefined;
+    let avatar: string | undefined = undefined;
+    while (_loadingUserIds.has(request.id)) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      user = usersAdapter.getSelectors().selectById(store.getState().users, request.id);
+      if (user) {
+        avatar = store.getState().users.avatars[request.id];
+      }
+    }
+    if (!user) {
+      _loadingUserIds.add(request.id);
+      const client = await getCredentialClient(request);
+      const response = await client.getUsers(GetUsersRequest.create({ userId: request.id }), client.credential);
+      _loadingUserIds.delete(request.id);
+      if (response.users.length == 0) throw 'User not found';
 
-    let user = response.users[0]!;
-    let avatar = user.avatar
-      ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
-      : '';
-    return { user: { ...user, avatar: undefined }, avatar };
+      user = response.users[0]!;
+      avatar = user.avatar
+        ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
+        : '';
+    }
+    return { user: { ...user!, avatar: undefined }, avatar: avatar! };
   }
 );
+
 export type LoadUsername = { username: string } & AccountOrServer;
+const _loadingUsernames = new Set<string>();
 export const loadUsername: AsyncThunk<LoadUserResult, LoadUsername, any> = createAsyncThunk<LoadUserResult, LoadUsername>(
   "users/loadByName",
   async (request) => {
-    const client = await getCredentialClient(request);
-    const getUsersRequest = GetUsersRequest.create({ username: request.username });
-    const response = await client.getUsers(getUsersRequest, client.credential);
-    if (response.users.length == 0) throw 'User not found';
+    let user: User | undefined = undefined;
+    let avatar: string | undefined = undefined;
+    while (_loadingUsernames.has(request.username)) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const userId = store.getState().users.usernameIds[request.username];
+      user = userId ? usersAdapter.getSelectors().selectById(store.getState().users, userId) : undefined;
+      if (user) {
+        avatar = store.getState().users.avatars[user.id];
+      }
+    }
+    if (!user) {
+      _loadingUsernames.add(request.username);
+      const client = await getCredentialClient(request);
+      const response = await client.getUsers(GetUsersRequest.create({ username: request.username }), client.credential);
+      _loadingUsernames.delete(request.username);
+      if (response.users.length == 0) throw 'User not found';
 
-    const user = response.users[0]!;
-    const avatar = user.avatar
-      ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
-      : '';
-    return { user: { ...user, avatar: undefined }, avatar };
+      user = response.users[0]!;
+      avatar = user.avatar
+        ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
+        : '';
+    }
+    return { user: { ...user!, avatar: undefined }, avatar: avatar! };
   }
 );
 
@@ -186,10 +216,10 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
         state.error = action.error as Error;
       });
     });
-    builder.addCase(loadUserAvatar.fulfilled, (state, action) => {
-      state.avatars[action.meta.arg.id] = action.payload;
-      state.successMessage = `Avatar image for ${action.meta.arg.id} loaded.`;
-    });
+    // builder.addCase(loadUserAvatar.fulfilled, (state, action) => {
+    //   state.avatars[action.meta.arg.id] = action.payload;
+    //   state.successMessage = `Avatar image for ${action.meta.arg.id} loaded.`;
+    // });
   },
 });
 
