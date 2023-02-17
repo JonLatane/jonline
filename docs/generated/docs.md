@@ -416,7 +416,9 @@ Returned when creating an account or logging in.
 <a name="jonline-Membership"></a>
 
 ### Membership
-
+Model for a user&#39;s membership in a group. Memberships are generically
+included as part of User models when relevant in Jonline, but UIs should use the group_id
+to reconcile memberships with groups.
 
 
 | Field | Type | Label | Description |
@@ -665,7 +667,7 @@ There will never be more than `reply_count` replies. However, there may be fewer
 | moderation | [Moderation](#jonline-Moderation) |  | The moderation of the Post. |
 | group_count | [int32](#int32) |  | The number of groups this post is in. |
 | current_group_post | [GroupPost](#jonline-GroupPost) | optional | When the post is returned in the context of a group_id parameter, `current_group_post` is returned. It lets the UI know whether the post can be cross-posted to a group, and of course, information about the cross-post (time, moderation) if that&#39;s relevant. |
-| has_preview_image | [bool](#bool) |  | Always returned, even if preview_image is not. Indicates whether the UI should attempt to fetch a preview_image. |
+| preview_image_exists | [bool](#bool) |  | Always returned, even if preview_image is not. Indicates whether the UI should attempt to fetch a preview_image. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 
