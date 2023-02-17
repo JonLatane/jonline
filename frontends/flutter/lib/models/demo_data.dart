@@ -590,7 +590,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
           content: '''Large-scale capitalist social media sucks for most of us. 
 Jonline is a new approach to social media that keeps user data hyper-local - 
 within peoples' physical communities - all wrapped up as a 
-[well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/generated/docs.md). 
+[well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md). 
 A Jonline *instance* or community (like the one you're reading this post on - probably 
 [jonline.io](https://jonline.io) or [getj.online](https://getj.online)) 
 is designed for use cases like:
