@@ -116,6 +116,11 @@ export interface Follow {
   updatedAt?: string | undefined;
 }
 
+/**
+ * Model for a user's membership in a group. Memberships are generically
+ * included as part of User models when relevant in Jonline, but UIs should use the group_id
+ * to reconcile memberships with groups.
+ */
 export interface Membership {
   userId: string;
   groupId: string;

@@ -196,6 +196,7 @@ fn create_rocket<T: rocket::figment::Provider>(
                 web::flutter_index,
                 web::flutter_file,
                 web::tamagui_index,
+                web::tamagui_about,
                 web::tamagui_post,
                 web::tamagui_user,
                 web::tamagui_server,

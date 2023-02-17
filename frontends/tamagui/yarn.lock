@@ -4669,9 +4669,8 @@ __metadata:
     react-native-get-random-values: ^1.8.0
     react-native-image-picker: ^5.0.1
     react-native-markdown-renderer: ^3.2.8
-    react-native-social-fab: ^1.0.2
     react-redux: ^8.0.5
-    react-sticky-box: ^1.0.2
+    react-sticky-box: ^2.0.0
     recyclerlistview: ^4.2.0
     redux-persist: ^6.0.0
     solito: 2.0.0-canary.4
@@ -12850,16 +12849,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-social-fab@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "react-native-social-fab@npm:1.0.2"
-  peerDependencies:
-    react: ^16.0.0-beta.5
-    react-native: ^0.49.1
-  checksum: d402f294974eabe592ded53ba2eb76bec88a1ebf3cf01d2127d8a64deefe8c43a2c416060e0617f0fb3095d2fa6d25ea4888122c78e8f815c6a506bd035e2415
-  languageName: node
-  linkType: hard
-
 "react-native-svg@npm:13.4.0":
   version: 13.4.0
   resolution: "react-native-svg@npm:13.4.0"
@@ -13059,14 +13048,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-sticky-box@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "react-sticky-box@npm:1.0.2"
-  dependencies:
-    resize-observer-polyfill: ^1.5.1
+"react-sticky-box@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "react-sticky-box@npm:2.0.0"
   peerDependencies:
     react: ">=16.8.0"
-  checksum: 60ddc90ff2bc8c0597f8de8ca8f287dc20eff0f4d484225f35e426937cc5af223913a57efd63b68afbdbccae97be89416b01823977d21325ac96681277f719ca
+  checksum: cfe20bdbadb7ca12af0eee3746eb2880ef44b0f92f4d2a35814b6f0558ebe9b27733102d284caa1c8d13d5db3410780afb68009a38c1f533f9a156776ed82192
   languageName: node
   linkType: hard
 
@@ -13420,13 +13407,6 @@ __metadata:
   version: 4.1.7
   resolution: "reselect@npm:4.1.7"
   checksum: 738d8e2b8f0dca154ad29de6a209c9fbca2d70ae6788fd85df87f2c74b95a65bbf2d16d43a9e2faff39de34d17a29d706ba08a6b2ee5660c09589edbd19af7e1
-  languageName: node
-  linkType: hard
-
-"resize-observer-polyfill@npm:^1.5.1":
-  version: 1.5.1
-  resolution: "resize-observer-polyfill@npm:1.5.1"
-  checksum: 57e7f79489867b00ba43c9c051524a5c8f162a61d5547e99333549afc23e15c44fd43f2f318ea0261ea98c0eb3158cca261e6f48d66e1ed1cd1f340a43977094
   languageName: node
   linkType: hard
 

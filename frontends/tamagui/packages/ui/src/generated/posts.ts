@@ -195,8 +195,14 @@ export interface Post {
    * cross-posted to a group, and of course, information about the cross-post
    * (time, moderation) if that's relevant.
    */
-  currentGroupPost?: GroupPost | undefined;
-  hasPreviewImage: boolean;
+  currentGroupPost?:
+    | GroupPost
+    | undefined;
+  /**
+   * Always returned, even if preview_image is not. Indicates whether the UI
+   * should attempt to fetch a preview_image.
+   */
+  previewImageExists: boolean;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
 }
@@ -497,7 +503,7 @@ function createBasePost(): Post {
     moderation: 0,
     groupCount: 0,
     currentGroupPost: undefined,
-    hasPreviewImage: false,
+    previewImageExists: false,
     createdAt: undefined,
     updatedAt: undefined,
   };
@@ -547,8 +553,8 @@ export const Post = {
     if (message.currentGroupPost !== undefined) {
       GroupPost.encode(message.currentGroupPost, writer.uint32(122).fork()).ldelim();
     }
-    if (message.hasPreviewImage === true) {
-      writer.uint32(128).bool(message.hasPreviewImage);
+    if (message.previewImageExists === true) {
+      writer.uint32(128).bool(message.previewImageExists);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(162).fork()).ldelim();
@@ -609,7 +615,7 @@ export const Post = {
           message.currentGroupPost = GroupPost.decode(reader, reader.uint32());
           break;
         case 16:
-          message.hasPreviewImage = reader.bool();
+          message.previewImageExists = reader.bool();
           break;
         case 20:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
@@ -641,7 +647,7 @@ export const Post = {
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
       groupCount: isSet(object.groupCount) ? Number(object.groupCount) : 0,
       currentGroupPost: isSet(object.currentGroupPost) ? GroupPost.fromJSON(object.currentGroupPost) : undefined,
-      hasPreviewImage: isSet(object.hasPreviewImage) ? Boolean(object.hasPreviewImage) : false,
+      previewImageExists: isSet(object.previewImageExists) ? Boolean(object.previewImageExists) : false,
       createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
@@ -669,7 +675,7 @@ export const Post = {
     message.groupCount !== undefined && (obj.groupCount = Math.round(message.groupCount));
     message.currentGroupPost !== undefined &&
       (obj.currentGroupPost = message.currentGroupPost ? GroupPost.toJSON(message.currentGroupPost) : undefined);
-    message.hasPreviewImage !== undefined && (obj.hasPreviewImage = message.hasPreviewImage);
+    message.previewImageExists !== undefined && (obj.previewImageExists = message.previewImageExists);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
@@ -699,7 +705,7 @@ export const Post = {
     message.currentGroupPost = (object.currentGroupPost !== undefined && object.currentGroupPost !== null)
       ? GroupPost.fromPartial(object.currentGroupPost)
       : undefined;
-    message.hasPreviewImage = object.hasPreviewImage ?? false;
+    message.previewImageExists = object.previewImageExists ?? false;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;

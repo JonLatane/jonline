@@ -7,9 +7,15 @@ export const protobufPackage = "jonline";
 
 /** Request to create a new account. */
 export interface CreateAccountRequest {
+  /** Username for the account to be created. Must not exist. */
   username: string;
+  /** Password for the account to be created. Must be at least 8 characters. */
   password: string;
-  email?: ContactMethod | undefined;
+  /** Email to be used as a contact method. */
+  email?:
+    | ContactMethod
+    | undefined;
+  /** Phone number to be used as a contact method. */
   phone?:
     | ContactMethod
     | undefined;
@@ -20,22 +26,38 @@ export interface CreateAccountRequest {
 
 /** Request to login to an existing account. */
 export interface LoginRequest {
+  /** Username for the account to be logged into. Must exist. */
   username: string;
+  /** Password for the account to be logged into. */
   password: string;
   /** Request an expiration time for the Auth Token returned. By default it will not expire. */
-  expiresAt?: string | undefined;
+  expiresAt?:
+    | string
+    | undefined;
+  /** (Not yet implemented.) */
   deviceName?: string | undefined;
 }
 
 /** Returned when creating an account or logging in. */
 export interface RefreshTokenResponse {
-  refreshToken: ExpirableToken | undefined;
-  accessToken: ExpirableToken | undefined;
+  /**
+   * The persisted token the device should store and associate with the account.
+   * Used to request new access tokens.
+   */
+  refreshToken:
+    | ExpirableToken
+    | undefined;
+  /** An initial access token provided for convenience. */
+  accessToken:
+    | ExpirableToken
+    | undefined;
+  /** The user associated with the account that was created/logged into. */
   user: User | undefined;
 }
 
 /** Generic type for refresh and access tokens. */
 export interface ExpirableToken {
+  /** The secure token value. */
   token: string;
   /** Optional expiration time for the token. If not set, the token will not expire. */
   expiresAt?: string | undefined;
@@ -51,7 +73,8 @@ export interface AccessTokenRequest {
 /** Returned when requesting access tokens. */
 export interface AccessTokenResponse {
   /**
-   * If a refresh token is returned, the old refresh token is no longer valid.
+   * If a refresh token is returned, it should be stored. Old refresh tokens may expire *before*
+   * their indicated expiration.
    * See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
    */
   refreshToken?: ExpirableToken | undefined;

@@ -46,6 +46,7 @@ pub fn default_server_configuration() -> NewServerConfiguration {
     let basic_user_permissions = vec![
         Permission::ViewUsers,
         Permission::FollowUsers,
+        Permission::PublishUsersGlobally,
         Permission::ViewGroups,
         Permission::CreateGroups,
         Permission::JoinGroups,
@@ -73,12 +74,10 @@ pub fn default_server_configuration() -> NewServerConfiguration {
         })
         .unwrap(),
         anonymous_user_permissions: vec![
+            Permission::ViewUsers,
             Permission::ViewGroups,
             Permission::ViewPosts,
-            Permission::PublishPostsLocally,
             Permission::ViewEvents,
-            Permission::CreateEvents,
-            Permission::PublishEventsLocally,
         ].to_json_permissions(),
         default_user_permissions: basic_user_permissions.to_owned(),
         basic_user_permissions: basic_user_permissions,

@@ -1,15 +1,19 @@
 import { Button, Heading, Popover, useMedia } from '@jonline/ui';
 import { Adapt, Anchor, GetGroupsRequest, Group, Input, Label, Paragraph, ScrollView, Sheet, TamaguiElement, Theme, XStack, YGroup, YStack } from '@jonline/ui/src';
-import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
+import { Boxes, ChevronDown, Info, Search, Users, X as XIcon } from '@tamagui/lucide-icons';
 import { RootState, selectAllGroups, selectAllServers, updateGroups, useCredentialDispatch, useServerInfo, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FlatList, View } from 'react-native';
 import { useLink } from 'solito/link';
-import { TamaguiMarkdown } from '../post/post_card';
+import { } from '../post/post_card';
+import { TamaguiMarkdown } from '../post/tamagui_markdown';
 
 export type GroupsSheetProps = {
   selectedGroup?: Group;
+  // Forwarder to link to a group page. Defaults to /g/:shortname.
+  // But, for instance, post pages can link to /g/:shortname/p/:id.
+  groupPageForwarder?: (group: Group) => string;
 }
 
 export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
@@ -22,7 +26,7 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
   // const app = useTypedSelector((state: RootState) => state.app);
   // const serversState = useTypedSelector((state: RootState) => state.servers);
   // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  const { server, primaryColor, navColor } = useServerInfo();
+  const { server, primaryColor, navColor, navTextColor } = useServerInfo();
   const searchInputRef = React.createRef() as React.MutableRefObject<HTMLElement | View>;
 
   const groups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
@@ -46,15 +50,16 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
 
   const matchedGroups = groups.filter(g => g.name.toLowerCase().includes(searchText.toLowerCase()));
 
-  const infoMarginLeft = -36;
-  const infoPaddingRight = 40;
+  const infoMarginLeft = -34;
+  const infoPaddingRight = 39;
   return (
 
     <>
       <Button icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup}
         paddingRight={selectedGroup ? infoPaddingRight : undefined}
+        paddingLeft={selectedGroup ? '$2' : undefined}
         onPress={() => setOpen((x) => !x)}>
-        {selectedGroup ? <Heading size="$4">{selectedGroup.name}</Heading> : undefined}
+        {selectedGroup ? <Paragraph size="$1">{selectedGroup.name}</Paragraph> : undefined}
       </Button>
       <Sheet
         modal
@@ -177,16 +182,20 @@ type GroupButtonProps = {
   group: Group;
   selected: boolean;
   setOpen: (open: boolean) => void;
+  // Forwarder to link to a group page. Defaults to /g/:shortname.
+  // But, for instance, post pages can link to /g/:shortname/p/:id.
+  groupPageForwarder?: (group: Group) => string;
 }
 
-function GroupButton({ group, selected, setOpen }: GroupButtonProps) {
-  const link = useLink({ href: `/g/${group.shortname}` });
+function GroupButton({ group, selected, setOpen, groupPageForwarder }: GroupButtonProps) {
+  const link = useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
+  const media = useMedia();
   const onPress = link.onPress;
   link.onPress = (e) => {
     setOpen(false);
     onPress?.(e);
   }
-  const { server, primaryColor, navColor } = useServerInfo();
+  const { server, primaryColor, navColor, navTextColor } = useServerInfo();
   return <Button
     // bordered={false}
     // href={`/g/${group.shortname}`}
@@ -196,6 +205,17 @@ function GroupButton({ group, selected, setOpen }: GroupButtonProps) {
     // disabled={appSection == AppSection.HOME}
     {...link}
   >
-    <Heading size="$4">{group.name}</Heading>
+    <XStack w='100%'>
+      <XStack w={media.gtXs ? 70 : 0} />
+      <Paragraph size="$5" color={selected ? navTextColor : undefined} whiteSpace='nowrap' overflow='hidden' marginVertical='auto' f={1} ta='center'>
+        {group.name}
+      </Paragraph>
+      <XStack w={70}>
+        <YStack marginVertical='auto' mr='$2'><Users size="$1" color={selected ? navTextColor : undefined} /></YStack>
+        <Heading size="$3" color={selected ? navTextColor : undefined} marginVertical='auto' f={1} ta='right'>
+          {group.memberCount}
+        </Heading>
+      </XStack>
+    </XStack>
   </Button>;
 }

@@ -8,6 +8,8 @@ import { createParam } from 'solito'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import ServerCard from './server_card'
 import StickyBox from "react-sticky-box";
+import { useLink } from 'solito/link'
+import { Info } from '@tamagui/lucide-icons'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -29,6 +31,7 @@ export function ServerDetailsScreen() {
     account?.user?.permissions.includes(Permission.ADMIN);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
+  const aboutLink = useLink({ href: '/about' })
 
   const { serviceVersion, serverConfiguration } = server || {};
 
@@ -57,6 +60,8 @@ export function ServerDetailsScreen() {
   if (navColorHex != navColor && navColorHex == '#FFFFFF') {
     setNavColorHex(navColor);
   }
+  const primaryTextColor = primaryColorInt && primaryColorInt < 0x808080 ? 'white' : 'black';
+  const navTextColor = navColorInt && navColorInt < 0x808080 ? 'white' : 'black';
 
   async function updateServer() {
     setUpdating(true);
@@ -114,6 +119,9 @@ export function ServerDetailsScreen() {
                 </>}
                 <Heading size='$10' als='center' mt='$3'>Server Info</Heading>
                 <ServerCard server={server!} />
+                <Button {...aboutLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
+                  <Heading size='$2' color={navTextColor}>About Jonline...</Heading>
+                </Button>
                 <XStack mt='$4'>
                   <Heading size='$3' f={1}>Service Version</Heading>
                   <Paragraph>{serviceVersion?.version}</Paragraph>

@@ -5,12 +5,12 @@ import { loadUsername, RootState, selectUserById, updateUser, useCredentialDispa
 import React, { useState, useEffect } from 'react'
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
-import { TamaguiMarkdown } from '../post/post_card'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import UserCard from './user_card'
 import { Dimensions } from 'react-native';
 import StickyBox from "react-sticky-box";
 import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
+import { TamaguiMarkdown } from '../post/tamagui_markdown'
 
 
 const { useParam } = createParam<{ username: string }>()

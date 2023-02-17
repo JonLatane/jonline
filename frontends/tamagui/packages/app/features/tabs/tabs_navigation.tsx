@@ -34,6 +34,9 @@ export type TabsNavigationProps = {
   appSection?: AppSection;
   selectedGroup?: Group;
   customHomeAction?: () => void;
+  // Forwarder to link to a group page. Defaults to /g/:shortname.
+  // But, for instance, post pages can link to /g/:shortname/p/:id.
+  groupPageForwarder?: (group: Group) => string;
 };
 
 export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, selectedGroup, customHomeAction }: TabsNavigationProps) {

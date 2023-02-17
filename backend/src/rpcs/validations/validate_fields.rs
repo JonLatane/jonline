@@ -12,8 +12,9 @@ pub fn validate_username(value: &str) -> Result<(), Status> {
         &value,
         "username",
         &[
-            "app", "home", "web", "events", "event", "e", "posts", "post", "p", "groups", "group",
-            "g", "people", "person", "author", "a", "member", "m", "server", "s", "servers",
+            "app", "flutter", "tamagui", "home", "web", "events", "event", "e", "posts", "post", "p", "groups", "group",
+            "g", "people", "person", "author", "a", "member", "m", "server", "s", "servers", "about", "about_jonline", "u", "users", "user",
+            "info", "robots.txt", "favicon.ico", "sitemap.xml", "sitemap.xml.gz", "sitemap.xml.gz", "sitemap.xml.gz", "sitemap.xml.gz",
         ],
     )
 }

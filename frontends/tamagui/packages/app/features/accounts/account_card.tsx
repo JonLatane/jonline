@@ -1,7 +1,7 @@
 import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
 import { Permission } from "@jonline/ui/src";
 import { Bot, Shield, Trash, User as UserIcon } from "@tamagui/lucide-icons";
-import { store, JonlineAccount, removeAccount, selectAccount, selectServer, useTypedDispatch } from "app/store";
+import { store, JonlineAccount, removeAccount, selectAccount, selectServer, useTypedDispatch, accountId } from "app/store";
 import React from "react";
 import { View } from "react-native";
 import { useLink } from "solito/link";
@@ -12,7 +12,7 @@ interface Props {
 
 const AccountCard: React.FC<Props> = ({ account }) => {
   const dispatch = useTypedDispatch();
-  let selected = store.getState().accounts.account?.id == account.id;
+  let selected = accountId(store.getState().accounts.account) == accountId(account);
 
   const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
   const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
@@ -105,7 +105,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
                         <Button>Cancel</Button>
                       </Dialog.Close>
                       {/* <Dialog.Action asChild> */}
-                      <Button theme="active" onClick={() => dispatch(removeAccount(account.id))}>Remove</Button>
+                      <Button theme="active" onClick={() => dispatch(removeAccount(accountId(account)!))}>Remove</Button>
                       {/* </Dialog.Action> */}
                     </XStack>
                   </YStack>

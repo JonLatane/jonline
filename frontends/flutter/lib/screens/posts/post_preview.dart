@@ -3,7 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:get_storage/get_storage.dart';
+// import 'package:get_storage/get_storage.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:jonline/jonline_state.dart';
@@ -13,6 +13,7 @@ import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:memory_cache/memory_cache.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
@@ -25,7 +26,7 @@ import '../../models/jonline_server.dart';
 import '../../models/settings.dart';
 
 // import 'package:jonline/db.dart';
-final previewStorage = GetStorage('preview');
+// final previewStorage = GetStorage('preview');
 
 class PostPreview extends StatefulWidget {
   final String server;
@@ -77,13 +78,18 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
       : post.link.startsWith(RegExp(r'https?://'))
           ? post.link
           : 'http://${post.link}';
+  String get previewKey => "post-preview-${widget.server}:${post.id}";
   List<int>? previewImage;
   String? get content => post.content.isEmpty ? null : post.content;
   String? get username =>
       post.author.username.isEmpty ? null : post.author.username;
   int get responseCount => post.responseCount;
 
+  bool loadingGroupPosts = false;
+  bool failedToLoadGroupPosts = false;
+  bool loadingServerPreview = false;
   bool hasLoadedServerPreview = false;
+  bool failedToLoadServerPreview = false;
   User? get author =>
       appState.users.value.where((u) => u.id == post.author.userId).firstOrNull;
 
@@ -92,10 +98,15 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
   @override
   void initState() {
     super.initState();
-
+    final key = previewKey;
+    if (MemoryCache.instance.contains(key)) {
+      previewImage = MemoryCache.instance.read(key);
+      hasLoadedServerPreview = true;
+    }
     if (post.link.isNotEmpty) {
       loadServerPreview();
     }
+
     loadGroupPosts();
 
     widget.refreshContent?.addListener(refreshContent);
@@ -112,48 +123,87 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
   }
 
   loadServerPreview() async {
-    if (hasLoadedServerPreview) return;
+    if (previewImage != null ||
+        hasLoadedServerPreview ||
+        failedToLoadServerPreview ||
+        loadingServerPreview ||
+        !post.previewImageExists) return;
+
+    setState(() => loadingServerPreview = true);
     await _loadServerPreview();
   }
 
   _loadServerPreview() async {
-    final key = "${widget.server}:${post.id}";
-    List<int>? previewData;
-    if (previewStorage.hasData(key)) {
-      previewData = previewStorage.read(key).cast<int>();
-    }
-    if (previewData == null) {
-      previewData = (await JonlineOperations.getPosts(
-              request: GetPostsRequest(postId: post.id),
-              showMessage: showSnackBar))
-          ?.posts
-          .firstOrNull
-          ?.previewImage;
-      previewStorage.write(key, previewData);
-    }
-    if (!mounted) return;
-    if (previewData != null && previewData.isNotEmpty) {
+    if (previewImage != null ||
+        hasLoadedServerPreview ||
+        !post.previewImageExists ||
+        failedToLoadServerPreview) return;
+
+    try {
+      final key = previewKey;
+      List<int>? previewData;
+      // if (previewStorage.hasData(key)) {
+      //   print("Loading stored preview for ${post.id}");
+      //   previewData = previewStorage.read(key).cast<int>();
+      // }
+
+      if (MemoryCache.instance.contains(key)) {
+        // print("Loading stored preview for ${post.id}");
+        previewData = MemoryCache.instance.read(key);
+      }
+      if (previewData == null) {
+        // print("Loading preview from web for ${post.id}");
+        previewData = (await JonlineOperations.getPosts(
+                request: GetPostsRequest(postId: post.id),
+                showMessage: showSnackBar))
+            ?.posts
+            .firstOrNull
+            ?.previewImage;
+        MemoryCache.instance.create(key, previewData);
+      }
+      if (!mounted) return;
+      if (previewData != null && previewData.isNotEmpty) {
+        setState(() {
+          previewImage = previewData;
+        });
+      }
+      if (!mounted) return;
       setState(() {
-        previewImage = previewData;
+        hasLoadedServerPreview = true;
       });
+    } catch (e) {
+      setState(() => failedToLoadServerPreview = true);
+    } finally {
+      if (mounted) {
+        setState(() => loadingServerPreview = false);
+      }
     }
-    if (!mounted) return;
-    setState(() {
-      hasLoadedServerPreview = true;
-    });
   }
 
   loadGroupPosts() async {
-    // if (this.groupPosts != null) return;
     if (widget.isReply) return;
+    if (groupPosts != null || loadingGroupPosts || failedToLoadGroupPosts) {
+      return;
+    }
 
-    final groupPosts = await JonlineOperations.getGroupPosts(
-        GetGroupPostsRequest(postId: post.id),
-        showMessage: (e) => print(e));
-    if (!mounted) return;
-    setState(() {
-      this.groupPosts = groupPosts;
-    });
+    setState(() => loadingGroupPosts = true);
+    try {
+      print("Loading group posts for ${post.id}");
+      final groupPosts = await JonlineOperations.getGroupPosts(
+          GetGroupPostsRequest(postId: post.id),
+          showMessage: (e) => print(e));
+      if (!mounted) return;
+      setState(() {
+        this.groupPosts = groupPosts;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => failedToLoadGroupPosts = true);
+    } finally {
+      if (mounted) {
+        setState(() => loadingGroupPosts = false);
+      }
+    }
   }
 
   @override

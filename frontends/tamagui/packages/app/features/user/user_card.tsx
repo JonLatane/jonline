@@ -1,10 +1,10 @@
-import { Button, Card, Dialog, Heading, Theme, XStack, Image, YStack, User, useMedia } from "@jonline/ui";
-import { Input, Permission, Tooltip } from "@jonline/ui/src";
-import { Bot, Camera, Info, Lock, Shield, Trash, Unlock } from "@tamagui/lucide-icons";
-import { store, removeAccount, removeUser, RootState, selectAccount, selectAllAccounts, useTypedDispatch, useTypedSelector, useCredentialDispatch, loadUser, useServerInfo } from "app/store";
-import React, { useState, useEffect } from "react";
-import { useLink } from "solito/link";
-import { FadeInView } from "../post/post_card";
+import { Card, Heading, Image, Theme, useMedia, User, XStack, YStack } from "@jonline/ui";
+import { Permission, Tooltip } from "@jonline/ui/src";
+import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
+import { loadUser, RootState, useCredentialDispatch, useServerInfo, useTypedSelector } from "app/store";
+import React, { useEffect } from "react";
+import { FadeInView } from "../post/fade_in_view";
+import { } from "../post/post_card";
 
 interface Props {
   user: User;
@@ -75,34 +75,40 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
           </XStack>
         </Card.Header>
         <Card.Footer>
-          <XStack width='100%'>
-            <YStack mt='$2' mr='$3' f={1}>
-              {(!isPreview && avatar && avatar != '') ?
-                <Image
-                  // pos="absolute"
-                  // width={400}
-                  // opacity={0.25}
-                  // height={400}
-                  // minWidth={300}
-                  // minHeight={300}
-                  // width='100%'
-                  // height='100%'
-                  mb='$3'
-                  width={media.sm ? 300 : 400}
-                  height={media.sm ? 300 : 400}
-                  resizeMode="contain"
-                  als="center"
-                  src={avatar}
-                  borderRadius={10}
-                // borderBottomRightRadius={5}
-                /> : undefined}
-              <XStack>
-                <Heading size='$1'>{user.id}</Heading>
-                <XStack f={1} />
-                {isCurrentUser && setAvatar ? <Camera /> : undefined}
-              </XStack>
-            </YStack>
-          </XStack>
+          <YStack mt='$2' mr='$3' w='100%'>
+            <XStack>
+              <Heading size='$1' f={1}>{user.followerCount} followers</Heading>
+              <Heading size='$1' f={1} ta='right'>following {user.followingCount}</Heading>
+            </XStack>
+            <XStack>
+              <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
+              <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
+            </XStack>
+            {(!isPreview && avatar && avatar != '') ?
+              <Image
+                // pos="absolute"
+                // width={400}
+                // opacity={0.25}
+                // height={400}
+                // minWidth={300}
+                // minHeight={300}
+                // width='100%'
+                // height='100%'
+                mb='$3'
+                width={media.gtXs ? 400 : 300}
+                height={media.gtXs ? 400 : 300}
+                resizeMode="contain"
+                als="center"
+                src={avatar}
+                borderRadius={10}
+              // borderBottomRightRadius={5}
+              /> : undefined}
+            <XStack>
+              <Heading size='$1'>{user.id}</Heading>
+              <XStack f={1} />
+              {isCurrentUser && setAvatar ? <Camera /> : undefined}
+            </XStack>
+          </YStack>
         </Card.Footer>
         <Card.Background>
           {/* <XStack>

@@ -232,6 +232,22 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
             Text('Default Web UI', style: textTheme.titleMedium),
             const SizedBox(height: 8),
             RadioListTile<WebUserInterface>(
+              value: WebUserInterface.REACT_TAMAGUI,
+              groupValue: config?.serverInfo.webUserInterface,
+              title: const Text("React/Redux/Tamagui Web UI"),
+              subtitle: Text(
+                  "React/Tamagui UI. Fast to load in browsers. Will eventually support customization. Always accessible from ${server?.server}/tamagui."),
+              onChanged: account != null
+                  ? (WebUserInterface? value) {
+                      if (value == null) return;
+
+                      setState(() {
+                        config!.serverInfo.webUserInterface = value;
+                      });
+                    }
+                  : null,
+            ),
+            RadioListTile<WebUserInterface>(
               value: WebUserInterface.FLUTTER_WEB,
               groupValue: config?.serverInfo.webUserInterface,
               title: const Text("Flutter Web UI"),
@@ -263,22 +279,6 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
             //         }
             //       : null,
             // ),
-            RadioListTile<WebUserInterface>(
-              value: WebUserInterface.REACT_TAMAGUI,
-              groupValue: config?.serverInfo.webUserInterface,
-              title: const Text("React/Redux/Tamagui Web UI [WIP]"),
-              subtitle: Text(
-                  "React/Tamagui UI. Fast to load in browsers. Will eventually support customization. Always accessible from ${server?.server}/tamagui."),
-              onChanged: account != null
-                  ? (WebUserInterface? value) {
-                      if (value == null) return;
-
-                      setState(() {
-                        config!.serverInfo.webUserInterface = value;
-                      });
-                    }
-                  : null,
-            ),
             const SizedBox(height: 24),
             Text('Feature Settings', style: textTheme.titleMedium),
             // Row(

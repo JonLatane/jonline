@@ -1,12 +1,13 @@
 import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useTypedDispatch, useTypedSelector } from 'app/store';
+import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useServerInfo, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
 import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
+import { LoginMethod } from './add_account_sheet';
 import ServerCard from './server_card';
 
 export type AccountsSheetProps = {
@@ -26,9 +27,11 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const [newServerSecure, setNewServerSecure] = useState(true);
   const [newAccountUser, setNewAccountUser] = useState('');
   const [newAccountPass, setNewAccountPass] = useState('');
+  const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
 
   const dispatch = useTypedDispatch();
   const app = useTypedSelector((state: RootState) => state.app);
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerInfo();
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
   const serversLoading = serversState.status == 'loading';
@@ -74,6 +77,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const accountsLoading = accountsState.status == 'loading';
   const newAccountValid = newAccountUser.length > 0 && newAccountPass.length >= 8;
   const [forceDisableAccountButtons, setForceDisableAccountButtons] = useState(false);
+  const disableLoginMethodButtons = newAccountUser == '';
   const disableAccountInputs = accountsLoading || forceDisableAccountButtons;
   const disableAccountButtons = accountsLoading || !newAccountValid || forceDisableAccountButtons;
   const isLoadingCredentialedData = loadingCredentialedData();
@@ -99,6 +103,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         setNewAccountUser('');
         setNewAccountPass('');
         setForceDisableAccountButtons(false);
+        setLoginMethod(undefined);
       }, 1000);
     }, 1500);
   } else if (accountsState.errorMessage && forceDisableAccountButtons) {
@@ -142,7 +147,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
           <XStack space='$4' paddingHorizontal='$3'>
 
             <Button size='$3' icon={RefreshCw} circular
-              disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
+              // disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
               onPress={resetCredentialedData} />
             <XStack f={1} />
             <Button
@@ -164,19 +169,35 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     : undefined}
 
                   <XStack f={1} />
-                  {!browsingServers && currentServerInfoLink && !onlyShowServer
-                    ? <Button size='$3' mr='$2' disabled icon={<Info />} circular opacity={0} />
-                    : undefined}
-                  {!browsingServers
-                    ? <YStack maw={media.gtXs ? 350 : 250}>
-                      <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading>
-                      <Heading size='$3' als='center' marginTop='$2'>
-                        {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
-                      </Heading>
-                    </YStack>
-                    : undefined}
-                  {!browsingServers && currentServerInfoLink && !onlyShowServer
-                    ? <Button size='$3' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
+
+                  {!browsingServers ?
+                    <XStack animation="bouncy"
+                      opacity={1}
+                      scale={1}
+                      y={0}
+                      enterStyle={{
+                        // scale: 1.5,
+                        y: 50,
+                        opacity: 0,
+                      }}
+                      exitStyle={{
+                        // scale: 1.5,
+                        // y: 50,
+                        opacity: 0,
+                      }}>
+                      {currentServerInfoLink && !onlyShowServer
+                        ? <Button size='$3' mr='$2' disabled icon={<Info />} circular opacity={0} />
+                        : undefined}
+                      <YStack maw={media.gtXs ? 350 : 250}>
+                        <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading>
+                        <Heading size='$3' als='center' marginTop='$2'>
+                          {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
+                        </Heading>
+                      </YStack>
+                      {currentServerInfoLink && !onlyShowServer
+                        ? <Button size='$3' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
+                        : undefined}
+                    </XStack>
                     : undefined}
                   <XStack f={1} />
                   {app.allowServerSelection ? <Button
@@ -242,7 +263,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                               <Heading size="$2">Secure</Heading>
                             </Label>
                           </YStack>
-                          <Button style={{ flex: 2 }} theme='active' onClick={addServer} disabled={serversLoading || !newServerValid}>
+                          <Button style={{ flex: 2 }} backgroundColor={primaryColor} color={primaryTextColor} onClick={addServer} disabled={serversLoading || !newServerValid}>
                             Add Server
                           </Button>
                         </XStack>
@@ -276,16 +297,32 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
               {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
 
-              {browsingServers ? <FlatList
-                horizontal={true}
-                data={servers}
-                keyExtractor={(server) => server.host}
-                renderItem={({ item: server }) => {
-                  return <ServerCard server={server} key={`serverCard-${serverUrl(server)}`} isPreview />;
-                }}
-              // style={Styles.trueBackground}
-              // contentContainerStyle={Styles.contentBackground}
-              /> : undefined}
+              {browsingServers
+                ? <XStack animation="bouncy"
+                  opacity={1}
+                  scale={1}
+                  y={0}
+                  enterStyle={{
+                    // scale: 1.5,
+                    y: -50,
+                    opacity: 0,
+                  }}
+                  exitStyle={{
+                    // scale: 1.5,
+                    // y: 50,
+                    opacity: 0,
+                  }}>
+                  <FlatList
+                    horizontal={true}
+                    data={servers}
+                    keyExtractor={(server) => server.host}
+                    renderItem={({ item: server }) => {
+                      return <ServerCard server={server} key={`serverCard-${serverUrl(server)}`} isPreview />;
+                    }}
+                  // style={Styles.trueBackground}
+                  // contentContainerStyle={Styles.contentBackground}
+                  />
+                </XStack> : undefined}
               {!browsingServers ? <YStack h="$2" /> : undefined}
               <YStack space="$2">
                 <XStack>
@@ -323,29 +360,59 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       />
                       <YStack space="$2" maw={600} w='100%' als='center'>
                         <Heading size="$10">Add Account</Heading>
-                        <Heading size="$6">{primaryServer?.host}/</Heading>
-                        <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
+                        <Heading size="$6">{primaryServer?.host}/</Heading><Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
                           disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
                           autoCapitalize='none'
                           value={newAccountUser}
                           onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
-                        <Input secureTextEntry textContentType="newPassword" placeholder="Password"
-                          disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
-                          value={newAccountPass}
-                          onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
 
-                        <XStack>
-                          <Button flex={2} marginRight='$1' onClick={createServerAccount} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                            Create Account
-                          </Button>
-                          <Button flex={1} theme='active' onClick={loginToServer} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                            Login
-                          </Button>
-                        </XStack>
+                        {loginMethod ? <XStack w='100%' animation="bouncy"
+                          scale={1}
+                          y={0}
+                          enterStyle={{
+                            y: -20,
+                            opacity: 0,
+                          }}
+                          exitStyle={{
+                            opacity: 0,
+                          }}><Input secureTextEntry w='100%'
+                            textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
+                            placeholder="Password"
+                            disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
 
-                        {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{accountsState.errorMessage}</Heading> : undefined}
-                        {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{accountsState.successMessage}</Heading> : undefined}
+                            value={newAccountPass}
+                            onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
+                          : undefined}
 
+                        {loginMethod
+                          ? <XStack>
+                            <Button marginRight='$1' onClick={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                              disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
+                              Back
+                            </Button>
+                            <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onClick={() => {
+                              if (loginMethod == LoginMethod.Login) {
+                                loginToServer();
+                              } else {
+                                createServerAccount();
+                              }
+                            }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
+                              {loginMethod == LoginMethod.Login ? 'Login' : 'Create Account'}
+                            </Button>
+                          </XStack>
+                          : <XStack>
+                            <Button flex={2} marginRight='$1' onClick={() => setLoginMethod(LoginMethod.CreateAccount)}
+                              disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
+                              Create Account
+                            </Button>
+                            <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onClick={() => setLoginMethod(LoginMethod.Login)}
+                              disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
+                              Login
+                            </Button>
+                          </XStack>}
+
+                        {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
+                        {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
                       </YStack>
                     </Sheet.Frame>
                   </Sheet>
@@ -356,23 +423,23 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               {app.separateAccountsByServer
                 ? <>
                   {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on {primaryServer?.host}.</Heading> : undefined}
-                  {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={account.id} />)}
+                  {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={accountId(account)} />)}
                   {accountsElsewhere.length > 0 && !onlyShowServer
                     ? <>
                       <Heading>Accounts Elsewhere</Heading>
-                      {accountsElsewhere.map((account) => <AccountCard account={account} key={account.id} />)}
+                      {accountsElsewhere.map((account) => <AccountCard account={account} key={accountId(account)} />)}
                     </>
                     : undefined
                   }
                 </>
                 : <>
                   {accounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
-                  {accounts.map((account) => <AccountCard account={account} key={account.id} />)}
+                  {accounts.map((account) => <AccountCard account={account} key={accountId(account)} />)}
                 </>}
 
               {/* <FlatList
                 data={accounts}
-                keyExtractor={(account) => account.id}
+                keyExtractor={(account) => accountId(account)}
                 renderItem={({ item }) => {
                   return <AccountCard account={item} />;
                 }}

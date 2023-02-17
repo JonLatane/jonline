@@ -52,6 +52,9 @@ message Follow {
   optional google.protobuf.Timestamp updated_at = 5;
 }
 
+// Model for a user's membership in a group. Memberships are generically
+// included as part of User models when relevant in Jonline, but UIs should use the group_id
+// to reconcile memberships with groups.
 message Membership {
   string user_id = 1;
   string group_id = 2;

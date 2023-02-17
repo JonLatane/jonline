@@ -63,6 +63,7 @@ extension JonlineOperations on JonlineAccount {
         entityType: "group posts");
   }
 
+  static final Map<String, DateTime> _lastErrors = {};
   static Future<Response?> performOperation<Response>(
       Future<Response?> Function(JonlineClient) operation,
       {Function(String)? showMessage,
@@ -81,9 +82,16 @@ extension JonlineOperations on JonlineAccount {
     try {
       response = await operation(client);
     } catch (e) {
-      showMessage?.call('Error loading ${entityType ?? 'data'}.');
-      if (showMessage != null) await communicationDelay;
-      showMessage?.call(formatServerError(e));
+      if (_lastErrors[entityType ?? 'data'] == null ||
+          DateTime.now()
+                  .difference(_lastErrors[entityType ?? 'data']!)
+                  .inSeconds >
+              5) {
+        showMessage?.call('Error loading ${entityType ?? 'data'}.');
+        if (showMessage != null) await communicationDelay;
+        _lastErrors[entityType ?? 'data'] = DateTime.now();
+        showMessage?.call(formatServerError(e));
+      }
       return null;
     }
     return response;

@@ -1,6 +1,6 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack } from "@jonline/ui";
 import { Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverUrl, useTypedDispatch, useTypedSelector } from "app/store";
+import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverUrl, useTypedDispatch, useTypedSelector, accountId } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 
@@ -31,7 +31,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
   function doRemoveServer() {
     accounts.forEach(account => {
       if (account.server.host == server.host) {
-        dispatch(removeAccount(account.id));
+        dispatch(removeAccount(accountId(account)!));
       }
     });
     dispatch(removeServer(server));

@@ -15,6 +15,7 @@ import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { store, getServerClient, resetCredentialedData } from "../store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient, JonlineServer } from "../types";
+import { serverUrl } from "./servers";
 
 let _accessFetchLock = false;
 let _newAccessToken: ExpirableToken | undefined = undefined;
@@ -35,9 +36,9 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
         await new Promise(resolve => setTimeout(resolve, 100));
         newAccessToken = _newAccessToken;
       }
-      const newTokenExpired = !newAccessToken || 
+      const newTokenExpired = !newAccessToken ||
         moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
-      if(newTokenExpired) {
+      if (newTokenExpired) {
         _accessFetchLock = true;
         let { accessToken: fetchedAccessToken, refreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
         newAccessToken = fetchedAccessToken!;
@@ -64,8 +65,13 @@ export interface AccountsState {
   entities: Dictionary<JonlineAccount>;
 }
 
+export function accountId(account: JonlineAccount | undefined): string | undefined {
+  if (!account) return undefined;
+
+  return `${serverUrl(account.server)}-${account.user.id}`;
+}
 const accountsAdapter = createEntityAdapter<JonlineAccount>({
-  selectId: (account) => account.id,
+  selectId: (account) => accountId(account)!,
 });
 
 export type CreateAccount = JonlineServer & CreateAccountRequest;
@@ -118,19 +124,19 @@ export const accountsSlice = createSlice({
   reducers: {
     upsertAccount: (state, action: PayloadAction<JonlineAccount>) => {
       accountsAdapter.upsertOne(state, action.payload);
-      if (state.account?.id === action.payload.id) {
+      if (accountId(state.account) === accountId(action.payload)) {
         state.account = action.payload;
       }
     },
     removeAccount: (state, action: PayloadAction<string>) => {
-      if (state.account?.id === action.payload) {
+      if (accountId(state.account) === action.payload) {
         state.account = undefined;
       }
       accountsAdapter.removeOne(state, action);
     },
     resetAccounts: () => initialState,
     selectAccount: (state, action: PayloadAction<JonlineAccount | undefined>) => {
-      if (state.account?.id != action.payload?.id) {
+      if (accountId(state.account) != accountId(action.payload)) {
         resetCredentialedData();
       }
       _newAccessToken = undefined;

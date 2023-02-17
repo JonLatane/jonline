@@ -27,6 +27,11 @@ pub async fn tamagui_index() -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("index.html").await
 }
 
+#[rocket::get("/about")]
+pub async fn tamagui_about() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("about.html").await
+}
+
 #[rocket::get("/post/<_id_etc..>")]
 pub async fn tamagui_post(_id_etc: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("post/[postId].html").await

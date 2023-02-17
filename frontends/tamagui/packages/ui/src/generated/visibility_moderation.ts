@@ -4,9 +4,13 @@ export const protobufPackage = "jonline";
 
 export enum Visibility {
   VISIBILITY_UNKNOWN = 0,
+  /** PRIVATE - Subject is only visible to the user who owns it. */
   PRIVATE = 1,
+  /** LIMITED - Subject is only visible to explictly associated Groups and Users. See: [`GroupPost`](#jonline-GroupPost) and [`UserPost`](#jonline-UserPost). */
   LIMITED = 2,
+  /** SERVER_PUBLIC - Subject is visible to all authenticated users. */
   SERVER_PUBLIC = 3,
+  /** GLOBAL_PUBLIC - Subject is visible to all users on the internet. */
   GLOBAL_PUBLIC = 4,
   UNRECOGNIZED = -1,
 }
@@ -55,9 +59,13 @@ export function visibilityToJSON(object: Visibility): string {
 
 export enum Moderation {
   MODERATION_UNKNOWN = 0,
+  /** UNMODERATED - Subject has not been moderated and is visible to all users. */
   UNMODERATED = 1,
+  /** PENDING - Subject is awaiting moderation and not visible to any users. */
   PENDING = 2,
+  /** APPROVED - Subject has been approved by moderators and is visible to all users. */
   APPROVED = 3,
+  /** REJECTED - Subject has been rejected by moderators and is not visible to any users. */
   REJECTED = 4,
   UNRECOGNIZED = -1,
 }

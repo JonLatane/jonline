@@ -1,8 +1,10 @@
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart';
 import 'package:jonline/utils/proto_utils.dart';
+import 'package:username_gen/username_gen.dart';
 
 import '../app_state.dart';
 import '../generated/groups.pb.dart';
@@ -32,6 +34,9 @@ postDemoData(
   final demoGroups =
       await generateDemoGroups(client, account, showSnackBar, appState);
   // showSnackBar("Relevant Groups exist or have been generated.");
+
+  List<JonlineAccount> sideAccounts = await generateSideAccounts(
+      client, account, demoGroups, showSnackBar, appState, 30);
 
   final List<Post> posts = [];
   var topLevelPosts = List.of(_demoData);
@@ -63,8 +68,8 @@ postDemoData(
   showSnackBar(
       "Posted demo topics successfully! 🎉 Generating users, relationships, and conversations...");
   // JonlineAccount? sideAccount;
-  List<JonlineAccount> sideAccounts = await generateSideAccounts(
-      client, account, demoGroups, showSnackBar, appState, 7);
+  // List<JonlineAccount> sideAccounts = await generateSideAccounts(
+  //     client, account, demoGroups, showSnackBar, appState, 12);
 
   List<JonlineAccount> replyAccounts = [
     account,
@@ -139,57 +144,90 @@ Future<List<JonlineAccount>> generateSideAccounts(
     Function(String) showSnackBar,
     AppState appState,
     int count) async {
-  List<JonlineAccount> sideAccounts = [];
-  String prefix = "";
-  String fakeAccountName = generateRandomName();
-
-  while (sideAccounts.length < count && prefix.length < 200) {
-    try {
-      final JonlineAccount? sideAccount = await JonlineAccount.createAccount(
-          account.server, "$prefix$fakeAccountName", getRandomString(15), (m) {
-        if (!m.contains("insecurely") &&
-            !m.contains("already exists") &&
-            !m.contains("Failed to create account")) {
-          showSnackBar(m);
+  final List<int> range = [for (var i = 0; i < count; i += 1) i];
+  final Set<int> avatarHashcodes = {};
+  final List<Image> avatars = [];
+  final httpClient = http.Client();
+  while (avatars.length < range.length) {
+    http.Response response = await httpClient
+        .get(Uri.parse('https://thispersondoesnotexist.com/image'), headers: {
+      if (!MyPlatform.isWeb) "User-Agent": "Jonline",
+      if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
+    });
+    final image = decodeJpg(response.bodyBytes);
+    if (image != null) {
+      final hashCode = const ListEquality().hash(image.data);
+      final Image avatar = copyResize(image, width: 128);
+      if (!avatarHashcodes.contains(hashCode)) {
+        avatarHashcodes.add(hashCode);
+        avatars.add(avatar);
+        if (avatars.length % 5 == 0) {
+          showSnackBar("Generated ${avatars.length} avatars...");
         }
-      }, allowInsecure: account.allowInsecure, selectAccount: false);
-      // final JonlineClient? sideClient =
-      //     await (sideAccount?.getClient(showMessage: showSnackBar));
-      final httpClient = http.Client();
-      if (sideAccount != null) {
-        final User? user = await sideAccount.updateUserData();
-        if (user != null) {
-          user.permissions.add(Permission.RUN_BOTS);
-          // Source from https://thispersondoesnotexist.com/image
-          http.Response response = await httpClient.get(
-              Uri.parse('https://thispersondoesnotexist.com/image'),
-              headers: {
-                if (!MyPlatform.isWeb) "User-Agent": "Jonline",
-                if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
-              });
-          final image = decodeJpg(response.bodyBytes);
-          if (image != null) {
-            final avatar = copyResize(image, width: 128);
-            user.avatar = encodeJpg(avatar);
-          } else {
-            showSnackBar("Failed to generate avatar for $fakeAccountName.");
-          }
-          await client.updateUser(user,
-              options: account.authenticatedCallOptions);
-          await sideAccount.updateUserData();
-        }
-        // showSnackBar("Created side account ${sideAccount.username}.");
-        appState.updateAccountList();
-        sideAccounts.add(sideAccount);
-        prefix = "";
-        fakeAccountName = generateRandomName();
       } else {
-        prefix = "not-$prefix";
+        await Future.delayed(const Duration(milliseconds: 1000));
       }
-    } catch (e) {
-      prefix = "not-$prefix";
+    } else {
+      showSnackBar("Failed to generate avatar...");
     }
   }
+
+  Iterable<Future<JonlineAccount?>> futures = range.map((i) async {
+    JonlineAccount? sideAccount;
+    String fakeAccountName = generateRandomName();
+    int retryCount = 0;
+
+    while (retryCount < 15) {
+      try {
+        final JonlineAccount? sideAccount = await JonlineAccount.createAccount(
+            account.server, fakeAccountName, getRandomString(15), (m) {
+          if (!m.contains("insecurely") &&
+              !m.contains("already exists") &&
+              !m.contains("Failed to create account")) {
+            showSnackBar(m);
+          }
+        }, allowInsecure: account.allowInsecure, selectAccount: false);
+        // final JonlineClient? sideClient =
+        //     await (sideAccount?.getClient(showMessage: showSnackBar));
+        if (sideAccount != null) {
+          final User? user = await sideAccount.updateUserData();
+          if (user != null) {
+            user.permissions.add(Permission.RUN_BOTS);
+            // Source from https://thispersondoesnotexist.com/image
+            // await Future.delayed(
+            //     Duration(milliseconds: _random.nextInt(60000)));
+            // http.Response response = await httpClient.get(
+            //     Uri.parse('https://thispersondoesnotexist.com/image'),
+            //     headers: {
+            //       if (!MyPlatform.isWeb) "User-Agent": "Jonline",
+            //       if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
+            //     });
+            // final image = decodeJpg(response.bodyBytes);
+            // if (image != null) {
+            //   final avatar = copyResize(image, width: 128);
+            //   user.avatar = encodeJpg(avatar);
+            // } else {
+            //   showSnackBar("Failed to generate avatar for $fakeAccountName.");
+            // }
+            user.avatar = encodeJpg(avatars[i]);
+            await client.updateUser(user,
+                options: account.authenticatedCallOptions);
+            await sideAccount.updateUserData();
+          }
+          // showSnackBar("Created side account ${sideAccount.username}.");
+          appState.updateAccountList();
+          return sideAccount;
+        }
+      } catch (e) {
+        fakeAccountName = generateRandomName();
+        retryCount++;
+      }
+    }
+    return sideAccount;
+  });
+
+  List<JonlineAccount> sideAccounts =
+      (await Future.wait(futures.toList())).whereNotNull().toList();
 
   //Generate follow relationships between side accounts and originating account
   int relationshipsCreated = 0;
@@ -218,6 +256,9 @@ Future<List<JonlineAccount>> generateSideAccounts(
             ),
             options: sideAccount.authenticatedCallOptions);
         relationshipsCreated += 1;
+        if (relationshipsCreated % 10 == 0) {
+          showSnackBar("Created $relationshipsCreated follow relationships.");
+        }
       }
     } catch (e) {
       showSnackBar("Error following side account: $e");
@@ -243,6 +284,9 @@ Future<List<JonlineAccount>> generateSideAccounts(
             options: sideAccount.authenticatedCallOptions);
         targetGroups.remove(group);
         membershipsCreated += 1;
+        if (membershipsCreated % 10 == 0) {
+          showSnackBar("Created $membershipsCreated group memberships.");
+        }
       }
     } catch (e) {
       showSnackBar("Error following side account: $e");
@@ -253,47 +297,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
   return sideAccounts;
 }
 
-String generateRandomName() =>
-    _demoNameComponents.map((fix) => fix[_random.nextInt(fix.length)]).join('');
-
-final List<List<String>> _demoNameComponents = [
-  [
-    'kim',
-    'bob',
-    'tim',
-    'jess',
-    'kim',
-    'mar',
-    'jen',
-    'jeff',
-    'anton',
-    'chris',
-    'mor',
-    'shay',
-    'trey',
-    'josh',
-    'joe',
-    'jim',
-    'jimmy',
-    'shan',
-    'han',
-    'mike',
-    'hil'
-  ],
-  [
-    'berly',
-    'othy',
-    'athon',
-    'bothy',
-    'ine',
-    'an',
-    'frey',
-    'nifer',
-    'berly',
-    'bo',
-    'ary'
-  ]
-];
+String generateRandomName() => UsernameGen().generate();
 
 enum DemoGroup {
   coolKidsClub,
@@ -569,7 +573,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
       [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
       CreatePostRequest(
         title:
-            "Jonline images are on DockerHub so you can try/deploy it easily without touching anything Rust/Flutter",
+            "Jonline images are on DockerHub so you can try/deploy it easily without touching anything Rust/React/Flutter",
         link: "https://hub.docker.com/r/jonlatane/jonline",
       )),
   DemoPost(
@@ -584,44 +588,29 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
       CreatePostRequest(
           title: "What is Jonline??",
           content: '''Large-scale capitalist social media sucks for most of us. 
-Jonline takes a minimalist approach to social media, both in terms of user count 
-(per "instance" at least) and features. 
+Jonline is a new approach to social media that keeps user data hyper-local - 
+within peoples' physical communities - all wrapped up as a 
+[well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/generated/docs.md). 
 A Jonline *instance* or community (like the one you're reading this post on - probably 
 [jonline.io](https://jonline.io) or [getj.online](https://getj.online)) 
-is designed for groups like:
+is designed for use cases like:
 
 * Neighborhoods, communities, or cities
 * (Ex-)Coworkers wanting a private channel to chat
 * Run/bike/etc. clubs
-* Hobbyist/maker groups
+* Hobbyist/maker/homebrewing groups
 * Local concert listings
-* Event venue calendars
+* Event venue or fitness studio calendars
 * Board game groups
 * D&D parties
-* App user groups
 * Online game clans
+* Customer/interpersonal calendar management for individual artists, teachers, coaches, etc.
 
-Instances are designed to be maintainable by a *single person* in any of these groups,
-at a cost of no more than \$15/mo, on any provider you choose or your own hardware. 
-Jonline keeps things simple: there are only Users/People (with follows/friendships),
-Groups (with memberships), Posts (with replies), and Events (TODO, but also with replies),
-along with visibility features like most other social media apps, and easy-to-use 
-admin and moderation tools. A Jonline  instance is much like a ListServ, 
+Instances are designed to be maintainable by a *single person* of reasonable technical 
+knowledge in any of these groups, at the absolute lowest possible cost, on any 
+provider or their own hardware. A Jonline instance is much like a ListServ, 
 Slack/Discord server, Reddit community, IRC server or PHPBB/vBulletin/Wordpress 
 forum if you're old, or a Facebook group if you're *really* old.
-
-(If you want to pay me to host an instance and/or develop features for your needs, 
-get in touch! I work a real job making much more boring but profitable things than
-Jonline, but would love to get paid to do this kind of stuff for myself. There 
-will probably be a waitlist until I have at least 5-10 interested parties and have 
-developed the features everyone needs, though. And I will expect things like domain 
-ownership and moderating your instance to stay on your end, with me just providing 
-hosting.)
-
-Jonline is trustworthy, because you can literally look at the 
-[code where it stores](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L30) 
-and [validates your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
-even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/demo_data.dart) 🤯🙃
 
 Importantly, to "run" a community like this one at [jonline.io](https://jonline.io), 
 you have to (or really, *get to*) run your own Jonline server. 
@@ -631,30 +620,34 @@ to post/comment; just remember I'll likely delete all your (and my) data as I co
 The upside: nothing you do here at [jonline.io](https://jonline.io) matters! ✨🔮✨ 
 So just button-mash a password (your account will stay logged-in/available until 
 data is reset) and you can post/comment away in a few seconds! Create lots of 
-accounts and shitpost to your heart's desire! Comment about how easy/hard my 
-account-switching UI makes it to shitpost! Give me a reason to implement 
-moderation tools! 🙃 (But like, don't be a real asshole pls)
+accounts and shitpost to your heart's desire!
+
+Jonline is trustworthy, because you can literally look at the 
+[code where it stores](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L30) 
+and [validates your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
+even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/demo_data.dart) 🤯🙃
+
+If you're familiar with OpenSocial and Mastodon, Jonline is much like them. But
+Jonline has a faster web UI than either thanks to Tamagui, a faster BE thanks to being written in
+Rust, and [Jonline's Docker images are currently 105MB](https://hub.docker.com/r/jonlatane/jonline/tags), 
+while [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags), 
+and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags)! 
+Further, Jonline should (hopefully) be easier to deploy, partly by virtue of having such minimal system requirements.
+Finally, Jonline's Discussion/Chat UI and upcoming Event features don't have great 
+analogues in other open-source social networks.
 
 If you feel moderately brave, take a crack at spinning up your own server. 
-Part of the design is that running your own server, or one for your local 
-community, should be easy, cheap, and portable to any Kubernetes (K8s) provider 
-(I pay \$15/mo for [DigitalOcean Kubernetes Service](https://m.do.co/c/1eaa3f9e536c)). 
-Instructions for quick K8s setup are at https://github.com/jonlatane/jonline, or if you're more a
-DIY Docker person, images are at https://hub.docker.com/r/jonlatane/jonline.
+Spinning one up locally should take under a minute if you already have Postgres and Docker
+installed (and can configure a fresh Postgres DB in under 45 seconds 😁) using 
+[the Docker setup instructions on Jonline's DockerHub page](https://hub.docker.com/r/jonlatane/jonline).
+Use this to turn any computer into a server, if you are comfortable managing HTTPS certs.
+It should also be easy to deploy to any Kubernetes (K8s) provider using
+[the Kubernetes setup instructions on Jonline's GitHub page](https://github.com/jonlatane/jonline).
+(For reference, I pay \$15/mo for [DigitalOcean Kubernetes Service](https://m.do.co/c/1eaa3f9e536c) 
+plus \$8/mo per static IP/website).
 
-If you feel *really* brave, and wanna contribute to a Flutter/Rust full-stack
-app, info on that stuff is *also* at https://github.com/jonlatane/jonline.
-The tl;dr: [Jonline BE](https://hub.docker.com/r/jonlatane/jonline) is a monolithic Rust server that runs 
-[a gRPC server via Tonic on port 27707](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/backend/src/main.rs#L45)
-along with web servers via Rocket on ports 
-[443 (if TLS is enabled)](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/backend/src/main.rs#L78), 
-[80](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/backend/src/main.rs#L68) and 
-[8000](https://github.com/JonLatane/jonline/blob/0e51d0350c01496fcb6ad1c94efb21ce426ff857/backend/src/main.rs#L58). 
-Jonline FE is a Flutter app that uses the gRPC server; versions can be built for 
-iOS, Android, macOS, Windows, Linux, or any other platform Flutter supports. 
-Jonline FE's Flutter Web build is also copied to the Jonline BE docker image, 
-and served by Rocket on the ports listed. So the [single `jonline` Docker image](https://hub.docker.com/r/jonlatane/jonline) 
-is a full-stack app that can be run wherever!
+If you feel *really* brave, and wanna contribute to any part of a cutting-edge Rust/React/Flutter full-stack 
+app, info on that is *also* at https://github.com/jonlatane/jonline.
 ''')),
 ];
 

@@ -5,7 +5,7 @@ description: Flutter client for Jonline.
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+196
+version: 1.0.0+219
 
 environment:
   sdk: ">=2.17.1 <3.0.0"
@@ -33,7 +33,6 @@ dependencies:
   scrolls_to_top: ^1.1.1
   native_device_orientation: ^1.1.4
   any_link_preview: ^2.0.9
-  get_storage: ^2.0.3
   intl: ^0.17.0
   flutter_colorpicker: ^1.0.3
   multi_select_flutter: ^4.1.2
@@ -43,6 +42,8 @@ dependencies:
   window_manager: ^0.2.7
   image: ^3.2.2
   http: ^0.13.5
+  username_gen: ^1.0.4
+  memory_cache: ^1.2.0
   # smooth: 
   #   path: ../../flutter_smooth/packages/smooth
 

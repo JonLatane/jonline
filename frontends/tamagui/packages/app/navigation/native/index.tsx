@@ -9,9 +9,11 @@ import { RootState, useTypedSelector } from 'app/store'
 import { HomeScreen } from '../../features/home/screen'
 import { UserDetailsScreen } from '../../features/user/details_screen'
 import { GroupDetailsScreen } from 'app/features/groups/details_screen'
+import { AboutScreen } from 'app/features/about/screen'
 
 const Stack = createNativeStackNavigator<{
   home: undefined,
+  about: undefined,
   userDetails: {
     id: string
   },
@@ -57,14 +59,22 @@ export function NativeNavigation() {
   }
   return (
     <Stack.Navigator>
-      <Stack.Screen
-        name="home"
-        component={HomeScreen}
-        options={{
-          title: 'Home',
-          ...defaultOptions,
-        }}
-      />
+    <Stack.Screen
+      name="home"
+      component={HomeScreen}
+      options={{
+        title: 'Home',
+        ...defaultOptions,
+      }}
+    />
+    <Stack.Screen
+      name="about"
+      component={AboutScreen}
+      options={{
+        title: 'About',
+        ...defaultOptions,
+      }}
+    />
       <Stack.Screen
         name="userDetails"
         component={UserDetailsScreen}

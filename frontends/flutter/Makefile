@@ -1,7 +1,10 @@
 .NOTPARALLEL:
-# Local FE dev targets
-protos_generate:
+
+# Local Flutter FE dev targets
+protos: protos_prepare protos_generate
+protos_prepare:
 	dart pub global activate protoc_plugin
+protos_generate:
 	mkdir -p lib/generated
 	protoc --dart_out=grpc:lib/generated -I../../protos ../../protos/*.proto google/protobuf/timestamp.proto google/protobuf/field_mask.proto google/protobuf/empty.proto
 

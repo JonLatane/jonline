@@ -48,7 +48,7 @@ impl ToProtoPost for models::MinimalPost {
             reply_count: self.reply_count,
             group_count: self.group_count,
             preview_image: None,
-            has_preview_image: *has_preview,
+            preview_image_exists: *has_preview,
             current_group_post: group_post.map(|gp| gp.to_proto()),
             ..Default::default()
         }
@@ -96,7 +96,7 @@ impl ToProtoPost for models::Post {
                 .to_proto_moderation()
                 .unwrap_or(Moderation::Unknown) as i32,
             replies: vec![], //TODO update this
-            has_preview_image: *has_preview,
+            preview_image_exists: *has_preview,
             current_group_post: group_post.map(|gp| gp.to_proto()),
         }
     }

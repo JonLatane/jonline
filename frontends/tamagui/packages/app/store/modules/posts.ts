@@ -26,6 +26,7 @@ export interface PostsState {
   ids: EntityId[];
   entities: Dictionary<Post>;
   previews: Dictionary<string>;
+  failedPostIds: string[];
 }
 
 const postsAdapter: EntityAdapter<Post> = createEntityAdapter<Post>({
@@ -111,7 +112,7 @@ export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any>
     console.log("loadPostReplies:", repliesRequest)
     const getPostsRequest = GetPostsRequest.create({
       postId: repliesRequest.postIdPath.at(-1),
-      replyDepth: 1,
+      replyDepth: 2,
     })
 
     const client = await getCredentialClient(repliesRequest);
@@ -126,6 +127,7 @@ const initialState: PostsState = {
   draftPost: Post.create(),
   sendReplyStatus: undefined,
   previews: {},
+  failedPostIds: [],
   ...postsAdapter.getInitialState(),
 };
 
@@ -234,6 +236,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
+      state.failedPostIds = [...state.failedPostIds, (action.meta.arg as LoadPost).id];
     });
     builder.addCase(loadPostReplies.pending, (state) => {
       state.status = "loading";

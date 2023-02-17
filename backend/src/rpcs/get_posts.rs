@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use diesel::*;
 use tonic::{Code, Status};
 
@@ -50,7 +52,7 @@ pub fn get_posts(
         )?,
         (_, Some(post_id)) => match request.reply_depth {
             None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
-            _ => get_replies_to_post_id(&user, &post_id, conn)?,
+            Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
         },
         (_, None) => get_all_posts(&user, conn),
     };
@@ -69,7 +71,11 @@ fn get_by_post_id(
     };
     let result = posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((posts::all_columns, users::username.nullable(), posts::preview.is_not_null()))
+        .select((
+            posts::all_columns,
+            users::username.nullable(),
+            posts::preview.is_not_null(),
+        ))
         .filter(posts::id.eq(post_db_id))
         .get_result::<(models::Post, Option<String>, bool)>(conn)
         .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), &has_preview));
@@ -92,7 +98,11 @@ fn get_all_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> 
     .to_string_visibilities();
     posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), posts::preview.is_not_null()))
+        .select((
+            models::MINIMAL_POST_COLUMNS,
+            users::username.nullable(),
+            posts::preview.is_not_null(),
+        ))
         .filter(posts::visibility.eq_any(visibilities))
         .filter(posts::parent_post_id.is_null())
         .order(posts::created_at.desc())
@@ -115,7 +125,11 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
             .inner_join(group_posts::table.on(group_posts::group_id.eq(groups::id)))
             .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-            .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), posts::preview.is_not_null()))
+            .select((
+                models::MINIMAL_POST_COLUMNS,
+                users::username.nullable(),
+                posts::preview.is_not_null(),
+            ))
             .filter(memberships::user_id.eq(user.id))
             .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
             .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
@@ -135,7 +149,11 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
         .inner_join(group_posts::table.on(group_posts::group_id.eq(groups::id)))
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), posts::preview.is_not_null()))
+        .select((
+            models::MINIMAL_POST_COLUMNS,
+            users::username.nullable(),
+            posts::preview.is_not_null(),
+        ))
         .filter(memberships::user_id.eq(user.id))
         .filter(
             memberships::permissions.has_any_key(
@@ -168,7 +186,12 @@ fn get_group_posts(
         (Visibility::GlobalPublic, None) => group_posts::table
             .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-            .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), posts::preview.is_not_null(), group_posts::all_columns))
+            .select((
+                models::MINIMAL_POST_COLUMNS,
+                users::username.nullable(),
+                posts::preview.is_not_null(),
+                group_posts::all_columns,
+            ))
             .filter(group_posts::group_id.eq(group_id))
             .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
             .filter(posts::visibility.eq("GLOBAL_PUBLIC"))
@@ -184,7 +207,12 @@ fn get_group_posts(
         (Visibility::GlobalPublic, Some(_)) => group_posts::table
             .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-            .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), posts::preview.is_not_null(), group_posts::all_columns))
+            .select((
+                models::MINIMAL_POST_COLUMNS,
+                users::username.nullable(),
+                posts::preview.is_not_null(),
+                group_posts::all_columns,
+            ))
             .filter(group_posts::group_id.eq(group_id))
             .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
             .filter(posts::visibility.eq_any(vec!["GLOBAL_PUBLIC", "SERVER_PUBLIC"]))
@@ -228,7 +256,11 @@ fn load_group_posts(
     group_posts::table
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), posts::preview.is_not_null()))
+        .select((
+            models::MINIMAL_POST_COLUMNS,
+            users::username.nullable(),
+            posts::preview.is_not_null(),
+        ))
         .filter(group_posts::group_id.eq(group_id))
         .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
         .filter(posts::visibility.ne("PRIVATE"))
@@ -245,7 +277,11 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
     follows::table
         .inner_join(posts::table.on(follows::target_user_id.nullable().eq(posts::user_id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), posts::preview.is_not_null()))
+        .select((
+            models::MINIMAL_POST_COLUMNS,
+            users::username.nullable(),
+            posts::preview.is_not_null(),
+        ))
         .filter(follows::user_id.eq(user.id))
         .filter(follows::target_user_moderation.eq_any(PASSING_MODERATIONS))
         .filter(posts::visibility.eq_any(
@@ -262,6 +298,7 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
 fn get_replies_to_post_id(
     _user: &Option<models::User>,
     post_id: &str,
+    reply_depth: u32,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<Post>, Status> {
     let post_db_id = match post_id.to_string().to_db_id() {
@@ -273,9 +310,13 @@ fn get_replies_to_post_id(
             ))
         }
     };
-    let result = posts::table
+    let result: Vec<Post> = posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((models::MINIMAL_POST_COLUMNS, users::username.nullable(), posts::preview.is_not_null()))
+        .select((
+            models::MINIMAL_POST_COLUMNS,
+            users::username.nullable(),
+            posts::preview.is_not_null(),
+        ))
         .filter(posts::visibility.eq("GLOBAL_PUBLIC"))
         .filter(posts::parent_post_id.eq(post_db_id))
         .order(posts::created_at.desc())
@@ -285,5 +326,22 @@ fn get_replies_to_post_id(
         .iter()
         .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
         .collect();
+    if reply_depth > 1 {
+        let extended_result: Vec<Post> = result
+            .iter()
+            .map(|post| {
+                if post.reply_count == 0 {
+                    return post.clone();
+                }
+                let replies =
+                    get_replies_to_post_id(_user, &post.id, min(reply_depth - 1, 1), conn);
+                Post {
+                    replies: replies.unwrap().into(),
+                    ..post.clone()
+                }
+            })
+            .collect();
+        return Ok(extended_result);
+    }
     Ok(result)
 }

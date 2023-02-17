@@ -113,7 +113,7 @@ message Post {
   optional GroupPost current_group_post = 15;
   // Always returned, even if preview_image is not. Indicates whether the UI
   // should attempt to fetch a preview_image.
-  bool has_preview_image = 16;
+  bool preview_image_exists = 16;
 
   google.protobuf.Timestamp created_at = 20;
   optional google.protobuf.Timestamp updated_at = 21;

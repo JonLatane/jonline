@@ -72,7 +72,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center' space='$3'>
               <Heading>Settings</Heading>
-              {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)}
+              {/* {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)} */}
               {toggleRow('Auto-Refresh Discussion Chat', app.autoRefreshDiscussions, setAutoRefreshDiscussions)}
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.autoRefreshDiscussions ? 1 : 0.5}>Only supported in Chat Mode.</Paragraph>
 

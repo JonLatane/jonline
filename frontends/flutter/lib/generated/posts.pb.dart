@@ -279,7 +279,7 @@ class Post extends $pb.GeneratedMessage {
     ..e<$9.Moderation>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
     ..a<$core.int>(14, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupCount', $pb.PbFieldType.O3)
     ..aOM<GroupPost>(15, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
-    ..aOB(16, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'hasPreviewImage')
+    ..aOB(16, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'previewImageExists')
     ..aOM<$7.Timestamp>(20, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $7.Timestamp.create)
     ..aOM<$7.Timestamp>(21, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $7.Timestamp.create)
     ..hasRequiredFields = false
@@ -301,7 +301,7 @@ class Post extends $pb.GeneratedMessage {
     $9.Moderation? moderation,
     $core.int? groupCount,
     GroupPost? currentGroupPost,
-    $core.bool? hasPreviewImage_16,
+    $core.bool? previewImageExists,
     $7.Timestamp? createdAt,
     $7.Timestamp? updatedAt,
   }) {
@@ -348,8 +348,8 @@ class Post extends $pb.GeneratedMessage {
     if (currentGroupPost != null) {
       _result.currentGroupPost = currentGroupPost;
     }
-    if (hasPreviewImage_16 != null) {
-      _result.hasPreviewImage_16 = hasPreviewImage_16;
+    if (previewImageExists != null) {
+      _result.previewImageExists = previewImageExists;
     }
     if (createdAt != null) {
       _result.createdAt = createdAt;
@@ -505,13 +505,13 @@ class Post extends $pb.GeneratedMessage {
   GroupPost ensureCurrentGroupPost() => $_ensure(13);
 
   @$pb.TagNumber(16)
-  $core.bool get hasPreviewImage_16 => $_getBF(14);
+  $core.bool get previewImageExists => $_getBF(14);
   @$pb.TagNumber(16)
-  set hasPreviewImage_16($core.bool v) { $_setBool(14, v); }
+  set previewImageExists($core.bool v) { $_setBool(14, v); }
   @$pb.TagNumber(16)
-  $core.bool hasHasPreviewImage_16() => $_has(14);
+  $core.bool hasPreviewImageExists() => $_has(14);
   @$pb.TagNumber(16)
-  void clearHasPreviewImage_16() => clearField(16);
+  void clearPreviewImageExists() => clearField(16);
 
   @$pb.TagNumber(20)
   $7.Timestamp get createdAt => $_getN(15);

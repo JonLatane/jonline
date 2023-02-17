@@ -92,7 +92,7 @@ const Post$json = const {
     const {'1': 'moderation', '3': 12, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
     const {'1': 'group_count', '3': 14, '4': 1, '5': 5, '10': 'groupCount'},
     const {'1': 'current_group_post', '3': 15, '4': 1, '5': 11, '6': '.jonline.GroupPost', '9': 6, '10': 'currentGroupPost', '17': true},
-    const {'1': 'has_preview_image', '3': 16, '4': 1, '5': 8, '10': 'hasPreviewImage'},
+    const {'1': 'preview_image_exists', '3': 16, '4': 1, '5': 8, '10': 'previewImageExists'},
     const {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     const {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 7, '10': 'updatedAt', '17': true},
   ],
@@ -109,7 +109,7 @@ const Post$json = const {
 };
 
 /// Descriptor for `Post`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List postDescriptor = $convert.base64Decode('CgRQb3N0Eg4KAmlkGAEgASgJUgJpZBIsCgZhdXRob3IYAiABKAsyDy5qb25saW5lLkF1dGhvckgAUgZhdXRob3KIAQESLAoQcmVwbHlfdG9fcG9zdF9pZBgDIAEoCUgBUg1yZXBseVRvUG9zdElkiAEBEhkKBXRpdGxlGAQgASgJSAJSBXRpdGxliAEBEhcKBGxpbmsYBSABKAlIA1IEbGlua4gBARIdCgdjb250ZW50GAYgASgJSARSB2NvbnRlbnSIAQESJQoOcmVzcG9uc2VfY291bnQYByABKAVSDXJlc3BvbnNlQ291bnQSHwoLcmVwbHlfY291bnQYCCABKAVSCnJlcGx5Q291bnQSJwoHcmVwbGllcxgJIAMoCzINLmpvbmxpbmUuUG9zdFIHcmVwbGllcxIoCg1wcmV2aWV3X2ltYWdlGAogASgMSAVSDHByZXZpZXdJbWFnZYgBARIzCgp2aXNpYmlsaXR5GAsgASgOMhMuam9ubGluZS5WaXNpYmlsaXR5Ugp2aXNpYmlsaXR5EjMKCm1vZGVyYXRpb24YDCABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SCm1vZGVyYXRpb24SHwoLZ3JvdXBfY291bnQYDiABKAVSCmdyb3VwQ291bnQSRQoSY3VycmVudF9ncm91cF9wb3N0GA8gASgLMhIuam9ubGluZS5Hcm91cFBvc3RIBlIQY3VycmVudEdyb3VwUG9zdIgBARIqChFoYXNfcHJldmlld19pbWFnZRgQIAEoCFIPaGFzUHJldmlld0ltYWdlEjkKCmNyZWF0ZWRfYXQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSPgoKdXBkYXRlZF9hdBgVIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIB1IJdXBkYXRlZEF0iAEBQgkKB19hdXRob3JCEwoRX3JlcGx5X3RvX3Bvc3RfaWRCCAoGX3RpdGxlQgcKBV9saW5rQgoKCF9jb250ZW50QhAKDl9wcmV2aWV3X2ltYWdlQhUKE19jdXJyZW50X2dyb3VwX3Bvc3RCDQoLX3VwZGF0ZWRfYXQ=');
+final $typed_data.Uint8List postDescriptor = $convert.base64Decode('CgRQb3N0Eg4KAmlkGAEgASgJUgJpZBIsCgZhdXRob3IYAiABKAsyDy5qb25saW5lLkF1dGhvckgAUgZhdXRob3KIAQESLAoQcmVwbHlfdG9fcG9zdF9pZBgDIAEoCUgBUg1yZXBseVRvUG9zdElkiAEBEhkKBXRpdGxlGAQgASgJSAJSBXRpdGxliAEBEhcKBGxpbmsYBSABKAlIA1IEbGlua4gBARIdCgdjb250ZW50GAYgASgJSARSB2NvbnRlbnSIAQESJQoOcmVzcG9uc2VfY291bnQYByABKAVSDXJlc3BvbnNlQ291bnQSHwoLcmVwbHlfY291bnQYCCABKAVSCnJlcGx5Q291bnQSJwoHcmVwbGllcxgJIAMoCzINLmpvbmxpbmUuUG9zdFIHcmVwbGllcxIoCg1wcmV2aWV3X2ltYWdlGAogASgMSAVSDHByZXZpZXdJbWFnZYgBARIzCgp2aXNpYmlsaXR5GAsgASgOMhMuam9ubGluZS5WaXNpYmlsaXR5Ugp2aXNpYmlsaXR5EjMKCm1vZGVyYXRpb24YDCABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SCm1vZGVyYXRpb24SHwoLZ3JvdXBfY291bnQYDiABKAVSCmdyb3VwQ291bnQSRQoSY3VycmVudF9ncm91cF9wb3N0GA8gASgLMhIuam9ubGluZS5Hcm91cFBvc3RIBlIQY3VycmVudEdyb3VwUG9zdIgBARIwChRwcmV2aWV3X2ltYWdlX2V4aXN0cxgQIAEoCFIScHJldmlld0ltYWdlRXhpc3RzEjkKCmNyZWF0ZWRfYXQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSPgoKdXBkYXRlZF9hdBgVIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIB1IJdXBkYXRlZEF0iAEBQgkKB19hdXRob3JCEwoRX3JlcGx5X3RvX3Bvc3RfaWRCCAoGX3RpdGxlQgcKBV9saW5rQgoKCF9jb250ZW50QhAKDl9wcmV2aWV3X2ltYWdlQhUKE19jdXJyZW50X2dyb3VwX3Bvc3RCDQoLX3VwZGF0ZWRfYXQ=');
 @$core.Deprecated('Use authorDescriptor instead')
 const Author$json = const {
   '1': 'Author',

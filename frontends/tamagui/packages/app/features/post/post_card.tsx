@@ -1,13 +1,16 @@
-import { loadPostPreview, loadPostReplies, loadUser, RootState, selectPostById, selectUserById, useCredentialDispatch, useServerInfo, useTypedSelector } from "app/store";
-import React, { PropsWithChildren, useEffect, useState } from "react";
-import { Animated, Platform, View, ViewStyle, Dimensions } from "react-native";
+import { loadPostPreview, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerInfo, useTypedSelector } from "app/store";
+import React, { useEffect, useState } from "react";
+import { Platform, View } from "react-native";
 
-import { Anchor, Button, Card, Group, Heading, Image, ListItem, Paragraph, Post, Tooltip, useMedia, useTheme, XStack, YStack, Text, User } from "@jonline/ui";
+import { Anchor, Button, Card, Group, Heading, Image, Post, Tooltip, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import { Permission, Theme } from "@jonline/ui/src";
 import { Bot, ChevronRight, Shield } from "@tamagui/lucide-icons";
+import { useOnScreen } from "app/hooks/use_on_screen";
 import moment from 'moment';
-import ReactMarkdown from 'react-markdown';
 import { useLink } from "solito/link";
-import { Permission } from "@jonline/ui/src";
+import { FadeInView } from "./fade_in_view";
+import { TamaguiMarkdown } from "./tamagui_markdown";
+import { AuthorInfo } from "./author_info";
 
 interface Props {
   post: Post;
@@ -17,9 +20,12 @@ interface Props {
   collapseReplies?: boolean;
   toggleCollapseReplies?: () => void;
   previewParent?: Post;
+  onPress?: () => void;
+  onPressParentPreview?: () => void;
+  selectedPostId?: string;
 }
 
-export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, collapseReplies, previewParent }) => {
+export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -36,7 +42,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // ... than 300px of element is visible.
   const onScreen = useOnScreen(ref, "-1px");
   useEffect(() => {
-    if (!preview && !loadingPreview && onScreen && post.hasPreviewImage != false) {
+    if (!preview && !loadingPreview && onScreen && post.previewImageExists != false) {
       post.content
       setLoadingPreview(true);
       setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
@@ -56,10 +62,10 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
       ? `/${authorName}`
       : `/user/${authorId}`
   });
-  const postLinkProps = isPreview ? postLink : { onPress: undefined };
+  const postLinkProps = isPreview ? postLink : { onPress: onPress };
   const authorLinkProps = post.author ? authorLink : undefined;
   const showDetailsShadow = isPreview && post.content && post.content.length > 1000;
-  const detailsMargins = showDetailsShadow ? 20 : 0;
+  const detailsMargins = showDetailsShadow ? media.gtXs && !isPreview ? 20 : 0 : 0;
   const detailsProps = showDetailsShadow ? {
     marginHorizontal: -detailsMargins,
     shadowOpacity: 0.3,
@@ -92,7 +98,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   });
   function toggleReplies() {
     setTimeout(() => {
-      if (post.replies.length == 0) {
+      if (!loadingReplies && post.replies.length == 0) {
         setLoadingReplies(true);
         dispatch(loadPostReplies({ ...accountOrServer, postIdPath: replyPostIdPath! }));
       } else if (toggleCollapseReplies) {
@@ -104,207 +110,250 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
     || (post.replies.length > 0 && !toggleCollapseReplies);
   const collapsed = collapseReplies || post.replies?.length == 0;
   return (
-    // <Theme inverse={false}>
     <>
       <YStack w='100%'>
         {previewParent && post.replyToPostId
-          ? <XStack
+          ? <XStack w='100%'>
+            {media.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}
+            <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
+
+            <Theme inverse={selectedPostId == previewParent.id}>
+              <Card f={1} theme="dark" elevate size="$1" bordered
+                margin='$0'
+                // marginBottom={replyPostIdPath ? '$0' : '$3'}
+                // marginTop={replyPostIdPath ? '$0' : '$3'}
+                // padding='$2'
+                paddingHorizontal='$2'
+                paddingVertical='$1'
+                mb='$1'
+                // f={isPreview ? undefined : 1}
+                animation="bouncy"
+                scale={0.92}
+                pressStyle={{ scale: 0.91 }}
+                onPress={onPressParentPreview}
+              >
+                <Card.Footer>
+                  <YStack w='100%'>
+                    <XStack mah={200} w='100%'>
+                      <TamaguiMarkdown text={previewParent.content} />
+                    </XStack>
+
+                    <XStack ml='$2'>
+                      <AuthorInfo post={previewParent!} isPreview={false} />
+                    </XStack>
+                  </YStack>
+                </Card.Footer>
+              </Card>
+            </Theme>
+          </XStack>
+          : undefined}
+        {/* // ? <XStack
             mt={media.gtXs ? '-5%' : '-12%'}
             ml={media.gtXs ? '-28%' : '-28%'}
             mb={media.gtXs ? '-5%' : '-14%'}
             scale={0.5}>
             <PostCard post={previewParent} isPreview={true} />
-          </XStack> : undefined}
+          </XStack> : undefined} */}
         {/* {previewParent ? <PostCard post={post.parent!} isPreview={true}  /> : undefined} */}
-        <Card theme="dark" elevate size="$4" bordered
-          margin='$0'
-          marginBottom={replyPostIdPath ? '$0' : '$3'}
-          marginTop={replyPostIdPath ? '$0' : '$3'}
-          padding='$0'
-          f={isPreview ? undefined : 1}
-          animation="bouncy"
-          pressStyle={{ scale: 0.990 }}
-          ref={ref!}
-          {...postLinkProps}
-        >
-          {post.link || post.title
-            ? <Card.Header>
-              <XStack>
-                <View style={{ flex: 1 }}>
-                  {post.link
-                    ? isPreview
-                      ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
-                      : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                        color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                    :
-                    <Heading size="$7" marginRight='auto'>{post.title}</Heading>
-                  }
-                </View>
-              </XStack>
-            </Card.Header>
-            : undefined}
-          <Card.Footer>
-            <XStack width='100%' >
-              {/* {...postLinkProps}> */}
-              <YStack style={{ flex: 10 }} zi={1000}>
-                <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden'>
-                  {(!isPreview && preview && preview != '') ?
-                    <Image
-                      mb='$3'
-                      width={media.sm ? 300 : 400}
-                      height={media.sm ? 300 : 400}
-                      resizeMode="contain"
-                      als="center"
-                      src={preview}
-                      borderRadius={10}
-                    /> : undefined}
-                  {
-                    post.content && post.content != '' ? Platform.select({
-                      default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
-                      // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
-                      // default: <Heading size='$1'>Native Markdown support pending!</Heading>
-                    }) : undefined
-                  }
-                </YStack>
-                <XStack pt={10} {...detailsProps}>
-                  <YStack mr='auto' marginLeft={detailsMargins}>
-                    <XStack>
-                      <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading>
-                      {author && author.permissions.includes(Permission.ADMIN)
-                        ? <Tooltip placement="bottom-start">
-                          <Tooltip.Trigger>
-                            <Shield />
-                          </Tooltip.Trigger>
-                          <Tooltip.Content>
-                            <Heading size='$2'>User is an admin.</Heading>
-                          </Tooltip.Content>
-                        </Tooltip> : undefined}
-                      {author && author.permissions.includes(Permission.RUN_BOTS)
-                        ? <Tooltip placement="bottom-start">
-                          <Tooltip.Trigger>
-                            <Bot />
-                          </Tooltip.Trigger>
-                          <Tooltip.Content>
-                            <Heading size='$2' ta='center' als='center'>User may be (or run) a bot.</Heading>
-                            <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading>
-                          </Tooltip.Content>
-                        </Tooltip> : undefined}
-                      <Heading size="$1" ml={author && author.permissions.includes(Permission.RUN_BOTS) ? '$2' : '$1'}
-                        marginVertical='auto'>
-                        {post.author
-                          ? isPreview
-                            ? `${post.author?.username}`
-                            : <Anchor {...authorLinkProps}>{post.author?.username}</Anchor>
-                          : 'anonymous'}
-                      </Heading>
-                    </XStack>
-                    <Tooltip placement="bottom-start">
-                      <Tooltip.Trigger>
-                        <Heading size="$1">
-                          {moment.utc(post.createdAt).local().startOf('seconds').fromNow()}
-                        </Heading>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content>
-                        <Heading size='$2'>{moment.utc(post.createdAt).local().format("ddd, MMM Do YYYY, h:mm:ss a")}</Heading>
-                      </Tooltip.Content>
-                    </Tooltip>
-                  </YStack>
-                  {(authorAvatar && authorAvatar != '') ?
-                    isPreview
-                      ? <FadeInView>
-                        <Image
-                          pos="absolute"
-                          width={50}
-                          ml='$3'
-                          // opacity={0.25}
-                          height={50}
-                          borderRadius={25}
-                          resizeMode="contain"
-                          als="flex-start"
-                          src={authorAvatar}
-                          // blurRadius={1.5}
-                          // borderRadius={5}
-                          borderBottomRightRadius={5}
-                        />
-                      </FadeInView>
+
+        <Theme inverse={selectedPostId == post.id}>
+          <Card theme="dark" elevate size="$4" bordered
+            margin='$0'
+            marginBottom={replyPostIdPath ? '$0' : '$3'}
+            marginTop={replyPostIdPath ? '$0' : '$3'}
+            padding='$0'
+            f={isPreview ? undefined : 1}
+            animation="bouncy"
+            pressStyle={{ scale: 0.990 }}
+            ref={ref!}
+            {...postLinkProps}
+
+          >
+            {post.link || post.title
+              ? <Card.Header>
+                <XStack>
+                  <View style={{ flex: 1 }}>
+                    {post.link
+                      ? isPreview
+                        ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
+                        : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
+                          color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
                       :
-                      <FadeInView>
-                        <Anchor {...authorLinkProps}
-                          ml='$3'>
-                          <XStack w={50} h={50}>
+                      <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+                    }
+                  </View>
+                </XStack>
+              </Card.Header>
+              : undefined}
+            <Card.Footer paddingRight={media.gtXs ? '$3' : '$1'} >
+              <XStack width='100%' >
+                {/* {...postLinkProps}> */}
+                <YStack style={{ flex: 10 }} zi={1000}>
+                  <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden'>
+                    {(!isPreview && preview && preview != '') ?
+                      <Image
+                        mb='$3'
+                        width={media.sm ? 300 : 400}
+                        height={media.sm ? 300 : 400}
+                        resizeMode="contain"
+                        als="center"
+                        src={preview}
+                        borderRadius={10}
+                      /> : undefined}
+                    {
+                      post.content && post.content != '' ? Platform.select({
+                        default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
+                        // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
+                        // default: <Heading size='$1'>Native Markdown support pending!</Heading>
+                      }) : undefined
+                    }
+                  </YStack>
+                  <XStack pt={10} {...detailsProps}>
+                    <AuthorInfo {...{ post, isPreview, detailsMargins }} />
+                    {/* <XStack f={1} ml={media.gtXs ? 0 : -7} alignContent='flex-start'>
+                    {(authorAvatar && authorAvatar != '') ?
+                      <YStack marginVertical='auto'>
+                        {isPreview
+                          ? <FadeInView>
                             <Image
                               pos="absolute"
-                              width={50}
+                              width={media.gtXs ? 50 : 26}
+                              mr={media.gtXs ? '$3' : '$2'}
                               // opacity={0.25}
-                              height={50}
-                              borderRadius={25}
+                              height={media.gtXs ? 50 : 26}
+                              borderRadius={media.gtXs ? 25 : 13}
                               resizeMode="contain"
                               als="flex-start"
                               src={authorAvatar}
-                              // blurRadius={1.5}
-                              // borderRadius={5}
-                              borderBottomRightRadius={5}
+                            // blurRadius={1.5}
+                            // borderRadius={5}
                             />
-                          </XStack>
-                        </Anchor>
-                      </FadeInView>
-                    : undefined}
-                  <XStack f={1} />
-                  <YStack h='100%'>
-                    <Button transparent
-                      disabled={cannotToggleReplies || loadingReplies}
-                      marginVertical='auto'
-                      onPress={toggleReplies}>
+                          </FadeInView>
+                          :
+                          <FadeInView>
+                            <Anchor {...authorLinkProps}
+                              mr={media.gtXs ? '$3' : '$2'}>
+                              <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
+                                <Image
+                                  pos="absolute"
+                                  width={media.gtXs ? 50 : 26}
+                                  // opacity={0.25}
+                                  height={media.gtXs ? 50 : 26}
+                                  borderRadius={media.gtXs ? 25 : 13}
+                                  resizeMode="contain"
+                                  als="flex-start"
+                                  src={authorAvatar}
+                                // blurRadius={1.5}
+                                // borderRadius={5}
+                                />
+                              </XStack>
+                            </Anchor>
+                          </FadeInView>}
+                      </YStack>
+                      : undefined}
+                    <YStack marginLeft={detailsMargins}>
                       <XStack>
-                        <YStack marginVertical='auto'>
-                          {!post.replyToPostId ? <Heading size="$1" ta='right'>
-                            {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
-                          </Heading> : undefined}
-                          {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
-                            {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                          </Heading> : undefined}
-                          {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
-                            {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
-                          </Heading>}
-                        </YStack>
-                        {!cannotToggleReplies ? <XStack marginVertical='auto'
-                          animation='quick'
-                          rotate={collapsed ? '0deg' : '90deg'}
-                        >
-                          <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
-                        </XStack> : undefined}
+
+                        <Heading size="$1" ml='$1' mr='$2'
+                          marginVertical='auto'>
+                          {post.author
+                            ? isPreview
+                              ? `${post.author?.username}`
+                              : <Anchor size='$1' {...authorLinkProps}>{post.author?.username}</Anchor>
+                            : 'anonymous'}
+                        </Heading>
                       </XStack>
-                    </Button>
-                    {/* {replyPostIdPath
+                      <XStack>
+                        <Tooltip placement="bottom-start">
+                          <Tooltip.Trigger>
+                            <Heading size="$1" marginVertical='auto' mr='$2'>
+                              {moment.utc(post.createdAt).local().startOf('seconds').fromNow()}
+                            </Heading>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content>
+                            <Heading size='$2'>{moment.utc(post.createdAt).local().format("ddd, MMM Do YYYY, h:mm:ss a")}</Heading>
+                          </Tooltip.Content>
+                        </Tooltip>
+                        {author && author.permissions.includes(Permission.ADMIN)
+                          ? <Tooltip placement="bottom">
+                            <Tooltip.Trigger>
+                              <Shield />
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Heading size='$2'>User is an admin.</Heading>
+                            </Tooltip.Content>
+                          </Tooltip> : undefined}
+                        {author && author.permissions.includes(Permission.RUN_BOTS)
+                          ? <Tooltip placement="bottom">
+                            <Tooltip.Trigger>
+                              <Bot />
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Heading size='$2' ta='center' als='center'>User may be (or run) a bot.</Heading>
+                              <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading>
+                            </Tooltip.Content>
+                          </Tooltip> : undefined}
+                      </XStack>
+                    </YStack>
+                  </XStack> */}
+
+                    <YStack h='100%'>
+                      <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                        disabled={cannotToggleReplies || loadingReplies}
+                        marginVertical='auto'
+                        mr={media.gtXs || isPreview ? 0 : -10}
+                        onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
+                        <XStack opacity={0.9}>
+                          <YStack marginVertical='auto'>
+                            {!post.replyToPostId ? <Heading size="$1" ta='right'>
+                              {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                            </Heading> : undefined}
+                            {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
+                              {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
+                            </Heading> : undefined}
+                            {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
+                              {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
+                            </Heading>}
+                          </YStack>
+                          {!cannotToggleReplies ? <XStack marginVertical='auto'
+                            animation='quick'
+                            rotate={collapsed ? '0deg' : '90deg'}
+                          >
+                            <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
+                          </XStack> : undefined}
+                        </XStack>
+                      </Button>
+                      {/* {replyPostIdPath
                     ? <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
                       {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
                     </Heading>
                     : <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
                       {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
                     </Heading>} */}
-                  </YStack>
-                </XStack>
-              </YStack>
-            </XStack>
-          </Card.Footer>
-          <Card.Background>
-            {(isPreview && preview && preview != '') ?
-              <FadeInView>
-                <Image
-                  pos="absolute"
-                  width={300}
-                  opacity={0.25}
-                  height={300}
-                  resizeMode="contain"
-                  als="flex-start"
-                  src={preview}
-                  blurRadius={1.5}
-                  // borderRadius={5}
-                  borderBottomRightRadius={5}
-                />
-              </FadeInView> : undefined}
-          </Card.Background>
-        </Card >
+                    </YStack>
+                  </XStack>
+                </YStack>
+              </XStack>
+            </Card.Footer>
+            <Card.Background>
+              {(isPreview && preview && preview != '') ?
+                <FadeInView>
+                  <Image
+                    pos="absolute"
+                    width={300}
+                    opacity={0.25}
+                    height={300}
+                    resizeMode="contain"
+                    als="flex-start"
+                    src={preview}
+                    blurRadius={1.5}
+                    // borderRadius={5}
+                    borderBottomRightRadius={5}
+                  />
+                </FadeInView> : undefined}
+            </Card.Background>
+          </Card >
+        </Theme>
       </YStack>
       {
         isPreview ?
@@ -338,95 +387,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
           : undefined
       }
     </>
-    // </Theme>
   );
 };
-
-
-// Hook
-function useOnScreen(ref, rootMargin = "0px") {
-  // State and setter for storing whether element is visible
-  const [isIntersecting, setIntersecting] = useState(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Update our state when observer callback fires
-        setIntersecting(entry?.isIntersecting || false);
-      },
-      {
-        rootMargin,
-      }
-    );
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-    return () => {
-      ref.current && observer.unobserve(ref.current);
-    };
-  }, []); // Empty array ensures that effect is only run on mount and unmount
-  return isIntersecting;
-}
-export type FadeInViewProps = PropsWithChildren<{ style?: ViewStyle }>;
-
-export const FadeInView: React.FC<FadeInViewProps> = props => {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current; // Initial value for opacity: 0
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1500,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
-
-  return (
-    <Animated.View // Special animatable View
-      style={{
-        ...props.style,
-        opacity: fadeAnim, // Bind opacity to animated value
-      }}>
-      {props.children}
-    </Animated.View>
-  );
-};
-
-export type MarkdownProps = {
-  text?: string;
-  disableLinks?: boolean;
-  cleanContent?: boolean;
-}
-export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false }: MarkdownProps) => {
-  const { server, primaryColor, navColor } = useServerInfo();
-
-  const cleanedText = cleanContent ? text.replace(
-    /((?!  ).)\n([^\n*])/g,
-    (_, b, c) => {
-      if (b[1] != ' ') b = `${b} `
-      return `${b}${c}`;
-    }
-  ) : text;
-
-  return <ReactMarkdown children={cleanedText}
-    components={{
-      // li: ({ node, ordered, ...props }) => <li }} {...props} />,
-      h1: ({ children, id }) => <Heading size='$9' {...{ children, id }} />,
-      h2: ({ children, id }) => <Heading size='$8' {...{ children, id }} />,
-      h3: ({ children, id }) => <Heading size='$7' {...{ children, id }} />,
-      h4: ({ children, id }) => <Heading size='$6' {...{ children, id }} />,
-      h5: ({ children, id }) => <Heading size='$5' {...{ children, id }} />,
-      h6: ({ children, id }) => <Heading size='$4' {...{ children, id }} />,
-      li: ({ ordered, index, children }) => <XStack ml='$3' mb='$2'>
-        {/* <Paragraph size='$3' mr='$4'>{ordered ? `${index + 1}.` : '• '}</Paragraph>
-        <Paragraph size='$3' {...{ children }} /> */}
-        <Text fontFamily='$body' fontSize='$3' mr='$4'>{ordered ? `${index + 1}.` : '• '}</Text>
-        <Text fontFamily='$body' fontSize='$3' {...{ children }} />
-      </XStack>,
-      p: ({ children }) => <Paragraph size='$3' marginVertical='$2' {...{ children }} w='100%' />,
-      // a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
-      a: ({ children, href }) => disableLinks
-        ? <Text fontFamily='$body' color={navColor} {...{ href, children }} />
-        : <Anchor color={navColor} target='_blank' {...{ href, children }} />,
-    }} />
-}
 
 export default PostCard;

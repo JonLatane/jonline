@@ -1,6 +1,6 @@
-import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useServerInfo, useTypedDispatch, useTypedSelector } from 'app/store';
+import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useServerInfo, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -11,14 +11,21 @@ import ServerCard from './server_card';
 
 export type AddAccountSheetProps = {
   // primaryServer?: JonlineServer;
+  operation: string;
 }
 
-export function AddAccountSheet({}: AddAccountSheetProps) {
+export enum LoginMethod {
+  Login = 'login',
+  CreateAccount = 'create_account',
+}
+export function AddAccountSheet({ operation }: AddAccountSheetProps) {
   const media = useMedia();
   // const [open, setOpen] = useState(false);
   // const [browsingServers, setBrowsingServers] = useState(false);
   // const [addingServer, setAddingServer] = useState(false);
+  const [open, setOpen] = useState(false);
   const [addingAccount, setAddingAccount] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
   const [position, setPosition] = useState(0);
   const [newAccountUser, setNewAccountUser] = useState('');
   const [newAccountPass, setNewAccountPass] = useState('');
@@ -28,6 +35,9 @@ export function AddAccountSheet({}: AddAccountSheetProps) {
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
   const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
+  // const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
+  // const primaryServer = onlyShowServer || serversState.server;
+
   // const browsingOnDiffers = browsingOn && (
   //   serversState.server && serversState.server.host != browsingOn ||
   //   onlyShowServer && onlyShowServer.host != browsingOn
@@ -46,6 +56,8 @@ export function AddAccountSheet({}: AddAccountSheetProps) {
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
   // const accountsOnPrimaryServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
+  const accountsOnServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
+
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
@@ -68,20 +80,25 @@ export function AddAccountSheet({}: AddAccountSheetProps) {
   const [forceDisableAccountButtons, setForceDisableAccountButtons] = useState(false);
   const disableAccountInputs = accountsLoading || forceDisableAccountButtons;
   const disableAccountButtons = accountsLoading || !newAccountValid || forceDisableAccountButtons;
+  const disableLoginMethodButtons = newAccountUser == '';
+
   useEffect(() => {
     if (accountsLoading && !forceDisableAccountButtons) {
       setForceDisableAccountButtons(true);
     }
+    if (!addingAccount && accountsOnServer.length == 0) {
+      setAddingAccount(true);
+    }
   });
-
   if (accountsState.successMessage) {
     setTimeout(() => {
-      setAddingAccount(false);
+      setOpen(false);
       setTimeout(() => {
         dispatch(clearAccountAlerts());
         setNewAccountUser('');
         setNewAccountPass('');
         setForceDisableAccountButtons(false);
+        setLoginMethod(undefined);
       }, 1000);
     }, 1500);
   } else if (accountsState.errorMessage && forceDisableAccountButtons) {
@@ -91,13 +108,13 @@ export function AddAccountSheet({}: AddAccountSheetProps) {
     <>
       <Button backgroundColor={primaryColor} color={primaryTextColor}
         disabled={serversState.server === undefined}
-        onPress={() => setAddingAccount((x) => !x)}>
-        Login or Create Account to Comment
+        onPress={() => setOpen((x) => !x)}>
+        Login or Create Account to {operation}
       </Button>
       <Sheet
         modal
-        open={addingAccount}
-        onOpenChange={setAddingAccount}
+        open={open}
+        onOpenChange={setOpen}
         // snapPoints={[80]}
         snapPoints={[82]} dismissOnSnapToBottom
         position={position}
@@ -105,7 +122,7 @@ export function AddAccountSheet({}: AddAccountSheetProps) {
       // dismissOnSnapToBottom
       >
         <Sheet.Overlay />
-        <Sheet.Frame padding="$5">
+        <Sheet.Frame>
           <Sheet.Handle />
           <Button
             alignSelf='center'
@@ -113,35 +130,106 @@ export function AddAccountSheet({}: AddAccountSheetProps) {
             circular
             icon={ChevronDown}
             onPress={() => {
-              setAddingAccount(false)
+              setOpen(false)
             }}
           />
-          <YStack space="$2" maw={600} w='100%' als='center'>
-            <Heading size="$10">Add Account</Heading>
-            <Heading size="$6">{server?.host}/</Heading>
-            <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
-              disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
-              autoCapitalize='none'
-              value={newAccountUser}
-              onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
-            <Input secureTextEntry textContentType="newPassword" placeholder="Password"
-              disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
-              value={newAccountPass}
-              onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
-
-            <XStack>
-              <Button flex={2} marginRight='$1' onClick={createServerAccount} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                Create Account
+          {accountsOnServer.length > 0
+            ? <XStack marginHorizontal='auto' marginVertical='$3'>
+              {/* <Tooltip placement="bottom">
+                <Tooltip.Trigger> */}
+              <Button backgroundColor={addingAccount ? undefined : navColor}
+                transparent={addingAccount}
+                borderTopRightRadius={0} borderBottomRightRadius={0}
+                onPress={() => setAddingAccount(false)}>
+                <Heading size='$4' color={addingAccount ? undefined : navTextColor}>Choose Account</Heading>
               </Button>
-              <Button flex={1} theme='active' onClick={loginToServer} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                Login
+              {/* </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <Heading size='$2'>Newest on bottom.</Heading>
+                  <Heading size='$1'>Sorted by time.</Heading>
+                </Tooltip.Content>
+              </Tooltip>
+              <Tooltip placement="bottom-end">
+                <Tooltip.Trigger> */}
+              <Button backgroundColor={!addingAccount ? undefined : navColor}
+                transparent={!addingAccount}
+                borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
+                onPress={() => setAddingAccount(true)}>
+                <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>Add Account</Heading>
               </Button>
+              {/* </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <Heading size='$2'>Go to newest.</Heading>
+                </Tooltip.Content>
+              </Tooltip> */}
             </XStack>
+            : <Heading size='$10' ml='$5'>Add Account</Heading>}
+          <Sheet.ScrollView>
+            <YStack space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
+              {addingAccount
+                ? <YStack space="$2" w='100%'>
+                  <Heading size="$6">{server?.host}/</Heading>
+                  <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
+                    disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
+                    autoCapitalize='none'
+                    value={newAccountUser}
+                    onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
+                  {loginMethod ? <XStack w='100%' animation="bouncy"
+                    scale={1}
+                    y={0}
+                    enterStyle={{
+                      y: -20,
+                      opacity: 0,
+                    }}
+                    exitStyle={{
+                      opacity: 0,
+                    }}><Input secureTextEntry w='100%'
+                      textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
+                      placeholder="Password"
+                      disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
 
-            {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{accountsState.errorMessage}</Heading> : undefined}
-            {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{accountsState.successMessage}</Heading> : undefined}
+                      value={newAccountPass}
+                      onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
+                    : undefined}
 
-          </YStack>
+                  {loginMethod
+                    ? <XStack>
+                      <Button marginRight='$1' onClick={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                        disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
+                        Back
+                      </Button>
+                      <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onClick={() => {
+                        if (loginMethod == LoginMethod.Login) {
+                          loginToServer();
+                        } else {
+                          createServerAccount();
+                        }
+                      }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
+                        {loginMethod == LoginMethod.Login ? 'Login' : 'Create Account'}
+                      </Button>
+                    </XStack>
+                    : <XStack>
+                      <Button flex={2} marginRight='$1' onClick={() => setLoginMethod(LoginMethod.CreateAccount)}
+                        disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
+                        Create Account
+                      </Button>
+                      <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onClick={() => setLoginMethod(LoginMethod.Login)}
+                        disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
+                        Login
+                      </Button>
+                    </XStack>}
+
+                  {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
+                  {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
+                </YStack>
+                : accountsOnServer.length > 0 ? <>
+                  {/* <Heading size="$7" paddingVertical='$2'>Choose Account</Heading> */}
+                  {accountsOnServer.map((account) => <AccountCard account={account} key={accountId(account)} />)}
+                </>
+                  : undefined}
+            </YStack>
+          </Sheet.ScrollView>
         </Sheet.Frame>
       </Sheet>
     </>

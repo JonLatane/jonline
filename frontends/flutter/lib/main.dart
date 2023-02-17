@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:jonline/models/storage.dart';
 import 'package:window_manager/window_manager.dart';
 // import 'package:smooth/smooth.dart';
@@ -10,10 +9,10 @@ import 'my_platform.dart';
 // void main() => runApp(const MyApp());
 main() async {
   // SmoothWidgetsFlutterBinding.ensureInitialized();
-  await GetStorage.init();
+  // await GetStorage.init();
+  WidgetsFlutterBinding.ensureInitialized();
   await initStorage();
   if (MyPlatform.isMacOS) {
-    WidgetsFlutterBinding.ensureInitialized();
     // Must add this line.
     await windowManager.ensureInitialized();
 
