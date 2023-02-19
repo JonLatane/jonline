@@ -21,24 +21,25 @@ deploy_certmanager:
 # Cert-Manager targets: These all revolve around generating a (.gitignored)
 # cert-manager.*.generated.yaml from a cert-manager.*.template.yaml
 deploy_certmanager_credential:
-	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)
-deploy_certmanager_credential_digitalocean: deploy_certmanager_credential_digitalocean_store_apitoken deploy_certmanager_credential_digitalocean_prepare deploy_certmanager_credential_digitalocean_apply
-
-deploy_certmanager_credential_digitalocean_clean:
-	rm k8s/cert-manager.digitalocean.generated.yaml
-deploy_certmanager_credential_digitalocean_store_apitoken:
-	kubectl create secret generic digitalocean-dns --from-literal=access-token=$(CERT_MANAGER_API_TOKEN) -n jonline
+	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_store_apitoken
+	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_prepare
+	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_apply
+deploy_certmanager_credential_clean:
+	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_clean
 
 # DigitalOcean Cert-Manager targets
-deploy_certmanager_credential_digitalocean_prepare: k8s/cert-manager.digitalocean.generated.yaml
-k8s/cert-manager.digitalocean.generated.yaml:
+deploy_certmanager_credential_digitalocean_clean:
+	rm k8s/cert-manager.digitalocean.*.generated.yaml
+deploy_certmanager_credential_digitalocean_store_apitoken:
+	kubectl create secret generic digitalocean-dns --from-literal=access-token=$(CERT_MANAGER_API_TOKEN) -n $(NAMESPACE)
+deploy_certmanager_credential_digitalocean_prepare: k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml
+k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml:
 	cat k8s/cert-manager.digitalocean.template.yaml | \
 	  sed 's/$${CERT_MANAGER_EMAIL}/$(CERT_MANAGER_EMAIL)/g' | \
 	  sed 's/$${CERT_MANAGER_DOMAIN}/$(CERT_MANAGER_DOMAIN)/g' \
-	  > k8s/cert-manager.digitalocean.generated.yaml
+	  > k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml
 deploy_certmanager_credential_digitalocean_apply: deploy_ensure_namespace deploy_certmanager_digitalocean_prepare
-	kubectl apply -f k8s/cert-manager.digitalocean.generated.yaml -n $(NAMESPACE)
-
+	kubectl apply -f k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml -n $(NAMESPACE)
 
 
 # Custom CA certificate generation targets

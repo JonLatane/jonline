@@ -1,10 +1,10 @@
 # Generated Certs for Jonline
-The best way to secure your Jonline distro is with Cert-Manager. There's also support manually using your own certs, and I've also documented using your own custom CA here, though this is of course not useful for most use cases of Jonline :)
+The easiest way to secure your Jonline distro is with Cert-Manager. There's also support manually using your own certs, and I've also documented using your own custom CA here, though this is of course not useful for most use cases of Jonline 😁
 
 ## Use Cert-Manager (recommended)
-These instructions should at least get you a lazy wildcard setup for a domain managed by DigitalOcean.
+These instructions should at least get you a lazy wildcard setup for a domain managed by DigitalOcean. The following `make` commands should be run from inside this directory (`generated_certs`).
 
-### Quick setup (DigitalOcean-only for now)
+### Quick setup with Cert-Manager (DigitalOcean-only for now)
 1. Point your DNS host (for instance, I use `jonline.io`), at the IP for your deployed `jonline` LoadBalancer instance. For the default Quick Start deploy, get it with: `kubectl describe service jonline -n jonline | grep 'LoadBalancer Ingress'`.
     * You need to be using DigitalOcean DNS for your domain and DigitalOcean Kubernetes Service (DOKS) to host.
 2. Generate an API token with read+write access from [this DigitalOcean console page](https://cloud.digitalocean.com/account/api/tokens).
@@ -12,10 +12,18 @@ These instructions should at least get you a lazy wildcard setup for a domain ma
 3. `make deploy_certmanager` to deploy CertManager to your cluster. (You can also follow [the official Cert-Manager docs](https://cert-manager.io/docs/installation/), but the Makefile just does what they say!)
 4. `unset HISTFILE` in your terminal to prevent your API token from being stored in history.
 5. `CERT_MANAGER_API_TOKEN=<api-token> CERT_MANAGER_DOMAIN=<your-domain.com> CERT_MANAGER_EMAIL=<your@email.com> make deploy_certmanager_credential`
+    * To deploy the credential to a different namespace, add `NAMESPACE=my-k8s-namespace` to the environment variables.
+
+To validate that setup worked, simply run `kubectl get certificates`:
+
+```
+NAME                       READY   SECRET                  AGE
+jonline-letsencrypt-cert   True    jonline-generated-tls   30m
+```
 
 Want to contribute to quick setup
 
-### DIY with Cert-Manager
+### Manual/Advanced setup with Cert-Manager
 1. Point your DNS host (for instance, I use `be.jonline.io`), at the IP for your deployed `jonline` LoadBalancer instance. For the default Quick Start deploy, get it with: `kubectl describe service jonline -n jonline | grep 'LoadBalancer Ingress'`.
 2. [Install Cert-Manager](https://cert-manager.io/docs/installation/).
     * Currently their page says: `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml`.
