@@ -24,6 +24,8 @@ deploy_certmanager_credential:
 	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_store_apitoken
 	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_prepare
 	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_apply
+deploy_certmanager_credential_apply:
+	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_apply
 deploy_certmanager_credential_clean:
 	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_clean
 
