@@ -1,6 +1,6 @@
 import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useServerInfo, useTypedDispatch, useTypedSelector } from 'app/store';
+import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -51,7 +51,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
   //   }));
   // }
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerInfo();
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;

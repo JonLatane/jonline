@@ -1,7 +1,8 @@
-import { Button, Heading, Popover, ScrollView, useMedia, WebUserInterface, XStack, YGroup, YStack } from "@jonline/ui/src";
+import { Button, Heading, Popover, ScrollView, Theme, useMedia, WebUserInterface, XStack, YStack } from "@jonline/ui/src";
 import { Group } from "@jonline/ui/types";
+import { useTheme } from "@react-navigation/native";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, useTypedSelector } from "app/store";
+import { JonlineServer, RootState, useServerTheme, useTypedSelector } from "app/store";
 import { Platform } from 'react-native';
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
@@ -59,41 +60,51 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const wrapTitle = serverName.length > 20;
   const maxWidth = media.gtXs ? 350 : 250;
-  return Platform.select({
-    web: <>
-      <StickyBox style={{ zIndex: 10 }} className="blur">
-        <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
-          {/* <XStack h={5}></XStack> */}
-          <XStack space="$1" marginVertical={5}>
-            <XStack w={5} />
-            {selectedGroup
-              ? <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
-                iconAfter={serverNameEmoji ? undefined : HomeIcon}
-                {...homeProps}>
-                <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                  <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
-                </XStack>
-              </Button>
-              : <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
-                iconAfter={serverNameEmoji ? undefined : HomeIcon}
-                {...homeProps}>
-                <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                  <Heading whiteSpace="nowrap">{serverName}</Heading>
-                </XStack>
-              </Button>}
-            <ScrollView horizontal>
-              <XStack w={1} />
-              <GroupsSheet selectedGroup={selectedGroup} />
-              {app.showBetaNavigation ? <>
-                <XStack w={selectedGroup ? 11 : 3.5} />
-                <Popover size="$5">
-                  <Popover.Trigger asChild>
-                    <Button transparent>
-                      <Heading size="$4">{sectionTitle(appSection)}</Heading>
-                    </Button>
-                  </Popover.Trigger>
 
-                  {/* <Adapt when="sm" platform="web">
+  // const app = useLocalApp();
+  const theme = useTheme();
+  // const targetTheme = app.darkModeAuto ? undefined : app.darkMode ? 'dark' : 'light';
+  const { darkMode: systemDark } = useServerTheme();
+  const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
+  const dark = app.darkModeAuto ? systemDark : app.darkMode;
+  const bgColor = dark ? '$gray1Dark' : '$gray2Light';
+  // console.log(`app.darkModeAuto=${app.darkModeAuto}, systemDark=${systemDark}, app.darkMode=${app.darkMode}, invert=${invert}, dark=${dark}, bgColor=${bgColor}`);
+  return <Theme inverse={invert}>
+    {Platform.select({
+      web: <>
+        <StickyBox style={{ zIndex: 10 }} className="blur">
+          <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
+            {/* <XStack h={5}></XStack> */}
+            <XStack space="$1" marginVertical={5}>
+              <XStack w={5} />
+              {selectedGroup
+                ? <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
+                  iconAfter={serverNameEmoji ? undefined : HomeIcon}
+                  {...homeProps}>
+                  <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                    <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+                  </XStack>
+                </Button>
+                : <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
+                  iconAfter={serverNameEmoji ? undefined : HomeIcon}
+                  {...homeProps}>
+                  <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                    <Heading whiteSpace="nowrap">{serverName}</Heading>
+                  </XStack>
+                </Button>}
+              <ScrollView horizontal>
+                <XStack w={1} />
+                <GroupsSheet selectedGroup={selectedGroup} />
+                {app.showBetaNavigation ? <>
+                  <XStack w={selectedGroup ? 11 : 3.5} />
+                  <Popover size="$5">
+                    <Popover.Trigger asChild>
+                      <Button transparent>
+                        <Heading size="$4">{sectionTitle(appSection)}</Heading>
+                      </Button>
+                    </Popover.Trigger>
+
+                    {/* <Adapt when="sm" platform="web">
         <Popover.Sheet modal dismissOnSnapToBottom>
           <Popover.Sheet.Frame padding="$4">
             <Adapt.Contents />
@@ -102,73 +113,73 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
         </Popover.Sheet>
       </Adapt> */}
 
-                  <Popover.Content
-                    bw={1}
-                    boc="$borderColor"
-                    enterStyle={{ x: 0, y: -10, o: 0 }}
-                    exitStyle={{ x: 0, y: -10, o: 0 }}
-                    x={0}
-                    y={0}
-                    o={1}
-                    animation={[
-                      'quick',
-                      {
-                        opacity: {
-                          overshootClamping: true,
+                    <Popover.Content
+                      bw={1}
+                      boc="$borderColor"
+                      enterStyle={{ x: 0, y: -10, o: 0 }}
+                      exitStyle={{ x: 0, y: -10, o: 0 }}
+                      x={0}
+                      y={0}
+                      o={1}
+                      animation={[
+                        'quick',
+                        {
+                          opacity: {
+                            overshootClamping: true,
+                          },
                         },
-                      },
-                    ]}
-                    elevate
-                  >
-                    <Popover.Arrow bw={1} boc="$borderColor" />
+                      ]}
+                      elevate
+                    >
+                      <Popover.Arrow bw={1} boc="$borderColor" />
 
-                    <YStack space="$3">
-                      {/* <XStack space="$3">
+                      <YStack space="$3">
+                        {/* <XStack space="$3">
             <Label size="$3" htmlFor={'asdf'}>
               Name
             </Label>
             <Input size="$3" id={'asdf'} />
           </XStack> */}
 
-                      {[AppSection.HOME, AppSection.POSTS, AppSection.EVENTS].map((section) =>
-                        <Popover.Close asChild>
-                          <Button
-                            // bordered={false}
-                            transparent
-                            size="$3"
-                            disabled={appSection == section}
-                            onPress={() => { }}
-                          >
-                            <Heading size="$4">{sectionTitle(section)}</Heading>
-                          </Button>
-                        </Popover.Close>)
-                      }
-                    </YStack>
-                  </Popover.Content>
-                </Popover>
-              </> : undefined}
-            </ScrollView>
-            <XStack f={1} />
-
-            <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />
-            <XStack w={5} />
-          </XStack>
-          {/* <XStack h={5}></XStack> */}
-        </YStack>
-      </StickyBox>
-      <YStack f={1} jc="center" ai="center">
-        {children}
-      </YStack>
-    </>,
-    default:
-      <YStack f={1} jc="center" ai="center">
-        <ScrollView f={1}>
-          <YStack f={1} jc="center" ai="center">
-            {children}
+                        {[AppSection.HOME, AppSection.POSTS, AppSection.EVENTS].map((section) =>
+                          <Popover.Close asChild>
+                            <Button
+                              // bordered={false}
+                              transparent
+                              size="$3"
+                              disabled={appSection == section}
+                              onPress={() => { }}
+                            >
+                              <Heading size="$4">{sectionTitle(section)}</Heading>
+                            </Button>
+                          </Popover.Close>)
+                        }
+                      </YStack>
+                    </Popover.Content>
+                  </Popover>
+                </> : undefined}
+              </ScrollView>
+              <XStack f={1} />
+              <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />
+              <XStack w={5} />
+            </XStack>
+            {/* <XStack h={5}></XStack> */}
           </YStack>
-        </ScrollView>
-      </YStack>
-  });
+        </StickyBox>
+        <YStack f={1} jc="center" ai="center" backgroundColor={bgColor}>
+          {children}
+        </YStack>
+      </>,
+      default:
+        <YStack f={1} jc="center" ai="center">
+          <ScrollView f={1}>
+            <YStack f={1} jc="center" ai="center">
+              {children}
+            </YStack>
+          </ScrollView>
+        </YStack>
+    })}
+  </Theme>;
 }
 function hexToRgb(hex) {
   var c;

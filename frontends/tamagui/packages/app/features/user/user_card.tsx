@@ -1,7 +1,7 @@
 import { Card, Heading, Image, Theme, useMedia, User, XStack, YStack } from "@jonline/ui";
 import { Permission, Tooltip } from "@jonline/ui/src";
 import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
-import { loadUser, RootState, useCredentialDispatch, useServerInfo, useTypedSelector } from "app/store";
+import { loadUser, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect } from "react";
 import { FadeInView } from "../post/fade_in_view";
 import { } from "../post/post_card";
@@ -18,7 +18,7 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
   const media = useMedia();
 
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
-  const { server, primaryColor, navColor } = useServerInfo();
+  const { server, primaryColor, navColor } = useServerTheme();
   const avatar = useTypedSelector((state: RootState) => state.users.avatars[user.id]);
   const [loadingAvatar, setLoadingAvatar] = React.useState(false);
 

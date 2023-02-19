@@ -1,7 +1,7 @@
 import { Paragraph, YStack } from '@jonline/ui'
 import { Anchor, Card, Group, GroupPost, Heading, Spinner, useWindowDimensions, XStack } from '@jonline/ui/src'
 import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
-import { loadPost, RootState, selectGroupById, selectPostById, updateGroupPosts, useCredentialDispatch, useServerInfo, useTypedSelector } from 'app/store'
+import { loadPost, RootState, selectGroupById, selectPostById, updateGroupPosts, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { FlatList } from 'react-native'
@@ -17,7 +17,7 @@ export function GroupDetailsScreen() {
   const [shortname] = useParam('shortname');
   // const [loadingPosts, setLoadingPosts] = React.useState(false);
   const linkProps = useLink({ href: '/' });
-  const { server, primaryColor, navColor } = useServerInfo();
+  const { server, primaryColor, navColor } = useServerTheme();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const groupsState = useTypedSelector((state: RootState) => state.groups);
@@ -87,7 +87,7 @@ function GroupPostCard({ group, groupPost }: GroupPostCardProps) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const post = useTypedSelector((state: RootState) => selectPostById(state.posts, groupPost.postId!));
   const postsState = useTypedSelector((state: RootState) => state.posts);
-  const { primaryColor } = useServerInfo();
+  const { primaryColor } = useServerTheme();
   const [loadingPost, setLoadingPost] = useState(false);
   useEffect(() => {
     if (!post && !loadingPost) {

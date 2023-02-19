@@ -1,6 +1,6 @@
 import { Button, formatError, Heading, Input, Paragraph, ServerConfiguration, TextArea, XStack, YStack } from '@jonline/ui'
 import { isWeb, Permission, ScrollView, useWindowDimensions } from '@jonline/ui/src'
-import { getCredentialClient, JonlineServer, RootState, selectServer, selectServerById, serverUrl, setAllowServerSelection, upsertServer, useTypedDispatch, useTypedSelector } from 'app/store'
+import { getCredentialClient, JonlineServer, RootState, selectServer, selectServerById, serverUrl, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useState } from 'react'
 import { HexColorPicker } from "react-colorful"
 import { Dimensions } from 'react-native';
@@ -10,6 +10,7 @@ import ServerCard from './server_card'
 import StickyBox from "react-sticky-box";
 import { useLink } from 'solito/link'
 import { Info } from '@tamagui/lucide-icons'
+import { TamaguiMarkdown } from '../post/tamagui_markdown'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -36,14 +37,14 @@ export function ServerDetailsScreen() {
   const { serviceVersion, serverConfiguration } = server || {};
 
   const serverName = serverConfiguration?.serverInfo?.name;
-  const [name, setName] = useState(serverName || '');
-  if (serverName && name != serverName && name == '') {
+  const [name, setName] = useState(serverName || undefined);
+  if (serverName && name != serverName && name == undefined) {
     setName(serverName);
   }
 
   const serverDescription = serverConfiguration?.serverInfo?.description;
-  const [description, setDescription] = useState(serverDescription || '');
-  if (serverDescription && description != serverDescription && description == '') {
+  const [description, setDescription] = useState(serverDescription || undefined);
+  if (serverDescription && description != serverDescription && description == undefined) {
     setDescription(serverDescription);
   }
 
@@ -62,6 +63,7 @@ export function ServerDetailsScreen() {
   }
   const primaryTextColor = primaryColorInt && primaryColorInt < 0x808080 ? 'white' : 'black';
   const navTextColor = navColorInt && navColorInt < 0x808080 ? 'white' : 'black';
+  const { warningAnchorColor } = useServerTheme();
 
   async function updateServer() {
     setUpdating(true);
@@ -105,12 +107,12 @@ export function ServerDetailsScreen() {
             <ScrollView w='100%'>
               <YStack space='$2' w='100%' maw={800} paddingHorizontal='$3' als='center' marginHorizontal='auto'>
                 {serverIsSelected ? undefined : <>
-                  <Heading mt='$3' size='$3' als='center' color='yellow' ta='center'>Currently browsing on a different server</Heading>
+                  <Heading mt='$3' size='$3' als='center' color={warningAnchorColor} ta='center'>Currently browsing on a different server</Heading>
 
-                  <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center' color='yellow' opacity={selectedServer?.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>
+                  <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center' color={warningAnchorColor} opacity={selectedServer?.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>
                     {selectedServer?.serverConfiguration?.serverInfo?.name || 'Unnamed'}
                   </Heading>
-                  <Heading size='$3' als='center' marginTop='$2' color='yellow'>
+                  <Heading size='$3' als='center' marginTop='$2' color={warningAnchorColor}>
                     {selectedServer?.host}
                   </Heading>
                   <Button onPress={() => dispatch(selectServer(server))} mt='$3' theme='active' size='$3'>
@@ -119,22 +121,21 @@ export function ServerDetailsScreen() {
                 </>}
                 <Heading size='$10' als='center' mt='$3'>Server Info</Heading>
                 <ServerCard server={server!} />
-                <Button {...aboutLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
-                  <Heading size='$2' color={navTextColor}>About Jonline...</Heading>
-                </Button>
                 <XStack mt='$4'>
                   <Heading size='$3' f={1}>Service Version</Heading>
                   <Paragraph>{serviceVersion?.version}</Paragraph>
                 </XStack>
                 <Heading size='$3'>Name</Heading>
                 {isAdmin
-                  ? <Input value={name} placeholder='The name of your community.' onChangeText={t => setName(t)} />
+                  ? <Input value={name ?? ''} placeholder='The name of your community.' onChangeText={t => setName(t)} />
                   : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
                 <Heading size='$3'>Description</Heading>
                 {isAdmin ?
-                  <TextArea value={description} onChangeText={t => setDescription(t)}
+                  <TextArea value={description ?? ''} onChangeText={t => setDescription(t)}
                     placeholder='A description of the purpose of your community, any general guidelines, etc.' />
-                  : <Paragraph opacity={name && name != '' ? 1 : 0.5}>{description || 'No description set.'}</Paragraph>}
+                  : description && description != ''
+                    ? <TamaguiMarkdown text={description} />
+                    : <Paragraph opacity={0.5}>No description set.</Paragraph>}
 
                 <XStack>
                   <Heading size='$3' f={1}>Primary Color</Heading>
@@ -151,6 +152,10 @@ export function ServerDetailsScreen() {
                 {isAdmin ? <XStack als='center'>
                   <HexColorPicker color={navColorHex} onChange={setNavColorHex} />
                 </XStack> : undefined}
+
+                <Button {...aboutLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
+                  <Heading size='$2' color={navTextColor}>About Jonline...</Heading>
+                </Button>
 
                 {isWeb && isAdmin ? <YStack h={50} /> : undefined}
               </YStack>
@@ -180,8 +185,8 @@ export function ServerDetailsScreen() {
               Autoconfigure Server <Heading size='$3'>{requestedServerUrl}</Heading>
             </Button>
               : <>
-                <Heading color='yellow' size='$3' ta={'center'}>Server URL is invalid.</Heading>
-                <Heading color='yellow' size='$3' ta={'center'}>Server URL format: [http|https]:valid_hostname</Heading>
+                <Heading color={warningAnchorColor} size='$3' ta={'center'}>Server URL is invalid.</Heading>
+                <Heading color={warningAnchorColor} size='$3' ta={'center'}>Server URL format: [http|https]:valid_hostname</Heading>
               </>}
           </> :
             <>

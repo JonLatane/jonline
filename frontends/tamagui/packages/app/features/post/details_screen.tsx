@@ -1,6 +1,6 @@
 import { GetPostsRequest, Spinner, Heading, Paragraph, Permission, XStack, YStack, } from '@jonline/ui'
 import { Button, isWeb, isClient, Post, ScrollView, TextArea, useWindowDimensions, Tooltip, ZStack } from '@jonline/ui/src'
-import { clearPostAlerts, loadPost, loadPostReplies, RootState, selectGroupById, selectPostById, loadPostsPage, useCredentialDispatch, useTypedSelector, useServerInfo, useLocalApp, setDiscussionChatUI, useTypedDispatch, confirmReplySent, replyToPost } from 'app/store'
+import { clearPostAlerts, loadPost, loadPostReplies, RootState, selectGroupById, selectPostById, loadPostsPage, useCredentialDispatch, useTypedSelector, useServerTheme, useLocalApp, setDiscussionChatUI, useTypedDispatch, confirmReplySent, replyToPost } from 'app/store'
 import React, { useState, useEffect, useReducer } from 'react'
 import { FlatList, View } from 'react-native'
 import { createParam } from 'solito'
@@ -31,7 +31,7 @@ export function PostDetailsScreen() {
   const [postId] = useParam('postId');
   const [shortname] = useParam('shortname');
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerInfo();
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const app = useLocalApp();
   const groupId = useTypedSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
@@ -353,7 +353,7 @@ interface ReplyAreaProps {
 
 export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerInfo();
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const [replyText, setReplyText] = useState('');
   const [previewReply, setPreviewReply] = useState(false);
   const maxPreviewHeight = useWindowDimensions().height * 0.5;
@@ -399,7 +399,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
     || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
   return isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
     {canComment
-      ? <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+      ? <YStack w='100%' pl='$2' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
         {replyingToPath.length > 1
           ? <Heading size='$1'>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
           : undefined}
@@ -408,7 +408,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
             <TextArea f={1} value={replyText} ref={textAreaRef}
               disabled={isSendingReply} opacity={isSendingReply ? 0.5 : 1}
               onChangeText={t => setReplyText(t)}
-              onFocus={() => _replyTextFocused = true}
+              onFocus={() => {_replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/}}
               onBlur={() => _replyTextFocused = false}
               placeholder={`Reply to this post. Markdown is supported.`} />
             {previewReply
@@ -458,3 +458,15 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
     : <Button mt='$3' circular icon={SendIcon} backgroundColor={primaryColor} onPress={() => { }} />
 
 }
+// var lastScrollTop = 0;
+
+// // element should be replaced with the actual target element on which you have applied scroll, use window in case of no target element.
+// isClient && window.addEventListener("scroll", function(){ // or window.addEventListener("scroll"....
+//    var st = window.pageYOffset || document.documentElement.scrollTop; // Credits: "https://github.com/qeremy/so/blob/master/so.dom.js#L426"
+//    if (st > lastScrollTop) {
+//       // downscroll code
+//    } else if (st < lastScrollTop) {
+//       // upscroll code
+//    } // else was horizontal scroll
+//    lastScrollTop = st <= 0 ? 0 : st; // For Mobile or negative scrolling
+// }, false);

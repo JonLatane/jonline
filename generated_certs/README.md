@@ -1,11 +1,21 @@
 # Generated Certs for Jonline
-This folder contains the CA cert (`ca.pem`) and server cert (`server.pem`) for Jon's official Jonline instance (be.jonline.io). To secure Jonline on your own domain, you can either use a wildcard cert from a legit CA (like LetsEncrypt), contact me to use my custom CA (i.e. ask me to use my `ca.key` to generate you a `server.pem` and `server.key`) or use your own CA (i.e. generate and use your own `ca.key`).
-
-(Note that `*.key` files are `.gitignore`d in this repo.)
+The best way to secure your Jonline distro is with Cert-Manager. There's also support manually using your own certs, and I've also documented using your own custom CA here, though this is of course not useful for most use cases of Jonline :)
 
 ## Use Cert-Manager (recommended)
 These instructions should at least get you a lazy wildcard setup for a domain managed by DigitalOcean.
 
+### Quick setup (DigitalOcean-only for now)
+1. Point your DNS host (for instance, I use `jonline.io`), at the IP for your deployed `jonline` LoadBalancer instance. For the default Quick Start deploy, get it with: `kubectl describe service jonline -n jonline | grep 'LoadBalancer Ingress'`.
+    * You need to be using DigitalOcean DNS for your domain and DigitalOcean Kubernetes Service (DOKS) to host.
+2. Generate an API token with read+write access from [this DigitalOcean console page](https://cloud.digitalocean.com/account/api/tokens).
+    * This, along with your email and the domain name, are all you need to get Cert-Manager up and running.
+3. `make deploy_certmanager` to deploy CertManager to your cluster. (You can also follow [the official Cert-Manager docs](https://cert-manager.io/docs/installation/), but the Makefile just does what they say!)
+4. `unset HISTFILE` in your terminal to prevent your API token from being stored in history.
+5. `CERT_MANAGER_API_TOKEN=<api-token> CERT_MANAGER_DOMAIN=<your-domain.com> CERT_MANAGER_EMAIL=<your@email.com> make deploy_certmanager_credential`
+
+Want to contribute to quick setup
+
+### DIY with Cert-Manager
 1. Point your DNS host (for instance, I use `be.jonline.io`), at the IP for your deployed `jonline` LoadBalancer instance. For the default Quick Start deploy, get it with: `kubectl describe service jonline -n jonline | grep 'LoadBalancer Ingress'`.
 2. [Install Cert-Manager](https://cert-manager.io/docs/installation/).
     * Currently their page says: `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml`.
@@ -13,7 +23,10 @@ These instructions should at least get you a lazy wildcard setup for a domain ma
     1. ***Disable history in your shell***.
         * For ZSH or Bash, simply `unset HISTFILE`.
     2. Generate and store your Cert-Manager-supported DNS provider's credentials.
-        * DigitalOcean: [Get an access token here](https://cloud.digitalocean.com/account/api/tokens), then `kubectl create secret generic digitalocean-dns --from-literal=access-token=<your access token here> -n jonline`. (If you deployed to a namespace other than `jonline`, change it here.)
+        * DigitalOcean:
+            * [Get an access token here](https://cloud.digitalocean.com/account/api/tokens).
+            * Base64-encode it with `echo -n '<your DigitalOcean API token>' | base64`
+            * Save it to K8s with `kubectl create secret generic digitalocean-dns --from-literal=access-token=<your Base64-encoded token> -n jonline`. (If you deployed to a namespace other than `jonline`, change it here.)
         * Other DNS providers: TBD. Search the web for "`<your provider> cert-manager dns01 wildcard`" for a start! The idea is to get your Cert-Manager/DNS provider to issue a cert for `yourdomain.com` and save it to the TLS secret `jonline-generated-tls` in the `jonline` namespace.
             * Contribute please 🙏🏻 Make a PR with your instructions here, a `backend/k8s/cert-manager.<your-provider>.template.yaml`, and new corresponding `make` targets for the next step!
 4. Generate your Cert-Manager authority and certificate from the template included here, and apply them to your cluster.

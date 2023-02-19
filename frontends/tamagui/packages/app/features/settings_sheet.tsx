@@ -1,6 +1,6 @@
 import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, useTypedDispatch, useTypedSelector } from 'app/store';
+import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
 
 
@@ -21,11 +21,14 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   const accountCount = useTypedSelector((state: RootState) => selectAccountTotal(state.accounts));
   const serverCount = useTypedSelector((state: RootState) => selectServerTotal(state.servers));
   // const forceUpdate: () => void = React.useState({})[1].bind(null, {})  // see NOTE below
-
+  // const { darkMode: systemDark } = useServerTheme();
+  // debugger;
   function doResetAllData() {
     resetAllData();
     setTimeout(forceUpdate, 2000);
   }
+
+  // const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void;
 
   function toggleRow(name: string, value: boolean, setter: (value: boolean) => any, disabled: boolean = false) {
     return <XStack space='$3' o={disabled ? 0.5 : 1}>
@@ -98,7 +101,10 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
               {toggleRow('Group Accounts by Server', app.separateAccountsByServer, setSeparateAccountsByServer, !app.allowServerSelection)}
               <Heading size='$3' mt='$3'>Testing</Heading>
-              {toggleRow('Show Beta Navigation', app.showBetaNavigation, setShowBetaNavigation)}
+              {toggleRow('Auto Dark Mode', app.darkModeAuto, setDarkModeAuto)}
+              {toggleRow('Dark Mode', app.darkMode, setDarkMode, app.darkModeAuto)}
+              <Heading size='$3' mt='$3'>Development</Heading>
+              {toggleRow('Show (WIP) Extended Navigation', app.showBetaNavigation, setShowBetaNavigation)}
 
               {/* <XStack>
                 <Button f={1} icon={XIcon} onPress={resetCredentialedData}>

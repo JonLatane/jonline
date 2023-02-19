@@ -3,11 +3,8 @@
 
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
-CERT_MANAGER_DOMAIN ?= jonline.io
-TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
-CERT_MANAGER_EMAIL ?= invalid_email
 
-# Set these variables when setting up cert generation
+TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
 
 # Configure these when building your own Jonline images. Note that you must update backend/k8s/jonline.yaml to
 # point to your cloud registry rather than docker.io/jonlatane.
@@ -109,63 +106,6 @@ deploy_be_get_certs:
 	kubectl get secret jonline-generated-tls -n $(NAMESPACE)
 deploy_be_get_ca_certs:
 	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
-
-# Cert-Manager targets: These all revolve around generating a (.gitignored)
-# cert-manager.*.generated.yaml from a cert-manager.*.template.yaml
-deploy_certmanager_digitalocean_clean:
-	rm backend/k8s/cert-manager.digitalocean.generated.yaml
-
-# DigitalOcean Cert-Manager targets
-deploy_certmanager_digitalocean_prepare: backend/k8s/cert-manager.digitalocean.generated.yaml
-backend/k8s/cert-manager.digitalocean.generated.yaml:
-	cat backend/k8s/cert-manager.digitalocean.template.yaml | \
-	  sed 's/$${CERT_MANAGER_EMAIL}/$(CERT_MANAGER_EMAIL)/g' | \
-	  sed 's/$${CERT_MANAGER_DOMAIN}/$(CERT_MANAGER_DOMAIN)/g' \
-	  > backend/k8s/cert-manager.digitalocean.generated.yaml
-deploy_certmanager_digitalocean_apply: deploy_ensure_namespace deploy_certmanager_digitalocean_prepare
-	kubectl apply -f backend/k8s/cert-manager.digitalocean.generated.yaml -n $(NAMESPACE)
-
-# Custom CA certificate generation targets
-certs_generate: certs_ca_generate certs_server_generate
-
-certs_ca_generate:
-	mkdir -p generated_certs
-	openssl req -x509 \
-	          -sha256 -days 365 \
-	          -nodes \
-	          -newkey rsa:2048 \
-	          -subj '/CN=$(CERT_MANAGER_DOMAIN)/C=US/L=Durham' \
-	          -keyout generated_certs/ca.key -out generated_certs/ca.pem 
-
-certs_server_generate:
-	mkdir -p generated_certs
-	openssl genpkey -out server.key -algorithm RSA -pkeyopt rsa_keygen_bits:2048
-	openssl req -new -key generated_certs/server.key -config generated_certs/server.csr.conf -out generated_certs/server.csr
-	openssl x509 -req \
-	  -in generated_certs/server.csr \
-	  -CA generated_certs/ca.pem -CAkey generated_certs/ca.key \
-	  -CAcreateserial -out generated_certs/server.pem \
-	  -days 365 \
-	  -sha256 -extfile generated_certs/server.extfile.conf
-
-certs_store_in_k8s: certs_server_store_in_k8s certs_ca_store_in_k8s
-certs_delete_from_k8s:
-	- $(MAKE) certs_server_delete_from_k8s
-	- $(MAKE) certs_ca_delete_from_k8s
-
-certs_server_store_in_k8s:
-	cd generated_certs && kubectl create secret tls jonline-generated-tls --cert=server.pem --key=server.key -n $(NAMESPACE)
-certs_server_delete_from_k8s:
-	kubectl delete secret jonline-generated-tls -n $(NAMESPACE)
-certs_ca_store_in_k8s:
-	cd generated_certs && kubectl create configmap jonline-generated-ca --from-file ca.crt=ca.pem -n $(NAMESPACE)
-certs_ca_delete_from_k8s:
-	kubectl delete configmap jonline-generated-ca -n $(NAMESPACE)
-
-# Custom CA cert testing targets
-certs_gen_test: certs_gen_test_pass_openssl_verify
-certs_gen_test_pass_openssl_verify:
-	openssl verify -CAfile generated_certs/ca.pem generated_certs/server.pem
 
 # DEVELOPMENT-RELATED TARGETS
 # Core release targets (for general use, CI/CD, etc.)

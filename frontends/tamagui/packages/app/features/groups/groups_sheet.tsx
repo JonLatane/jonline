@@ -1,7 +1,7 @@
 import { Button, Heading, Popover, useMedia } from '@jonline/ui';
 import { Adapt, Anchor, GetGroupsRequest, Group, Input, Label, Paragraph, ScrollView, Sheet, TamaguiElement, Theme, XStack, YGroup, YStack } from '@jonline/ui/src';
 import { Boxes, ChevronDown, Info, Search, Users, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, selectAllGroups, selectAllServers, updateGroups, useCredentialDispatch, useServerInfo, useTypedSelector } from 'app/store';
+import { RootState, selectAllGroups, selectAllServers, updateGroups, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FlatList, View } from 'react-native';
@@ -26,17 +26,17 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
   // const app = useTypedSelector((state: RootState) => state.app);
   // const serversState = useTypedSelector((state: RootState) => state.servers);
   // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  const { server, primaryColor, navColor, navTextColor } = useServerInfo();
+  const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   const searchInputRef = React.createRef() as React.MutableRefObject<HTMLElement | View>;
 
   const groups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
   const groupsState = useTypedSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
   useEffect(() => {
-    if (groupsState.status == 'unloaded' && !loadingGroups) {
+    if ( !loadingGroups && groupsState.status == 'unloaded') {
       setLoadingGroups(true);
       reloadGroups();
-    } else if (groupsState.status != 'unloaded') {
+    } else if (loadingGroups && !['unloaded', 'loading'].includes(groupsState.status)) {
       setLoadingGroups(false);
     }
   });
@@ -195,7 +195,7 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder }: GroupButt
     setOpen(false);
     onPress?.(e);
   }
-  const { server, primaryColor, navColor, navTextColor } = useServerInfo();
+  const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   return <Button
     // bordered={false}
     // href={`/g/${group.shortname}`}

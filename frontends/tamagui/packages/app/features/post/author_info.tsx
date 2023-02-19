@@ -1,4 +1,4 @@
-import { useServerInfo, useTypedSelector, loadUser, useCredentialDispatch, RootState, selectUserById } from "app/store";
+import { useServerTheme, useTypedSelector, loadUser, useCredentialDispatch, RootState, selectUserById } from "app/store";
 import React, { useState, useEffect } from "react";
 
 import { Anchor, Image, Heading, Paragraph, Text, Tooltip, useMedia, XStack, YStack, Post, Author, Permission } from "@jonline/ui";
@@ -17,7 +17,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { server, primaryColor, navColor } = useServerInfo();
+  const { server, primaryColor, navColor } = useServerTheme();
   const media = useMedia();
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
   const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
@@ -30,6 +30,13 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
       : `/user/${authorId}`
   });
   const authorLinkProps = author ? authorLink : undefined;
+  if (authorLinkProps) {
+    const authorOnPress = authorLinkProps.onPress;
+    authorLinkProps.onPress = (event) => {
+      event?.stopPropagation();
+      authorOnPress?.(event);
+    }
+  }
   useEffect(() => {
     if (authorId) {
       if (!loadingAuthor && (!author || authorAvatar == undefined) && !authorLoadFailed) {
@@ -45,8 +52,8 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
       <YStack marginVertical='auto'>
         {isPreview
           ? <FadeInView>
-            <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26} 
-                mr={media.gtXs ? '$3' : '$2'}>
+            <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}
+              mr={media.gtXs ? '$3' : '$2'}>
               <Image
                 pos="absolute"
                 width={media.gtXs ? 50 : 26}

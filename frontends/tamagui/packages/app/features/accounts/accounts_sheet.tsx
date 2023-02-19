@@ -1,6 +1,6 @@
 import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useServerInfo, useTypedDispatch, useTypedSelector } from 'app/store';
+import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -31,7 +31,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
   const dispatch = useTypedDispatch();
   const app = useTypedSelector((state: RootState) => state.app);
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerInfo();
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
   const serversLoading = serversState.status == 'loading';
@@ -123,7 +123,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         size={size}
         icon={circular ? UserIcon : open ? XIcon : ChevronDown}
         circular={circular}
-        color={serversDiffer || browsingOnDiffers ? 'yellow' : undefined}
+        color={serversDiffer || browsingOnDiffers ? warningAnchorColor : undefined}
         onPress={() => setOpen((x) => !x)}
       >
         {circular ? undefined : <YStack>
@@ -276,18 +276,18 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               </YStack>}
               {serversDiffer
                 ? <>
-                  <Heading color='yellow' whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>{primaryServer?.serverConfiguration?.serverInfo?.name}</Heading>
-                  <Heading color='yellow' size='$3' als='center' marginTop='$2' textAlign='center'>
+                  <Heading color={warningAnchorColor} whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>{primaryServer?.serverConfiguration?.serverInfo?.name}</Heading>
+                  <Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
                     Viewing server configuration for {onlyShowServer.host}
                   </Heading>
                 </>
                 : onlyShowServer
-                  ? <Heading size='$3' marginTop='$2' color='yellow' textAlign='center'>
+                  ? <Heading size='$3' marginTop='$2' color={warningAnchorColor} textAlign='center'>
                     Viewing server configuration
                   </Heading>
                   : undefined}
               {browsingOnDiffers
-                ? <><Heading color='yellow' size='$3' als='center' marginTop='$2' textAlign='center'>
+                ? <><Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
                   Browsing via {browsingOn}
                 </Heading>
                 </>

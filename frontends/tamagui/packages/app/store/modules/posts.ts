@@ -7,6 +7,7 @@ import {
   Draft,
   EntityAdapter,
   EntityId,
+  PayloadAction,
   Slice,
 } from "@reduxjs/toolkit";
 import { CreatePostRequest, GetPostsRequest, GetPostsResponse, Post, formatError, PostListingType } from "@jonline/ui/src";
@@ -14,6 +15,7 @@ import { getCredentialClient } from "./accounts";
 import { createTransform } from "redux-persist";
 import moment from "moment";
 import { AccountOrServer } from "../types";
+import { DictionaryNum } from "@reduxjs/toolkit/dist/entities/models";
 
 export interface PostsState {
   baseStatus: "unloaded" | "loading" | "loaded" | "errored";
@@ -26,6 +28,11 @@ export interface PostsState {
   ids: EntityId[];
   entities: Dictionary<Post>;
   previews: Dictionary<string>;
+  // Stores pages of listed posts for listing types used in the UI.
+  // i.e.: postPages[PostListingType.PUBLIC_POSTS][1] -> ["postId1", "postId2"].
+  // Posts should be loaded from the adapter/slice's entities.
+  // Maps PostListingType -> page -> postIds
+  postPages: DictionaryNum<DictionaryNum<string[]>>;
   failedPostIds: string[];
 }
 
@@ -54,7 +61,7 @@ export const replyToPost: AsyncThunk<Post, ReplyToPost, any> = createAsyncThunk<
     };
     // TODO: Why doesn't the BE return the correct created date? We "estimate" it here.
     const result = await client.createPost(createPostRequest, client.credential);
-    return {...result, createdAt: new Date().toISOString()}
+    return { ...result, createdAt: new Date().toISOString() }
   }
 );
 
@@ -62,11 +69,12 @@ export type LoadPostsRequest = AccountOrServer & {
   listingType?: PostListingType.PUBLIC_POSTS | PostListingType.FOLLOWING_POSTS | PostListingType.MY_GROUPS_POSTS,
   page?: number
 };
+export const defaultPostListingType = PostListingType.PUBLIC_POSTS;
 export const loadPostsPage: AsyncThunk<GetPostsResponse, LoadPostsRequest, any> = createAsyncThunk<GetPostsResponse, LoadPostsRequest>(
   "posts/loadPage",
   async (request) => {
     let client = await getCredentialClient(request);
-    let result = await client.getPosts({ listingType: PostListingType.PUBLIC_POSTS, ...request }, client.credential);
+    let result = await client.getPosts({ listingType: defaultPostListingType, ...request }, client.credential);
     return result;
   }
 );
@@ -128,6 +136,7 @@ const initialState: PostsState = {
   sendReplyStatus: undefined,
   previews: {},
   failedPostIds: [],
+  postPages: {},
   ...postsAdapter.getInitialState(),
 };
 
@@ -145,7 +154,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     },
     confirmReplySent: (state) => {
       state.sendReplyStatus = undefined;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(createPost.pending, (state) => {
@@ -211,6 +220,11 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         const oldPost = selectPostById(state, post.id);
         postsAdapter.upsertOne(state, { ...post, replies: oldPost?.replies ?? post.replies });
       });
+      const postIds = action.payload.posts.map(post => post.id);
+      const page = action.meta.arg.page || 0;
+      const listingType = action.meta.arg.listingType || defaultPostListingType;
+      if (!state.postPages[listingType]) state.postPages[listingType] = {};
+      state.postPages[listingType]![page] = postIds;
       state.successMessage = `Posts loaded.`;
     });
     builder.addCase(loadPostsPage.rejected, (state, action) => {
@@ -290,3 +304,9 @@ export const postsReducer = postsSlice.reducer;
 export const upsertPost = postsAdapter.upsertOne;
 export const upsertPosts = postsAdapter.upsertMany;
 export default postsReducer;
+
+export function getPostsPage(state: PostsState, listingType: PostListingType, page: number): Post[] {
+  const pagePostIds: string[] = (state.postPages[listingType] ?? {})[page] || [];
+  const pagePosts = pagePostIds.map(id => selectPostById(state, id)).filter(p => p) as Post[];
+  return pagePosts;
+}

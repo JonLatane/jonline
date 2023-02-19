@@ -1,4 +1,4 @@
-import { useServerInfo } from "app/store";
+import { useServerTheme } from "app/store";
 import React from "react";
 
 import { Anchor, Heading, Paragraph, Text, XStack } from "@jonline/ui";
@@ -10,7 +10,7 @@ export type MarkdownProps = {
   cleanContent?: boolean;
 }
 export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false }: MarkdownProps) => {
-  const { server, primaryColor, navColor } = useServerInfo();
+  const { server, primaryColor, navAnchorColor: navColor } = useServerTheme();
 
   const cleanedText = cleanContent ? text.replace(
     /((?!  ).)\n([^\n*])/g,

@@ -27,7 +27,7 @@ export function AboutScreen() {
   let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
   let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const dimensions = useWindowDimensions();
-  const [quote] = useState(quotes[Math.floor(Math.random()*quotes.length)]);
+  const [quote] = useState(quotes[Math.floor(Math.random() * quotes.length)]);
   // const quote= quotes[Math.floor(Math.random()*quotes.length)];
 
 
@@ -50,9 +50,11 @@ export function AboutScreen() {
           {showTechDetails
             ? <>
               <ListItem>
-                <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
-                  Jonline on GitHub (give it a ⭐️!)
-                </Anchor>
+                <Text fontFamily='$body' fontSize='$4'>
+                  <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
+                    Jonline on GitHub (give it a ⭐️!)
+                  </Anchor>&nbsp;(released under the GPLv3)
+                </Text>
               </ListItem>
               <ListItem mb='$3'>
                 <Anchor color={navColor} href="https://hub.docker.com/r/jonlatane/jonline" target="_blank">
@@ -60,23 +62,23 @@ export function AboutScreen() {
                 </Anchor>
               </ListItem>
               <Paragraph ta="left">
-                This{' '}
+                You're reading this from Jonline's{' '}
                 <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/tamagui" target="_blank">
-                  new UI
-                </Anchor> for Jonline's{' '}
+                  React/Tamagui frontend
+                </Anchor> backed by data from its{' '}
                 <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/backend" target="_blank">
                   Rust/gRPC backend
-                </Anchor> is built with React and{' '}
-                <Anchor
-                  color={navColor}
-                  href="https://github.com/tamagui/tamagui"
-                  target="_blank"
-                  rel="noreferrer"
-                >Tamagui</Anchor>. It's a work in progress to be sure! 👷🛠️🪲 The{' '}
+                </Anchor>. It's a work in progress to be sure! 👷🛠️🪲 The original{' '}
                 <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/flutter" target="_blank">
-                  original Flutter UI
-                </Anchor> is also available and compatible, with more features for now.
+                  Flutter frontend
+                </Anchor> is also available and compatible, with more administrator features for now.
               </Paragraph>
+              <XStack justifyContent='center' marginTop={15} mb='$3' space='$2'>
+                {Platform.OS == 'web' && showTechDetails ? <Button onPress={() => Linking.openURL('/flutter')}>Open Flutter Web UI</Button> : undefined}
+                {/* <Button backgroundColor={primaryColor} onClick={hideIntro}>
+                {Platform.OS == 'web' && showTechDetails ? 'Got It!' : 'Got It, Thanks!'}
+              </Button> */}
+              </XStack>
               <Heading size='$5' mb='$2' mt='$3'>Built with:</Heading>
               <Heading size='$4'>Backend</Heading>
               <ListItem>
@@ -87,58 +89,64 @@ export function AboutScreen() {
                   <ListItem>
                     <Anchor color={navColor} href="https://diesel.rs/" target="_blank">
                       Diesel
-                    </Anchor>
+                    </Anchor>&nbsp;(ORM/migrations)
                   </ListItem>
                   <ListItem>
                     <Anchor color={navColor} href="https://github.com/hyperium/tonic" target="_blank">
-                      Tonic (gRPC backend server)
-                    </Anchor>
+                      Tonic
+                    </Anchor>&nbsp;(gRPC server)
                   </ListItem>
                   <ListItem>
                     <Anchor color={navColor} href="https://rocket.rs/" target="_blank">
-                      Rocket (HTTP/S web server)
-                    </Anchor>
+                      Rocket
+                    </Anchor>&nbsp;(HTTP/S web server)
                   </ListItem>
                 </YStack>
               </ListItem>
               <Heading size='$4'>Frontends</Heading>
               <ListItem>
                 <YStack>
-                  <Anchor color={navColor} href="https://flutter.dev/" target="_blank">
-                    Flutter
-                  </Anchor>
+                  <Text fontFamily='$body' fontSize='$4'>
+                    <Anchor color={navColor} href="https://flutter.dev/" target="_blank">
+                      Flutter
+                    </Anchor>&nbsp;(<Anchor color={navColor} href="https://dart.dev/" target="_blank">Dart</Anchor>)
+                  </Text>
                   <ListItem>
                     <Anchor color={navColor} href="https://pub.dev/packages/provider" target="_blank">
                       provider
-                    </Anchor>
+                    </Anchor>&nbsp;(state management/DI)
                   </ListItem>
                   <ListItem>
                     <Anchor color={navColor} href="https://pub.dev/packages/auto_route" target="_blank">
                       auto_route
-                    </Anchor>
+                    </Anchor>&nbsp;(routing/navigation)
                   </ListItem>
-                  <Anchor color={navColor} href="https://reactjs.org/" target="_blank">
-                    React
-                  </Anchor>
+                  <Text fontFamily='$body' fontSize='$4'>
+                    <Anchor color={navColor} href="https://reactjs.org/" target="_blank">
+                      React Web+Native
+                    </Anchor>&nbsp;(<Anchor color={navColor} href="https://www.typescriptlang.org/" target="_blank">TypeScript</Anchor>)
+                  </Text>
                   <ListItem>
                     <Anchor color={navColor} href="https://redux.js.org/" target="_blank">
                       Redux
-                    </Anchor>
+                    </Anchor>&nbsp;(state management)
                   </ListItem>
                   <ListItem>
                     <YStack>
-                      <Anchor color={navColor} href="https://tamagui.dev/" target="_blank">
-                        Tamagui
-                      </Anchor>
+                      <Text fontFamily='$body' fontSize='$4'>
+                        <Anchor color={navColor} href="https://tamagui.dev/" target="_blank">
+                          Tamagui
+                        </Anchor>&nbsp;(UI library/project structure)
+                      </Text>
                       <ListItem>
                         <Anchor color={navColor} href="https://nextjs.org/" target="_blank">
                           NextJS
-                        </Anchor>
+                        </Anchor>&nbsp;(web builds)
                       </ListItem>
                       <ListItem>
                         <Anchor color={navColor} href="https://expo.dev/" target="_blank">
                           Expo
-                        </Anchor>
+                        </Anchor>&nbsp;(native builds)
                       </ListItem>
                     </YStack>
                   </ListItem>
@@ -151,10 +159,10 @@ export function AboutScreen() {
               </Button>
             </>}
           <Heading size='$5' mt='$3' ta='center'>
-            Beta software. Expect bugs! 🛠️👷🏼‍♂️🪲
+            Side-hobby software. Expect bugs! 🛠️👷🏼‍♂️🪲
           </Heading>
-          <Heading size='$3' mt='$3' ta='center'>
-            Made by{' '}
+          <Heading size='$3' mt='$3' mb='$10' ta='center'>
+            Made with ❤️ by{' '}
             <Anchor color={navColor} href="https://instagram.com/jon_luvs_ya" target="_blank">
               Jon Latané
             </Anchor>.
@@ -163,13 +171,6 @@ export function AboutScreen() {
         If this is a new server, create an admin account and go to server configuration
         to set up your server and hide this intro message.
       </Paragraph> */}
-
-          <XStack justifyContent='center' marginTop={15} mb='$10' space='$2'>
-            {Platform.OS == 'web' && showTechDetails ? <Button onPress={() => Linking.openURL('/flutter')}>Open Flutter Web UI</Button> : undefined}
-            {/* <Button backgroundColor={primaryColor} onClick={hideIntro}>
-                {Platform.OS == 'web' && showTechDetails ? 'Got It!' : 'Got It, Thanks!'}
-              </Button> */}
-          </XStack>
         </YStack>
       </YStack>
 

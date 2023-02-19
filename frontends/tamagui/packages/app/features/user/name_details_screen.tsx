@@ -1,7 +1,7 @@
 import { Button, Heading, Text, Paragraph, YStack } from '@jonline/ui'
 import { isWeb, Permission, ScrollView, TextArea, Tooltip, useWindowDimensions, XStack } from '@jonline/ui/src'
 import { ChevronLeft, Edit, Eye } from '@tamagui/lucide-icons'
-import { loadUsername, RootState, selectUserById, updateUser, useCredentialDispatch, useServerInfo, useTypedSelector } from 'app/store'
+import { loadUsername, RootState, selectUserById, updateUser, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
@@ -19,7 +19,7 @@ export function UsernameDetailsScreen() {
   const [username] = useParam('username')
   const linkProps = useLink({ href: '/' })
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerInfo();
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const userId = useTypedSelector((state: RootState) => username ? state.users.usernameIds[username] : undefined);
   const user = useTypedSelector((state: RootState) =>
     userId ? selectUserById(state.users, userId) : undefined);
