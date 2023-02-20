@@ -32,7 +32,7 @@ export interface PostsState {
   // i.e.: postPages[PostListingType.PUBLIC_POSTS][1] -> ["postId1", "postId2"].
   // Posts should be loaded from the adapter/slice's entities.
   // Maps PostListingType -> page -> postIds
-  postPages: DictionaryNum<DictionaryNum<string[]>>;
+  postPages: Dictionary<Dictionary<string[]>>;
   failedPostIds: string[];
 }
 
@@ -220,11 +220,13 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         const oldPost = selectPostById(state, post.id);
         postsAdapter.upsertOne(state, { ...post, replies: oldPost?.replies ?? post.replies });
       });
+
       const postIds = action.payload.posts.map(post => post.id);
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType || defaultPostListingType;
       if (!state.postPages[listingType]) state.postPages[listingType] = {};
       state.postPages[listingType]![page] = postIds;
+
       state.successMessage = `Posts loaded.`;
     });
     builder.addCase(loadPostsPage.rejected, (state, action) => {
@@ -306,7 +308,7 @@ export const upsertPosts = postsAdapter.upsertMany;
 export default postsReducer;
 
 export function getPostsPage(state: PostsState, listingType: PostListingType, page: number): Post[] {
-  const pagePostIds: string[] = (state.postPages[listingType] ?? {})[page] || [];
+  const pagePostIds: string[] = (state.postPages[listingType] ?? {})[page] ?? [];
   const pagePosts = pagePostIds.map(id => selectPostById(state, id)).filter(p => p) as Post[];
   return pagePosts;
 }

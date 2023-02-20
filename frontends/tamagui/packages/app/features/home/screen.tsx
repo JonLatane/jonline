@@ -1,6 +1,6 @@
 import { Heading, isClient, PostListingType, Spinner, useWindowDimensions, YStack, Post } from '@jonline/ui';
 import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global';
-import { getPostsPage, loadPostsPage, RootState, setShowIntro, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { getPostsPage, loadPostsPage, RootState, setShowIntro, selectAllPosts, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
@@ -14,25 +14,35 @@ export function HomeScreen() {
 
   const posts: Post[] = useTypedSelector((state: RootState) =>
     getPostsPage(state.posts, PostListingType.PUBLIC_POSTS, 0));
+  // const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
+  // const posts: Post[] = [];
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
+  // let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
+  // let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
+  // let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
+  // let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const dimensions = useWindowDimensions();
 
   const [loadingPosts, setLoadingPosts] = useState(false);
   useEffect(() => {
     if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
       if (!accountOrServer.server) return;
+
+      console.log("Loading posts...");
       setLoadingPosts(true);
       reloadPosts();
-    } else if (postsState.baseStatus == 'loaded') {
+    } else if (postsState.baseStatus == 'loaded' && loadingPosts) {
       setLoadingPosts(false);
       dismissScrollPreserver(setShowScrollPreserver);
     }
   });
 
   function reloadPosts() {
-    setTimeout(() => dispatch(loadPostsPage({ ...accountOrServer })), 1);
+    // setTimeout(() => 
+    dispatch(loadPostsPage({ ...accountOrServer }))
+    // , 1);
   }
 
   function onHomePressed() {

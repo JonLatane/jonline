@@ -1,7 +1,7 @@
 import { Anchor, Button, H2, H4, Heading, Text, Paragraph, XStack, YStack } from '@jonline/ui';
 import { GetPostsRequest, isClient, ListItem, Spinner, useWindowDimensions, ZStack } from '@jonline/ui/src';
 import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global';
-import { RootState, selectAllPosts, setShowIntro, loadPostsPage, useCredentialDispatch, useTypedSelector } from 'app/store';
+import { RootState, selectAllPosts, setShowIntro, loadPostsPage, useCredentialDispatch, useTypedSelector, useServerTheme } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Linking, Platform } from 'react-native';
 import PostCard from '../post/post_card';
@@ -49,18 +49,16 @@ export function AboutScreen() {
           </Paragraph>
           {showTechDetails
             ? <>
-              <ListItem>
-                <Text fontFamily='$body' fontSize='$4'>
-                  <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
-                    Jonline on GitHub (give it a ⭐️!)
-                  </Anchor>&nbsp;(released under the GPLv3)
-                </Text>
-              </ListItem>
-              <ListItem mb='$3'>
+              <AboutListItem>
+                <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
+                  Jonline on GitHub (give it a ⭐️!)
+                </Anchor> (released under the GPLv3)
+              </AboutListItem>
+              <AboutListItem mb='$3'>
                 <Anchor color={navColor} href="https://hub.docker.com/r/jonlatane/jonline" target="_blank">
                   Jonline on DockerHub
                 </Anchor>
-              </ListItem>
+              </AboutListItem>
               <Paragraph ta="left">
                 You're reading this from Jonline's{' '}
                 <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/tamagui" target="_blank">
@@ -75,79 +73,78 @@ export function AboutScreen() {
               </Paragraph>
               <XStack justifyContent='center' marginTop={15} mb='$3' space='$2'>
                 {Platform.OS == 'web' && showTechDetails ? <Button onPress={() => Linking.openURL('/flutter')}>Open Flutter Web UI</Button> : undefined}
-                {/* <Button backgroundColor={primaryColor} onClick={hideIntro}>
-                {Platform.OS == 'web' && showTechDetails ? 'Got It!' : 'Got It, Thanks!'}
-              </Button> */}
               </XStack>
               <Heading size='$5' mb='$2' mt='$3'>Built with:</Heading>
               <Heading size='$4'>Backend</Heading>
               <ListItem>
                 <YStack>
-                  <Anchor color={navColor} href="https://www.rust-lang.org/" target="_blank">
-                    Rust
-                  </Anchor>
-                  <ListItem>
+                  <AboutListHeading>
+                    <Anchor color={navColor} href="https://www.rust-lang.org/" target="_blank">
+                      Rust
+                    </Anchor> (<Anchor color={navColor} href="https://github.com/JonLatane/jonline/blob/main/backend/Cargo.toml" target="_blank">Cargo.toml</Anchor>)
+                  </AboutListHeading>
+                  <AboutListItem>
                     <Anchor color={navColor} href="https://diesel.rs/" target="_blank">
                       Diesel
-                    </Anchor>&nbsp;(ORM/migrations)
-                  </ListItem>
-                  <ListItem>
+                    </Anchor> (ORM/migrations)
+                  </AboutListItem>
+                  <AboutListItem>
                     <Anchor color={navColor} href="https://github.com/hyperium/tonic" target="_blank">
                       Tonic
-                    </Anchor>&nbsp;(gRPC server)
-                  </ListItem>
-                  <ListItem>
+                    </Anchor> (gRPC server)
+                  </AboutListItem>
+                  <AboutListItem>
                     <Anchor color={navColor} href="https://rocket.rs/" target="_blank">
                       Rocket
-                    </Anchor>&nbsp;(HTTP/S web server)
-                  </ListItem>
+                    </Anchor> (HTTP/S web server)
+                  </AboutListItem>
                 </YStack>
               </ListItem>
               <Heading size='$4'>Frontends</Heading>
               <ListItem>
                 <YStack>
-                  <Text fontFamily='$body' fontSize='$4'>
+                  <AboutListHeading>
                     <Anchor color={navColor} href="https://flutter.dev/" target="_blank">
                       Flutter
-                    </Anchor>&nbsp;(<Anchor color={navColor} href="https://dart.dev/" target="_blank">Dart</Anchor>)
-                  </Text>
-                  <ListItem>
+                    </Anchor> (<Anchor color={navColor} href="https://dart.dev/" target="_blank">Dart</Anchor>) (<Anchor color={navColor} href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/pubspec.yaml" target="_blank">pubspec.yaml</Anchor>)
+                  </AboutListHeading>
+                  <AboutListItem>
                     <Anchor color={navColor} href="https://pub.dev/packages/provider" target="_blank">
                       provider
-                    </Anchor>&nbsp;(state management/DI)
-                  </ListItem>
-                  <ListItem>
+                    </Anchor> (state management/DI)
+                  </AboutListItem>
+                  <AboutListItem>
                     <Anchor color={navColor} href="https://pub.dev/packages/auto_route" target="_blank">
                       auto_route
-                    </Anchor>&nbsp;(routing/navigation)
-                  </ListItem>
-                  <Text fontFamily='$body' fontSize='$4'>
+                    </Anchor> (routing/navigation)
+                  </AboutListItem>
+                  <AboutListHeading>
                     <Anchor color={navColor} href="https://reactjs.org/" target="_blank">
                       React Web+Native
-                    </Anchor>&nbsp;(<Anchor color={navColor} href="https://www.typescriptlang.org/" target="_blank">TypeScript</Anchor>)
-                  </Text>
-                  <ListItem>
+                    </Anchor> (<Anchor color={navColor} href="https://www.typescriptlang.org/" target="_blank">TypeScript</Anchor>)
+                  </AboutListHeading>
+                  <AboutListItem>
                     <Anchor color={navColor} href="https://redux.js.org/" target="_blank">
                       Redux
-                    </Anchor>&nbsp;(state management)
-                  </ListItem>
+                    </Anchor> (state management)
+                  </AboutListItem>
                   <ListItem>
                     <YStack>
-                      <Text fontFamily='$body' fontSize='$4'>
+                      <AboutListHeading>
                         <Anchor color={navColor} href="https://tamagui.dev/" target="_blank">
                           Tamagui
-                        </Anchor>&nbsp;(UI library/project structure)
-                      </Text>
-                      <ListItem>
+                        </Anchor> (UI library/project structure)
+                      </AboutListHeading>
+                      <AboutListItem>
                         <Anchor color={navColor} href="https://nextjs.org/" target="_blank">
                           NextJS
-                        </Anchor>&nbsp;(web builds)
-                      </ListItem>
-                      <ListItem>
+                        </Anchor> (web builds)
+                      </AboutListItem>
+                      <AboutListItem>
                         <Anchor color={navColor} href="https://expo.dev/" target="_blank">
                           Expo
-                        </Anchor>&nbsp;(native builds)
-                      </ListItem>
+                        </Anchor> (native builds)
+                      </AboutListItem>
                     </YStack>
                   </ListItem>
                 </YStack>
@@ -177,4 +174,18 @@ export function AboutScreen() {
       {/* </ZStack> */}
     </TabsNavigation>
   )
+}
+
+function AboutListItem({ children, ...props }) {
+  return <ListItem {...props}>
+    <AboutListHeading>
+      {children}
+    </AboutListHeading>
+  </ListItem>;
+}
+
+function AboutListHeading({ children, ...props }) {
+  return <Text fontFamily='$body' fontSize='$4' {...props}>
+    {children}
+  </Text>;
 }
