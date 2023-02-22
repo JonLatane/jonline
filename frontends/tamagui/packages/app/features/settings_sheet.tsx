@@ -37,7 +37,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
         defaultChecked={value}
         {...{ disabled }}
         onCheckedChange={(checked) => dispatch(setter(checked))}>
-        <Switch.Thumb animation="quick" />
+        <Switch.Thumb animation="quick" backgroundColor='black' />
       </Switch>
     </XStack>;
   }

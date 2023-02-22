@@ -10,6 +10,7 @@ import React, { startTransition } from 'react'
 import type { SolitoAppProps } from 'solito'
 
 function MyApp({ Component, pageProps }: SolitoAppProps) {
+  // usePreserveScroll();
   React.useEffect(() => {
     // Taken from StackOverflow. Trying to detect both Safari desktop and mobile.
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -58,3 +59,53 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export default MyApp
+
+/// TODO: Decide whether to actually use this for real.
+// Next.js has the expirimental scrollRestoration feature, which seems better.
+// This is copied from https://jak-ch-ll.medium.com/next-js-preserve-scroll-history-334cf699802a
+import { useRouter } from "next/router"
+import { useEffect, useRef } from "react"
+
+const usePreserveScroll = () => {
+  const router = useRouter()
+
+  const scrollPositions = useRef<{ [url: string]: number }>({})
+  const isBack = useRef(false)
+
+  useEffect(() => {
+    router.beforePopState(() => {
+      isBack.current = true
+      return true
+    })
+
+    const onRouteChangeStart = () => {
+      const url = router.pathname
+      scrollPositions.current[url] = window.scrollY
+    }
+
+    const onRouteChangeComplete = (url: any) => {
+      if (isBack.current && scrollPositions.current[url]) {
+        window.scroll({
+          top: scrollPositions.current[url],
+          behavior: "auto",
+        });
+        setTimeout(() => {
+          window.scroll({
+            top: scrollPositions.current[url],
+            behavior: "auto",
+          });
+        }, 100);
+      }
+
+      isBack.current = false
+    }
+
+    router.events.on("routeChangeStart", onRouteChangeStart)
+    router.events.on("routeChangeComplete", onRouteChangeComplete)
+
+    return () => {
+      router.events.off("routeChangeStart", onRouteChangeStart)
+      router.events.off("routeChangeComplete", onRouteChangeComplete)
+    }
+  }, [router])
+}
