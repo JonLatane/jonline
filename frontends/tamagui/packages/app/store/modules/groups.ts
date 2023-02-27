@@ -67,9 +67,9 @@ export const loadGroupAvatar: AsyncThunk<string, LoadGroupAvatar, any> = createA
   }
 );
 
-export type UpdateGroupPosts = AccountOrServer & { groupId: string };
-export const updateGroupPosts: AsyncThunk<GetPostsResponse, UpdateGroupPosts, any> = createAsyncThunk<GetPostsResponse, UpdateGroupPosts>(
-  "groups/updatePosts",
+export type LoadGroupPosts = AccountOrServer & { groupId: string };
+export const loadGroupPosts: AsyncThunk<GetPostsResponse, LoadGroupPosts, any> = createAsyncThunk<GetPostsResponse, LoadGroupPosts>(
+  "groups/laodPosts",
   async (request) => {
     let client = await getCredentialClient(request);
     const result = await client.getPosts({ groupId: request.groupId, listingType: PostListingType.GROUP_POSTS }, client.credential);
@@ -157,26 +157,25 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
 
 
-    builder.addCase(updateGroupPosts.pending, (state) => {
+    builder.addCase(loadGroupPosts.pending, (state) => {
       state.status = "loading";
       state.error = undefined;
     });
-    builder.addCase(updateGroupPosts.fulfilled, (state, action) => {
+    builder.addCase(loadGroupPosts.fulfilled, (state, action) => {
       state.status = "loaded";
       const { posts } = action.payload;
       const newPostIds = new Set(posts.map(p => p.id));
       const newGroupPosts = posts.map((p) => p.currentGroupPost!);//.filter((p) => p);
-      setTimeout(() => upsertPosts(store.getState().posts, posts), 1);
       const updatedGroupPosts = state.idGroupPosts[action.meta.arg.groupId]
-        ?.filter((p) => !newPostIds.has(p.postId))
+        ?.filter((gp) => !newPostIds.has(gp.postId))
         || [];
       updatedGroupPosts.push(...newGroupPosts);
       updatedGroupPosts.sort((a, b) => a.createdAt! == b.createdAt! ? 0
         : a.createdAt! < b.createdAt! ? 1 : -1);
       state.idGroupPosts[action.meta.arg.groupId] = updatedGroupPosts;
-      state.successMessage = `Group Posts loaded.`;
+      state.successMessage = `Group Posts for ${action.meta.arg.groupId} loaded.`;
     });
-    builder.addCase(updateGroupPosts.rejected, (state, action) => {
+    builder.addCase(loadGroupPosts.rejected, (state, action) => {
       state.status = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);

@@ -51,7 +51,8 @@ const rootReducer = combineReducers({
 const rootPersistConfig = {
   key: 'root',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['accounts', 'servers', 'posts'],
+  whitelist: ['app'],
+  // blacklist: ['accounts', 'servers', 'posts', 'users', 'groups'],
   // transforms: [RemovePostPreviews]
 }
 const persistedReducer = persistReducer(rootPersistConfig, rootReducer)

@@ -16,6 +16,8 @@ import { createTransform } from "redux-persist";
 import moment from "moment";
 import { AccountOrServer } from "../types";
 import { DictionaryNum } from "@reduxjs/toolkit/dist/entities/models";
+import { loadUserPosts } from "./users";
+import { loadGroupPosts } from "./groups";
 
 export interface PostsState {
   baseStatus: "unloaded" | "loading" | "loaded" | "errored";
@@ -296,6 +298,15 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     builder.addCase(loadPostPreview.fulfilled, (state, action) => {
       state.previews[action.meta.arg.id] = action.payload;
       state.successMessage = `Preview image loaded.`;
+    });
+
+    builder.addCase(loadUserPosts.fulfilled, (state, action) => {
+      const { posts } = action.payload;
+      upsertPosts(state, posts);
+    });
+    builder.addCase(loadGroupPosts.fulfilled, (state, action) => {
+      const { posts } = action.payload;
+      upsertPosts(state, posts);
     });
   },
 });

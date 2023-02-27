@@ -1,16 +1,17 @@
 import { Button, Heading, Text, Paragraph, YStack } from '@jonline/ui'
-import { isWeb, Permission, ScrollView, TextArea, Tooltip, useWindowDimensions, XStack } from '@jonline/ui/src'
+import { isClient, isWeb, Permission, ScrollView, TextArea, Tooltip, useWindowDimensions, XStack } from '@jonline/ui/src'
 import { ChevronLeft, Edit, Eye } from '@tamagui/lucide-icons'
-import { loadUsername, RootState, selectUserById, updateUser, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
+import { loadUsername, loadUserPosts, RootState, selectUserById, updateUser, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import UserCard from './user_card'
-import { Dimensions } from 'react-native';
+import { Dimensions, FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
 import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
 import { TamaguiMarkdown } from '../post/tamagui_markdown'
+import { AsyncPostCard } from '../post/async_post_card'
 
 
 const { useParam } = createParam<{ username: string }>()
@@ -36,12 +37,30 @@ export function UsernameDetailsScreen() {
   const [updatedAvatar, setUpdatedAvatar] = useState(avatar);
   const [editMode, setEditMode] = useState(false);
 
+  const userPosts = useTypedSelector((state: RootState) => {
+    return userId ? (state.users.idPosts ?? {})[userId] : undefined
+  });
+  const [loadingUserPosts, setLoadingUserPosts] = useState(false);
   useEffect(() => {
     if (user && !name) setName(user.username);
     if (user && !bio) setBio(user.bio);
     if (avatar && !updatedAvatar) setUpdatedAvatar(avatar);
     if (editMode && !canEdit) setEditMode(false);
+    if (userId && !userPosts && !loadingUserPosts) {
+      setLoadingUserPosts(true);
+      reloadPosts();
+    } else if (userPosts) {
+      setLoadingUserPosts(false);
+      dismissScrollPreserver(setShowScrollPreserver);
+    }
   });
+
+  function reloadPosts() {
+    if (!accountOrServer.server) return;
+
+    setTimeout(() =>
+      dispatch(loadUserPosts({ ...accountOrServer, userId: userId! })), 1);
+  }
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   useEffect(() => {
@@ -65,6 +84,9 @@ export function UsernameDetailsScreen() {
       avatar: avatar,
     })));
   }
+  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const loading = usersState.status == 'loading' || usersState.status == 'unloaded'
+    || postsState.status == 'loading' || postsState.status == 'unloaded';
 
   return (
     <TabsNavigation>
@@ -95,6 +117,19 @@ export function UsernameDetailsScreen() {
                   placeholder='Your user bio' />
                 : <TamaguiMarkdown text={bio!} />} */}
               </YStack>
+
+              {(userPosts || []).length > 0 ?
+                <FlatList data={userPosts} style={{ width: '100%' }}
+                  // onRefresh={reloadPosts}
+                  // refreshing={postsState.status == 'loading'}
+                  // Allow easy restoring of scroll position
+                  ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+                  keyExtractor={(postId) => postId}
+                  renderItem={({ item: postId }) => {
+                    return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
+                  }} />
+                : loading ? undefined : <Heading size='$1' ta='center'>No posts yet</Heading>}
+
               {isWeb && canEdit ? <YStack h={50} /> : undefined}
             </YStack>
           </ScrollView>
@@ -113,7 +148,9 @@ export function UsernameDetailsScreen() {
                   </Tooltip>
                   <Tooltip placement="top-start">
                     <Tooltip.Trigger>
-                      <Button backgroundColor={!editMode ? undefined : navColor} color={!editMode ? undefined : navTextColor} als='center' onPress={() => setEditMode(true)} icon={Edit} circular mr='$5' />
+                      <Button backgroundColor={!editMode ? undefined : navColor} color={!editMode ? undefined : navTextColor} als='center' onPress={() => {
+                        setEditMode(true); isClient && window.scrollTo({top: 0, behavior: 'smooth'})
+                      }} icon={Edit} circular mr='$5' />
                     </Tooltip.Trigger>
                     <Tooltip.Content>
                       <Heading size='$2'>Edit {isCurrentUser ? 'your' : 'this'} profile</Heading>

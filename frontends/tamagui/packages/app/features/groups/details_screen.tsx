@@ -1,7 +1,7 @@
 import { Paragraph, YStack } from '@jonline/ui'
 import { Anchor, Card, Group, GroupPost, Heading, Spinner, useWindowDimensions, XStack } from '@jonline/ui/src'
 import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
-import { loadPost, RootState, selectGroupById, selectPostById, updateGroupPosts, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
+import { loadPost, RootState, selectGroupById, selectPostById, loadGroupPosts, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { FlatList } from 'react-native'
@@ -43,10 +43,10 @@ export function GroupDetailsScreen() {
     if (!accountOrServer.server) return;
 
     setTimeout(() =>
-      dispatch(updateGroupPosts({ ...accountOrServer, groupId: groupId! })), 1);
+      dispatch(loadGroupPosts({ ...accountOrServer, groupId: groupId! })), 1);
   }
   const loading = groupsState.status == 'loading' || groupsState.status == 'unloaded'
-    || postsState.status == 'loading' || postsState.status == 'unloaded';
+    || postsState.status == 'loading';
 
   return (
     <TabsNavigation selectedGroup={group}>

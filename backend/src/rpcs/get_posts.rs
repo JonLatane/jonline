@@ -21,16 +21,23 @@ pub fn get_posts(
 ) -> Result<GetPostsResponse, Status> {
     // log::info!("GetPosts called");
     // let req: GetPostsRequest = request.into_inner();
-    let result = match (request.listing_type(), request.to_owned().post_id) {
-        (PostListingType::MyGroupsPosts, _) => get_my_group_posts(
+    let result = match (
+        request.listing_type(),
+        request.to_owned().post_id,
+        request.to_owned().author_user_id,
+    ) {
+        (_, _, Some(user_id)) => {
+            get_user_posts(user_id.to_string().to_db_id_or_err("user_id")?, &user, conn)
+        }
+        (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
             &user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
             conn,
         ),
-        (PostListingType::FollowingPosts, _) => get_following_posts(
+        (PostListingType::FollowingPosts, _, _) => get_following_posts(
             &user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
             conn,
         ),
-        (PostListingType::GroupPosts, _) => get_group_posts(
+        (PostListingType::GroupPosts, _, _) => get_group_posts(
             request
                 .to_owned()
                 .group_id
@@ -40,7 +47,7 @@ pub fn get_posts(
             vec![Moderation::Unmoderated, Moderation::Approved],
             conn,
         )?,
-        (PostListingType::GroupPostsPendingModeration, _) => get_group_posts(
+        (PostListingType::GroupPostsPendingModeration, _, _) => get_group_posts(
             request
                 .to_owned()
                 .group_id
@@ -50,11 +57,11 @@ pub fn get_posts(
             vec![Moderation::Pending],
             conn,
         )?,
-        (_, Some(post_id)) => match request.reply_depth {
+        (_, Some(post_id), _) => match request.reply_depth {
             None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
             Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
         },
-        (_, None) => get_all_posts(&user, conn),
+        (_, None, _) => get_all_posts(&user, conn),
     };
     // log::info!("GetPosts::request: {:?}, result: {:?}", request, result);
     Ok(GetPostsResponse { posts: result })
@@ -271,6 +278,35 @@ fn load_group_posts(
         .iter()
         .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
         .collect::<Vec<Post>>()
+}
+
+fn get_user_posts(
+    user_id: i32,
+    current_user: &Option<models::User>,
+    conn: &mut PgPooledConnection,
+) -> Vec<Post> {
+    let visibilities = match current_user {
+        Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
+        None => vec![Visibility::GlobalPublic],
+    }
+    .to_string_visibilities();
+    posts::table
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .select((
+            models::MINIMAL_POST_COLUMNS,
+            users::username.nullable(),
+            posts::preview.is_not_null(),
+        ))
+        .filter(posts::visibility.eq_any(visibilities))
+        // .filter(posts::parent_post_id.is_null())
+        .filter(posts::user_id.eq(user_id))
+        .order(posts::created_at.desc())
+        .limit(100)
+        .load::<(models::MinimalPost, Option<String>, bool)>(conn)
+        .unwrap()
+        .iter()
+        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
+        .collect()
 }
 
 fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec<Post> {

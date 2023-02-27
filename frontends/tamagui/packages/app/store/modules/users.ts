@@ -1,4 +1,4 @@
-import { formatError, GetUsersRequest, GetUsersResponse, User } from "@jonline/ui/src";
+import { formatError, GetPostsResponse, GetUsersRequest, GetUsersResponse, Post, PostListingType, User } from "@jonline/ui/src";
 import {
   AsyncThunk,
   createAsyncThunk,
@@ -15,6 +15,7 @@ import moment from "moment";
 import store from "../store";
 import { AccountOrServer } from "../types";
 import { getCredentialClient } from "./accounts";
+import { upsertPosts } from "./posts";
 
 export interface UsersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -27,6 +28,7 @@ export interface UsersState {
   avatars: Dictionary<string>;
   failedUsernames: string[];
   failedUserIds: string[];
+  idPosts: Dictionary<string[]>;
 }
 
 export interface UsersSlice {
@@ -125,6 +127,17 @@ export const loadUsername: AsyncThunk<LoadUserResult, LoadUsername, any> = creat
   }
 );
 
+export type LoadUserPosts = AccountOrServer & { userId: string };
+export const loadUserPosts: AsyncThunk<GetPostsResponse, LoadUserPosts, any> = createAsyncThunk<GetPostsResponse, LoadUserPosts>(
+  "users/loadPosts",
+  async (request) => {
+    let client = await getCredentialClient(request);
+    const result = await client.getPosts({ authorUserId: request.userId, listingType: PostListingType.GROUP_POSTS }, client.credential);
+    return result;
+  }
+);
+
+
 export type UpdateUser = { user: User, avatar?: string } & AccountOrServer;
 // export type LoadUserResult = {
 //   user: User;
@@ -156,6 +169,7 @@ const initialState: UsersState = {
   usernameIds: {},
   failedUsernames: [],
   failedUserIds: [],
+  idPosts: {},
   ...usersAdapter.getInitialState(),
 };
 
@@ -215,6 +229,29 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
         state.errorMessage = formatError(action.error as Error);
         state.error = action.error as Error;
       });
+    });
+
+    builder.addCase(loadUserPosts.pending, (state) => {
+      state.status = "loading";
+      state.error = undefined;
+    });
+    builder.addCase(loadUserPosts.fulfilled, (state, action) => {
+      state.status = "loaded";
+      const { posts } = action.payload;
+      const newPostIds = new Set(posts.map(p => p.id));
+      if (!state.idPosts) state.idPosts = {};
+      const updatedUserPostIds = state.idPosts[action.meta.arg.userId]
+        ?.filter((p) => !newPostIds.has(p))
+        || [];
+      updatedUserPostIds.push(...posts.map(p => p.id));
+      state.idPosts[action.meta.arg.userId] = updatedUserPostIds;
+      state.successMessage = `User Posts for ${action.meta.arg.userId} loaded.`;
+    });
+    builder.addCase(loadUserPosts.rejected, (state, action) => {
+      state.status = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
     });
     // builder.addCase(loadUserAvatar.fulfilled, (state, action) => {
     //   state.avatars[action.meta.arg.id] = action.payload;
