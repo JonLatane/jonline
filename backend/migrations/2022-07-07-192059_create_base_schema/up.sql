@@ -121,7 +121,8 @@ CREATE TABLE posts (
   group_count INTEGER NOT NULL DEFAULT 0,
   preview BYTEA NULL DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NULL DEFAULT NULL
+  updated_at TIMESTAMP NULL DEFAULT NULL,
+  last_activity TIMESTAMP NOT NULL DEFAULT NOW()
 );
 -- Speed up loading of posts by user.
 CREATE INDEX idx_post_vis_parent_created ON posts(visibility, parent_post_id, created_at);

@@ -62,7 +62,7 @@ pub fn create_post(
 
     let post_title: Option<String> = match req.reply_to_post_id {
         Some(_) => None,
-        None => req.title,
+        None => req.to_owned().title,
     };
 
     let post = conn.transaction::<models::Post, diesel::result::Error, _>(|conn| {
@@ -73,7 +73,10 @@ pub fn create_post(
                 title: post_title,
                 link: req.link.to_link(),
                 content: req.content.to_owned(),
-                visibility: "GLOBAL_PUBLIC".to_string(),
+                visibility: match req.visibility() {
+                    Visibility::Unknown => Visibility::GlobalPublic,
+                    v => v
+                }.to_string_visibility(),
                 preview: None,
             })
             .get_result::<models::Post>(conn)?;
@@ -85,7 +88,7 @@ pub fn create_post(
                     .execute(conn)?;
                 update(posts::table)
                     .filter(posts::id.eq_any(ancestor_post_ids))
-                    .set(posts::response_count.eq(posts::response_count + 1))
+                    .set((posts::response_count.eq(posts::response_count + 1), posts::last_activity.eq(inserted_post.created_at)))
                     .execute(conn)?;
                 update(users::table)
                     .filter(users::id.eq(user.id))

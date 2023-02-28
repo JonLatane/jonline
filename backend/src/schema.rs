@@ -105,6 +105,7 @@ table! {
         preview -> Nullable<Bytea>,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
+        last_activity -> Timestamp,
     }
 }
 

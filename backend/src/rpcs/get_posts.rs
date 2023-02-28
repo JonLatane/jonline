@@ -323,7 +323,7 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
         .filter(posts::visibility.eq_any(
             vec![Visibility::ServerPublic, Visibility::GlobalPublic].to_string_visibilities(),
         ))
-        .order(posts::created_at.desc())
+        .order(posts::last_activity.desc())
         .limit(100)
         .load::<(models::MinimalPost, Option<String>, bool)>(conn)
         .unwrap()

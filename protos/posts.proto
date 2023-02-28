@@ -65,6 +65,7 @@ message CreatePostRequest {
   optional string link = 2;
   optional string content = 3;
   optional string reply_to_post_id = 4;
+  optional Visibility visibility = 10;
 }
 
 // A `Post` is a message that can be posted to the server. Its `visibility`
@@ -117,6 +118,7 @@ message Post {
 
   google.protobuf.Timestamp created_at = 20;
   optional google.protobuf.Timestamp updated_at = 21;
+  google.protobuf.Timestamp last_activity = 22;
 }
 
 // Post-centric version of User. UI can cross-reference user details

@@ -77,11 +77,9 @@ impl ToProtoPost for models::Post {
             title: self.title.to_owned(),
             link: self.link.to_link(),
             content: self.content.to_owned(),
-            created_at: Some(::prost_wkt_types::Timestamp {
-                seconds: 1,
-                nanos: 1,
-            }),
-            updated_at: None,
+            created_at: Some(self.created_at.to_proto()),
+            updated_at: self.updated_at.map(|t| t.to_proto()),
+            last_activity: Some(self.last_activity.to_proto()),
             author: self.proto_author(username),
             response_count: self.response_count,
             reply_count: self.reply_count,
@@ -120,7 +118,9 @@ impl ToProtoGroupPost for models::GroupPost {
             user_id: self.user_id.to_proto_id().to_string(),
             group_moderation: self.group_moderation.to_proto_moderation().unwrap() as i32,
             created_at: Some(self.created_at.to_proto()),
-            // updated_at: Some(self.updated_at.to_proto()),
+            // updated_at: self.updated_at.map(|t| t.to_proto()),
+            // last_reply_created_at: self.last_reply_created_at.map(|t| t.to_proto()),
+            // last_response_created_at: self.last_response_created_at.map(|t| t.to_proto()),
         };
     }
 

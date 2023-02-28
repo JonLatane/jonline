@@ -1,4 +1,4 @@
-import { formatError, GetPostsResponse, GetUsersRequest, GetUsersResponse, Post, PostListingType, User } from "@jonline/ui/src";
+import { formatError, GetPostsResponse, GetUsersRequest, GetUsersResponse, PostListingType, User } from "@jonline/ui/src";
 import {
   AsyncThunk,
   createAsyncThunk,
@@ -15,7 +15,6 @@ import moment from "moment";
 import store from "../store";
 import { AccountOrServer } from "../types";
 import { getCredentialClient } from "./accounts";
-import { upsertPosts } from "./posts";
 
 export interface UsersState {
   status: "unloaded" | "loading" | "loaded" | "errored";

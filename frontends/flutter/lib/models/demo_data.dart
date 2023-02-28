@@ -148,13 +148,20 @@ Future<List<JonlineAccount>> generateSideAccounts(
   final Set<int> avatarHashcodes = {};
   final List<Image> avatars = [];
   final httpClient = http.Client();
+  int avatarFailureCount = 0;
   while (avatars.length < range.length) {
     http.Response response = await httpClient
         .get(Uri.parse('https://thispersondoesnotexist.com/image'), headers: {
-      if (!MyPlatform.isWeb) "User-Agent": "Jonline",
+      if (!MyPlatform.isWeb) "User-Agent": "asdf",
       if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
     });
-    final image = decodeJpg(response.bodyBytes);
+    // print("Got response: ${response.statusCode} ${response.bodyBytes.length}");
+    Image? image;
+    try {
+      image = decodeJpg(response.bodyBytes);
+    } catch (e) {
+      // showSnackBar("Failed to decode avatar...");
+    }
     if (image != null) {
       final hashCode = const ListEquality().hash(image.data);
       final Image avatar = copyResize(image, width: 128);
@@ -169,6 +176,12 @@ Future<List<JonlineAccount>> generateSideAccounts(
       }
     } else {
       showSnackBar("Failed to generate avatar...");
+      avatarFailureCount++;
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (avatarFailureCount > 4) {
+        showSnackBar("Generating accounts without avatars...");
+        break;
+      }
     }
   }
 
@@ -187,34 +200,17 @@ Future<List<JonlineAccount>> generateSideAccounts(
             showSnackBar(m);
           }
         }, allowInsecure: account.allowInsecure, selectAccount: false);
-        // final JonlineClient? sideClient =
-        //     await (sideAccount?.getClient(showMessage: showSnackBar));
         if (sideAccount != null) {
           final User? user = await sideAccount.updateUserData();
           if (user != null) {
             user.permissions.add(Permission.RUN_BOTS);
-            // Source from https://thispersondoesnotexist.com/image
-            // await Future.delayed(
-            //     Duration(milliseconds: _random.nextInt(60000)));
-            // http.Response response = await httpClient.get(
-            //     Uri.parse('https://thispersondoesnotexist.com/image'),
-            //     headers: {
-            //       if (!MyPlatform.isWeb) "User-Agent": "Jonline",
-            //       if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
-            //     });
-            // final image = decodeJpg(response.bodyBytes);
-            // if (image != null) {
-            //   final avatar = copyResize(image, width: 128);
-            //   user.avatar = encodeJpg(avatar);
-            // } else {
-            //   showSnackBar("Failed to generate avatar for $fakeAccountName.");
-            // }
-            user.avatar = encodeJpg(avatars[i]);
+            if (avatars.length > i) {
+              user.avatar = encodeJpg(avatars[i]);
+            }
             await client.updateUser(user,
                 options: account.authenticatedCallOptions);
             await sideAccount.updateUserData();
           }
-          // showSnackBar("Created side account ${sideAccount.username}.");
           appState.updateAccountList();
           return sideAccount;
         }

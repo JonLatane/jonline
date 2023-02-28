@@ -1,4 +1,4 @@
-import { formatError, GetGroupsRequest, GetGroupsResponse, GetPostsRequest, GetPostsResponse, Group, GroupPost, PostListingType } from "@jonline/ui/src";
+import { formatError, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, PostListingType } from "@jonline/ui/src";
 import {
   AsyncThunk,
   createAsyncThunk,
@@ -11,10 +11,8 @@ import {
   Slice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import store from "../store";
 import { AccountOrServer } from "../types";
 import { getCredentialClient } from "./accounts";
-import { LoadPostsRequest, upsertPosts } from "./posts";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
