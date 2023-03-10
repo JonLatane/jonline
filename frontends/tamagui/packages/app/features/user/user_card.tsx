@@ -1,10 +1,14 @@
 import { Card, Heading, Image, Theme, useMedia, User, XStack, YStack } from "@jonline/ui";
-import { Permission, Tooltip } from "@jonline/ui/src";
+import { Button, Permission, Tooltip } from "@jonline/ui/src";
 import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
 import { loadUser, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { passes } from "app/utils/moderation";
 import React, { useEffect } from "react";
 import { FadeInView } from "../post/fade_in_view";
 import { } from "../post/post_card";
+import { followUnfollowUser, respondToFollowRequest } from '../../store/modules/users';
+import { GestureResponderEvent } from 'react-native';
+import { useLocalApp } from '../../store/store';
 
 interface Props {
   user: User;
@@ -16,11 +20,27 @@ interface Props {
 const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAvatar }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
+  const app = useLocalApp();
 
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
-  const { server, primaryColor, navColor } = useServerTheme();
+  const { server, primaryColor, navColor, primaryTextColor, textColor } = useServerTheme();
   const avatar = useTypedSelector((state: RootState) => state.users.avatars[user.id]);
   const [loadingAvatar, setLoadingAvatar] = React.useState(false);
+
+  const following = passes(user.currentUserFollow?.targetUserModeration);
+  const followRequested = user.currentUserFollow && !following;
+  const followsCurrentUser = passes(user.targetCurrentUserFollow?.targetUserModeration);
+  const followRequestReceived = user.targetCurrentUserFollow && !followsCurrentUser;
+
+  const onFollowPressed = (e: GestureResponderEvent) => {
+    e.stopPropagation();
+    dispatch(followUnfollowUser({ userId: user.id, follow: !(following || followRequested), ...accountOrServer }))
+  };
+
+  const doRespondToFollowRequest = (e: GestureResponderEvent, accept: boolean) => {
+    e.stopPropagation();
+    dispatch(respondToFollowRequest({ userId: user.id, accept, ...accountOrServer }))
+  };
 
   useEffect(() => {
     if (!loadingAvatar) {
@@ -37,11 +57,12 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
     <Theme inverse={isCurrentUser}>
       <Card theme="dark" elevate size="$4" bordered
         animation="bouncy"
-        scale={0.9}
+        // scale={0.9}
         width={isPreview ? 260 : '100%'}
         // width={400}
-        hoverStyle={{ scale: 0.925 }}
-        pressStyle={{ scale: 0.875 }}>
+        // hoverStyle={{ scale: 0.925 }}
+        // pressStyle={{ scale: 0.875 }}
+        >
         <Card.Header>
           <XStack>
             <YStack f={1}>
@@ -76,14 +97,6 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
         </Card.Header>
         <Card.Footer>
           <YStack mt='$2' mr='$3' w='100%'>
-            <XStack>
-              <Heading size='$1' f={1}>{user.followerCount} followers</Heading>
-              <Heading size='$1' f={1} ta='right'>following {user.followingCount}</Heading>
-            </XStack>
-            <XStack>
-              <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
-              <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
-            </XStack>
             {(!isPreview && avatar && avatar != '') ?
               <Image
                 // pos="absolute"
@@ -103,11 +116,43 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
                 borderRadius={10}
               // borderBottomRightRadius={5}
               /> : undefined}
+              {followsCurrentUser ? <Heading size='$1' ta='center'>{following ? 'Friends' : 'Follows You'}</Heading> : undefined}
+              {followRequestReceived ? <>
+                <Heading size='$1' ta='center'>Wants to follow you</Heading>
+              <XStack ac='center' jc='center'>
+                <Button onPress={(e) => doRespondToFollowRequest(e, true)} backgroundColor={primaryColor}>
+                  <Heading size='$2' color={primaryTextColor}>
+                    Accept
+                  </Heading>
+                </Button>
+                <Button onPress={(e) => doRespondToFollowRequest(e, false)} >
+                  <Heading size='$2' color={textColor}>
+                    Reject
+                  </Heading>
+                </Button>
+              </XStack>
+              </>: undefined}
+              {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack ac='center' jc='center'>
+                <Button onPress={onFollowPressed} backgroundColor={!following && !followRequested ? primaryColor : undefined}>
+                  <Heading size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
+                    {!following && !followRequested ? 'Follow'
+                      : following ? 'Unfollow' : 'Cancel Request'}
+                  </Heading>
+                </Button>
+              </XStack> : undefined}
             <XStack>
+              <Heading size='$1' f={1}>{user.followerCount} followers</Heading>
+              <Heading size='$1' f={1} ta='right'>following {user.followingCount}</Heading>
+            </XStack>
+            <XStack>
+              <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
+              <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
+            </XStack>
+            {app.showUserIds ? <XStack>
               <Heading size='$1'>{user.id}</Heading>
               <XStack f={1} />
               {isCurrentUser && setAvatar ? <Camera /> : undefined}
-            </XStack>
+            </XStack>: undefined}
           </YStack>
         </Card.Footer>
         <Card.Background>

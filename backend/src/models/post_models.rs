@@ -38,7 +38,7 @@ pub struct Post {
     pub preview: Option<Vec<u8>>,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
-    pub last_activity: SystemTime,
+    pub last_activity_at: SystemTime,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
@@ -55,7 +55,7 @@ pub struct MinimalPost {
     pub group_count: i32,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
-    pub last_activity: SystemTime,
+    pub last_activity_at: SystemTime,
 }
 
 pub static MINIMAL_POST_COLUMNS: (
@@ -70,7 +70,7 @@ pub static MINIMAL_POST_COLUMNS: (
     posts::group_count,
     posts::created_at,
     posts::updated_at,
-    posts::last_activity,
+    posts::last_activity_at,
 ) = (
     posts::id,
     posts::user_id,
@@ -83,7 +83,7 @@ pub static MINIMAL_POST_COLUMNS: (
     posts::group_count,
     posts::created_at,
     posts::updated_at,
-    posts::last_activity,
+    posts::last_activity_at,
 );
 
 #[derive(Debug, Insertable)]

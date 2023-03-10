@@ -152,7 +152,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
   while (avatars.length < range.length) {
     http.Response response = await httpClient
         .get(Uri.parse('https://thispersondoesnotexist.com/image'), headers: {
-      if (!MyPlatform.isWeb) "User-Agent": "asdf",
+      if (!MyPlatform.isWeb) "User-Agent": "Jonline",
       if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
     });
     // print("Got response: ${response.statusCode} ${response.bodyBytes.length}");

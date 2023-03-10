@@ -88,7 +88,7 @@ pub fn create_post(
                     .execute(conn)?;
                 update(posts::table)
                     .filter(posts::id.eq_any(ancestor_post_ids))
-                    .set((posts::response_count.eq(posts::response_count + 1), posts::last_activity.eq(inserted_post.created_at)))
+                    .set((posts::response_count.eq(posts::response_count + 1), posts::last_activity_at.eq(inserted_post.created_at)))
                     .execute(conn)?;
                 update(users::table)
                     .filter(users::id.eq(user.id))

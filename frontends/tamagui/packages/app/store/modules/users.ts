@@ -1,4 +1,5 @@
-import { formatError, GetPostsResponse, GetUsersRequest, GetUsersResponse, PostListingType, User } from "@jonline/ui/src";
+import { Follow, formatError, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostListingType, User } from "@jonline/ui/src";
+import { Empty } from "@jonline/ui/src/generated/google/protobuf/empty";
 import {
   AsyncThunk,
   createAsyncThunk,
@@ -11,6 +12,7 @@ import {
   PayloadAction,
   Slice
 } from "@reduxjs/toolkit";
+import { passes } from "app/utils/moderation";
 import moment from "moment";
 import store from "../store";
 import { AccountOrServer } from "../types";
@@ -162,6 +164,27 @@ export const updateUser: AsyncThunk<LoadUserResult, UpdateUser, any> = createAsy
     return { user: { ...user, avatar: undefined }, avatar };
   }
 );
+
+export type FollowUnfollowUser = { userId: string, follow: boolean } & AccountOrServer;
+export const followUnfollowUser: AsyncThunk<Follow | Empty, FollowUnfollowUser, any> = createAsyncThunk<Follow | Empty, FollowUnfollowUser>(
+  "users/followUnfollow",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const follow = { userId: request.account!.user.id, targetUserId: request.userId };
+    const result: Follow | Empty = request.follow ? await client.createFollow(follow, client.credential) : await client.deleteFollow(follow, client.credential);
+    return result;
+  });
+
+export type RespondToFollowRequest = { userId: string, accept: boolean } & AccountOrServer;
+export const respondToFollowRequest: AsyncThunk<Follow | Empty, RespondToFollowRequest, any> = createAsyncThunk<Follow | Empty, RespondToFollowRequest>(
+  "users/respondToFollowRequest",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const follow = { targetUserId: request.account!.user.id, userId: request.userId, targetUserModeration: request.accept ? Moderation.APPROVED : Moderation.REJECTED };
+    const result: Follow | Empty = request.accept ? await client.updateFollow(follow, client.credential) : await client.deleteFollow(follow, client.credential);
+    return result;
+  });
+
 const initialState: UsersState = {
   status: "unloaded",
   avatars: {},
@@ -252,10 +275,33 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
-    // builder.addCase(loadUserAvatar.fulfilled, (state, action) => {
-    //   state.avatars[action.meta.arg.id] = action.payload;
-    //   state.successMessage = `Avatar image for ${action.meta.arg.id} loaded.`;
-    // });
+
+    builder.addCase(followUnfollowUser.fulfilled, (state, action) => {
+      let user = usersAdapter.getSelectors().selectById(state, action.meta.arg.userId)!;
+      if (action.meta.arg.follow) {
+        const result = action.payload as Follow;
+        if (passes(result.targetUserModeration)) {
+          user = { ...user, followerCount: (user.followerCount || 0) + 1 };
+        }
+        user = { ...user, currentUserFollow: result };
+      } else {
+        if (passes(user.currentUserFollow?.targetUserModeration)) {
+          user = { ...user, followerCount: (user.followerCount || 0) - 1 };
+        }
+        user = { ...user, currentUserFollow: undefined };
+      }
+      usersAdapter.upsertOne(state, user);
+    });
+    builder.addCase(respondToFollowRequest.fulfilled, (state, action) => {
+      let user = usersAdapter.getSelectors().selectById(state, action.meta.arg.userId)!;
+      if (action.meta.arg.accept) {
+        const result = action.payload as Follow;
+        user = { ...user, followingCount: (user.followingCount || 0) + 1, targetCurrentUserFollow: result };
+      } else {
+        user = { ...user, targetCurrentUserFollow: undefined };
+      }
+      usersAdapter.upsertOne(state, user);
+    });
   },
 });
 

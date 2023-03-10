@@ -11,6 +11,7 @@ import StickyBox from "react-sticky-box";
 import { useLink } from 'solito/link'
 import { Info } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from '../post/tamagui_markdown'
+import { colorMeta } from '../../store/store';
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -48,21 +49,21 @@ export function ServerDetailsScreen() {
     setDescription(serverDescription);
   }
 
-  const primaryColorInt = serverConfiguration?.serverInfo?.colors?.primary;
-  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
+  const primaryColorInt = serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
+  const primaryColor = `#${primaryColorInt.toString(16).slice(-6)}`;
   const [primaryColorHex, setPrimaryColorHex] = useState(primaryColor);
   if (primaryColorHex != primaryColor && primaryColorHex == '#424242') {
     setPrimaryColorHex(primaryColor);
   }
 
-  const navColorInt = serverConfiguration?.serverInfo?.colors?.navigation;
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'FFFFFF'}`;
+  const navColorInt = serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;
+  const navColor = `#${navColorInt.toString(16).slice(-6)}`;
   const [navColorHex, setNavColorHex] = useState(navColor);
   if (navColorHex != navColor && navColorHex == '#FFFFFF') {
     setNavColorHex(navColor);
   }
-  const primaryTextColor = primaryColorInt && primaryColorInt < 0x808080 ? 'white' : 'black';
-  const navTextColor = navColorInt && navColorInt < 0x808080 ? 'white' : 'black';
+  const {textColor: primaryTextColor} = colorMeta(primaryColor);
+  const {textColor: navTextColor} = colorMeta(navColor);
   const { warningAnchorColor } = useServerTheme();
 
   async function updateServer() {
@@ -164,7 +165,9 @@ export function ServerDetailsScreen() {
             {isAdmin ?
               isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
                 <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-                  <Button maw={600} als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
+                  <Button maw={600} als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>
+                    <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
+                  </Button>
                 </YStack>
               </StickyBox>
                 : <Button maw={600} mt='$3' als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>

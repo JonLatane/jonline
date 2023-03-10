@@ -1,6 +1,6 @@
 import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, setShowUserIds, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
 
 
@@ -104,6 +104,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               {toggleRow('Auto Dark Mode', app.darkModeAuto, setDarkModeAuto)}
               {toggleRow('Dark Mode', app.darkMode, setDarkMode, app.darkModeAuto)}
               <Heading size='$3' mt='$3'>Development</Heading>
+              {toggleRow('Show User IDs', app.showUserIds, setShowUserIds)}
               {toggleRow('Show (WIP) Extended Navigation', app.showBetaNavigation, setShowBetaNavigation)}
 
               {/* <XStack>

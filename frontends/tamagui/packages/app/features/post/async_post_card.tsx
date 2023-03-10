@@ -20,6 +20,8 @@ export function AsyncPostCard({ postId }: AsyncPostCardProps) {
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const { primaryColor } = useServerTheme();
   const [loadingPost, setLoadingPost] = useState(false);
+  const [loadingParentPost, setLoadingParentPost] = useState(false);
+  const parentPost = useTypedSelector((state: RootState) => post?.replyToPostId ? selectPostById(state.posts, post?.replyToPostId) : undefined);
   useEffect(() => {
     if (!post && !loadingPost) {
       setLoadingPost(true);
@@ -28,8 +30,16 @@ export function AsyncPostCard({ postId }: AsyncPostCardProps) {
     } else if (postsState.status == 'loaded') {
       // setLoadingPost(false);
     }
+
+    // if (post?.replyToPostId && !parentPost && !loadingParentPost) {
+    //   setLoadingParentPost(true);
+    //   setTimeout(() =>
+    //     dispatch(loadPost({ ...accountOrServer, id: post!.replyToPostId! })), 1);
+    // } else if (postsState.status == 'loaded') {
+    //   setLoadingParentPost(false);
+    // }
   });
-  return post ? <PostCard post={post} isPreview /> : <>
+  return post ? <PostCard post={post} previewParent={parentPost} isPreview /> : <>
     <Card w='100%' h={200}
       theme="dark" elevate size="$4" bordered
       margin='$0'

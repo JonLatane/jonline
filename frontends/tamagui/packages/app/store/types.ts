@@ -8,9 +8,8 @@ export type JonlineServer = {
   serverConfiguration?: ServerConfiguration;
 }
 
-// The type used to store accounts locally.
+// The type used to store accounts locally. Keyed by server URL + user ID.
 export type JonlineAccount = {
-  // id: string;
   user: User;
   refreshToken: ExpirableToken;
   accessToken: ExpirableToken;

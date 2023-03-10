@@ -61,7 +61,7 @@ pub fn get_posts(
             None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
             Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
         },
-        (_, None, _) => get_all_posts(&user, conn),
+        (_, None, _) => get_public_posts(&user, conn),
     };
     // log::info!("GetPosts::request: {:?}, result: {:?}", request, result);
     Ok(GetPostsResponse { posts: result })
@@ -97,7 +97,7 @@ fn get_by_post_id(
     }
 }
 
-fn get_all_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
+fn get_public_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
     let visibilities = match user {
         Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
         None => vec![Visibility::GlobalPublic],
@@ -300,7 +300,7 @@ fn get_user_posts(
         .filter(posts::visibility.eq_any(visibilities))
         // .filter(posts::parent_post_id.is_null())
         .filter(posts::user_id.eq(user_id))
-        .order(posts::created_at.desc())
+        .order(posts::last_activity_at.desc())
         .limit(100)
         .load::<(models::MinimalPost, Option<String>, bool)>(conn)
         .unwrap()
@@ -323,7 +323,7 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
         .filter(posts::visibility.eq_any(
             vec![Visibility::ServerPublic, Visibility::GlobalPublic].to_string_visibilities(),
         ))
-        .order(posts::last_activity.desc())
+        .order(posts::created_at.desc())
         .limit(100)
         .load::<(models::MinimalPost, Option<String>, bool)>(conn)
         .unwrap()

@@ -118,7 +118,7 @@ message Post {
 
   google.protobuf.Timestamp created_at = 20;
   optional google.protobuf.Timestamp updated_at = 21;
-  google.protobuf.Timestamp last_activity = 22;
+  google.protobuf.Timestamp last_activity_at = 22;
 }
 
 // Post-centric version of User. UI can cross-reference user details

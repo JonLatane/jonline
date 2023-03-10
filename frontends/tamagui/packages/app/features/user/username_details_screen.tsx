@@ -1,6 +1,6 @@
 import { Button, Heading, Text, Paragraph, YStack } from '@jonline/ui'
 import { isClient, isWeb, Permission, ScrollView, TextArea, Tooltip, useWindowDimensions, XStack } from '@jonline/ui/src'
-import { ChevronLeft, Edit, Eye } from '@tamagui/lucide-icons'
+import { ChevronLeft, ChevronRight, Edit, Eye } from '@tamagui/lucide-icons'
 import { loadUsername, loadUserPosts, RootState, selectUserById, updateUser, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
 import React, { useState, useEffect } from 'react'
 import { createParam } from 'solito'
@@ -27,10 +27,11 @@ export function UsernameDetailsScreen() {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const usersState = useTypedSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
+  const [showPermissionsAndVisibility, setShowPermissionsAndVisibility] = useState(false);
   const userLoadFailed = usersState.failedUsernames.includes(username!);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user?.id;
-  const canEdit = isCurrentUser
-    || accountOrServer.account?.user?.permissions?.includes(Permission.ADMIN);
+  const isAdmin = accountOrServer.account?.user?.permissions?.includes(Permission.ADMIN);
+  const canEdit = isCurrentUser || isAdmin;
   const [name, setName] = useState(user?.username);
   const [bio, setBio] = useState(user?.bio);
   const avatar = useTypedSelector((state: RootState) => userId ? state.users.avatars[userId] : undefined);
@@ -117,17 +118,26 @@ export function UsernameDetailsScreen() {
                   placeholder='Your user bio' />
                 : <TamaguiMarkdown text={bio!} />} */}
               </YStack>
+              <Button mt={-15} transparent>
+                <XStack ac='center' jc='center'>
+                  <Heading size='$4' ta='center'>Visibility & Permissions</Heading>
+                  <ChevronRight />
+                </XStack>
+              </Button>
 
               {(userPosts || []).length > 0 ?
-                <FlatList data={userPosts} style={{ width: '100%' }}
-                  // onRefresh={reloadPosts}
-                  // refreshing={postsState.status == 'loading'}
-                  // Allow easy restoring of scroll position
-                  ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-                  keyExtractor={(postId) => postId}
-                  renderItem={({ item: postId }) => {
-                    return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
-                  }} />
+                <>
+                  <Heading size='$4' ta='center'>Latest Activity</Heading>
+                  <FlatList data={userPosts} style={{ width: '100%' }}
+                    // onRefresh={reloadPosts}
+                    // refreshing={postsState.status == 'loading'}
+                    // Allow easy restoring of scroll position
+                    ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+                    keyExtractor={(postId) => postId}
+                    renderItem={({ item: postId }) => {
+                      return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
+                    }} />
+                </>
                 : loading ? undefined : <Heading size='$1' ta='center'>No posts yet</Heading>}
 
               {isWeb && canEdit ? <YStack h={50} /> : undefined}
@@ -149,7 +159,7 @@ export function UsernameDetailsScreen() {
                   <Tooltip placement="top-start">
                     <Tooltip.Trigger>
                       <Button backgroundColor={!editMode ? undefined : navColor} color={!editMode ? undefined : navTextColor} als='center' onPress={() => {
-                        setEditMode(true); isClient && window.scrollTo({top: 0, behavior: 'smooth'})
+                        setEditMode(true); isClient && window.scrollTo({ top: 0, behavior: 'smooth' })
                       }} icon={Edit} circular mr='$5' />
                     </Tooltip.Trigger>
                     <Tooltip.Content>

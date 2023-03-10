@@ -93,6 +93,8 @@ export type ServerTheme = {
   navLightColor: string;
   navAnchorColor: string;
 
+  textColor: string;
+
   warningAnchorColor: string;
   darkMode: boolean;
 }
@@ -117,14 +119,14 @@ export function useServerTheme(): ServerTheme {
 
   const theme = useTheme();
   const themeBgColor = theme.background.val;
-  const { luma: themeBgLuma } = colorMeta(themeBgColor);
+  const { luma: themeBgLuma, textColor } = colorMeta(themeBgColor);
   const darkMode = themeBgLuma <= 0.5;
   const primaryAnchorColor = !darkMode ? primaryDarkColor : primaryLightColor;
   const navAnchorColor = !darkMode ? navDarkColor : navLightColor;
 
   const warningAnchorColor = !darkMode ? '#d1c504' : '#EBDF1C';
   // debugger;
-  return { server, primaryColor, navColor, primaryTextColor, navTextColor, primaryDarkColor, navDarkColor, primaryLightColor, navLightColor, primaryAnchorColor, navAnchorColor, warningAnchorColor, darkMode };
+  return { server, textColor, primaryColor, navColor, primaryTextColor, navTextColor, primaryDarkColor, navDarkColor, primaryLightColor, navLightColor, primaryAnchorColor, navAnchorColor, warningAnchorColor, darkMode };
 }
 
 export function useLocalApp(): LocalAppConfiguration {
@@ -144,7 +146,7 @@ type ColorMeta = {
 }
 
 const _colorMetas = new Map<string, ColorMeta>();
-function colorIntMeta(colorInt: number): ColorMeta {
+export function colorIntMeta(colorInt: number): ColorMeta {
   const color = '#' + colorInt.toString(16).slice(-6);
   return colorMeta(color);
 }

@@ -46,6 +46,15 @@ CREATE TABLE users (
 );
 -- CREATE INDEX idx_users_username ON users(username);
 
+--TODO: Harden Auth: use the user_devices table and add an FK to it to user_refresh_tokens.
+--Then add refresh token rotation.
+CREATE TABLE user_devices (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  device_name VARCHAR NOT NULL,
+);
+CREATE UNIQUE INDEX idx_device_name ON user_devices(user_id, device_name);
+
 CREATE TABLE user_refresh_tokens (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -122,10 +131,13 @@ CREATE TABLE posts (
   preview BYTEA NULL DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL,
-  last_activity TIMESTAMP NOT NULL DEFAULT NOW()
+  last_activity_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 -- Speed up loading of posts by user.
 CREATE INDEX idx_post_vis_parent_created ON posts(visibility, parent_post_id, created_at);
+CREATE INDEX idx_post_vis_parent_activity ON posts(visibility, parent_post_id, last_activity_at);
+CREATE INDEX idx_post_vis_user_created ON posts(visibility, user_id, created_at);
+CREATE INDEX idx_post_vis_user_activity ON posts(visibility, user_id, last_activity_at);
 
 CREATE TABLE group_posts(
   id SERIAL PRIMARY KEY,
