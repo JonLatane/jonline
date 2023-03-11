@@ -1,17 +1,19 @@
-import { Button, Heading, Text, Paragraph, YStack } from '@jonline/ui'
-import { isClient, isWeb, Permission, ScrollView, TextArea, Tooltip, useWindowDimensions, XStack } from '@jonline/ui/src'
-import { ChevronLeft, ChevronRight, Edit, Eye } from '@tamagui/lucide-icons'
-import { loadUsername, loadUserPosts, RootState, selectUserById, updateUser, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
-import React, { useState, useEffect } from 'react'
+import { Moderation, Permission, User } from '@jonline/api'
+import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Text, TextArea, Tooltip, useWindowDimensions, XStack, YStack } from '@jonline/ui'
+import { CheckCircle, ChevronRight, Edit, Eye, AlertTriangle } from '@tamagui/lucide-icons';
+import { clearUserAlerts, loadUsername, loadUserPosts, RootState, selectUserById, updateUser, useCredentialDispatch, userSaved, useServerTheme, useTypedSelector } from 'app/store'
+import { pending } from 'app/utils/moderation'
+import React, { useEffect, useState } from 'react'
+import { FlatList } from 'react-native'
+import StickyBox from "react-sticky-box"
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
+import { useAccount } from '../../store/store'
+import { AsyncPostCard } from '../post/async_post_card'
+import { TamaguiMarkdown } from '../post/tamagui_markdown'
+import { ToggleRow } from '../settings_sheet'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import UserCard from './user_card'
-import { Dimensions, FlatList } from 'react-native';
-import StickyBox from "react-sticky-box";
-import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
-import { TamaguiMarkdown } from '../post/tamagui_markdown'
-import { AsyncPostCard } from '../post/async_post_card'
 
 
 const { useParam } = createParam<{ username: string }>()
@@ -37,15 +39,26 @@ export function UsernameDetailsScreen() {
   const avatar = useTypedSelector((state: RootState) => userId ? state.users.avatars[userId] : undefined);
   const [updatedAvatar, setUpdatedAvatar] = useState(avatar);
   const [editMode, setEditMode] = useState(false);
+  const [defaultFollowModeration, setDefaultFollowModeration] = useState(user?.defaultFollowModeration ?? Moderation.MODERATION_UNKNOWN);
+
+  const successSaving = useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
+  const dirtyData = name != user?.username || bio != user?.bio || updatedAvatar != avatar
+    || defaultFollowModeration != user?.defaultFollowModeration;
 
   const userPosts = useTypedSelector((state: RootState) => {
     return userId ? (state.users.idPosts ?? {})[userId] : undefined
   });
   const [loadingUserPosts, setLoadingUserPosts] = useState(false);
   useEffect(() => {
-    if (user && !name) setName(user.username);
-    if (user && !bio) setBio(user.bio);
-    if (avatar && !updatedAvatar) setUpdatedAvatar(avatar);
+    if (user && !name) {
+      setName(user.username);
+      setBio(user.bio);
+      setUpdatedAvatar(avatar);
+      setDefaultFollowModeration(user.defaultFollowModeration);
+    }
+    if (dirtyData && successSaving) {
+      dispatch(clearUserAlerts!());
+    }
     if (editMode && !canEdit) setEditMode(false);
     if (userId && !userPosts && !loadingUserPosts) {
       setLoadingUserPosts(true);
@@ -81,7 +94,7 @@ export function UsernameDetailsScreen() {
 
     setTimeout(() => dispatch(updateUser({
       ...accountOrServer,
-      user: { ...user!, bio: bio ?? '' },
+      user: { ...user!, bio: bio ?? '', defaultFollowModeration },
       avatar: avatar,
     })));
   }
@@ -99,8 +112,29 @@ export function UsernameDetailsScreen() {
               <YStack als='center' w='100%' p='$3' space>
                 {editMode ?
                   <TextArea value={bio} onChangeText={t => setBio(t)}
-                    placeholder={`Edit ${isCurrentUser ? 'your' : `${name}'s`} user bio. Markdown is supported.`} />
-                  : <TamaguiMarkdown text={bio!} />}
+                    placeholder={`Edit ${isCurrentUser ? 'your' : `${name}'s`} user bio. Markdown is supported.`}
+
+                    scale={1}
+                    y={0}
+                    enterStyle={{
+                      y: -50,
+                      opacity: 0,
+                    }}
+                    exitStyle={{
+                      opacity: 0,
+                    }} />
+                  : <YStack
+                    scale={1}
+                    y={0}
+                    enterStyle={{
+                      y: -50,
+                      opacity: 0,
+                    }}
+                    exitStyle={{
+                      opacity: 0,
+                    }}>
+                      <TamaguiMarkdown text={bio!} />
+                      </YStack>}
                 {/* {canEdit ?
                 <TextArea value={bio} onChangeText={t => setBio(t)}
                   placeholder='Your user bio' />
@@ -118,12 +152,16 @@ export function UsernameDetailsScreen() {
                   placeholder='Your user bio' />
                 : <TamaguiMarkdown text={bio!} />} */}
               </YStack>
-              <Button mt={-15} transparent>
+              <Button mt={-15} onPress={() => setShowPermissionsAndVisibility(!showPermissionsAndVisibility)} transparent>
                 <XStack ac='center' jc='center'>
                   <Heading size='$4' ta='center'>Visibility & Permissions</Heading>
-                  <ChevronRight />
+                  <XStack animation='bouncy' rotate={showPermissionsAndVisibility ? '90deg' : '0deg'}>
+                    <ChevronRight />
+                  </XStack>
                 </XStack>
               </Button>
+              <UserVisibilityPermissions expanded={showPermissionsAndVisibility}
+                {...{ user, defaultFollowModeration, setDefaultFollowModeration, editMode }} />
 
               {(userPosts || []).length > 0 ?
                 <>
@@ -166,9 +204,35 @@ export function UsernameDetailsScreen() {
                       <Heading size='$2'>Edit {isCurrentUser ? 'your' : 'this'} profile</Heading>
                     </Tooltip.Content>
                   </Tooltip>
+                  {dirtyData ? <YStack animation="bouncy"
+                    p='$3'
+                    opacity={1}
+                    scale={1}
+                    y={0}
+                    enterStyle={{ y: -50, opacity: 0, }}
+                    exitStyle={{ opacity: 0, }}>
+                    <AlertTriangle color='yellow' />
+                  </YStack> : <YStack animation="bouncy"
+                    p='$3'
+                    opacity={0}>
+                    <AlertTriangle color='yellow' />
+                  </YStack>}
                   <Button backgroundColor={primaryColor} als='center' onPress={saveUser}>
                     <Heading size='$2' color={primaryTextColor}>Save</Heading>
                   </Button>
+                  {successSaving ? <YStack animation="bouncy"
+                    p='$3'
+                    opacity={1}
+                    scale={1}
+                    y={0}
+                    enterStyle={{ y: -50, opacity: 0, }}
+                    exitStyle={{ opacity: 0, }}>
+                    <CheckCircle color='green' />
+                  </YStack> : <YStack animation="bouncy"
+                    p='$3'
+                    opacity={0}>
+                    <CheckCircle color='green' />
+                  </YStack>}
                   <XStack f={1} />
                 </XStack>
               </YStack>
@@ -185,4 +249,36 @@ export function UsernameDetailsScreen() {
       </YStack>
     </TabsNavigation>
   )
+}
+
+interface UserVisibilityPermissionsProps {
+  user: User,
+  defaultFollowModeration: Moderation,
+  setDefaultFollowModeration: (v: Moderation) => void,
+  expanded?: boolean;
+  editMode: boolean;
+}
+
+const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ user, defaultFollowModeration, setDefaultFollowModeration, editMode, expanded = true }) => {
+  const account = useAccount();
+  const isCurrentUser = account && account?.user?.id == user.id;
+  const isAdmin = account?.user?.permissions?.includes(Permission.ADMIN);
+  const canEdit = isCurrentUser || isAdmin;
+  return expanded ? <YStack animation="bouncy"
+    p='$3'
+    opacity={1}
+    scale={1}
+    y={0}
+    enterStyle={{
+      y: -50,
+      opacity: 0,
+    }}
+    exitStyle={{
+      opacity: 0,
+    }}>
+    <ToggleRow name={`Require${editMode && isCurrentUser ? '' : 's'} Permission to Follow`} value={pending(defaultFollowModeration)}
+      disabled={!editMode || !canEdit}
+      setter={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)} />
+
+  </YStack> : <></>;
 }

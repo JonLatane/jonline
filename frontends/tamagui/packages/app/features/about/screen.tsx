@@ -1,12 +1,8 @@
-import { Anchor, Button, H2, H4, Heading, Text, Paragraph, XStack, YStack } from '@jonline/ui';
-import { GetPostsRequest, isClient, ListItem, Spinner, useWindowDimensions, ZStack } from '@jonline/ui/src';
-import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global';
-import { RootState, selectAllPosts, setShowIntro, loadPostsPage, useCredentialDispatch, useTypedSelector, useServerTheme } from 'app/store';
-import React, { useState, useEffect } from 'react';
-import { FlatList, Linking, Platform } from 'react-native';
-import PostCard from '../post/post_card';
+import { Anchor, Button, H2, H4, Heading, isClient, ListItem, needsScrollPreservers, Paragraph, Text, useWindowDimensions, XStack, YStack } from '@jonline/ui';
+import { RootState, selectAllPosts, useCredentialDispatch, useTypedSelector } from 'app/store';
+import React, { useState } from 'react';
+import { Linking, Platform } from 'react-native';
 import { TabsNavigation } from '../tabs/tabs_navigation';
-import StickyBox from "react-sticky-box";
 
 const quotes = [
   'I read about it Jonline',

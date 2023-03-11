@@ -1,12 +1,12 @@
-import { useServerTheme, useTypedSelector, loadUser, useCredentialDispatch, RootState, selectUserById } from "app/store";
-import React, { useState, useEffect } from "react";
+import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import React, { useEffect, useState } from "react";
 
-import { Anchor, Image, Heading, Paragraph, Text, Tooltip, useMedia, XStack, YStack, Post, Author, Permission } from "@jonline/ui";
-import ReactMarkdown from 'react-markdown';
-import { FadeInView } from "./fade_in_view";
-import { useLink } from "solito/link";
+import { Permission, Post } from "@jonline/api";
+import { Anchor, Heading, Image, Tooltip, useMedia, XStack, YStack } from "@jonline/ui";
 import { Bot, Shield } from "@tamagui/lucide-icons";
 import moment from "moment";
+import { useLink } from "solito/link";
+import { FadeInView } from "./fade_in_view";
 
 export type AuthorInfoProps = {
   post: Post;

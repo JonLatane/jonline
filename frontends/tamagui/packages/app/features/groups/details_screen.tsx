@@ -1,15 +1,13 @@
-import { Paragraph, YStack } from '@jonline/ui'
-import { Anchor, Card, Group, GroupPost, Heading, Spinner, useWindowDimensions, XStack } from '@jonline/ui/src'
-import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
-import { loadPost, RootState, selectGroupById, selectPostById, loadGroupPosts, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
-import React, { useState, useEffect } from 'react'
-import ReactMarkdown from 'react-markdown'
+import { Group, GroupPost } from '@jonline/api'
+import { Card, dismissScrollPreserver, Heading, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui'
+import { loadGroupPosts, loadPost, RootState, selectGroupById, selectPostById, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
+import React, { useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
+import StickyBox from "react-sticky-box"
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
 import PostCard from '../post/post_card'
 import { TabsNavigation } from '../tabs/tabs_navigation'
-import StickyBox from "react-sticky-box";
 
 const { useParam } = createParam<{ shortname: string }>()
 

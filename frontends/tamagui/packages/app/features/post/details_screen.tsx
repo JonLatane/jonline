@@ -1,16 +1,15 @@
-import { GetPostsRequest, Spinner, Heading, Paragraph, Permission, XStack, YStack, } from '@jonline/ui'
-import { Button, isWeb, isClient, Post, ScrollView, TextArea, useWindowDimensions, Tooltip, ZStack } from '@jonline/ui/src'
-import { clearPostAlerts, loadPost, loadPostReplies, RootState, selectGroupById, selectPostById, loadPostsPage, useCredentialDispatch, useTypedSelector, useServerTheme, useLocalApp, setDiscussionChatUI, useTypedDispatch, confirmReplySent, replyToPost } from 'app/store'
-import React, { useState, useEffect, useReducer } from 'react'
-import { FlatList, View } from 'react-native'
-import { createParam } from 'solito'
-import { TabsNavigation } from '../tabs/tabs_navigation'
-import PostCard, { } from './post_card'
-import StickyBox from 'react-sticky-box'
-import { Edit, Eye, ListEnd, ListStart, Send as SendIcon } from '@tamagui/lucide-icons'
+import { Permission, Post } from '@jonline/api'
+import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Spinner, TextArea, Tooltip, useWindowDimensions, XStack, YStack, ZStack } from '@jonline/ui'
+import { Edit, Eye, ListEnd, Send as SendIcon } from '@tamagui/lucide-icons'
+import { confirmReplySent, loadPost, loadPostReplies, replyToPost, RootState, selectGroupById, selectPostById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
 import moment, { Moment } from 'moment'
-import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
+import React, { useEffect, useReducer, useState } from 'react'
+import { FlatList, View } from 'react-native'
+import StickyBox from 'react-sticky-box'
+import { createParam } from 'solito'
 import { AddAccountSheet } from '../accounts/add_account_sheet'
+import { TabsNavigation } from '../tabs/tabs_navigation'
+import PostCard from './post_card'
 import { TamaguiMarkdown } from './tamagui_markdown'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
@@ -408,7 +407,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
             <TextArea f={1} value={replyText} ref={textAreaRef}
               disabled={isSendingReply} opacity={isSendingReply ? 0.5 : 1}
               onChangeText={t => setReplyText(t)}
-              onFocus={() => {_replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/}}
+              onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
               onBlur={() => _replyTextFocused = false}
               placeholder={`Reply to this post. Markdown is supported.`} />
             {previewReply

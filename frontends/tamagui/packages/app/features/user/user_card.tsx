@@ -1,6 +1,7 @@
-import { Card, Heading, Image, Theme, useMedia, User, XStack, YStack } from "@jonline/ui";
-import { Button, Permission, Tooltip } from "@jonline/ui/src";
+import { Card, Heading, Image, Theme, useMedia, XStack, YStack, Button, Tooltip } from "@jonline/ui";
+import { Permission, User } from "@jonline/api";
 import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
+
 import { loadUser, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import { passes } from "app/utils/moderation";
 import React, { useEffect } from "react";
@@ -59,10 +60,10 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
         animation="bouncy"
         // scale={0.9}
         width={isPreview ? 260 : '100%'}
-        // width={400}
-        // hoverStyle={{ scale: 0.925 }}
-        // pressStyle={{ scale: 0.875 }}
-        >
+      // width={400}
+      // hoverStyle={{ scale: 0.925 }}
+      // pressStyle={{ scale: 0.875 }}
+      >
         <Card.Header>
           <XStack>
             <YStack f={1}>
@@ -116,9 +117,9 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
                 borderRadius={10}
               // borderBottomRightRadius={5}
               /> : undefined}
-              {followsCurrentUser ? <Heading size='$1' ta='center'>{following ? 'Friends' : 'Follows You'}</Heading> : undefined}
-              {followRequestReceived ? <>
-                <Heading size='$1' ta='center'>Wants to follow you</Heading>
+            {followsCurrentUser ? <Heading size='$1' ta='center'>{following ? 'Friends' : 'Follows You'}</Heading> : undefined}
+            {followRequestReceived ? <>
+              <Heading size='$1' ta='center'>Wants to follow you</Heading>
               <XStack ac='center' jc='center'>
                 <Button onPress={(e) => doRespondToFollowRequest(e, true)} backgroundColor={primaryColor}>
                   <Heading size='$2' color={primaryTextColor}>
@@ -131,15 +132,15 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
                   </Heading>
                 </Button>
               </XStack>
-              </>: undefined}
-              {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack ac='center' jc='center'>
-                <Button onPress={onFollowPressed} backgroundColor={!following && !followRequested ? primaryColor : undefined}>
-                  <Heading size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
-                    {!following && !followRequested ? 'Follow'
-                      : following ? 'Unfollow' : 'Cancel Request'}
-                  </Heading>
-                </Button>
-              </XStack> : undefined}
+            </> : undefined}
+            {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack ac='center' jc='center'>
+              <Button onPress={onFollowPressed} backgroundColor={!following && !followRequested ? primaryColor : undefined}>
+                <Heading size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
+                  {!following && !followRequested ? 'Follow'
+                    : following ? 'Unfollow' : 'Cancel Request'}
+                </Heading>
+              </Button>
+            </XStack> : undefined}
             <XStack>
               <Heading size='$1' f={1}>{user.followerCount} followers</Heading>
               <Heading size='$1' f={1} ta='right'>following {user.followingCount}</Heading>
@@ -152,7 +153,7 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
               <Heading size='$1'>{user.id}</Heading>
               <XStack f={1} />
               {isCurrentUser && setAvatar ? <Camera /> : undefined}
-            </XStack>: undefined}
+            </XStack> : undefined}
           </YStack>
         </Card.Footer>
         <Card.Background>

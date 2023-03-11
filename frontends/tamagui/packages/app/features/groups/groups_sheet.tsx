@@ -1,9 +1,8 @@
-import { Button, Heading, Popover, useMedia } from '@jonline/ui';
-import { Adapt, Anchor, GetGroupsRequest, Group, Input, Label, Paragraph, ScrollView, Sheet, TamaguiElement, Theme, XStack, YGroup, YStack } from '@jonline/ui/src';
+import { GetGroupsRequest, Group } from '@jonline/api';
+import { Button, Heading, Input, Paragraph, Sheet, Theme, useMedia, XStack, YStack } from '@jonline/ui';
 import { Boxes, ChevronDown, Info, Search, Users, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, selectAllGroups, selectAllServers, updateGroups, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
-import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { RootState, selectAllGroups, updateGroups, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import React, { useEffect, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useLink } from 'solito/link';
 import { } from '../post/post_card';
@@ -33,7 +32,7 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
   const groupsState = useTypedSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
   useEffect(() => {
-    if ( !loadingGroups && groupsState.status == 'unloaded') {
+    if (!loadingGroups && groupsState.status == 'unloaded') {
       setLoadingGroups(true);
       reloadGroups();
     } else if (loadingGroups && !['unloaded', 'loading'].includes(groupsState.status)) {

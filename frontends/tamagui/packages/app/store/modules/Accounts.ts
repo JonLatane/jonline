@@ -1,7 +1,6 @@
 import { grpc } from "@improbable-eng/grpc-web";
-import { formatError } from "@jonline/ui/src";
-import { CreateAccountRequest, LoginRequest } from "@jonline/ui/src/generated/authentication";
-import { ExpirableToken } from "@jonline/ui/types";
+import { CreateAccountRequest, ExpirableToken, LoginRequest } from "@jonline/api";
+import { formatError } from "@jonline/ui";
 import {
   createAsyncThunk,
   createEntityAdapter,
@@ -13,7 +12,7 @@ import {
 import moment from "moment";
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import { store, getServerClient, resetCredentialedData } from "../store";
+import { getServerClient, resetCredentialedData, store } from "../store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient, JonlineServer } from "../types";
 import { serverUrl } from "./servers";
 

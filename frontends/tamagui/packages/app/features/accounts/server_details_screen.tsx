@@ -1,17 +1,16 @@
-import { Button, formatError, Heading, Input, Paragraph, ServerConfiguration, TextArea, XStack, YStack } from '@jonline/ui'
-import { isWeb, Permission, ScrollView, useWindowDimensions } from '@jonline/ui/src'
+import { Permission, ServerConfiguration } from '@jonline/api'
+import { Button, formatError, Heading, Input, isWeb, Paragraph, ScrollView, TextArea, useWindowDimensions, XStack, YStack } from '@jonline/ui'
+import { Info } from '@tamagui/lucide-icons'
 import { getCredentialClient, JonlineServer, RootState, selectServer, selectServerById, serverUrl, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useState } from 'react'
 import { HexColorPicker } from "react-colorful"
-import { Dimensions } from 'react-native';
+import StickyBox from "react-sticky-box"
 import { createParam } from 'solito'
+import { useLink } from 'solito/link'
+import { colorMeta } from '../../store/store'
+import { TamaguiMarkdown } from '../post/tamagui_markdown'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import ServerCard from './server_card'
-import StickyBox from "react-sticky-box";
-import { useLink } from 'solito/link'
-import { Info } from '@tamagui/lucide-icons'
-import { TamaguiMarkdown } from '../post/tamagui_markdown'
-import { colorMeta } from '../../store/store';
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -62,8 +61,8 @@ export function ServerDetailsScreen() {
   if (navColorHex != navColor && navColorHex == '#FFFFFF') {
     setNavColorHex(navColor);
   }
-  const {textColor: primaryTextColor} = colorMeta(primaryColor);
-  const {textColor: navTextColor} = colorMeta(navColor);
+  const { textColor: primaryTextColor } = colorMeta(primaryColor);
+  const { textColor: navTextColor } = colorMeta(navColor);
   const { warningAnchorColor } = useServerTheme();
 
   async function updateServer() {

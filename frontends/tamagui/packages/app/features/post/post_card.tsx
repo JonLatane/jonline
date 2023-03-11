@@ -1,16 +1,15 @@
 import { colorMeta, loadPostPreview, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
-import { Platform, View, GestureResponderEvent } from "react-native";
+import { GestureResponderEvent, Platform, View } from "react-native";
 
-import { Anchor, Button, Card, Group, Heading, Image, Post, Tooltip, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
-import { Permission, Theme } from "@jonline/ui/src";
-import { Bot, ChevronRight, Shield } from "@tamagui/lucide-icons";
+import { Group, Post } from "@jonline/api";
+import { Anchor, Button, Card, Heading, Image, Theme, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import { ChevronRight } from "@tamagui/lucide-icons";
 import { useOnScreen } from "app/hooks/use_on_screen";
-import moment from 'moment';
 import { useLink } from "solito/link";
+import { AuthorInfo } from "./author_info";
 import { FadeInView } from "./fade_in_view";
 import { TamaguiMarkdown } from "./tamagui_markdown";
-import { AuthorInfo } from "./author_info";
 
 interface Props {
   post: Post;

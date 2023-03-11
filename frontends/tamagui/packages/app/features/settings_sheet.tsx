@@ -20,27 +20,12 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   const app = useTypedSelector((state: RootState) => state.app);
   const accountCount = useTypedSelector((state: RootState) => selectAccountTotal(state.accounts));
   const serverCount = useTypedSelector((state: RootState) => selectServerTotal(state.servers));
-  // const forceUpdate: () => void = React.useState({})[1].bind(null, {})  // see NOTE below
-  // const { darkMode: systemDark } = useServerTheme();
-  // debugger;
+
   function doResetAllData() {
     resetAllData();
     setTimeout(forceUpdate, 2000);
   }
 
-  // const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void;
-
-  function toggleRow(name: string, value: boolean, setter: (value: boolean) => any, disabled: boolean = false) {
-    return <XStack space='$3' o={disabled ? 0.5 : 1}>
-      <Label f={1}>{name}</Label>
-      <Switch size="$5" style={{ marginLeft: 'auto', marginRight: 'auto' }}
-        defaultChecked={value}
-        {...{ disabled }}
-        onCheckedChange={(checked) => dispatch(setter(checked))}>
-        <Switch.Thumb animation="quick" backgroundColor='black' />
-      </Switch>
-    </XStack>;
-  }
 
   return (
     <>
@@ -76,7 +61,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
             <YStack maxWidth={800} width='100%' alignSelf='center' space='$3'>
               <Heading>Settings</Heading>
               {/* {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)} */}
-              {toggleRow('Auto-Refresh Discussion Chat', app.autoRefreshDiscussions, setAutoRefreshDiscussions)}
+              <ToggleRow name='Auto-Refresh Discussion Chat' value={app.autoRefreshDiscussions} setter={setAutoRefreshDiscussions} autoDispatch/>
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.autoRefreshDiscussions ? 1 : 0.5}>Only supported in Chat Mode.</Paragraph>
 
               <XStack opacity={app.autoRefreshDiscussions ? 1 : 0.5}>
@@ -97,15 +82,15 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </YStack>
               </XStack>
               <Heading size='$3' mt='$3'>Multi-Server</Heading>
-              {toggleRow('Allow Server Selection', app.allowServerSelection, setAllowServerSelection)}
+              <ToggleRow name='Allow Server Selection' value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch/>
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
-              {toggleRow('Group Accounts by Server', app.separateAccountsByServer, setSeparateAccountsByServer, !app.allowServerSelection)}
+              <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch/>
               <Heading size='$3' mt='$3'>Testing</Heading>
-              {toggleRow('Auto Dark Mode', app.darkModeAuto, setDarkModeAuto)}
-              {toggleRow('Dark Mode', app.darkMode, setDarkMode, app.darkModeAuto)}
+              <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch/>
+              <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch/>
               <Heading size='$3' mt='$3'>Development</Heading>
-              {toggleRow('Show User IDs', app.showUserIds, setShowUserIds)}
-              {toggleRow('Show (WIP) Extended Navigation', app.showBetaNavigation, setShowBetaNavigation)}
+              <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch/>
+              <ToggleRow name='Show (WIP) Extended Navigation' value={app.showBetaNavigation} setter={setShowBetaNavigation} autoDispatch/>
 
               {/* <XStack>
                 <Button f={1} icon={XIcon} onPress={resetCredentialedData}>
@@ -178,4 +163,24 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
       </Sheet>
     </>
   )
+}
+
+export interface ToggleRowProps {
+  name: string;
+  value: boolean;
+  setter: (value: boolean) => any;
+  disabled?: boolean;
+  autoDispatch?: boolean;
+}
+export function ToggleRow({ name, value, setter, disabled = false, autoDispatch = false }: ToggleRowProps) {
+  const dispatch = useTypedDispatch();
+  return <XStack space='$3' o={disabled ? 0.5 : 1}>
+      <Label f={1}>{name}</Label>
+      <Switch size="$5" style={{ marginLeft: 'auto', marginRight: 'auto' }}
+        defaultChecked={value}
+        {...{ disabled }}
+        onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
+        <Switch.Thumb animation="quick" backgroundColor='black' />
+      </Switch>
+    </XStack>;
 }

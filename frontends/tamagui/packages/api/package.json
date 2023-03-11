@@ -1,12 +1,12 @@
 {
-  "name": "@jonline/ui",
+  "name": "@jonline/api",
   "version": "0.0.1",
   "sideEffects": [
     "*.css"
   ],
   "private": true,
   "types": "./types/index",
-  "main": "src/index.tsx",
+  "main": "index.tsx",
   "module:jsx": "src",
   "files": [
     "types",

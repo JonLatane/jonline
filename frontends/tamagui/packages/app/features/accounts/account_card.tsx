@@ -1,7 +1,8 @@
+import { Permission } from "@jonline/api";
 import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
-import { Permission } from "@jonline/ui/src";
+
 import { Bot, Shield, Trash, User as UserIcon } from "@tamagui/lucide-icons";
-import { store, JonlineAccount, removeAccount, selectAccount, selectServer, useTypedDispatch, accountId } from "app/store";
+import { accountId, JonlineAccount, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
 import React from "react";
 import { View } from "react-native";
 import { useLink } from "solito/link";

@@ -1,5 +1,5 @@
 import { grpc } from "@improbable-eng/grpc-web";
-import { ExpirableToken, GetServiceVersionResponse, Jonline, RefreshTokenResponse, ServerConfiguration, User } from "@jonline/ui/src";
+import { ExpirableToken, GetServiceVersionResponse, Jonline, ServerConfiguration, User } from "@jonline/api";
 
 export type JonlineServer = {
   host: string;
@@ -16,6 +16,7 @@ export type JonlineAccount = {
   server: JonlineServer;
 }
 
+// Note that this is inclusive-or
 export type AccountOrServer = {
   account?: JonlineAccount;
   server?: JonlineServer;

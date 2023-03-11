@@ -1,5 +1,5 @@
-import { Button, Heading, Popover, ScrollView, Theme, useMedia, WebUserInterface, XStack, YStack } from "@jonline/ui/src";
-import { Group } from "@jonline/ui/types";
+import { Group, WebUserInterface } from "@jonline/api";
+import { Button, Heading, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useTheme } from "@react-navigation/native";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, useServerTheme, useTypedSelector } from "app/store";

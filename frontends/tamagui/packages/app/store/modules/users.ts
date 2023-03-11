@@ -1,5 +1,5 @@
-import { Follow, formatError, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostListingType, User } from "@jonline/ui/src";
-import { Empty } from "@jonline/ui/src/generated/google/protobuf/empty";
+import { Empty, Follow, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostListingType, User } from "@jonline/api";
+import { formatError } from "@jonline/ui";
 import {
   AsyncThunk,
   createAsyncThunk,
@@ -144,6 +144,7 @@ export type UpdateUser = { user: User, avatar?: string } & AccountOrServer;
 //   user: User;
 //   avatar: string;
 // }
+export const userSaved = 'User Saved';
 export const updateUser: AsyncThunk<LoadUserResult, UpdateUser, any> = createAsyncThunk<LoadUserResult, UpdateUser>(
   "users/update",
   async (request) => {
@@ -239,6 +240,9 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
         state.avatars[action.payload.user.id] = action.payload.avatar;
         state.usernameIds[action.payload.user.username] = action.payload.user.id;
         state.successMessage = `User data for ${action.payload.user.id}:${action.payload.user.username} loaded.`;
+        if (loader == updateUser) {
+          state.successMessage = userSaved;
+        }
       });
       builder.addCase(loader.rejected, (state, action) => {
         state.status = "errored";
@@ -305,7 +309,7 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
   },
 });
 
-export const { removeUser, clearUserAlerts, resetUsers } = usersSlice.actions;
+export const { removeUser, clearUserAlerts, resetUsers, upsertUser } = usersSlice.actions;
 
 export const { selectAll: selectAllUsers, selectById: selectUserById } = usersAdapter.getSelectors();
 export const usersReducer = usersSlice.reducer;

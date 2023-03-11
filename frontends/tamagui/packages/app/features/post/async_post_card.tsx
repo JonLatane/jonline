@@ -1,15 +1,7 @@
-import { Paragraph, YStack } from '@jonline/ui'
-import { Anchor, Card, Group, GroupPost, Heading, Spinner, useWindowDimensions, XStack } from '@jonline/ui/src'
-import { dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui/src/global'
-import { loadPost, RootState, selectGroupById, selectPostById, loadGroupPosts, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
-import React, { useState, useEffect } from 'react'
-import ReactMarkdown from 'react-markdown'
-import { FlatList } from 'react-native'
-import { createParam } from 'solito'
-import { useLink } from 'solito/link'
+import { Card, Spinner } from '@jonline/ui'
+import { RootState, selectPostById, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
+import React, { useEffect, useState } from 'react'
 import PostCard from './post_card'
-import { TabsNavigation } from '../tabs/tabs_navigation'
-import StickyBox from "react-sticky-box";
 
 export type AsyncPostCardProps = {
   postId: string;

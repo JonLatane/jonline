@@ -1,4 +1,6 @@
-import { formatError, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, PostListingType } from "@jonline/ui/src";
+import { GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, PostListingType } from "@jonline/api";
+import { formatError } from "@jonline/ui";
+
 import {
   AsyncThunk,
   createAsyncThunk,

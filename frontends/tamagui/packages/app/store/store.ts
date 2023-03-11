@@ -1,6 +1,6 @@
 import { ReactNativeTransport } from "@improbable-eng/grpc-web-react-native-transport";
-import { Jonline, JonlineClientImpl, useTheme } from "@jonline/ui/src";
-import { GrpcWebImpl } from "@jonline/ui/src/generated/jonline";
+import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/api";
+import { useTheme } from "@jonline/ui";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AnyAction, combineReducers, configureStore, Store, ThunkDispatch } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
@@ -65,17 +65,19 @@ export function useTypedDispatch(): AppDispatch {
   return useDispatch<AppDispatch>()
 };
 
+export const useAccount = () => useTypedSelector((state: RootState) => state.accounts.account);
+export const useServer = () => useTypedSelector((state: RootState) => state.servers.server);
+
+export function useAccountOrServer(): AccountOrServer {
+  return { account: useAccount(), server: useServer() };
+}
+
 export type CredentialDispatch = {
   dispatch: AppDispatch;
   accountOrServer: AccountOrServer;
 };
 export function useCredentialDispatch(): CredentialDispatch {
-  let dispatch: AppDispatch = useTypedDispatch();
-  let accountOrServer = {
-    account: useTypedSelector((state: RootState) => state.accounts.account),
-    server: useTypedSelector((state: RootState) => state.servers.server)
-  }
-  return { dispatch, accountOrServer };
+  return { dispatch: useTypedDispatch(), accountOrServer: useAccountOrServer() };
 }
 
 export type ServerTheme = {

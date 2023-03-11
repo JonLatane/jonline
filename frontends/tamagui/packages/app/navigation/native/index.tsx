@@ -1,15 +1,15 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import React from 'react'
 
-import { Heading, Theme } from '@jonline/ui/src'
+import { Heading, Theme } from '@jonline/ui'
+import { AboutScreen } from 'app/features/about/screen'
 import { AccountsSheet } from 'app/features/accounts/accounts_sheet'
+import { GroupDetailsScreen } from 'app/features/groups/details_screen'
 import { PostDetailsScreen } from 'app/features/post/details_screen'
 import { UsernameDetailsScreen } from 'app/features/user/username_details_screen'
 import { RootState, useTypedSelector } from 'app/store'
 import { HomeScreen } from '../../features/home/screen'
 import { UserDetailsScreen } from '../../features/user/details_screen'
-import { GroupDetailsScreen } from 'app/features/groups/details_screen'
-import { AboutScreen } from 'app/features/about/screen'
 
 const Stack = createNativeStackNavigator<{
   home: undefined,
@@ -45,36 +45,36 @@ export function NativeNavigation() {
   let headerStyle = { backgroundColor, };
   // let accountsButton = <Button icon={UserIcon} onClick={()=>{}} size='$2' />;
   let accountsButton = <Theme name='dark'>
-    <AccountsSheet size='$3' circular/>
+    <AccountsSheet size='$3' circular />
   </Theme>;
 
-  let defaultOptions = { 
-    headerStyle, 
+  let defaultOptions = {
+    headerStyle,
     // headerLargeTitle: true,
     headerRight: () => accountsButton,
     headerTintColor: navColor,
-    headerTitle: ({children}) => <Heading>{children}</Heading>,
-    
+    headerTitle: ({ children }) => <Heading>{children}</Heading>,
+
     // headerRightContainerStyle: { paddingRight: 25 },
   }
   return (
     <Stack.Navigator>
-    <Stack.Screen
-      name="home"
-      component={HomeScreen}
-      options={{
-        title: 'Home',
-        ...defaultOptions,
-      }}
-    />
-    <Stack.Screen
-      name="about"
-      component={AboutScreen}
-      options={{
-        title: 'About',
-        ...defaultOptions,
-      }}
-    />
+      <Stack.Screen
+        name="home"
+        component={HomeScreen}
+        options={{
+          title: 'Home',
+          ...defaultOptions,
+        }}
+      />
+      <Stack.Screen
+        name="about"
+        component={AboutScreen}
+        options={{
+          title: 'About',
+          ...defaultOptions,
+        }}
+      />
       <Stack.Screen
         name="userDetails"
         component={UserDetailsScreen}
