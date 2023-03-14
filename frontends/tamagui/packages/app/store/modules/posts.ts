@@ -12,12 +12,15 @@ import moment from "moment";
 import { loadGroupPosts } from "./groups";
 import { createPost, defaultPostListingType, LoadPost, loadPost, loadPostPreview, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
 import { loadUserPosts } from "./users";
+import { Visibility } from '../../../api/generated/visibility_moderation';
+import { publicVisibility } from "app/utils/visibility";
 export * from './post_actions';
 
 export interface PostsState {
   baseStatus: "unloaded" | "loading" | "loaded" | "errored";
   status: "unloaded" | "loading" | "loaded" | "errored";
-  sendReplyStatus: "sending" | "sent" | "errored" | undefined;
+  sendReplyStatus?: "sending" | "sent" | "errored";
+  createPostStatus?: "posting" | "posted" | "errored";
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -68,6 +71,8 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.errorMessage = undefined;
       state.successMessage = undefined;
       state.error = undefined;
+      state.createPostStatus = undefined;
+      state.sendReplyStatus = undefined;
     },
     confirmReplySent: (state) => {
       state.sendReplyStatus = undefined;
@@ -76,15 +81,23 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   extraReducers: (builder) => {
     builder.addCase(createPost.pending, (state) => {
       state.status = "loading";
+      state.createPostStatus = "posting";
       state.error = undefined;
     });
     builder.addCase(createPost.fulfilled, (state, action) => {
       state.status = "loaded";
+      state.createPostStatus = "posted";
       postsAdapter.upsertOne(state, action.payload);
+      if (publicVisibility(action.payload.visibility)) {
+        state.postPages[defaultPostListingType] = state.postPages[defaultPostListingType] || {};
+        const firstPage = state.postPages[defaultPostListingType][0] || [];
+        state.postPages[defaultPostListingType][0] = [action.payload.id, ...firstPage];
+      }
       state.successMessage = `Post created.`;
     });
     builder.addCase(createPost.rejected, (state, action) => {
       state.status = "errored";
+      state.createPostStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;

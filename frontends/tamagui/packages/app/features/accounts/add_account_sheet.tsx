@@ -109,7 +109,12 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
       <Button backgroundColor={primaryColor} color={primaryTextColor}
         disabled={serversState.server === undefined}
         onPress={() => setOpen((x) => !x)}>
-        Login or Create Account to {operation}
+        <Heading size='$2' color={primaryTextColor}>
+          Login/Create Account
+        </Heading>
+        <Heading size='$1' color={primaryTextColor}>
+          to {operation}
+        </Heading>
       </Button>
       <Sheet
         modal

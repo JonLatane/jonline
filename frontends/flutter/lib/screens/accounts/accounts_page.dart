@@ -5,8 +5,8 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
-import 'package:implicitly_animated_reorderable_list_2/implicitly_animated_reorderable_list_2.dart';
-import 'package:implicitly_animated_reorderable_list_2/transitions.dart';
+import 'package:animated_list_plus/animated_list_plus.dart';
+import 'package:animated_list_plus/transitions.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/screens/accounts/server_configuration_page.dart';
 

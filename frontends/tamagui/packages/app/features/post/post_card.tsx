@@ -182,7 +182,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             padding='$0'
             f={isPreview ? undefined : 1}
             animation="bouncy"
-            pressStyle={{ scale: 0.990 }}
+            pressStyle={preview || post.replyToPostId ? { scale: 0.990 } : {}}
             ref={ref!}
             {...postLinkProps}
 

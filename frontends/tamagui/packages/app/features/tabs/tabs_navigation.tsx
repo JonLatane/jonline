@@ -8,26 +8,7 @@ import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupsSheet } from "../groups/groups_sheet";
-
-
-export enum AppSection {
-  HOME = 'home',
-  POSTS = 'posts',
-  EVENTS = 'events',
-}
-
-export function sectionTitle(section: AppSection) {
-  switch (section) {
-    case AppSection.HOME:
-      return 'Latest';
-    case AppSection.POSTS:
-      return 'Posts';
-    case AppSection.EVENTS:
-      return 'Events';
-    default:
-      return 'Latest';
-  }
-}
+import { AppSection, FeaturesNavigation, sectionTitle } from "./features_navigation";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -95,69 +76,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
               <ScrollView horizontal>
                 <XStack w={1} />
                 <GroupsSheet selectedGroup={selectedGroup} />
-                {app.showBetaNavigation ? <>
-                  <XStack w={selectedGroup ? 11 : 3.5} />
-                  <Popover size="$5">
-                    <Popover.Trigger asChild>
-                      <Button transparent>
-                        <Heading size="$4">{sectionTitle(appSection)}</Heading>
-                      </Button>
-                    </Popover.Trigger>
-
-                    {/* <Adapt when="sm" platform="web">
-        <Popover.Sheet modal dismissOnSnapToBottom>
-          <Popover.Sheet.Frame padding="$4">
-            <Adapt.Contents />
-          </Popover.Sheet.Frame>
-          <Popover.Sheet.Overlay />
-        </Popover.Sheet>
-      </Adapt> */}
-
-                    <Popover.Content
-                      bw={1}
-                      boc="$borderColor"
-                      enterStyle={{ x: 0, y: -10, o: 0 }}
-                      exitStyle={{ x: 0, y: -10, o: 0 }}
-                      x={0}
-                      y={0}
-                      o={1}
-                      animation={[
-                        'quick',
-                        {
-                          opacity: {
-                            overshootClamping: true,
-                          },
-                        },
-                      ]}
-                      elevate
-                    >
-                      <Popover.Arrow bw={1} boc="$borderColor" />
-
-                      <YStack space="$3">
-                        {/* <XStack space="$3">
-            <Label size="$3" htmlFor={'asdf'}>
-              Name
-            </Label>
-            <Input size="$3" id={'asdf'} />
-          </XStack> */}
-
-                        {[AppSection.HOME, AppSection.POSTS, AppSection.EVENTS].map((section) =>
-                          <Popover.Close asChild>
-                            <Button
-                              // bordered={false}
-                              transparent
-                              size="$3"
-                              disabled={appSection == section}
-                              onPress={() => { }}
-                            >
-                              <Heading size="$4">{sectionTitle(section)}</Heading>
-                            </Button>
-                          </Popover.Close>)
-                        }
-                      </YStack>
-                    </Popover.Content>
-                  </Popover>
-                </> : undefined}
+                {app.showBetaNavigation ? <FeaturesNavigation {...{appSection, selectedGroup}} /> : undefined}
               </ScrollView>
               <XStack f={1} />
               <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />

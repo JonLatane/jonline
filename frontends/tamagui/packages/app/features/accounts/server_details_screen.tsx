@@ -131,7 +131,7 @@ export function ServerDetailsScreen() {
                   : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
                 <Heading size='$3'>Description</Heading>
                 {isAdmin ?
-                  <TextArea value={description ?? ''} onChangeText={t => setDescription(t)}
+                  <TextArea value={description ?? ''} onChangeText={t => setDescription(t)} h='$14'
                     placeholder='A description of the purpose of your community, any general guidelines, etc.' />
                   : description && description != ''
                     ? <TamaguiMarkdown text={description} />

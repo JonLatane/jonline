@@ -1,9 +1,9 @@
-import { Card, Heading, Image, Theme, useMedia, XStack, YStack, Button, Tooltip } from "@jonline/ui";
+import { Card, Heading, Image, Theme, useMedia, XStack, YStack, Button, Tooltip, Paragraph } from '@jonline/ui';
 import { Permission, User } from "@jonline/api";
 import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
 
 import { loadUser, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
-import { passes } from "app/utils/moderation";
+import { passes, pending } from "app/utils/moderation";
 import React, { useEffect } from "react";
 import { FadeInView } from "../post/fade_in_view";
 import { } from "../post/post_card";
@@ -32,6 +32,8 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
   const followRequested = user.currentUserFollow && !following;
   const followsCurrentUser = passes(user.targetCurrentUserFollow?.targetUserModeration);
   const followRequestReceived = user.targetCurrentUserFollow && !followsCurrentUser;
+
+  const requiresPermissionToFollow = pending(user.defaultFollowModeration);
 
   const onFollowPressed = (e: GestureResponderEvent) => {
     e.stopPropagation();
@@ -72,6 +74,11 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
               {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
               <Heading size="$7" marginRight='auto'>{user.username}</Heading>
             </YStack>
+
+            {app.showUserIds ? <XStack o={0.6}>
+              <Heading size='$1'>{user.id}</Heading>
+              {/* <XStack f={1} /> */}
+            </XStack> : undefined}
 
             {user.permissions.includes(Permission.ADMIN)
               ? <Tooltip placement="bottom-end">
@@ -120,7 +127,7 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
             {followsCurrentUser ? <Heading size='$1' ta='center'>{following ? 'Friends' : 'Follows You'}</Heading> : undefined}
             {followRequestReceived ? <>
               <Heading size='$1' ta='center'>Wants to follow you</Heading>
-              <XStack ac='center' jc='center'>
+              <XStack ac='center' jc='center' mb='$2'>
                 <Button onPress={(e) => doRespondToFollowRequest(e, true)} backgroundColor={primaryColor}>
                   <Heading size='$2' color={primaryTextColor}>
                     Accept
@@ -133,12 +140,22 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
                 </Button>
               </XStack>
             </> : undefined}
+            {/* {followRequestReceived && accountOrServer.account && accountOrServer.account.user.id != user.id
+              ? <YStack h='$2' /> : undefined} */}
             {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack ac='center' jc='center'>
-              <Button onPress={onFollowPressed} backgroundColor={!following && !followRequested ? primaryColor : undefined}>
-                <Heading size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
-                  {!following && !followRequested ? 'Follow'
-                    : following ? 'Unfollow' : 'Cancel Request'}
-                </Heading>
+              <Button backgroundColor={!following && !followRequested ? primaryColor : undefined}
+                mb='$2'
+                p='$3'
+                onPress={onFollowPressed}>
+                <YStack jc='center' ac='center'>
+                  <Heading jc='center' ta='center' size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
+                    {!following && !followRequested ? requiresPermissionToFollow ? 'Follow Request' : 'Follow'
+                      : following ? 'Unfollow' : 'Cancel Request'}
+                  </Heading>
+                  {requiresPermissionToFollow && following ? <Paragraph size='$1'>
+                    Permission required to re-follow
+                  </Paragraph> : undefined}
+                </YStack>
               </Button>
             </XStack> : undefined}
             <XStack>
@@ -149,11 +166,7 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
               <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
               <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
             </XStack>
-            {app.showUserIds ? <XStack>
-              <Heading size='$1'>{user.id}</Heading>
-              <XStack f={1} />
-              {isCurrentUser && setAvatar ? <Camera /> : undefined}
-            </XStack> : undefined}
+            {isCurrentUser && setAvatar ? <Camera /> : undefined}
           </YStack>
         </Card.Footer>
         <Card.Background>

@@ -107,34 +107,20 @@ export function UsernameDetailsScreen() {
       <YStack f={1} jc="center" ai="center" space margin='$3' w='100%'>
         {user ? <>
           <ScrollView w='100%'>
-            <YStack maw={800} w='100%' als='center' marginHorizontal='auto'>
+            <YStack maw={800} w='100%' als='center' p='$2' marginHorizontal='auto'>
               <UserCard user={user} setUsername={editMode ? setName : undefined} setAvatar={editMode ? setUpdatedAvatar : undefined} />
-              <YStack als='center' w='100%' p='$3' space>
+              <YStack als='center' w='100%' paddingHorizontal='$2' paddingVertical='$3' space>
                 {editMode ?
                   <TextArea value={bio} onChangeText={t => setBio(t)}
+                    // size='$5'
+                    h='$14'
                     placeholder={`Edit ${isCurrentUser ? 'your' : `${name}'s`} user bio. Markdown is supported.`}
-
+                    o={1}
                     scale={1}
                     y={0}
-                    enterStyle={{
-                      y: -50,
-                      opacity: 0,
-                    }}
-                    exitStyle={{
-                      opacity: 0,
-                    }} />
-                  : <YStack
-                    scale={1}
-                    y={0}
-                    enterStyle={{
-                      y: -50,
-                      opacity: 0,
-                    }}
-                    exitStyle={{
-                      opacity: 0,
-                    }}>
-                      <TamaguiMarkdown text={bio!} />
-                      </YStack>}
+                    enterStyle={{ y: -50, o: 0, }}
+                    exitStyle={{ o: 0, }} />
+                  : <TamaguiMarkdown text={bio!} />}
                 {/* {canEdit ?
                 <TextArea value={bio} onChangeText={t => setBio(t)}
                   placeholder='Your user bio' />

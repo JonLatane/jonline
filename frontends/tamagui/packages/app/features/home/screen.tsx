@@ -4,6 +4,7 @@ import { getPostsPage, loadPostsPage, RootState, useCredentialDispatch, useServe
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
+import { StickyCreateButton } from '../post/create_post_sheet';
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 
@@ -80,6 +81,7 @@ export function HomeScreen() {
               return <PostCard post={post} isPreview />;
             }} />}
       </YStack>
+      <StickyCreateButton />
     </TabsNavigation>
   )
 }
