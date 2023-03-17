@@ -215,14 +215,14 @@ Future<List<JonlineAccount>> generateSideAccounts(
         avatars.add(avatar);
 
         if (shouldNotify(lastMessageTime)) {
-          showSnackBar("Generated ${avatars.length} avatars...");
+          showSnackBar("Loaded ${avatars.length}/$count avatars...");
           lastMessageTime = DateTime.now();
         }
       } else {
         await Future.delayed(const Duration(milliseconds: 1000));
       }
     } else {
-      showSnackBar("Failed to generate avatar...");
+      showSnackBar("Failed to load avatar...");
       avatarFailureCount++;
       await Future.delayed(const Duration(milliseconds: 1000));
       if (avatarFailureCount > 4) {
@@ -232,22 +232,23 @@ Future<List<JonlineAccount>> generateSideAccounts(
     }
   }
 
-  showSnackBar("Generated ${avatars.length} avatars.");
+  showSnackBar("Loaded ${avatars.length} avatars.");
 
   Iterable<Future<JonlineAccount?>> futures = range.map((i) async {
     JonlineAccount? sideAccount;
     String fakeAccountName = generateRandomName();
     int retryCount = 0;
-
+    int sideAccountsLoaded = 0;
+    lastMessageTime = DateTime.now();
     while (retryCount < 15) {
       try {
         final JonlineAccount? sideAccount = await JonlineAccount.createAccount(
             account.server, fakeAccountName, getRandomString(15), (m) {
-          if (!m.contains("insecurely") &&
-              !m.contains("already exists") &&
-              !m.contains("Failed to create account")) {
-            showSnackBar(m);
-          }
+          // if (!m.contains("insecurely") &&
+          //     !m.contains("already exists") &&
+          //     !m.contains("Failed to create account")) {
+          //   showSnackBar(m);
+          // }
         }, allowInsecure: account.allowInsecure, selectAccount: false);
         if (sideAccount != null) {
           final User? user = await sideAccount.updateUserData();
@@ -261,6 +262,11 @@ Future<List<JonlineAccount>> generateSideAccounts(
             await sideAccount.updateUserData();
           }
           appState.updateAccountList();
+          sideAccountsLoaded++;
+          if (shouldNotify(lastMessageTime)) {
+            showSnackBar("Created $sideAccountsLoaded/$count side accounts...");
+            lastMessageTime = DateTime.now();
+          }
           return sideAccount;
         }
       } catch (e) {
@@ -273,6 +279,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
 
   List<JonlineAccount> sideAccounts =
       (await Future.wait(futures.toList())).whereNotNull().toList();
+  showSnackBar("Created ${sideAccounts.length} side accounts.");
 
   return sideAccounts;
 }

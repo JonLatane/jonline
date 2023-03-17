@@ -94,10 +94,10 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
             ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
             keyExtractor={(user) => user.id}
             renderItem={({ item: user }) => {
-              return <UserCard user={user} isPreview />;
+              return <YStack mb='$3'><UserCard user={user} isPreview /></YStack>;
             }} />}
       </YStack>
-      <StickyCreateButton />
+      {/* <StickyCreateButton /> */}
     </TabsNavigation>
   )
 }

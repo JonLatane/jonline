@@ -319,19 +319,29 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
     builder.addCase(followUnfollowUser.fulfilled, (state, action) => {
       unlockUser(state, action.meta.arg.userId);
       let user = usersAdapter.getSelectors().selectById(state, action.meta.arg.userId)!;
+      let currentUser = usersAdapter.getSelectors().selectById(state, action.meta.arg.account!.user.id);
       if (action.meta.arg.follow) {
         const result = action.payload as Follow;
         if (passes(result.targetUserModeration)) {
           user = { ...user, followerCount: (user.followerCount || 0) + 1 };
+          if (currentUser) {
+            currentUser = { ...currentUser, followingCount: (currentUser.followingCount || 0) + 1 };
+          }
         }
         user = { ...user, currentUserFollow: result };
       } else {
         if (passes(user.currentUserFollow?.targetUserModeration)) {
           user = { ...user, followerCount: (user.followerCount || 0) - 1 };
+          if (currentUser) {
+            currentUser = { ...currentUser, followingCount: (currentUser.followingCount || 0) - 1 };
+          }
         }
         user = { ...user, currentUserFollow: undefined };
       }
       usersAdapter.upsertOne(state, user);
+      if (currentUser) {
+        usersAdapter.upsertOne(state, currentUser);
+      }
     });
 
     builder.addCase(respondToFollowRequest.pending, (state, action) => {
@@ -346,6 +356,11 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       if (action.meta.arg.accept) {
         const result = action.payload as Follow;
         user = { ...user, followingCount: (user.followingCount || 0) + 1, targetCurrentUserFollow: result };
+        let currentUser = usersAdapter.getSelectors().selectById(state, action.meta.arg.account!.user.id);
+        if (currentUser) {
+          currentUser = { ...currentUser, followerCount: (currentUser.followerCount || 0) + 1 };
+          usersAdapter.upsertOne(state, currentUser);
+        }
       } else {
         user = { ...user, targetCurrentUserFollow: undefined };
       }
