@@ -18,12 +18,12 @@ export function MainPeopleScreen() {
   return BasePeopleScreen(UserListingType.EVERYONE);
 }
 
-export function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYONE) {
+function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYONE) {
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const usersState = useTypedSelector((state: RootState) => state.users);
   const app = useTypedSelector((state: RootState) => state.app);
 
-  const users: User[] = useTypedSelector((state: RootState) =>
+  const users: User[] | undefined = useTypedSelector((state: RootState) =>
     getUsersPage(state.users, listingType, 0));
   // const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
   // const posts: Post[] = [];
@@ -38,7 +38,7 @@ export function BasePeopleScreen(listingType: UserListingType = UserListingType.
 
   const [loadingUsers, setLoadingUsers] = useState(false);
   useEffect(() => {
-    if (usersState.pagesStatus == 'unloaded' && !loadingUsers) {
+    if (users == undefined && !loadingUsers) {
       if (!accountOrServer.server) return;
 
       console.log("Loading users...");
@@ -75,7 +75,7 @@ export function BasePeopleScreen(listingType: UserListingType = UserListingType.
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
-        {users.length == 0
+        {users && users.length == 0
           ? usersState.pagesStatus != 'loading' && usersState.pagesStatus != 'unloaded'
             ? listingType == UserListingType.FOLLOW_REQUESTS ?
               <YStack width='100%' maw={600} jc="center" ai="center">

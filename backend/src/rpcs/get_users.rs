@@ -110,42 +110,34 @@ fn get_follow_requests(
     let target_follows = alias!(follows as target_follows);
     let target_follows_user_id = target_follows.field(follows::user_id);
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
+    let target_follows_target_user_moderation =
+        target_follows.field(follows::target_user_moderation);
     let target_follows_columns = target_follows.fields(follows::all_columns);
-    let users =
-        follows::table
-            .inner_join(
-                users::table.on(follows::target_user_id
-                    .eq(users::id)
-                    .and(follows::user_id.eq(user.id))),
-            )
-            .left_join(
-                target_follows.on(target_follows_user_id
-                    .eq(users::id)
-                    .and(target_follows_target_user_id.nullable().eq(user.id))),
-            )
-            .select((
-                users::all_columns,
-                follows::all_columns,
-                target_follows_columns.nullable(),
-            ))
-            .filter(follows::target_user_id.eq(user.id).and(
-                follows::target_user_moderation.eq(Moderation::Pending.to_string_moderation()),
-            ))
-            // .filter(
-            //     users::visibility
-            //         .eq_any(visibilities)
-            //         .or(users::id.nullable().eq(user.map(|u| u.id))),
-            // )
-            .order(users::created_at.desc())
-            .limit(100)
-            .offset((request.page.unwrap_or(0) * 100).into())
-            .load::<(models::User, models::Follow, Option<models::Follow>)>(conn)
-            .unwrap()
-            .iter()
-            .map(|(user, follow, target_follow)| {
-                user.to_proto_with(&Some(follow), &target_follow.as_ref())
-            })
-            .collect();
+    let users = target_follows
+        .inner_join(users::table.on(target_follows_user_id.eq(users::id)))
+        .left_join(
+            follows::table.on(follows::target_user_id
+                .eq(users::id)
+                .and(follows::user_id.nullable().eq(user.id))),
+        )
+        .select((
+            users::all_columns,
+            follows::all_columns.nullable(),
+            target_follows_columns,
+        ))
+        .filter(target_follows_target_user_id.eq(user.id).and(
+            target_follows_target_user_moderation.eq(Moderation::Pending.to_string_moderation()),
+        ))
+        .order(users::created_at.desc())
+        .limit(100)
+        .offset((request.page.unwrap_or(0) * 100).into())
+        .load::<(models::User, Option<models::Follow>, models::Follow)>(conn)
+        .unwrap()
+        .iter()
+        .map(|(user, follow, target_follow)| {
+            user.to_proto_with(&follow.as_ref(), &Some(target_follow))
+        })
+        .collect();
     GetUsersResponse {
         users,
         has_next_page: false,
@@ -170,9 +162,9 @@ fn get_by_username(
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
     let target_follows_columns = target_follows.fields(follows::all_columns);
 
-    let has_follow_relationship = follows::user_id.is_not_null().or(
-        target_follows_user_id.is_not_null()
-    );
+    let has_follow_relationship = follows::user_id
+        .is_not_null()
+        .or(target_follows_user_id.is_not_null());
     let is_self = users::id.nullable().eq(user.as_ref().map(|u| u.id));
     let users = users::table
         .left_join(

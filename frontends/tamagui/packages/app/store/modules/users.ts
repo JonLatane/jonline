@@ -360,8 +360,10 @@ export const { selectAll: selectAllUsers, selectById: selectUserById } = usersAd
 export const usersReducer = usersSlice.reducer;
 export default usersReducer;
 
-export function getUsersPage(state: UsersState, listingType: UserListingType, page: number): User[] {
-  const pagePostIds: string[] = (state.userPages[listingType] ?? {})[page] ?? [];
+export function getUsersPage(state: UsersState, listingType: UserListingType, page: number): User[] | undefined {
+  const pagePostIds: string[] | undefined = (state.userPages[listingType] ?? {})[page];
+  if (!pagePostIds) return undefined;
+
   const pagePosts = pagePostIds.map(id => selectUserById(state, id)).filter(p => p) as User[];
   return pagePosts;
 }
