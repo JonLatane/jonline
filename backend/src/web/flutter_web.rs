@@ -1,23 +1,22 @@
-use std::path::*;
-use rocket::fs::*;
+use rocket::{fs::*, http::Status, routes, Route};
 use rocket_cache_response::CacheResponse;
+use std::path::*;
 
-
-use rocket::http::Status;
+lazy_static! {
+    pub static ref FLUTTER_PAGES: Vec<Route> = routes![flutter_index, flutter_file,];
+}
 
 #[rocket::get("/flutter/<file..>")]
 pub async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
     log::info!("flutter_file: {:?}", file);
-    // let real_file = match file.strip_prefix("app/") {
-    //     Ok(p) => p.to_path_buf(),
-    //     Err(_) => file
-    // };
     let result = match NamedFile::open(Path::new("opt/flutter_web/").join(file.to_owned())).await {
         Ok(file) => Ok(file),
-        Err(_) => match NamedFile::open(Path::new("../frontends/flutter/build/web/").join(file)).await {
-            Ok(file) => Ok(file),
-            Err(_) => Err(Status::NotFound),
-        },
+        Err(_) => {
+            match NamedFile::open(Path::new("../frontends/flutter/build/web/").join(file)).await {
+                Ok(file) => Ok(file),
+                Err(_) => Err(Status::NotFound),
+            }
+        }
     };
     CacheResponse::Public {
         responder: result,

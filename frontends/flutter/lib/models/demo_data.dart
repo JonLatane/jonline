@@ -8,11 +8,11 @@ import 'package:username_gen/username_gen.dart';
 
 import '../app_state.dart';
 import '../generated/groups.pb.dart';
-import '../generated/visibility_moderation.pb.dart' as vm;
 import '../generated/jonline.pbgrpc.dart';
 import '../generated/permissions.pbenum.dart';
 import '../generated/posts.pb.dart';
 import '../generated/users.pb.dart';
+import '../generated/visibility_moderation.pb.dart' as vm;
 import '../generated/visibility_moderation.pbenum.dart';
 import '../my_platform.dart';
 import 'jonline_account.dart';
@@ -28,48 +28,49 @@ postDemoData(
     showSnackBar("Account not ready.");
     return;
   }
-  // showSnackBar("Updating refresh token...");
   await account.ensureAccessToken(showMessage: showSnackBar);
 
   final demoGroups =
       await generateDemoGroups(client, account, showSnackBar, appState);
-  // showSnackBar("Relevant Groups exist or have been generated.");
+  final List<Post> posts = await generateTopLevelPosts(
+      client, account, showSnackBar, appState, demoGroups, randomize);
 
-  List<JonlineAccount> sideAccounts = await generateSideAccounts(
-      client, account, demoGroups, showSnackBar, appState, 30);
+  List<JonlineAccount> sideAccounts =
+      await generateSideAccounts(client, account, showSnackBar, appState, 30);
 
-  final List<Post> posts = [];
-  var topLevelPosts = List.of(_demoData);
-  if (randomize) {
-    topLevelPosts.shuffle();
-  }
-  for (final demoPost in topLevelPosts) {
-    final groups = demoPost.groups;
-    final basePost = demoPost.post;
+  showSnackBar("Generating conversations...");
+  await generateConversations(
+      client, account, showSnackBar, appState, demoGroups, posts, sideAccounts);
 
-    showSnackBar(
-        'Posting "${basePost.title}" across ${groups.length} groups...');
-    try {
-      final post = await client.createPost(basePost,
-          options: account.authenticatedCallOptions);
-      posts.add(post);
-      for (final demoGroup in groups) {
-        final group = demoGroups[demoGroup]!;
-        await client.createGroupPost(
-            GroupPost(groupId: group.id, postId: post.id),
-            options: account.authenticatedCallOptions);
-      }
-    } catch (e) {
-      showSnackBar("Error posting demo data: $e");
-      rethrow;
-    }
-    await communicationDelay;
-  }
+  final int relationshipsCreated = await generateFollowRelationships(
+    client,
+    account,
+    showSnackBar,
+    appState,
+    sideAccounts,
+  );
+  final int membershipsCreated = await generateGroupMemberships(
+    client,
+    account,
+    demoGroups,
+    showSnackBar,
+    appState,
+    sideAccounts,
+  );
+
   showSnackBar(
-      "Posted demo topics successfully! 🎉 Generating users, relationships, and conversations...");
-  // JonlineAccount? sideAccount;
-  // List<JonlineAccount> sideAccounts = await generateSideAccounts(
-  //     client, account, demoGroups, showSnackBar, appState, 12);
+      "Created $relationshipsCreated follow relationships and joined $membershipsCreated groups.");
+}
+
+Future<void> generateConversations(
+    JonlineClient client,
+    JonlineAccount account,
+    Function(String) showSnackBar,
+    AppState appState,
+    Map<DemoGroup, Group> demoGroups,
+    List<Post> topLevelPosts,
+    List<JonlineAccount> sideAccounts) async {
+  final List<Post> posts = List.of(topLevelPosts, growable: true);
 
   List<JonlineAccount> replyAccounts = [
     account,
@@ -94,8 +95,7 @@ postDemoData(
           options: targetAccount.authenticatedCallOptions);
       targets.add(replyPost);
       replyCount += 1;
-      if (DateTime.now().difference(lastMessageTime) >
-          const Duration(seconds: 5)) {
+      if (shouldNotify(lastMessageTime)) {
         showSnackBar("Posted $replyCount replies.");
         lastMessageTime = DateTime.now();
       }
@@ -104,7 +104,51 @@ postDemoData(
       return;
     }
   }
-  showSnackBar("Posted all demo data, with $replyCount replies 🎉🎉🎉🎉🎉 ");
+  showSnackBar("Posted $replyCount total replies 🎉🎉🎉🎉🎉 ");
+}
+
+Future<List<Post>> generateTopLevelPosts(
+    JonlineClient client,
+    JonlineAccount account,
+    Function(String) showSnackBar,
+    AppState appState,
+    Map<DemoGroup, Group> demoGroups,
+    bool randomize) async {
+  final List<Post> posts = [];
+  var topLevelPosts = List.of(_demoData);
+  if (randomize) {
+    topLevelPosts.shuffle();
+  }
+  var lastMessageTime = DateTime.now();
+  for (final demoPost in topLevelPosts) {
+    final groups = demoPost.groups;
+    final basePost = demoPost.post;
+
+    // showSnackBar(
+    //     'Posting "${basePost.title}" across ${groups.length} groups...');
+    try {
+      final post = await client.createPost(basePost,
+          options: account.authenticatedCallOptions);
+      posts.add(post);
+      final index = topLevelPosts.indexOf(demoPost);
+      if (shouldNotify(lastMessageTime)) {
+        showSnackBar("Posted ${index + 1} demo topics...");
+        lastMessageTime = DateTime.now();
+      }
+      for (final demoGroup in groups) {
+        final group = demoGroups[demoGroup]!;
+        await client.createGroupPost(
+            GroupPost(groupId: group.id, postId: post.id),
+            options: account.authenticatedCallOptions);
+      }
+    } catch (e) {
+      showSnackBar("Error posting demo data: $e");
+      rethrow;
+    }
+    // await communicationDelay;
+  }
+  showSnackBar("Posted ${posts.length} demo topics.");
+  return posts;
 }
 
 Future<Map<DemoGroup, Group>> generateDemoGroups(
@@ -140,7 +184,6 @@ Future<Map<DemoGroup, Group>> generateDemoGroups(
 Future<List<JonlineAccount>> generateSideAccounts(
     JonlineClient client,
     JonlineAccount account,
-    Map<DemoGroup, Group> demoGroups,
     Function(String) showSnackBar,
     AppState appState,
     int count) async {
@@ -149,11 +192,13 @@ Future<List<JonlineAccount>> generateSideAccounts(
   final List<Image> avatars = [];
   final httpClient = http.Client();
   int avatarFailureCount = 0;
+
+  var lastMessageTime = DateTime.now();
   while (avatars.length < range.length) {
     http.Response response = await httpClient
-        .get(Uri.parse('https://thispersondoesnotexist.com/image'), headers: {
-      if (!MyPlatform.isWeb) "User-Agent": "Jonline",
-      if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
+        .get(Uri.parse('https://100k-faces.glitch.me/random-image'), headers: {
+      if (!MyPlatform.isWeb) "User-Agent": "Jonline Flutter Client",
+      // if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
     });
     // print("Got response: ${response.statusCode} ${response.bodyBytes.length}");
     Image? image;
@@ -168,8 +213,10 @@ Future<List<JonlineAccount>> generateSideAccounts(
       if (!avatarHashcodes.contains(hashCode)) {
         avatarHashcodes.add(hashCode);
         avatars.add(avatar);
-        if (avatars.length % 5 == 0) {
+
+        if (shouldNotify(lastMessageTime)) {
           showSnackBar("Generated ${avatars.length} avatars...");
+          lastMessageTime = DateTime.now();
         }
       } else {
         await Future.delayed(const Duration(milliseconds: 1000));
@@ -184,6 +231,8 @@ Future<List<JonlineAccount>> generateSideAccounts(
       }
     }
   }
+
+  showSnackBar("Generated ${avatars.length} avatars.");
 
   Iterable<Future<JonlineAccount?>> futures = range.map((i) async {
     JonlineAccount? sideAccount;
@@ -225,6 +274,15 @@ Future<List<JonlineAccount>> generateSideAccounts(
   List<JonlineAccount> sideAccounts =
       (await Future.wait(futures.toList())).whereNotNull().toList();
 
+  return sideAccounts;
+}
+
+Future<int> generateFollowRelationships(
+    JonlineClient client,
+    JonlineAccount account,
+    Function(String) showSnackBar,
+    AppState appState,
+    List<JonlineAccount> sideAccounts) async {
   //Generate follow relationships between side accounts and originating account
   int relationshipsCreated = 0;
 
@@ -233,6 +291,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
     ...List.filled(originalAccountDupes, account),
     ...sideAccounts
   ];
+  var lastMessageTime = DateTime.now();
   for (final sideAccount in sideAccounts) {
     // showSnackBar("Creating relationships for ${sideAccount.username}.");
     final followedAccounts = [sideAccount];
@@ -252,17 +311,28 @@ Future<List<JonlineAccount>> generateSideAccounts(
             ),
             options: sideAccount.authenticatedCallOptions);
         relationshipsCreated += 1;
-        if (relationshipsCreated % 10 == 0) {
+
+        if (shouldNotify(lastMessageTime)) {
           showSnackBar("Created $relationshipsCreated follow relationships.");
+          lastMessageTime = DateTime.now();
         }
       }
     } catch (e) {
       showSnackBar("Error following side account: $e");
     }
   }
+  return relationshipsCreated;
+}
 
-  //Generate follow relationships between side accounts and originating account
+Future<int> generateGroupMemberships(
+    JonlineClient client,
+    JonlineAccount account,
+    Map<DemoGroup, Group> demoGroups,
+    Function(String) showSnackBar,
+    AppState appState,
+    List<JonlineAccount> sideAccounts) async {
   int membershipsCreated = 0;
+  var lastMessageTime = DateTime.now();
 
   for (final sideAccount in sideAccounts) {
     // showSnackBar("Creating relationships for ${sideAccount.username}.");
@@ -280,17 +350,17 @@ Future<List<JonlineAccount>> generateSideAccounts(
             options: sideAccount.authenticatedCallOptions);
         targetGroups.remove(group);
         membershipsCreated += 1;
-        if (membershipsCreated % 10 == 0) {
+
+        if (shouldNotify(lastMessageTime)) {
           showSnackBar("Created $membershipsCreated group memberships.");
+          lastMessageTime = DateTime.now();
         }
       }
     } catch (e) {
       showSnackBar("Error following side account: $e");
     }
   }
-  showSnackBar(
-      "Created $relationshipsCreated follow relationships and joined $membershipsCreated groups.");
-  return sideAccounts;
+  return membershipsCreated;
 }
 
 String generateRandomName() => UsernameGen().generate();
@@ -313,6 +383,9 @@ enum DemoGroup {
   restaurants,
   programming
 }
+
+shouldNotify(DateTime lastMessageTime) =>
+    DateTime.now().difference(lastMessageTime) > const Duration(seconds: 5);
 
 final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
   DemoGroup.coolKidsClub: Group(
@@ -583,7 +656,8 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
       CreatePostRequest(
           title: "What is Jonline??",
-          content: '''Large-scale capitalist social media sucks for most of us. 
+          content:
+              '''Large-scale capitalist social media has failed most of us. 
 Jonline is a new approach to social media that keeps user data hyper-local - 
 within peoples' physical communities - all wrapped up as a 
 [well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md). 
@@ -623,14 +697,19 @@ Jonline is trustworthy, because you can literally look at the
 and [validates your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
 even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/demo_data.dart) 🤯🙃
 
-If you're familiar with OpenSocial and Mastodon, Jonline is much like them. But
-Jonline has a faster web UI than either thanks to Tamagui, a faster BE thanks to being written in
-Rust, and [Jonline's Docker images are currently 105MB](https://hub.docker.com/r/jonlatane/jonline/tags), 
-while [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags), 
-and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags)! 
+If you're familiar with OpenSocial and Mastodon, Jonline is something like them. Notably, Jonline does *not*
+support reactions to posts as they do (and is deliberately not architected in a "big data" way so as to support this).
+Jonline has a faster web UI than either thanks to Tamagui and NextJS and a faster BE thanks to Rust.
+[Jonline's Docker images are currently 105MB](https://hub.docker.com/r/jonlatane/jonline/tags),
+while [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags),
+and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags)/
 Further, Jonline should (hopefully) be easier to deploy, partly by virtue of having such minimal system requirements.
-Finally, Jonline's Discussion/Chat UI and upcoming Event features don't have great 
+Finally, Jonline's Discussion/Chat UI feature doesn't have any great
 analogues in other open-source social networks.
+
+In terms of features, unlike most other networks, Jonline plans to support Events and will eventually support
+more independent-monetization features, so admins can make money for hosting their instance. (Planned dev approach is:
+Invoicing/Direct Payments for a foundation, then Ticketed Events, then Products and/or Subscriptions).
 
 If you feel moderately brave, take a crack at spinning up your own server. 
 Spinning one up locally should take under a minute if you already have Postgres and Docker

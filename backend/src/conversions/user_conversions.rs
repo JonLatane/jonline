@@ -10,7 +10,7 @@ use tonic::Status;
 
 pub trait ToProtoUser {
     fn to_proto(&self) -> User;
-    fn to_proto_with(&self, follow: &Option<models::Follow>, target_follow: &Option<models::Follow>) -> User;
+    fn to_proto_with(&self, follow: &Option<&models::Follow>, target_follow: &Option<&models::Follow>) -> User;
     fn to_proto_auto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> User;
 }
 impl ToProtoUser for models::User {
@@ -27,9 +27,9 @@ impl ToProtoUser for models::User {
                 .ok(),
             None => None,
         };
-        self.to_proto_with(&follow, &None)
+        self.to_proto_with(&follow.as_ref(), &None)
     }
-    fn to_proto_with(&self, follow: &Option<models::Follow>, target_follow: &Option<models::Follow>) -> User {
+    fn to_proto_with(&self, follow: &Option<&models::Follow>, target_follow: &Option<&models::Follow>) -> User {
         let email: Option<ContactMethod> = self
             .email
             .to_owned()

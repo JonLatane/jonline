@@ -1,18 +1,15 @@
-import { CreatePostRequest, Permission, Post } from '@jonline/api';
-import { Button, Heading, Input, isClient, isWeb, Label, ScrollView, Sheet, SizeTokens, Switch, TextArea, Tooltip, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, Send as SendIcon, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, createPost, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useCredentialDispatch, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
-import React, { useState, useEffect } from 'react';
-import { FlatList, Platform, View } from 'react-native';
+import { CreatePostRequest, Permission, Post, Visibility } from '@jonline/api';
+import { Button, Heading, Input, isClient, isWeb, Sheet, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
+import { ChevronDown, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
+import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import React, { useEffect, useState } from 'react';
+import { Platform, View } from 'react-native';
 import StickyBox from 'react-sticky-box';
-import { useLink } from 'solito/link';
-import { v4 as uuidv4 } from 'uuid';
 import { AddAccountSheet } from '../accounts/add_account_sheet';
-import { SettingsSheet } from '../settings_sheet';
-import { TamaguiMarkdown } from './tamagui_markdown';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
 import PostCard from './post_card';
+import { VisibilityPicker } from './visibility_picker';
 
 
 interface StickyCreateButtonProps {
@@ -65,6 +62,7 @@ export const StickyCreateButton: React.FC<StickyCreateButtonProps> = ({ }: Stick
   });
   const canPost = (accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS)
     || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
+
   return isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
     {canPost
       ? <YStack w='100%' p='$2' opacity={.92} backgroundColor='$background' alignContent='center'>
@@ -102,14 +100,14 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   const media = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const account = accountOrServer.account!;
-  // const [open, setOpen] = useState(false);
-  // const [browsingServers, setBrowsingServers] = useState(false);
-  // const [addingServer, setAddingServer] = useState(false);
   const [open, setOpen] = useState(false);
-  // const [previewing, setPreviewing] = useState(false);
-  const [renderType, setRenderType] = useState(RenderType.Edit);
-  // const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
   const [position, setPosition] = useState(0);
+
+  const [renderType, setRenderType] = useState(RenderType.Edit);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Form fields
+  const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
   const [content, setContent] = useState('');
@@ -119,27 +117,10 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
 
   const [posting, setPosting] = useState(false);
 
-  // const [newAccountPass, setNewAccountPass] = useState('');
-
   const app = useTypedSelector((state: RootState) => state.app);
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
   const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
-  // const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
-  // const primaryServer = onlyShowServer || serversState.server;
-
-  // const browsingOnDiffers = browsingOn && (
-  //   serversState.server && serversState.server.host != browsingOn ||
-  //   onlyShowServer && onlyShowServer.host != browsingOn
-  // );
-  // function addServer() {
-  //   console.log(`Connecting to server ${newServerHost}`)
-  //   dispatch(clearServerAlerts());
-  //   dispatch(upsertServer({
-  //     host: newServerHost,
-  //     secure: newServerSecure,
-  //   }));
-  // }
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
@@ -151,51 +132,26 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const accountsLoading = accountsState.status == 'loading';
   const valid = title.length > 0;
-  // const disableInputs = accountsLoading || forceDisableAccountButtons;
-  // const disableAccountButtons = accountsLoading || !valid || forceDisableAccountButtons;
-  // const disableLoginMethodButtons = title == '';
 
   const showEditor = edit(renderType);
   const showFullPreview = fullPreview(renderType);
   const showShortPreview = shortPreview(renderType);
 
-  useEffect(() => {
-    if (accountsLoading && !forceDisableAccountButtons) {
-      setForceDisableAccountButtons(true);
-    }
-    // if (!previewing && accountsOnServer.length == 0) {
-    //   setPreviewing(true);
-    // }
-  });
-  // if (accountsState.successMessage) {
-  //   setTimeout(() => {
-  //     setOpen(false);
-  //     setTimeout(() => {
-  //       dispatch(clearAccountAlerts());
-  //       setTitle('');
-  //       setContent('');
-  //       setForceDisableAccountButtons(false);
-  //       // setLoginMethod(undefined);
-  //     }, 1000);
-  //   }, 1500);
-  // } else if (accountsState.errorMessage && forceDisableAccountButtons) {
-  //   setForceDisableAccountButtons(false);
-  // }
-
   function doCreate() {
     const createPostRequest: CreatePostRequest = { title, link, content };
 
     dispatch(createPost({ ...createPostRequest, ...accountOrServer })).then((action) => {
-      if(action.type == createPost.fulfilled.type) {
+      if (action.type == createPost.fulfilled.type) {
         setOpen(false);
         setTitle('');
         setContent('');
         setLink('');
         setRenderType(RenderType.Edit);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        dispatch(clearPostAlerts!());
       }
     });
   }
-  const [forceDisableAccountButtons, setForceDisableAccountButtons] = useState(false);
   const disableInputs = ['posting', 'posted'].includes(postsState.createPostStatus!);
   return (
     <>
@@ -209,7 +165,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
         open={open}
         onOpenChange={setOpen}
         // snapPoints={[80]}
-        snapPoints={[82]} dismissOnSnapToBottom
+        snapPoints={[90]} dismissOnSnapToBottom
         position={position}
         onPositionChange={setPosition}
       // dismissOnSnapToBottom
@@ -226,15 +182,43 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
               setOpen(false)
             }}
           />
-          <XStack marginHorizontal='$5'>
-            <Heading f={1} size='$7'>Create Post</Heading>
-            <Button backgroundColor={primaryColor} disabled={disableInputs} onPress={doCreate}>
+          <XStack marginHorizontal='$5' mb='$2'>
+            <Heading marginVertical='auto' f={1} size='$7'>Create Post</Heading>
+            <Button backgroundColor={showSettings ? navColor : undefined} onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
+              <Settings color={showSettings ? navTextColor : textColor} />
+            </Button>
+            <Button backgroundColor={primaryColor} disabled={disableInputs} opacity={disableInputs ? 0.5 : 1} onPress={doCreate}>
               <Heading size='$1' color={primaryTextColor}>Create</Heading>
             </Button>
           </XStack>
           {postsState.createPostStatus == "errored" && postsState.errorMessage ?
             <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined}
-          <XStack marginHorizontal='auto' marginVertical='$3'>
+          {showSettings
+            ? <XStack ac='center' jc='center' marginHorizontal='$5' animation="bouncy"
+              p='$3'
+              opacity={1}
+              scale={1}
+              y={0}
+              enterStyle={{ y: -50, opacity: 0, }}
+              exitStyle={{ opacity: 0, }}>
+              {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
+              <VisibilityPicker label='Post Visibility' visibility={visibility} onChange={setVisibility}
+                visibilityDescription={(v) => {
+                  switch (v) {
+                    case Visibility.PRIVATE:
+                      return 'Only you can see this post.';
+                    case Visibility.LIMITED:
+                      return 'Only your followers and groups you choose can see this post.';
+                    case Visibility.SERVER_PUBLIC:
+                      return 'Anyone on this server can see this post.';
+                    case Visibility.GLOBAL_PUBLIC:
+                      return 'Anyone on the internet can see this post.';
+                    default:
+                      return 'Unknown';
+                  }
+                }} />
+            </XStack> : undefined}
+            <XStack marginHorizontal='auto' marginVertical='$3'>
             <Button backgroundColor={showEditor ? navColor : undefined}
               transparent={!showEditor}
               borderTopRightRadius={0} borderBottomRightRadius={0}
@@ -260,18 +244,18 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
               {showEditor
                 ? <YStack space="$2" w='100%'>
                   {/* <Heading size="$6">{server?.host}/</Heading> */}
-                  <Input textContentType="name" autoCorrect={false} placeholder="Post Title"
+                  <Input textContentType="name" placeholder="Post Title"
                     disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
                     autoCapitalize='words'
                     value={title}
                     onChange={(data) => { setTitle(data.nativeEvent.text) }} />
-                  <Input textContentType="name" autoCorrect={false} placeholder="Optional Link"
+                  <Input textContentType="URL" autoCorrect={false} placeholder="Optional Link"
                     disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
                     // autoCapitalize='words'
                     value={link}
                     onChange={(data) => { setLink(data.nativeEvent.text) }} />
 
-                  <TextArea f={1} h='$17' value={content} ref={textAreaRef}
+                  <TextArea f={1} h='$19' value={content} ref={textAreaRef}
                     disabled={posting} opacity={posting ? 0.5 : 1}
                     onChangeText={t => setContent(t)}
                     // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}

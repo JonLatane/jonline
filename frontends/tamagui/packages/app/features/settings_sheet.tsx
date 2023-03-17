@@ -61,7 +61,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
             <YStack maxWidth={800} width='100%' alignSelf='center' space='$3'>
               <Heading>Settings</Heading>
               {/* {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)} */}
-              <ToggleRow name='Auto-Refresh Discussion Chat' value={app.autoRefreshDiscussions} setter={setAutoRefreshDiscussions} autoDispatch/>
+              <ToggleRow name='Auto-Refresh Discussion Chat' value={app.autoRefreshDiscussions} setter={setAutoRefreshDiscussions} autoDispatch />
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.autoRefreshDiscussions ? 1 : 0.5}>Only supported in Chat Mode.</Paragraph>
 
               <XStack opacity={app.autoRefreshDiscussions ? 1 : 0.5}>
@@ -82,15 +82,15 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </YStack>
               </XStack>
               <Heading size='$3' mt='$3'>Multi-Server</Heading>
-              <ToggleRow name='Allow Server Selection' value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch/>
+              <ToggleRow name='Allow Server Selection' value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
-              <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch/>
+              <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
               <Heading size='$3' mt='$3'>Testing</Heading>
-              <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch/>
-              <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch/>
+              <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />
+              <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch />
               <Heading size='$3' mt='$3'>Development</Heading>
-              <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch/>
-              <ToggleRow name='Show (WIP) Extended Navigation' value={app.showBetaNavigation} setter={setShowBetaNavigation} autoDispatch/>
+              <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
+              <ToggleRow name='Show (WIP) Extended Navigation' value={app.showBetaNavigation} setter={setShowBetaNavigation} autoDispatch />
 
               {/* <XStack>
                 <Button f={1} icon={XIcon} onPress={resetCredentialedData}>
@@ -175,12 +175,12 @@ export interface ToggleRowProps {
 export function ToggleRow({ name, value, setter, disabled = false, autoDispatch = false }: ToggleRowProps) {
   const dispatch = useTypedDispatch();
   return <XStack space='$3' o={disabled ? 0.5 : 1}>
-      <Label f={1}>{name}</Label>
-      <Switch size="$5" style={{ marginLeft: 'auto', marginRight: 'auto' }}
-        defaultChecked={value}
-        {...{ disabled }}
-        onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
-        <Switch.Thumb animation="quick" backgroundColor='black' />
-      </Switch>
-    </XStack>;
+    <Label marginVertical='auto' f={1}>{name}</Label>
+    <Switch size="$5" margin='auto'
+      defaultChecked={value}
+      {...{ disabled }}
+      onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
+      <Switch.Thumb animation="quick" backgroundColor='black' />
+    </Switch>
+  </XStack>;
 }

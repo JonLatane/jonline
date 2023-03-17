@@ -8,12 +8,13 @@ import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupsSheet } from "../groups/groups_sheet";
-import { AppSection, FeaturesNavigation, sectionTitle } from "./features_navigation";
+import { AppSection, AppSubsection, FeaturesNavigation, sectionTitle } from "./features_navigation";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
   onlyShowServer?: JonlineServer;
   appSection?: AppSection;
+  appSubsection?: AppSubsection;
   selectedGroup?: Group;
   customHomeAction?: () => void;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
@@ -21,7 +22,7 @@ export type TabsNavigationProps = {
   groupPageForwarder?: (group: Group) => string;
 };
 
-export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, selectedGroup, customHomeAction }: TabsNavigationProps) {
+export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, appSubsection, selectedGroup, customHomeAction }: TabsNavigationProps) {
   const media = useMedia()
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;
@@ -49,8 +50,9 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
+  const shrinkHomeButton = selectedGroup || appSubsection == AppSubsection.FOLLOW_REQUESTS;
   // console.log(`app.darkModeAuto=${app.darkModeAuto}, systemDark=${systemDark}, app.darkMode=${app.darkMode}, invert=${invert}, dark=${dark}, bgColor=${bgColor}`);
-  return <Theme inverse={invert}>
+  return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     {Platform.select({
       web: <>
         <StickyBox style={{ zIndex: 10 }} className="blur">
@@ -58,7 +60,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
             {/* <XStack h={5}></XStack> */}
             <XStack space="$1" marginVertical={5}>
               <XStack w={5} />
-              {selectedGroup
+              {shrinkHomeButton
                 ? <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
                   iconAfter={serverNameEmoji ? undefined : HomeIcon}
                   {...homeProps}>
@@ -76,7 +78,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
               <ScrollView horizontal>
                 <XStack w={1} />
                 <GroupsSheet selectedGroup={selectedGroup} />
-                {app.showBetaNavigation ? <FeaturesNavigation {...{appSection, selectedGroup}} /> : undefined}
+                {app.showBetaNavigation ? <FeaturesNavigation {...{appSection, appSubsection, selectedGroup}} /> : undefined}
               </ScrollView>
               <XStack f={1} />
               <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />

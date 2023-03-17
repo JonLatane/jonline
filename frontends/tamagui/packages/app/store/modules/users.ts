@@ -17,9 +17,11 @@ import moment from "moment";
 import store from "../store";
 import { AccountOrServer } from "../types";
 import { getCredentialClient } from "./accounts";
+import { UserListingType } from '../../../api/generated/users';
 
 export interface UsersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
+  pagesStatus: "unloaded" | "loading" | "loaded" | "errored";
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -30,6 +32,12 @@ export interface UsersState {
   failedUsernames: string[];
   failedUserIds: string[];
   idPosts: Dictionary<string[]>;
+  // Stores pages of listed users for listing types used in the UI.
+  // i.e.: userPages[PostListingType.PUBLIC_POSTS][1] -> ["userId1", "userId2"].
+  // Users should be loaded from the adapter/slice's entities.
+  // Maps UserListingType -> page -> userIds
+  userPages: Dictionary<Dictionary<string[]>>;
+  mutatingUserIds: string[];
 }
 
 export interface UsersSlice {
@@ -41,12 +49,17 @@ const usersAdapter: EntityAdapter<User> = createEntityAdapter<User>({
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
 
-export type LoadUsersRequest = AccountOrServer & { page: number };
+export type LoadUsersRequest = AccountOrServer & { page?: number, listingType?: UserListingType };
+const defaultUserListingType = UserListingType.EVERYONE;
 export const loadUsersPage: AsyncThunk<GetUsersResponse, LoadUsersRequest, any> = createAsyncThunk<GetUsersResponse, LoadUsersRequest>(
   "users/loadPage",
-  async (getUsersRequest) => {
-    let client = await getCredentialClient(getUsersRequest);
-    return await client.getUsers(getUsersRequest, client.credential);
+  async (request) => {
+    let client = await getCredentialClient(request);
+    const getUserRequest = GetUsersRequest.create({
+      page: request.page,
+      listingType: request.listingType ?? defaultUserListingType,
+    });
+    return await client.getUsers(getUserRequest, client.credential);
   }
 );
 
@@ -80,6 +93,9 @@ export const loadUser: AsyncThunk<LoadUserResult, LoadUser, any> = createAsyncTh
       if (user) {
         avatar = store.getState().users.avatars[request.id];
       }
+    }
+    if (store.getState().users.failedUserIds.includes(request.id)) {
+      throw 'User not found';
     }
     if (!user) {
       _loadingUserIds.add(request.id);
@@ -188,11 +204,14 @@ export const respondToFollowRequest: AsyncThunk<Follow | Empty, RespondToFollowR
 
 const initialState: UsersState = {
   status: "unloaded",
+  pagesStatus: "unloaded",
   avatars: {},
   usernameIds: {},
   failedUsernames: [],
   failedUserIds: [],
   idPosts: {},
+  userPages: {},
+  mutatingUserIds: [],
   ...usersAdapter.getInitialState(),
 };
 
@@ -215,15 +234,26 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
   extraReducers: (builder) => {
     builder.addCase(loadUsersPage.pending, (state) => {
       state.status = "loading";
+      state.pagesStatus = "loading";
       state.error = undefined;
     });
     builder.addCase(loadUsersPage.fulfilled, (state, action) => {
       state.status = "loaded";
+      state.pagesStatus = "loaded";
       usersAdapter.upsertMany(state, action.payload.users);
+
+      const userIds = action.payload.users.map(u => u.id);
+      const page = action.meta.arg.page ?? 0;
+      const listingType = action.meta.arg.listingType ?? defaultUserListingType;
+
+      if (!state.userPages[listingType]) state.userPages[listingType] = {};
+      state.userPages[listingType]![page] = userIds;
+
       state.successMessage = `Users loaded.`;
     });
     builder.addCase(loadUsersPage.rejected, (state, action) => {
       state.status = "errored";
+      state.pagesStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
@@ -248,7 +278,7 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
         state.status = "errored";
         if (loader === loadUsername) {
           state.failedUsernames = [...state.failedUsernames, (action.meta.arg as LoadUsername).username];
-        } else if (loader == loadUser) {
+        } else if (loader == loadUser && !state.failedUserIds.includes((action.meta.arg as LoadUser).id)) {
           state.failedUserIds = [...state.failedUserIds, (action.meta.arg as LoadUser).id];
         }
         state.error = action.error as Error;
@@ -280,7 +310,14 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       state.error = action.error as Error;
     });
 
+    builder.addCase(followUnfollowUser.pending, (state, action) => {
+      lockUser(state, action.meta.arg.userId);
+    });
+    builder.addCase(followUnfollowUser.rejected, (state, action) => {
+      unlockUser(state, action.meta.arg.userId);
+    });
     builder.addCase(followUnfollowUser.fulfilled, (state, action) => {
+      unlockUser(state, action.meta.arg.userId);
       let user = usersAdapter.getSelectors().selectById(state, action.meta.arg.userId)!;
       if (action.meta.arg.follow) {
         const result = action.payload as Follow;
@@ -296,7 +333,15 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       }
       usersAdapter.upsertOne(state, user);
     });
+
+    builder.addCase(respondToFollowRequest.pending, (state, action) => {
+      lockUser(state, action.meta.arg.userId);
+    });
+    builder.addCase(respondToFollowRequest.rejected, (state, action) => {
+      unlockUser(state, action.meta.arg.userId);
+    });
     builder.addCase(respondToFollowRequest.fulfilled, (state, action) => {
+      unlockUser(state, action.meta.arg.userId);
       let user = usersAdapter.getSelectors().selectById(state, action.meta.arg.userId)!;
       if (action.meta.arg.accept) {
         const result = action.payload as Follow;
@@ -314,3 +359,20 @@ export const { removeUser, clearUserAlerts, resetUsers, upsertUser } = usersSlic
 export const { selectAll: selectAllUsers, selectById: selectUserById } = usersAdapter.getSelectors();
 export const usersReducer = usersSlice.reducer;
 export default usersReducer;
+
+export function getUsersPage(state: UsersState, listingType: UserListingType, page: number): User[] {
+  const pagePostIds: string[] = (state.userPages[listingType] ?? {})[page] ?? [];
+  const pagePosts = pagePostIds.map(id => selectUserById(state, id)).filter(p => p) as User[];
+  return pagePosts;
+}
+
+function lockUser(state: UsersState, userId: string) {
+  state.mutatingUserIds = [userId, ...state.mutatingUserIds];
+}
+function unlockUser(state: UsersState, userId: string) {
+  state.mutatingUserIds = state.mutatingUserIds.filter(u => u != userId);
+}
+
+export function isUserLocked(state: UsersState, userId: string): boolean {
+  return state.mutatingUserIds.includes(userId);
+}

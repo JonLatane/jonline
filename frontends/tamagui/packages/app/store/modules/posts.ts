@@ -153,7 +153,8 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
 
       const postIds = action.payload.posts.map(post => post.id);
       const page = action.meta.arg.page || 0;
-      const listingType = action.meta.arg.listingType || defaultPostListingType;
+      const listingType = action.meta.arg.listingType ?? defaultPostListingType;
+
       if (!state.postPages[listingType]) state.postPages[listingType] = {};
       state.postPages[listingType]![page] = postIds;
 

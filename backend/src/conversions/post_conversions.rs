@@ -93,6 +93,7 @@ impl ToProtoPost for models::Post {
                 .moderation
                 .to_proto_moderation()
                 .unwrap_or(Moderation::Unknown) as i32,
+            shareable: false, //TODO update this
             replies: vec![], //TODO update this
             preview_image_exists: *has_preview,
             current_group_post: group_post.map(|gp| gp.to_proto()),

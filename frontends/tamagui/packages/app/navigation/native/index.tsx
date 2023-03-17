@@ -10,6 +10,7 @@ import { UsernameDetailsScreen } from 'app/features/user/username_details_screen
 import { RootState, useTypedSelector } from 'app/store'
 import { HomeScreen } from '../../features/home/screen'
 import { UserDetailsScreen } from '../../features/user/details_screen'
+import { MainPeopleScreen, FollowRequestsScreen } from 'app/features/people/screen';
 
 const Stack = createNativeStackNavigator<{
   home: undefined,
@@ -32,7 +33,9 @@ const Stack = createNativeStackNavigator<{
   groupPostDetails: {
     shortname: string,
     postId: string
-  }
+  },
+  people: undefined,
+  followRequests: undefined,
 }>()
 
 export function NativeNavigation() {
@@ -120,6 +123,22 @@ export function NativeNavigation() {
         component={PostDetailsScreen}
         options={{
           title: 'Group Post Details',
+          ...defaultOptions,
+        }}
+      />
+      <Stack.Screen
+        name="people"
+        component={MainPeopleScreen}
+        options={{
+          title: 'People',
+          ...defaultOptions,
+        }}
+      />
+      <Stack.Screen
+        name="followRequests"
+        component={FollowRequestsScreen}
+        options={{
+          title: 'Follow Requests',
           ...defaultOptions,
         }}
       />

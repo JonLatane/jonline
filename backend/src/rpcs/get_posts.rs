@@ -61,7 +61,7 @@ pub fn get_posts(
             None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
             Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
         },
-        (_, None, _) => get_public_posts(&user, conn),
+        (_, None, _) => get_top_posts(&user, conn),
     };
     // log::info!("GetPosts::request: {:?}, result: {:?}", request, result);
     Ok(GetPostsResponse { posts: result })
@@ -97,20 +97,29 @@ fn get_by_post_id(
     }
 }
 
-fn get_public_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
-    let visibilities = match user {
+fn get_top_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
+    let public_visibilities = match user {
         Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
         None => vec![Visibility::GlobalPublic],
     }
     .to_string_visibilities();
+    let public = posts::visibility.eq_any(public_visibilities);
+    let limited_to_followers = posts::visibility.eq(Visibility::Limited.to_string_visibility())
+        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
     posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .left_join(
+            follows::table.on(posts::user_id
+                .eq(follows::target_user_id.nullable())
+                .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)))),
+        )
         .select((
             models::MINIMAL_POST_COLUMNS,
             users::username.nullable(),
             posts::preview.is_not_null(),
         ))
-        .filter(posts::visibility.eq_any(visibilities))
+        // .filter(posts::visibility.eq_any(visibilities))
+        .filter(public.or(limited_to_followers))
         .filter(posts::parent_post_id.is_null())
         .order(posts::created_at.desc())
         .limit(100)

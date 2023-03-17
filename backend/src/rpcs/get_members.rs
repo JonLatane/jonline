@@ -132,7 +132,7 @@ fn get_all_members(
         .unwrap()
         .iter()
         .map(|(membership, user, follow, target_follow)| Member {
-            user: Some(user.to_proto_with(&follow, &target_follow)),
+            user: Some(user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())),
             membership: Some(membership.to_proto()),
         })
         .collect();
@@ -204,7 +204,7 @@ fn get_members_by_username(
         .unwrap()
         .iter()
         .map(|(membership, user, follow, target_follow)| Member {
-            user: Some(user.to_proto_with(&follow, &target_follow)),
+            user: Some(user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())),
             membership: Some(membership.to_proto()),
         })
         .collect();

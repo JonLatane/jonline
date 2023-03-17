@@ -165,15 +165,6 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             </Theme>
           </XStack>
           : undefined}
-        {/* // ? <XStack
-            mt={media.gtXs ? '-5%' : '-12%'}
-            ml={media.gtXs ? '-28%' : '-28%'}
-            mb={media.gtXs ? '-5%' : '-14%'}
-            scale={0.5}>
-            <PostCard post={previewParent} isPreview={true} />
-          </XStack> : undefined} */}
-        {/* {previewParent ? <PostCard post={post.parent!} isPreview={true}  /> : undefined} */}
-
         <Theme inverse={selectedPostId == post.id}>
           <Card theme="dark" elevate size="$4" bordered
             margin='$0'

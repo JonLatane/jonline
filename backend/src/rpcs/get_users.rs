@@ -5,8 +5,8 @@ use tonic::Status;
 use crate::conversions::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
-use crate::protos::*;
 use crate::protos::UserListingType::*;
+use crate::protos::*;
 use crate::schema::follows;
 use crate::schema::users;
 
@@ -16,10 +16,18 @@ pub fn get_users(
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
     log::info!("GetUsers::request: {:?}", request);
-    let response = match (request.to_owned().listing_type.to_proto_user_listing_type(), request.to_owned().username, request.to_owned().user_id) {
-        (Some(FollowRequests), _, _) => get_all_users(request.to_owned(), user, conn),
-        (_, Some(_), _) => get_by_username(request.to_owned(), user, conn),
-        (_, _, Some(_)) => get_by_user_id(request.to_owned(), user, conn),
+    let response = match (
+        &user,
+        request.to_owned().listing_type.to_proto_user_listing_type(),
+        request.to_owned().username,
+        request.to_owned().user_id,
+    ) {
+        (Some(user), Some(FollowRequests), _, _) => {
+            get_follow_requests(request.to_owned(), user, conn)
+        }
+        (None, Some(FollowRequests), _, _) => GetUsersResponse::default(),
+        (_, _, Some(_), _) => get_by_username(request.to_owned(), user, conn),
+        (_, _, _, Some(_)) => get_by_user_id(request.to_owned(), user, conn),
         _ => get_all_users(request.to_owned(), user, conn),
     };
     // let response = match request.to_owned().username {
@@ -30,7 +38,11 @@ pub fn get_users(
     //     },
     // };
     // log::info!("GetUsers::request: {:?}, response: {:?}", request, response);
-    log::info!("GetUsers::request: {:?}, response_length: {:?}", request, response.users.len());
+    log::info!(
+        "GetUsers::request: {:?}, response_length: {:?}",
+        request,
+        response.users.len()
+    );
     Ok(response)
 }
 
@@ -58,11 +70,17 @@ fn get_all_users(
                 .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
         )
         .left_join(
-            target_follows.on(target_follows_user_id
-                .eq(users::id)
-                .and(target_follows_target_user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+            target_follows.on(target_follows_user_id.eq(users::id).and(
+                target_follows_target_user_id
+                    .nullable()
+                    .eq(user.as_ref().map(|u| u.id)),
+            )),
         )
-        .select((users::all_columns, follows::all_columns.nullable(), target_follows_columns.nullable()))
+        .select((
+            users::all_columns,
+            follows::all_columns.nullable(),
+            target_follows_columns.nullable(),
+        ))
         .filter(
             users::visibility
                 .eq_any(visibilities)
@@ -74,13 +92,66 @@ fn get_all_users(
         .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow)| user.to_proto_with(&follow, &target_follow))
+        .map(|(user, follow, target_follow)| {
+            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+        })
         .collect();
     GetUsersResponse {
         users,
         has_next_page: false,
     }
 }
+
+fn get_follow_requests(
+    request: GetUsersRequest,
+    user: &models::User,
+    conn: &mut PgPooledConnection,
+) -> GetUsersResponse {
+    let target_follows = alias!(follows as target_follows);
+    let target_follows_user_id = target_follows.field(follows::user_id);
+    let target_follows_target_user_id = target_follows.field(follows::target_user_id);
+    let target_follows_columns = target_follows.fields(follows::all_columns);
+    let users =
+        follows::table
+            .inner_join(
+                users::table.on(follows::target_user_id
+                    .eq(users::id)
+                    .and(follows::user_id.eq(user.id))),
+            )
+            .left_join(
+                target_follows.on(target_follows_user_id
+                    .eq(users::id)
+                    .and(target_follows_target_user_id.nullable().eq(user.id))),
+            )
+            .select((
+                users::all_columns,
+                follows::all_columns,
+                target_follows_columns.nullable(),
+            ))
+            .filter(follows::target_user_id.eq(user.id).and(
+                follows::target_user_moderation.eq(Moderation::Pending.to_string_moderation()),
+            ))
+            // .filter(
+            //     users::visibility
+            //         .eq_any(visibilities)
+            //         .or(users::id.nullable().eq(user.map(|u| u.id))),
+            // )
+            .order(users::created_at.desc())
+            .limit(100)
+            .offset((request.page.unwrap_or(0) * 100).into())
+            .load::<(models::User, models::Follow, Option<models::Follow>)>(conn)
+            .unwrap()
+            .iter()
+            .map(|(user, follow, target_follow)| {
+                user.to_proto_with(&Some(follow), &target_follow.as_ref())
+            })
+            .collect();
+    GetUsersResponse {
+        users,
+        has_next_page: false,
+    }
+}
+
 fn get_by_username(
     request: GetUsersRequest,
     user: Option<models::User>,
@@ -93,12 +164,16 @@ fn get_by_username(
     .iter()
     .map(|v| v.as_str_name())
     .collect::<Vec<&str>>();
-    log::info!("GetUsers::get_by_username: {:?}, visibilities: {:?}", request.username, visibilities);
 
     let target_follows = alias!(follows as target_follows);
     let target_follows_user_id = target_follows.field(follows::user_id);
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
     let target_follows_columns = target_follows.fields(follows::all_columns);
+
+    let has_follow_relationship = follows::user_id.is_not_null().or(
+        target_follows_user_id.is_not_null()
+    );
+    let is_self = users::id.nullable().eq(user.as_ref().map(|u| u.id));
     let users = users::table
         .left_join(
             follows::table.on(follows::target_user_id
@@ -106,15 +181,22 @@ fn get_by_username(
                 .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
         )
         .left_join(
-            target_follows.on(target_follows_user_id
-                .eq(users::id)
-                .and(target_follows_target_user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+            target_follows.on(target_follows_user_id.eq(users::id).and(
+                target_follows_target_user_id
+                    .nullable()
+                    .eq(user.as_ref().map(|u| u.id)),
+            )),
         )
-        .select((users::all_columns, follows::all_columns.nullable(), target_follows_columns.nullable()))
+        .select((
+            users::all_columns,
+            follows::all_columns.nullable(),
+            target_follows_columns.nullable(),
+        ))
         .filter(
             users::visibility
                 .eq_any(visibilities)
-                .or(users::id.nullable().eq(user.map(|u| u.id))),
+                .or(is_self)
+                .or(has_follow_relationship),
         )
         // .filter(users::username.ilike(format!("{}%", request.username.unwrap())))
         .filter(users::username.eq(request.username.unwrap()))
@@ -124,7 +206,9 @@ fn get_by_username(
         .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow)| user.to_proto_with(&follow, &target_follow))
+        .map(|(user, follow, target_follow)| {
+            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+        })
         .collect();
     GetUsersResponse {
         users,
@@ -156,11 +240,17 @@ fn get_by_user_id(
                 .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
         )
         .left_join(
-            target_follows.on(target_follows_user_id
-                .eq(users::id)
-                .and(target_follows_target_user_id.nullable().eq(user.as_ref().map(|u| u.id)))),
+            target_follows.on(target_follows_user_id.eq(users::id).and(
+                target_follows_target_user_id
+                    .nullable()
+                    .eq(user.as_ref().map(|u| u.id)),
+            )),
         )
-        .select((users::all_columns, follows::all_columns.nullable(), target_follows_columns.nullable()))
+        .select((
+            users::all_columns,
+            follows::all_columns.nullable(),
+            target_follows_columns.nullable(),
+        ))
         .filter(
             users::visibility
                 .eq_any(visibilities)
@@ -173,7 +263,9 @@ fn get_by_user_id(
         .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow)| user.to_proto_with(&follow, &target_follow))
+        .map(|(user, follow, target_follow)| {
+            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+        })
         .collect();
     GetUsersResponse {
         users,

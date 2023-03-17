@@ -115,6 +115,10 @@ message Post {
   // Always returned, even if preview_image is not. Indicates whether the UI
   // should attempt to fetch a preview_image.
   bool preview_image_exists = 16;
+  // Sharability is based on the visibility of the post. Not applicable to all visibilities.
+  // * `Visibility.LIMITED`, `Visibility.SERVER_PUBLIC`, `Visibility.GLOBAL_PUBLIC`: Allows other users to GroupPost your Post to (other) Groups.
+  // * `Visibility.PRIVATE`: Allows other users to reply to your Post.
+  bool shareable = 17;
 
   google.protobuf.Timestamp created_at = 20;
   optional google.protobuf.Timestamp updated_at = 21;

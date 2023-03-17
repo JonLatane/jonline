@@ -15,8 +15,9 @@ import "server_configuration.proto";
 // generally exposed on port 27707.
 //
 // Authenticated calls require an Access Token in request metadata, retrieved from
-// the AccessToken RPC. The CreateAccount or Login RPC should first be used to fetch
-// (and store) a Refresh Token to use when requesting new Access Tokens.
+// the `AccessToken` RPC. First, use the `CreateAccount` or `Login` RPCs to fetch
+// (and store) a Refresh Token and initial Access Token. Then use the Refresh Token
+// to call `AccessToken` when your previous Access Token has expired.
 service Jonline {
   // Get the version (from Cargo) of the Jonline service. *Publicly accessible.*
   rpc GetServiceVersion(google.protobuf.Empty) returns (GetServiceVersionResponse) {}
@@ -24,21 +25,21 @@ service Jonline {
   // Gets the Jonline server's configuration. *Publicly accessible.*
   rpc GetServerConfiguration(google.protobuf.Empty) returns (ServerConfiguration) {}
 
-  // Creates a user account and provides a Refresh Token (along with an Access Token). *Publicly accessible.*
+  // Creates a user account and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.*
   rpc CreateAccount(CreateAccountRequest) returns (RefreshTokenResponse) {}
-  // Logs in a user and provides a Refresh Token (along with an Access Token). *Publicly accessible.*
+  // Logs in a user and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.*
   rpc Login(LoginRequest) returns (RefreshTokenResponse) {}
-  // Gets a new Access Token and optionally a new Refresh Token, given a Refresh Token. *Publicly accessible.*
+  // Gets a new `access_token` (and possibly a new `refresh_token`, which should replace the old one in client storage), given a `refresh_token`. *Publicly accessible.*
   rpc AccessToken(AccessTokenRequest) returns (AccessTokenResponse) {}
 
   // Gets the current user. *Authenticated.*
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
   // Gets Users. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility.
+  // Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
 
   // Update a user by ID. *Authenticated.*
-  // Updating other users requires ADMIN permissions.
+  // Updating other users requires `ADMIN` permissions.
   rpc UpdateUser(User) returns (User) {}
 
   // Follow (or request to follow) a user. *Authenticated.*
@@ -49,25 +50,25 @@ service Jonline {
   rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
   
   // Gets Groups. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility.
+  // Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
   rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse) {}
 
   // Creates a group with the current user as its admin. *Authenticated.*
-  // Requires the CREATE_GROUPS permission.
+  // Requires the `CREATE_GROUPS` permission.
   rpc CreateGroup(Group) returns (Group) {}
   // Update a Groups's information, default membership permissions or moderation. *Authenticated.*
-  // Requires ADMIN permissions within the group, or ADMIN permissions for the user.
+  // Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   rpc UpdateGroup(Group) returns (Group) {}
   // Delete a Group. *Authenticated.*
-  // Requires ADMIN permissions within the group, or ADMIN permissions for the user.
+  // Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   rpc DeleteGroup(Group) returns (google.protobuf.Empty) {}
 
   // Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.*
   // Memberships and moderations are set to their defaults.
   rpc CreateMembership(Membership) returns (Membership) {}
   // Update aspects of a user's membership. *Authenticated.*
-  // Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user.
-  // Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group.
+  // Updating permissions requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
+  // Updating moderation (approving/denying/banning) requires the same, or `MODERATE_USERS` permissions within the group.
   rpc UpdateMembership(Membership) returns (Membership) {}
   // Leave a group (or cancel membership request). *Authenticated.*
   rpc DeleteMembership(Membership) returns (google.protobuf.Empty) {}
@@ -75,7 +76,7 @@ service Jonline {
   rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {}
 
   // Gets Posts. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.
+  // Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility.
   rpc GetPosts(GetPostsRequest) returns (GetPostsResponse) {}
 
   // Creates a Post. *Authenticated.*
@@ -98,11 +99,11 @@ service Jonline {
   rpc StreamReplies(Post) returns (stream Post);
 
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
-  // Requires ADMIN permissions.
+  // Requires `ADMIN` permissions.
   rpc ConfigureServer(ServerConfiguration) returns (ServerConfiguration) {}
 
   // DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.*
-  // Requires ADMIN permissions.
+  // Requires `ADMIN` permissions.
   // Note: Server Configuration is not deleted.
   rpc ResetData(google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }

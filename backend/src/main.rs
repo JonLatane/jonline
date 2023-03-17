@@ -6,6 +6,7 @@ extern crate diesel_migrations;
 extern crate dotenv;
 extern crate futures;
 extern crate itertools;
+extern crate log;
 extern crate markdown;
 extern crate prost_types;
 extern crate prost_wkt_types;
@@ -17,8 +18,7 @@ extern crate rocket_cache_response;
 extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
-extern crate log;
-// #[macro_use]
+#[macro_use]
 extern crate lazy_static;
 extern crate tokio_stream;
 
@@ -37,13 +37,13 @@ pub mod web;
 
 use crate::jonline::JonLineImpl;
 // use crate::jonline::*;
-use tonic_web::*;
 use ::jonline::{db_connection::PgPool, env_var, report_error};
 use futures::future::join_all;
 use protos::jonline_server::JonlineServer;
 use rocket::*;
 use std::net::SocketAddr;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
+use tonic_web::*;
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
@@ -54,7 +54,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool2 = pool1.clone();
     let pool3 = pool1.clone();
     let pool4 = pool1.clone();
-
 
     let jonline = JonLineImpl { pool: pool1 };
 
@@ -85,10 +84,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let tonic_router = tonic_server
-            .accept_http1(true)
-            // .layer(GrpcWebLayer::new())
-            .add_service(enable(JonlineServer::new(jonline)))
-            .add_service(enable(reflection_service));
+        .accept_http1(true)
+        // .layer(GrpcWebLayer::new())
+        .add_service(enable(JonlineServer::new(jonline)))
+        .add_service(enable(reflection_service));
 
     tokio::spawn(async {
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], 27707));
@@ -103,7 +102,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let rocket_unsecure_8000_server = rocket::tokio::spawn(async move {
-        match create_rocket_unsecured(8000, pool2, secure_mode).launch().await {
+        match create_rocket_unsecured(8000, pool2, secure_mode)
+            .launch()
+            .await
+        {
             Ok(_) => (),
             Err(e) => {
                 log::warn!("Unable to start Rocket server on port 8000");
@@ -113,7 +115,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ()
     });
     let rocket_unsecure_80_server = rocket::tokio::spawn(async move {
-        match create_rocket_unsecured(80, pool3, secure_mode).launch().await {
+        match create_rocket_unsecured(80, pool3, secure_mode)
+            .launch()
+            .await
+        {
             Ok(_) => (),
             Err(e) => {
                 log::warn!("Unable to start Rocket server on port 80");
@@ -187,24 +192,14 @@ fn create_rocket<T: rocket::figment::Provider>(
     figment: T,
     pool: Arc<PgPool>,
 ) -> rocket::Rocket<rocket::Build> {
+    let mut routes = routes![
+        web::main_index::main_index,
+    ];
+    routes.append(&mut (*web::FLUTTER_PAGES).clone());
+    routes.append(&mut (*web::TAMAGUI_PAGES).clone());
     let server = rocket::custom(figment)
         .manage(web::RocketState { pool })
-        .mount(
-            "/",
-            routes![
-                web::main_index::main_index,
-                web::flutter_index,
-                web::flutter_file,
-                web::tamagui_index,
-                web::tamagui_about,
-                web::tamagui_post,
-                web::tamagui_user,
-                web::tamagui_server,
-                web::tamagui_group_shortname,
-                web::tamagui_group_post,
-                web::tamagui_file_or_username
-            ],
-        )
+        .mount("/", routes)
         .register("/", catchers![web::catchers::not_found]);
     if cfg!(debug_assertions) {
         server

@@ -1,7 +1,8 @@
 import { Group } from "@jonline/api";
 import { JonlineServer } from "app/store";
 import { Button, Heading, Popover, ScrollView, XStack, YStack } from '@jonline/ui';
-import { useAccount } from '../../store/store';
+import { useAccount, useServerTheme } from '../../store/store';
+import { useLink } from "solito/link";
 
 export enum AppSection {
   HOME = 'home',
@@ -9,6 +10,10 @@ export enum AppSection {
   EVENTS = 'events',
   PEOPLE = 'people',
   GROUPS = 'groups',
+}
+
+export enum AppSubsection {
+  FOLLOW_REQUESTS = 'follow_requests',
 }
 
 export function sectionTitle(section: AppSection) {
@@ -27,23 +32,54 @@ export function sectionTitle(section: AppSection) {
       return 'Latest';
   }
 }
+export function subsectionTitle(subsection?: AppSubsection): string | undefined {
+  switch (subsection) {
+    case AppSubsection.FOLLOW_REQUESTS:
+      return 'Follow Requests';
+    default:
+      return undefined;
+  }
+}
 
 export type FeaturesNavigationProps = {
   appSection?: AppSection;
+  appSubsection?: AppSubsection;
   selectedGroup?: Group;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
   groupPageForwarder?: (group: Group) => string;
 };
 
-export function FeaturesNavigation({ appSection = AppSection.HOME, selectedGroup, groupPageForwarder }: FeaturesNavigationProps) {
+export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, groupPageForwarder }: FeaturesNavigationProps) {
   const account = useAccount();
+  const { navColor, navTextColor, textColor } = useServerTheme();
+
+  const latestLink = useLink({ href: '/' });
+  const peopleLink = useLink({ href: '/people' });
+  const followRequestsLink = useLink({ href: '/people/follow_requests' });
+
+  const isLatest = appSection == AppSection.HOME;
+  const isPeople = appSection == AppSection.PEOPLE && appSubsection == undefined;
+  const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
+
+  function navButton(selected, link, name) {
+    return <Button
+      // bordered={false}
+      transparent
+      size="$3"
+      disabled={selected}
+      backgroundColor={selected ? navColor : undefined}
+      {...link}
+    >
+      <Heading size="$4" color={selected ? navTextColor : textColor}>{name}</Heading>
+    </Button>;
+  }
   return <>
     <XStack w={selectedGroup ? 11 : 3.5} />
     <Popover size="$5">
       <Popover.Trigger asChild>
         <Button transparent>
-          <Heading size="$4">{sectionTitle(appSection)}</Heading>
+          <Heading size="$4">{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
         </Button>
       </Popover.Trigger>
 
@@ -86,7 +122,9 @@ Name
 
           {[AppSection.HOME/*, AppSection.POSTS, AppSection.EVENTS*/].map((section) => <ScrollView w='100%'><XStack ac='center' jc='center'>
             <Popover.Close asChild>
-              <Button
+
+              {navButton(isLatest, latestLink, sectionTitle(section))}
+              {/* <Button
                 // bordered={false}
                 transparent
                 size="$3"
@@ -94,10 +132,10 @@ Name
                 onPress={() => { }}
               >
                 <Heading size="$4">{sectionTitle(section)}</Heading>
-              </Button>
+              </Button> */}
             </Popover.Close>
             {account ? <>
-            {/* <Popover.Close asChild>
+              {/* <Popover.Close asChild>
               <Button
                 // bordered={false}
                 transparent
@@ -108,7 +146,7 @@ Name
                 <Heading size="$4">Following</Heading>
               </Button>
             </Popover.Close> */}
-            {/* <Popover.Close asChild>
+              {/* <Popover.Close asChild>
               <Button
                 // bordered={false}
                 transparent
@@ -123,30 +161,36 @@ Name
           </XStack>
           </ScrollView>)
           }
-          <XStack ac='center' jc='center'>
+          <XStack ac='center' jc='center' space='$2'>
 
             <Popover.Close asChild>
-              <Button
+              {navButton(isPeople, peopleLink, 'People')}
+              {/* <Button
                 // bordered={false}
                 transparent
                 size="$3"
-                disabled={appSection == AppSection.PEOPLE}
-                onPress={() => { }}
+                disabled={isPeople}
+                backgroundColor={isPeople ? navColor : undefined}
+                {...peopleLink}
               >
-                <Heading size="$4">{sectionTitle(AppSection.PEOPLE)}</Heading>
-              </Button>
+                <Heading size="$4" color={isPeople ? navTextColor : textColor}>People</Heading>
+              </Button> */}
             </Popover.Close>
-            {account ? <><Popover.Close asChild>
-              <Button
-                // bordered={false}
-                transparent
-                size="$3"
-                disabled={appSection == AppSection.PEOPLE}
-                onPress={() => { }}
-              >
-                <Heading size="$4">Follow Requests</Heading>
-              </Button>
-            </Popover.Close></> : undefined}
+            {account ? <>
+              <Popover.Close asChild>
+                {navButton(isFollowRequests, followRequestsLink, 'Follow Requests')}
+                {/* <Button
+                  // bordered={false}
+                  transparent
+                  size="$3"
+                  disabled={isFollowRequests}
+                  backgroundColor={isFollowRequests ? navColor : undefined}
+                  {...followRequestsLink}
+                >
+                  <Heading size="$4" color={isFollowRequests ? navTextColor : textColor}>Follow Requests</Heading>
+                </Button> */}
+              </Popover.Close>
+            </> : undefined}
           </XStack>
           {/* <XStack ac='center' jc='center'>
 

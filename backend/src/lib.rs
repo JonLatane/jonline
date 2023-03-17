@@ -12,7 +12,7 @@ extern crate futures;
 extern crate serde;
 extern crate serde_json;
 extern crate itertools;
-// #[macro_use]
+#[macro_use]
 extern crate lazy_static;
 extern crate log;
 extern crate tokio_stream;

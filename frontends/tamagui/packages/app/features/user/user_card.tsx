@@ -1,15 +1,16 @@
-import { Card, Heading, Image, Theme, useMedia, XStack, YStack, Button, Tooltip, Paragraph } from '@jonline/ui';
 import { Permission, User } from "@jonline/api";
+import { Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
 
+import { useOnScreen } from 'app/hooks/use_on_screen';
 import { loadUser, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation";
 import React, { useEffect } from "react";
+import { GestureResponderEvent, View } from 'react-native';
+import { followUnfollowUser, isUserLocked, respondToFollowRequest } from '../../store/modules/users';
+import { useLocalApp } from '../../store/store';
 import { FadeInView } from "../post/fade_in_view";
 import { } from "../post/post_card";
-import { followUnfollowUser, respondToFollowRequest } from '../../store/modules/users';
-import { GestureResponderEvent } from 'react-native';
-import { useLocalApp } from '../../store/store';
 
 interface Props {
   user: User;
@@ -32,6 +33,7 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
   const followRequested = user.currentUserFollow && !following;
   const followsCurrentUser = passes(user.targetCurrentUserFollow?.targetUserModeration);
   const followRequestReceived = user.targetCurrentUserFollow && !followsCurrentUser;
+  const isLocked = useTypedSelector((state: RootState) => isUserLocked(state.users, user.id));
 
   const requiresPermissionToFollow = pending(user.defaultFollowModeration);
 
@@ -44,10 +46,12 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
     e.stopPropagation();
     dispatch(respondToFollowRequest({ userId: user.id, accept, ...accountOrServer }))
   };
+  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  const onScreen = useOnScreen(ref, "-1px");
 
   useEffect(() => {
     if (!loadingAvatar) {
-      if (avatar == undefined) {
+      if (avatar == undefined && onScreen) {
         setLoadingAvatar(true);
         setTimeout(() => dispatch(loadUser({ id: user.id, ...accountOrServer })), 1);
       } else if (avatar != undefined) {
@@ -60,8 +64,10 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
     <Theme inverse={isCurrentUser}>
       <Card theme="dark" elevate size="$4" bordered
         animation="bouncy"
+        ref={ref}
         // scale={0.9}
-        width={isPreview ? 260 : '100%'}
+        margin='$0'
+        width={'100%'}
       // width={400}
       // hoverStyle={{ scale: 0.925 }}
       // pressStyle={{ scale: 0.875 }}
@@ -106,34 +112,38 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
         <Card.Footer>
           <YStack mt='$2' mr='$3' w='100%'>
             {(!isPreview && avatar && avatar != '') ?
-              <Image
-                // pos="absolute"
-                // width={400}
-                // opacity={0.25}
-                // height={400}
-                // minWidth={300}
-                // minHeight={300}
-                // width='100%'
-                // height='100%'
-                mb='$3'
-                width={media.gtXs ? 400 : 300}
-                height={media.gtXs ? 400 : 300}
-                resizeMode="contain"
-                als="center"
-                src={avatar}
-                borderRadius={10}
-              // borderBottomRightRadius={5}
-              /> : undefined}
+              <FadeInView>
+                <Image
+                  // pos="absolute"
+                  // width={400}
+                  // opacity={0.25}
+                  // height={400}
+                  // minWidth={300}
+                  // minHeight={300}
+                  // width='100%'
+                  // height='100%'
+                  mb='$3'
+                  width={media.gtXs ? 400 : 300}
+                  height={media.gtXs ? 400 : 300}
+                  resizeMode="contain"
+                  als="center"
+                  src={avatar}
+                  borderRadius={10}
+                // borderBottomRightRadius={5}
+                />
+              </FadeInView> : undefined}
             {followsCurrentUser ? <Heading size='$1' ta='center'>{following ? 'Friends' : 'Follows You'}</Heading> : undefined}
             {followRequestReceived ? <>
               <Heading size='$1' ta='center'>Wants to follow you</Heading>
-              <XStack ac='center' jc='center' mb='$2'>
-                <Button onPress={(e) => doRespondToFollowRequest(e, true)} backgroundColor={primaryColor}>
+              <XStack ac='center' jc='center' mb='$2' space='$2'>
+                <Button onPress={(e) => doRespondToFollowRequest(e, true)} backgroundColor={primaryColor}
+                  disabled={isLocked} opacity={isLocked ? 0.5 : 1}>
                   <Heading size='$2' color={primaryTextColor}>
                     Accept
                   </Heading>
                 </Button>
-                <Button onPress={(e) => doRespondToFollowRequest(e, false)} >
+                <Button onPress={(e) => doRespondToFollowRequest(e, false)}
+                  disabled={isLocked} opacity={isLocked ? 0.5 : 1} >
                   <Heading size='$2' color={textColor}>
                     Reject
                   </Heading>
@@ -146,6 +156,7 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
               <Button backgroundColor={!following && !followRequested ? primaryColor : undefined}
                 mb='$2'
                 p='$3'
+                disabled={isLocked} opacity={isLocked ? 0.5 : 1}
                 onPress={onFollowPressed}>
                 <YStack jc='center' ac='center'>
                   <Heading jc='center' ta='center' size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
@@ -176,9 +187,9 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
             <FadeInView>
               <Image
                 pos="absolute"
-                width={300}
+                width={media.gtSm ? 300 : 150}
+                height={media.gtSm ? 300 : 150}
                 opacity={0.25}
-                height={300}
                 resizeMode="contain"
                 als="flex-start"
                 src={avatar}

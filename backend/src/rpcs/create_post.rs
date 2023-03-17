@@ -60,6 +60,16 @@ pub fn create_post(
         None => None,
     };
 
+    let visibility = match req.visibility() {
+        Visibility::Unknown => Visibility::GlobalPublic,
+        v => v
+    };
+    match visibility {
+        Visibility::GlobalPublic => validate_permission(&user, Permission::PublishPostsGlobally)?,
+        Visibility::ServerPublic => validate_permission(&user, Permission::PublishPostsLocally)?,
+        _ => {}
+    };
+
     let post_title: Option<String> = match req.reply_to_post_id {
         Some(_) => None,
         None => req.to_owned().title,
@@ -73,10 +83,7 @@ pub fn create_post(
                 title: post_title,
                 link: req.link.to_link(),
                 content: req.content.to_owned(),
-                visibility: match req.visibility() {
-                    Visibility::Unknown => Visibility::GlobalPublic,
-                    v => v
-                }.to_string_visibility(),
+                visibility: visibility.to_string_visibility(),
                 preview: None,
             })
             .get_result::<models::Post>(conn)?;

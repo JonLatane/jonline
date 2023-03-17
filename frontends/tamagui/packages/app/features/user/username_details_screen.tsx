@@ -1,19 +1,20 @@
-import { Moderation, Permission, User } from '@jonline/api'
-import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Text, TextArea, Tooltip, useWindowDimensions, XStack, YStack } from '@jonline/ui'
-import { CheckCircle, ChevronRight, Edit, Eye, AlertTriangle } from '@tamagui/lucide-icons';
-import { clearUserAlerts, loadUsername, loadUserPosts, RootState, selectUserById, updateUser, useCredentialDispatch, userSaved, useServerTheme, useTypedSelector } from 'app/store'
-import { pending } from 'app/utils/moderation'
-import React, { useEffect, useState } from 'react'
-import { FlatList } from 'react-native'
-import StickyBox from "react-sticky-box"
-import { createParam } from 'solito'
-import { useLink } from 'solito/link'
-import { useAccount } from '../../store/store'
-import { AsyncPostCard } from '../post/async_post_card'
-import { TamaguiMarkdown } from '../post/tamagui_markdown'
-import { ToggleRow } from '../settings_sheet'
-import { TabsNavigation } from '../tabs/tabs_navigation'
-import UserCard from './user_card'
+import { Moderation, Permission, User, Visibility } from '@jonline/api';
+import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Text, TextArea, Tooltip, useWindowDimensions, XStack, YStack, useMedia } from '@jonline/ui';
+import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye } from '@tamagui/lucide-icons';
+import { clearUserAlerts, loadUsername, loadUserPosts, RootState, selectUserById, updateUser, useCredentialDispatch, userSaved, useServerTheme, useTypedSelector } from 'app/store';
+import { pending } from 'app/utils/moderation';
+import React, { useEffect, useState } from 'react';
+import { FlatList } from 'react-native';
+import StickyBox from "react-sticky-box";
+import { createParam } from 'solito';
+import { useLink } from 'solito/link';
+import { useAccount } from '../../store/store';
+import { AsyncPostCard } from '../post/async_post_card';
+import { TamaguiMarkdown } from '../post/tamagui_markdown';
+import { VisibilityPicker } from '../post/visibility_picker';
+import { ToggleRow } from '../settings_sheet';
+import { TabsNavigation } from '../tabs/tabs_navigation';
+import UserCard from './user_card';
 
 
 const { useParam } = createParam<{ username: string }>()
@@ -40,10 +41,11 @@ export function UsernameDetailsScreen() {
   const [updatedAvatar, setUpdatedAvatar] = useState(avatar);
   const [editMode, setEditMode] = useState(false);
   const [defaultFollowModeration, setDefaultFollowModeration] = useState(user?.defaultFollowModeration ?? Moderation.MODERATION_UNKNOWN);
+  const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
 
   const successSaving = useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
   const dirtyData = name != user?.username || bio != user?.bio || updatedAvatar != avatar
-    || defaultFollowModeration != user?.defaultFollowModeration;
+    || defaultFollowModeration != user?.defaultFollowModeration || visibility != user?.visibility;
 
   const userPosts = useTypedSelector((state: RootState) => {
     return userId ? (state.users.idPosts ?? {})[userId] : undefined
@@ -55,6 +57,7 @@ export function UsernameDetailsScreen() {
       setBio(user.bio);
       setUpdatedAvatar(avatar);
       setDefaultFollowModeration(user.defaultFollowModeration);
+      setVisibility(user.visibility);
     }
     if (dirtyData && successSaving) {
       dispatch(clearUserAlerts!());
@@ -94,7 +97,7 @@ export function UsernameDetailsScreen() {
 
     setTimeout(() => dispatch(updateUser({
       ...accountOrServer,
-      user: { ...user!, bio: bio ?? '', defaultFollowModeration },
+      user: { ...user!, bio: bio ?? '', defaultFollowModeration, visibility },
       avatar: avatar,
     })));
   }
@@ -147,11 +150,11 @@ export function UsernameDetailsScreen() {
                 </XStack>
               </Button>
               <UserVisibilityPermissions expanded={showPermissionsAndVisibility}
-                {...{ user, defaultFollowModeration, setDefaultFollowModeration, editMode }} />
+                {...{ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, editMode }} />
 
               {(userPosts || []).length > 0 ?
                 <>
-                  <Heading size='$4' ta='center'>Latest Activity</Heading>
+                  <Heading size='$4' ta='center' mt='$2'>Latest Activity</Heading>
                   <FlatList data={userPosts} style={{ width: '100%' }}
                     // onRefresh={reloadPosts}
                     // refreshing={postsState.status == 'loading'}
@@ -241,17 +244,23 @@ interface UserVisibilityPermissionsProps {
   user: User,
   defaultFollowModeration: Moderation,
   setDefaultFollowModeration: (v: Moderation) => void,
+  visibility: Visibility,
+  setVisibility: (v: Visibility) => void,
   expanded?: boolean;
   editMode: boolean;
 }
 
-const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ user, defaultFollowModeration, setDefaultFollowModeration, editMode, expanded = true }) => {
+const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, editMode, expanded = true }) => {
+  const media = useMedia();
   const account = useAccount();
   const isCurrentUser = account && account?.user?.id == user.id;
   const isAdmin = account?.user?.permissions?.includes(Permission.ADMIN);
   const canEdit = isCurrentUser || isAdmin;
+  const disableInputs = !editMode || !canEdit;
   return expanded ? <YStack animation="bouncy"
     p='$3'
+    ac='center'
+    jc='center'
     opacity={1}
     scale={1}
     y={0}
@@ -262,9 +271,31 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
     exitStyle={{
       opacity: 0,
     }}>
-    <ToggleRow name={`Require${editMode && isCurrentUser ? '' : 's'} Permission to Follow`} value={pending(defaultFollowModeration)}
-      disabled={!editMode || !canEdit}
-      setter={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)} />
-
+    <XStack ac='center' jc='center' mb='$2'>
+      {media.gtSm ? <Heading size='$3' marginVertical='auto' f={1} o={disableInputs ? 0.5 : 1}>
+        Visibility
+      </Heading> : undefined}
+      <VisibilityPicker label={`${isCurrentUser ? 'Profile' : 'User'} Visibility`}
+        visibility={visibility} onChange={setVisibility}
+        disabled={disableInputs}
+        visibilityDescription={(v) => {
+          switch (v) {
+            case Visibility.PRIVATE:
+              return `Only ${isCurrentUser ? 'you' : 'they'} can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+            case Visibility.LIMITED:
+              return `Only followers can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+            case Visibility.SERVER_PUBLIC:
+              return `Anyone on this server can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+            case Visibility.GLOBAL_PUBLIC:
+              return `Anyone on the internet can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+            default:
+              return 'Unknown';
+          }
+        }} />
+    </XStack>
+    <ToggleRow name={`Require${editMode && isCurrentUser ? '' : 's'} Permission to Follow`}
+      value={pending(defaultFollowModeration)}
+      setter={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+      disabled={disableInputs} />
   </YStack> : <></>;
 }
