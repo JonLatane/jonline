@@ -11,12 +11,18 @@ import { followUnfollowUser, isUserLocked, respondToFollowRequest } from '../../
 import { useLocalApp } from '../../store/store';
 import { FadeInView } from "../post/fade_in_view";
 import { } from "../post/post_card";
+import { useLink } from 'solito/link';
 
 interface Props {
   user: User;
   isPreview?: boolean;
   setUsername?: (username: string) => void;
   setAvatar?: (encodedBlob: string) => void;
+}
+
+export function useFullAvatarHeight(): number {
+  const media = useMedia();
+  return media.gtXs ? 400 : 300;
 }
 
 const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAvatar }) => {
@@ -34,6 +40,8 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
   const followsCurrentUser = passes(user.targetCurrentUserFollow?.targetUserModeration);
   const followRequestReceived = user.targetCurrentUserFollow && !followsCurrentUser;
   const isLocked = useTypedSelector((state: RootState) => isUserLocked(state.users, user.id));
+  const userLink = useLink({ href: `/${user.username}` });
+  const fullAvatarHeight = useFullAvatarHeight();
 
   const requiresPermissionToFollow = pending(user.defaultFollowModeration);
 
@@ -68,9 +76,10 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
         // scale={0.9}
         margin='$0'
         width={'100%'}
-      // width={400}
-      // hoverStyle={{ scale: 0.925 }}
-      // pressStyle={{ scale: 0.875 }}
+        // width={400}
+        hoverStyle={isPreview ? { scale: 0.97 } : {}}
+        pressStyle={isPreview ? { scale: 0.95 } : {}}
+        {...(isPreview ? userLink : {})}
       >
         <Card.Header>
           <XStack>
@@ -123,8 +132,8 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
                   // width='100%'
                   // height='100%'
                   mb='$3'
-                  width={media.gtXs ? 400 : 300}
-                  height={media.gtXs ? 400 : 300}
+                  width={fullAvatarHeight}
+                  height={fullAvatarHeight}
                   resizeMode="contain"
                   als="center"
                   src={avatar}

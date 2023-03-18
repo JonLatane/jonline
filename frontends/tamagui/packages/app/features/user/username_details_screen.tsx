@@ -1,5 +1,5 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Text, TextArea, Tooltip, useWindowDimensions, XStack, YStack, useMedia } from '@jonline/ui';
+import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Text, TextArea, Tooltip, useMedia, useWindowDimensions, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye } from '@tamagui/lucide-icons';
 import { clearUserAlerts, loadUsername, loadUserPosts, RootState, selectUserById, updateUser, useCredentialDispatch, userSaved, useServerTheme, useTypedSelector } from 'app/store';
 import { pending } from 'app/utils/moderation';
@@ -14,19 +14,19 @@ import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import { VisibilityPicker } from '../post/visibility_picker';
 import { ToggleRow } from '../settings_sheet';
 import { TabsNavigation } from '../tabs/tabs_navigation';
-import UserCard from './user_card';
+import UserCard, { useFullAvatarHeight } from './user_card';
 
 
 const { useParam } = createParam<{ username: string }>()
 
 export function UsernameDetailsScreen() {
-  const [username] = useParam('username')
-  const linkProps = useLink({ href: '/' })
+  const [username] = useParam('username');
+  const linkProps = useLink({ href: '/' });
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const userId = useTypedSelector((state: RootState) => username ? state.users.usernameIds[username] : undefined);
-  const user = useTypedSelector((state: RootState) =>
-    userId ? selectUserById(state.users, userId) : undefined);
+  const paramUserId: string | undefined = useTypedSelector((state: RootState) => username ? state.users.usernameIds[username] : undefined);
+  const [userId, setUserId] = useState(paramUserId);
+  const user = useTypedSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const usersState = useTypedSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
@@ -51,13 +51,32 @@ export function UsernameDetailsScreen() {
     return userId ? (state.users.idPosts ?? {})[userId] : undefined
   });
   const [loadingUserPosts, setLoadingUserPosts] = useState(false);
+  const fullAvatarHeight = useFullAvatarHeight();
+  function resetFormData() {
+    if (!user) {
+      setName(undefined);
+      setBio(undefined);
+      setUpdatedAvatar(undefined);
+      setDefaultFollowModeration(Moderation.MODERATION_UNKNOWN);
+      setVisibility(Visibility.VISIBILITY_UNKNOWN);
+      return;
+    };
+
+    setBio(user.bio);
+    setUpdatedAvatar(avatar);
+    setDefaultFollowModeration(user.defaultFollowModeration);
+    setVisibility(user.visibility);
+    setName(user.username);
+  }
+
   useEffect(() => {
+    if (paramUserId != userId) {
+      setUserId(paramUserId);
+      resetFormData();
+    }
     if (user && !name) {
-      setName(user.username);
-      setBio(user.bio);
-      setUpdatedAvatar(avatar);
-      setDefaultFollowModeration(user.defaultFollowModeration);
-      setVisibility(user.visibility);
+      setUserId(paramUserId);
+      resetFormData();
     }
     if (dirtyData && successSaving) {
       dispatch(clearUserAlerts!());
@@ -185,9 +204,16 @@ export function UsernameDetailsScreen() {
                   </Tooltip>
                   <Tooltip placement="top-start">
                     <Tooltip.Trigger>
-                      <Button backgroundColor={!editMode ? undefined : navColor} color={!editMode ? undefined : navTextColor} als='center' onPress={() => {
-                        setEditMode(true); isClient && window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }} icon={Edit} circular mr='$5' />
+                      <Button icon={Edit} circular mr='$5' als='center'
+                        backgroundColor={!editMode ? undefined : navColor} color={!editMode ? undefined : navTextColor}
+                        onPress={() => {
+                          setEditMode(true);
+                          setShowPermissionsAndVisibility(true);
+                          const maxScrollPosition = 270 + (avatar ? fullAvatarHeight : 0);
+                          if (window.scrollY > maxScrollPosition) {
+                            isClient && window.scrollTo({ top: maxScrollPosition, behavior: 'smooth' });
+                          }
+                        }} />
                     </Tooltip.Trigger>
                     <Tooltip.Content>
                       <Heading size='$2'>Edit {isCurrentUser ? 'your' : 'this'} profile</Heading>
@@ -206,7 +232,7 @@ export function UsernameDetailsScreen() {
                     opacity={0}>
                     <AlertTriangle color='yellow' />
                   </YStack>}
-                  <Button backgroundColor={primaryColor} als='center' onPress={saveUser}>
+                  <Button backgroundColor={primaryColor} disabled={!dirtyData} opacity={dirtyData ? 1 : 0.5} als='center' onPress={saveUser}>
                     <Heading size='$2' color={primaryTextColor}>Save</Heading>
                   </Button>
                   {successSaving ? <YStack animation="bouncy"
