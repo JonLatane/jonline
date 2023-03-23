@@ -4,208 +4,31 @@
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
 
-TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
-
-# Configure these when building your own Jonline images. Note that you must update backend/k8s/jonline.yaml to
-# point to your cloud registry rather than docker.io/jonlatane.
-CLOUD_REGISTRY := docker.io/jonlatane
-LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
-
-# You likely don't need to update this, but it's used when creating the local builder image.
-LOCAL_REGISTRY := kubernetes.docker.internal:5000
-
-# Versions are derived from TOML/YAML files, and should not be changed here.
-BE_VERSION := $$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
-FE_VERSION := $$(cat frontends/flutter/pubspec.yaml | grep 'version:' | sed -n 1p | awk '{print $$2;}' | sed 's/"//g')
-
-show_be_version:
-	@echo $(BE_VERSION)
-show_fe_version:
-	@echo $(FE_VERSION)
-
 # K8s server deployment targets
-deploy_be_create: deploy_ensure_namespace
-	kubectl create -f backend/k8s/jonline.yaml --save-config -n $(NAMESPACE)
-
+deploy_be_create:
+	cd deploys && $(MAKE) deploy_be_create
+# K8s server deployment targets
 deploy_be_update:
-	kubectl apply -f backend/k8s/jonline.yaml -n $(NAMESPACE)
+	cd deploys && $(MAKE) deploy_be_update
 
-deploy_be_delete:
-	kubectl delete -f backend/k8s/jonline.yaml -n $(NAMESPACE)
-
-deploy_be_restart:
-	kubectl rollout restart deployment jonline -n $(NAMESPACE)
-
-deploy_be_get_external_ip:
-# Suppress echoing this so 'make deploy_be_get_external_ip` is easily composable. 
-	@kubectl get service jonline -n $(NAMESPACE) | sed -n 2p | awk '{print $$4}'
-
-deploy_get_all:
-	kubectl get all -n $(NAMESPACE)
-
-deploy_be_get_pods:
-	kubectl get pods --selector=app=jonline -n $(NAMESPACE)
-
-# K8s server deployment test targets
-deploy_test_be:
-	@echo 'Getting services on target server...'
-	grpcurl $(TEST_GRPC_TARGET) list
-	@echo "\nGetting Jonline service version..."
-	grpcurl $(TEST_GRPC_TARGET) jonline.Jonline/GetServiceVersion
-	@echo "\nGetting available Jonline RPCs..."
-	grpcurl $(TEST_GRPC_TARGET) list jonline.Jonline
-
-deploy_test_be_unsecured:
-	@echo 'Getting services on target server...'
-	grpcurl -plaintext $(TEST_GRPC_TARGET) list
-	@echo "\nGetting Jonline service version..."
-	grpcurl -plaintext $(TEST_GRPC_TARGET) jonline.Jonline/GetServiceVersion
-	@echo "\nGetting available Jonline RPCs..."
-	grpcurl -plaintext $(TEST_GRPC_TARGET) list jonline.Jonline
-
-deploy_test_be_tls_openssl:
-	openssl s_client -connect $(TEST_GRPC_TARGET) -CAfile generated_certs/ca.pem
-
-deploy_data_create: deploy_db_create deploy_minio_create
-deploy_data_update: deploy_db_update deploy_minio_update
-deploy_data_delete: deploy_db_delete deploy_minio_delete
-deploy_data_restart: deploy_ddbrestart deploy_dminiorestart
-
-# K8s DB deployment targets (optional if using managed DB)
-deploy_db_create: deploy_ensure_namespace
-	kubectl create -f backend/k8s/k8s-postgres.yaml --save-config -n $(NAMESPACE)
-
-deploy_db_update:
-	kubectl apply -f backend/k8s/k8s-postgres.yaml -n $(NAMESPACE)
-
-deploy_db_delete:
-	- kubectl delete -f backend/k8s/k8s-postgres.yaml -n $(NAMESPACE)
-
-deploy_db_restart:
-	kubectl rollout restart deployment jonline-postgres -n $(NAMESPACE)
-
-# K8s Minio deployment targets (optional if using managed S3/Minio)
-deploy_minio_create: deploy_ensure_namespace
-	kubectl create -f backend/k8s/k8s-minio.yaml --save-config -n $(NAMESPACE)
-
-deploy_minio_update:
-	kubectl apply -f backend/k8s/k8s-minio.yaml -n $(NAMESPACE)
-
-deploy_minio_delete:
-	- kubectl delete -f backend/k8s/k8s-minio.yaml -n $(NAMESPACE)
-
-deploy_minio_restart:
-	kubectl rollout restart deployment jonline-minio -n $(NAMESPACE)
-
-# Useful things
-deploy_ensure_namespace:
-	- kubectl create namespace $(NAMESPACE)
-
-# Certificate-related targets
-deploy_be_get_certs:
-	kubectl get secret jonline-generated-tls -n $(NAMESPACE)
-deploy_be_get_ca_certs:
-	kubectl get configmap jonline-generated-ca -n $(NAMESPACE)
+deploy_data_create:
+	cd deploys && $(MAKE) deploy_data_create
 
 # DEVELOPMENT-RELATED TARGETS
 # Core release targets (for general use, CI/CD, etc.)
-release_ios: release_ios_push_testflight
+release_ios:
+	cd deploys/releases && $(MAKE) release_ios
 release_be_cloud: release_be_push_cloud
+	cd deploys/releases && $(MAKE) release_be_cloud
 # This target rebuilds the Flutter+React apps, but does not rebuild the Rust BE
 # before pushing the new image. The server Docker image is structured so that this will
 # result in a very small push of only it first layer. Useful for iteration (~55s to deploy
 # to two namespaces in my cluster from my old MBP), but note that
 # the BE GetServiceVersion call will not match the version of the Docker image.
-release_be_fe_only_cloud: release_be_fe_only_push_cloud
-release_be_local: release_be_push_local
-
-# Local registry targets for build
-local_registry_start:
-	docker start local-registry
-
-local_registry_stop:
-	docker stop local-registry
-	docker rm local-registry
-
-local_registry_create:
-	$(MAKE) local_registry_start || docker run -d -p 5000:5000 --restart=always --name local-registry -v $(LOCAL_REGISTRY_DIRECTORY):/var/lib/registry registry:2
-
-local_registry_destroy:
-	$(MAKE) local_registry_stop; rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
-
-# RELEASE TARGETS (for developers)
-
-# Flutter app release targets
-release_ios_push_testflight:
-	cd frontends/flutter && ./build-release ios
-
-# Flutter/React web UI release targets. Copied by backend/docker/server/Dockerfile
-release_web_builds: release_flutter_web_build release_tamagui_build
-release_flutter_web_build:
-	cd frontends/flutter && ./build-release web
-release_tamagui_build:
-	cd frontends/tamagui && yarn web:prod:export
-
-# jonline-be-build image targets
-release_builder_push_local: local_registry_create
-	docker build . -t $(LOCAL_REGISTRY)/jonline-be-build -f backend/docker/build/Dockerfile
-	docker push $(LOCAL_REGISTRY)/jonline-be-build
-
-release_builder_push_cloud:
-	docker build . -t $(CLOUD_REGISTRY)/jonline-be-build -f backend/docker/build/Dockerfile
-	docker push $(CLOUD_REGISTRY)/jonline-be-build
-
-
-# Build environment targets for build
-build_environment_start:
-	docker start jonline-build-environment
-build_environment_stop:
-	docker stop jonline-build-environment
-	docker rm jonline-build-environment
-build_environment_create: local_registry_create
-	$(MAKE) build_environment_start || docker run -dit --name jonline-build-environment -v $$(pwd):/opt $(LOCAL_REGISTRY)/jonline-be-build:latest
-build_environment_destroy:
-	$(MAKE) build_environment_stop; rm -rf $(LOCAL_REGISTRY_DIRECTORY)/docker
-
-# Server image build targets
-release_be_build_binary: backend/target/release/jonline__server_release
-
-backend/target/release/jonline__server_release: release_builder_push_local build_environment_create
-# docker run --rm -v $$(pwd):/opt -w /opt/backend/src $(LOCAL_REGISTRY)/jonline-be-build:latest /bin/bash -c "cargo build --release"
-	docker exec -it -w /opt/backend/src jonline-build-environment /bin/bash -c "cargo build --release"
-	mv backend/target/release/jonline backend/target/release/jonline__server_release
-	mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release
-	mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release
-	mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release
-	mv backend/target/release/set_permission backend/target/release/set_permission__server_release
-
-release_be_push_local: local_registry_create release_be_build_binary release_web_builds
-	docker build . -t $(LOCAL_REGISTRY)/jonline -f backend/docker/server/Dockerfile
-	docker push $(LOCAL_REGISTRY)/jonline
-	docker build . -t $(LOCAL_REGISTRY)/jonline_preview_generator -f backend/docker/preview_generator/Dockerfile
-	docker push $(LOCAL_REGISTRY)/jonline_preview_generator
-
-release_be_push_cloud: release_be_build_binary release_web_builds _push_be_cloud_release
-release_be_fe_only_push_cloud: release_web_builds _push_be_cloud_release
-_push_be_cloud_release:
-	docker build . -t $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) -f backend/docker/server/Dockerfile
-	docker push $(CLOUD_REGISTRY)/jonline:$(BE_VERSION)
-	docker tag $(CLOUD_REGISTRY)/jonline:$(BE_VERSION) $(CLOUD_REGISTRY)/jonline:latest
-	docker build . -t $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION) -f backend/docker/preview_generator/Dockerfile
-	docker push $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION)
-	docker tag $(CLOUD_REGISTRY)/jonline_preview_generator:$(BE_VERSION) $(CLOUD_REGISTRY)/jonline_preview_generator:latest
-
+release_be_fe_only_cloud:
+	cd deploys/releases && $(MAKE) release_be_fe_only_cloud
 
 # Full-Stack dev targets
-clean:
-	cd backend && $(MAKE) clean
-
-clean_protos:
-	cd backend && $(MAKE) clean_protos
-
-build_local:
-	cd backend && $(MAKE) build
-
 lines_of_code:
 	git ls-files | xargs cloc
 

@@ -78,10 +78,11 @@
 The internet-facing Jonline service implementing the Jonline protocol,
 generally exposed on port 27707.
 
-Authenticated calls require an Access Token in request metadata, retrieved from
-the `AccessToken` RPC. First, use the `CreateAccount` or `Login` RPCs to fetch
-(and store) a Refresh Token and initial Access Token. Then use the Refresh Token
-to call `AccessToken` when your previous Access Token has expired.
+Authenticated calls require an `access_token` in request metadata to be included
+directly as the value of the `authorization` header (with no `Bearer ` prefix).
+First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
+`refresh_token` and `access_token`. Use the `access_token` until it expires,
+then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
