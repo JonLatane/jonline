@@ -27,7 +27,7 @@ Why this goal for this project? The tl;dr is that it keeps our social media data
 * Jonline's server images are structured so you only need one LoadBalancer (the things you typically pay for) per deploy/website, and really only one web-facing container (though it defaults to 2) per deploy.
     * Within the containers themselves, everything is handled by a single Rust BE binary. No scripting runtime. So containers are small, even with useful Linux tools like `psql` and `grpcurl` built in. They start *really fast*, and Kubernetes failovers work very smoothly.
     * And the Rust BE is, after all, Rust; it's *fast*.
-* To be specific, at the time of this writing: [Jonline's Docker images are currently 105MB](https://hub.docker.com/r/jonlatane/jonline/tags), [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags), [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags), 
+* To be specific, at the time of this writing: [Jonline's Docker images are currently 105MB](https://hub.docker.com/r/jonlatane/jonline/tags), [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags), and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags).
 * The new Tamagui FE is also demonstrably lightweight.
 * A major feature I *hope* to differentiate on is Events, but it's not done yet.
 
