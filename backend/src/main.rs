@@ -45,6 +45,9 @@ use std::net::SocketAddr;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
 use tonic_web::*;
 
+use std::time::Duration;
+use tower_http::cors::{CorsLayer, AllowOrigin};
+
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
 #[rocket::main]
@@ -85,9 +88,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tonic_router = tonic_server
         .accept_http1(true)
-        // .layer(GrpcWebLayer::new())
-        .add_service(enable(JonlineServer::new(jonline)))
-        .add_service(enable(reflection_service));
+        .layer(GrpcWebLayer::new())
+        .layer(CorsLayer::very_permissive())
+        .add_service(JonlineServer::new(jonline))
+        .add_service(reflection_service);
 
     tokio::spawn(async {
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], 27707));

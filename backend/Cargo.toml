@@ -13,18 +13,19 @@ default-run = "jonline"
 [dependencies]
 tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
 tonic = { version = "0.8.1", features = ["tls", "tls-roots", "tls-webpki-roots", "gzip"] }
-tonic-reflection = "0.5.0"
-tonic-web = "0.4.0"
+tonic-reflection = "0.6.0"
+tonic-web = "0.5.0"
+tower-http = "0.3.5" # used to configure CORS for Tonic Web
 rocket = { version = "0.5.0-rc.2", features = [ "tls" ] }
 rocket_async_compression = "0.2.0"
 rocket-cache-response = "0.6.2"
 # rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars", "tera"]}
 futures = "0.3.24"
-prost = "0.11.6"
-prost-build = "0.11.6"
-prost-types = { version = "0.11.1", features = ["std"] }
-prost-wkt = "0.4"
-prost-wkt-types = "0.4"
+prost = "0.11.8"
+prost-build = "0.11.8"
+prost-types = { version = "0.11.8", features = ["std"] }
+prost-wkt = "0.4.1"
+prost-wkt-types = "0.4.1"
 diesel = { version = "2.0.2", features = ["postgres", "r2d2", "serde_json"] }
 diesel_migrations = "2.0.0"
 serde = "1.0.144"
@@ -47,5 +48,5 @@ lazy_static = "1.4.0"
 tokio-stream = "0.1.11"
 
 [build-dependencies]
-tonic-build = "0.8.0"
-prost-wkt-build = "0.4"
+tonic-build = "0.8.4"
+prost-wkt-build = "0.4.1"
