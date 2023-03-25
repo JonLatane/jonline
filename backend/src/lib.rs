@@ -18,7 +18,6 @@ extern crate log;
 extern crate tokio_stream;
 
 pub mod auth;
-pub mod db_connection;
 pub mod jonline;
 pub mod models;
 pub mod protos;
@@ -27,6 +26,10 @@ pub mod schema;
 pub mod conversions;
 pub mod logic;
 pub mod web;
+pub mod rocket_servers;
+pub mod tonic_server;
+pub mod tls;
+pub mod db_connection;
 
 #[cfg(test)]
 mod tests {
