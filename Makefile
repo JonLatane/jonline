@@ -18,7 +18,7 @@ deploy_data_create:
 # Core release targets (for general use, CI/CD, etc.)
 release_ios:
 	cd deploys/releases && $(MAKE) release_ios
-release_be_cloud: release_be_push_cloud
+release_be_cloud:
 	cd deploys/releases && $(MAKE) release_be_cloud
 # This target rebuilds the Flutter+React apps, but does not rebuild the Rust BE
 # before pushing the new image. The server Docker image is structured so that this will
