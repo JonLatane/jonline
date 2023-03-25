@@ -26,9 +26,7 @@ pub mod schema;
 pub mod conversions;
 pub mod logic;
 pub mod web;
-pub mod rocket_servers;
-pub mod tonic_server;
-pub mod tls;
+pub mod servers;
 pub mod db_connection;
 
 #[cfg(test)]

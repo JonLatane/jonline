@@ -1,17 +1,17 @@
 use std::{env, sync::Arc};
 
-use crate::db_connection::PgPool;
+use crate::{db_connection::PgPool, env_var};
 use crate::jonline::JonLineImpl;
 
 use crate::report_error;
 
 use crate::protos::jonline_server::JonlineServer;
-use crate::tls::get_tls_config;
 
 use std::net::SocketAddr;
-use tonic::transport::Server;
+use tonic::transport::{Server, ServerTlsConfig, Certificate, Identity};
 use tonic_web::GrpcWebLayer;
 use tower_http::cors::CorsLayer;
+use ::log::{info, warn};
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
@@ -25,21 +25,21 @@ pub fn start_tonic_server(pool: Arc<PgPool>) -> Result<bool, Box<dyn std::error:
 
     let (tonic_server, secure_mode) = match get_tls_config() {
         Some(tls) => {
-            ::log::info!("Configuring TLS...");
+            info!("Configuring TLS...");
             match Server::builder().tls_config(tls) {
                 Ok(server) => {
-                    ::log::info!("TLS successfully configured.");
+                    info!("TLS successfully configured.");
                     (server, true)
                 }
                 Err(details) => {
-                    ::log::info!("Error configuring TLS. Connections are not secure.");
+                    info!("Error configuring TLS. Connections are not secure.");
                     report_error(details);
                     (Server::builder(), false)
                 }
             }
         }
         _ => {
-            ::log::warn!("No TLS keys available. Connections are not secure.");
+            warn!("No TLS keys available. Connections are not secure.");
             (Server::builder(), false)
         }
     };
@@ -64,4 +64,26 @@ pub fn start_tonic_server(pool: Arc<PgPool>) -> Result<bool, Box<dyn std::error:
     });
 
     Ok(secure_mode)
+}
+
+fn get_tls_config() -> Option<ServerTlsConfig> {
+    let cert = env_var("TLS_CERT");
+    let key = env_var("TLS_KEY");
+    let ca_cert = env_var("CA_CERT");
+
+    match (cert, key, ca_cert) {
+        (Some(cert), Some(key), Some(ca_cert)) => {
+            info!("Configuring TLS with custom CA...");
+            Some(
+                ServerTlsConfig::new()
+                    .identity(Identity::from_pem(cert, key))
+                    .client_ca_root(Certificate::from_pem(ca_cert)),
+            )
+        }
+        (Some(cert), Some(key), None) => {
+            info!("Configuring TLS with official CAs...");
+            Some(ServerTlsConfig::new().identity(Identity::from_pem(cert, key)))
+        }
+        _ => None,
+    }
 }

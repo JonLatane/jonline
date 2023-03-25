@@ -32,14 +32,11 @@ pub mod protos;
 pub mod rpcs;
 pub mod schema;
 pub mod web;
-pub mod rocket_servers;
-pub mod tonic_server;
-pub mod tls;
+pub mod servers;
 
 use std::sync::Arc;
 use futures::future::join_all;
-use rocket_servers::{start_rocket_secure, start_rocket_unsecured};
-use tonic_server::start_tonic_server;
+use servers::{start_tonic_server, start_rocket_secure, start_rocket_unsecured};
 use ::jonline::{env_var, report_error};
 
 #[rocket::main]

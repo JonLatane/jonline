@@ -5,6 +5,7 @@ use crate::{db_connection::PgPool, env_var};
 
 use rocket::*;
 use tokio::task::JoinHandle;
+use ::log::{info, warn};
 
 pub fn start_rocket_secure(pool: Arc<PgPool>) -> JoinHandle<()> {
     let cert = env_var("TLS_CERT");
@@ -12,7 +13,7 @@ pub fn start_rocket_secure(pool: Arc<PgPool>) -> JoinHandle<()> {
 
     let server_build = match (cert, key) {
         (Some(cert), Some(key)) => {
-            ::log::info!("Configuring Rocket TLS...");
+            info!("Configuring Rocket TLS...");
 
             fs::write(".tls.crt", cert).expect("Unable to write TLS certificate");
             fs::write(".tls.key", key).expect("Unable to write TLS key");
@@ -32,7 +33,7 @@ pub fn start_rocket_secure(pool: Arc<PgPool>) -> JoinHandle<()> {
             Some(rocket) => match rocket.launch().await {
                 Ok(_) => (),
                 Err(e) => {
-                    ::log::warn!("Unable to start secure Rocket server on port 443");
+                    warn!("Unable to start secure Rocket server on port 443");
                     report_error(e);
                 }
             },
@@ -60,7 +61,7 @@ pub fn start_rocket_unsecured(
         {
             Ok(_) => (),
             Err(e) => {
-                ::log::warn!("Unable to start Rocket server on port {}", port);
+                warn!("Unable to start Rocket server on port {}", port);
                 report_error(e);
             }
         };
