@@ -12,3 +12,13 @@ impl ToProtoTime for SystemTime {
         }
     }
 }
+
+pub trait ToDbTime {
+    fn to_db(&self) -> SystemTime;
+}
+
+impl ToDbTime for Timestamp {
+    fn to_db(&self) -> SystemTime {
+        UNIX_EPOCH + std::time::Duration::from_secs(self.seconds as u64)
+    }
+}

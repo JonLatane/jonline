@@ -36,6 +36,7 @@ pub struct Post {
     pub reply_count: i32,
     pub group_count: i32,
     pub preview: Option<Vec<u8>>,
+    pub context: String,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
     pub last_activity_at: SystemTime,
@@ -53,6 +54,7 @@ pub struct MinimalPost {
     pub response_count: i32,
     pub reply_count: i32,
     pub group_count: i32,
+    pub context: String,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
     pub last_activity_at: SystemTime,
@@ -68,6 +70,7 @@ pub static MINIMAL_POST_COLUMNS: (
     posts::response_count,
     posts::reply_count,
     posts::group_count,
+    posts::context,
     posts::created_at,
     posts::updated_at,
     posts::last_activity_at,
@@ -81,6 +84,7 @@ pub static MINIMAL_POST_COLUMNS: (
     posts::response_count,
     posts::reply_count,
     posts::group_count,
+    posts::context,
     posts::created_at,
     posts::updated_at,
     posts::last_activity_at,
@@ -107,7 +111,7 @@ pub struct GroupPost {
     pub user_id: i32,
     pub group_moderation: String,
     pub created_at: SystemTime,
-    pub updated_at: SystemTime,
+    pub updated_at: Option<SystemTime>,
 }
 #[derive(Debug, Insertable)]
 #[diesel(table_name = group_posts)]
@@ -124,7 +128,7 @@ pub struct UserPost {
     pub user_id: i32,
     pub post_id: i32,
     pub created_at: SystemTime,
-    pub updated_at: SystemTime,
+    pub updated_at: Option<SystemTime>,
 }
 #[derive(Debug, Insertable)]
 #[diesel(table_name = user_posts)]

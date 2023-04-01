@@ -23,7 +23,7 @@ pub mod models;
 pub mod protos;
 pub mod rpcs;
 pub mod schema;
-pub mod conversions;
+pub mod marshaling;
 pub mod logic;
 pub mod web;
 pub mod servers;
@@ -31,8 +31,8 @@ pub mod db_connection;
 
 #[cfg(test)]
 mod tests {
-    use crate::conversions::ToProtoId;
-    use crate::conversions::ToDbId;
+    use crate::marshaling::ToProtoId;
+    use crate::marshaling::ToDbId;
 
     #[test]
     fn id_conversions_work() {

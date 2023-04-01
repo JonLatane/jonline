@@ -2,7 +2,7 @@ use super::OperationType;
 use super::{validate_email, validate_phone, validate_username};
 use tonic::{Code, Status};
 
-use crate::conversions::*;
+use crate::marshaling::*;
 use crate::protos::*;
 
 pub fn validate_user(user: &User) -> Result<(), Status> {

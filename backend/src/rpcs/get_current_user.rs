@@ -1,6 +1,6 @@
 use tonic::{Response, Status};
 
-use crate::conversions::ToProtoUser;
+use crate::marshaling::ToProtoUser;
 use crate::{models, protos};
 
 pub fn get_current_user(user: models::User) -> Result<Response<protos::User>, Status> {

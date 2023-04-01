@@ -4,7 +4,7 @@ use crate::schema::server_configurations::dsl::*;
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::conversions::ToProtoServerConfiguration;
+use crate::marshaling::ToProtoServerConfiguration;
 use crate::{models, protos};
 
 pub fn get_server_configuration(

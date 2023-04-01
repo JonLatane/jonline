@@ -32,6 +32,7 @@ pub struct User {
     pub following_count: i32,
     pub group_count: i32,
     pub post_count: i32,
+    pub event_count: i32,
     pub response_count: i32,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,

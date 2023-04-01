@@ -6,6 +6,7 @@ import "google/protobuf/empty.proto";
 
 import "authentication.proto";
 import "posts.proto";
+import "events.proto";
 import "users.proto";
 import "groups.proto";
 import "federation.proto";
@@ -98,6 +99,9 @@ service Jonline {
 
   // (TODO) Reply streaming interface
   rpc StreamReplies(Post) returns (stream Post);
+
+  // Creates an Event. *Authenticated.*
+  rpc CreateEvent(Event) returns (Event) {}
 
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
   // Requires `ADMIN` permissions.

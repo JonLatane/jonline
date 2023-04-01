@@ -10,7 +10,7 @@ use diesel::*;
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
-use jonline::conversions::ToLink;
+use jonline::marshaling::ToLink;
 use jonline::db_connection;
 use jonline::models::Post;
 use jonline::schema::posts::dsl::*;

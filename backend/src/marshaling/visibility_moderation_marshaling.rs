@@ -2,12 +2,13 @@ use std::mem::transmute;
 
 use crate::protos::*;
 
-pub const ALL_VISIBILITIES: [Visibility; 5] = [
+pub const ALL_VISIBILITIES: [Visibility; 6] = [
     Visibility::Unknown,
     Visibility::Private,
     Visibility::Limited,
     Visibility::ServerPublic,
     Visibility::GlobalPublic,
+    Visibility::Direct,
 ];
 
 pub trait ToProtoVisibility {

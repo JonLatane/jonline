@@ -1,9 +1,11 @@
+use std::mem::transmute;
+
 use diesel::*;
 use tonic::Code;
 use tonic::Status;
 
-use super::id_conversions::ToProtoId;
-use super::visibility_moderation_conversions::ToProtoModeration;
+use super::id_marshaling::ToProtoId;
+use super::visibility_moderation_marshaling::ToProtoModeration;
 use super::ToLink;
 use super::ToProtoTime;
 use super::ToProtoVisibility;
@@ -93,6 +95,10 @@ impl ToProtoPost for models::Post {
                 .moderation
                 .to_proto_moderation()
                 .unwrap_or(Moderation::Unknown) as i32,
+                context: self
+                    .context
+                    .to_proto_post_context()
+                    .unwrap_or(PostContext::Post) as i32,
             shareable: false, //TODO update this
             replies: vec![], //TODO update this
             preview_image_exists: *has_preview,
@@ -151,3 +157,28 @@ impl ToProtoGroupPost for models::GroupPost {
         Ok(())
     }
 }
+
+pub const ALL_POST_CONTEXTS: [PostContext; 2] = [
+  PostContext::Post,
+  PostContext::Event,
+];
+
+pub trait ToProtoPostContext {
+    fn to_proto_post_context(&self) -> Option<PostContext>;
+  }
+  impl ToProtoPostContext for String {
+    fn to_proto_post_context(&self) -> Option<PostContext> {
+        for post_context in ALL_POST_CONTEXTS {
+            if post_context.as_str_name().eq_ignore_ascii_case(self) {
+                return Some(post_context);
+            }
+        }
+        return None;
+    }
+  }
+  impl ToProtoPostContext for i32 {
+    fn to_proto_post_context(&self) -> Option<PostContext> {
+        Some(unsafe { transmute::<i32, PostContext>(*self) })
+    }
+  }
+  

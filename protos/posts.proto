@@ -50,13 +50,18 @@ enum PostListingType {
   FOLLOWING_POSTS = 1;
   // Returns posts from any group the user is a member of.
   MY_GROUPS_POSTS = 2;
-  // Returns LIMITED posts that are directly addressed to the user.
+  // Returns `DIRECT` posts that are directly addressed to the user.
   DIRECT_POSTS = 3;
   POSTS_PENDING_MODERATION = 4;
 
   // group_id parameter is required for these.
   GROUP_POSTS = 10;
   GROUP_POSTS_PENDING_MODERATION = 11;
+}
+
+enum PostContext {
+  POST = 0;
+  EVENT = 1;
 }
 
 // A request to create a post.
@@ -119,6 +124,7 @@ message Post {
   // * `Visibility.LIMITED`, `Visibility.SERVER_PUBLIC`, `Visibility.GLOBAL_PUBLIC`: Allows other users to GroupPost your Post to (other) Groups.
   // * `Visibility.PRIVATE`: Allows other users to reply to your Post.
   bool shareable = 17;
+  PostContext context = 18;
 
   google.protobuf.Timestamp created_at = 20;
   optional google.protobuf.Timestamp updated_at = 21;

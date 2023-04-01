@@ -2,7 +2,7 @@ extern crate diesel;
 extern crate jonline;
 extern crate serde_json;
 use diesel::*;
-use jonline::conversions::{ToProtoId, ToProtoPermission, ALL_PERMISSIONS};
+use jonline::marshaling::{ToProtoId, ToProtoPermission, ALL_PERMISSIONS};
 
 use jonline::db_connection;
 // use jonline::protos::Permission;

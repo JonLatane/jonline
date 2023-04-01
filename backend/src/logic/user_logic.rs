@@ -1,5 +1,5 @@
 // use super::id_conversions::ToProtoId;
-use crate::conversions::ToProtoUser;
+use crate::marshaling::ToProtoUser;
 // use super::permission_conversions::ToProtoPermissions;
 use crate::models;
 use crate::protos::*;

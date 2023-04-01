@@ -28,7 +28,6 @@ impl Clone for JonLineImpl {
 type ReplyStreamResult<T> = Result<Response<T>, Status>;
 type ReplyStream = Pin<Box<dyn Stream<Item = Result<Post, Status>> + Send>>;
 
-
 #[tonic::async_trait]
 impl Jonline for JonLineImpl {
     async fn get_service_version(
@@ -262,6 +261,12 @@ impl Jonline for JonLineImpl {
         Ok(Response::new(
             Box::pin(output_stream) as Self::StreamRepliesStream
         ))
+    }
+
+    async fn create_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
+        rpcs::create_event(request, user, &mut conn)
     }
 
     async fn get_server_configuration(

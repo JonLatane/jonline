@@ -33,7 +33,7 @@ enum EventListingType {
   FOLLOWING_EVENTS = 1;
   // Returns events from any group the user is a member of.
   MY_GROUPS_EVENTS = 2;
-  // Returns LIMITED events that are directly addressed to the user.
+  // Returns `DIRECT` events that are directly addressed to the user.
   DIRECT_EVENTS = 3;
   EVENTS_PENDING_MODERATION = 4;
 

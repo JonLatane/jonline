@@ -23,7 +23,7 @@ extern crate lazy_static;
 extern crate tokio_stream;
 
 pub mod auth;
-pub mod conversions;
+pub mod marshaling;
 pub mod db_connection;
 pub mod jonline;
 pub mod logic;

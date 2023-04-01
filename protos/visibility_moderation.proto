@@ -15,7 +15,7 @@ enum Visibility {
   // [TODO] Subject is visible to explicitly-associated Users. Only applicable to Posts and Events.
   // For Users, this is the same as LIMITED.
   // See: [`UserPost`](#jonline-UserPost).
-  // DIRECT = 5;
+  DIRECT = 5;
 }
 
 enum Moderation {

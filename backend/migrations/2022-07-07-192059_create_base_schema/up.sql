@@ -40,6 +40,7 @@ CREATE TABLE users (
   following_count INTEGER NOT NULL DEFAULT 0,
   group_count INTEGER NOT NULL DEFAULT 0,
   post_count INTEGER NOT NULL DEFAULT 0,
+  event_count INTEGER NOT NULL DEFAULT 0,
   response_count INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -51,7 +52,7 @@ CREATE TABLE users (
 CREATE TABLE user_devices (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  device_name VARCHAR NOT NULL,
+  device_name VARCHAR NOT NULL
 );
 CREATE UNIQUE INDEX idx_device_name ON user_devices(user_id, device_name);
 
@@ -129,6 +130,7 @@ CREATE TABLE posts (
   reply_count INTEGER NOT NULL DEFAULT 0,
   group_count INTEGER NOT NULL DEFAULT 0,
   preview BYTEA NULL DEFAULT NULL,
+  context VARCHAR NOT NULL DEFAULT 'POST',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL,
   last_activity_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -147,7 +149,7 @@ CREATE TABLE group_posts(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   group_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMP NULL DEFAULT NULL
 );
 CREATE UNIQUE INDEX idx_group_post ON group_posts(group_id, post_id);
 
@@ -156,7 +158,7 @@ CREATE TABLE user_posts(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   post_id INTEGER NOT NULL REFERENCES posts ON DELETE CASCADE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMP NULL DEFAULT NULL
 );
 CREATE UNIQUE INDEX idx_user_post ON user_posts(user_id, post_id);
 
@@ -164,7 +166,9 @@ CREATE UNIQUE INDEX idx_user_post ON user_posts(user_id, post_id);
 CREATE TABLE events(
   id SERIAL PRIMARY KEY,
   post_id INTEGER NOT NULL REFERENCES posts ON DELETE CASCADE,
-  info JSONB NOT NULL DEFAULT '{}'::JSONB
+  info JSONB NOT NULL DEFAULT '{}'::JSONB,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NULL DEFAULT NULL
 );
 CREATE UNIQUE INDEX idx_event_post ON events(id, post_id);
 
@@ -175,7 +179,9 @@ CREATE TABLE event_instances(
   post_id INTEGER NULL DEFAULT NULL REFERENCES posts ON DELETE SET NULL,
   info JSONB NOT NULL DEFAULT '{}'::JSONB,
   starts_at TIMESTAMP NOT NULL,
-  ends_at TIMESTAMP NOT NULL
+  ends_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NULL DEFAULT NULL
 );
 
 -- FEDERATION MODELS

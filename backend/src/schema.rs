@@ -6,6 +6,8 @@ table! {
         info -> Jsonb,
         starts_at -> Timestamp,
         ends_at -> Timestamp,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -14,6 +16,8 @@ table! {
         id -> Int4,
         post_id -> Int4,
         info -> Jsonb,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -52,7 +56,7 @@ table! {
         user_id -> Int4,
         group_moderation -> Varchar,
         created_at -> Timestamp,
-        updated_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -103,6 +107,7 @@ table! {
         reply_count -> Int4,
         group_count -> Int4,
         preview -> Nullable<Bytea>,
+        context -> Varchar,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
         last_activity_at -> Timestamp,
@@ -139,12 +144,20 @@ table! {
 }
 
 table! {
+    user_devices (id) {
+        id -> Int4,
+        user_id -> Int4,
+        device_name -> Varchar,
+    }
+}
+
+table! {
     user_posts (id) {
         id -> Int4,
         user_id -> Int4,
         post_id -> Int4,
         created_at -> Timestamp,
-        updated_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -175,6 +188,7 @@ table! {
         following_count -> Int4,
         group_count -> Int4,
         post_count -> Int4,
+        event_count -> Int4,
         response_count -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -193,6 +207,7 @@ joinable!(memberships -> groups (group_id));
 joinable!(memberships -> users (user_id));
 joinable!(posts -> users (user_id));
 joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
+joinable!(user_devices -> users (user_id));
 joinable!(user_posts -> posts (post_id));
 joinable!(user_posts -> users (user_id));
 joinable!(user_refresh_tokens -> users (user_id));
@@ -209,6 +224,7 @@ allow_tables_to_appear_in_same_query!(
     posts,
     server_configurations,
     user_access_tokens,
+    user_devices,
     user_posts,
     user_refresh_tokens,
     users,

@@ -1,7 +1,7 @@
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
 
-use crate::conversions::*;
+use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
@@ -18,6 +18,7 @@ pub fn create_post(
         "CreatePost called for user {}, user_id={}",
         &user.username, user.id
     );
+    validate_permission(&user, Permission::CreatePosts)?;
     let req = request.into_inner();
     match req.title.to_owned() {
         None => {}

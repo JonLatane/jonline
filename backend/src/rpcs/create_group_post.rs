@@ -2,11 +2,11 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use super::validations::*;
-use crate::conversions::*;
+use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{group_posts};
+use crate::schema::group_posts;
 
 pub fn create_group_post(
     request: GroupPost,
@@ -14,12 +14,21 @@ pub fn create_group_post(
     conn: &mut PgPooledConnection,
 ) -> Result<GroupPost, Status> {
     let group_id = request.group_id.to_db_id_or_err("group_id")?;
-    let post_id = request.post_id.to_db_id_or_err("post_id")?;
     let membership = models::get_membership(group_id, user.id, conn)?;
     validate_group_permission(&membership, &user, Permission::CreatePosts)?;
+
+    let post_id = request.post_id.to_db_id_or_err("post_id")?;
+    let post = models::get_post(post_id, conn)?;
+    if post.visibility.to_proto_visibility() == Some(Visibility::Direct) {
+        return Err(Status::new(
+            Code::InvalidArgument,
+            "Direct posts may not be added to groups",
+        ));
+    }
+
     let group = models::get_group(group_id, conn)?;
-    let group_post_result: Result<models::GroupPost, diesel::result::Error> = conn
-        .transaction::<models::GroupPost, diesel::result::Error, _>(|conn| {
+    let group_post_result: Result<models::GroupPost, diesel::result::Error> =
+        conn.transaction::<models::GroupPost, diesel::result::Error, _>(|conn| {
             let group_post = insert_into(group_posts::table)
                 .values(&models::NewGroupPost {
                     post_id: post_id,

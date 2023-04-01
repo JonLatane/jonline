@@ -1,7 +1,7 @@
 use diesel::*;
 use tonic::Status;
 
-use crate::conversions::*;
+use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
 use crate::logic::*;
 use crate::models;
@@ -66,7 +66,8 @@ pub fn get_group_posts(
                 }
                 Visibility::GlobalPublic | Visibility::ServerPublic => {}
                 Visibility::Unknown | Visibility::Private => return None,
-                // _ => {}
+                //TODO implement direct post visibility
+                Visibility::Direct => return None,
             };
             if moderations.contains(&group_post.group_moderation.to_proto_moderation().unwrap()) {
                 Some(group_post.to_proto())
