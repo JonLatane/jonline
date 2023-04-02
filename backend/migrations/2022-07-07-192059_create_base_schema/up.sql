@@ -136,10 +136,10 @@ CREATE TABLE posts (
   last_activity_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 -- Speed up loading of posts by user.
-CREATE INDEX idx_post_vis_parent_created ON posts(visibility, parent_post_id, created_at);
-CREATE INDEX idx_post_vis_parent_activity ON posts(visibility, parent_post_id, last_activity_at);
-CREATE INDEX idx_post_vis_user_created ON posts(visibility, user_id, created_at);
-CREATE INDEX idx_post_vis_user_activity ON posts(visibility, user_id, last_activity_at);
+CREATE INDEX idx_post_vis_parent_created ON posts(context, visibility, parent_post_id, created_at);
+CREATE INDEX idx_post_vis_parent_activity ON posts(context, visibility, parent_post_id, last_activity_at);
+CREATE INDEX idx_post_vis_user_created ON posts(context, visibility, user_id, created_at);
+CREATE INDEX idx_post_vis_user_activity ON posts(context, visibility, user_id, last_activity_at);
 
 CREATE TABLE group_posts(
   id SERIAL PRIMARY KEY,

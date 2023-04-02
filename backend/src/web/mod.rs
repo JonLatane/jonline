@@ -22,3 +22,5 @@ pub use main_index::*;
 
 pub mod secure_redirect;
 pub use secure_redirect::*;
+pub mod robots_sitemap;
+pub use robots_sitemap::*;

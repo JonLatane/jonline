@@ -84,6 +84,7 @@ pub fn create_post(
                 title: post_title,
                 link: req.link.to_link(),
                 content: req.content.to_owned(),
+                context: PostContext::Post.as_str_name().to_string(),
                 visibility: visibility.to_string_visibility(),
                 preview: None,
             })

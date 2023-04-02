@@ -4,18 +4,12 @@ use diesel::*;
 use tonic::Code;
 use tonic::Status;
 
-use super::id_marshaling::ToProtoId;
-use super::visibility_moderation_marshaling::ToProtoModeration;
-use super::ToLink;
-use super::ToProtoTime;
-use super::ToProtoVisibility;
+use super::{ToI32Moderation, ToI32Visibility, ToLink, ToProtoId, ToProtoTime};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
-use crate::schema::group_posts;
-use crate::schema::groups;
-use crate::schema::posts;
+use crate::schema::{groups, posts, group_posts};
 
 pub trait ToProtoPost {
     fn to_proto(&self, username: Option<String>, has_preview: &bool) -> Post;
@@ -49,7 +43,10 @@ impl ToProtoPost for models::MinimalPost {
             response_count: self.response_count,
             reply_count: self.reply_count,
             group_count: self.group_count,
+            context: self.context.to_i32_post_context(),
             preview_image: None,
+            visibility: self.visibility.to_i32_visibility(),
+            moderation: self.moderation.to_i32_moderation(),
             preview_image_exists: *has_preview,
             current_group_post: group_post.map(|gp| gp.to_proto()),
             ..Default::default()
@@ -86,21 +83,12 @@ impl ToProtoPost for models::Post {
             response_count: self.response_count,
             reply_count: self.reply_count,
             group_count: self.group_count,
+            context: self.context.to_i32_post_context(),
             preview_image: self.preview.to_owned(),
-            visibility: self
-                .visibility
-                .to_proto_visibility()
-                .unwrap_or(Visibility::Unknown) as i32,
-            moderation: self
-                .moderation
-                .to_proto_moderation()
-                .unwrap_or(Moderation::Unknown) as i32,
-                context: self
-                    .context
-                    .to_proto_post_context()
-                    .unwrap_or(PostContext::Post) as i32,
+            visibility: self.visibility.to_i32_visibility(),
+            moderation: self.moderation.to_i32_moderation(),
             shareable: false, //TODO update this
-            replies: vec![], //TODO update this
+            replies: vec![],  //TODO update this
             preview_image_exists: *has_preview,
             current_group_post: group_post.map(|gp| gp.to_proto()),
         }
@@ -123,7 +111,7 @@ impl ToProtoGroupPost for models::GroupPost {
             group_id: self.group_id.to_proto_id().to_string(),
             post_id: self.post_id.to_proto_id().to_string(),
             user_id: self.user_id.to_proto_id().to_string(),
-            group_moderation: self.group_moderation.to_proto_moderation().unwrap() as i32,
+            group_moderation: self.group_moderation.to_i32_moderation(),
             created_at: Some(self.created_at.to_proto()),
             // updated_at: self.updated_at.map(|t| t.to_proto()),
         };
@@ -158,15 +146,12 @@ impl ToProtoGroupPost for models::GroupPost {
     }
 }
 
-pub const ALL_POST_CONTEXTS: [PostContext; 2] = [
-  PostContext::Post,
-  PostContext::Event,
-];
+pub const ALL_POST_CONTEXTS: [PostContext; 2] = [PostContext::Post, PostContext::Event];
 
 pub trait ToProtoPostContext {
     fn to_proto_post_context(&self) -> Option<PostContext>;
-  }
-  impl ToProtoPostContext for String {
+}
+impl ToProtoPostContext for String {
     fn to_proto_post_context(&self) -> Option<PostContext> {
         for post_context in ALL_POST_CONTEXTS {
             if post_context.as_str_name().eq_ignore_ascii_case(self) {
@@ -175,10 +160,18 @@ pub trait ToProtoPostContext {
         }
         return None;
     }
-  }
-  impl ToProtoPostContext for i32 {
+}
+impl ToProtoPostContext for i32 {
     fn to_proto_post_context(&self) -> Option<PostContext> {
         Some(unsafe { transmute::<i32, PostContext>(*self) })
     }
-  }
-  
+}
+
+pub trait ToI32PostContext {
+    fn to_i32_post_context(&self) -> i32;
+}
+impl ToI32PostContext for String {
+    fn to_i32_post_context(&self) -> i32 {
+        self.to_proto_post_context().unwrap() as i32
+    }
+}

@@ -72,6 +72,7 @@ pub fn create_event(
                     link: post.link.to_link(),
                     content: post.content.to_owned(),
                     visibility: visibility.to_string_visibility(),
+                    context: PostContext::Event.as_str_name().to_string(),
                     preview: None,
                 })
                 .get_result::<models::Post>(conn)?;
@@ -93,6 +94,7 @@ pub fn create_event(
                                 link: p.link.to_link(),
                                 content: p.content.to_owned(),
                                 visibility: p.visibility.to_string_visibility(),
+                                context: PostContext::Event.as_str_name().to_string(),
                                 preview: None,
                             })
                             .get_result::<models::Post>(conn)?,
