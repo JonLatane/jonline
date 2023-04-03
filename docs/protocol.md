@@ -42,7 +42,18 @@
     - [Post](#jonline-Post)
     - [UserPost](#jonline-UserPost)
   
+    - [PostContext](#jonline-PostContext)
     - [PostListingType](#jonline-PostListingType)
+  
+- [events.proto](#events-proto)
+    - [Event](#jonline-Event)
+    - [EventInfo](#jonline-EventInfo)
+    - [EventInstance](#jonline-EventInstance)
+    - [EventInstanceInfo](#jonline-EventInstanceInfo)
+    - [GetEventsRequest](#jonline-GetEventsRequest)
+    - [GetEventsResponse](#jonline-GetEventsResponse)
+  
+    - [EventListingType](#jonline-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
     - [FeatureSettings](#jonline-FeatureSettings)
@@ -114,6 +125,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 | DeleteGroupPost | [GroupPost](#jonline-GroupPost) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a GroupPost. *Authenticated.* |
 | GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
 | StreamReplies | [Post](#jonline-Post) | [Post](#jonline-Post) stream | (TODO) Reply streaming interface |
+| CreateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates an Event. *Authenticated.* |
 | ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. |
 | ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
 
@@ -275,9 +287,8 @@ Returned when creating an account or logging in.
 | PRIVATE | 1 | Subject is only visible to the user who owns it. |
 | LIMITED | 2 | Subject is only visible to explictly associated Groups and Users. See: [`GroupPost`](#jonline-GroupPost) and [`UserPost`](#jonline-UserPost). |
 | SERVER_PUBLIC | 3 | Subject is visible to all authenticated users. |
-| GLOBAL_PUBLIC | 4 | Subject is visible to all users on the internet.
-
-[TODO] Subject is visible to explicitly-associated Users. Only applicable to Posts and Events. For Users, this is the same as LIMITED. See: [`UserPost`](#jonline-UserPost). DIRECT = 5; |
+| GLOBAL_PUBLIC | 4 | Subject is visible to all users on the internet. |
+| DIRECT | 5 | [TODO] Subject is visible to explicitly-associated Users. Only applicable to Posts and Events. For Users, this is the same as LIMITED. See: [`UserPost`](#jonline-UserPost). |
 
 
  
@@ -674,6 +685,7 @@ There will never be more than `reply_count` replies. However, there may be fewer
 | current_group_post | [GroupPost](#jonline-GroupPost) | optional | When the post is returned in the context of a group_id parameter, `current_group_post` is returned. It lets the UI know whether the post can be cross-posted to a group, and of course, information about the cross-post (time, moderation) if that&#39;s relevant. |
 | preview_image_exists | [bool](#bool) |  | Always returned, even if preview_image is not. Indicates whether the UI should attempt to fetch a preview_image. |
 | shareable | [bool](#bool) |  | Sharability is based on the visibility of the post. Not applicable to all visibilities. * `Visibility.LIMITED`, `Visibility.SERVER_PUBLIC`, `Visibility.GLOBAL_PUBLIC`: Allows other users to GroupPost your Post to (other) Groups. * `Visibility.PRIVATE`: Allows other users to reply to your Post. |
+| context | [PostContext](#jonline-PostContext) |  |  |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | last_activity_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -702,6 +714,18 @@ A `UserPost` is a &#34;direct share&#34; of a `Post` to a `User`. Currently unus
  
 
 
+<a name="jonline-PostContext"></a>
+
+### PostContext
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| POST | 0 |  |
+| EVENT | 1 |  |
+
+
+
 <a name="jonline-PostListingType"></a>
 
 ### PostListingType
@@ -712,10 +736,142 @@ A high-level enumeration of general ways of requesting posts.
 | PUBLIC_POSTS | 0 | Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible. Also usable for getting replies anywhere. |
 | FOLLOWING_POSTS | 1 | Returns posts from users the user is following. |
 | MY_GROUPS_POSTS | 2 | Returns posts from any group the user is a member of. |
-| DIRECT_POSTS | 3 | Returns LIMITED posts that are directly addressed to the user. |
+| DIRECT_POSTS | 3 | Returns `DIRECT` posts that are directly addressed to the user. |
 | POSTS_PENDING_MODERATION | 4 |  |
 | GROUP_POSTS | 10 | group_id parameter is required for these. |
 | GROUP_POSTS_PENDING_MODERATION | 11 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="events-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## events.proto
+
+
+
+<a name="jonline-Event"></a>
+
+### Event
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| post | [Post](#jonline-Post) |  |  |
+| info | [EventInfo](#jonline-EventInfo) |  |  |
+| instances | [EventInstance](#jonline-EventInstance) | repeated |  |
+
+
+
+
+
+
+<a name="jonline-EventInfo"></a>
+
+### EventInfo
+To be used for ticketing, RSVPs, etc.
+
+
+
+
+
+
+<a name="jonline-EventInstance"></a>
+
+### EventInstance
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| event_id | [string](#string) |  |  |
+| post | [Post](#jonline-Post) | optional |  |
+| info | [EventInstanceInfo](#jonline-EventInstanceInfo) |  |  |
+| starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="jonline-EventInstanceInfo"></a>
+
+### EventInstanceInfo
+To be used for ticketing, RSVPs, etc.
+
+
+
+
+
+
+<a name="jonline-GetEventsRequest"></a>
+
+### GetEventsRequest
+Valid GetEventsRequest formats:
+- {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
+- {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
+- {event_id:}                                     (TODO: get single event including preview data)
+- {listing_type: GroupEvents|
+     GroupEventsPendingModeration,
+     group_id:}                                  (TODO: get events/events needing moderation for a group)
+- {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
+- {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| event_id | [string](#string) | optional | Returns the single event with the given ID. |
+| author_user_id | [string](#string) | optional | Limits results to replies to the given event. optional string replies_to_event_id = 2; Limits results to those by the given author user ID. |
+| group_id | [string](#string) | optional |  |
+| listing_type | [EventListingType](#jonline-EventListingType) |  |  |
+
+
+
+
+
+
+<a name="jonline-GetEventsResponse"></a>
+
+### GetEventsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| events | [Event](#jonline-Event) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="jonline-EventListingType"></a>
+
+### EventListingType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PUBLIC_EVENTS | 0 | Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible. Also usable for getting replies anywhere. |
+| FOLLOWING_EVENTS | 1 | Returns events from users the user is following. |
+| MY_GROUPS_EVENTS | 2 | Returns events from any group the user is a member of. |
+| DIRECT_EVENTS | 3 | Returns `DIRECT` events that are directly addressed to the user. |
+| EVENTS_PENDING_MODERATION | 4 |  |
+| GROUP_EVENTS | 10 | group_id parameter is required for these. |
+| GROUP_EVENTS_PENDING_MODERATION | 11 |  |
 
 
  

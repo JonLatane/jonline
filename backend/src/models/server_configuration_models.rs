@@ -53,9 +53,11 @@ pub fn default_server_configuration() -> NewServerConfiguration {
         Permission::ViewPosts,
         Permission::CreatePosts,
         Permission::PublishPostsLocally,
+        Permission::PublishPostsGlobally,
         Permission::ViewEvents,
         Permission::CreateEvents,
         Permission::PublishEventsLocally,
+        Permission::PublishEventsGlobally,
     ].to_json_permissions();
     return NewServerConfiguration {
         server_info: serde_json::to_value(ServerInfo {

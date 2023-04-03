@@ -4,15 +4,21 @@
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
 
-# K8s server deployment targets
+# Targets for deploying Jonline to your K8s cluster.
 deploy_be_create:
 	cd deploys && $(MAKE) deploy_be_create
-# K8s server deployment targets
 deploy_be_update:
 	cd deploys && $(MAKE) deploy_be_update
+deploy_be_restart:
+	cd deploys && $(MAKE) deploy_be_restart
+deploy_be_delete:
+	cd deploys && $(MAKE) deploy_be_delete
 
+# General targets for creating/deleting Postgres/MinIO for Jonline. For more granuar control, use deploys/Makefile directly.
 deploy_data_create:
 	cd deploys && $(MAKE) deploy_data_create
+deploy_data_delete:
+	cd deploys && $(MAKE) deploy_data_delete
 
 # DEVELOPMENT-RELATED TARGETS
 # Core release targets (for general use, CI/CD, etc.)
@@ -34,4 +40,4 @@ lines_of_code:
 
 docs: documentation
 documentation:
-	docker run --rm -v $(PWD)/docs:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,protocol.md jonline.proto authentication.proto visibility_moderation.proto permissions.proto users.proto posts.proto server_configuration.proto
+	docker run --rm -v $(PWD)/docs:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,protocol.md jonline.proto authentication.proto visibility_moderation.proto permissions.proto users.proto posts.proto events.proto server_configuration.proto
