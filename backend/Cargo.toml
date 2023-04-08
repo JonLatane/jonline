@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.416"
+version = "0.1.418"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -51,6 +51,7 @@ which = "4.3.0"
 markdown = "0.3"
 lazy_static = "1.4.0"
 tokio-stream = "0.1.11"
+env_logger = "0.10.0"
 
 [build-dependencies]
 tonic-build = "0.8.4"

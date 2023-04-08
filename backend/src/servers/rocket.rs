@@ -74,9 +74,9 @@ fn create_rocket<T: rocket::figment::Provider>(
     pool: Arc<PgPool>,
 ) -> rocket::Rocket<rocket::Build> {
     let mut routes = routes![web::main_index::main_index,];
+    routes.append(&mut (*web::SEO_PAGES).clone());
     routes.append(&mut (*web::FLUTTER_PAGES).clone());
     routes.append(&mut (*web::TAMAGUI_PAGES).clone());
-    routes.append(&mut (*web::SEO_PAGES).clone());
     let server = rocket::custom(figment)
         .manage(web::RocketState { pool })
         .mount("/", routes)

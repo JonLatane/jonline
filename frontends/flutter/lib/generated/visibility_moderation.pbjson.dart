@@ -17,11 +17,12 @@ const Visibility$json = const {
     const {'1': 'LIMITED', '2': 2},
     const {'1': 'SERVER_PUBLIC', '2': 3},
     const {'1': 'GLOBAL_PUBLIC', '2': 4},
+    const {'1': 'DIRECT', '2': 5},
   ],
 };
 
 /// Descriptor for `Visibility`. Decode as a `google.protobuf.EnumDescriptorProto`.
-final $typed_data.Uint8List visibilityDescriptor = $convert.base64Decode('CgpWaXNpYmlsaXR5EhYKElZJU0lCSUxJVFlfVU5LTk9XThAAEgsKB1BSSVZBVEUQARILCgdMSU1JVEVEEAISEQoNU0VSVkVSX1BVQkxJQxADEhEKDUdMT0JBTF9QVUJMSUMQBA==');
+final $typed_data.Uint8List visibilityDescriptor = $convert.base64Decode('CgpWaXNpYmlsaXR5EhYKElZJU0lCSUxJVFlfVU5LTk9XThAAEgsKB1BSSVZBVEUQARILCgdMSU1JVEVEEAISEQoNU0VSVkVSX1BVQkxJQxADEhEKDUdMT0JBTF9QVUJMSUMQBBIKCgZESVJFQ1QQBQ==');
 @$core.Deprecated('Use moderationDescriptor instead')
 const Moderation$json = const {
   '1': 'Moderation',

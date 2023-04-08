@@ -17,6 +17,7 @@ import 'authentication.pb.dart' as $3;
 import 'users.pb.dart' as $4;
 import 'groups.pb.dart' as $5;
 import 'posts.pb.dart' as $6;
+import 'events.pb.dart' as $7;
 export 'jonline.pb.dart';
 
 class JonlineClient extends $grpc.Client {
@@ -156,6 +157,16 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/StreamReplies',
       ($6.Post value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $6.Post.fromBuffer(value));
+  static final _$createEvent = $grpc.ClientMethod<$7.Event, $7.Event>(
+      '/jonline.Jonline/CreateEvent',
+      ($7.Event value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $7.Event.fromBuffer(value));
+  static final _$getEvents =
+      $grpc.ClientMethod<$7.GetEventsRequest, $7.GetEventsResponse>(
+          '/jonline.Jonline/GetEvents',
+          ($7.GetEventsRequest value) => value.writeToBuffer(),
+          ($core.List<$core.int> value) =>
+              $7.GetEventsResponse.fromBuffer(value));
   static final _$configureServer =
       $grpc.ClientMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
           '/jonline.Jonline/ConfigureServer',
@@ -320,6 +331,17 @@ class JonlineClient extends $grpc.Client {
     return $createStreamingCall(
         _$streamReplies, $async.Stream.fromIterable([request]),
         options: options);
+  }
+
+  $grpc.ResponseFuture<$7.Event> createEvent($7.Event request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createEvent, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$7.GetEventsResponse> getEvents(
+      $7.GetEventsRequest request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getEvents, request, options: options);
   }
 
   $grpc.ResponseFuture<$2.ServerConfiguration> configureServer(
@@ -540,6 +562,20 @@ abstract class JonlineServiceBase extends $grpc.Service {
         true,
         ($core.List<$core.int> value) => $6.Post.fromBuffer(value),
         ($6.Post value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$7.Event, $7.Event>(
+        'CreateEvent',
+        createEvent_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $7.Event.fromBuffer(value),
+        ($7.Event value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$7.GetEventsRequest, $7.GetEventsResponse>(
+        'GetEvents',
+        getEvents_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $7.GetEventsRequest.fromBuffer(value),
+        ($7.GetEventsResponse value) => value.writeToBuffer()));
     $addMethod(
         $grpc.ServiceMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
             'ConfigureServer',
@@ -700,6 +736,16 @@ abstract class JonlineServiceBase extends $grpc.Service {
     yield* streamReplies(call, await request);
   }
 
+  $async.Future<$7.Event> createEvent_Pre(
+      $grpc.ServiceCall call, $async.Future<$7.Event> request) async {
+    return createEvent(call, await request);
+  }
+
+  $async.Future<$7.GetEventsResponse> getEvents_Pre($grpc.ServiceCall call,
+      $async.Future<$7.GetEventsRequest> request) async {
+    return getEvents(call, await request);
+  }
+
   $async.Future<$2.ServerConfiguration> configureServer_Pre(
       $grpc.ServiceCall call,
       $async.Future<$2.ServerConfiguration> request) async {
@@ -760,6 +806,9 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$6.GetGroupPostsResponse> getGroupPosts(
       $grpc.ServiceCall call, $6.GetGroupPostsRequest request);
   $async.Stream<$6.Post> streamReplies($grpc.ServiceCall call, $6.Post request);
+  $async.Future<$7.Event> createEvent($grpc.ServiceCall call, $7.Event request);
+  $async.Future<$7.GetEventsResponse> getEvents(
+      $grpc.ServiceCall call, $7.GetEventsRequest request);
   $async.Future<$2.ServerConfiguration> configureServer(
       $grpc.ServiceCall call, $2.ServerConfiguration request);
   $async.Future<$0.Empty> resetData($grpc.ServiceCall call, $0.Empty request);

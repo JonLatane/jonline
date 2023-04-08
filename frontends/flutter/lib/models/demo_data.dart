@@ -1,12 +1,15 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:fixnum/fixnum.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart';
 import 'package:jonline/utils/proto_utils.dart';
 import 'package:username_gen/username_gen.dart';
 
 import '../app_state.dart';
+import '../generated/events.pb.dart';
+import '../generated/google/protobuf/timestamp.pb.dart';
 import '../generated/groups.pb.dart';
 import '../generated/jonline.pbgrpc.dart';
 import '../generated/permissions.pbenum.dart';
@@ -21,7 +24,7 @@ import 'jonline_clients.dart';
 
 postDemoData(
     JonlineAccount account, Function(String) showSnackBar, AppState appState,
-    {bool randomize = false}) async {
+    {bool randomizePosts = false}) async {
   final JonlineClient? client =
       await (account.getClient(showMessage: showSnackBar));
   if (client == null) {
@@ -32,8 +35,11 @@ postDemoData(
 
   final demoGroups =
       await generateDemoGroups(client, account, showSnackBar, appState);
-  final List<Post> posts = await generateTopLevelPosts(
-      client, account, showSnackBar, appState, demoGroups, randomize);
+  final List<Post> posts = await generateTopicPosts(
+      client, account, showSnackBar, appState, demoGroups, randomizePosts);
+
+  await generateEvents(
+      client, account, showSnackBar, appState, demoGroups, randomizePosts);
 
   List<JonlineAccount> sideAccounts =
       await generateSideAccounts(client, account, showSnackBar, appState, 30);
@@ -107,7 +113,7 @@ Future<void> generateConversations(
   showSnackBar("Posted $replyCount total replies 🎉🎉🎉🎉🎉 ");
 }
 
-Future<List<Post>> generateTopLevelPosts(
+Future<List<Post>> generateTopicPosts(
     JonlineClient client,
     JonlineAccount account,
     Function(String) showSnackBar,
@@ -115,7 +121,7 @@ Future<List<Post>> generateTopLevelPosts(
     Map<DemoGroup, Group> demoGroups,
     bool randomize) async {
   final List<Post> posts = [];
-  var topLevelPosts = List.of(_demoData);
+  var topLevelPosts = List.of(_demoPosts);
   if (randomize) {
     topLevelPosts.shuffle();
   }
@@ -148,6 +154,50 @@ Future<List<Post>> generateTopLevelPosts(
     // await communicationDelay;
   }
   showSnackBar("Posted ${posts.length} demo topics.");
+  return posts;
+}
+
+Future<List<Event>> generateEvents(
+    JonlineClient client,
+    JonlineAccount account,
+    Function(String) showSnackBar,
+    AppState appState,
+    Map<DemoGroup, Group> demoGroups,
+    bool randomize) async {
+  final List<Event> posts = [];
+  var events = List.of(_demoEvents);
+  if (randomize) {
+    events.shuffle();
+  }
+  var lastMessageTime = DateTime.now();
+  for (final demoPost in events) {
+    final groups = demoPost.groups;
+    final basePost = demoPost.post;
+
+    // showSnackBar(
+    //     'Posting "${basePost.title}" across ${groups.length} groups...');
+    try {
+      final event = await client.createEvent(basePost,
+          options: account.authenticatedCallOptions);
+      posts.add(event);
+      final index = events.indexOf(demoPost);
+      if (shouldNotify(lastMessageTime)) {
+        showSnackBar("Posted ${index + 1} demo events...");
+        lastMessageTime = DateTime.now();
+      }
+      for (final demoGroup in groups) {
+        final group = demoGroups[demoGroup]!;
+        await client.createGroupPost(
+            GroupPost(groupId: group.id, postId: event.post.id),
+            options: account.authenticatedCallOptions);
+      }
+    } catch (e) {
+      showSnackBar("Error posting demo data: $e");
+      rethrow;
+    }
+    // await communicationDelay;
+  }
+  showSnackBar("Posted ${posts.length} demo events.");
   return posts;
 }
 
@@ -507,7 +557,7 @@ class DemoPost {
   DemoPost(this.groups, this.post);
 }
 
-final List<DemoPost> _demoData = [
+final List<DemoPost> _demoPosts = [
   DemoPost(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
       CreatePostRequest(
@@ -662,7 +712,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
       CreatePostRequest(
-          title: "What is Jonline??",
+          title: "What is Jonline?",
           content:
               '''Large-scale capitalist social media has failed most of us. 
 Jonline is a new approach to social media that keeps user data hyper-local - 
@@ -732,6 +782,61 @@ If you feel *really* brave, and wanna contribute to any part of a cutting-edge R
 app, info on that is *also* at https://github.com/jonlatane/jonline.
 ''')),
 ];
+
+class DemoEvent {
+  final List<DemoGroup> groups;
+  Event post;
+
+  DemoEvent(this.groups, this.post);
+}
+
+final List<DemoEvent> _demoEvents = [
+  DemoEvent(
+      [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
+      Event(
+          post: Post(
+            title: "Bull City Run Club",
+            link: "https://bullcityrunning.com/events/runclub/",
+          ),
+          instances: _generateWeeklyInstances(
+              DateTime.parse('2021-04-12 18:00:00-04:00'),
+              DateTime.parse('2021-04-12 19:00:00-04:00'),
+              20))),
+  DemoEvent(
+      [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
+      Event(
+          post: Post(
+            title: "RAD Ride",
+            link: "https://www.instagram.com/ride_around_durham/",
+          ),
+          instances: _generateWeeklyInstances(
+              DateTime.parse('2021-04-13 18:00:00-04:00'),
+              DateTime.parse('2021-04-13 21:00:00-04:00'),
+              20)))
+];
+
+List<EventInstance> _generateWeeklyInstances(
+    DateTime startsAt, DateTime endsAt, int recurringWeeks) {
+  final List<EventInstance> instances = [];
+  // LOL this doesn't even handle DST but copilot generated it and it's good enough for a demo for now...
+  for (int i = 0; i < recurringWeeks; i++) {
+    instances.add(EventInstance(
+        startsAt: Timestamp(
+          seconds: Int64.fromInts(
+              0,
+              (startsAt.add(Duration(days: i * 7)).millisecondsSinceEpoch /
+                      1000)
+                  .floor()),
+        ),
+        endsAt: Timestamp(
+          seconds: Int64.fromInts(
+              0,
+              (endsAt.add(Duration(days: i * 7)).millisecondsSinceEpoch / 1000)
+                  .floor()),
+        )));
+  }
+  return instances;
+}
 
 final _random = Random();
 const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';

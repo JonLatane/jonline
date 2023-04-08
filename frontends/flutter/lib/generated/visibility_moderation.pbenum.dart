@@ -15,6 +15,7 @@ class Visibility extends $pb.ProtobufEnum {
   static const Visibility LIMITED = Visibility._(2, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'LIMITED');
   static const Visibility SERVER_PUBLIC = Visibility._(3, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'SERVER_PUBLIC');
   static const Visibility GLOBAL_PUBLIC = Visibility._(4, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'GLOBAL_PUBLIC');
+  static const Visibility DIRECT = Visibility._(5, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'DIRECT');
 
   static const $core.List<Visibility> values = <Visibility> [
     VISIBILITY_UNKNOWN,
@@ -22,6 +23,7 @@ class Visibility extends $pb.ProtobufEnum {
     LIMITED,
     SERVER_PUBLIC,
     GLOBAL_PUBLIC,
+    DIRECT,
   ];
 
   static final $core.Map<$core.int, Visibility> _byValue = $pb.ProtobufEnum.initByValue(values);

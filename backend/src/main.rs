@@ -7,6 +7,7 @@ extern crate dotenv;
 extern crate futures;
 extern crate itertools;
 extern crate log;
+extern crate env_logger;
 extern crate markdown;
 extern crate prost_types;
 extern crate prost_wkt_types;
@@ -37,10 +38,11 @@ pub mod servers;
 use std::sync::Arc;
 use futures::future::join_all;
 use servers::{start_tonic_server, start_rocket_secure, start_rocket_unsecured};
-use ::jonline::{env_var, report_error};
+use ::jonline::{env_var, report_error, init_service_logging};
 
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    init_service_logging();
     db_connection::migrate_database();
     let pool1 = Arc::new(db_connection::establish_pool());
     let pool2 = pool1.clone();

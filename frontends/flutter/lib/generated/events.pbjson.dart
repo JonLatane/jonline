@@ -31,17 +31,40 @@ const GetEventsRequest$json = const {
     const {'1': 'event_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'eventId', '17': true},
     const {'1': 'author_user_id', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'authorUserId', '17': true},
     const {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupId', '17': true},
+    const {'1': 'event_instance_id', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'eventInstanceId', '17': true},
+    const {'1': 'time_filter', '3': 5, '4': 1, '5': 11, '6': '.jonline.TimeFilter', '9': 4, '10': 'timeFilter', '17': true},
     const {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.EventListingType', '10': 'listingType'},
   ],
   '8': const [
     const {'1': '_event_id'},
     const {'1': '_author_user_id'},
     const {'1': '_group_id'},
+    const {'1': '_event_instance_id'},
+    const {'1': '_time_filter'},
   ],
 };
 
 /// Descriptor for `GetEventsRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode('ChBHZXRFdmVudHNSZXF1ZXN0Eh4KCGV2ZW50X2lkGAEgASgJSABSB2V2ZW50SWSIAQESKQoOYXV0aG9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEh4KCGdyb3VwX2lkGAMgASgJSAJSB2dyb3VwSWSIAQESPAoMbGlzdGluZ190eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZUILCglfZXZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZA==');
+final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode('ChBHZXRFdmVudHNSZXF1ZXN0Eh4KCGV2ZW50X2lkGAEgASgJSABSB2V2ZW50SWSIAQESKQoOYXV0aG9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEh4KCGdyb3VwX2lkGAMgASgJSAJSB2dyb3VwSWSIAQESLwoRZXZlbnRfaW5zdGFuY2VfaWQYBCABKAlIA1IPZXZlbnRJbnN0YW5jZUlkiAEBEjkKC3RpbWVfZmlsdGVyGAUgASgLMhMuam9ubGluZS5UaW1lRmlsdGVySARSCnRpbWVGaWx0ZXKIAQESPAoMbGlzdGluZ190eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZUILCglfZXZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdGFuY2VfaWRCDgoMX3RpbWVfZmlsdGVy');
+@$core.Deprecated('Use timeFilterDescriptor instead')
+const TimeFilter$json = const {
+  '1': 'TimeFilter',
+  '2': const [
+    const {'1': 'starts_after', '3': 1, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'startsAfter', '17': true},
+    const {'1': 'ends_after', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'endsAfter', '17': true},
+    const {'1': 'starts_before', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'startsBefore', '17': true},
+    const {'1': 'ends_before', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 3, '10': 'endsBefore', '17': true},
+  ],
+  '8': const [
+    const {'1': '_starts_after'},
+    const {'1': '_ends_after'},
+    const {'1': '_starts_before'},
+    const {'1': '_ends_before'},
+  ],
+};
+
+/// Descriptor for `TimeFilter`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List timeFilterDescriptor = $convert.base64Decode('CgpUaW1lRmlsdGVyEkIKDHN0YXJ0c19hZnRlchgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAFILc3RhcnRzQWZ0ZXKIAQESPgoKZW5kc19hZnRlchgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAVIJZW5kc0FmdGVyiAEBEkQKDXN0YXJ0c19iZWZvcmUYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAJSDHN0YXJ0c0JlZm9yZYgBARJACgtlbmRzX2JlZm9yZRgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIA1IKZW5kc0JlZm9yZYgBAUIPCg1fc3RhcnRzX2FmdGVyQg0KC19lbmRzX2FmdGVyQhAKDl9zdGFydHNfYmVmb3JlQg4KDF9lbmRzX2JlZm9yZQ==');
 @$core.Deprecated('Use getEventsResponseDescriptor instead')
 const GetEventsResponse$json = const {
   '1': 'GetEventsResponse',

@@ -38,6 +38,7 @@ export function HomeScreen() {
       setLoadingPosts(false);
       dismissScrollPreserver(setShowScrollPreserver);
     }
+    document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
   function reloadPosts() {

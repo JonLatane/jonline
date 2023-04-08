@@ -103,6 +103,10 @@ service Jonline {
   // Creates an Event. *Authenticated.*
   rpc CreateEvent(Event) returns (Event) {}
 
+  // Gets Events. *Publicly accessible **or** Authenticated.*
+  // Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
+  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
+
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
   // Requires `ADMIN` permissions.
   rpc ConfigureServer(ServerConfiguration) returns (ServerConfiguration) {}

@@ -131,6 +131,18 @@ export function PostDetailsScreen() {
         dismissScrollPreserver(setShowScrollPreserver);
       }
     }
+    const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    if (subjectPost) {
+      if(subjectPost.title && subjectPost.title.length > 0) {
+        document.title = `${subjectPost.title} - ${serverName}`;
+      } else {
+        document.title = `Untitled Post (#${subjectPost.id}) - ${serverName}`;
+      }
+    } else if (failedToLoadPost) {
+      document.title = `Post Not Found - ${serverName}`;
+    } else {
+      document.title = `Loading Post... - ${serverName}`;
+    }
   });
 
   function toggleCollapseReplies(postId: string) {

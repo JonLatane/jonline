@@ -539,7 +539,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                             showSnackBar("Account not ready.");
                           }
                           postDemoData(account!, showSnackBar, appState,
-                              randomize: true);
+                              randomizePosts: true);
                         },
                       )));
                 },

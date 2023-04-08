@@ -857,6 +857,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                   onLongPress: selectServer,
                   onDoubleTap: selectServer,
                   onTap: () {
+                    selectServer?.call();
                     if (uiSelectedServer == server) {
                       setState(() {
                         uiSelectedServer = null;

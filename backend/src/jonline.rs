@@ -219,11 +219,6 @@ impl Jonline for JonLineImpl {
         rpcs::get_posts(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
-    // async fn stream_replies(
-    //     &self,
-    //     request: tonic::Request<Post>,
-    // ) -> Result<tonic::Response<ReplyStream>, tonic::Status> {
-    // }
     type StreamRepliesStream = ReplyStream;
     async fn stream_replies(
         &self,
@@ -267,6 +262,15 @@ impl Jonline for JonLineImpl {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::create_event(request, user, &mut conn)
+    }
+
+    async fn get_events(
+        &self,
+        request: Request<GetEventsRequest>,
+    ) -> Result<Response<GetEventsResponse>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
+        rpcs::get_events(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
     async fn get_server_configuration(

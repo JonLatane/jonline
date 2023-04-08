@@ -4,13 +4,15 @@ extern crate serde_json;
 use diesel::*;
 use jonline::marshaling::{ToProtoId, ToProtoPermission, ALL_PERMISSIONS};
 
-use jonline::db_connection;
+use jonline::{db_connection, init_bin_logging};
 // use jonline::protos::Permission;
 use jonline::schema::*;
 // use serde_json::Value::Array;
 use std::env;
 
 pub fn main() {
+    init_bin_logging();
+
     let args: Vec<String> = env::args().collect();
     if args.len() != 4 {
         return help("Invalid number of arguments.".to_string());
@@ -29,7 +31,9 @@ pub fn main() {
     }
     log::info!(
         "Setting '{}' permission to '{}' for user '{}'.",
-        permission, status, username
+        permission,
+        status,
+        username
     );
 
     log::info!("Connecting to DB...");
@@ -71,7 +75,8 @@ pub fn main() {
     }
     log::info!("Updated permissions: {:?}", perms);
     user.permissions = perms.into();
-    user.save_changes::<jonline::models::User>(&mut conn).unwrap();
+    user.save_changes::<jonline::models::User>(&mut conn)
+        .unwrap();
     log::info!("Updated user {}.", username);
 }
 
@@ -84,5 +89,10 @@ fn help(error: String) {
     log::info!("Usage:      set_permission <username> <permission> <status>");
     log::info!("Example:    set_permission jon admin off");
     log::info!("Statuses:   on|off|true|false");
-    log::info!("Permissions (case insensitive): \n * {}", ALL_PERMISSIONS.map(|p| p.as_str_name().to_ascii_lowercase()).join("\n * "));
+    log::info!(
+        "Permissions (case insensitive): \n * {}",
+        ALL_PERMISSIONS
+            .map(|p| p.as_str_name().to_ascii_lowercase())
+            .join("\n * ")
+    );
 }

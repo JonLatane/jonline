@@ -11,11 +11,12 @@ use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
 use jonline::marshaling::ToLink;
-use jonline::db_connection;
+use jonline::{db_connection, init_bin_logging};
 use jonline::models::Post;
 use jonline::schema::posts::dsl::*;
 
 pub fn main() {
+    init_bin_logging();
     log::info!("Generating preview images...");
     log::info!("Connecting to DB...");
     let mut conn = db_connection::establish_connection();

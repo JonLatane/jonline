@@ -9,10 +9,10 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'google/protobuf/timestamp.pb.dart' as $7;
+import 'google/protobuf/timestamp.pb.dart' as $8;
 
 import 'posts.pbenum.dart';
-import 'visibility_moderation.pbenum.dart' as $9;
+import 'visibility_moderation.pbenum.dart' as $10;
 
 export 'posts.pbenum.dart';
 
@@ -180,6 +180,7 @@ class CreatePostRequest extends $pb.GeneratedMessage {
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'link')
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'content')
     ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'replyToPostId')
+    ..e<$10.Visibility>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
     ..hasRequiredFields = false
   ;
 
@@ -189,6 +190,7 @@ class CreatePostRequest extends $pb.GeneratedMessage {
     $core.String? link,
     $core.String? content,
     $core.String? replyToPostId,
+    $10.Visibility? visibility,
   }) {
     final _result = create();
     if (title != null) {
@@ -202,6 +204,9 @@ class CreatePostRequest extends $pb.GeneratedMessage {
     }
     if (replyToPostId != null) {
       _result.replyToPostId = replyToPostId;
+    }
+    if (visibility != null) {
+      _result.visibility = visibility;
     }
     return _result;
   }
@@ -261,6 +266,15 @@ class CreatePostRequest extends $pb.GeneratedMessage {
   $core.bool hasReplyToPostId() => $_has(3);
   @$pb.TagNumber(4)
   void clearReplyToPostId() => clearField(4);
+
+  @$pb.TagNumber(10)
+  $10.Visibility get visibility => $_getN(4);
+  @$pb.TagNumber(10)
+  set visibility($10.Visibility v) { setField(10, v); }
+  @$pb.TagNumber(10)
+  $core.bool hasVisibility() => $_has(4);
+  @$pb.TagNumber(10)
+  void clearVisibility() => clearField(10);
 }
 
 class Post extends $pb.GeneratedMessage {
@@ -275,13 +289,16 @@ class Post extends $pb.GeneratedMessage {
     ..a<$core.int>(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'replyCount', $pb.PbFieldType.O3)
     ..pc<Post>(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'replies', $pb.PbFieldType.PM, subBuilder: Post.create)
     ..a<$core.List<$core.int>>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'previewImage', $pb.PbFieldType.OY)
-    ..e<$9.Visibility>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $9.Visibility.VISIBILITY_UNKNOWN, valueOf: $9.Visibility.valueOf, enumValues: $9.Visibility.values)
-    ..e<$9.Moderation>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
+    ..e<$10.Visibility>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
+    ..e<$10.Moderation>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..a<$core.int>(14, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupCount', $pb.PbFieldType.O3)
     ..aOM<GroupPost>(15, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
     ..aOB(16, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'previewImageExists')
-    ..aOM<$7.Timestamp>(20, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $7.Timestamp.create)
-    ..aOM<$7.Timestamp>(21, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $7.Timestamp.create)
+    ..aOB(17, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'shareable')
+    ..e<PostContext>(18, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
+    ..aOM<$8.Timestamp>(20, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $8.Timestamp.create)
+    ..aOM<$8.Timestamp>(21, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $8.Timestamp.create)
+    ..aOM<$8.Timestamp>(22, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'lastActivityAt', subBuilder: $8.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -297,13 +314,16 @@ class Post extends $pb.GeneratedMessage {
     $core.int? replyCount,
     $core.Iterable<Post>? replies,
     $core.List<$core.int>? previewImage,
-    $9.Visibility? visibility,
-    $9.Moderation? moderation,
+    $10.Visibility? visibility,
+    $10.Moderation? moderation,
     $core.int? groupCount,
     GroupPost? currentGroupPost,
     $core.bool? previewImageExists,
-    $7.Timestamp? createdAt,
-    $7.Timestamp? updatedAt,
+    $core.bool? shareable,
+    PostContext? context,
+    $8.Timestamp? createdAt,
+    $8.Timestamp? updatedAt,
+    $8.Timestamp? lastActivityAt,
   }) {
     final _result = create();
     if (id != null) {
@@ -351,11 +371,20 @@ class Post extends $pb.GeneratedMessage {
     if (previewImageExists != null) {
       _result.previewImageExists = previewImageExists;
     }
+    if (shareable != null) {
+      _result.shareable = shareable;
+    }
+    if (context != null) {
+      _result.context = context;
+    }
     if (createdAt != null) {
       _result.createdAt = createdAt;
     }
     if (updatedAt != null) {
       _result.updatedAt = updatedAt;
+    }
+    if (lastActivityAt != null) {
+      _result.lastActivityAt = lastActivityAt;
     }
     return _result;
   }
@@ -467,18 +496,18 @@ class Post extends $pb.GeneratedMessage {
   void clearPreviewImage() => clearField(10);
 
   @$pb.TagNumber(11)
-  $9.Visibility get visibility => $_getN(10);
+  $10.Visibility get visibility => $_getN(10);
   @$pb.TagNumber(11)
-  set visibility($9.Visibility v) { setField(11, v); }
+  set visibility($10.Visibility v) { setField(11, v); }
   @$pb.TagNumber(11)
   $core.bool hasVisibility() => $_has(10);
   @$pb.TagNumber(11)
   void clearVisibility() => clearField(11);
 
   @$pb.TagNumber(12)
-  $9.Moderation get moderation => $_getN(11);
+  $10.Moderation get moderation => $_getN(11);
   @$pb.TagNumber(12)
-  set moderation($9.Moderation v) { setField(12, v); }
+  set moderation($10.Moderation v) { setField(12, v); }
   @$pb.TagNumber(12)
   $core.bool hasModeration() => $_has(11);
   @$pb.TagNumber(12)
@@ -513,27 +542,56 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(16)
   void clearPreviewImageExists() => clearField(16);
 
+  @$pb.TagNumber(17)
+  $core.bool get shareable => $_getBF(15);
+  @$pb.TagNumber(17)
+  set shareable($core.bool v) { $_setBool(15, v); }
+  @$pb.TagNumber(17)
+  $core.bool hasShareable() => $_has(15);
+  @$pb.TagNumber(17)
+  void clearShareable() => clearField(17);
+
+  @$pb.TagNumber(18)
+  PostContext get context => $_getN(16);
+  @$pb.TagNumber(18)
+  set context(PostContext v) { setField(18, v); }
+  @$pb.TagNumber(18)
+  $core.bool hasContext() => $_has(16);
+  @$pb.TagNumber(18)
+  void clearContext() => clearField(18);
+
   @$pb.TagNumber(20)
-  $7.Timestamp get createdAt => $_getN(15);
+  $8.Timestamp get createdAt => $_getN(17);
   @$pb.TagNumber(20)
-  set createdAt($7.Timestamp v) { setField(20, v); }
+  set createdAt($8.Timestamp v) { setField(20, v); }
   @$pb.TagNumber(20)
-  $core.bool hasCreatedAt() => $_has(15);
+  $core.bool hasCreatedAt() => $_has(17);
   @$pb.TagNumber(20)
   void clearCreatedAt() => clearField(20);
   @$pb.TagNumber(20)
-  $7.Timestamp ensureCreatedAt() => $_ensure(15);
+  $8.Timestamp ensureCreatedAt() => $_ensure(17);
 
   @$pb.TagNumber(21)
-  $7.Timestamp get updatedAt => $_getN(16);
+  $8.Timestamp get updatedAt => $_getN(18);
   @$pb.TagNumber(21)
-  set updatedAt($7.Timestamp v) { setField(21, v); }
+  set updatedAt($8.Timestamp v) { setField(21, v); }
   @$pb.TagNumber(21)
-  $core.bool hasUpdatedAt() => $_has(16);
+  $core.bool hasUpdatedAt() => $_has(18);
   @$pb.TagNumber(21)
   void clearUpdatedAt() => clearField(21);
   @$pb.TagNumber(21)
-  $7.Timestamp ensureUpdatedAt() => $_ensure(16);
+  $8.Timestamp ensureUpdatedAt() => $_ensure(18);
+
+  @$pb.TagNumber(22)
+  $8.Timestamp get lastActivityAt => $_getN(19);
+  @$pb.TagNumber(22)
+  set lastActivityAt($8.Timestamp v) { setField(22, v); }
+  @$pb.TagNumber(22)
+  $core.bool hasLastActivityAt() => $_has(19);
+  @$pb.TagNumber(22)
+  void clearLastActivityAt() => clearField(22);
+  @$pb.TagNumber(22)
+  $8.Timestamp ensureLastActivityAt() => $_ensure(19);
 }
 
 class Author extends $pb.GeneratedMessage {
@@ -602,8 +660,8 @@ class GroupPost extends $pb.GeneratedMessage {
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postId')
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userId')
-    ..e<$9.Moderation>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $9.Moderation.MODERATION_UNKNOWN, valueOf: $9.Moderation.valueOf, enumValues: $9.Moderation.values)
-    ..aOM<$7.Timestamp>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $7.Timestamp.create)
+    ..e<$10.Moderation>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..aOM<$8.Timestamp>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $8.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -612,8 +670,8 @@ class GroupPost extends $pb.GeneratedMessage {
     $core.String? groupId,
     $core.String? postId,
     $core.String? userId,
-    $9.Moderation? groupModeration,
-    $7.Timestamp? createdAt,
+    $10.Moderation? groupModeration,
+    $8.Timestamp? createdAt,
   }) {
     final _result = create();
     if (groupId != null) {
@@ -682,31 +740,31 @@ class GroupPost extends $pb.GeneratedMessage {
   void clearUserId() => clearField(3);
 
   @$pb.TagNumber(4)
-  $9.Moderation get groupModeration => $_getN(3);
+  $10.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($9.Moderation v) { setField(4, v); }
+  set groupModeration($10.Moderation v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
   void clearGroupModeration() => clearField(4);
 
   @$pb.TagNumber(5)
-  $7.Timestamp get createdAt => $_getN(4);
+  $8.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
-  set createdAt($7.Timestamp v) { setField(5, v); }
+  set createdAt($8.Timestamp v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasCreatedAt() => $_has(4);
   @$pb.TagNumber(5)
   void clearCreatedAt() => clearField(5);
   @$pb.TagNumber(5)
-  $7.Timestamp ensureCreatedAt() => $_ensure(4);
+  $8.Timestamp ensureCreatedAt() => $_ensure(4);
 }
 
 class UserPost extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'UserPost', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userId')
-    ..aOM<$7.Timestamp>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $7.Timestamp.create)
+    ..aOM<$8.Timestamp>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $8.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -714,7 +772,7 @@ class UserPost extends $pb.GeneratedMessage {
   factory UserPost({
     $core.String? groupId,
     $core.String? userId,
-    $7.Timestamp? createdAt,
+    $8.Timestamp? createdAt,
   }) {
     final _result = create();
     if (groupId != null) {
@@ -768,15 +826,15 @@ class UserPost extends $pb.GeneratedMessage {
   void clearUserId() => clearField(2);
 
   @$pb.TagNumber(3)
-  $7.Timestamp get createdAt => $_getN(2);
+  $8.Timestamp get createdAt => $_getN(2);
   @$pb.TagNumber(3)
-  set createdAt($7.Timestamp v) { setField(3, v); }
+  set createdAt($8.Timestamp v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasCreatedAt() => $_has(2);
   @$pb.TagNumber(3)
   void clearCreatedAt() => clearField(3);
   @$pb.TagNumber(3)
-  $7.Timestamp ensureCreatedAt() => $_ensure(2);
+  $8.Timestamp ensureCreatedAt() => $_ensure(2);
 }
 
 class GetGroupPostsRequest extends $pb.GeneratedMessage {

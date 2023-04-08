@@ -9,8 +9,8 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+import 'google/protobuf/timestamp.pb.dart' as $8;
 import 'posts.pb.dart' as $6;
-import 'google/protobuf/timestamp.pb.dart' as $7;
 
 import 'events.pbenum.dart';
 
@@ -21,6 +21,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'eventId')
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'authorUserId')
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
+    ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'eventInstanceId')
+    ..aOM<TimeFilter>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'timeFilter', subBuilder: TimeFilter.create)
     ..e<EventListingType>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: EventListingType.PUBLIC_EVENTS, valueOf: EventListingType.valueOf, enumValues: EventListingType.values)
     ..hasRequiredFields = false
   ;
@@ -30,6 +32,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.String? eventId,
     $core.String? authorUserId,
     $core.String? groupId,
+    $core.String? eventInstanceId,
+    TimeFilter? timeFilter,
     EventListingType? listingType,
   }) {
     final _result = create();
@@ -41,6 +45,12 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     }
     if (groupId != null) {
       _result.groupId = groupId;
+    }
+    if (eventInstanceId != null) {
+      _result.eventInstanceId = eventInstanceId;
+    }
+    if (timeFilter != null) {
+      _result.timeFilter = timeFilter;
     }
     if (listingType != null) {
       _result.listingType = listingType;
@@ -95,14 +105,131 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearGroupId() => clearField(3);
 
+  @$pb.TagNumber(4)
+  $core.String get eventInstanceId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set eventInstanceId($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasEventInstanceId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearEventInstanceId() => clearField(4);
+
+  @$pb.TagNumber(5)
+  TimeFilter get timeFilter => $_getN(4);
+  @$pb.TagNumber(5)
+  set timeFilter(TimeFilter v) { setField(5, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasTimeFilter() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTimeFilter() => clearField(5);
+  @$pb.TagNumber(5)
+  TimeFilter ensureTimeFilter() => $_ensure(4);
+
   @$pb.TagNumber(10)
-  EventListingType get listingType => $_getN(3);
+  EventListingType get listingType => $_getN(5);
   @$pb.TagNumber(10)
   set listingType(EventListingType v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasListingType() => $_has(3);
+  $core.bool hasListingType() => $_has(5);
   @$pb.TagNumber(10)
   void clearListingType() => clearField(10);
+}
+
+class TimeFilter extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'TimeFilter', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<$8.Timestamp>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'startsAfter', subBuilder: $8.Timestamp.create)
+    ..aOM<$8.Timestamp>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'endsAfter', subBuilder: $8.Timestamp.create)
+    ..aOM<$8.Timestamp>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'startsBefore', subBuilder: $8.Timestamp.create)
+    ..aOM<$8.Timestamp>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'endsBefore', subBuilder: $8.Timestamp.create)
+    ..hasRequiredFields = false
+  ;
+
+  TimeFilter._() : super();
+  factory TimeFilter({
+    $8.Timestamp? startsAfter,
+    $8.Timestamp? endsAfter,
+    $8.Timestamp? startsBefore,
+    $8.Timestamp? endsBefore,
+  }) {
+    final _result = create();
+    if (startsAfter != null) {
+      _result.startsAfter = startsAfter;
+    }
+    if (endsAfter != null) {
+      _result.endsAfter = endsAfter;
+    }
+    if (startsBefore != null) {
+      _result.startsBefore = startsBefore;
+    }
+    if (endsBefore != null) {
+      _result.endsBefore = endsBefore;
+    }
+    return _result;
+  }
+  factory TimeFilter.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory TimeFilter.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  TimeFilter clone() => TimeFilter()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  TimeFilter copyWith(void Function(TimeFilter) updates) => super.copyWith((message) => updates(message as TimeFilter)) as TimeFilter; // ignore: deprecated_member_use
+  $pb.BuilderInfo get info_ => _i;
+  @$core.pragma('dart2js:noInline')
+  static TimeFilter create() => TimeFilter._();
+  TimeFilter createEmptyInstance() => create();
+  static $pb.PbList<TimeFilter> createRepeated() => $pb.PbList<TimeFilter>();
+  @$core.pragma('dart2js:noInline')
+  static TimeFilter getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TimeFilter>(create);
+  static TimeFilter? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $8.Timestamp get startsAfter => $_getN(0);
+  @$pb.TagNumber(1)
+  set startsAfter($8.Timestamp v) { setField(1, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasStartsAfter() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearStartsAfter() => clearField(1);
+  @$pb.TagNumber(1)
+  $8.Timestamp ensureStartsAfter() => $_ensure(0);
+
+  @$pb.TagNumber(2)
+  $8.Timestamp get endsAfter => $_getN(1);
+  @$pb.TagNumber(2)
+  set endsAfter($8.Timestamp v) { setField(2, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasEndsAfter() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEndsAfter() => clearField(2);
+  @$pb.TagNumber(2)
+  $8.Timestamp ensureEndsAfter() => $_ensure(1);
+
+  @$pb.TagNumber(3)
+  $8.Timestamp get startsBefore => $_getN(2);
+  @$pb.TagNumber(3)
+  set startsBefore($8.Timestamp v) { setField(3, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasStartsBefore() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearStartsBefore() => clearField(3);
+  @$pb.TagNumber(3)
+  $8.Timestamp ensureStartsBefore() => $_ensure(2);
+
+  @$pb.TagNumber(4)
+  $8.Timestamp get endsBefore => $_getN(3);
+  @$pb.TagNumber(4)
+  set endsBefore($8.Timestamp v) { setField(4, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasEndsBefore() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearEndsBefore() => clearField(4);
+  @$pb.TagNumber(4)
+  $8.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
 class GetEventsResponse extends $pb.GeneratedMessage {
@@ -268,8 +395,8 @@ class EventInstance extends $pb.GeneratedMessage {
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'eventId')
     ..aOM<$6.Post>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'post', subBuilder: $6.Post.create)
     ..aOM<EventInstanceInfo>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'info', subBuilder: EventInstanceInfo.create)
-    ..aOM<$7.Timestamp>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'startsAt', subBuilder: $7.Timestamp.create)
-    ..aOM<$7.Timestamp>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'endsAt', subBuilder: $7.Timestamp.create)
+    ..aOM<$8.Timestamp>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'startsAt', subBuilder: $8.Timestamp.create)
+    ..aOM<$8.Timestamp>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'endsAt', subBuilder: $8.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -279,8 +406,8 @@ class EventInstance extends $pb.GeneratedMessage {
     $core.String? eventId,
     $6.Post? post,
     EventInstanceInfo? info,
-    $7.Timestamp? startsAt,
-    $7.Timestamp? endsAt,
+    $8.Timestamp? startsAt,
+    $8.Timestamp? endsAt,
   }) {
     final _result = create();
     if (id != null) {
@@ -365,26 +492,26 @@ class EventInstance extends $pb.GeneratedMessage {
   EventInstanceInfo ensureInfo() => $_ensure(3);
 
   @$pb.TagNumber(5)
-  $7.Timestamp get startsAt => $_getN(4);
+  $8.Timestamp get startsAt => $_getN(4);
   @$pb.TagNumber(5)
-  set startsAt($7.Timestamp v) { setField(5, v); }
+  set startsAt($8.Timestamp v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasStartsAt() => $_has(4);
   @$pb.TagNumber(5)
   void clearStartsAt() => clearField(5);
   @$pb.TagNumber(5)
-  $7.Timestamp ensureStartsAt() => $_ensure(4);
+  $8.Timestamp ensureStartsAt() => $_ensure(4);
 
   @$pb.TagNumber(6)
-  $7.Timestamp get endsAt => $_getN(5);
+  $8.Timestamp get endsAt => $_getN(5);
   @$pb.TagNumber(6)
-  set endsAt($7.Timestamp v) { setField(6, v); }
+  set endsAt($8.Timestamp v) { setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasEndsAt() => $_has(5);
   @$pb.TagNumber(6)
   void clearEndsAt() => clearField(6);
   @$pb.TagNumber(6)
-  $7.Timestamp ensureEndsAt() => $_ensure(5);
+  $8.Timestamp ensureEndsAt() => $_ensure(5);
 }
 
 class EventInstanceInfo extends $pb.GeneratedMessage {

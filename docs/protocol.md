@@ -52,6 +52,7 @@
     - [EventInstanceInfo](#jonline-EventInstanceInfo)
     - [GetEventsRequest](#jonline-GetEventsRequest)
     - [GetEventsResponse](#jonline-GetEventsResponse)
+    - [TimeFilter](#jonline-TimeFilter)
   
     - [EventListingType](#jonline-EventListingType)
   
@@ -126,6 +127,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 | GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
 | StreamReplies | [Post](#jonline-Post) | [Post](#jonline-Post) stream | (TODO) Reply streaming interface |
 | CreateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates an Event. *Authenticated.* |
+| GetEvents | [GetEventsRequest](#jonline-GetEventsRequest) | [GetEventsResponse](#jonline-GetEventsResponse) | Gets Events. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility. |
 | ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. |
 | ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
 
@@ -834,6 +836,8 @@ Valid GetEventsRequest formats:
 | event_id | [string](#string) | optional | Returns the single event with the given ID. |
 | author_user_id | [string](#string) | optional | Limits results to replies to the given event. optional string replies_to_event_id = 2; Limits results to those by the given author user ID. |
 | group_id | [string](#string) | optional |  |
+| event_instance_id | [string](#string) | optional |  |
+| time_filter | [TimeFilter](#jonline-TimeFilter) | optional |  |
 | listing_type | [EventListingType](#jonline-EventListingType) |  |  |
 
 
@@ -850,6 +854,24 @@ Valid GetEventsRequest formats:
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | events | [Event](#jonline-Event) | repeated |  |
+
+
+
+
+
+
+<a name="jonline-TimeFilter"></a>
+
+### TimeFilter
+Time filter that simply works on the starts_at and ends_at fields.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| starts_after | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| ends_after | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| starts_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| ends_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 
 
 

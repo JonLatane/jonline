@@ -22,7 +22,17 @@ message GetEventsRequest {
   // Limits results to those by the given author user ID.
   optional string author_user_id = 2;
   optional string group_id = 3;
+  optional string event_instance_id = 4;
+  optional TimeFilter time_filter = 5;
   EventListingType listing_type = 10;
+}
+
+// Time filter that simply works on the starts_at and ends_at fields.
+message TimeFilter {
+  optional google.protobuf.Timestamp starts_after = 1;
+  optional google.protobuf.Timestamp ends_after = 2;
+  optional google.protobuf.Timestamp starts_before = 3;
+  optional google.protobuf.Timestamp ends_before = 4;
 }
 
 enum EventListingType {
