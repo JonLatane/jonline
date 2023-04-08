@@ -132,17 +132,23 @@ export function PostDetailsScreen() {
       }
     }
     const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    let title = '';
     if (subjectPost) {
       if(subjectPost.title && subjectPost.title.length > 0) {
-        document.title = `${subjectPost.title} - ${serverName}`;
+        title = subjectPost.title;
       } else {
-        document.title = `Untitled Post (#${subjectPost.id}) - ${serverName}`;
+        title = `Untitled Post (#${subjectPost.id})`;
       }
     } else if (failedToLoadPost) {
-      document.title = `Post Not Found - ${serverName}`;
+      title = 'Post Not Found';
     } else {
-      document.title = `Loading Post... - ${serverName}`;
+      title = 'Loading Post...';
     }
+    title += ` - ${serverName}`;
+    if (shortname && shortname.length > 0 && group && group.name.length > 0) {
+      title += `- ${group.name}`;
+    }
+    document.title = title;
   });
 
   function toggleCollapseReplies(postId: string) {

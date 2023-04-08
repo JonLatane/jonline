@@ -35,6 +35,15 @@ export function GroupDetailsScreen() {
       setLoadingGroupPosts(false);
       dismissScrollPreserver(setShowScrollPreserver);
     }
+    let title = '';
+    if (shortname && shortname.length > 0 && group && group.name.length > 0) {
+      title = group.name;
+    } else {
+      title = 'Group Not Found'
+    }
+    const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    title += ` - ${serverName}`;
+    document.title = title;
   });
 
   function reloadPosts() {
