@@ -42,6 +42,7 @@ export function PostDetailsScreen() {
   const [loadingPost, setLoadingPost] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());
+  const [expandAnimation, setExpandAnimation] = useState(true);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const chatUI = app?.discussionChatUI;
@@ -134,10 +135,10 @@ export function PostDetailsScreen() {
     const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
     let title = '';
     if (subjectPost) {
-      if(subjectPost.title && subjectPost.title.length > 0) {
+      if (subjectPost.title && subjectPost.title.length > 0) {
         title = subjectPost.title;
       } else {
-        title = `Untitled Post (#${subjectPost.id})`;
+        title = `Post Details (#${subjectPost.id})`;
       }
     } else if (failedToLoadPost) {
       title = 'Post Not Found';
@@ -273,7 +274,7 @@ export function PostDetailsScreen() {
                     y={0}
                     enterStyle={{
                       // scale: 1.5,
-                      y: -50,
+                      y: expandAnimation ? -50 : 50,
                       opacity: 0,
                     }}
                     exitStyle={{
@@ -308,7 +309,11 @@ export function PostDetailsScreen() {
                         selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
                         collapseReplies={collapsedReplies.has(post.id)}
                         previewParent={showParentPreview ? parentPost : undefined}
-                        toggleCollapseReplies={() => toggleCollapseReplies(post.id)}
+                        onLoadReplies={() => setExpandAnimation(true)}
+                        toggleCollapseReplies={() => {
+                          setExpandAnimation(collapsedReplies.has(post.id));
+                          toggleCollapseReplies(post.id);
+                        }}
                         onPress={() => {
                           if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
                             setReplyPostIdPath([postId!]);

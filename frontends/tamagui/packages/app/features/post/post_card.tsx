@@ -18,13 +18,14 @@ interface Props {
   replyPostIdPath?: string[];
   collapseReplies?: boolean;
   toggleCollapseReplies?: () => void;
+  onLoadReplies?: () => void;
   previewParent?: Post;
   onPress?: () => void;
   onPressParentPreview?: () => void;
   selectedPostId?: string;
 }
 
-export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
+export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -118,6 +119,9 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
     setTimeout(() => {
       if (!loadingReplies && post.replies.length == 0) {
         setLoadingReplies(true);
+        if (onLoadReplies) {
+          onLoadReplies();
+        }
         dispatch(loadPostReplies({ ...accountOrServer, postIdPath: replyPostIdPath! }));
       } else if (toggleCollapseReplies) {
         toggleCollapseReplies();

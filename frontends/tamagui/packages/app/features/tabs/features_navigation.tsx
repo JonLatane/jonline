@@ -1,8 +1,9 @@
 import { Group } from "@jonline/api";
 import { JonlineServer } from "app/store";
 import { Button, Heading, Popover, ScrollView, XStack, YStack } from '@jonline/ui';
-import { useAccount, useServerTheme } from '../../store/store';
+import { useAccount, useLocalApp, useServerTheme } from '../../store/store';
 import { useLink } from "solito/link";
+import { AlertTriangle } from "@tamagui/lucide-icons";
 
 export enum AppSection {
   HOME = 'home',
@@ -52,13 +53,18 @@ export type FeaturesNavigationProps = {
 
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, groupPageForwarder }: FeaturesNavigationProps) {
   const account = useAccount();
+  const app = useLocalApp();
   const { navColor, navTextColor, textColor } = useServerTheme();
 
   const latestLink = useLink({ href: '/' });
+  const postsLink = useLink({ href: '/posts' });
+  const eventsLink = useLink({ href: '/events' });
   const peopleLink = useLink({ href: '/people' });
   const followRequestsLink = useLink({ href: '/people/follow_requests' });
 
   const isLatest = appSection == AppSection.HOME;
+  const isPosts = appSection == AppSection.POSTS;
+  const isEvents = appSection == AppSection.EVENTS;
   const isPeople = appSection == AppSection.PEOPLE && appSubsection == undefined;
   const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
 
@@ -82,16 +88,6 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           <Heading size="$4">{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
         </Button>
       </Popover.Trigger>
-
-      {/* <Adapt when="sm" platform="web">
-<Popover.Sheet modal dismissOnSnapToBottom>
-<Popover.Sheet.Frame padding="$4">
-<Adapt.Contents />
-</Popover.Sheet.Frame>
-<Popover.Sheet.Overlay />
-</Popover.Sheet>
-</Adapt> */}
-
       <Popover.Content
         bw={1}
         boc="$borderColor"
@@ -113,110 +109,26 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         <Popover.Arrow bw={1} boc="$borderColor" />
 
         <YStack space="$3">
-          {/* <XStack space="$3">
-<Label size="$3" htmlFor={'asdf'}>
-Name
-</Label>
-<Input size="$3" id={'asdf'} />
-</XStack> */}
-
-          {[AppSection.HOME/*, AppSection.POSTS, AppSection.EVENTS*/].map((section) => <ScrollView w='100%'><XStack ac='center' jc='center'>
-            <Popover.Close asChild>
-
-              {navButton(isLatest, latestLink, sectionTitle(section))}
-              {/* <Button
-                // bordered={false}
-                transparent
-                size="$3"
-                // disabled={appSection == section}
-                onPress={() => { }}
-              >
-                <Heading size="$4">{sectionTitle(section)}</Heading>
-              </Button> */}
-            </Popover.Close>
-            {account ? <>
-              {/* <Popover.Close asChild>
-              <Button
-                // bordered={false}
-                transparent
-                size="$3"
-                // disabled={appSection == section}
-                onPress={() => { }}
-              >
-                <Heading size="$4">Following</Heading>
-              </Button>
-            </Popover.Close> */}
-              {/* <Popover.Close asChild>
-              <Button
-                // bordered={false}
-                transparent
-                size="$3"
-                // disabled={appSection == section}
-                onPress={() => { }}
-              >
-                <Heading size="$4">Groups</Heading>
-              </Button>
-            </Popover.Close> */}
+          <XStack ac='center' jc='center' space='$2'>
+            {navButton(isLatest, latestLink, sectionTitle(AppSection.HOME))}
+            {app.showBetaNavigation || isPosts || isEvents ? <>
+              {/* {!app.showBetaNavigation ? <YStack marginVertical='auto' mr='$2'><AlertTriangle size='$1' /></YStack> : undefined} */}
+              {navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS))}
+              <YStack mr='$2'/>
+              {navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS))}
             </> : undefined}
           </XStack>
-          </ScrollView>)
-          }
           <XStack ac='center' jc='center' space='$2'>
 
             <Popover.Close asChild>
               {navButton(isPeople, peopleLink, 'People')}
-              {/* <Button
-                // bordered={false}
-                transparent
-                size="$3"
-                disabled={isPeople}
-                backgroundColor={isPeople ? navColor : undefined}
-                {...peopleLink}
-              >
-                <Heading size="$4" color={isPeople ? navTextColor : textColor}>People</Heading>
-              </Button> */}
             </Popover.Close>
             {account ? <>
               <Popover.Close asChild>
                 {navButton(isFollowRequests, followRequestsLink, 'Follow Requests')}
-                {/* <Button
-                  // bordered={false}
-                  transparent
-                  size="$3"
-                  disabled={isFollowRequests}
-                  backgroundColor={isFollowRequests ? navColor : undefined}
-                  {...followRequestsLink}
-                >
-                  <Heading size="$4" color={isFollowRequests ? navTextColor : textColor}>Follow Requests</Heading>
-                </Button> */}
               </Popover.Close>
             </> : undefined}
           </XStack>
-          {/* <XStack ac='center' jc='center'>
-
-            <Popover.Close asChild>
-              <Button
-                // bordered={false}
-                transparent
-                size="$3"
-                disabled={appSection == AppSection.GROUPS}
-                onPress={() => { }}
-              >
-                <Heading size="$4">{sectionTitle(AppSection.GROUPS)}</Heading>
-              </Button>
-            </Popover.Close>
-            {account ? <><Popover.Close asChild>
-              <Button
-                // bordered={false}
-                transparent
-                size="$3"
-                disabled={appSection == AppSection.GROUPS}
-                onPress={() => { }}
-              >
-                <Heading size="$4">Member Requests</Heading>
-              </Button>
-            </Popover.Close></> : undefined}
-          </XStack> */}
         </YStack>
       </Popover.Content>
     </Popover>

@@ -759,7 +759,7 @@ support reactions to posts as they do (and is deliberately not architected in a 
 Jonline has a faster web UI than either thanks to Tamagui and NextJS and a faster BE thanks to Rust.
 [Jonline's Docker images are currently 105MB](https://hub.docker.com/r/jonlatane/jonline/tags),
 while [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags),
-and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags)/
+and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags).
 Further, Jonline should (hopefully) be easier to deploy, partly by virtue of having such minimal system requirements.
 Finally, Jonline's Discussion/Chat UI feature doesn't have any great
 analogues in other open-source social networks.

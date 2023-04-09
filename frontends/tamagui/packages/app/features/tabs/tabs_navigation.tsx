@@ -78,7 +78,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
               <ScrollView horizontal>
                 <XStack w={1} />
                 <GroupsSheet selectedGroup={selectedGroup} />
-                {app.showBetaNavigation ? <FeaturesNavigation {...{appSection, appSubsection, selectedGroup}} /> : undefined}
+                <FeaturesNavigation {...{appSection, appSubsection, selectedGroup}} />
               </ScrollView>
               <XStack f={1} />
               <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />

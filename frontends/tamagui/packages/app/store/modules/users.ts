@@ -1,4 +1,4 @@
-import { Empty, Follow, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostListingType, User } from "@jonline/api";
+import { Empty, Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostListingType, User } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   AsyncThunk,
@@ -149,7 +149,16 @@ export const loadUserPosts: AsyncThunk<GetPostsResponse, LoadUserPosts, any> = c
   "users/loadPosts",
   async (request) => {
     let client = await getCredentialClient(request);
-    const result = await client.getPosts({ authorUserId: request.userId, listingType: PostListingType.GROUP_POSTS }, client.credential);
+    const result = await client.getPosts({ authorUserId: request.userId }, client.credential);
+    return result;
+  }
+);
+export type LoadUserEvents = AccountOrServer & { userId: string };
+export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEvents, any> = createAsyncThunk<GetEventsResponse, LoadUserEvents>(
+  "users/loadPosts",
+  async (request) => {
+    let client = await getCredentialClient(request);
+    const result = await client.getEvents({ authorUserId: request.userId }, client.credential);
     return result;
   }
 );

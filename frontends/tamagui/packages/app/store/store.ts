@@ -10,6 +10,7 @@ import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
 import { accountsReducer, groupsReducer, LocalAppConfiguration, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, resetUsers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
 import { AccountOrServer, JonlineServer } from './types';
+import eventsReducer from "./modules/events";
 
 const serversPersistConfig = {
   key: 'servers',
@@ -44,6 +45,7 @@ const rootReducer = combineReducers({
   accounts: persistReducer(accountsPersistConfig, accountsReducer),
   servers: persistReducer(serversPersistConfig, serversReducer),
   posts: postsReducer, // persistReducer(postsPersistConfig, postsReducer),
+  events: eventsReducer,
   users: usersReducer, // persistReducer(usersPersistConfig, usersReducer),
   groups: groupsReducer, // persistReducer(groupsPersistConfig, groupsReducer)
 });

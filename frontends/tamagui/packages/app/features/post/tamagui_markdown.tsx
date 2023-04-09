@@ -39,6 +39,6 @@ export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false 
       // a: ({ children, href }) => <Anchor color={navColor} target='_blank' {...{ href, children }} />,
       a: ({ children, href }) => disableLinks
         ? <Text fontFamily='$body' color={navColor} {...{ href, children }} />
-        : <Anchor color={navColor} target='_blank' {...{ href, children }} />,
+        : <Anchor fontSize='$3' color={navColor} target='_blank' {...{ href, children }} />,
     }} />
 }

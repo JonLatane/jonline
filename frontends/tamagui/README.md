@@ -5,6 +5,14 @@ both React Native and React Web ergonomically. It should become an alternative F
 existing Flutter one, to provide multiple options for the best user experience against any
 Jonline server.
 
+## Adding new routes/pages
+Suppose we want to add the page `events/fancy_thing/[:id]`.
+
+* Implement the screen for the page.
+* Add new file to `apps/next/pages/events/fancy_thing.tsx` referencing the screen.
+* Add config to `packages/app/navigation/native/index.tsx`.
+* Add config to `packages/app/provider/navigation/index.tsx`.
+
 ### Based on: Tamagui + Solito + Next + Expo Monorepo
 
 ```sh

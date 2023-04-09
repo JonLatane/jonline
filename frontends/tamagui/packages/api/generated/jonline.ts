@@ -10,6 +10,7 @@ import {
   LoginRequest,
   RefreshTokenResponse,
 } from "./authentication";
+import { Event, GetEventsRequest, GetEventsResponse } from "./events";
 import { GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
@@ -31,31 +32,33 @@ export const protobufPackage = "jonline";
  * The internet-facing Jonline service implementing the Jonline protocol,
  * generally exposed on port 27707.
  *
- * Authenticated calls require an Access Token in request metadata, retrieved from
- * the AccessToken RPC. The CreateAccount or Login RPC should first be used to fetch
- * (and store) a Refresh Token to use when requesting new Access Tokens.
+ * Authenticated calls require an `access_token` in request metadata to be included
+ * directly as the value of the `authorization` header (with no `Bearer ` prefix).
+ * First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
+ * `refresh_token` and `access_token`. Use the `access_token` until it expires,
+ * then use the `refresh_token` to call the `AccessToken` RPC for a new one.
  */
 export interface Jonline {
   /** Get the version (from Cargo) of the Jonline service. *Publicly accessible.* */
   getServiceVersion(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<GetServiceVersionResponse>;
   /** Gets the Jonline server's configuration. *Publicly accessible.* */
   getServerConfiguration(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<ServerConfiguration>;
-  /** Creates a user account and provides a Refresh Token (along with an Access Token). *Publicly accessible.* */
+  /** Creates a user account and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.* */
   createAccount(request: DeepPartial<CreateAccountRequest>, metadata?: grpc.Metadata): Promise<RefreshTokenResponse>;
-  /** Logs in a user and provides a Refresh Token (along with an Access Token). *Publicly accessible.* */
+  /** Logs in a user and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.* */
   login(request: DeepPartial<LoginRequest>, metadata?: grpc.Metadata): Promise<RefreshTokenResponse>;
-  /** Gets a new Access Token and optionally a new Refresh Token, given a Refresh Token. *Publicly accessible.* */
+  /** Gets a new `access_token` (and possibly a new `refresh_token`, which should replace the old one in client storage), given a `refresh_token`. *Publicly accessible.* */
   accessToken(request: DeepPartial<AccessTokenRequest>, metadata?: grpc.Metadata): Promise<AccessTokenResponse>;
   /** Gets the current user. *Authenticated.* */
   getCurrentUser(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<User>;
   /**
    * Gets Users. *Publicly accessible **or** Authenticated.*
-   * Unauthenticated calls only return Users of GLOBAL_PUBLIC visibility.
+   * Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
    */
   getUsers(request: DeepPartial<GetUsersRequest>, metadata?: grpc.Metadata): Promise<GetUsersResponse>;
   /**
    * Update a user by ID. *Authenticated.*
-   * Updating other users requires ADMIN permissions.
+   * Updating other users requires `ADMIN` permissions.
    */
   updateUser(request: DeepPartial<User>, metadata?: grpc.Metadata): Promise<User>;
   /** Follow (or request to follow) a user. *Authenticated.* */
@@ -66,22 +69,22 @@ export interface Jonline {
   deleteFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Empty>;
   /**
    * Gets Groups. *Publicly accessible **or** Authenticated.*
-   * Unauthenticated calls only return Groups of GLOBAL_PUBLIC visibility.
+   * Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
    */
   getGroups(request: DeepPartial<GetGroupsRequest>, metadata?: grpc.Metadata): Promise<GetGroupsResponse>;
   /**
    * Creates a group with the current user as its admin. *Authenticated.*
-   * Requires the CREATE_GROUPS permission.
+   * Requires the `CREATE_GROUPS` permission.
    */
   createGroup(request: DeepPartial<Group>, metadata?: grpc.Metadata): Promise<Group>;
   /**
    * Update a Groups's information, default membership permissions or moderation. *Authenticated.*
-   * Requires ADMIN permissions within the group, or ADMIN permissions for the user.
+   * Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
    */
   updateGroup(request: DeepPartial<Group>, metadata?: grpc.Metadata): Promise<Group>;
   /**
    * Delete a Group. *Authenticated.*
-   * Requires ADMIN permissions within the group, or ADMIN permissions for the user.
+   * Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
    */
   deleteGroup(request: DeepPartial<Group>, metadata?: grpc.Metadata): Promise<Empty>;
   /**
@@ -91,8 +94,8 @@ export interface Jonline {
   createMembership(request: DeepPartial<Membership>, metadata?: grpc.Metadata): Promise<Membership>;
   /**
    * Update aspects of a user's membership. *Authenticated.*
-   * Updating permissions requires ADMIN permissions within the group, or ADMIN permissions for the user.
-   * Updating moderation (approving/denying/banning) requires the same, or MODERATE_USERS permissions within the group.
+   * Updating permissions requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
+   * Updating moderation (approving/denying/banning) requires the same, or `MODERATE_USERS` permissions within the group.
    */
   updateMembership(request: DeepPartial<Membership>, metadata?: grpc.Metadata): Promise<Membership>;
   /** Leave a group (or cancel membership request). *Authenticated.* */
@@ -101,7 +104,7 @@ export interface Jonline {
   getMembers(request: DeepPartial<GetMembersRequest>, metadata?: grpc.Metadata): Promise<GetMembersResponse>;
   /**
    * Gets Posts. *Publicly accessible **or** Authenticated.*
-   * Unauthenticated calls only return Posts of GLOBAL_PUBLIC visibility.
+   * Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility.
    */
   getPosts(request: DeepPartial<GetPostsRequest>, metadata?: grpc.Metadata): Promise<GetPostsResponse>;
   /** Creates a Post. *Authenticated.* */
@@ -120,14 +123,21 @@ export interface Jonline {
   getGroupPosts(request: DeepPartial<GetGroupPostsRequest>, metadata?: grpc.Metadata): Promise<GetGroupPostsResponse>;
   /** (TODO) Reply streaming interface */
   streamReplies(request: DeepPartial<Post>, metadata?: grpc.Metadata): Observable<Post>;
+  /** Creates an Event. *Authenticated.* */
+  createEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event>;
+  /**
+   * Gets Events. *Publicly accessible **or** Authenticated.*
+   * Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
+   */
+  getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse>;
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
-   * Requires ADMIN permissions.
+   * Requires `ADMIN` permissions.
    */
   configureServer(request: DeepPartial<ServerConfiguration>, metadata?: grpc.Metadata): Promise<ServerConfiguration>;
   /**
    * DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.*
-   * Requires ADMIN permissions.
+   * Requires `ADMIN` permissions.
    * Note: Server Configuration is not deleted.
    */
   resetData(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<Empty>;
@@ -166,6 +176,8 @@ export class JonlineClientImpl implements Jonline {
     this.deleteGroupPost = this.deleteGroupPost.bind(this);
     this.getGroupPosts = this.getGroupPosts.bind(this);
     this.streamReplies = this.streamReplies.bind(this);
+    this.createEvent = this.createEvent.bind(this);
+    this.getEvents = this.getEvents.bind(this);
     this.configureServer = this.configureServer.bind(this);
     this.resetData = this.resetData.bind(this);
   }
@@ -280,6 +292,14 @@ export class JonlineClientImpl implements Jonline {
 
   streamReplies(request: DeepPartial<Post>, metadata?: grpc.Metadata): Observable<Post> {
     return this.rpc.invoke(JonlineStreamRepliesDesc, Post.fromPartial(request), metadata);
+  }
+
+  createEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event> {
+    return this.rpc.unary(JonlineCreateEventDesc, Event.fromPartial(request), metadata);
+  }
+
+  getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse> {
+    return this.rpc.unary(JonlineGetEventsDesc, GetEventsRequest.fromPartial(request), metadata);
   }
 
   configureServer(request: DeepPartial<ServerConfiguration>, metadata?: grpc.Metadata): Promise<ServerConfiguration> {
@@ -927,6 +947,52 @@ export const JonlineStreamRepliesDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = Post.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineCreateEventDesc: UnaryMethodDefinitionish = {
+  methodName: "CreateEvent",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return Event.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Event.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineGetEventsDesc: UnaryMethodDefinitionish = {
+  methodName: "GetEvents",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return GetEventsRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = GetEventsResponse.decode(data);
       return {
         ...value,
         toObject() {

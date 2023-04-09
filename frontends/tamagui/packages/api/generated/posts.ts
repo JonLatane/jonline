@@ -23,7 +23,7 @@ export enum PostListingType {
   FOLLOWING_POSTS = 1,
   /** MY_GROUPS_POSTS - Returns posts from any group the user is a member of. */
   MY_GROUPS_POSTS = 2,
-  /** DIRECT_POSTS - Returns LIMITED posts that are directly addressed to the user. */
+  /** DIRECT_POSTS - Returns `DIRECT` posts that are directly addressed to the user. */
   DIRECT_POSTS = 3,
   POSTS_PENDING_MODERATION = 4,
   /** GROUP_POSTS - group_id parameter is required for these. */
@@ -84,6 +84,39 @@ export function postListingTypeToJSON(object: PostListingType): string {
   }
 }
 
+export enum PostContext {
+  POST = 0,
+  EVENT = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function postContextFromJSON(object: any): PostContext {
+  switch (object) {
+    case 0:
+    case "POST":
+      return PostContext.POST;
+    case 1:
+    case "EVENT":
+      return PostContext.EVENT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PostContext.UNRECOGNIZED;
+  }
+}
+
+export function postContextToJSON(object: PostContext): string {
+  switch (object) {
+    case PostContext.POST:
+      return "POST";
+    case PostContext.EVENT:
+      return "EVENT";
+    case PostContext.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /**
  * Valid GetPostsRequest formats:
  *
@@ -132,6 +165,7 @@ export interface CreatePostRequest {
   link?: string | undefined;
   content?: string | undefined;
   replyToPostId?: string | undefined;
+  visibility?: Visibility | undefined;
 }
 
 /**
@@ -203,8 +237,16 @@ export interface Post {
    * should attempt to fetch a preview_image.
    */
   previewImageExists: boolean;
+  /**
+   * Sharability is based on the visibility of the post. Not applicable to all visibilities.
+   * * `Visibility.LIMITED`, `Visibility.SERVER_PUBLIC`, `Visibility.GLOBAL_PUBLIC`: Allows other users to GroupPost your Post to (other) Groups.
+   * * `Visibility.PRIVATE`: Allows other users to reply to your Post.
+   */
+  shareable: boolean;
+  context: PostContext;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
+  lastActivityAt: string | undefined;
 }
 
 /**
@@ -408,7 +450,7 @@ export const GetPostsResponse = {
 };
 
 function createBaseCreatePostRequest(): CreatePostRequest {
-  return { title: undefined, link: undefined, content: undefined, replyToPostId: undefined };
+  return { title: undefined, link: undefined, content: undefined, replyToPostId: undefined, visibility: undefined };
 }
 
 export const CreatePostRequest = {
@@ -424,6 +466,9 @@ export const CreatePostRequest = {
     }
     if (message.replyToPostId !== undefined) {
       writer.uint32(34).string(message.replyToPostId);
+    }
+    if (message.visibility !== undefined) {
+      writer.uint32(80).int32(message.visibility);
     }
     return writer;
   },
@@ -447,6 +492,9 @@ export const CreatePostRequest = {
         case 4:
           message.replyToPostId = reader.string();
           break;
+        case 10:
+          message.visibility = reader.int32() as any;
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -461,6 +509,7 @@ export const CreatePostRequest = {
       link: isSet(object.link) ? String(object.link) : undefined,
       content: isSet(object.content) ? String(object.content) : undefined,
       replyToPostId: isSet(object.replyToPostId) ? String(object.replyToPostId) : undefined,
+      visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : undefined,
     };
   },
 
@@ -470,6 +519,8 @@ export const CreatePostRequest = {
     message.link !== undefined && (obj.link = message.link);
     message.content !== undefined && (obj.content = message.content);
     message.replyToPostId !== undefined && (obj.replyToPostId = message.replyToPostId);
+    message.visibility !== undefined &&
+      (obj.visibility = message.visibility !== undefined ? visibilityToJSON(message.visibility) : undefined);
     return obj;
   },
 
@@ -483,6 +534,7 @@ export const CreatePostRequest = {
     message.link = object.link ?? undefined;
     message.content = object.content ?? undefined;
     message.replyToPostId = object.replyToPostId ?? undefined;
+    message.visibility = object.visibility ?? undefined;
     return message;
   },
 };
@@ -504,8 +556,11 @@ function createBasePost(): Post {
     groupCount: 0,
     currentGroupPost: undefined,
     previewImageExists: false,
+    shareable: false,
+    context: 0,
     createdAt: undefined,
     updatedAt: undefined,
+    lastActivityAt: undefined,
   };
 }
 
@@ -556,11 +611,20 @@ export const Post = {
     if (message.previewImageExists === true) {
       writer.uint32(128).bool(message.previewImageExists);
     }
+    if (message.shareable === true) {
+      writer.uint32(136).bool(message.shareable);
+    }
+    if (message.context !== 0) {
+      writer.uint32(144).int32(message.context);
+    }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(162).fork()).ldelim();
     }
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(170).fork()).ldelim();
+    }
+    if (message.lastActivityAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastActivityAt), writer.uint32(178).fork()).ldelim();
     }
     return writer;
   },
@@ -617,11 +681,20 @@ export const Post = {
         case 16:
           message.previewImageExists = reader.bool();
           break;
+        case 17:
+          message.shareable = reader.bool();
+          break;
+        case 18:
+          message.context = reader.int32() as any;
+          break;
         case 20:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         case 21:
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 22:
+          message.lastActivityAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -648,8 +721,11 @@ export const Post = {
       groupCount: isSet(object.groupCount) ? Number(object.groupCount) : 0,
       currentGroupPost: isSet(object.currentGroupPost) ? GroupPost.fromJSON(object.currentGroupPost) : undefined,
       previewImageExists: isSet(object.previewImageExists) ? Boolean(object.previewImageExists) : false,
+      shareable: isSet(object.shareable) ? Boolean(object.shareable) : false,
+      context: isSet(object.context) ? postContextFromJSON(object.context) : 0,
       createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+      lastActivityAt: isSet(object.lastActivityAt) ? String(object.lastActivityAt) : undefined,
     };
   },
 
@@ -676,8 +752,11 @@ export const Post = {
     message.currentGroupPost !== undefined &&
       (obj.currentGroupPost = message.currentGroupPost ? GroupPost.toJSON(message.currentGroupPost) : undefined);
     message.previewImageExists !== undefined && (obj.previewImageExists = message.previewImageExists);
+    message.shareable !== undefined && (obj.shareable = message.shareable);
+    message.context !== undefined && (obj.context = postContextToJSON(message.context));
     message.createdAt !== undefined && (obj.createdAt = message.createdAt);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    message.lastActivityAt !== undefined && (obj.lastActivityAt = message.lastActivityAt);
     return obj;
   },
 
@@ -706,8 +785,11 @@ export const Post = {
       ? GroupPost.fromPartial(object.currentGroupPost)
       : undefined;
     message.previewImageExists = object.previewImageExists ?? false;
+    message.shareable = object.shareable ?? false;
+    message.context = object.context ?? 0;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.lastActivityAt = object.lastActivityAt ?? undefined;
     return message;
   },
 };

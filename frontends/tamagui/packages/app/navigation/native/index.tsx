@@ -8,12 +8,16 @@ import { GroupDetailsScreen } from 'app/features/groups/details_screen'
 import { PostDetailsScreen } from 'app/features/post/details_screen'
 import { UsernameDetailsScreen } from 'app/features/user/username_details_screen'
 import { RootState, useTypedSelector } from 'app/store'
-import { HomeScreen } from '../../features/home/screen'
+import { HomeScreen } from '../../features/home/home_screen'
 import { UserDetailsScreen } from '../../features/user/details_screen'
 import { MainPeopleScreen, FollowRequestsScreen } from 'app/features/people/screen';
+import { PostsScreen } from 'app/features/home/posts_screen'
+import { EventsScreen } from 'app/features/home/events_screen'
 
 const Stack = createNativeStackNavigator<{
   home: undefined,
+  posts: undefined,
+  events: undefined,
   about: undefined,
   userDetails: {
     id: string
@@ -62,14 +66,30 @@ export function NativeNavigation() {
   }
   return (
     <Stack.Navigator>
-      <Stack.Screen
-        name="home"
-        component={HomeScreen}
-        options={{
-          title: 'Home',
-          ...defaultOptions,
-        }}
-      />
+    <Stack.Screen
+      name="home"
+      component={HomeScreen}
+      options={{
+        title: 'Home',
+        ...defaultOptions,
+      }}
+    />
+    <Stack.Screen
+      name="posts"
+      component={PostsScreen}
+      options={{
+        title: 'Home',
+        ...defaultOptions,
+      }}
+    />
+    <Stack.Screen
+      name="events"
+      component={EventsScreen}
+      options={{
+        title: 'Home',
+        ...defaultOptions,
+      }}
+    />
       <Stack.Screen
         name="about"
         component={AboutScreen}

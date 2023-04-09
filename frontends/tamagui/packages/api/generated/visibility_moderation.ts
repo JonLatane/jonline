@@ -12,6 +12,12 @@ export enum Visibility {
   SERVER_PUBLIC = 3,
   /** GLOBAL_PUBLIC - Subject is visible to all users on the internet. */
   GLOBAL_PUBLIC = 4,
+  /**
+   * DIRECT - [TODO] Subject is visible to explicitly-associated Users. Only applicable to Posts and Events.
+   * For Users, this is the same as LIMITED.
+   * See: [`UserPost`](#jonline-UserPost).
+   */
+  DIRECT = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -32,6 +38,9 @@ export function visibilityFromJSON(object: any): Visibility {
     case 4:
     case "GLOBAL_PUBLIC":
       return Visibility.GLOBAL_PUBLIC;
+    case 5:
+    case "DIRECT":
+      return Visibility.DIRECT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -51,6 +60,8 @@ export function visibilityToJSON(object: Visibility): string {
       return "SERVER_PUBLIC";
     case Visibility.GLOBAL_PUBLIC:
       return "GLOBAL_PUBLIC";
+    case Visibility.DIRECT:
+      return "DIRECT";
     case Visibility.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
