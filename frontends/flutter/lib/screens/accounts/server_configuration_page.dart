@@ -609,7 +609,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                       const Icon(Icons.developer_mode),
                       Expanded(
                         child: Text(
-                          'DELETE EVERYTHING: Posts, Groups, Users (except ${account!.username})',
+                          'DELETE EVERYTHING: Posts, Events, Groups, Users (except ${account!.username})',
                           textAlign: TextAlign.center,
                         ),
                       ),

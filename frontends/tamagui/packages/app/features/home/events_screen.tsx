@@ -1,23 +1,24 @@
-import { Post, PostListingType } from '@jonline/api';
+import { Event, EventListingType } from '@jonline/api';
 import { dismissScrollPreserver, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
-import { getPostsPage, loadPostsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { getEventsPage, loadEventsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
-import { StickyCreateButton } from '../post/create_post_sheet';
+// import { StickyCreateButton } from '../evepont/create_event_sheet';
+import EventCard from '../event/event_card';
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { AppSection } from '../tabs/features_navigation';
 
 export function EventsScreen() {
   const serversState = useTypedSelector((state: RootState) => state.servers);
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const eventsState = useTypedSelector((state: RootState) => state.events);
   const app = useTypedSelector((state: RootState) => state.app);
 
-  const posts: Post[] = useTypedSelector((state: RootState) =>
-    getPostsPage(state.posts, PostListingType.PUBLIC_POSTS, 0));
-  // const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
-  // const posts: Post[] = [];
+  const events: Event[] = useTypedSelector((state: RootState) =>
+    getEventsPage(state.events, EventListingType.PUBLIC_EVENTS, 0));
+  // const events = useTypedSelector((state: RootState) => selectAllEvents(state.events));
+  // const events: Event[] = [];
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
@@ -27,24 +28,24 @@ export function EventsScreen() {
   // let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const dimensions = useWindowDimensions();
 
-  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [loadingEvents, setLoadingEvents] = useState(false);
   useEffect(() => {
-    if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
+    if (eventsState.loadStatus == 'unloaded' && !loadingEvents) {
       if (!accountOrServer.server) return;
 
-      console.log("Loading posts...");
-      setLoadingPosts(true);
-      reloadPosts();
-    } else if (postsState.baseStatus == 'loaded' && loadingPosts) {
-      setLoadingPosts(false);
+      console.log("Loading events...");
+      setLoadingEvents(true);
+      reloadEvents();
+    } else if (eventsState.loadStatus == 'loaded' && loadingEvents) {
+      setLoadingEvents(false);
       dismissScrollPreserver(setShowScrollPreserver);
     }
     document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
-  function reloadPosts() {
+  function reloadEvents() {
     // setTimeout(() => 
-    dispatch(loadPostsPage({ ...accountOrServer }))
+    dispatch(loadEventsPage({ ...accountOrServer }))
     // , 1);
   }
 
@@ -52,13 +53,13 @@ export function EventsScreen() {
     if (isClient && window.scrollY > 0) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      reloadPosts();
+      reloadEvents();
     }
   }
 
   return (
     <TabsNavigation customHomeAction={onHomePressed} appSection={AppSection.EVENTS}>
-      {postsState.baseStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+      {eventsState.loadStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
             top={dimensions.height / 2 - 50}
@@ -66,24 +67,25 @@ export function EventsScreen() {
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
-        {posts.length == 0
-          ? postsState.baseStatus != 'loading' && postsState.baseStatus != 'unloaded'
+        {events.length == 0
+          ? eventsState.loadStatus != 'loading' && eventsState.loadStatus != 'unloaded'
             ? <YStack width='100%' maw={600} jc="center" ai="center">
-              <Heading size='$5' mb='$3'>No posts found.</Heading>
-              <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+              <Heading size='$5' mb='$3'>No events found.</Heading>
+              <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : undefined
-          : <FlatList data={posts}
-            // onRefresh={reloadPosts}
-            // refreshing={postsState.status == 'loading'}
+          : <FlatList data={events}
+            // onRefresh={reloadEvents}
+            // refreshing={eventsState.status == 'loading'}
             // Allow easy restoring of scroll position
             ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-            keyExtractor={(post) => post.id}
-            renderItem={({ item: post }) => {
-              return <PostCard post={post} isPreview />;
+            keyExtractor={(event) => event.id}
+            renderItem={({ item: event }) => {
+              return <EventCard event={event} isPreview />;
+              // return <PostCard post={event.post!} isPreview />;
             }} />}
       </YStack>
-      <StickyCreateButton />
+      {/* <StickyCreateButton /> */}
     </TabsNavigation>
   )
 }

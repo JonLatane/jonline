@@ -223,8 +223,8 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
   },
 });
 
-export const { removePost, clearPostAlerts, confirmReplySent, resetPosts } = eventsSlice.actions;
-export const { selectAll: selectAllevents, selectById: selectEventById } = eventsAdapter.getSelectors();
+export const { removeEvent, clearEventAlerts, resetEvents } = eventsSlice.actions;
+export const { selectAll: selectAllEvents, selectById: selectEventById } = eventsAdapter.getSelectors();
 export const eventsReducer = eventsSlice.reducer;
 export const upsertEvent = eventsAdapter.upsertOne;
 export const upsertEvents = eventsAdapter.upsertMany;

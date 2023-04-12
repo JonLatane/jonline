@@ -756,7 +756,7 @@ even [the code that was used to generate *this post you're reading right now and
 
 If you're familiar with OpenSocial and Mastodon, Jonline is something like them. Notably, Jonline does *not*
 support reactions to posts as they do (and is deliberately not architected in a "big data" way so as to support this).
-Jonline has a faster web UI than either thanks to Tamagui and NextJS and a faster BE thanks to Rust.
+On similar hardware, Jonline has a faster web UI than either thanks to Tamagui and NextJS, and a faster BE thanks to Rust.
 [Jonline's Docker images are currently 105MB](https://hub.docker.com/r/jonlatane/jonline/tags),
 while [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags),
 and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags).
@@ -799,8 +799,8 @@ final List<DemoEvent> _demoEvents = [
             link: "https://bullcityrunning.com/events/runclub/",
           ),
           instances: _generateWeeklyInstances(
-              DateTime.parse('2021-04-12 18:00:00-04:00'),
-              DateTime.parse('2021-04-12 19:00:00-04:00'),
+              DateTime.parse('2023-04-12 18:00:00-04:00'),
+              DateTime.parse('2023-04-12 19:00:00-04:00'),
               20))),
   DemoEvent(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
@@ -810,8 +810,8 @@ final List<DemoEvent> _demoEvents = [
             link: "https://www.instagram.com/ride_around_durham/",
           ),
           instances: _generateWeeklyInstances(
-              DateTime.parse('2021-04-13 18:00:00-04:00'),
-              DateTime.parse('2021-04-13 21:00:00-04:00'),
+              DateTime.parse('2023-04-13 18:00:00-04:00'),
+              DateTime.parse('2023-04-13 21:00:00-04:00'),
               20)))
 ];
 
