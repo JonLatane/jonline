@@ -1,4 +1,4 @@
-import { Event, EventListingType } from "@jonline/api";
+import { Event, EventInstance, EventListingType } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   Dictionary,
@@ -27,10 +27,11 @@ export interface EventsState {
   previews: Dictionary<string>;
   // Links instance IDs to Event IDs.
   instanceEvents: Dictionary<string>;
-  // Stores pages of listed events for listing types used in the UI.
+  instances: Dictionary<EventInstance>;
+  // Stores pages of listed event *instances* for listing types used in the UI.
   // i.e.: eventPages[EventListingType.PUBLIC_EVENTS][1] -> ["eventId1", "eventId2"].
   // Events should be loaded from the adapter/slice's entities.
-  // Maps EventListingType -> page (as a number) -> eventIds
+  // Maps EventListingType -> page (as a number) -> eventInstanceIds
   eventPages: Dictionary<Dictionary<string[]>>;
   failedEventIds: string[];
 }
@@ -48,6 +49,7 @@ const initialState: EventsState = {
   previews: {},
   failedEventIds: [],
   eventPages: {},
+  instances: {},
   instanceEvents: {},
   ...eventsAdapter.getInitialState(),
 };
@@ -132,17 +134,25 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       state.loadStatus = "loaded";
       action.payload.events.forEach(event => {
         const oldEvent = selectEventById(state, event.id);
-        eventsAdapter.upsertOne(state, { ...event });
+        let instances = event.instances;
+        for (let instance of instances) {
+          state.instanceEvents[instance.id] = event.id;
+          state.instances[instance.id] = instance;
+        }
+        if (oldEvent) {
+          instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
+        }
+        eventsAdapter.upsertOne(state, { ...event, instances });
       });
 
-      const postIds = action.payload.events.map(post => post.id);
+      const instanceIds = action.payload.events.map(event => event.instances[0]!.id);
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
 
       if (!state.eventPages[listingType]) state.eventPages[listingType] = {};
-      state.eventPages[listingType]![page] = postIds;
+      state.eventPages[listingType]![page] = instanceIds;
 
-      state.successMessage = `Posts loaded.`;
+      state.successMessage = `Events loaded.`;
     });
     builder.addCase(loadEventsPage.rejected, (state, action) => {
       state.loadStatus = "errored";
@@ -231,7 +241,11 @@ export const upsertEvents = eventsAdapter.upsertMany;
 export default eventsReducer;
 
 export function getEventsPage(state: EventsState, listingType: EventListingType, page: number): Event[] {
-  const pageEventIds: string[] = (state.eventPages[listingType] ?? {})[page] ?? [];
-  const pageEvents = pageEventIds.map(id => selectEventById(state, id)).filter(p => p) as Event[];
+  const pageInstaceIds: string[] = (state.eventPages[listingType] ?? {})[page] ?? [];
+  const pageInstances = pageInstaceIds.map(id => state.instances[id]).filter(p => p) as EventInstance[];
+  const pageEvents = pageInstances.map(instance => {
+    const event = selectEventById(state, instance.eventId);
+    return event ? {...event, instances: [instance]} : undefined;
+  }).filter(p => p) as Event[];
   return pageEvents;
 }

@@ -67,6 +67,7 @@ impl ToProtoEventInstance for models::EventInstance {
     fn to_proto(&self, post: &Option<&models::Post>, user: &Option<&models::User>) -> EventInstance {
         EventInstance {
             id: self.id.to_proto_id(),
+            event_id: self.event_id.to_proto_id(),
             post: post.map(|p| p.to_proto(user.map(|u| u.username.to_owned()), &p.preview.is_some())),
             starts_at: Some(self.starts_at.to_proto()),
             ends_at: Some(self.ends_at.to_proto()),

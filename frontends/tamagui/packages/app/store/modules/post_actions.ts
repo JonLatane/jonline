@@ -31,7 +31,7 @@ export const replyToPost: AsyncThunk<Post, ReplyToPost, any> = createAsyncThunk<
 );
 
 export type LoadPostsRequest = AccountOrServer & {
-  listingType?: PostListingType.PUBLIC_POSTS | PostListingType.FOLLOWING_POSTS | PostListingType.MY_GROUPS_POSTS,
+  listingType?: PostListingType,
   page?: number
 };
 export const defaultPostListingType = PostListingType.PUBLIC_POSTS;

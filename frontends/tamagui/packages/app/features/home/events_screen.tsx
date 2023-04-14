@@ -11,54 +11,24 @@ import { TabsNavigation } from '../tabs/tabs_navigation';
 import { AppSection } from '../tabs/features_navigation';
 
 export function EventsScreen() {
-  const serversState = useTypedSelector((state: RootState) => state.servers);
   const eventsState = useTypedSelector((state: RootState) => state.events);
-  const app = useTypedSelector((state: RootState) => state.app);
 
-  const events: Event[] = useTypedSelector((state: RootState) =>
-    getEventsPage(state.events, EventListingType.PUBLIC_EVENTS, 0));
-  // const events = useTypedSelector((state: RootState) => selectAllEvents(state.events));
-  // const events: Event[] = [];
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  let { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-  // let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
-  // let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  // let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  // let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const dimensions = useWindowDimensions();
 
-  const [loadingEvents, setLoadingEvents] = useState(false);
   useEffect(() => {
-    if (eventsState.loadStatus == 'unloaded' && !loadingEvents) {
-      if (!accountOrServer.server) return;
-
-      console.log("Loading events...");
-      setLoadingEvents(true);
-      reloadEvents();
-    } else if (eventsState.loadStatus == 'loaded' && loadingEvents) {
-      setLoadingEvents(false);
-      dismissScrollPreserver(setShowScrollPreserver);
-    }
     document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
-  function reloadEvents() {
-    // setTimeout(() => 
-    dispatch(loadEventsPage({ ...accountOrServer }))
-    // , 1);
-  }
-
-  function onHomePressed() {
-    if (isClient && window.scrollY > 0) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      reloadEvents();
-    }
-  }
+  const { events, loadingEvents, reloadEvents } = useEventsPage(
+    EventListingType.PUBLIC_EVENTS,
+    0,
+    () => dismissScrollPreserver(setShowScrollPreserver)
+  );
 
   return (
-    <TabsNavigation customHomeAction={onHomePressed} appSection={AppSection.EVENTS}>
+    <TabsNavigation appSection={AppSection.EVENTS}>
       {eventsState.loadStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
@@ -88,4 +58,31 @@ export function EventsScreen() {
       {/* <StickyCreateButton /> */}
     </TabsNavigation>
   )
+}
+
+export function useEventsPage(listingType: EventListingType, page: number, onLoaded?: () => void) {
+  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const eventsState = useTypedSelector((state: RootState) => state.events);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
+  const events: Event[] = useTypedSelector((state: RootState) => getEventsPage(state.events, EventListingType.PUBLIC_EVENTS, 0));
+
+  useEffect(() => {
+    if (eventsState.loadStatus == 'unloaded' && !loadingEvents) {
+      if (!accountOrServer.server) return;
+
+      console.log("Loading events...");
+      setLoadingEvents(true);
+      reloadEvents();
+    } else if (eventsState.loadStatus == 'loaded' && loadingEvents) {
+      setLoadingEvents(false);
+      onLoaded?.();
+    }
+  });
+
+  function reloadEvents() {
+    dispatch(loadEventsPage({ ...accountOrServer, listingType, page }))
+  }
+
+  return { events, loadingEvents, reloadEvents };
 }

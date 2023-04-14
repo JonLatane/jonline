@@ -31,7 +31,7 @@ export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk
 // );
 
 export type LoadEventsRequest = AccountOrServer & {
-  listingType?: EventListingType.PUBLIC_EVENTS | EventListingType.FOLLOWING_EVENTS | EventListingType.MY_GROUPS_EVENTS,
+  listingType?: EventListingType,
   page?: number
 };
 export const defaultEventListingType = EventListingType.PUBLIC_EVENTS;

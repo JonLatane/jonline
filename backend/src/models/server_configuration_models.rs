@@ -63,7 +63,16 @@ pub fn default_server_configuration() -> NewServerConfiguration {
         server_info: serde_json::to_value(ServerInfo {
             name: None,
             short_name: None,
-            description: None,
+            description: Some("
+Jonline is a new, DIY federated social network. It's designed to be run by local businesses,
+community groups, and other organizations. It's open source (AGPLv3) and designed to be as easy
+and cheap to deploy as possible. It's built atop a [well-documented, performant, RESTful open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md)
+that operates over gRPC (with configurable TLS) on port 27707. Multi-server interaction is managed via CORS.
+
+***This is a demo server.*** Please create an account and post! But your account will be deleted at some point.
+If you're interested in me running an instance for you, get in touch with me at [jonlatane@gmail.com](mailto:jonlatane@gmail.com).
+If this is an instance you're running, feel free to replace this text with your own 🙃
+            ".to_string()),
             privacy_policy_link: None,
             about_link: None,
             web_user_interface: Some(WebUserInterface::ReactTamagui as i32),

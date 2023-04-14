@@ -795,9 +795,10 @@ final List<DemoEvent> _demoEvents = [
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
       Event(
           post: Post(
-            title: "Bull City Run Club",
-            link: "https://bullcityrunning.com/events/runclub/",
-          ),
+              title: "Bull City Run Club",
+              link: "https://bullcityrunning.com/events/runclub/",
+              content:
+                  "A weekly run club for all levels of runners. Meets at Bull City Running's downtown location, with running starting at 6pm. 3, 4 and 6 mile routes are available. Registration isn't required, but costs only \$1 (cash) and lets you earn free beers, pint glasses, and T-shirts!"),
           instances: _generateWeeklyInstances(
               DateTime.parse('2023-04-12 18:00:00-04:00'),
               DateTime.parse('2023-04-12 19:00:00-04:00'),
@@ -806,9 +807,10 @@ final List<DemoEvent> _demoEvents = [
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
       Event(
           post: Post(
-            title: "RAD Ride",
-            link: "https://www.instagram.com/ride_around_durham/",
-          ),
+              title: "RAD Ride",
+              link: "https://www.instagram.com/ride_around_durham/",
+              content:
+                  "Ride Around Durham is a weekly bike ride for all levels of riders. Meets at Duke Chapel at 6pm, with the ride starting at 6:30. Bring a beer and grab another after the ride at the bar we land at! New routes every week."),
           instances: _generateWeeklyInstances(
               DateTime.parse('2023-04-13 18:00:00-04:00'),
               DateTime.parse('2023-04-13 21:00:00-04:00'),

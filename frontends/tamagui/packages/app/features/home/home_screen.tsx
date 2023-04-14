@@ -1,57 +1,49 @@
-import { Post, PostListingType } from '@jonline/api';
-import { dismissScrollPreserver, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
-import { getPostsPage, loadPostsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { EventListingType, PostListingType } from '@jonline/api';
+import { Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
+import { RootState, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
+import EventCard from '../event/event_card';
 import { StickyCreateButton } from '../post/create_post_sheet';
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
+import { useEventsPage } from './events_screen';
+import { usePostsPage } from './posts_screen';
 
 export function HomeScreen() {
-  const serversState = useTypedSelector((state: RootState) => state.servers);
   const postsState = useTypedSelector((state: RootState) => state.posts);
-  const app = useTypedSelector((state: RootState) => state.app);
+  const eventsState = useTypedSelector((state: RootState) => state.events);
+  const media = useMedia();
 
-  const posts: Post[] = useTypedSelector((state: RootState) =>
-    getPostsPage(state.posts, PostListingType.PUBLIC_POSTS, 0));
-  // const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
-  // const posts: Post[] = [];
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  let { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-  // let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
-  // let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  // let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  // let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
+
   const dimensions = useWindowDimensions();
 
-  const [loadingPosts, setLoadingPosts] = useState(false);
   useEffect(() => {
-    if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
-      if (!accountOrServer.server) return;
-
-      console.log("Loading posts...");
-      setLoadingPosts(true);
-      reloadPosts();
-    } else if (postsState.baseStatus == 'loaded' && loadingPosts) {
-      setLoadingPosts(false);
-      dismissScrollPreserver(setShowScrollPreserver);
-    }
     document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
-  function reloadPosts() {
-    // setTimeout(() => 
-    dispatch(loadPostsPage({ ...accountOrServer }))
-    // , 1);
-  }
+  const { posts, loadingPosts, reloadPosts } = usePostsPage(
+    PostListingType.PUBLIC_POSTS,
+    0,
+    () => dismissScrollPreserver(setShowScrollPreserver)
+  );
+
+  const { events, loadingEvents, reloadEvents } = useEventsPage(
+    EventListingType.PUBLIC_EVENTS,
+    0,
+    () => dismissScrollPreserver(setShowScrollPreserver)
+  );
+
 
   function onHomePressed() {
     if (isClient && window.scrollY > 0) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       reloadPosts();
+      reloadEvents();
     }
   }
 
@@ -65,6 +57,46 @@ export function HomeScreen() {
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
+        {events.length == 0
+          ? eventsState.loadStatus != 'loading' && eventsState.loadStatus != 'unloaded'
+            ? <YStack width='100%' maw={600} jc="center" ai="center">
+              <Heading size='$5' mb='$3'>No events found.</Heading>
+              <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+            </YStack>
+            : undefined
+          : <ScrollView horizontal
+            w='100%'
+            animation="bouncy"
+            opacity={1}
+            scale={1}
+            y={0}
+            enterStyle={{
+              // scale: 1.5,
+              y: -50,
+              opacity: 0,
+            }}
+            exitStyle={{
+              // scale: 1.5,
+              // y: 50,
+              opacity: 0,
+            }}>
+            <XStack space='$2'>
+              <XStack w={media.gtSm ? 400 : 260}>
+                {events.map((event) => <EventCard event={event} isPreview />)}
+              </XStack>
+            </XStack>
+            {/* <FlatList data={events}
+              horizontal={true}
+              // onRefresh={reloadEvents}
+              // refreshing={eventsState.status == 'loading'}
+              // Allow easy restoring of scroll position
+              // ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+              keyExtractor={(event) => event.id}
+              renderItem={({ item: event }) => {
+                return <EventCard event={event} isPreview />;
+                // return <PostCard post={event.post!} isPreview />;
+              }} /> */}
+          </ScrollView>}
         {posts.length == 0
           ? postsState.baseStatus != 'loading' && postsState.baseStatus != 'unloaded'
             ? <YStack width='100%' maw={600} jc="center" ai="center">

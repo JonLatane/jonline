@@ -52,11 +52,12 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) =
   const startsAtHeader = instances.length == 1 ? instance?.startsAt : undefined;
   const endsAtHeader = instances.length == 1 ? instance?.endsAt : undefined;
 
-  const postLink = useLink({
-    href: groupContext
-      ? `/g/${groupContext.shortname}/p/${post.id}`
-      : `/post/${post.id}`,
-  });
+  const postLink = {};
+  // useLink({
+  //   href: groupContext
+  //     ? `/g/${groupContext.shortname}/p/${post.id}`
+  //     : `/post/${post.id}`,
+  // });
   const authorLink = useLink({
     href: authorName
       ? `/${authorName}`
@@ -116,6 +117,38 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) =
     </YStack>;
   }
 
+  function dateRangeView(startsAt: string, endsAt: string) {
+    const startsAtDate = moment.utc(startsAt).local().format('ddd, MMM Do YYYY');
+    const endsAtDate = moment.utc(endsAt).local().format('ddd, MMM Do YYYY');
+    if (startsAtDate == endsAtDate) {
+      return <YStack>
+        <Heading size="$4" color={primaryColor} mr='$2'>
+          {moment.utc(startsAt).local().format('ddd, MMM Do YYYY')}
+        </Heading>
+        <XStack space>
+          <Heading size="$3" color={primaryColor}>
+            {moment.utc(startsAt).local().format('h:mm a')}
+          </Heading>
+          <Heading size="$3" color={primaryColor}>
+            -
+          </Heading>
+          <Heading size="$3" color={primaryColor}>
+            {moment.utc(endsAt).local().format('h:mm a')}
+          </Heading>
+        </XStack>
+      </YStack>;
+    } else {
+      return <XStack>
+        <View style={{ flex: 1 }}>
+          {startsAt ? dateView(startsAt) : undefined}
+        </View>
+        <View style={{ flex: 1 }}>
+          {endsAt ? dateView(endsAt) : undefined}
+        </View>
+      </XStack>;
+    }
+  }
+
   return (
     <>
       <YStack w='100%'>
@@ -137,14 +170,6 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) =
                 <YStack>
                   <XStack>
                     <View style={{ flex: 1 }}>
-                      {startsAtHeader ? dateView(startsAtHeader) : undefined}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      {endsAtHeader ? dateView(endsAtHeader) : undefined}
-                    </View>
-                  </XStack>
-                  <XStack>
-                    <View style={{ flex: 1 }}>
                       {post.link
                         ? isPreview
                           ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
@@ -155,6 +180,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) =
                       }
                     </View>
                   </XStack>
+                  {startsAtHeader && endsAtHeader ? dateRangeView(startsAtHeader, endsAtHeader) : undefined}
                 </YStack>
               </Card.Header>
               : undefined}

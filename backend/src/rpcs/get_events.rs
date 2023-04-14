@@ -1,6 +1,8 @@
 use std::cmp::min;
+use std::time::SystemTime;
 
 use diesel::*;
+use log::info;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
@@ -99,6 +101,12 @@ fn get_applicable_events(
                 .field(posts::user_id)
                 .eq(event_users.field(users::id).nullable())),
         )
+        .left_join(
+            follows::table.on(event_posts
+                .field(posts::user_id)
+                .eq(follows::target_user_id.nullable())
+                .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id).unwrap_or(0))))
+        )
         // .left_join(
         //     instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
         //     // instance_posts.on(instance_posts
@@ -106,33 +114,28 @@ fn get_applicable_events(
         //     //     .eq(event_instances::post_id)),
         // )
         // .left_join(instance_users.on(instance_posts.field(posts::user_id).eq(instance_users.field(users::id).nullable())))
-        .left_join(
-            follows::table.on(event_posts
-                .field(posts::user_id)
-                .eq(follows::target_user_id.nullable())
-                .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id).unwrap_or(0))))
-        )
         .select((
             event_instances::all_columns,
             events::all_columns,
             event_posts.fields(posts::all_columns),
             event_users.fields(users::all_columns).nullable(),
+            event_posts.field(posts::preview).is_not_null(),
             // instance_posts.fields(posts::all_columns).nullable(),
             // instance_users.fields(users::all_columns).nullable(),
-            event_posts.field(posts::preview).is_not_null(),
             // instance_posts.field(posts::preview).is_not_null(),
         ))
         .filter(public.or(limited_to_followers))
-        .order(event_instances::starts_at.desc())
+        .filter(event_instances::starts_at.gt(SystemTime::now()))
+        .order(event_instances::starts_at)
         .limit(100)
         .load::<(
             models::EventInstance,
             models::Event,
             models::Post,
             Option<models::User>,
+            bool,
             // Option<models::Post>,
             // Option<models::User>,
-            bool,
             // bool,
         )>(conn)
         .unwrap()
@@ -148,6 +151,7 @@ fn get_applicable_events(
                 has_event_preview,
                 // has_instance_preview,
             )| {
+                info!("instance: {:?}", instance);
                 event.to_proto(
                     &event_post,
                     event_user.as_ref(),

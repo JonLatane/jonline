@@ -10,51 +10,22 @@ import { TabsNavigation } from '../tabs/tabs_navigation';
 import { AppSection } from '../tabs/features_navigation';
 
 export function PostsScreen() {
-  const serversState = useTypedSelector((state: RootState) => state.servers);
   const postsState = useTypedSelector((state: RootState) => state.posts);
-  const app = useTypedSelector((state: RootState) => state.app);
 
-  const posts: Post[] = useTypedSelector((state: RootState) =>
-    getPostsPage(state.posts, PostListingType.PUBLIC_POSTS, 0));
-  // const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
-  // const posts: Post[] = [];
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  let { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-  // let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
-  // let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  // let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  // let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
+
   const dimensions = useWindowDimensions();
 
-  const [loadingPosts, setLoadingPosts] = useState(false);
   useEffect(() => {
-    if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
-      if (!accountOrServer.server) return;
-
-      console.log("Loading posts...");
-      setLoadingPosts(true);
-      reloadPosts();
-    } else if (postsState.baseStatus == 'loaded' && loadingPosts) {
-      setLoadingPosts(false);
-      dismissScrollPreserver(setShowScrollPreserver);
-    }
     document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
-  function reloadPosts() {
-    // setTimeout(() => 
-    dispatch(loadPostsPage({ ...accountOrServer }))
-    // , 1);
-  }
-
-  function onHomePressed() {
-    if (isClient && window.scrollY > 0) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      reloadPosts();
-    }
-  }
+  const { posts, loadingPosts, reloadPosts } = usePostsPage(
+    PostListingType.PUBLIC_POSTS,
+    0,
+    () => dismissScrollPreserver(setShowScrollPreserver)
+  );
 
   return (
     <TabsNavigation appSection={AppSection.POSTS}>
@@ -86,4 +57,31 @@ export function PostsScreen() {
       <StickyCreateButton />
     </TabsNavigation>
   )
+}
+
+export function usePostsPage(listingType: PostListingType, page: number, onLoaded?: () => void) {
+  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+
+  const posts: Post[] = useTypedSelector((state: RootState) => getPostsPage(state.posts, PostListingType.PUBLIC_POSTS, 0));
+
+  useEffect(() => {
+    if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
+      if (!accountOrServer.server) return;
+
+      console.log("Loading posts...");
+      setLoadingPosts(true);
+      reloadPosts();
+    } else if (postsState.baseStatus == 'loaded' && loadingPosts) {
+      setLoadingPosts(false);
+      onLoaded?.();
+    }
+  });
+
+  function reloadPosts() {
+    dispatch(loadPostsPage({ ...accountOrServer, listingType, page }))
+  }
+
+  return {posts, loadingPosts, reloadPosts};
 }
