@@ -14,6 +14,7 @@ export type LocalAppConfiguration = {
   autoRefreshDiscussions: boolean;
   discussionRefreshIntervalSeconds: number;
   showUserIds: boolean;
+  showEventsOnLatest: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -27,6 +28,7 @@ const initialState: LocalAppConfiguration = {
   autoRefreshDiscussions: true,
   discussionRefreshIntervalSeconds: 6,
   showUserIds: false,
+  showEventsOnLatest: true,
 };
 
 export const localAppSlice = createSlice({
@@ -64,6 +66,9 @@ export const localAppSlice = createSlice({
     setShowUserIds: (state, action: PayloadAction<boolean>) => {
       state.showUserIds = action.payload;
     },
+    setShowEventsOnLatest: (state, action: PayloadAction<boolean>) => {
+      state.showEventsOnLatest = action.payload;
+    }
   },
   extraReducers: (builder) => {
   },
@@ -71,7 +76,7 @@ export const localAppSlice = createSlice({
 
 export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection,
   setSeparateAccountsByServer, setShowBetaNavigation, resetLocalApp, setDiscussionChatUI,
-  setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds
+  setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

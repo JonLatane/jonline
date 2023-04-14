@@ -99,6 +99,8 @@ export type ServerTheme = {
 
   textColor: string;
 
+  backgroundColor: string;
+
   warningAnchorColor: string;
   darkMode: boolean;
 }
@@ -122,15 +124,15 @@ export function useServerTheme(): ServerTheme {
 
 
   const theme = useTheme();
-  const themeBgColor = theme.background.val;
-  const { luma: themeBgLuma, textColor } = colorMeta(themeBgColor);
+  const backgroundColor = theme.background.val;
+  const { luma: themeBgLuma, textColor } = colorMeta(backgroundColor);
   const darkMode = themeBgLuma <= 0.5;
   const primaryAnchorColor = !darkMode ? primaryDarkColor : primaryLightColor;
   const navAnchorColor = !darkMode ? navDarkColor : navLightColor;
 
   const warningAnchorColor = !darkMode ? '#d1c504' : '#EBDF1C';
   // debugger;
-  return { server, textColor, primaryColor, navColor, primaryTextColor, navTextColor, primaryDarkColor, navDarkColor, primaryLightColor, navLightColor, primaryAnchorColor, navAnchorColor, warningAnchorColor, darkMode };
+  return { server, textColor, primaryColor, navColor, primaryTextColor, navTextColor, primaryDarkColor, navDarkColor, primaryLightColor, navLightColor, primaryAnchorColor, navAnchorColor, warningAnchorColor, darkMode, backgroundColor };
 }
 
 export function useLocalApp(): LocalAppConfiguration {

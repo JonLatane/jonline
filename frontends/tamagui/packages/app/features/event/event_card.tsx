@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
 import { Group, Event } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, Theme, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import { Anchor, Button, Card, Heading, Image, Paragraph, Theme, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
 import { ChevronRight } from "@tamagui/lucide-icons";
 import { useOnScreen } from "app/hooks/use_on_screen";
 import { useLink } from "solito/link";
@@ -16,9 +16,10 @@ interface Props {
   event: Event;
   isPreview?: boolean;
   groupContext?: Group;
+  horizontal?: boolean;
 }
 
-export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) => {
+export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, horizontal }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -26,9 +27,9 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) =
 
   const theme = useTheme();
   const textColor: string = theme.color.val;
-  const themeBgColor = theme.background.val;
+  // const themeBgColor = theme.background.val;
+  const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor } = useServerTheme();
   const { luma: themeBgLuma } = colorMeta(themeBgColor);
-  const { server, primaryColor, navAnchorColor: navColor } = useServerTheme();
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
   const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
@@ -63,9 +64,12 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) =
       ? `/${authorName}`
       : `/user/${authorId}`
   });
+
+  const maxContentHeight = isPreview ? horizontal ? 100 : 300 : undefined;
   const postLinkProps = isPreview ? postLink : undefined;
   const authorLinkProps = post.author ? authorLink : undefined;
-  const showDetailsShadow = isPreview && post.content && post.content.length > 700;
+  const contentLengthShadowThreshold = horizontal ? 180 : 700;
+  const showDetailsShadow = isPreview && post.content && post.content.length > contentLengthShadowThreshold;
   const detailsMargins = showDetailsShadow ? 20 : 0;
   const footerProps = isPreview ? {
     // ml: -detailsMargins,
@@ -121,10 +125,13 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) =
     const startsAtDate = moment.utc(startsAt).local().format('ddd, MMM Do YYYY');
     const endsAtDate = moment.utc(endsAt).local().format('ddd, MMM Do YYYY');
     if (startsAtDate == endsAtDate) {
-      return <YStack>
-        <Heading size="$4" color={primaryColor} mr='$2'>
-          {moment.utc(startsAt).local().format('ddd, MMM Do YYYY')}
-        </Heading>
+      return <YStack
+        backgroundColor={themeBgColor} opacity={0.8} pl='$2' borderRadius='$3'>
+        <XStack>
+          <Paragraph size="$3" fontWeight='bold' color={primaryColor} mr='$2'>
+            {startsAtDate}
+          </Paragraph>
+        </XStack>
         <XStack space>
           <Heading size="$3" color={primaryColor}>
             {moment.utc(startsAt).local().format('h:mm a')}
@@ -188,7 +195,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext }) =
 
               {/* {...postLinkProps}> */}
               <YStack zi={1000} width='100%' {...footerProps}>
-                <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
+                <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
                   {(!isPreview && preview && preview != '') ?
                     <Image
                       mb='$3'
