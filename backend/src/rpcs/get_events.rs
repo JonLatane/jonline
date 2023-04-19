@@ -127,7 +127,7 @@ fn get_applicable_events(
         .filter(public.or(limited_to_followers))
         .filter(event_instances::starts_at.gt(SystemTime::now()))
         .order(event_instances::starts_at)
-        .limit(100)
+        .limit(20)
         .load::<(
             models::EventInstance,
             models::Event,

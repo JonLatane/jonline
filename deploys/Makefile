@@ -29,6 +29,9 @@ deploy_get_all:
 deploy_be_get_pods:
 	kubectl get pods --selector=app=jonline -n $(NAMESPACE)
 
+deploy_be_shell:
+	kubectl exec -it $$(kubectl get pods --selector=app=jonline -n $(NAMESPACE) -o jsonpath='{.items[0].metadata.name}') -n $(NAMESPACE) -- /bin/bash
+
 # K8s server deployment test targets
 deploy_test_be:
 	@echo 'Getting services on target server...'

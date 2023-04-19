@@ -140,6 +140,7 @@ CREATE INDEX idx_post_vis_parent_created ON posts(context, visibility, parent_po
 CREATE INDEX idx_post_vis_parent_activity ON posts(context, visibility, parent_post_id, last_activity_at);
 CREATE INDEX idx_post_vis_user_created ON posts(context, visibility, user_id, created_at);
 CREATE INDEX idx_post_vis_user_activity ON posts(context, visibility, user_id, last_activity_at);
+CREATE INDEX idx_post_vis ON posts(visibility);
 
 CREATE TABLE group_posts(
   id SERIAL PRIMARY KEY,
@@ -170,7 +171,7 @@ CREATE TABLE events(
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL
 );
-CREATE UNIQUE INDEX idx_event_post ON events(id, post_id);
+-- CREATE UNIQUE INDEX idx_event_post ON events(id, post_id);
 
 CREATE TABLE event_instances(
   id SERIAL PRIMARY KEY,
@@ -183,6 +184,7 @@ CREATE TABLE event_instances(
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL
 );
+CREATE UNIQUE INDEX idx_event_instance_starts_at ON event_instances(starts_at);
 
 -- FEDERATION MODELS
 CREATE TABLE federated_servers (
