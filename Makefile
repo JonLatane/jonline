@@ -4,6 +4,10 @@
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
 
+############################################################################
+# DEPLOYMENT-RELATED TARGETS: More in deploys/Makefile
+############################################################################
+
 # Targets for deploying Jonline to your K8s cluster.
 deploy_be_create:
 	cd deploys && $(MAKE) deploy_be_create
@@ -14,13 +18,22 @@ deploy_be_restart:
 deploy_be_delete:
 	cd deploys && $(MAKE) deploy_be_delete
 
+# Targets for managing an existing deployment on your K8s cluster, so you can quickly setup DNS and setup an admin.
+deploy_be_shell:
+	cd deploys && $(MAKE) deploy_be_shell
+deploy_be_get_external_ip:
+	cd deploys && $(MAKE) deploy_be_get_external_ip
+
 # General targets for creating/deleting Postgres/MinIO for Jonline. For more granuar control, use deploys/Makefile directly.
 deploy_data_create:
 	cd deploys && $(MAKE) deploy_data_create
 deploy_data_delete:
 	cd deploys && $(MAKE) deploy_data_delete
 
-# DEVELOPMENT-RELATED TARGETS
+############################################################################
+# FULLSTACK DEV/RELEASE-RELATED TARGETS: More in deploys/releases/Makefile
+############################################################################
+
 # Core release targets (for general use, CI/CD, etc.)
 release_ios:
 	cd deploys/releases && $(MAKE) release_ios
