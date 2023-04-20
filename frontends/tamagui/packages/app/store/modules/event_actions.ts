@@ -1,4 +1,4 @@
-import {  GetEventsRequest, GetEventsResponse, Event, EventListingType } from "@jonline/api";
+import { GetEventsRequest, GetEventsResponse, Event, EventListingType } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -40,7 +40,10 @@ export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, an
   async (request) => {
     let client = await getCredentialClient(request);
     let result = await client.getEvents({ listingType: defaultEventListingType, ...request }, client.credential);
-    return result;
+    return { 
+      ...result,
+      events: result.events.map(e => { return { ...e, post: { ...e.post!, previewImage: undefined } } })
+    };
   }
 );
 

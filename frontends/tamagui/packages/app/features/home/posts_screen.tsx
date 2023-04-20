@@ -4,7 +4,7 @@ import { getPostsPage, loadPostsPage, RootState, useCredentialDispatch, useServe
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
-import { StickyCreateButton } from '../post/create_post_sheet';
+import { StickyCreateButton } from './sticky_create_button';
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { AppSection } from '../tabs/features_navigation';

@@ -1,17 +1,18 @@
-import { CreatePostRequest, Permission, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, isClient, isWeb, Sheet, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
+import { CreatePostRequest, EventInstance, Permission, Post, Event, Visibility, EventListingType } from '@jonline/api';
+import { Button, Heading, Input, isClient, isWeb, Paragraph, Sheet, Text, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
-import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { clearPostAlerts, createEvent, createPost, loadEventsPage, RootState, selectAllAccounts, selectAllServers, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import StickyBox from 'react-sticky-box';
 import { AddAccountSheet } from '../accounts/add_account_sheet';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
-import PostCard from './post_card';
-import { VisibilityPicker } from './visibility_picker';
+import EventCard from './event_card';
+import { VisibilityPicker } from '../post/visibility_picker';
+import moment from 'moment';
 
-export type CreatePostSheetProps = {
+export type CreateEventSheetProps = {
   // primaryServer?: JonlineServer;
   // operation: string;
 }
@@ -25,11 +26,19 @@ const shortPreview = (r: RenderType) => r == RenderType.ShortPreview;
 //   Login = 'login',
 //   CreateAccount = 'create_account',
 // }
-export function CreatePostSheet({ }: CreatePostSheetProps) {
+export function CreateEventSheet({ }: CreateEventSheetProps) {
   const media = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const account = accountOrServer.account!;
-  const [open, setOpen] = useState(false);
+  const [open, doSetOpen] = useState(false);
+  function setOpen(v: boolean) {
+    if (v && !open && title.length == 0) {
+      console.log(moment().format('YYYY-MM-DDTHH:mm'));
+      setStartTime(moment().format('YYYY-MM-DDTHH:mm'));
+      setEndTime(moment().add(1, 'hour').format('YYYY-MM-DDTHH:mm'));
+    }
+    doSetOpen(v);
+  }
   const [position, setPosition] = useState(0);
 
   const [renderType, setRenderType] = useState(RenderType.Edit);
@@ -40,8 +49,16 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
   const [content, setContent] = useState('');
+  // const [instances, setInstances] = useState<EventInstance[]>([]);
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  console.log(startTime)
 
   const previewPost = Post.create({ title, link, content, author: { userId: account?.user.id, username: account?.user.username } })
+  const previewEvent = Event.create({
+    post: previewPost,
+    instances: [{ startsAt: moment(startTime).utc().toISOString(), endsAt: moment(endTime).utc().toISOString() }],
+  });
   const textAreaRef = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
   const [posting, setPosting] = useState(false);
@@ -58,38 +75,43 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   // const accountsOnPrimaryServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
   const accountsOnServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
 
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const eventsState = useTypedSelector((state: RootState) => state.events);
   const accountsLoading = accountsState.status == 'loading';
-  const valid = title.length > 0;
+  const valid = title.length > 0 && moment(endTime).isAfter(moment(startTime));
+  const endDateInvalid = !moment(endTime).isAfter(moment(startTime))
 
   const showEditor = edit(renderType);
   const showFullPreview = fullPreview(renderType);
   const showShortPreview = shortPreview(renderType);
 
   function doCreate() {
-    const createPostRequest: CreatePostRequest = { title, link, content };
 
-    dispatch(createPost({ ...createPostRequest, ...accountOrServer })).then((action) => {
-      if (action.type == createPost.fulfilled.type) {
+    // const createPostRequest: CreatePostRequest = { title, link, content };
+
+    dispatch(createEvent({ ...previewEvent, ...accountOrServer })).then((action) => {
+      if (action.type == createEvent.fulfilled.type) {
+        dispatch(loadEventsPage({ ...accountOrServer, listingType: EventListingType.PUBLIC_EVENTS, page: 0 }));
         setOpen(false);
         setTitle('');
         setContent('');
         setLink('');
+        setStartTime('');
+        setEndTime('');
         setRenderType(RenderType.Edit);
         window.scrollTo({ top: 0, behavior: 'smooth' });
         dispatch(clearPostAlerts!());
       }
     });
   }
-  const disableInputs = ['posting', 'posted'].includes(postsState.createPostStatus!);
+  const disableInputs = ['creating', 'created'].includes(eventsState.createStatus ?? '');
   const disablePreview = disableInputs || !valid;
   const disableCreate = disableInputs || !valid;
   return (
     <>
       <Button backgroundColor={primaryColor} color={primaryTextColor} f={1}
         disabled={serversState.server === undefined}
-        onPress={() => setOpen((x) => !x)}>
-        <Heading size='$2'>Create Post</Heading>
+        onPress={() => setOpen(!open)}>
+        <Heading size='$2'>Create Event</Heading>
       </Button>
       <Sheet
         modal
@@ -114,16 +136,16 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
             }}
           />
           <XStack marginHorizontal='$5' mb='$2'>
-            <Heading marginVertical='auto' f={1} size='$7'>Create Post</Heading>
+            <Heading marginVertical='auto' f={1} size='$7'>Create Event</Heading>
             <Button backgroundColor={showSettings ? navColor : undefined} onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
               <Settings color={showSettings ? navTextColor : textColor} />
             </Button>
-            <Button backgroundColor={primaryColor} disabled={!disableCreate} opacity={disableCreate ? 0.5 : 1} onPress={doCreate}>
+            <Button backgroundColor={primaryColor} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1} onPress={doCreate}>
               <Heading size='$1' color={primaryTextColor}>Create</Heading>
             </Button>
           </XStack>
-          {postsState.createPostStatus == "errored" && postsState.errorMessage ?
-            <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined}
+          {eventsState.createStatus == "errored" && eventsState.errorMessage ?
+            <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{eventsState.errorMessage}</Heading> : undefined}
           {showSettings
             ? <XStack ac='center' jc='center' marginHorizontal='$5' animation="bouncy"
               p='$3'
@@ -137,19 +159,19 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                 visibilityDescription={(v) => {
                   switch (v) {
                     case Visibility.PRIVATE:
-                      return 'Only you can see this post.';
+                      return 'Only you can see this event.';
                     case Visibility.LIMITED:
-                      return 'Only your followers and groups you choose can see this post.';
+                      return 'Only your followers and groups you choose can see this event.';
                     case Visibility.SERVER_PUBLIC:
-                      return 'Anyone on this server can see this post.';
+                      return 'Anyone on this server can see this event.';
                     case Visibility.GLOBAL_PUBLIC:
-                      return 'Anyone on the internet can see this post.';
+                      return 'Anyone on the internet can see this event.';
                     default:
                       return 'Unknown';
                   }
                 }} />
             </XStack> : undefined}
-            <XStack marginHorizontal='auto' marginVertical='$3'>
+          <XStack marginHorizontal='auto' marginVertical='$3'>
             <Button backgroundColor={showEditor ? navColor : undefined}
               transparent={!showEditor}
               borderTopRightRadius={0} borderBottomRightRadius={0}
@@ -179,11 +201,26 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
               {showEditor
                 ? <YStack space="$2" w='100%'>
                   {/* <Heading size="$6">{server?.host}/</Heading> */}
-                  <Input textContentType="name" placeholder="Post Title"
+                  <Input textContentType="name" placeholder="Event Title"
                     disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
                     autoCapitalize='words'
                     value={title}
                     onChange={(data) => { setTitle(data.nativeEvent.text) }} />
+                  <XStack marginHorizontal='$2'>
+                    <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
+                    <Text fontSize='$2' fontFamily='$body'>
+                      <input type='datetime-local' value={startTime} onChange={(v) => setStartTime(v.target.value)} style={{ padding: 10 }} />
+                    </Text>
+                  </XStack>
+                  <XStack marginHorizontal='$2'>
+                    <YStack marginVertical='auto' f={1}>
+                      <Heading size='$2' marginVertical='auto'>End Time</Heading>
+                      {endDateInvalid ? <Paragraph size='$2' f={1} marginVertical='auto'>Must be after Start Time</Paragraph> : undefined}
+                    </YStack>
+                    <Text fontSize='$2' fontFamily='$body'>
+                      <input type='datetime-local' value={endTime} min={startTime} onChange={(v) => setEndTime(v.target.value)} style={{ padding: 10 }} />
+                    </Text>
+                  </XStack>
                   <Input textContentType="URL" autoCorrect={false} placeholder="Optional Link"
                     disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
                     // autoCapitalize='words'
@@ -201,10 +238,10 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                 </YStack>
                 : undefined}
               {showFullPreview
-                ? <PostCard post={previewPost} />
+                ? <EventCard event={previewEvent} />
                 : undefined}
               {showShortPreview
-                ? <PostCard post={previewPost} isPreview />
+                ? <EventCard event={previewEvent} isPreview />
                 : undefined}
             </XStack>
           </Sheet.ScrollView>

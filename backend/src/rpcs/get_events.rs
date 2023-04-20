@@ -14,67 +14,28 @@ use crate::schema::*;
 
 use super::validations::PASSING_MODERATIONS;
 
-// use super::validations::*;
-
 pub fn get_events(
     request: GetEventsRequest,
     user: Option<models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetEventsResponse, Status> {
-    // log::info!("GetPosts called");
-    // let req: GetPostsRequest = request.into_inner();
+    // log::info!("GetEvents called");
     let result: Vec<Event> = match (
         request.listing_type(),
         request.to_owned().event_id,
         request.to_owned().event_instance_id,
         request.to_owned().author_user_id,
     ) {
+        (_, Some(event_id), _, _) => vec![get_event_by_id(&user, &event_id, conn)?],
         _ => get_applicable_events(&user, conn, request.time_filter),
-        // (_, _, Some(user_id)) => {
-        //     get_user_posts(user_id.to_string().to_db_id_or_err("user_id")?, &user, conn)
-        // }
-        // (EventListingType::MyGroupsPosts, _, _) => get_my_group_posts(
-        //     &user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
-        //     conn,
-        // ),
-        // (EventListingType::FollowingPosts, _, _) => get_following_posts(
-        //     &user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
-        //     conn,
-        // ),
-        // (EventListingType::GroupPosts, _, _) => get_group_posts(
-        //     request
-        //         .to_owned()
-        //         .group_id
-        //         .ok_or(Status::new(Code::InvalidArgument, "group_id_required"))?
-        //         .to_db_id_or_err("group_id")?,
-        //     &user,
-        //     vec![Moderation::Unmoderated, Moderation::Approved],
-        //     conn,
-        // )?,
-        // (EventListingType::GroupPostsPendingModeration, _, _) => get_group_posts(
-        //     request
-        //         .to_owned()
-        //         .group_id
-        //         .ok_or(Status::new(Code::InvalidArgument, "group_id_required"))?
-        //         .to_db_id_or_err("group_id")?,
-        //     &Some(user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?),
-        //     vec![Moderation::Pending],
-        //     conn,
-        // )?,
-        // (_, Some(post_id), _) => match request.reply_depth {
-        //     None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
-        //     Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
-        // },
-        // (_, None, _) => get_top_posts(&user, conn),
     };
-    // log::info!("GetPosts::request: {:?}, result: {:?}", request, result);
     Ok(GetEventsResponse { events: result })
 }
 
 fn get_applicable_events(
     user: &Option<models::User>,
     conn: &mut PgPooledConnection,
-    filter: Option<TimeFilter>,
+    _filter: Option<TimeFilter>,
 ) -> Vec<Event> {
     let public_visibilities = match user {
         Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
@@ -105,7 +66,11 @@ fn get_applicable_events(
             follows::table.on(event_posts
                 .field(posts::user_id)
                 .eq(follows::target_user_id.nullable())
-                .and(follows::user_id.nullable().eq(user.as_ref().map(|u| u.id).unwrap_or(0))))
+                .and(
+                    follows::user_id
+                        .nullable()
+                        .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+                )),
         )
         // .left_join(
         //     instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
@@ -125,8 +90,8 @@ fn get_applicable_events(
             // instance_posts.field(posts::preview).is_not_null(),
         ))
         .filter(public.or(limited_to_followers))
-        .filter(event_instances::starts_at.gt(SystemTime::now()))
-        .order(event_instances::starts_at)
+        .filter(event_instances::ends_at.gt(SystemTime::now()))
+        .order(event_instances::ends_at)
         .limit(20)
         .load::<(
             models::EventInstance,
@@ -148,7 +113,7 @@ fn get_applicable_events(
                 event_user,
                 // instance_post,
                 // instance_user,
-                has_event_preview,
+                _has_event_preview,
                 // has_instance_preview,
             )| {
                 info!("instance: {:?}", instance);
@@ -160,62 +125,102 @@ fn get_applicable_events(
             },
         )
         .collect()
-    // posts::table
-    //     .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-    //     .left_join(
-    //         follows::table.on(posts::user_id
-    //             .eq(follows::target_user_id.nullable())
-    //             .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)))),
-    //     )
-    //     .select((
-    //         models::MINIMAL_POST_COLUMNS,
-    //         users::username.nullable(),
-    //         posts::preview.is_not_null(),
-    //     ))
-    //     // .filter(posts::visibility.eq_any(visibilities))
-    //     .filter(public.or(limited_to_followers))
-    //     .filter(posts::parent_post_id.is_null())
-    //     .filter(posts::context.eq(PostContext::Post.as_str_name()))
-    //     .order(posts::created_at.desc())
-    //     .limit(100)
-    //     .load::<(models::MinimalPost, Option<String>, bool)>(conn)
-    //     .unwrap()
-    //     .iter()
-    //     .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
-    //     .collect()
 }
 
-//TODO Update below copypasta
-
-fn _get_by_post_id(
+fn get_event_by_id(
     user: &Option<models::User>,
-    post_id: &str,
+    event_id: &str,
     conn: &mut PgPooledConnection,
-) -> Result<Vec<Post>, Status> {
-    let post_db_id = match post_id.to_string().to_db_id() {
+) -> Result<Event, Status> {
+    let event_db_id = match event_id.to_string().to_db_id() {
         Ok(db_id) => db_id,
         Err(_) => return Err(Status::new(Code::InvalidArgument, "post_id_invalid")),
     };
-    let result = posts::table
-        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((
-            posts::all_columns,
-            users::username.nullable(),
-            posts::preview.is_not_null(),
-        ))
-        .filter(posts::id.eq(post_db_id))
-        .get_result::<(models::Post, Option<String>, bool)>(conn)
-        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), &has_preview));
-
-    match result {
-        Ok(post) => match (post.visibility(), user) {
-            (Visibility::GlobalPublic, _) => Ok(vec![post]),
-            (Visibility::ServerPublic, Some(_)) => Ok(vec![post]),
-            _ => Err(Status::new(Code::NotFound, "post_not_found")),
-        },
-        Err(_) => Err(Status::new(Code::NotFound, "post_not_found")),
+    let public_visibilities = match user {
+        Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
+        None => vec![Visibility::GlobalPublic],
     }
+    .to_string_visibilities();
+    let public = posts::visibility.eq_any(public_visibilities);
+    let limited_to_followers = posts::visibility
+        .eq(Visibility::Limited.to_string_visibility())
+        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
+    let event = events::table
+        .inner_join(posts::table.on(events::post_id.eq(posts::id)))
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .left_join(
+            follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
+                follows::user_id
+                    .nullable()
+                    .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+            )),
+        )
+        .select((
+            events::all_columns,
+            posts::all_columns,
+            users::all_columns.nullable(),
+        ))
+        .filter(events::id.eq(event_db_id))
+        .filter(public.or(limited_to_followers))
+        .get_result::<(models::Event, models::Post, Option<models::User>)>(conn)
+        .map(|(event, event_post, event_user)| {
+            event.to_proto(
+                &event_post,
+                event_user.as_ref(),
+                &Vec::<(
+                    &models::EventInstance,
+                    std::option::Option<&models::Post>,
+                    std::option::Option<&models::User>,
+                )>::new(),
+            )
+        });
+
+    match event {
+        Ok(ref event) => match (
+            event.post.as_ref().expect("post required").visibility(),
+            user,
+        ) {
+            (Visibility::GlobalPublic, _) => {}
+            (Visibility::ServerPublic, Some(_)) => {}
+            _ => return Err(Status::new(Code::NotFound, "event_not_found")),
+        },
+        Err(_) => return Err(Status::new(Code::NotFound, "event_not_found")),
+    };
+
+    let binding = event_instances::table
+        .left_join(posts::table.on(event_instances::post_id.eq(posts::id.nullable())))
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .left_join(
+            follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
+                follows::user_id
+                    .nullable()
+                    .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+            )),
+        )
+        .select((
+            event_instances::all_columns,
+            posts::all_columns.nullable(),
+            users::all_columns.nullable(),
+        ))
+        .load::<(
+            models::EventInstance,
+            Option<models::Post>,
+            Option<models::User>,
+        )>(conn)
+        .unwrap();
+    let instances = binding
+        .iter()
+        .map(|(instance, instance_post, instance_user)| {
+            instance.to_proto(&instance_post.as_ref(), &instance_user.as_ref())
+        });
+
+    Ok(Event {
+        instances: instances.collect(),
+        ..event.unwrap()
+    })
 }
+
+//TODO Update below copypasta
 
 fn _get_top_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
     let public_visibilities = match user {

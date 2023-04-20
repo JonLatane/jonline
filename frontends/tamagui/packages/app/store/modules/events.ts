@@ -82,7 +82,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
         const firstPage = state.eventPages[defaultEventListingType][0] || [];
         state.eventPages[defaultEventListingType][0] = [action.payload.id, ...firstPage];
       }
-      state.successMessage = `Post created.`;
+      state.successMessage = `Event created.`;
     });
     builder.addCase(createEvent.rejected, (state, action) => {
       state.createStatus = "errored";
@@ -142,7 +142,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
         if (oldEvent) {
           instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
         }
-        eventsAdapter.upsertOne(state, { ...event, instances });
+        eventsAdapter.upsertOne(state, event);
       });
 
       const instanceIds = action.payload.events.map(event => event.instances[0]!.id);
@@ -166,8 +166,9 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     });
     builder.addCase(loadEvent.fulfilled, (state, action) => {
       state.loadStatus = "loaded";
-      const oldPost = selectEventById(state, action.payload.event.id);
-      eventsAdapter.upsertOne(state, { ...action.payload.event });
+      // const oldPost = selectEventById(state, action.payload.event.id);
+      const event = action.payload.event;
+      eventsAdapter.upsertOne(state, event);
       state.previews[action.meta.arg.id] = action.payload.preview;
       state.successMessage = `Post data loaded.`;
     });
@@ -245,7 +246,7 @@ export function getEventsPage(state: EventsState, listingType: EventListingType,
   const pageInstances = pageInstaceIds.map(id => state.instances[id]).filter(p => p) as EventInstance[];
   const pageEvents = pageInstances.map(instance => {
     const event = selectEventById(state, instance.eventId);
-    return event ? {...event, instances: [instance]} : undefined;
+    return event ? { ...event, instances: [instance] } : undefined;
   }).filter(p => p) as Event[];
   return pageEvents;
 }

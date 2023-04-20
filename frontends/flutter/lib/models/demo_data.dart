@@ -713,8 +713,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
       CreatePostRequest(
           title: "What is Jonline?",
-          content:
-              '''Large-scale capitalist social media has failed most of us. 
+          content: '''Corporate social media has failed most of us. 
 Jonline is a new approach to social media that keeps user data hyper-local - 
 within peoples' physical communities - all wrapped up as a 
 [well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md). 
