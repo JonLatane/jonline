@@ -5,6 +5,7 @@ use crate::db_connection::PgPool;
 
 pub struct RocketState {
   pub pool: Arc<PgPool>,
+  pub bucket: Arc<s3::Bucket>,
 }
 // This module contains Rocket routes and handlers for the web interface.
 

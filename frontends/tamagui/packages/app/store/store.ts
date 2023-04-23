@@ -8,7 +8,7 @@ import { createSelectorHook, useDispatch } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { accountsReducer, groupsReducer, LocalAppConfiguration, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetServers, resetUsers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
+import { accountsReducer, groupsReducer, LocalAppConfiguration, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetEvents, resetServers, resetUsers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
 import { AccountOrServer, JonlineServer } from './types';
 import eventsReducer from "./modules/events";
 
@@ -268,6 +268,7 @@ export const persistor = persistStore(store);
 export function resetCredentialedData() {
   setTimeout(() => {
     store.dispatch(resetPosts!());
+    store.dispatch(resetEvents!());
     store.dispatch(resetGroups!());
     store.dispatch(resetUsers!());
   }, 1);

@@ -15,8 +15,8 @@ use ::log::{info, warn};
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
-pub fn start_tonic_server(pool: Arc<PgPool>) -> Result<bool, Box<dyn std::error::Error>> {
-    let jonline = JonLineImpl { pool };
+pub fn start_tonic_server(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>) -> Result<bool, Box<dyn std::error::Error>> {
+    let jonline = JonLineImpl { pool, bucket };
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)

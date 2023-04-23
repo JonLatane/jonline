@@ -19,6 +19,31 @@ local_db_drop:
 	dropdb jonline_dev
 local_db_reset: local_instances_stop local_db_drop local_db_create
 
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MAKEFILE_DIR := $(dir $(MAKEFILE_PATH))
+
+local_minio_start:
+	docker start jonline-dev-minio
+
+local_minio_create:
+	$(MAKE) local_minio_start || $(MAKE) _do_local_minio_create
+
+_do_local_minio_create:
+	docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" quay.io/minio/minio server /data --console-address ":9090"
+	docker run --rm --link jonline-dev-minio:minio -e MINIO_BUCKET=jonline_dev --entrypoint sh minio/mc -c "\
+  while ! nc -z minio 9000; do echo 'Wait minio to startup...' && sleep 0.1; done; \
+  sleep 5 && \
+  mc config host add myminio http://minio:9000 \ROOTNAME \CHANGEME123 && \
+  mc rm -r --force myminio/\jonline_dev || true && \
+  mc mb myminio/\jonline_dev && \
+  mc policy download myminio/\jonline_dev \
+	"
+
+local_minio_delete:
+	docker stop jonline-dev-minio
+	docker rm jonline-dev-minio
+
+
 local_instances_stop:
 	-killall jonline
 

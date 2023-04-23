@@ -15,12 +15,14 @@ use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
 pub struct JonLineImpl {
     pub pool: Arc<PgPool>,
+    pub bucket: Arc<s3::Bucket>,
 }
 
 impl Clone for JonLineImpl {
     fn clone(&self) -> Self {
         JonLineImpl {
             pool: self.pool.clone(),
+            bucket: self.bucket.clone(),
         }
     }
 }

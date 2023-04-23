@@ -113,6 +113,16 @@ CREATE TABLE memberships (
 );
 CREATE UNIQUE INDEX idx_membership ON memberships(user_id, group_id);
 
+-- MEDIA MODELS
+
+CREATE TABLE media (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NULL REFERENCES users ON DELETE CASCADE ON DELETE SET NULL,
+  s3_path VARCHAR NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 -- CORE SOCIAL/POST MODELS
 
 CREATE TABLE posts (

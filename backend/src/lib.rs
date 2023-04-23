@@ -17,6 +17,9 @@ extern crate lazy_static;
 extern crate env_logger;
 extern crate log;
 extern crate tokio_stream;
+extern crate s3;
+extern crate awscreds;
+extern crate awsregion;
 
 pub mod auth;
 pub mod db_connection;

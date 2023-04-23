@@ -712,8 +712,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
       CreatePostRequest(
-          title: "What is Jonline?",
-          content: '''Corporate social media has failed most of us. 
+          title: "What is Jonline?", content: '''Corporate social media sucks. 
 Jonline is a new approach to social media that keeps user data hyper-local - 
 within peoples' physical communities - all wrapped up as a 
 [well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md). 
@@ -763,12 +762,12 @@ Further, Jonline should (hopefully) be easier to deploy, partly by virtue of hav
 Finally, Jonline's Discussion/Chat UI feature doesn't have any great
 analogues in other open-source social networks.
 
-In terms of features, unlike most other networks, Jonline plans to support Events and will eventually support
+In terms of features, unlike most other networks, Jonline supports Events and will eventually support
 more independent-monetization features, so admins can make money for hosting their instance. (Planned dev approach is:
-Invoicing/Direct Payments for a foundation, then Ticketed Events, then Products and/or Subscriptions).
+Invoicing/Direct Payments for a foundation, then Ticketed Events, then Products and/or Subscriptions.)
 
 If you feel moderately brave, take a crack at spinning up your own server. 
-Spinning one up locally should take under a minute if you already have Postgres and Docker
+Spinning one up locally should take under a minute if you already have Postgres and Docker 
 installed (and can configure a fresh Postgres DB in under 45 seconds 😁) using 
 [the Docker setup instructions on Jonline's DockerHub page](https://hub.docker.com/r/jonlatane/jonline).
 Use this to turn any computer into a server, if you are comfortable managing HTTPS certs.

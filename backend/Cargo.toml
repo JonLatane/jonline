@@ -52,6 +52,9 @@ markdown = "0.3"
 lazy_static = "1.4.0"
 tokio-stream = "0.1.11"
 env_logger = "0.10.0"
+rust-s3 = "0.33.0"
+aws-creds = "0.34.1"
+aws-region = "0.25.1"
 
 [build-dependencies]
 tonic-build = "0.9.1"
