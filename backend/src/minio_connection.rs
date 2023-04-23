@@ -67,15 +67,12 @@ pub async fn get_and_test_bucket() -> Result<Bucket, S3Error> {
         Err(e) => {
             if e.to_string().contains("NoSuchBucket") {
                 log::warn!("MinIO bucket does not exist, attempting to create");
-                let new_bucket = Bucket::create(
-                    &minio_bucket,
-                    Region::Custom {
-                        region: minio_region,
-                        endpoint: minio_endpoint,
-                    },
+                let new_bucket = Bucket::create_with_path_style(
+                    bucket.name.as_str(),
+                    bucket.region.clone(),
                     Credentials {
-                        access_key: Some(minio_access_key),
-                        secret_key: Some(minio_secret_key),
+                        access_key: Some(minio_access_key.to_owned()),
+                        secret_key: Some(minio_secret_key.to_owned()),
                         security_token: None,
                         expiration: None,
                         session_token: None,
@@ -86,7 +83,6 @@ pub async fn get_and_test_bucket() -> Result<Bucket, S3Error> {
                 match new_bucket {
                     Ok(_) => {
                         log::warn!("MinIO bucket created");
-                        // bucket = b;
                         bucket.put_object(s3_path, test).await?;
                     }
                     Err(e) => {
@@ -95,8 +91,8 @@ pub async fn get_and_test_bucket() -> Result<Bucket, S3Error> {
                     }
                 }
             } //else {
-            //     return Err(*e);
-            // }
+              //     return Err(*e);
+              // }
         }
         _ => {}
     };
