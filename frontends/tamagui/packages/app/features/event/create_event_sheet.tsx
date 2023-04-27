@@ -155,7 +155,7 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
               enterStyle={{ y: -50, opacity: 0, }}
               exitStyle={{ opacity: 0, }}>
               {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
-              <VisibilityPicker label='Post Visibility' visibility={visibility} onChange={setVisibility}
+              <VisibilityPicker label='Event Visibility' visibility={visibility} onChange={setVisibility}
                 visibilityDescription={(v) => {
                   switch (v) {
                     case Visibility.PRIVATE:

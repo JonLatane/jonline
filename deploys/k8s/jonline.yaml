@@ -43,11 +43,21 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.1.430
+        - image: docker.io/jonlatane/jonline:0.1.431
           name: jonline
           env:
             - name: DATABASE_URL
               value: postgres://admin:secure_password1@jonline-postgres/jonline
+            - name: MINIO_ENDPOINT
+              value: http://jonline-minio
+            - name: MINIO_REGION
+              value: ''
+            - name: MINIO_BUCKET
+              value: jonline
+            - name: MINIO_ACCESS_KEY
+              value: minio
+            - name: MINIO_SECRET_KEY
+              value: minio123
             - name: RUST_BACKTRACE
               value: full
             - name: TLS_KEY
@@ -95,7 +105,7 @@ spec:
         spec:
           containers:
           - name: delete-expired-tokens
-            image: docker.io/jonlatane/jonline:0.1.430
+            image: docker.io/jonlatane/jonline:0.1.431
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL
@@ -118,7 +128,7 @@ spec:
         spec:
           containers:
           - name: generate-preview-images
-            image: docker.io/jonlatane/jonline_preview_generator:0.1.430
+            image: docker.io/jonlatane/jonline_preview_generator:0.1.431
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL
