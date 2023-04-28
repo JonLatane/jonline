@@ -7,7 +7,7 @@ echo "#-----------------------------------------------------------------------" 
 echo "# Building, Archiving, and Uploading for iOS" && \
 echo "#-----------------------------------------------------------------------" && \
 # --bundle-sksl-path ios_shaders.sksl.json
-flutter build ios --bundle-sksl-path ios_shaders.sksl.json | sed 's/.*/\[iOS\] &/' && \
+flutter build ios | sed 's/.*/\[iOS\] &/' && \
 echo "Archiving iOS app..." && \
 xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration release archive | sed 's/.*/\[iOS: Archive\] &/' && \
 echo "iOS app built! Uploading to the App Store..." && \
