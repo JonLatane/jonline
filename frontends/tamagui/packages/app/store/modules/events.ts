@@ -225,6 +225,8 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
 
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
       const { events } = action.payload;
+      if (!events) return;
+
       upsertEvents(state, events);
     });
     // builder.addCase(loadGroupPosts.fulfilled, (state, action) => {

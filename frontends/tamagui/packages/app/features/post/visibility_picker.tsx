@@ -50,7 +50,7 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
       </Select.ScrollUpButton>
 
       <Select.Viewport minWidth={200}>
-        <Select.Group space="$-0">
+        <Select.Group space="$0">
           <Select.Label>{label ?? 'Visibility'}</Select.Label>
           {[Visibility.PRIVATE, Visibility.LIMITED, Visibility.SERVER_PUBLIC, Visibility.GLOBAL_PUBLIC,].map((item, i) => {
             const description = visibilityDescription?.(item);

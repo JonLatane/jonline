@@ -90,7 +90,8 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
                 <Heading size='$3' ta='center'>The people you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
               </YStack>
             : undefined
-          : <FlatList data={users}
+          : <>
+          {/* <FlatList data={users}
             // onRefresh={reloadUsers}
             // refreshing={usersState.pagesStatus == 'loading'}
             // Allow easy restoring of scroll position
@@ -99,7 +100,12 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
             keyExtractor={(user) => user.id}
             renderItem={({ item: user }) => {
               return <YStack w='100%' mb='$3'><UserCard user={user} isPreview /></YStack>;
-            }} />}
+            }} /> */}
+            {users?.map((user) => {
+              return <YStack w='100%' mb='$3'><UserCard user={user} isPreview /></YStack>;
+            })}
+            {showScrollPreserver ? <YStack h={100000} /> : undefined}
+          </>}
       </YStack>
       {/* <StickyCreateButton /> */}
     </TabsNavigation>

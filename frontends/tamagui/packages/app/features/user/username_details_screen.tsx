@@ -1,6 +1,7 @@
-import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Text, TextArea, Tooltip, useMedia, useWindowDimensions, XStack, YStack } from '@jonline/ui';
-import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye } from '@tamagui/lucide-icons';
+import { Moderation, Permission, User, Visibility, permissionToJSON } from '@jonline/api';
+import { Adapt, Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, Paragraph, ScrollView, Select, Sheet, Text, TextArea, Tooltip, useMedia, useWindowDimensions, XStack, YStack } from '@jonline/ui';
+import { LinearGradient } from "@tamagui/linear-gradient";
+import { AlertTriangle, Check, CheckCircle, ChevronRight, ChevronUp, Edit, Eye, Plus } from '@tamagui/lucide-icons';
 import { clearUserAlerts, loadUsername, loadUserPosts, RootState, selectUserById, updateUser, useCredentialDispatch, userSaved, useServerTheme, useTypedSelector } from 'app/store';
 import { pending } from 'app/utils/moderation';
 import React, { useEffect, useState } from 'react';
@@ -42,15 +43,36 @@ export function UsernameDetailsScreen() {
   const [editMode, setEditMode] = useState(false);
   const [defaultFollowModeration, setDefaultFollowModeration] = useState(user?.defaultFollowModeration ?? Moderation.MODERATION_UNKNOWN);
   const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
+  const [permissions, setPermissions] = useState(user?.permissions ?? []);
+  function selectPermission(permission: Permission) {
+    if (permissions.includes(permission)) {
+      setPermissions(permissions.filter(p => p != permission));
+    } else {
+      setPermissions([...permissions, permission]);
+    }
+  }
+  function deselectPermission(permission: Permission) {
+    setPermissions(permissions.filter(p => p != permission));
+  }
+
+  const permissionsEditorProps: PermissionsEditorProps = {
+    selectedPermissions: permissions,
+    selectPermission,
+    deselectPermission,
+    editMode
+  };
 
   const successSaving = useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
+  const permissionsModified = JSON.stringify(permissions) !== JSON.stringify(user?.permissions ?? []);
   const dirtyData = name != user?.username || bio != user?.bio || updatedAvatar != avatar
-    || defaultFollowModeration != user?.defaultFollowModeration || visibility != user?.visibility;
+    || defaultFollowModeration != user?.defaultFollowModeration || visibility != user?.visibility
+    || permissionsModified;
 
   const userPosts = useTypedSelector((state: RootState) => {
     return userId ? (state.users.idPosts ?? {})[userId] : undefined
   });
   const [loadingUserPosts, setLoadingUserPosts] = useState(false);
+  const [loadingUserEvents, setLoadingUserEvents] = useState(false);
   const fullAvatarHeight = useFullAvatarHeight();
   function resetFormData() {
     if (!user) {
@@ -59,6 +81,7 @@ export function UsernameDetailsScreen() {
       setUpdatedAvatar(undefined);
       setDefaultFollowModeration(Moderation.MODERATION_UNKNOWN);
       setVisibility(Visibility.VISIBILITY_UNKNOWN);
+      setPermissions([]);
       return;
     };
 
@@ -67,6 +90,7 @@ export function UsernameDetailsScreen() {
     setDefaultFollowModeration(user.defaultFollowModeration);
     setVisibility(user.visibility);
     setName(user.username);
+    setPermissions(user.permissions);
   }
 
   useEffect(() => {
@@ -116,7 +140,7 @@ export function UsernameDetailsScreen() {
 
     setTimeout(() => dispatch(updateUser({
       ...accountOrServer,
-      user: { ...user!, bio: bio ?? '', defaultFollowModeration, visibility },
+      user: { ...user!, bio: bio ?? '', defaultFollowModeration, visibility, permissions },
       avatar: avatar,
     })));
   }
@@ -169,7 +193,7 @@ export function UsernameDetailsScreen() {
                 </XStack>
               </Button>
               <UserVisibilityPermissions expanded={showPermissionsAndVisibility}
-                {...{ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, editMode }} />
+                {...{ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, permissionsEditorProps, editMode }} />
 
               {(userPosts || []).length > 0 ?
                 <>
@@ -274,9 +298,10 @@ interface UserVisibilityPermissionsProps {
   setVisibility: (v: Visibility) => void,
   expanded?: boolean;
   editMode: boolean;
+  permissionsEditorProps: PermissionsEditorProps;
 }
 
-const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, editMode, expanded = true }) => {
+const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, editMode, expanded = true, permissionsEditorProps }) => {
   const media = useMedia();
   const account = useAccount();
   const isCurrentUser = account && account?.user?.id == user.id;
@@ -323,5 +348,126 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
       value={pending(defaultFollowModeration)}
       setter={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
       disabled={disableInputs} />
+    <XStack h='$1' />
+    <PermissionsEditor {...permissionsEditorProps} />
   </YStack> : <></>;
 }
+
+type PermissionsEditorProps = {
+  id?: string;
+  label?: string;
+  selectablePermissions?: Permission[];
+  selectedPermissions: Permission[];
+  selectPermission: (p: Permission) => void;
+  deselectPermission: (p: Permission) => void;
+  editMode: boolean;
+}
+
+function toTitleCase(str: string) {
+  return str.replace(
+    /\w\S*/g,
+    function(txt: string) {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    }
+  );
+}
+
+function permissionName(p: Permission): string {
+  return toTitleCase(permissionToJSON(p).replace(/_/g, ' '));
+}
+
+function permissionDescription(p: Permission): string | undefined {
+  return undefined;
+}
+
+const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label, selectablePermissions, selectedPermissions, selectPermission, deselectPermission, editMode }) => {
+  const disabled = !editMode;
+  const allPermissions = selectablePermissions ??
+    Object.keys(Permission)
+      .filter(k => typeof Permission[k as any] === "number")
+      .map(k => Permission[k as any]! as unknown as Permission)
+      .filter(p => p != Permission.PERMISSION_UNKNOWN && p != Permission.UNRECOGNIZED);
+  const addablePermissions = allPermissions.filter(p => !selectedPermissions.includes(p));
+  return <YStack w='100%'>
+    <Heading size='$3' marginVertical='auto' o={editMode ? 1 : 0.5}>
+      Permissions
+    </Heading>
+    <XStack w='100%' space='$2' flexWrap='wrap'>
+      {selectedPermissions.map((p: Permission) =>
+        <Button disabled={!editMode} onPress={() => deselectPermission(p)} mb='$2'>
+          <XStack>
+            <Paragraph size='$2'>{permissionToJSON(p).replace(/_/g, ' ')}</Paragraph>
+          </XStack>
+        </Button>)
+      }
+      {editMode ? <Select key={`permissions-${JSON.stringify(selectedPermissions)}`} onValueChange={(p) => selectPermission(parseInt(p) as Permission)}
+        value={undefined}>
+        <Select.Trigger height='$2' f={1} maw={350} opacity={disabled ? 0.5 : 1} iconAfter={Plus} {...{ disabled }}>
+          <Select.Value placeholder="Add a Permission..." />
+        </Select.Trigger>
+
+        <Adapt when="xs" platform="touch">
+          <Sheet modal dismissOnSnapToBottom>
+            <Sheet.Frame>
+              <Sheet.ScrollView>
+                <Adapt.Contents />
+              </Sheet.ScrollView>
+            </Sheet.Frame>
+            <Sheet.Overlay />
+          </Sheet>
+        </Adapt>
+
+        <Select.Content zIndex={200000}>
+          <Select.ScrollUpButton ai="center" jc="center" pos="relative" w="100%" h="$3">
+            <YStack zi={10}>
+              <ChevronUp size={20} />
+            </YStack>
+            <LinearGradient
+              start={[0, 0]}
+              end={[0, 1]}
+              fullscreen
+              colors={['$background', '$backgroundTransparent']}
+              br="$4"
+            />
+          </Select.ScrollUpButton>
+
+          <Select.Viewport minWidth={200}>
+            <Select.Group space="$0">
+              <Select.Label>{'Available Permissions'}</Select.Label>
+              {addablePermissions.map((item, i) => {
+                const description = permissionDescription?.(item);
+                return (
+                  <Select.Item index={i} key={`${item}`} value={item.toString()}>
+                    <Select.ItemText>
+                      <YStack>
+                        <Heading size='$2'>{permissionName(item)}</Heading>
+                        <Paragraph size='$1'>{permissionDescription(item)}</Paragraph>
+                      </YStack>
+                    </Select.ItemText>
+                    <Select.ItemIndicator ml="auto">
+                      <Check size={16} />
+                    </Select.ItemIndicator>
+                  </Select.Item>
+                )
+              })}
+            </Select.Group>
+          </Select.Viewport>
+
+          <Select.ScrollDownButton ai="center" jc="center" pos="relative" w="100%" h="$3">
+            <YStack zi={10}>
+              <Plus size={20} />
+            </YStack>
+            <LinearGradient
+              start={[0, 0]}
+              end={[0, 1]}
+              fullscreen
+              colors={['$backgroundTransparent', '$background']}
+              br="$4"
+            />
+          </Select.ScrollDownButton>
+        </Select.Content>
+      </Select> : undefined}
+
+    </XStack>
+  </YStack>;
+};
