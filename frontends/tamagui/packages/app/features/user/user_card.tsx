@@ -1,5 +1,5 @@
 import { Permission, User } from "@jonline/api";
-import { Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
+import { Anchor, Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
 
 import { useOnScreen } from 'app/hooks/use_on_screen';
@@ -77,18 +77,20 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
         margin='$0'
         width={'100%'}
         // width={400}
-        hoverStyle={isPreview ? { scale: 0.97 } : {}}
-        pressStyle={isPreview ? { scale: 0.95 } : {}}
+        // hoverStyle={isPreview ? { scale: 0.97 } : {}}
+        // pressStyle={isPreview ? { scale: 0.95 } : {}}
         {...(isPreview ? userLink : {})}
       >
         <Card.Header>
           <XStack>
+            <Anchor f={1} {...(isPreview ? userLink : {})}>
             <YStack f={1}>
               <Heading size="$1" style={{ marginRight: 'auto' }}>{server?.host}/</Heading>
 
               {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
               <Heading size="$7" marginRight='auto'>{user.username}</Heading>
             </YStack>
+            </Anchor>
 
             {app.showUserIds ? <XStack o={0.6}>
               <Heading size='$1'>{user.id}</Heading>

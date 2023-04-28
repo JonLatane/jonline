@@ -29,6 +29,8 @@ deploy_data_create:
 	cd deploys && $(MAKE) deploy_data_create
 deploy_data_delete:
 	cd deploys && $(MAKE) deploy_data_delete
+deploy_data_update:
+	cd deploys && $(MAKE) deploy_data_update
 
 ############################################################################
 # FULLSTACK DEV/RELEASE-RELATED TARGETS: More in deploys/releases/Makefile

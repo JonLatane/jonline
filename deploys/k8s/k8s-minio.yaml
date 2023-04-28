@@ -2,8 +2,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: jonline-minio
+  labels:
+    app: jonline-minio
 spec:
-  # type: LoadBalancer
   ports:
     - port: 9000
       targetPort: 9000
@@ -15,7 +16,9 @@ apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and befor
 kind: Deployment
 metadata:
   # This name uniquely identifies the Deployment
-  name: minio-deployment
+  name: jonline-minio
+  labels:
+    app: jonline-minio
 spec:
   selector:
     matchLabels:

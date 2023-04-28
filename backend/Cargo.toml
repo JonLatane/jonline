@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.431"
+version = "0.1.432"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -21,10 +21,9 @@ tonic = { version = "0.9.0", features = [
 tonic-reflection = "0.9.0"
 tonic-web = "0.9.0"
 tower-http = "0.4.0" # used to configure CORS for Tonic Web
-rocket = { version = "0.5.0-rc.2", features = ["tls"] }
-rocket_async_compression = "0.2.0"
+rocket = { version = "0.5.0-rc.3", features = ["tls"] }
+rocket_async_compression = "0.3.0"
 rocket-cache-response = "0.6.2"
-# rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars", "tera"]}
 futures = "0.3.24"
 prost = "0.11.8"
 prost-build = "0.11.8"

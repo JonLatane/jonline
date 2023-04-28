@@ -53,6 +53,8 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
   JonlineServer? server;
   JonlineClient? client;
   ServerConfiguration? config;
+  TextEditingController nameController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
   ThemeData get theme => Theme.of(context);
   String? get serverHost => account?.server;
   bool get isAdmin =>
@@ -228,6 +230,67 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 Text("v${server?.serviceVersion}", style: textTheme.bodySmall),
               ],
             ),
+            const SizedBox(height: 24),
+            if (config != null)
+              Column(
+                children: [
+                  Row(children: [
+                    Text("Server Name",
+                        textAlign: TextAlign.left, style: textTheme.labelLarge)
+                  ]),
+                  TextFormField(
+                    // focusNode: titleFocus,
+                    initialValue: config?.serverInfo.name,
+                    keyboardType: TextInputType.text,
+                    textCapitalization: TextCapitalization.words,
+                    enableSuggestions: true,
+                    autocorrect: true,
+                    maxLines: 1,
+                    cursorColor: Colors.white,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14),
+                    enabled: account != null,
+                    decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Community Name",
+                        isDense: true),
+                    onChanged: (value) {
+                      config?.serverInfo.name = value;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Text("Server Description",
+                        textAlign: TextAlign.left, style: textTheme.labelLarge)
+                  ]),
+                  SizedBox(
+                      height: 120,
+                      child: TextFormField(
+                        // focusNode: titleFocus,
+                        initialValue: config?.serverInfo.description,
+                        keyboardType: TextInputType.text,
+                        textCapitalization: TextCapitalization.words,
+                        enableSuggestions: true,
+                        autocorrect: true,
+                        maxLines: null,
+                        cursorColor: Colors.white,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14),
+                        enabled: account != null,
+                        decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: "Community Description",
+                            isDense: true),
+                        onChanged: (value) {
+                          config?.serverInfo.description = value;
+                        },
+                      ))
+                ],
+              ),
             const SizedBox(height: 24),
             Text('Default Web UI', style: textTheme.titleMedium),
             const SizedBox(height: 8),

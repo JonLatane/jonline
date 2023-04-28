@@ -4,7 +4,7 @@ import { getPostsPage, getUsersPage, loadPostsPage, loadUsersPage, RootState, us
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
-import { StickyCreateButton } from '../post/create_post_sheet';
+// import { StickyCreateButton } from '../post/create_post_sheet';
 import PostCard from '../post/post_card';
 import { AppSection, AppSubsection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
@@ -94,10 +94,11 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
             // onRefresh={reloadUsers}
             // refreshing={usersState.pagesStatus == 'loading'}
             // Allow easy restoring of scroll position
+            contentContainerStyle={{width:'100%'}}
             ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
             keyExtractor={(user) => user.id}
             renderItem={({ item: user }) => {
-              return <YStack mb='$3'><UserCard user={user} isPreview /></YStack>;
+              return <YStack w='100%' mb='$3'><UserCard user={user} isPreview /></YStack>;
             }} />}
       </YStack>
       {/* <StickyCreateButton /> */}
