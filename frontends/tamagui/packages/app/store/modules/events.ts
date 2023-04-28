@@ -142,7 +142,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
         if (oldEvent) {
           instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
         }
-        eventsAdapter.upsertOne(state, event);
+        eventsAdapter.upsertOne(state, {...event, instances});
       });
 
       const instanceIds = action.payload.events.map(event => event.instances[0]!.id);
