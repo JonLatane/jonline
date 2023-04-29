@@ -5,9 +5,10 @@ package jonline;
 import "google/protobuf/empty.proto";
 
 import "authentication.proto";
+import "users.proto";
+import "media.proto";
 import "posts.proto";
 import "events.proto";
-import "users.proto";
 import "groups.proto";
 import "federation.proto";
 import "server_configuration.proto";
@@ -50,6 +51,9 @@ service Jonline {
   rpc UpdateFollow(Follow) returns (Follow) {}
   // Unfollow (or unrequest) a user. *Authenticated.*
   rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
+
+  // (TODO) Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.*
+  rpc GetMedia(GetMediaRequest) returns (GetMediaResponse) {}
   
   // Gets Groups. *Publicly accessible **or** Authenticated.*
   // Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.

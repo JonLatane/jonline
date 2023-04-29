@@ -49,7 +49,13 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             group_settings: Some(group_settings),
             post_settings: Some(post_settings),
             event_settings: Some(event_settings),
-
+            //TODO actually add media settings to the DB models...
+            media_settings: Some(FeatureSettings {
+                visible: true,
+                default_moderation: Moderation::Unmoderated as i32,
+                default_visibility: Visibility::GlobalPublic as i32,
+                custom_title: None,
+            }),
             private_user_strategy: self.private_user_strategy.to_i32_private_user_strategy(),
             authentication_features: self
                 .authentication_features

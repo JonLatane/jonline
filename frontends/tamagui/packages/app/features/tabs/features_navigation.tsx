@@ -11,6 +11,7 @@ export enum AppSection {
   EVENTS = 'events',
   PEOPLE = 'people',
   GROUPS = 'groups',
+  MEDIA = 'media',
 }
 
 export enum AppSubsection {
@@ -61,24 +62,28 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const eventsLink = useLink({ href: '/events' });
   const peopleLink = useLink({ href: '/people' });
   const followRequestsLink = useLink({ href: '/people/follow_requests' });
+  const myMediaLink = useLink({ href: '/media' });
 
   const isLatest = appSection == AppSection.HOME;
   const isPosts = appSection == AppSection.POSTS;
   const isEvents = appSection == AppSection.EVENTS;
+  const isMedia = appSection == AppSection.MEDIA;
   const isPeople = appSection == AppSection.PEOPLE && appSubsection == undefined;
   const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
 
   function navButton(selected, link, name) {
-    return <Button
-      // bordered={false}
-      transparent
-      size="$3"
-      disabled={selected}
-      backgroundColor={selected ? navColor : undefined}
-      {...link}
-    >
-      <Heading size="$4" color={selected ? navTextColor : textColor}>{name}</Heading>
-    </Button>;
+    return <Popover.Close asChild>
+      <Button
+        // bordered={false}
+        transparent
+        size="$3"
+        disabled={selected}
+        backgroundColor={selected ? navColor : undefined}
+        {...link}
+      >
+        <Heading size="$4" color={selected ? navTextColor : textColor}>{name}</Heading>
+      </Button>
+    </Popover.Close>;
   }
   return <>
     <XStack w={selectedGroup ? 11 : 3.5} />
@@ -114,21 +119,18 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
             {app.showBetaNavigation || isPosts || isEvents ? <>
               {/* {!app.showBetaNavigation ? <YStack marginVertical='auto' mr='$2'><AlertTriangle size='$1' /></YStack> : undefined} */}
               {navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS))}
-              <YStack mr='$2'/>
+              <YStack mr='$2' />
               {navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS))}
             </> : undefined}
           </XStack>
           <XStack ac='center' jc='center' space='$2'>
-
-            <Popover.Close asChild>
-              {navButton(isPeople, peopleLink, 'People')}
-            </Popover.Close>
-            {account ? <>
-              <Popover.Close asChild>
-                {navButton(isFollowRequests, followRequestsLink, 'Follow Requests')}
-              </Popover.Close>
-            </> : undefined}
+            {navButton(isPeople, peopleLink, 'People')}
+            {account ? navButton(isFollowRequests, followRequestsLink, 'Follow Requests') : undefined}
           </XStack>
+          {app.showBetaNavigation || isMedia ?
+            <XStack ac='center' jc='center' space='$2'>
+              {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
+            </XStack> : undefined}
         </YStack>
       </Popover.Content>
     </Popover>

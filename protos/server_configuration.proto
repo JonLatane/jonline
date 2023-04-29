@@ -40,6 +40,9 @@ message ServerConfiguration {
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_EVENTS_GLOBALLY`.
   FeatureSettings event_settings = 23;
+  // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  // contain `PUBLISH_EVENTS_GLOBALLY`.
+  FeatureSettings media_settings = 24;
 
   // Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   PrivateUserStrategy private_user_strategy = 100;

@@ -18,6 +18,7 @@ import { serverUrl } from "./servers";
 
 let _accessFetchLock = false;
 let _newAccessToken: ExpirableToken | undefined = undefined;
+let _newRefreshToken: ExpirableToken | undefined = undefined;
 export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
   let { account, server } = accountOrServer;
   if (!account) {
@@ -31,6 +32,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
     if (expired) {
       console.log(`Access token expired, refreshing..., now=${now}, expiresAt=${accessExpiresAt}`)
       let newAccessToken: ExpirableToken | undefined = undefined;
+      let newRefreshToken: ExpirableToken | undefined = undefined;
       while (_accessFetchLock) {
         await new Promise(resolve => setTimeout(resolve, 100));
         newAccessToken = _newAccessToken;
@@ -39,11 +41,13 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
         moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
       if (newTokenExpired) {
         _accessFetchLock = true;
-        let { accessToken: fetchedAccessToken, refreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
+        let { accessToken: fetchedAccessToken, refreshToken: fetchedRefreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
         newAccessToken = fetchedAccessToken!;
         _newAccessToken = newAccessToken;
+        newRefreshToken = fetchedRefreshToken!;
+        _newRefreshToken = newRefreshToken;
         _accessFetchLock = false;
-        account = { ...account, accessToken: newAccessToken! };
+        account = { ...account, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken };
         store.dispatch(accountsSlice.actions.upsertAccount(account));
       }
       // account = { ...account, accessToken: newAccessToken! };

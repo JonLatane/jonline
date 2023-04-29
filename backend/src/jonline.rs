@@ -101,6 +101,16 @@ impl Jonline for JonLineImpl {
         rpcs::delete_follow(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
+    async fn get_media(
+        &self,
+        request: Request<GetMediaRequest>,
+    ) -> Result<Response<GetMediaResponse>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let _user = auth::get_auth_user(&request, &mut conn)?;
+        Ok(Response::new(GetMediaResponse { ..Default::default() }))
+        // rpcs::get_posts(request.into_inner(), user, &mut conn).map(Response::new)
+    }
+
     async fn get_groups(
         &self,
         request: Request<GetGroupsRequest>,

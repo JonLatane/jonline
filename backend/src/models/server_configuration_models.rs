@@ -54,10 +54,15 @@ pub fn default_server_configuration() -> NewServerConfiguration {
         Permission::CreatePosts,
         Permission::PublishPostsLocally,
         Permission::PublishPostsGlobally,
+        Permission::ReplyToPosts,
         Permission::ViewEvents,
         Permission::CreateEvents,
         Permission::PublishEventsLocally,
         Permission::PublishEventsGlobally,
+        Permission::ViewMedia,
+        Permission::CreateMedia,
+        Permission::PublishMediaLocally,
+        Permission::PublishMediaGlobally,
     ].to_json_permissions();
     return NewServerConfiguration {
         server_info: serde_json::to_value(ServerInfo {
@@ -89,6 +94,7 @@ If this is an instance you're running, feel free to replace this text with your 
             Permission::ViewGroups,
             Permission::ViewPosts,
             Permission::ViewEvents,
+            Permission::ViewMedia,
         ].to_json_permissions(),
         default_user_permissions: basic_user_permissions.to_owned(),
         basic_user_permissions: basic_user_permissions,

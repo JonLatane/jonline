@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package jonline;
+
+import "visibility_moderation.proto";
+
+// Valid GetEventsRequest formats:
+// - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
+// - {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
+// - {event_id:}                                     (TODO: get single event including preview data)
+// - {listing_type: GroupEvents|
+//      GroupEventsPendingModeration,
+//      group_id:}                                  (TODO: get events/events needing moderation for a group)
+// - {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
+// - {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+message GetMediaRequest {
+  // Returns the single event with the given ID.
+  optional string event_id = 1;
+
+  uint32 page = 11;
+}
+
+message GetMediaResponse {
+  repeated Media media = 1;
+  bool has_next_page = 2;
+}
+
+
+// A Jonline `Media` object represents a single media item, such as a photo or video.
+// Media data is deliberately *not returnable from the gRPC API*. Instead, the client
+// should fetch media from `http[s]://my.jonline.instance/media/{id}` (TODO: implement this).
+//
+// Media objects may be created with a POST or PUT to `http[s]://my.jonline.instance/media`.
+// On success, the endpoint will return the media ID.
+//
+// HTTP Media endpoints require the value of "".
+message Media {
+  // The ID of the Media object.
+  string id = 1;
+  // An optional title for the media item.
+  optional string title = 2;
+  // An optional description for the media item.
+  optional string description = 3;
+  // Visibility of the media item.
+  Visibility visibility = 4;
+  // Moderation of the media item.
+  Moderation moderation = 5;
+}

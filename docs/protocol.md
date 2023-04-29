@@ -31,6 +31,21 @@
   
     - [UserListingType](#jonline-UserListingType)
   
+- [media.proto](#media-proto)
+    - [GetMediaRequest](#jonline-GetMediaRequest)
+    - [GetMediaResponse](#jonline-GetMediaResponse)
+    - [Media](#jonline-Media)
+  
+- [groups.proto](#groups-proto)
+    - [GetGroupsRequest](#jonline-GetGroupsRequest)
+    - [GetGroupsResponse](#jonline-GetGroupsResponse)
+    - [GetMembersRequest](#jonline-GetMembersRequest)
+    - [GetMembersResponse](#jonline-GetMembersResponse)
+    - [Group](#jonline-Group)
+    - [Member](#jonline-Member)
+  
+    - [GroupListingType](#jonline-GroupListingType)
+  
 - [posts.proto](#posts-proto)
     - [Author](#jonline-Author)
     - [CreatePostRequest](#jonline-CreatePostRequest)
@@ -109,6 +124,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
+| GetMedia | [GetMediaRequest](#jonline-GetMediaRequest) | [GetMediaResponse](#jonline-GetMediaResponse) | (TODO) Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* |
 | GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility. |
 | CreateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Creates a group with the current user as its admin. *Authenticated.* Requires the `CREATE_GROUPS` permission. |
 | UpdateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Update a Groups&#39;s information, default membership permissions or moderation. *Authenticated.* Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user. |
@@ -341,6 +357,11 @@ Returned when creating an account or logging in.
 | PUBLISH_EVENTS_LOCALLY | 32 |  |
 | PUBLISH_EVENTS_GLOBALLY | 33 |  |
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
+| VIEW_MEDIA | 40 |  |
+| CREATE_MEDIA | 41 |  |
+| PUBLISH_MEDIA_LOCALLY | 42 |  |
+| PUBLISH_MEDIA_GLOBALLY | 43 |  |
+| MODERATE_MEDIA | 44 | Allow the user to moderate events. |
 | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
 | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s. |
 | VIEW_PRIVATE_CONTACT_METHODS | 10001 | Allow the user to view the private contact methods of other users. Kept separate from `ADMIN` to allow for more fine-grained privacy control. |
@@ -501,6 +522,233 @@ to reconcile memberships with groups.
 | FRIENDS | 2 |  |
 | FOLLOWERS | 3 |  |
 | FOLLOW_REQUESTS | 4 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="media-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## media.proto
+
+
+
+<a name="jonline-GetMediaRequest"></a>
+
+### GetMediaRequest
+Valid GetEventsRequest formats:
+- {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
+- {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
+- {event_id:}                                     (TODO: get single event including preview data)
+- {listing_type: GroupEvents|
+     GroupEventsPendingModeration,
+     group_id:}                                  (TODO: get events/events needing moderation for a group)
+- {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
+- {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| event_id | [string](#string) | optional | Returns the single event with the given ID. |
+| page | [uint32](#uint32) |  |  |
+
+
+
+
+
+
+<a name="jonline-GetMediaResponse"></a>
+
+### GetMediaResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| media | [Media](#jonline-Media) | repeated |  |
+| has_next_page | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="jonline-Media"></a>
+
+### Media
+A Jonline `Media` object represents a single media item, such as a photo or video.
+Media data is deliberately *not returnable from the gRPC API*. Instead, the client
+should fetch media from `http[s]://my.jonline.instance/media/{id}` (TODO: implement this).
+
+Media objects may be created with a POST or PUT to `http[s]://my.jonline.instance/media`.
+On success, the endpoint will return the media ID.
+
+HTTP Media endpoints require the value of &#34;&#34;.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The ID of the Media object. |
+| title | [string](#string) | optional | An optional title for the media item. |
+| description | [string](#string) | optional | An optional description for the media item. |
+| visibility | [Visibility](#jonline-Visibility) |  | Visibility of the media item. |
+| moderation | [Moderation](#jonline-Moderation) |  | Moderation of the media item. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="groups-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## groups.proto
+
+
+
+<a name="jonline-GetGroupsRequest"></a>
+
+### GetGroupsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| group_id | [string](#string) | optional |  |
+| group_name | [string](#string) | optional |  |
+| group_shortname | [string](#string) | optional | Group shortname search is case-insensitive. |
+| listing_type | [GroupListingType](#jonline-GroupListingType) |  |  |
+| page | [int32](#int32) | optional |  |
+
+
+
+
+
+
+<a name="jonline-GetGroupsResponse"></a>
+
+### GetGroupsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| groups | [Group](#jonline-Group) | repeated |  |
+| has_next_page | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="jonline-GetMembersRequest"></a>
+
+### GetMembersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| group_id | [string](#string) |  |  |
+| username | [string](#string) | optional |  |
+| group_moderation | [Moderation](#jonline-Moderation) | optional |  |
+| page | [int32](#int32) | optional |  |
+
+
+
+
+
+
+<a name="jonline-GetMembersResponse"></a>
+
+### GetMembersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [Member](#jonline-Member) | repeated |  |
+| has_next_page | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="jonline-Group"></a>
+
+### Group
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| name | [string](#string) |  |  |
+| shortname | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| avatar | [bytes](#bytes) | optional |  |
+| default_membership_permissions | [Permission](#jonline-Permission) | repeated |  |
+| default_membership_moderation | [Moderation](#jonline-Moderation) |  | Valid values are PENDING (requires a moderator to let you join) and UNMODERATED. |
+| default_post_moderation | [Moderation](#jonline-Moderation) |  |  |
+| default_event_moderation | [Moderation](#jonline-Moderation) |  |  |
+| visibility | [Visibility](#jonline-Visibility) |  | LIMITED visibility groups are only visible to members. PRIVATE groups are only visibile to users with the ADMIN group permission. |
+| member_count | [uint32](#uint32) |  |  |
+| post_count | [uint32](#uint32) |  |  |
+| current_user_membership | [Membership](#jonline-Membership) | optional |  |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+
+
+
+
+
+
+<a name="jonline-Member"></a>
+
+### Member
+Used by group MODERATE_USERS mods to manage group requests from the People tab.
+See also: UserListingType.MEMBERSHIP_REQUESTS.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user | [User](#jonline-User) |  |  |
+| membership | [Membership](#jonline-Membership) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="jonline-GroupListingType"></a>
+
+### GroupListingType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ALL_GROUPS | 0 |  |
+| MY_GROUPS | 1 |  |
+| REQUESTED | 2 |  |
+| INVITED | 3 |  |
 
 
  
@@ -983,6 +1231,7 @@ Configuration for a Jonline server instance.
 | group_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_GROUPS_GLOBALLY`. |
 | post_settings | [PostSettings](#jonline-PostSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |
 | event_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
+| media_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 
