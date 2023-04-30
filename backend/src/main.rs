@@ -2,6 +2,7 @@
 extern crate diesel;
 extern crate bcrypt;
 extern crate bs58;
+extern crate uuid;
 extern crate diesel_migrations;
 extern crate dotenv;
 extern crate env_logger;

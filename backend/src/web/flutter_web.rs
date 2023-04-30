@@ -7,7 +7,7 @@ lazy_static! {
 }
 
 #[rocket::get("/flutter/<file..>")]
-pub async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+async fn flutter_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
     log::info!("flutter_file: {:?}", file);
     let result = match NamedFile::open(Path::new("opt/flutter_web/").join(file.to_owned())).await {
         Ok(file) => Ok(file),

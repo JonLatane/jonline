@@ -14,6 +14,7 @@ import { Event, GetEventsRequest, GetEventsResponse } from "./events";
 import { GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
+import { GetMediaRequest, GetMediaResponse } from "./media";
 import {
   CreatePostRequest,
   GetGroupPostsRequest,
@@ -67,6 +68,8 @@ export interface Jonline {
   updateFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow>;
   /** Unfollow (or unrequest) a user. *Authenticated.* */
   deleteFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Empty>;
+  /** (TODO) Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* */
+  getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse>;
   /**
    * Gets Groups. *Publicly accessible **or** Authenticated.*
    * Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
@@ -159,6 +162,7 @@ export class JonlineClientImpl implements Jonline {
     this.createFollow = this.createFollow.bind(this);
     this.updateFollow = this.updateFollow.bind(this);
     this.deleteFollow = this.deleteFollow.bind(this);
+    this.getMedia = this.getMedia.bind(this);
     this.getGroups = this.getGroups.bind(this);
     this.createGroup = this.createGroup.bind(this);
     this.updateGroup = this.updateGroup.bind(this);
@@ -224,6 +228,10 @@ export class JonlineClientImpl implements Jonline {
 
   deleteFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Empty> {
     return this.rpc.unary(JonlineDeleteFollowDesc, Follow.fromPartial(request), metadata);
+  }
+
+  getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse> {
+    return this.rpc.unary(JonlineGetMediaDesc, GetMediaRequest.fromPartial(request), metadata);
   }
 
   getGroups(request: DeepPartial<GetGroupsRequest>, metadata?: grpc.Metadata): Promise<GetGroupsResponse> {
@@ -556,6 +564,29 @@ export const JonlineDeleteFollowDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = Empty.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineGetMediaDesc: UnaryMethodDefinitionish = {
+  methodName: "GetMedia",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return GetMediaRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = GetMediaResponse.decode(data);
       return {
         ...value,
         toObject() {

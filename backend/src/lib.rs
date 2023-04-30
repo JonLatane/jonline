@@ -4,6 +4,7 @@ use std::env;
 extern crate diesel;
 extern crate bcrypt;
 extern crate bs58;
+extern crate uuid;
 extern crate diesel_migrations;
 extern crate dotenv;
 extern crate futures;
@@ -18,6 +19,7 @@ extern crate env_logger;
 extern crate log;
 extern crate tokio_stream;
 extern crate s3;
+extern crate bytes;
 extern crate awscreds;
 extern crate awsregion;
 

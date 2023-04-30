@@ -20,7 +20,7 @@ pub struct ServerConfiguration {
     pub group_settings: serde_json::Value,
     pub post_settings: serde_json::Value,
     pub event_settings: serde_json::Value,
-    
+
     pub private_user_strategy: String,
     pub authentication_features: serde_json::Value,
 
@@ -46,9 +46,16 @@ pub fn default_server_configuration() -> NewServerConfiguration {
     let basic_user_permissions = vec![
         Permission::ViewUsers,
         Permission::FollowUsers,
+        Permission::PublishUsersLocally,
         Permission::PublishUsersGlobally,
+        Permission::ViewMedia,
+        Permission::CreateMedia,
+        Permission::PublishMediaLocally,
+        Permission::PublishMediaGlobally,
         Permission::ViewGroups,
         Permission::CreateGroups,
+        Permission::PublishGroupsLocally,
+        Permission::PublishGroupsGlobally,
         Permission::JoinGroups,
         Permission::ViewPosts,
         Permission::CreatePosts,
@@ -59,11 +66,8 @@ pub fn default_server_configuration() -> NewServerConfiguration {
         Permission::CreateEvents,
         Permission::PublishEventsLocally,
         Permission::PublishEventsGlobally,
-        Permission::ViewMedia,
-        Permission::CreateMedia,
-        Permission::PublishMediaLocally,
-        Permission::PublishMediaGlobally,
-    ].to_json_permissions();
+    ]
+    .to_json_permissions();
     return NewServerConfiguration {
         server_info: serde_json::to_value(ServerInfo {
             name: None,

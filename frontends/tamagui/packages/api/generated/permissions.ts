@@ -64,6 +64,12 @@ export enum Permission {
   PUBLISH_EVENTS_GLOBALLY = 33,
   /** MODERATE_EVENTS - Allow the user to moderate events. */
   MODERATE_EVENTS = 34,
+  VIEW_MEDIA = 40,
+  CREATE_MEDIA = 41,
+  PUBLISH_MEDIA_LOCALLY = 42,
+  PUBLISH_MEDIA_GLOBALLY = 43,
+  /** MODERATE_MEDIA - Allow the user to moderate events. */
+  MODERATE_MEDIA = 44,
   /**
    * RUN_BOTS - Allow the user to run bots. There is no enforcement of this permission (yet),
    * but it lets other users know that the user is allowed to run bots.
@@ -157,6 +163,21 @@ export function permissionFromJSON(object: any): Permission {
     case 34:
     case "MODERATE_EVENTS":
       return Permission.MODERATE_EVENTS;
+    case 40:
+    case "VIEW_MEDIA":
+      return Permission.VIEW_MEDIA;
+    case 41:
+    case "CREATE_MEDIA":
+      return Permission.CREATE_MEDIA;
+    case 42:
+    case "PUBLISH_MEDIA_LOCALLY":
+      return Permission.PUBLISH_MEDIA_LOCALLY;
+    case 43:
+    case "PUBLISH_MEDIA_GLOBALLY":
+      return Permission.PUBLISH_MEDIA_GLOBALLY;
+    case 44:
+    case "MODERATE_MEDIA":
+      return Permission.MODERATE_MEDIA;
     case 9999:
     case "RUN_BOTS":
       return Permission.RUN_BOTS;
@@ -223,6 +244,16 @@ export function permissionToJSON(object: Permission): string {
       return "PUBLISH_EVENTS_GLOBALLY";
     case Permission.MODERATE_EVENTS:
       return "MODERATE_EVENTS";
+    case Permission.VIEW_MEDIA:
+      return "VIEW_MEDIA";
+    case Permission.CREATE_MEDIA:
+      return "CREATE_MEDIA";
+    case Permission.PUBLISH_MEDIA_LOCALLY:
+      return "PUBLISH_MEDIA_LOCALLY";
+    case Permission.PUBLISH_MEDIA_GLOBALLY:
+      return "PUBLISH_MEDIA_GLOBALLY";
+    case Permission.MODERATE_MEDIA:
+      return "MODERATE_MEDIA";
     case Permission.RUN_BOTS:
       return "RUN_BOTS";
     case Permission.ADMIN:

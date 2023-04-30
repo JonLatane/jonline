@@ -12,6 +12,7 @@ DROP TABLE posts;
 
 DROP TABLE memberships;
 DROP TABLE groups;
+DROP TABLE media;
 
 DROP TABLE follows;
 

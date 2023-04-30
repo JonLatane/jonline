@@ -353,7 +353,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
   </YStack> : <></>;
 }
 
-type PermissionsEditorProps = {
+export type PermissionsEditorProps = {
   id?: string;
   label?: string;
   selectablePermissions?: Permission[];
@@ -377,10 +377,14 @@ function permissionName(p: Permission): string {
 }
 
 function permissionDescription(p: Permission): string | undefined {
+  switch (p) {
+    case Permission.ADMIN:
+      return 'Grants access to server configuration and all other permissions, such as moderation, creation, and publishing of media, posts, and events.';
+  }
   return undefined;
 }
 
-const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label, selectablePermissions, selectedPermissions, selectPermission, deselectPermission, editMode }) => {
+export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label, selectablePermissions, selectedPermissions, selectPermission, deselectPermission, editMode }) => {
   const disabled = !editMode;
   const allPermissions = selectablePermissions ??
     Object.keys(Permission)
@@ -390,13 +394,13 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label, select
   const addablePermissions = allPermissions.filter(p => !selectedPermissions.includes(p));
   return <YStack w='100%'>
     <Heading size='$3' marginVertical='auto' o={editMode ? 1 : 0.5}>
-      Permissions
+      {label ?? 'Permissions'}
     </Heading>
     <XStack w='100%' space='$2' flexWrap='wrap'>
       {selectedPermissions.map((p: Permission) =>
         <Button disabled={!editMode} onPress={() => deselectPermission(p)} mb='$2'>
           <XStack>
-            <Paragraph size='$2'>{permissionToJSON(p).replace(/_/g, ' ')}</Paragraph>
+            <Paragraph size='$2'>{permissionName(p)}</Paragraph>
           </XStack>
         </Button>)
       }

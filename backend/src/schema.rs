@@ -81,6 +81,20 @@ table! {
 }
 
 table! {
+    media (id) {
+        id -> Int8,
+        user_id -> Nullable<Int4>,
+        minio_path -> Varchar,
+        name -> Nullable<Varchar>,
+        description -> Nullable<Text>,
+        visibility -> Varchar,
+        moderation -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
     memberships (id) {
         id -> Int4,
         user_id -> Int4,
@@ -203,6 +217,7 @@ joinable!(federated_accounts -> users (user_id));
 joinable!(group_posts -> groups (group_id));
 joinable!(group_posts -> posts (post_id));
 joinable!(group_posts -> users (user_id));
+joinable!(media -> users (user_id));
 joinable!(memberships -> groups (group_id));
 joinable!(memberships -> users (user_id));
 joinable!(posts -> users (user_id));
@@ -220,6 +235,7 @@ allow_tables_to_appear_in_same_query!(
     follows,
     group_posts,
     groups,
+    media,
     memberships,
     posts,
     server_configurations,

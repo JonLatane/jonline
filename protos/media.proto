@@ -33,7 +33,9 @@ message GetMediaResponse {
 // Media objects may be created with a POST or PUT to `http[s]://my.jonline.instance/media`.
 // On success, the endpoint will return the media ID.
 //
-// HTTP Media endpoints require the value of "".
+// HTTP Media endpoints support supplying the Access Token in a `jonline-media-access` cookie,
+// or via a `jonline_access_token` query parameter.
+// Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
 message Media {
   // The ID of the Media object.
   string id = 1;

@@ -11,7 +11,7 @@ lazy_static! {
     pub static ref SEO_PAGES: Vec<Route> = routes![robots, sitemap];
 }
 #[rocket::get("/robots.txt")]
-pub async fn robots(
+async fn robots(
     state: &State<RocketState>,
     host: HostHeader<'_>,
 ) -> CacheResponse<RawText<String>> {
@@ -38,7 +38,7 @@ Sitemap: https://{}/sitemap.xml
 }
 
 #[rocket::get("/sitemap.xml")]
-pub async fn sitemap(
+async fn sitemap(
     state: &State<RocketState>,
     host: HostHeader<'_>,
 ) -> CacheResponse<RawXml<String>> {

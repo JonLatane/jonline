@@ -208,6 +208,13 @@ export interface ServerConfiguration {
   eventSettings:
     | FeatureSettings
     | undefined;
+  /**
+   * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+   * contain `PUBLISH_EVENTS_GLOBALLY`.
+   */
+  mediaSettings:
+    | FeatureSettings
+    | undefined;
   /** Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. */
   privateUserStrategy: PrivateUserStrategy;
   /**
@@ -309,6 +316,7 @@ function createBaseServerConfiguration(): ServerConfiguration {
     groupSettings: undefined,
     postSettings: undefined,
     eventSettings: undefined,
+    mediaSettings: undefined,
     privateUserStrategy: 0,
     authenticationFeatures: [],
   };
@@ -345,6 +353,9 @@ export const ServerConfiguration = {
     }
     if (message.eventSettings !== undefined) {
       FeatureSettings.encode(message.eventSettings, writer.uint32(186).fork()).ldelim();
+    }
+    if (message.mediaSettings !== undefined) {
+      FeatureSettings.encode(message.mediaSettings, writer.uint32(194).fork()).ldelim();
     }
     if (message.privateUserStrategy !== 0) {
       writer.uint32(800).int32(message.privateUserStrategy);
@@ -409,6 +420,9 @@ export const ServerConfiguration = {
         case 23:
           message.eventSettings = FeatureSettings.decode(reader, reader.uint32());
           break;
+        case 24:
+          message.mediaSettings = FeatureSettings.decode(reader, reader.uint32());
+          break;
         case 100:
           message.privateUserStrategy = reader.int32() as any;
           break;
@@ -446,6 +460,7 @@ export const ServerConfiguration = {
       groupSettings: isSet(object.groupSettings) ? FeatureSettings.fromJSON(object.groupSettings) : undefined,
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
       eventSettings: isSet(object.eventSettings) ? FeatureSettings.fromJSON(object.eventSettings) : undefined,
+      mediaSettings: isSet(object.mediaSettings) ? FeatureSettings.fromJSON(object.mediaSettings) : undefined,
       privateUserStrategy: isSet(object.privateUserStrategy)
         ? privateUserStrategyFromJSON(object.privateUserStrategy)
         : 0,
@@ -482,6 +497,8 @@ export const ServerConfiguration = {
       (obj.postSettings = message.postSettings ? PostSettings.toJSON(message.postSettings) : undefined);
     message.eventSettings !== undefined &&
       (obj.eventSettings = message.eventSettings ? FeatureSettings.toJSON(message.eventSettings) : undefined);
+    message.mediaSettings !== undefined &&
+      (obj.mediaSettings = message.mediaSettings ? FeatureSettings.toJSON(message.mediaSettings) : undefined);
     message.privateUserStrategy !== undefined &&
       (obj.privateUserStrategy = privateUserStrategyToJSON(message.privateUserStrategy));
     if (message.authenticationFeatures) {
@@ -515,6 +532,9 @@ export const ServerConfiguration = {
       : undefined;
     message.eventSettings = (object.eventSettings !== undefined && object.eventSettings !== null)
       ? FeatureSettings.fromPartial(object.eventSettings)
+      : undefined;
+    message.mediaSettings = (object.mediaSettings !== undefined && object.mediaSettings !== null)
+      ? FeatureSettings.fromPartial(object.mediaSettings)
       : undefined;
     message.privateUserStrategy = object.privateUserStrategy ?? 0;
     message.authenticationFeatures = object.authenticationFeatures?.map((e) => e) || [];

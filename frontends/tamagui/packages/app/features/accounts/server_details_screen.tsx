@@ -11,6 +11,7 @@ import { colorMeta } from '../../store/store'
 import { TamaguiMarkdown } from '../post/tamagui_markdown'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import ServerCard from './server_card'
+import { PermissionsEditor, PermissionsEditorProps } from '../user/username_details_screen'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -64,6 +65,52 @@ export function ServerDetailsScreen() {
   const { textColor: primaryTextColor } = colorMeta(primaryColor);
   const { textColor: navTextColor } = colorMeta(navColor);
   const { warningAnchorColor } = useServerTheme();
+
+  const serverDefaultPermissions = serverConfiguration?.defaultUserPermissions;
+  const [_defaultPermissions, setDefaultPermissions] = useState(serverDefaultPermissions);
+  if (serverDefaultPermissions && _defaultPermissions == undefined) {
+    setDefaultPermissions(serverDefaultPermissions);
+  }
+  const defaultPermissions = _defaultPermissions || [];
+  function selectDefaultPermission(permission: Permission) {
+    if (defaultPermissions.includes(permission)) {
+      setDefaultPermissions(defaultPermissions.filter(p => p != permission));
+    } else {
+      setDefaultPermissions([...defaultPermissions, permission]);
+    }
+  }
+  function deselectDefaultPermission(permission: Permission) {
+    setDefaultPermissions(defaultPermissions.filter(p => p != permission));
+  }
+  const configurableUserPermissions = [
+    Permission.VIEW_USERS, 
+    Permission.PUBLISH_USERS_LOCALLY,
+    Permission.PUBLISH_USERS_GLOBALLY,
+    Permission.VIEW_GROUPS,
+    Permission.CREATE_GROUPS,
+    Permission.VIEW_MEDIA,
+    Permission.CREATE_MEDIA,
+    Permission.PUBLISH_MEDIA_LOCALLY,
+    Permission.PUBLISH_MEDIA_GLOBALLY,
+    Permission.PUBLISH_GROUPS_LOCALLY,
+    Permission.PUBLISH_GROUPS_GLOBALLY,
+    Permission.JOIN_GROUPS,
+    Permission.VIEW_POSTS,
+    Permission.CREATE_POSTS,
+    Permission.PUBLISH_POSTS_LOCALLY,
+    Permission.PUBLISH_POSTS_GLOBALLY,
+    Permission.VIEW_EVENTS,
+    Permission.CREATE_EVENTS,
+    Permission.PUBLISH_EVENTS_LOCALLY,
+    Permission.PUBLISH_EVENTS_GLOBALLY,
+  ];
+  const defaultPermissionsEditorProps: PermissionsEditorProps = {
+    selectablePermissions: configurableUserPermissions,
+    selectedPermissions: defaultPermissions,
+    selectPermission: selectDefaultPermission,
+    deselectPermission: deselectDefaultPermission,
+    editMode: isAdmin ?? false
+  };
 
   async function updateServer() {
     setUpdating(true);
@@ -152,6 +199,9 @@ export function ServerDetailsScreen() {
                 {isAdmin ? <XStack als='center'>
                   <HexColorPicker color={navColorHex} onChange={setNavColorHex} />
                 </XStack> : undefined}
+                {<PermissionsEditor label='Default Permissions'
+                  {...defaultPermissionsEditorProps} />}
+
 
                 <Button {...aboutLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
                   <Heading size='$2' color={navTextColor}>About Jonline...</Heading>
