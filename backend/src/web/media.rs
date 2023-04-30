@@ -18,6 +18,11 @@ use rocket_cache_response::CacheResponse;
 use rocket::http::Status;
 use s3::request::ResponseDataStream;
 use uuid::Uuid;
+use std::io;
+use std::net::SocketAddr;
+
+use rocket::tokio::net::TcpStream;
+use rocket::response::stream::ReaderStream;
 
 lazy_static! {
     pub static ref MEDIA_ENDPOINTS: Vec<Route> = routes![add_media, media_file];
@@ -54,8 +59,15 @@ pub async fn add_media(
     return Ok(media.unwrap().id.to_proto_id());
 }
 
+#[rocket::get("/stream-example")]
+async fn stream() -> io::Result<ReaderStream![TcpStream]> {
+    let addr = SocketAddr::from(([127, 0, 0, 1], 9999));
+    let stream = TcpStream::connect(addr).await?;
+    Ok(ReaderStream::one(stream))
+}
+
 #[rocket::get("/media/<id>?<jonline_access_token>")]
-pub async fn media_file(
+pub async fn media_file<'a>(
     id: &str,
     jonline_access_token: Option<String>,
     cookies: &CookieJar<'_>,
@@ -65,15 +77,9 @@ pub async fn media_file(
     let result = get_media_file(id, jonline_access_token, cookies, state).await;
 
     match result {
-        Ok(mut response_data_stream) => {
-            let bytes = response_data_stream.bytes();
-            Ok(
-                    ByteStream! {
-                        while let Some(chunk) = bytes.next().await {
-                            yield chunk;
-                        }
-                    }
-                )
+        Ok(mut stream) => {
+            // Ok(ByteStream::from(stream.bytes()))
+            Ok(ByteStream! { yield bytes::Bytes::from("test")})
         }
         Err(s) => Err(s)
     }
