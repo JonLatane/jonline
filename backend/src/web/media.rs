@@ -10,19 +10,11 @@ use crate::schema::users::dsl as users;
 use crate::web::RocketState;
 
 use diesel::*;
-use crate::futures::StreamExt;
 use rocket::response::stream::ByteStream;
 use rocket::{data::ToByteUnit, http::CookieJar, routes, Data, Route, State};
-use rocket_cache_response::CacheResponse;
 
 use rocket::http::Status;
-use s3::request::ResponseDataStream;
 use uuid::Uuid;
-use std::io;
-use std::net::SocketAddr;
-
-use rocket::tokio::net::TcpStream;
-use rocket::response::stream::ReaderStream;
 
 lazy_static! {
     pub static ref MEDIA_ENDPOINTS: Vec<Route> = routes![add_media, media_file];
@@ -59,38 +51,14 @@ pub async fn add_media(
     return Ok(media.unwrap().id.to_proto_id());
 }
 
-#[rocket::get("/stream-example")]
-async fn stream() -> io::Result<ReaderStream![TcpStream]> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 9999));
-    let stream = TcpStream::connect(addr).await?;
-    Ok(ReaderStream::one(stream))
-}
-
 #[rocket::get("/media/<id>?<jonline_access_token>")]
-pub async fn media_file<'a>(
+pub async fn media_file(
     id: &str,
     jonline_access_token: Option<String>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
 ) -> Result<ByteStream![bytes::Bytes], Status> {
     log::info!("media_file: {:?}", id);
-    let result = get_media_file(id, jonline_access_token, cookies, state).await;
-
-    match result {
-        Ok(mut stream) => {
-            // Ok(ByteStream::from(stream.bytes()))
-            Ok(ByteStream! { yield bytes::Bytes::from("test")})
-        }
-        Err(s) => Err(s)
-    }
-}
-
-async fn get_media_file(
-    id: &str,
-    jonline_access_token: Option<String>,
-    cookies: &CookieJar<'_>,
-    state: &State<RocketState>,
-) -> Result<ResponseDataStream, Status> {
     let _user = get_media_user(jonline_access_token, cookies, state).ok();
 
     let media = schema::media::table
@@ -103,13 +71,16 @@ async fn get_media_file(
         .first::<models::Media>(&mut state.pool.get().unwrap())
         .map_err(|_| Status::NotFound)?;
 
-    let stream = state
+    // TODO: Validate moderation/visiblity/permissions etc.
+
+    let mut stream = state
         .bucket
         .get_object_stream(media.minio_path.as_str())
         .await
         .map_err(|_| Status::NotFound)?;
 
-    Ok(stream)
+    // Ok(ByteStream::from(stream.bytes()))
+    Ok(ByteStream! { yield bytes::Bytes::from("test")})
 }
 
 fn get_media_user(

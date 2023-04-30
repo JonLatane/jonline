@@ -25,6 +25,7 @@ extern crate lazy_static;
 extern crate awscreds;
 extern crate awsregion;
 extern crate s3;
+extern crate bytes;
 extern crate tokio_stream;
 
 pub mod auth;
