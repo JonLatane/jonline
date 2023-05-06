@@ -29,7 +29,7 @@ export interface EventsState {
   instanceEvents: Dictionary<string>;
   instances: Dictionary<EventInstance>;
   // Stores pages of listed event *instances* for listing types used in the UI.
-  // i.e.: eventPages[EventListingType.PUBLIC_EVENTS][1] -> ["eventId1", "eventId2"].
+  // i.e.: eventPages[EventListingType.PUBLIC_EVENTS][0] -> ["eventId1", "eventId2"].
   // Events should be loaded from the adapter/slice's entities.
   // Maps EventListingType -> page (as a number) -> eventInstanceIds
   eventPages: Dictionary<Dictionary<string[]>>;

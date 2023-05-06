@@ -1,5 +1,6 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
+import { Timestamp } from "./google/protobuf/timestamp";
 import {
   Moderation,
   moderationFromJSON,
@@ -12,19 +13,21 @@ import {
 export const protobufPackage = "jonline";
 
 /**
- * Valid GetEventsRequest formats:
- * - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
- * - {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
- * - {event_id:}                                     (TODO: get single event including preview data)
- * - {listing_type: GroupEvents|
- *      GroupEventsPendingModeration,
- *      group_id:}                                  (TODO: get events/events needing moderation for a group)
- * - {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
- * - {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+ * Valid GetMediaRequest formats:
+ * - `{user_id: "123"}` - Gets the media of the given user that the current user can see. IE:
+ *     - *all* of the current user's own media
+ *     - `GLOBAL_PUBLIC` media for the user if the current user is not logged in.
+ *     - `SERVER_PUBLIC` media for the user if the current user is logged in.
+ *     - `LIMITED` media for the user if the current user is following the user.
+ * - `{media_id: "123"}` - Gets the media with the given ID, if visible to the current user.
  */
 export interface GetMediaRequest {
-  /** Returns the single event with the given ID. */
-  eventId?: string | undefined;
+  /** Returns the single media item with the given ID. */
+  mediaId?:
+    | string
+    | undefined;
+  /** Returns all media items for the given user. */
+  userId?: string | undefined;
   page: number;
 }
 
@@ -41,14 +44,19 @@ export interface GetMediaResponse {
  * Media objects may be created with a POST or PUT to `http[s]://my.jonline.instance/media`.
  * On success, the endpoint will return the media ID.
  *
- * HTTP Media endpoints support supplying the Access Token in a `jonline-media-access` cookie.
+ * HTTP Media endpoints support supplying the Access Token in a `jonline-media-access` cookie,
+ * or via a `jonline_access_token` query parameter.
  * Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
  */
 export interface Media {
-  /** The ID of the Media object. */
+  /** The ID of the media item. */
   id: string;
+  /** The ID of the user who created the media item. */
+  userId?:
+    | string
+    | undefined;
   /** An optional title for the media item. */
-  title?:
+  name?:
     | string
     | undefined;
   /** An optional description for the media item. */
@@ -59,16 +67,21 @@ export interface Media {
   visibility: Visibility;
   /** Moderation of the media item. */
   moderation: Moderation;
+  createdAt: string | undefined;
+  updatedAt: string | undefined;
 }
 
 function createBaseGetMediaRequest(): GetMediaRequest {
-  return { eventId: undefined, page: 0 };
+  return { mediaId: undefined, userId: undefined, page: 0 };
 }
 
 export const GetMediaRequest = {
   encode(message: GetMediaRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.eventId !== undefined) {
-      writer.uint32(10).string(message.eventId);
+    if (message.mediaId !== undefined) {
+      writer.uint32(10).string(message.mediaId);
+    }
+    if (message.userId !== undefined) {
+      writer.uint32(18).string(message.userId);
     }
     if (message.page !== 0) {
       writer.uint32(88).uint32(message.page);
@@ -84,7 +97,10 @@ export const GetMediaRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.eventId = reader.string();
+          message.mediaId = reader.string();
+          break;
+        case 2:
+          message.userId = reader.string();
           break;
         case 11:
           message.page = reader.uint32();
@@ -99,14 +115,16 @@ export const GetMediaRequest = {
 
   fromJSON(object: any): GetMediaRequest {
     return {
-      eventId: isSet(object.eventId) ? String(object.eventId) : undefined,
+      mediaId: isSet(object.mediaId) ? String(object.mediaId) : undefined,
+      userId: isSet(object.userId) ? String(object.userId) : undefined,
       page: isSet(object.page) ? Number(object.page) : 0,
     };
   },
 
   toJSON(message: GetMediaRequest): unknown {
     const obj: any = {};
-    message.eventId !== undefined && (obj.eventId = message.eventId);
+    message.mediaId !== undefined && (obj.mediaId = message.mediaId);
+    message.userId !== undefined && (obj.userId = message.userId);
     message.page !== undefined && (obj.page = Math.round(message.page));
     return obj;
   },
@@ -117,7 +135,8 @@ export const GetMediaRequest = {
 
   fromPartial<I extends Exact<DeepPartial<GetMediaRequest>, I>>(object: I): GetMediaRequest {
     const message = createBaseGetMediaRequest();
-    message.eventId = object.eventId ?? undefined;
+    message.mediaId = object.mediaId ?? undefined;
+    message.userId = object.userId ?? undefined;
     message.page = object.page ?? 0;
     return message;
   },
@@ -190,7 +209,16 @@ export const GetMediaResponse = {
 };
 
 function createBaseMedia(): Media {
-  return { id: "", title: undefined, description: undefined, visibility: 0, moderation: 0 };
+  return {
+    id: "",
+    userId: undefined,
+    name: undefined,
+    description: undefined,
+    visibility: 0,
+    moderation: 0,
+    createdAt: undefined,
+    updatedAt: undefined,
+  };
 }
 
 export const Media = {
@@ -198,17 +226,26 @@ export const Media = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.title !== undefined) {
-      writer.uint32(18).string(message.title);
+    if (message.userId !== undefined) {
+      writer.uint32(18).string(message.userId);
+    }
+    if (message.name !== undefined) {
+      writer.uint32(26).string(message.name);
     }
     if (message.description !== undefined) {
-      writer.uint32(26).string(message.description);
+      writer.uint32(34).string(message.description);
     }
     if (message.visibility !== 0) {
-      writer.uint32(32).int32(message.visibility);
+      writer.uint32(40).int32(message.visibility);
     }
     if (message.moderation !== 0) {
-      writer.uint32(40).int32(message.moderation);
+      writer.uint32(48).int32(message.moderation);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(122).fork()).ldelim();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(130).fork()).ldelim();
     }
     return writer;
   },
@@ -224,16 +261,25 @@ export const Media = {
           message.id = reader.string();
           break;
         case 2:
-          message.title = reader.string();
+          message.userId = reader.string();
           break;
         case 3:
-          message.description = reader.string();
+          message.name = reader.string();
           break;
         case 4:
-          message.visibility = reader.int32() as any;
+          message.description = reader.string();
           break;
         case 5:
+          message.visibility = reader.int32() as any;
+          break;
+        case 6:
           message.moderation = reader.int32() as any;
+          break;
+        case 15:
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 16:
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -246,20 +292,26 @@ export const Media = {
   fromJSON(object: any): Media {
     return {
       id: isSet(object.id) ? String(object.id) : "",
-      title: isSet(object.title) ? String(object.title) : undefined,
+      userId: isSet(object.userId) ? String(object.userId) : undefined,
+      name: isSet(object.name) ? String(object.name) : undefined,
       description: isSet(object.description) ? String(object.description) : undefined,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
   },
 
   toJSON(message: Media): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
-    message.title !== undefined && (obj.title = message.title);
+    message.userId !== undefined && (obj.userId = message.userId);
+    message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
     message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
   },
 
@@ -270,10 +322,13 @@ export const Media = {
   fromPartial<I extends Exact<DeepPartial<Media>, I>>(object: I): Media {
     const message = createBaseMedia();
     message.id = object.id ?? "";
-    message.title = object.title ?? undefined;
+    message.userId = object.userId ?? undefined;
+    message.name = object.name ?? undefined;
     message.description = object.description ?? undefined;
     message.visibility = object.visibility ?? 0;
     message.moderation = object.moderation ?? 0;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
     return message;
   },
 };
@@ -288,6 +343,19 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function toTimestamp(dateStr: string): Timestamp {
+  const date = new Date(dateStr);
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): string {
+  let millis = t.seconds * 1_000;
+  millis += t.nanos / 1_000_000;
+  return new Date(millis).toISOString();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

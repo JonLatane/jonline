@@ -2,15 +2,15 @@ import { ReactNativeTransport } from "@improbable-eng/grpc-web-react-native-tran
 import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/api";
 import { useTheme } from "@jonline/ui";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AnyAction, combineReducers, configureStore, Store, ThunkDispatch } from "@reduxjs/toolkit";
+import { AnyAction, Store, ThunkDispatch, combineReducers, configureStore } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
 import { createSelectorHook, useDispatch } from "react-redux";
-import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
+import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { accountsReducer, groupsReducer, LocalAppConfiguration, localAppReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetPosts, resetEvents, resetServers, resetUsers, serversReducer, serverUrl, upsertServer, usersReducer } from "./modules";
-import { AccountOrServer, JonlineServer } from './types';
+import { LocalAppConfiguration, accountsReducer, groupsReducer, localAppReducer, mediaReducer, postsReducer, resetAccounts, resetEvents, resetGroups, resetLocalApp, resetPosts, resetServers, resetUsers, serverUrl, serversReducer, upsertServer, usersReducer } from "./modules";
 import eventsReducer from "./modules/events";
+import { AccountOrServer, JonlineServer } from './types';
 
 const serversPersistConfig = {
   key: 'servers',
@@ -44,6 +44,7 @@ const rootReducer = combineReducers({
   app: localAppReducer,
   accounts: persistReducer(accountsPersistConfig, accountsReducer),
   servers: persistReducer(serversPersistConfig, serversReducer),
+  media: mediaReducer,
   posts: postsReducer, // persistReducer(postsPersistConfig, postsReducer),
   events: eventsReducer,
   users: usersReducer, // persistReducer(usersPersistConfig, usersReducer),

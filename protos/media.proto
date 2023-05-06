@@ -2,20 +2,22 @@ syntax = "proto3";
 
 package jonline;
 
+import "google/protobuf/timestamp.proto";
+
 import "visibility_moderation.proto";
 
-// Valid GetEventsRequest formats:
-// - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
-// - {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
-// - {event_id:}                                     (TODO: get single event including preview data)
-// - {listing_type: GroupEvents|
-//      GroupEventsPendingModeration,
-//      group_id:}                                  (TODO: get events/events needing moderation for a group)
-// - {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
-// - {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+// Valid GetMediaRequest formats:
+// - `{user_id: "123"}` - Gets the media of the given user that the current user can see. IE:
+//     - *all* of the current user's own media
+//     - `GLOBAL_PUBLIC` media for the user if the current user is not logged in.
+//     - `SERVER_PUBLIC` media for the user if the current user is logged in.
+//     - `LIMITED` media for the user if the current user is following the user.
+// - `{media_id: "123"}` - Gets the media with the given ID, if visible to the current user.
 message GetMediaRequest {
-  // Returns the single event with the given ID.
-  optional string event_id = 1;
+  // Returns the single media item with the given ID.
+  optional string media_id = 1;
+  // Returns all media items for the given user.
+  optional string user_id = 2;
 
   uint32 page = 11;
 }
@@ -37,14 +39,18 @@ message GetMediaResponse {
 // or via a `jonline_access_token` query parameter.
 // Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
 message Media {
-  // The ID of the Media object.
+  // The ID of the media item.
   string id = 1;
+  // The ID of the user who created the media item.
+  optional string user_id = 2;
   // An optional title for the media item.
-  optional string title = 2;
+  optional string name = 3;
   // An optional description for the media item.
-  optional string description = 3;
+  optional string description = 4;
   // Visibility of the media item.
-  Visibility visibility = 4;
+  Visibility visibility = 5;
   // Moderation of the media item.
-  Moderation moderation = 5;
+  Moderation moderation = 6;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
 }

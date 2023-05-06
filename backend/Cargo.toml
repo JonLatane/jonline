@@ -56,6 +56,7 @@ rust-s3 = { version="0.33.0" }
 aws-creds = "0.34.1"
 aws-region = "0.25.1"
 bytes = "1.4.0"
+tempfile = "3.5.0"
 
 [build-dependencies]
 tonic-build = "0.9.1"

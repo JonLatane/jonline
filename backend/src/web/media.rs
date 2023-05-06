@@ -8,12 +8,18 @@ use crate::schema::user_access_tokens::dsl as user_access_tokens;
 use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use crate::schema::users::dsl as users;
 use crate::web::RocketState;
+// use crate::tokio_stream::StreamExt;
+// use crate::bytes::Bytes;
+use log::info;
+use rocket::fs::NamedFile;
+// use s3::request::ResponseDataStream;
 
 use diesel::*;
-use rocket::response::stream::ByteStream;
+// use rocket::response::stream::ByteStream;
 use rocket::{data::ToByteUnit, http::CookieJar, routes, Data, Route, State};
 
 use rocket::http::Status;
+// use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 lazy_static! {
@@ -57,7 +63,7 @@ pub async fn media_file(
     jonline_access_token: Option<String>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
-) -> Result<ByteStream![bytes::Bytes], Status> {
+) -> Result<NamedFile, Status> {
     log::info!("media_file: {:?}", id);
     let _user = get_media_user(jonline_access_token, cookies, state).ok();
 
@@ -73,14 +79,74 @@ pub async fn media_file(
 
     // TODO: Validate moderation/visiblity/permissions etc.
 
-    let mut stream = state
-        .bucket
-        .get_object_stream(media.minio_path.as_str())
-        .await
-        .map_err(|_| Status::NotFound)?;
+    let local_filename = format!(
+        "{}/{}.mediafile",
+        state.tempdir.path().display(),
+        media.minio_path
+    );
+    if !std::path::Path::new(&local_filename).exists() {
+        info!("local_filename: {}", local_filename);
 
-    // Ok(ByteStream::from(stream.bytes()))
-    Ok(ByteStream! { yield bytes::Bytes::from("test")})
+        // Ensure local directory exists.
+        let mut _filevec: Vec<&str> = local_filename.split("/").collect();
+        _filevec.pop();
+        let local_filedir = _filevec.join("/");
+        info!("local_filedir: {}", local_filedir);
+        std::fs::create_dir_all(local_filedir).map_err(|_| Status::InternalServerError)?;
+
+        // Download file from S3 into a tempfile
+        let temp_filename = format!("{}.{}", local_filename, Uuid::new_v4());
+        let mut async_output_file = tokio::fs::File::create(temp_filename.to_owned())
+            .await
+            .map_err(|_| Status::InternalServerError)?;
+        let _status_code = state
+            .bucket
+            .get_object_to_writer(media.minio_path, &mut async_output_file)
+            .await
+            .map_err(|_| Status::InternalServerError)?;
+
+        // Rename tempfile to final filename
+        std::fs::rename(temp_filename, &local_filename).map_err(|_| Status::InternalServerError)?
+    }
+
+    let result = NamedFile::open(local_filename)
+        .await
+        .map_err(|_| Status::InternalServerError)?;
+    Ok(result)
+
+    // let mut _stream = state
+    //     .bucket
+    //     .get_object_stream(media.minio_path.as_str())
+    //     .await
+    //     .map_err(|_| Status::NotFound)?;
+
+    // Ok(ByteStream::from(async_output_file.st))
+
+    // This should work.
+    // Ok(ByteStream::from(_stream.bytes()))
+
+    // Or this.
+    // Ok(ByteStream! {
+    //     let mut stream: &'a ResponseDataStream = &state
+    //         .bucket
+    //         .get_object_stream(media.minio_path.as_str())
+    //         .await
+    //         .map_err(|_| Status::NotFound).unwrap();
+    //     while let Some(bytes) = stream.bytes().next().await {
+    //         yield bytes;
+    //     }
+    // })
+
+    // We should at least be able to write to an output file and return that... but this doesn't compile either.
+    // Seems the S3 `ResponseDataStream` type is not `Send`.
+
+    // let mut async_output_file = tokio::fs::File::create(media.minio_path).await.expect("Unable to create file");
+    // while let Some(chunk) = _stream.bytes.next().await {
+    //     async_output_file.write_all(&chunk).await.map_err(|_| Status::NotFound)?;
+    // }
+
+    // So far all I can get to work is this...
+    // Ok(ByteStream! { yield bytes::Bytes::from("test")})
 }
 
 fn get_media_user(

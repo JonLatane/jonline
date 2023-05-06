@@ -1,13 +1,16 @@
 use std::{fs, sync::Arc};
 
-use crate::{web, report_error};
 use crate::{db_connection::PgPool, env_var};
+use crate::{report_error, web};
 
+use ::log::{info, warn};
 use rocket::*;
 use tokio::task::JoinHandle;
-use ::log::{info, warn};
 
-pub fn start_rocket_secure(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>) -> JoinHandle<()> {
+pub fn start_rocket_secure(
+    pool: Arc<PgPool>,
+    bucket: Arc<s3::Bucket>,
+    tempdir: Arc<tempfile::TempDir>,) -> JoinHandle<()> {
     let cert = env_var("TLS_CERT");
     let key = env_var("TLS_KEY");
 
@@ -22,7 +25,7 @@ pub fn start_rocket_secure(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>) -> JoinHa
                 .merge(("address", "0.0.0.0"))
                 .merge(("tls.certs", ".tls.crt"))
                 .merge(("tls.key", ".tls.key"));
-            Some(create_rocket(figment, pool, bucket))
+            Some(create_rocket(figment, pool, bucket, tempdir))
         }
         _ => None,
     };
@@ -46,20 +49,21 @@ pub fn start_rocket_unsecured(
     port: i32,
     pool: Arc<PgPool>,
     bucket: Arc<s3::Bucket>,
+    tempdir: Arc<tempfile::TempDir>,
+
     https_redirect: bool,
 ) -> JoinHandle<()> {
     let figment = rocket::Config::figment()
         .merge(("port", port))
         .merge(("address", "0.0.0.0"));
     let server_build = if https_redirect {
-        create_rocket_https_redirect(figment, pool, bucket)
+        create_rocket_https_redirect(figment, pool, bucket, tempdir)
     } else {
-        create_rocket(figment, pool, bucket)
+        create_rocket(figment, pool, bucket, tempdir)
     };
 
     rocket::tokio::spawn(async move {
-        match server_build.launch().await
-        {
+        match server_build.launch().await {
             Ok(_) => (),
             Err(e) => {
                 warn!("Unable to start Rocket server on port {}", port);
@@ -74,14 +78,18 @@ fn create_rocket<T: rocket::figment::Provider>(
     figment: T,
     pool: Arc<PgPool>,
     bucket: Arc<s3::Bucket>,
-) -> rocket::Rocket<rocket::Build> {
+    tempdir: Arc<tempfile::TempDir>,) -> rocket::Rocket<rocket::Build> {
     let mut routes = routes![web::main_index::main_index,];
     routes.append(&mut (*web::SEO_PAGES).clone());
     routes.append(&mut (*web::MEDIA_ENDPOINTS).clone());
     routes.append(&mut (*web::FLUTTER_PAGES).clone());
     routes.append(&mut (*web::TAMAGUI_PAGES).clone());
     let server = rocket::custom(figment)
-        .manage(web::RocketState { pool , bucket})
+        .manage(web::RocketState {
+            pool,
+            bucket,
+            tempdir,
+        })
         .mount("/", routes)
         .register("/", catchers![web::catchers::not_found]);
     if cfg!(debug_assertions) {
@@ -99,10 +107,15 @@ fn create_rocket<T: rocket::figment::Provider>(
 
 fn create_rocket_https_redirect<T: rocket::figment::Provider>(
     figment: T,
-    pool: Arc<PgPool>, bucket: Arc<s3::Bucket>,
-) -> rocket::Rocket<rocket::Build> {
+    pool: Arc<PgPool>,
+    bucket: Arc<s3::Bucket>,
+    tempdir: Arc<tempfile::TempDir>,) -> rocket::Rocket<rocket::Build> {
     rocket::custom(figment)
-        .manage(web::RocketState { pool , bucket})
+        .manage(web::RocketState {
+            pool,
+            bucket,
+            tempdir,
+        })
         .mount("/", routes![web::redirect_to_secure,])
         .register("/", catchers![web::catchers::not_found])
 }

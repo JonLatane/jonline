@@ -22,6 +22,9 @@ pub use listing_type_marshaling::*;
 mod user_marshaling;
 pub use user_marshaling::*;
 
+mod media_marshaling;
+pub use media_marshaling::*;
+
 mod group_marshaling;
 pub use group_marshaling::*;
 

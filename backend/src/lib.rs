@@ -22,6 +22,7 @@ extern crate s3;
 extern crate bytes;
 extern crate awscreds;
 extern crate awsregion;
+extern crate tempfile;
 
 pub mod auth;
 pub mod db_connection;

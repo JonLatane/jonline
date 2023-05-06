@@ -40,6 +40,9 @@ pub use update_follow::update_follow;
 mod delete_follow;
 pub use delete_follow::delete_follow;
 
+mod get_media;
+pub use get_media::get_media;
+
 mod get_groups;
 pub use get_groups::get_groups;
 

@@ -27,6 +27,7 @@ extern crate awsregion;
 extern crate s3;
 extern crate bytes;
 extern crate tokio_stream;
+extern crate tempfile;
 
 pub mod auth;
 pub mod db_connection;
@@ -51,29 +52,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_service_logging();
     db_connection::migrate_database();
 
-    let pool1 = Arc::new(db_connection::establish_pool());
-    let pool2 = pool1.clone();
-    let pool3 = pool1.clone();
-    let pool4 = pool1.clone();
+    let pool = Arc::new(db_connection::establish_pool());
 
-    let bucket = minio_connection::get_and_test_bucket().await.map_err(|e| {
+    let raw_bucket = minio_connection::get_and_test_bucket().await.map_err(|e| {
         log::error!("Failed to connect to MinIO: {:?}", e);
-        // let _fake_bucket = s3::Bucket::new("fake", awsregion::Region::AfSouth1, awscreds::Credentials::default().unwrap()).unwrap();
-        // _fake_bucket
-        //TODO map to this error and end the map_err with "?".
         std::io::Error::new(std::io::ErrorKind::Other, "Failed to connect to MinIO")
     })?;
+    let bucket = Arc::new(raw_bucket);
 
-    let bucket1 = Arc::new(bucket/*.unwrap_or_else(|b| { b }) */);
-    let bucket2 = bucket1.clone();
-    let bucket3 = bucket1.clone();
-    let bucket4 = bucket1.clone();
+    let tempdir = Arc::new(tempfile::tempdir().map_err(|e| {
+        log::error!("Failed to create tempdir: {:?}", e);
+        e
+    })?);
 
-    let secure_mode = start_tonic_server(pool1, bucket1)?;
+    let secure_mode = start_tonic_server(pool.clone(), bucket.clone())?;
 
-    let rocket_unsecure_8000 = start_rocket_unsecured(8000, pool2, bucket2, secure_mode);
-    let rocket_unsecure_80 = start_rocket_unsecured(80, pool3, bucket3, secure_mode);
-    let rocket_secure = start_rocket_secure(pool4, bucket4);
+    let rocket_unsecure_8000 = start_rocket_unsecured(8000, pool.clone(), bucket.clone(), tempdir.clone(), secure_mode);
+    let rocket_unsecure_80 = start_rocket_unsecured(80, pool.clone(), bucket.clone(), tempdir.clone(), secure_mode);
+    let rocket_secure = start_rocket_secure(pool.clone(), bucket.clone(), tempdir.clone());
 
     join_all::<_>([
         // tonic_server,

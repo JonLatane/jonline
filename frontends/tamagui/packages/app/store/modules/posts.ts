@@ -29,7 +29,7 @@ export interface PostsState {
   entities: Dictionary<Post>;
   previews: Dictionary<string>;
   // Stores pages of listed posts for listing types used in the UI.
-  // i.e.: postPages[PostListingType.PUBLIC_POSTS][1] -> ["postId1", "postId2"].
+  // i.e.: postPages[PostListingType.PUBLIC_POSTS][0] -> ["postId1", "postId2"].
   // Posts should be loaded from the adapter/slice's entities.
   // Maps PostListingType -> page -> postIds
   postPages: Dictionary<Dictionary<string[]>>;
