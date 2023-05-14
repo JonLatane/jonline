@@ -1,6 +1,6 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack } from "@jonline/ui";
 import { Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverUrl, useTypedDispatch, useTypedSelector, accountId } from "app/store";
+import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useTypedDispatch, useTypedSelector, accountId } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 
@@ -15,14 +15,14 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts))
     .filter(account => account.server.host == server.host);
-  const infoLink = useLink({ href: `/server/${serverUrl(server)}` });
+  const infoLink = useLink({ href: `/server/${serverID(server)}` });
   const primaryColorInt = server.serverConfiguration?.serverInfo?.colors?.primary;
   const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
 
   function doSelectServer() {
     if (selected) {
       dispatch(selectAccount(undefined));
-    } else if (accountsState.account && serverUrl(accountsState.account.server) != serverUrl(server)) {
+    } else if (accountsState.account && serverID(accountsState.account.server) != serverID(server)) {
       dispatch(selectAccount(undefined));
     }
     dispatch(selectServer(server));

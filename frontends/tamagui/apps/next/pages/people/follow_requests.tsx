@@ -1,3 +1,3 @@
-import { FollowRequestsScreen } from 'app/features/people/screen'
+import { FollowRequestsScreen } from 'app/features/people/people_screen'
 
 export default FollowRequestsScreen

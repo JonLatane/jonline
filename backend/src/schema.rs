@@ -85,6 +85,7 @@ table! {
         id -> Int8,
         user_id -> Nullable<Int4>,
         minio_path -> Varchar,
+        content_type -> Varchar,
         name -> Nullable<Varchar>,
         description -> Nullable<Text>,
         visibility -> Varchar,

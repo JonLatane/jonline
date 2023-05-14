@@ -1,6 +1,6 @@
 import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverUrl, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -55,7 +55,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
   const primaryServer = onlyShowServer || serversState.server;
-  const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverUrl(a.server) == serverUrl(primaryServer!)) : [];
+  const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverID(a.server) == serverID(primaryServer!)) : [];
   const accountsElsewhere = accounts.filter(a => !accountsOnPrimaryServer.includes(a));
   function loginToServer() {
     dispatch(clearAccountAlerts());
@@ -112,8 +112,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   if (!app.allowServerSelection && browsingServers) {
     setBrowsingServers(false);
   }
-  const serversDiffer = onlyShowServer && serversState.server && serverUrl(onlyShowServer) != serverUrl(serversState.server);
-  const currentServerInfoLink = serversState.server && useLink({ href: `/server/${serverUrl(serversState.server)}` });
+  const serversDiffer = onlyShowServer && serversState.server && serverID(onlyShowServer) != serverID(serversState.server);
+  const currentServerInfoLink = serversState.server && useLink({ href: `/server/${serverID(serversState.server)}` });
   // bc react native may render multiple accounts sheets at a time
   const secureLabelUuid = uuidv4();
   const disableSecureSelection = serversLoading || (Platform.OS == 'web' && window.location.protocol == 'https');
@@ -317,7 +317,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     data={servers}
                     keyExtractor={(server) => server.host}
                     renderItem={({ item: server }) => {
-                      return <ServerCard server={server} key={`serverCard-${serverUrl(server)}`} isPreview />;
+                      return <ServerCard server={server} key={`serverCard-${serverID(server)}`} isPreview />;
                     }}
                   // style={Styles.trueBackground}
                   // contentContainerStyle={Styles.contentBackground}

@@ -39,7 +39,7 @@ export interface GetMediaResponse {
 /**
  * A Jonline `Media` object represents a single media item, such as a photo or video.
  * Media data is deliberately *not returnable from the gRPC API*. Instead, the client
- * should fetch media from `http[s]://my.jonline.instance/media/{id}` (TODO: implement this).
+ * should fetch media from `http[s]://my.jonline.instance/media/{id}`.
  *
  * Media objects may be created with a POST or PUT to `http[s]://my.jonline.instance/media`.
  * On success, the endpoint will return the media ID.
@@ -51,6 +51,8 @@ export interface GetMediaResponse {
 export interface Media {
   /** The ID of the media item. */
   id: string;
+  /** The MIME content type of the media item. */
+  contentType: string;
   /** The ID of the user who created the media item. */
   userId?:
     | string
@@ -211,6 +213,7 @@ export const GetMediaResponse = {
 function createBaseMedia(): Media {
   return {
     id: "",
+    contentType: "",
     userId: undefined,
     name: undefined,
     description: undefined,
@@ -226,20 +229,23 @@ export const Media = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
+    if (message.contentType !== "") {
+      writer.uint32(26).string(message.contentType);
+    }
     if (message.userId !== undefined) {
       writer.uint32(18).string(message.userId);
     }
     if (message.name !== undefined) {
-      writer.uint32(26).string(message.name);
+      writer.uint32(34).string(message.name);
     }
     if (message.description !== undefined) {
-      writer.uint32(34).string(message.description);
+      writer.uint32(42).string(message.description);
     }
     if (message.visibility !== 0) {
-      writer.uint32(40).int32(message.visibility);
+      writer.uint32(48).int32(message.visibility);
     }
     if (message.moderation !== 0) {
-      writer.uint32(48).int32(message.moderation);
+      writer.uint32(56).int32(message.moderation);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(122).fork()).ldelim();
@@ -260,19 +266,22 @@ export const Media = {
         case 1:
           message.id = reader.string();
           break;
+        case 3:
+          message.contentType = reader.string();
+          break;
         case 2:
           message.userId = reader.string();
           break;
-        case 3:
+        case 4:
           message.name = reader.string();
           break;
-        case 4:
+        case 5:
           message.description = reader.string();
           break;
-        case 5:
+        case 6:
           message.visibility = reader.int32() as any;
           break;
-        case 6:
+        case 7:
           message.moderation = reader.int32() as any;
           break;
         case 15:
@@ -292,6 +301,7 @@ export const Media = {
   fromJSON(object: any): Media {
     return {
       id: isSet(object.id) ? String(object.id) : "",
+      contentType: isSet(object.contentType) ? String(object.contentType) : "",
       userId: isSet(object.userId) ? String(object.userId) : undefined,
       name: isSet(object.name) ? String(object.name) : undefined,
       description: isSet(object.description) ? String(object.description) : undefined,
@@ -305,6 +315,7 @@ export const Media = {
   toJSON(message: Media): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
+    message.contentType !== undefined && (obj.contentType = message.contentType);
     message.userId !== undefined && (obj.userId = message.userId);
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
@@ -322,6 +333,7 @@ export const Media = {
   fromPartial<I extends Exact<DeepPartial<Media>, I>>(object: I): Media {
     const message = createBaseMedia();
     message.id = object.id ?? "";
+    message.contentType = object.contentType ?? "";
     message.userId = object.userId ?? undefined;
     message.name = object.name ?? undefined;
     message.description = object.description ?? undefined;

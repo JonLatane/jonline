@@ -1,7 +1,7 @@
 import { Permission, ServerConfiguration } from '@jonline/api'
 import { Button, formatError, Heading, Input, isWeb, Paragraph, ScrollView, TextArea, useWindowDimensions, XStack, YStack } from '@jonline/ui'
 import { Info } from '@tamagui/lucide-icons'
-import { getCredentialClient, JonlineServer, RootState, selectServer, selectServerById, serverUrl, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
+import { getCredentialClient, JonlineServer, RootState, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useState } from 'react'
 import { HexColorPicker } from "react-colorful"
 import StickyBox from "react-sticky-box"
@@ -28,8 +28,8 @@ export function ServerDetailsScreen() {
   const selectedServer = useTypedSelector((state: RootState) => state.servers.server);
   const account = useTypedSelector((state: RootState) => state.accounts.account);
   const serverIsSelected = server && selectedServer &&
-    serverUrl(server) == serverUrl(selectedServer);
-  const isAdmin = account && server && serverUrl(account.server) == serverUrl(server) &&
+    serverID(server) == serverID(selectedServer);
+  const isAdmin = account && server && serverID(account.server) == serverID(server) &&
     account?.user?.permissions.includes(Permission.ADMIN);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');

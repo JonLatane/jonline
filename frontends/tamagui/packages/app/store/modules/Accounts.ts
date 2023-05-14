@@ -14,7 +14,8 @@ import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { getServerClient, resetCredentialedData, store } from "../store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient, JonlineServer } from "../types";
-import { serverUrl } from "./servers";
+import { serverID } from "./servers";
+import { getCookie, setCookie } from 'typescript-cookie'
 
 let _accessFetchLock = false;
 let _newAccessToken: ExpirableToken | undefined = undefined;
@@ -22,6 +23,7 @@ let _newRefreshToken: ExpirableToken | undefined = undefined;
 export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
   let { account, server } = accountOrServer;
   if (!account) {
+    setCookie('jonline_access_token', null);
     return getServerClient(server!);
   } else {
     const client = await getServerClient(account.server);
@@ -54,6 +56,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
       // store.dispatch(accountsSlice.actions.upsertAccount(account));
     }
     metadata.append('authorization', account.accessToken.token);
+    setCookie('jonline_access_token', account.accessToken.token);
     return { ...client, credential: metadata };
   }
 }
@@ -71,7 +74,7 @@ export interface AccountsState {
 export function accountId(account: JonlineAccount | undefined): string | undefined {
   if (!account) return undefined;
 
-  return `${serverUrl(account.server)}-${account.user.id}`;
+  return `${serverID(account.server)}-${account.user.id}`;
 }
 const accountsAdapter = createEntityAdapter<JonlineAccount>({
   selectId: (account) => accountId(account)!,

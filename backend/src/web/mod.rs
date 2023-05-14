@@ -10,6 +10,9 @@ pub struct RocketState {
 }
 // This module contains Rocket routes and handlers for the web interface.
 
+pub mod headers;
+pub mod cors;
+
 pub mod catchers;
 pub use catchers::*;
 

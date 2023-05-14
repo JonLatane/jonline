@@ -106,9 +106,8 @@ impl Jonline for JonLineImpl {
         request: Request<GetMediaRequest>,
     ) -> Result<Response<GetMediaResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
-        let _user = auth::get_auth_user(&request, &mut conn)?;
-        Ok(Response::new(GetMediaResponse { ..Default::default() }))
-        // rpcs::get_posts(request.into_inner(), user, &mut conn).map(Response::new)
+        let user = auth::get_auth_user(&request, &mut conn).ok();
+        rpcs::get_media(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
     async fn get_groups(

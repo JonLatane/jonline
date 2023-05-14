@@ -688,7 +688,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
       CreatePostRequest(
           title:
               "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness.",
-          link: "https://instagram.com/jon_luvs_ya")),
+          link: "https://instagram.com/jons_meaningless_life")),
   DemoPost(
       [DemoGroup.everyoneWelcome],
       CreatePostRequest(

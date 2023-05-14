@@ -1,7 +1,7 @@
 import { CreatePostRequest, EventInstance, Permission, Post, Event, Visibility, EventListingType } from '@jonline/api';
 import { Button, Heading, Input, isClient, isWeb, Paragraph, Sheet, Text, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
-import { clearPostAlerts, createEvent, createPost, loadEventsPage, RootState, selectAllAccounts, selectAllServers, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { clearPostAlerts, createEvent, createPost, loadEventsPage, RootState, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import StickyBox from 'react-sticky-box';
@@ -73,7 +73,7 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
   // const accountsOnPrimaryServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
-  const accountsOnServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
+  const accountsOnServer = server ? accounts.filter(a => serverID(a.server) == serverID(server!)) : [];
 
   const eventsState = useTypedSelector((state: RootState) => state.events);
   const accountsLoading = accountsState.status == 'loading';

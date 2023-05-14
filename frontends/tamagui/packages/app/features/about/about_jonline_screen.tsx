@@ -10,7 +10,7 @@ const quotes = [
   'Jonline media is ruining young minds',
   'Let me check Jonline',
 ];
-export function AboutScreen() {
+export function AboutJonlineScreen() {
   const [showTechDetails, setShowTechDetails] = useState(false);
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const postsState = useTypedSelector((state: RootState) => state.posts);
@@ -156,7 +156,7 @@ export function AboutScreen() {
           </Heading>
           <Heading size='$3' mt='$3' mb='$10' ta='center'>
             Made with ❤️ by{' '}
-            <Anchor color={navColor} href="https://instagram.com/jon_luvs_ya" target="_blank">
+            <Anchor color={navColor} href="https://instagram.com/jons_meaningless_life" target="_blank">
               Jon Latané
             </Anchor>.
           </Heading>

@@ -16,6 +16,7 @@ export function NavigationProvider({
             initialRouteName: 'home',
             screens: {
               home: '',
+              media: 'media',
               posts: 'posts',
               events: 'events',
               userDetails: 'user/:id',

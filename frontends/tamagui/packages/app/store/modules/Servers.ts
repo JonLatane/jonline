@@ -10,8 +10,12 @@ import { getServerClient, resetCredentialedData } from "../store";
 import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 
-export function serverUrl(server: JonlineServer): string {
+export function serverID(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}:${server.host}`;
+}
+
+export function serverUrl(server: JonlineServer): string {
+  return `http${server.secure ? "s" : ""}://${server.host}`;
 }
 
 export interface ServersState {
@@ -26,7 +30,7 @@ export interface ServersState {
 }
 
 const serversAdapter = createEntityAdapter<JonlineServer>({
-  selectId: serverUrl,
+  selectId: serverID,
 });
 
 export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
@@ -53,8 +57,8 @@ const initialState: ServersState = {
   error: undefined,
   server: initialServer,
   ...serversAdapter.getInitialState({
-    ids: initialServer ? [serverUrl(initialServer)] : [],
-    entities: initialServer ? { [serverUrl(initialServer)]: initialServer } : {},
+    ids: initialServer ? [serverID(initialServer)] : [],
+    entities: initialServer ? { [serverID(initialServer)]: initialServer } : {},
   }),
 };
 
@@ -64,10 +68,10 @@ export const serversSlice = createSlice({
   reducers: {
     upsertServer: serversAdapter.upsertOne,
     removeServer: (state, action: PayloadAction<JonlineServer>) => {
-      if (state.server && serverUrl(state.server) == serverUrl(action.payload)) {
+      if (state.server && serverID(state.server) == serverID(action.payload)) {
         state.server = undefined;
       }
-      serversAdapter.removeOne(state, serverUrl(action.payload));
+      serversAdapter.removeOne(state, serverID(action.payload));
     },
     resetServers: () => initialState,
     clearServerAlerts: (state) => {
@@ -76,8 +80,8 @@ export const serversSlice = createSlice({
       state.error = undefined;
     },
     selectServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
-      let currentUrl = state.server ? serverUrl(state.server) : undefined;
-      if (currentUrl != serverUrl(action.payload!)) {
+      let currentUrl = state.server ? serverID(state.server) : undefined;
+      if (currentUrl != serverID(action.payload!)) {
         resetCredentialedData();
       }
       state.server = action.payload;
@@ -92,7 +96,7 @@ export const serversSlice = createSlice({
       state.status = "loaded";
       let server = action.payload
       serversAdapter.upsertOne(state, action.payload);
-      if (!state.server || serverUrl(server) == serverUrl(state.server!)) {
+      if (!state.server || serverID(server) == serverID(state.server!)) {
         state.server = server;
       }
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`);

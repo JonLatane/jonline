@@ -31,6 +31,7 @@ pub struct Media {
     pub id: i64,
     pub user_id: Option<i32>,
     pub minio_path: String,
+    pub content_type: String,
     pub name: Option<String>,
     pub description: Option<String>,
     pub visibility: String,
@@ -44,6 +45,7 @@ pub struct Media {
 pub struct NewMedia {
     pub user_id: Option<i32>,
     pub minio_path: String,
+    pub content_type: String,
     pub name: Option<String>,
     pub description: Option<String>,
     pub visibility: String,

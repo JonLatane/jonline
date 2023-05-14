@@ -7,6 +7,7 @@ use crate::schema::media;
 use crate::schema::user_access_tokens::dsl as user_access_tokens;
 use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use crate::schema::users::dsl as users;
+use crate::web::headers::{AuthHeader, ContentTypeHeader, FilenameHeader};
 use crate::web::RocketState;
 // use crate::tokio_stream::StreamExt;
 // use crate::bytes::Bytes;
@@ -23,18 +24,26 @@ use rocket::http::Status;
 use uuid::Uuid;
 
 lazy_static! {
-    pub static ref MEDIA_ENDPOINTS: Vec<Route> = routes![add_media, media_file];
+    pub static ref MEDIA_ENDPOINTS: Vec<Route> = routes![add_media_options, add_media, media_file];
 }
 
-#[rocket::post("/media?<jonline_access_token>", data = "<media>")]
+
+#[rocket::options("/media")]
+pub async fn add_media_options() -> &'static str {
+    return "";
+}
+
+#[rocket::post("/media", data = "<media>")]
 pub async fn add_media(
     media: Data<'_>,
-    jonline_access_token: Option<String>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
+    auth_header: Option<AuthHeader<'_>>,
+    content_type_header: ContentTypeHeader<'_>,
+    filename_header: FilenameHeader<'_>,
 ) -> Result<String, Status> {
     log::info!("add_media");
-    let user = get_media_user(jonline_access_token, cookies, state)?;
+    let user = get_media_user(None, auth_header, cookies, state)?;
     let uuid = Uuid::new_v4();
     let minio_path = format!("user/{}/{}", user.username, uuid);
 
@@ -48,7 +57,8 @@ pub async fn add_media(
         .values(&models::NewMedia {
             user_id: Some(user.id),
             minio_path: minio_path,
-            name: None,
+            content_type: content_type_header.0.to_string(),
+            name: Some(filename_header.0.to_string()),
             description: None,
             visibility: Visibility::GlobalPublic.to_string_visibility(),
         })
@@ -57,15 +67,17 @@ pub async fn add_media(
     return Ok(media.unwrap().id.to_proto_id());
 }
 
+
 #[rocket::get("/media/<id>?<jonline_access_token>")]
 pub async fn media_file(
     id: &str,
     jonline_access_token: Option<String>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
+    auth_header: Option<AuthHeader<'_>>,
 ) -> Result<NamedFile, Status> {
     log::info!("media_file: {:?}", id);
-    let _user = get_media_user(jonline_access_token, cookies, state).ok();
+    let _user = get_media_user(jonline_access_token, auth_header, cookies, state).ok();
 
     let media = schema::media::table
         .filter(
@@ -149,16 +161,21 @@ pub async fn media_file(
     // Ok(ByteStream! { yield bytes::Bytes::from("test")})
 }
 
+/// Gets the user from a manual jonline_access_token, auth header, or cookies (in that priority order).
 fn get_media_user(
     jonline_access_token: Option<String>,
+    auth_header: Option<AuthHeader<'_>>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
 ) -> Result<models::User, Status> {
     let access_token = match jonline_access_token {
         Some(access_token) => access_token,
-        None => match cookies.get("jonline_access_token") {
-            Some(access_token) => access_token.value().to_string(),
-            None => return Err(Status::Unauthorized),
+        None => match auth_header {
+            Some(auth_header) => auth_header.0.to_string(),
+            None => match cookies.get("jonline_access_token") {
+                Some(access_token) => access_token.value().to_string(),
+                None => return Err(Status::Unauthorized),
+            },
         },
     };
 

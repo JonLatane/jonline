@@ -30,7 +30,7 @@ message GetMediaResponse {
 
 // A Jonline `Media` object represents a single media item, such as a photo or video.
 // Media data is deliberately *not returnable from the gRPC API*. Instead, the client
-// should fetch media from `http[s]://my.jonline.instance/media/{id}` (TODO: implement this).
+// should fetch media from `http[s]://my.jonline.instance/media/{id}`.
 //
 // Media objects may be created with a POST or PUT to `http[s]://my.jonline.instance/media`.
 // On success, the endpoint will return the media ID.
@@ -41,16 +41,18 @@ message GetMediaResponse {
 message Media {
   // The ID of the media item.
   string id = 1;
+  // The MIME content type of the media item.
+  string content_type = 3;
   // The ID of the user who created the media item.
   optional string user_id = 2;
   // An optional title for the media item.
-  optional string name = 3;
+  optional string name = 4;
   // An optional description for the media item.
-  optional string description = 4;
+  optional string description = 5;
   // Visibility of the media item.
-  Visibility visibility = 5;
+  Visibility visibility = 6;
   // Moderation of the media item.
-  Moderation moderation = 6;
+  Moderation moderation = 7;
   google.protobuf.Timestamp created_at = 15;
   google.protobuf.Timestamp updated_at = 16;
 }

@@ -15,7 +15,7 @@ import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import { VisibilityPicker } from '../post/visibility_picker';
 import { ToggleRow } from '../settings_sheet';
 import { TabsNavigation } from '../tabs/tabs_navigation';
-import UserCard, { useFullAvatarHeight } from './user_card';
+import  { UserCard, useFullAvatarHeight } from './user_card';
 
 
 const { useParam } = createParam<{ username: string }>()

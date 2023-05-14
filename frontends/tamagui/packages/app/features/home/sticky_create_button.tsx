@@ -1,7 +1,7 @@
 import { CreatePostRequest, Permission, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, isClient, isWeb, Sheet, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
-import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import StickyBox from 'react-sticky-box';

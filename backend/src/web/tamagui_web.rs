@@ -7,6 +7,7 @@ use rocket::http::Status;
 lazy_static! {
     pub static ref TAMAGUI_PAGES: Vec<Route> = routes![
         tamagui_index,
+        tamagui_media,
         tamagui_posts,
         tamagui_events,
         tamagui_about,
@@ -44,6 +45,11 @@ async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<NamedFi
 #[rocket::get("/tamagui")]
 pub async fn tamagui_index() -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("index.html").await
+}
+
+#[rocket::get("/media")]
+async fn tamagui_media() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("media.html").await
 }
 
 #[rocket::get("/posts")]

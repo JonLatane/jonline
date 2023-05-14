@@ -1,3 +1,3 @@
-import { AboutScreen } from 'app/features/about/screen'
+import { AboutJonlineScreen } from 'app/features/about/about_jonline_screen'
 
-export default AboutScreen
+export default AboutJonlineScreen

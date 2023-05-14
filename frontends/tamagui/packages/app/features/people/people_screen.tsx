@@ -8,7 +8,7 @@ import StickyBox from "react-sticky-box";
 import PostCard from '../post/post_card';
 import { AppSection, AppSubsection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
-import UserCard from '../user/user_card';
+import {UserCard} from '../user/user_card';
 
 export function FollowRequestsScreen() {
   return BasePeopleScreen(UserListingType.FOLLOW_REQUESTS);

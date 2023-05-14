@@ -1,6 +1,6 @@
 use rocket::*;
 
-use super::{HostHeader, RocketState};
+use super::{headers::HostHeader, RocketState};
 use rocket::response::content::{RawText, RawXml};
 
 use rocket_cache_response::CacheResponse;

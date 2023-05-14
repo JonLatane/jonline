@@ -10,7 +10,8 @@ use tokio::task::JoinHandle;
 pub fn start_rocket_secure(
     pool: Arc<PgPool>,
     bucket: Arc<s3::Bucket>,
-    tempdir: Arc<tempfile::TempDir>,) -> JoinHandle<()> {
+    tempdir: Arc<tempfile::TempDir>,
+) -> JoinHandle<()> {
     let cert = env_var("TLS_CERT");
     let key = env_var("TLS_KEY");
 
@@ -78,13 +79,15 @@ fn create_rocket<T: rocket::figment::Provider>(
     figment: T,
     pool: Arc<PgPool>,
     bucket: Arc<s3::Bucket>,
-    tempdir: Arc<tempfile::TempDir>,) -> rocket::Rocket<rocket::Build> {
+    tempdir: Arc<tempfile::TempDir>,
+) -> rocket::Rocket<rocket::Build> {
     let mut routes = routes![web::main_index::main_index,];
     routes.append(&mut (*web::SEO_PAGES).clone());
     routes.append(&mut (*web::MEDIA_ENDPOINTS).clone());
     routes.append(&mut (*web::FLUTTER_PAGES).clone());
     routes.append(&mut (*web::TAMAGUI_PAGES).clone());
     let server = rocket::custom(figment)
+        .attach(web::cors::CORS)
         .manage(web::RocketState {
             pool,
             bucket,
@@ -109,8 +112,10 @@ fn create_rocket_https_redirect<T: rocket::figment::Provider>(
     figment: T,
     pool: Arc<PgPool>,
     bucket: Arc<s3::Bucket>,
-    tempdir: Arc<tempfile::TempDir>,) -> rocket::Rocket<rocket::Build> {
+    tempdir: Arc<tempfile::TempDir>,
+) -> rocket::Rocket<rocket::Build> {
     rocket::custom(figment)
+        .attach(web::cors::CORS)
         .manage(web::RocketState {
             pool,
             bucket,

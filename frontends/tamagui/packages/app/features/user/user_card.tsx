@@ -25,7 +25,7 @@ export function useFullAvatarHeight(): number {
   return media.gtXs ? 400 : 300;
 }
 
-const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAvatar }) => {
+export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAvatar }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
   const app = useLocalApp();
@@ -79,7 +79,7 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
         // width={400}
         // hoverStyle={isPreview ? { scale: 0.97 } : {}}
         // pressStyle={isPreview ? { scale: 0.95 } : {}}
-        {...(isPreview ? userLink : {})}
+        // {...(isPreview ? userLink : {})}
       >
         <Card.Header>
           <XStack>
@@ -215,5 +215,3 @@ const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAv
     </Theme>
   );
 };
-
-export default UserCard;

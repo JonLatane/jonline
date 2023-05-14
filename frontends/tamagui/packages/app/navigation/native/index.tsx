@@ -2,7 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import React from 'react'
 
 import { Heading, Theme } from '@jonline/ui'
-import { AboutScreen } from 'app/features/about/screen'
+import { AboutJonlineScreen } from 'app/features/about/about_jonline_screen'
 import { AccountsSheet } from 'app/features/accounts/accounts_sheet'
 import { GroupDetailsScreen } from 'app/features/groups/details_screen'
 import { PostDetailsScreen } from 'app/features/post/details_screen'
@@ -10,12 +10,14 @@ import { UsernameDetailsScreen } from 'app/features/user/username_details_screen
 import { RootState, useTypedSelector } from 'app/store'
 import { HomeScreen } from '../../features/home/home_screen'
 import { UserDetailsScreen } from '../../features/user/details_screen'
-import { MainPeopleScreen, FollowRequestsScreen } from 'app/features/people/screen';
+import { MainPeopleScreen, FollowRequestsScreen } from 'app/features/people/people_screen';
 import { PostsScreen } from 'app/features/home/posts_screen'
 import { EventsScreen } from 'app/features/home/events_screen'
+import { MediaScreen } from 'app/features/media/media_screen'
 
 const Stack = createNativeStackNavigator<{
   home: undefined,
+  media: undefined,
   posts: undefined,
   events: undefined,
   about: undefined,
@@ -92,7 +94,7 @@ export function NativeNavigation() {
     />
       <Stack.Screen
         name="about"
-        component={AboutScreen}
+        component={AboutJonlineScreen}
         options={{
           title: 'About',
           ...defaultOptions,

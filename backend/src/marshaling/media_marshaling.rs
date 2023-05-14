@@ -10,6 +10,7 @@ impl ToProtoMedia for models::Media {
     fn to_proto(&self) -> Media {
         Media {
             id: self.id.to_proto_id(),
+            content_type: self.content_type.to_owned(),
             user_id: self.user_id.map(|i| i.to_proto_id()),
             name: self.name.to_owned(),
             description: self.description.to_owned(),
