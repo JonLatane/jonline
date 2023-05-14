@@ -53,6 +53,7 @@ export function MediaScreen() {
       fetch(uploadUrl,
       {
         method: 'POST',
+        body: file,
         headers: {
           'Authorization': accountOrServer.account?.accessToken?.token || '',
           'Content-Type': file.type,

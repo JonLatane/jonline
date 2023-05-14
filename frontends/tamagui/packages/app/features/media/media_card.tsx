@@ -1,11 +1,12 @@
-import { colorMeta, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { colorMeta, loadUser, RootState, selectUserById, serverUrl, useAccountOrServer, useCredentialDispatch, useServer, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 
 import { Media } from "@jonline/api";
-import { Card, Heading, Theme, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import { Card, Heading, Paragraph, Theme, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
 import { useOnScreen } from "app/hooks/use_on_screen";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
+import { MediaRenderer } from "./media_renderer";
 
 interface Props {
   media: Media;
@@ -130,6 +131,7 @@ export const MediaCard: React.FC<Props> = ({ media }) => {
 
           {/* {...postLinkProps}> */}
           <YStack zi={1000} width='100%'>
+            <MediaRenderer media={media} />
             <YStack>
               <TamaguiMarkdown text={media.description} />
             </YStack>

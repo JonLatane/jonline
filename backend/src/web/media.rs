@@ -27,7 +27,7 @@ lazy_static! {
     pub static ref MEDIA_ENDPOINTS: Vec<Route> = routes![add_media_options, add_media, media_file];
 }
 
-
+/// Used to manage CORS for the media upload endpoint.
 #[rocket::options("/media")]
 pub async fn add_media_options() -> &'static str {
     return "";
@@ -43,15 +43,17 @@ pub async fn add_media(
     filename_header: FilenameHeader<'_>,
 ) -> Result<String, Status> {
     log::info!("add_media");
-    let user = get_media_user(None, auth_header, cookies, state)?;
+    let user = get_media_user(auth_header, cookies, state)?;
     let uuid = Uuid::new_v4();
-    let minio_path = format!("user/{}/{}", user.username, uuid);
+    let minio_path = format!("user/{}-{}/{}-{}", user.id.to_proto_id(), user.username, uuid, filename_header.0);
 
-    state
+    let status_code = state
         .bucket
         .put_object_stream(&mut media.open(250.mebibytes()), &minio_path)
         .await
         .map_err(|_| Status::InternalServerError)?;
+
+    log::info!("add_media status_code: {:?}", status_code);
 
     let media = insert_into(media::table)
         .values(&models::NewMedia {
@@ -67,17 +69,15 @@ pub async fn add_media(
     return Ok(media.unwrap().id.to_proto_id());
 }
 
-
-#[rocket::get("/media/<id>?<jonline_access_token>")]
+#[rocket::get("/media/<id>")]
 pub async fn media_file(
     id: &str,
-    jonline_access_token: Option<String>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
     auth_header: Option<AuthHeader<'_>>,
 ) -> Result<NamedFile, Status> {
     log::info!("media_file: {:?}", id);
-    let _user = get_media_user(jonline_access_token, auth_header, cookies, state).ok();
+    let _user = get_media_user(auth_header, cookies, state).ok();
 
     let media = schema::media::table
         .filter(
@@ -163,19 +163,15 @@ pub async fn media_file(
 
 /// Gets the user from a manual jonline_access_token, auth header, or cookies (in that priority order).
 fn get_media_user(
-    jonline_access_token: Option<String>,
     auth_header: Option<AuthHeader<'_>>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
 ) -> Result<models::User, Status> {
-    let access_token = match jonline_access_token {
-        Some(access_token) => access_token,
-        None => match auth_header {
-            Some(auth_header) => auth_header.0.to_string(),
-            None => match cookies.get("jonline_access_token") {
-                Some(access_token) => access_token.value().to_string(),
-                None => return Err(Status::Unauthorized),
-            },
+    let access_token = match auth_header {
+        Some(auth_header) => auth_header.0.to_string(),
+        None => match cookies.get("jonline_access_token") {
+            Some(access_token) => access_token.value().to_string(),
+            None => return Err(Status::Unauthorized),
         },
     };
 
