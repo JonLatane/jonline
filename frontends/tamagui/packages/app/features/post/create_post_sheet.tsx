@@ -118,7 +118,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
             <Button backgroundColor={showSettings ? navColor : undefined} onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
               <Settings color={showSettings ? navTextColor : textColor} />
             </Button>
-            <Button backgroundColor={primaryColor} disabled={!disableCreate} opacity={disableCreate ? 0.5 : 1} onPress={doCreate}>
+            <Button backgroundColor={primaryColor} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1} onPress={doCreate}>
               <Heading size='$1' color={primaryTextColor}>Create</Heading>
             </Button>
           </XStack>
