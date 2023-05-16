@@ -6,6 +6,46 @@ import "google/protobuf/timestamp.proto";
 
 import "visibility_moderation.proto";
 
+// A Jonline `Media` message represents a single media item, such as a photo or video.
+// Media data is deliberately *not returnable from the gRPC API*. Instead, the client
+// should fetch media from `http[s]://my.jonline.instance/media/{id}`.
+//
+// Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
+// along with an "Authorization" header (your access token) and a "Content-Type" header.
+// On success, the endpoint will return the media ID in plaintext.
+//
+// `POST /media` supports the following headers:
+// - `Content-Type` - The MIME content type of the media item.
+// - `Filename` - An optional title for the media item.
+// - `Authorization` - Jonline Access Token for the user. Required, but may be supplied in `Cookies`.
+// - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
+//
+// `GET /media` supports the following:
+// - **Headers**:
+//     - `Authorization` - Jonline Access Token for the user. May also be supplied in `Cookies` or via query parameter.
+//     - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
+// - **Query Parameters**:
+//     - `authorization` - Jonline Access Token for the user. May also be supplied in the `Cookies` or `Authorization` headers.
+// - Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
+message Media {
+  // The ID of the media item.
+  string id = 1;
+  // The MIME content type of the media item.
+  string content_type = 3;
+  // The ID of the user who created the media item.
+  optional string user_id = 2;
+  // An optional title for the media item.
+  optional string name = 4;
+  // An optional description for the media item.
+  optional string description = 5;
+  // Visibility of the media item.
+  Visibility visibility = 6;
+  // Moderation of the media item.
+  Moderation moderation = 7;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+}
+
 // Valid GetMediaRequest formats:
 // - `{user_id: "123"}` - Gets the media of the given user that the current user can see. IE:
 //     - *all* of the current user's own media
@@ -25,34 +65,4 @@ message GetMediaRequest {
 message GetMediaResponse {
   repeated Media media = 1;
   bool has_next_page = 2;
-}
-
-
-// A Jonline `Media` object represents a single media item, such as a photo or video.
-// Media data is deliberately *not returnable from the gRPC API*. Instead, the client
-// should fetch media from `http[s]://my.jonline.instance/media/{id}`.
-//
-// Media objects may be created with a POST or PUT to `http[s]://my.jonline.instance/media`.
-// On success, the endpoint will return the media ID.
-//
-// HTTP Media endpoints support supplying the Access Token in a `jonline-media-access` cookie,
-// or via a `jonline_access_token` query parameter.
-// Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
-message Media {
-  // The ID of the media item.
-  string id = 1;
-  // The MIME content type of the media item.
-  string content_type = 3;
-  // The ID of the user who created the media item.
-  optional string user_id = 2;
-  // An optional title for the media item.
-  optional string name = 4;
-  // An optional description for the media item.
-  optional string description = 5;
-  // Visibility of the media item.
-  Visibility visibility = 6;
-  // Moderation of the media item.
-  Moderation moderation = 7;
-  google.protobuf.Timestamp created_at = 15;
-  google.protobuf.Timestamp updated_at = 16;
 }

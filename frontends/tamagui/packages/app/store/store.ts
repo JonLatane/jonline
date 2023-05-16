@@ -8,7 +8,7 @@ import { createSelectorHook, useDispatch } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { LocalAppConfiguration, accountsReducer, groupsReducer, localAppReducer, mediaReducer, postsReducer, resetAccounts, resetEvents, resetGroups, resetLocalApp, resetPosts, resetServers, resetUsers, serverID, serversReducer, upsertServer, usersReducer } from "./modules";
+import { LocalAppConfiguration, accountsReducer, groupsReducer, localAppReducer, mediaReducer, postsReducer, resetAccounts, resetEvents, resetGroups, resetLocalApp, resetMedia, resetPosts, resetServers, resetUsers, serverID, serversReducer, upsertServer, usersReducer } from "./modules";
 import eventsReducer from "./modules/events";
 import { AccountOrServer, JonlineServer } from './types';
 
@@ -268,6 +268,7 @@ export const persistor = persistStore(store);
 // Reset store data that depends on selected server/account.
 export function resetCredentialedData() {
   setTimeout(() => {
+    store.dispatch(resetMedia!());
     store.dispatch(resetPosts!());
     store.dispatch(resetEvents!());
     store.dispatch(resetGroups!());
@@ -293,17 +294,17 @@ export default store;
 
 const clients = new Map<string, JonlineClientImpl>();
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {
-  let host = `${serverID(server).replace(":", "://")}:27707`;
+  const host = `${serverID(server).replace(":", "://")}:27707`;
   if (!clients.has(host)) {
-    let client = new JonlineClientImpl(
+    const client = new JonlineClientImpl(
       new GrpcWebImpl(host, {
         transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
       })
     );
     clients.set(host, client);
     try {
-      let serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
-      let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
+      const serviceVersion = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
+      const serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
       store.dispatch(upsertServer({ ...server, serviceVersion, serverConfiguration }));
     } catch (e) {
       clients.delete(host);

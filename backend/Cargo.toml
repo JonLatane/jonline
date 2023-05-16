@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.438"
+version = "0.1.447"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -11,7 +11,7 @@ description = "Backend of Jonline"
 default-run = "jonline"
 
 [dependencies]
-tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread", "fs", "sync"] }
 tonic = { version = "0.9.0", features = [
   "tls",
   "tls-roots",

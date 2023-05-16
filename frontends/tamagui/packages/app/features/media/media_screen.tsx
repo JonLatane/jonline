@@ -1,5 +1,5 @@
 import { Post, PostListingType, Media } from '@jonline/api';
-import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
+import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable } from '@jonline/ui';
 import { getMediaPage, getPostsPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
@@ -9,8 +9,9 @@ import PostCard from '../post/post_card';
 import { AppSection, AppSubsection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { MediaCard } from './media_card';
-import { useAccountOrServer } from '../../store/store';
+import { useAccount, useAccountOrServer } from '../../store/store';
 import { FileUploader } from "react-drag-drop-files";
+import { Upload } from '@tamagui/lucide-icons';
 
 
 export function MediaScreen() {
@@ -18,14 +19,17 @@ export function MediaScreen() {
   const mediaState = useTypedSelector((state: RootState) => state.media);
   const app = useTypedSelector((state: RootState) => state.app);
   const { dispatch, accountOrServer } = useCredentialDispatch();
+  const account = useAccount();
 
   // const media: Media[] | undefined = useTypedSelector((state: RootState) =>
   //   accountOrServer.account
   //     ? getMediaPage(state.media, accountOrServer.account?.user?.id, 0)
   //     : undefined);
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  const { server, primaryColor, navColor, navTextColor } = useServerTheme();
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     let title = 'Media';
@@ -40,7 +44,7 @@ export function MediaScreen() {
   );
 
   function handleUpload(arg: File | Array<File>) {
-    if(!server) return;
+    if (!server) return;
 
     const currentServer = server;
     console.log("Uploading file...");
@@ -50,19 +54,24 @@ export function MediaScreen() {
       getCredentialClient(accountOrServer);
 
       const uploadUrl = `${serverUrl(currentServer)}/media`
+
+      setUploading(true);
       fetch(uploadUrl,
-      {
-        method: 'POST',
-        body: file,
-        headers: {
-          'Authorization': accountOrServer.account?.accessToken?.token || '',
-          'Content-Type': file.type,
-          'Filename': file.name
+        {
+          method: 'POST',
+          body: file,
+          headers: {
+            'Authorization': accountOrServer.account?.accessToken?.token || '',
+            'Content-Type': file.type,
+            'Filename': file.name
+          }
         }
-      }
-      ).then(reloadMedia)
+      ).then(() => {
+        setUploading(false);
+        reloadMedia();
+      })
     }
-    
+
     if (arg instanceof File) {
       uploadFile(arg);
     } else {
@@ -74,7 +83,7 @@ export function MediaScreen() {
 
   return (
     <TabsNavigation appSection={AppSection.MEDIA}>
-      {mediaState.loadStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+      {account && (mediaState.loadStatus == 'loading' || loadingMedia || uploading) ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
             top={dimensions.height / 2 - 50}
@@ -85,10 +94,28 @@ export function MediaScreen() {
         {
           accountOrServer.account
             ? <Text fontFamily='$body' fontSize='$3' mr='$4'>
-              <FileUploader handleChange={handleUpload} name="file" 
-              label='Click or drag/drop to add media.'
-              width={550}
-              maxSize={250} types={["JPG", "PNG", "GIF", "PDF", "MOV", "AVI"]} />
+              <YStack mb={-19}>
+                <FileUploader handleChange={handleUpload} name="file"
+                  label='Add Media'
+                  onDraggingStateChange={setDragging}
+                  types={["JPG", "JPEG", "PNG", "GIF", "PDF", "MOV", "AVI", "OGG", "MP3", "MP4", "MPG", "WEBM", "WEBP", "WMV"]}>
+                  <Button onPress={() => { }} backgroundColor={dragging ? primaryColor : navColor}>
+                    <XStack space='$2'>
+                      <XStack my='auto'>
+                        <Upload size={24} color={dragging ? primaryTextColor : navTextColor} />
+                      </XStack>
+                      <YStack jc="center" ai="center" f={1} my='auto' p='$3'>
+                        <Heading size='$3' ta='center' color={dragging ? primaryTextColor : navTextColor}>
+                          Upload Media
+                        </Heading>
+                        <Heading size='$1' ta='center' color={dragging ? primaryTextColor : navTextColor}>
+                          {isTouchable || isWebTouchable ? 'Tap' : 'Drag/drop or click'} to choose
+                        </Heading>
+                      </YStack>
+                    </XStack>
+                  </Button>
+                </FileUploader>
+              </YStack>
             </Text>
             : <YStack width='100%' maw={600} jc="center" ai="center">
               <Heading size='$5' mb='$3'>You must be logged in to view media.</Heading>
@@ -127,19 +154,19 @@ export function MediaScreen() {
 
 export function useMediaPage(userId: string | undefined, page: number, onLoaded?: () => void) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const mediaState = useTypedSelector((state: RootState) => state.media);
   const [loadingMedia, setLoadingMedia] = useState(false);
 
   const media: Media[] | undefined = useTypedSelector((state: RootState) => userId ? getMediaPage(state.media, userId, 0) : undefined);
 
   useEffect(() => {
-    if (postsState.baseStatus == 'unloaded' && !loadingMedia) {
+    if (mediaState.loadStatus == 'unloaded' && !loadingMedia) {
       if (!accountOrServer.server) return;
 
-      console.log("Loading posts...");
+      console.log("Loading media...");
       setLoadingMedia(true);
       reloadMedia();
-    } else if (postsState.baseStatus == 'loaded' && loadingMedia) {
+    } else if (mediaState.loadStatus == 'loaded' && loadingMedia) {
       setLoadingMedia(false);
       onLoaded?.();
     }

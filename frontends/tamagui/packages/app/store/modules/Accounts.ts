@@ -38,6 +38,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
       while (_accessFetchLock) {
         await new Promise(resolve => setTimeout(resolve, 100));
         newAccessToken = _newAccessToken;
+        newRefreshToken = _newRefreshToken;
       }
       const newTokenExpired = !newAccessToken ||
         moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
@@ -56,7 +57,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
       // store.dispatch(accountsSlice.actions.upsertAccount(account));
     }
     metadata.append('authorization', account.accessToken.token);
-    setCookie('jonline_access_token', account.accessToken.token);
+    // setCookie('jonline_access_token', account.accessToken.token);
     return { ...client, credential: metadata };
   }
 }

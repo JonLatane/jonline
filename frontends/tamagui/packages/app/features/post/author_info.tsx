@@ -2,9 +2,8 @@ import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTh
 import React, { useEffect, useState } from "react";
 
 import { Permission, Post } from "@jonline/api";
-import { Anchor, Heading, Image, Tooltip, useMedia, XStack, YStack } from "@jonline/ui";
-import { Bot, Shield } from "@tamagui/lucide-icons";
-import moment from "moment";
+import { Anchor, DateViewer, Heading, Image, useMedia, XStack, YStack } from "@jonline/ui";
+import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
 import { useLink } from "solito/link";
 import { FadeInView } from "./fade_in_view";
 
@@ -104,35 +103,11 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
         </Heading>
       </XStack>
       <XStack>
-        <Tooltip placement="bottom-start">
-          <Tooltip.Trigger>
-            <Heading size="$1" marginVertical='auto' mr='$2'>
-              {moment.utc(post.createdAt).local().startOf('seconds').fromNow()}
-            </Heading>
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            <Heading size='$2'>{moment.utc(post.createdAt).local().format("ddd, MMM Do YYYY, h:mm:ss a")}</Heading>
-          </Tooltip.Content>
-        </Tooltip>
+        <DateViewer date={post.createdAt} />
         {author && author.permissions.includes(Permission.ADMIN)
-          ? <Tooltip placement="bottom">
-            <Tooltip.Trigger>
-              <Shield />
-            </Tooltip.Trigger>
-            <Tooltip.Content>
-              <Heading size='$2'>User is an admin.</Heading>
-            </Tooltip.Content>
-          </Tooltip> : undefined}
+          ? <PermissionIndicator permission={Permission.ADMIN} /> : undefined}
         {author && author.permissions.includes(Permission.RUN_BOTS)
-          ? <Tooltip placement="bottom">
-            <Tooltip.Trigger>
-              <Bot />
-            </Tooltip.Trigger>
-            <Tooltip.Content>
-              <Heading size='$2' ta='center' als='center'>User may be (or run) a bot.</Heading>
-              <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading>
-            </Tooltip.Content>
-          </Tooltip> : undefined}
+          ? <PermissionIndicator permission={Permission.RUN_BOTS} /> : undefined}
       </XStack>
     </YStack>
   </XStack>;

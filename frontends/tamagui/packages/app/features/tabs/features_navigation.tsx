@@ -127,7 +127,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
             {navButton(isPeople, peopleLink, 'People')}
             {account ? navButton(isFollowRequests, followRequestsLink, 'Follow Requests') : undefined}
           </XStack>
-          {app.showBetaNavigation || isMedia ?
+          {account ?
             <XStack ac='center' jc='center' space='$2'>
               {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
             </XStack> : undefined}

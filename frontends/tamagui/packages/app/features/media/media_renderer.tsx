@@ -1,25 +1,37 @@
-import { colorMeta, loadUser, RootState, selectUserById, serverUrl, useAccountOrServer, useCredentialDispatch, useServer, useServerTheme, useTypedSelector } from "app/store";
-import React, { useEffect, useState } from "react";
-import { View } from "react-native";
+import { serverUrl, useServer, useServerTheme } from "app/store";
+import React from "react";
 
 import { Media } from "@jonline/api";
-import { Card, Heading, Paragraph, Theme, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
-import { useOnScreen } from "app/hooks/use_on_screen";
-import { TamaguiMarkdown } from "../post/tamagui_markdown";
+import { Anchor, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
+import ReactPlayer from 'react-player/lazy'
 
 interface Props {
   media: Media;
 }
 
 export const MediaRenderer: React.FC<Props> = ({ media }) => {
-  const server = useServer();
+  const { server, navAnchorColor } = useServerTheme();
+  const mediaQuery = useMedia();
   if (!server) return <></>;
 
+  const mediaUrl = `${serverUrl(server)}/media/${media.id}`;
   const type = media.contentType.split('/')[0];
+  const subType = media.contentType.split('/')[1];
   switch (type) {
     case 'image':
-      return <img src={`${serverUrl(server)}/media/${media.id}`} />;
+      return <img src={mediaUrl} />;
+    case 'video':
+      return <YStack w='100%' ac='center' jc='center'>
+        <ReactPlayer width='100%' height={mediaQuery.gtXs ? '500px' : '300px'} //style={{ maxWidth: '100%' }}
+          url={mediaUrl} controls muted />
+      </YStack>;
     default:
-      return<Paragraph>Rendering is not implemented for this media type.</Paragraph>;
   }
+
+  // If all else fails, render it as an HTML object and rely on the tag's standard fallback.
+  return <object data={mediaUrl} type={media.contentType} width="100%" height={mediaQuery.gtXs ? '500px' : '350px'}>
+    <Paragraph>
+      Media rendering is not yet implemented for type <Text fontFamily='monospace'>{media.contentType}</Text>. <Anchor href={mediaUrl} color={navAnchorColor}>Download</Anchor> instead.
+    </Paragraph>
+  </object>;
 };

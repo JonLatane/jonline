@@ -18,5 +18,7 @@ impl Fairing for CORS {
         response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+        // We could let admins configure what external servers can use their instance as a media source here, using the rocket state.
+        response.set_header(Header::new("Content-Security-Policy", "object-src *; media-src *;"));
     }
 }

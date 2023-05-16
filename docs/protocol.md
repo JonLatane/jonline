@@ -542,20 +542,19 @@ to reconcile memberships with groups.
 <a name="jonline-GetMediaRequest"></a>
 
 ### GetMediaRequest
-Valid GetEventsRequest formats:
-- {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
-- {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
-- {event_id:}                                     (TODO: get single event including preview data)
-- {listing_type: GroupEvents|
-     GroupEventsPendingModeration,
-     group_id:}                                  (TODO: get events/events needing moderation for a group)
-- {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
-- {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+Valid GetMediaRequest formats:
+- `{user_id: &#34;123&#34;}` - Gets the media of the given user that the current user can see. IE:
+    - *all* of the current user&#39;s own media
+    - `GLOBAL_PUBLIC` media for the user if the current user is not logged in.
+    - `SERVER_PUBLIC` media for the user if the current user is logged in.
+    - `LIMITED` media for the user if the current user is following the user.
+- `{media_id: &#34;123&#34;}` - Gets the media with the given ID, if visible to the current user.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| event_id | [string](#string) | optional | Returns the single event with the given ID. |
+| media_id | [string](#string) | optional | Returns the single media item with the given ID. |
+| user_id | [string](#string) | optional | Returns all media items for the given user. |
 | page | [uint32](#uint32) |  |  |
 
 
@@ -582,23 +581,40 @@ Valid GetEventsRequest formats:
 <a name="jonline-Media"></a>
 
 ### Media
-A Jonline `Media` object represents a single media item, such as a photo or video.
+A Jonline `Media` message represents a single media item, such as a photo or video.
 Media data is deliberately *not returnable from the gRPC API*. Instead, the client
-should fetch media from `http[s]://my.jonline.instance/media/{id}` (TODO: implement this).
+should fetch media from `http[s]://my.jonline.instance/media/{id}`.
 
-Media objects may be created with a POST or PUT to `http[s]://my.jonline.instance/media`.
-On success, the endpoint will return the media ID.
+Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
+along with an &#34;Authorization&#34; header (your access token) and a &#34;Content-Type&#34; header.
+On success, the endpoint will return the media ID in plaintext.
 
-HTTP Media endpoints require the value of &#34;&#34;.
+`POST /media` supports the following headers:
+- `Content-Type` - The MIME content type of the media item.
+- `Filename` - An optional title for the media item.
+- `Authorization` - Jonline Access Token for the user. Required, but may be supplied in `Cookies`.
+- `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
+
+`GET /media` supports the following:
+- **Headers**:
+    - `Authorization` - Jonline Access Token for the user. May also be supplied in `Cookies` or via query parameter.
+    - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
+- **Query Parameters**:
+    - `authorization` - Jonline Access Token for the user. May also be supplied in the `Cookies` or `Authorization` headers.
+- Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The ID of the Media object. |
-| title | [string](#string) | optional | An optional title for the media item. |
+| id | [string](#string) |  | The ID of the media item. |
+| content_type | [string](#string) |  | The MIME content type of the media item. |
+| user_id | [string](#string) | optional | The ID of the user who created the media item. |
+| name | [string](#string) | optional | An optional title for the media item. |
 | description | [string](#string) | optional | An optional description for the media item. |
 | visibility | [Visibility](#jonline-Visibility) |  | Visibility of the media item. |
 | moderation | [Moderation](#jonline-Moderation) |  | Moderation of the media item. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::db_connection::*;
 use crate::marshaling::*;
 use crate::models;
@@ -9,22 +11,28 @@ use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use crate::schema::users::dsl as users;
 use crate::web::headers::{AuthHeader, ContentTypeHeader, FilenameHeader};
 use crate::web::RocketState;
+// use futures::StreamExt;
+use rocket::http::ContentType;
 // use crate::tokio_stream::StreamExt;
 // use crate::bytes::Bytes;
 use log::info;
 use rocket::fs::NamedFile;
+// use rocket::Response;
 // use s3::request::ResponseDataStream;
 
 use diesel::*;
+use rocket::http::MediaType;
 // use rocket::response::stream::ByteStream;
 use rocket::{data::ToByteUnit, http::CookieJar, routes, Data, Route, State};
 
 use rocket::http::Status;
+// use s3::request::ResponseDataStream;
 // use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 lazy_static! {
-    pub static ref MEDIA_ENDPOINTS: Vec<Route> = routes![add_media_options, add_media, media_file];
+    pub static ref MEDIA_ENDPOINTS: Vec<Route> =
+        routes![add_media_options, add_media, media_file_options, media_file];
 }
 
 /// Used to manage CORS for the media upload endpoint.
@@ -43,9 +51,15 @@ pub async fn add_media(
     filename_header: FilenameHeader<'_>,
 ) -> Result<String, Status> {
     log::info!("add_media");
-    let user = get_media_user(auth_header, cookies, state)?;
+    let user = get_media_user(None, auth_header, cookies, state)?;
     let uuid = Uuid::new_v4();
-    let minio_path = format!("user/{}-{}/{}-{}", user.id.to_proto_id(), user.username, uuid, filename_header.0);
+    let minio_path = format!(
+        "user/{}-{}/{}-{}",
+        user.id.to_proto_id(),
+        user.username,
+        uuid,
+        filename_header.0
+    );
 
     let status_code = state
         .bucket
@@ -69,15 +83,22 @@ pub async fn add_media(
     return Ok(media.unwrap().id.to_proto_id());
 }
 
-#[rocket::get("/media/<id>")]
-pub async fn media_file(
+/// Used to manage CORS for the media download endpoint(s).
+#[rocket::options("/media/<_id>")]
+pub async fn media_file_options(_id: &str) -> &'static str {
+    return "";
+}
+
+#[rocket::get("/media/<id>?<authorization>")]
+pub async fn media_file<'a>(
     id: &str,
+    authorization: Option<String>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
     auth_header: Option<AuthHeader<'_>>,
-) -> Result<NamedFile, Status> {
+) -> Result<(ContentType, NamedFile), Status> {
     log::info!("media_file: {:?}", id);
-    let _user = get_media_user(auth_header, cookies, state).ok();
+    let _user = get_media_user(authorization, auth_header, cookies, state).ok();
 
     let media = schema::media::table
         .filter(
@@ -97,17 +118,15 @@ pub async fn media_file(
         media.minio_path
     );
     if !std::path::Path::new(&local_filename).exists() {
-        info!("local_filename: {}", local_filename);
-
         // Ensure local directory exists.
         let mut _filevec: Vec<&str> = local_filename.split("/").collect();
         _filevec.pop();
         let local_filedir = _filevec.join("/");
-        info!("local_filedir: {}", local_filedir);
+        // info!("local_filedir: {}", local_filedir);
         std::fs::create_dir_all(local_filedir).map_err(|_| Status::InternalServerError)?;
 
         // Download file from S3 into a tempfile
-        let temp_filename = format!("{}.{}", local_filename, Uuid::new_v4());
+        let temp_filename = format!("{}-download-{}", local_filename, Uuid::new_v4());
         let mut async_output_file = tokio::fs::File::create(temp_filename.to_owned())
             .await
             .map_err(|_| Status::InternalServerError)?;
@@ -118,13 +137,17 @@ pub async fn media_file(
             .map_err(|_| Status::InternalServerError)?;
 
         // Rename tempfile to final filename
-        std::fs::rename(temp_filename, &local_filename).map_err(|_| Status::InternalServerError)?
+        std::fs::rename(temp_filename, &local_filename).map_err(|_| Status::InternalServerError)?;
     }
 
+    let media_type = ContentType(
+        MediaType::from_str(&media.content_type).map_err(|_| Status::ExpectationFailed)?,
+    );
+    info!("media_type: {:?}", media_type);
     let result = NamedFile::open(local_filename)
         .await
-        .map_err(|_| Status::InternalServerError)?;
-    Ok(result)
+        .map_err(|_| Status::ImATeapot)?;
+    Ok((media_type, result))
 
     // let mut _stream = state
     //     .bucket
@@ -163,15 +186,19 @@ pub async fn media_file(
 
 /// Gets the user from a manual jonline_access_token, auth header, or cookies (in that priority order).
 fn get_media_user(
+    manual_authorization: Option<String>,
     auth_header: Option<AuthHeader<'_>>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
 ) -> Result<models::User, Status> {
-    let access_token = match auth_header {
-        Some(auth_header) => auth_header.0.to_string(),
-        None => match cookies.get("jonline_access_token") {
-            Some(access_token) => access_token.value().to_string(),
-            None => return Err(Status::Unauthorized),
+    let access_token = match manual_authorization {
+        Some(access_token) => access_token,
+        _ => match auth_header {
+            Some(auth_header) => auth_header.0.to_string(),
+            _ => match cookies.get("jonline_access_token") {
+                Some(access_token) => access_token.value().to_string(),
+                _ => return Err(Status::Unauthorized),
+            },
         },
     };
 
