@@ -270,7 +270,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                       child: TextFormField(
                         // focusNode: titleFocus,
                         initialValue: config?.serverInfo.description,
-                        keyboardType: TextInputType.text,
+                        keyboardType: TextInputType.multiline,
                         textCapitalization: TextCapitalization.words,
                         enableSuggestions: true,
                         autocorrect: true,

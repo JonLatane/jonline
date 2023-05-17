@@ -10,6 +10,7 @@ COPY backend/target/release/jonline__server_release /opt/jonline
 
 # Background job binaries
 COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_expired_tokens
+COPY backend/target/release/delete_unowned_media__server_release /opt/delete_unowned_media
 
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images

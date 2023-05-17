@@ -20,6 +20,7 @@ export const MediaCard: React.FC<Props> = ({ media }) => {
         marginTop='$3'
         padding='$0'
         animation="bouncy"
+        width='100%'
         opacity={1}
         scale={1}
         y={0}

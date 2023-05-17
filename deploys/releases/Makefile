@@ -75,6 +75,8 @@ release_be_build_binary: ../../backend/target/release/jonline__server_release
 	docker exec -it -w /opt/backend/src jonline-build-environment /bin/bash -c "cargo build --release"
 	cd ../.. && mv backend/target/release/jonline backend/target/release/jonline__server_release
 	cd ../.. && mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release
+		cd ../.. && mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release
+
 	cd ../.. && mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release
 	cd ../.. && mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release
 	cd ../.. && mv backend/target/release/set_permission backend/target/release/set_permission__server_release

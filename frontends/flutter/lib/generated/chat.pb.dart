@@ -9,7 +9,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'posts.pb.dart' as $6;
+import 'posts.pb.dart' as $7;
 
 class Conversation extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Conversation', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
@@ -252,14 +252,14 @@ class GroupConversationPost extends $pb.GeneratedMessage {
 class CreateConversationPostRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'CreateConversationPostRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'conversationId')
-    ..aOM<$6.CreatePostRequest>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'post', subBuilder: $6.CreatePostRequest.create)
+    ..aOM<$7.Post>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'post', subBuilder: $7.Post.create)
     ..hasRequiredFields = false
   ;
 
   CreateConversationPostRequest._() : super();
   factory CreateConversationPostRequest({
     $core.String? conversationId,
-    $6.CreatePostRequest? post,
+    $7.Post? post,
   }) {
     final _result = create();
     if (conversationId != null) {
@@ -301,28 +301,28 @@ class CreateConversationPostRequest extends $pb.GeneratedMessage {
   void clearConversationId() => clearField(1);
 
   @$pb.TagNumber(2)
-  $6.CreatePostRequest get post => $_getN(1);
+  $7.Post get post => $_getN(1);
   @$pb.TagNumber(2)
-  set post($6.CreatePostRequest v) { setField(2, v); }
+  set post($7.Post v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasPost() => $_has(1);
   @$pb.TagNumber(2)
   void clearPost() => clearField(2);
   @$pb.TagNumber(2)
-  $6.CreatePostRequest ensurePost() => $_ensure(1);
+  $7.Post ensurePost() => $_ensure(1);
 }
 
 class CreateGroupConversationPostRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'CreateGroupConversationPostRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
-    ..aOM<$6.CreatePostRequest>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'post', subBuilder: $6.CreatePostRequest.create)
+    ..aOM<$7.Post>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'post', subBuilder: $7.Post.create)
     ..hasRequiredFields = false
   ;
 
   CreateGroupConversationPostRequest._() : super();
   factory CreateGroupConversationPostRequest({
     $core.String? groupId,
-    $6.CreatePostRequest? post,
+    $7.Post? post,
   }) {
     final _result = create();
     if (groupId != null) {
@@ -364,15 +364,15 @@ class CreateGroupConversationPostRequest extends $pb.GeneratedMessage {
   void clearGroupId() => clearField(1);
 
   @$pb.TagNumber(2)
-  $6.CreatePostRequest get post => $_getN(1);
+  $7.Post get post => $_getN(1);
   @$pb.TagNumber(2)
-  set post($6.CreatePostRequest v) { setField(2, v); }
+  set post($7.Post v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasPost() => $_has(1);
   @$pb.TagNumber(2)
   void clearPost() => clearField(2);
   @$pb.TagNumber(2)
-  $6.CreatePostRequest ensurePost() => $_ensure(1);
+  $7.Post ensurePost() => $_ensure(1);
 }
 
 class GetConversationsRequest extends $pb.GeneratedMessage {
@@ -555,13 +555,13 @@ class GetConversationRequest extends $pb.GeneratedMessage {
 
 class GetConversationResponse extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetConversationResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<$6.Post>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'conversation', $pb.PbFieldType.PM, subBuilder: $6.Post.create)
+    ..pc<$7.Post>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'conversation', $pb.PbFieldType.PM, subBuilder: $7.Post.create)
     ..hasRequiredFields = false
   ;
 
   GetConversationResponse._() : super();
   factory GetConversationResponse({
-    $core.Iterable<$6.Post>? conversation,
+    $core.Iterable<$7.Post>? conversation,
   }) {
     final _result = create();
     if (conversation != null) {
@@ -591,6 +591,6 @@ class GetConversationResponse extends $pb.GeneratedMessage {
   static GetConversationResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<$6.Post> get conversation => $_getList(0);
+  $core.List<$7.Post> get conversation => $_getList(0);
 }
 

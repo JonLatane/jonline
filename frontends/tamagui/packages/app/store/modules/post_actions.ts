@@ -1,4 +1,4 @@
-import { CreatePostRequest, GetPostsRequest, GetPostsResponse, Post, PostListingType } from "@jonline/api";
+import { Post, GetPostsRequest, GetPostsResponse, PostListingType } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -6,7 +6,7 @@ import {
 import { AccountOrServer } from "../types";
 import { getCredentialClient } from "./accounts";
 
-export type CreatePost = AccountOrServer & CreatePostRequest;
+export type CreatePost = AccountOrServer & Post;
 export const createPost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, CreatePost>(
   "posts/create",
   async (request) => {
@@ -20,12 +20,12 @@ export const replyToPost: AsyncThunk<Post, ReplyToPost, any> = createAsyncThunk<
   "posts/reply",
   async (request) => {
     const client = await getCredentialClient(request);
-    const createPostRequest: CreatePostRequest = {
+    const newPost: Post = Post.fromPartial({
       replyToPostId: request.postIdPath[request.postIdPath.length - 1],
       content: request.content,
-    };
+    });
     // TODO: Why doesn't the BE return the correct created date? We "estimate" it here.
-    const result = await client.createPost(createPostRequest, client.credential);
+    const result = await client.createPost(newPost, client.credential);
     return { ...result, createdAt: new Date().toISOString() }
   }
 );

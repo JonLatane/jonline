@@ -109,7 +109,7 @@ class CreatePostPageState extends JonlineState<CreatePostPage> {
     final Post post;
     try {
       post = await client!.createPost(
-          CreatePostRequest(
+          Post(
               title: title.isNotEmpty ? title : null,
               link: link.isNotEmpty ? link : null,
               content: content.isNotEmpty ? content : null),

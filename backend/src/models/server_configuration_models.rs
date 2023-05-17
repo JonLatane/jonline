@@ -6,7 +6,7 @@ use crate::schema::server_configurations;
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct ServerConfiguration {
-    pub id: i32,
+    pub id: i64,
 
     pub active: bool,
 

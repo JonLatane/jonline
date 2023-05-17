@@ -99,7 +99,7 @@ fn get_by_id(
             media::id.eq(request
                 .media_id
                 .unwrap()
-                .to_db_big_id_or_err("media_id")
+                .to_db_id_or_err("media_id")
                 .unwrap()),
         )
         .order(media::created_at.desc())

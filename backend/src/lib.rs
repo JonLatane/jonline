@@ -26,6 +26,7 @@ extern crate tempfile;
 
 pub mod auth;
 pub mod db_connection;
+pub mod minio_connection;
 pub mod jonline;
 pub mod logic;
 pub mod marshaling;

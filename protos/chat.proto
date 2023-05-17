@@ -29,12 +29,12 @@ message GroupConversationPost {
 
 message CreateConversationPostRequest {
   string conversation_id = 1;
-  CreatePostRequest post = 2;
+  Post post = 2;
 }
 
 message CreateGroupConversationPostRequest {
   string group_id = 1;
-  CreatePostRequest post = 2;
+  Post post = 2;
 }
 
 message GetConversationsRequest {

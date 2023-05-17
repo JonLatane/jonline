@@ -64,15 +64,6 @@ enum PostContext {
   EVENT = 1;
 }
 
-// A request to create a post.
-message CreatePostRequest {
-  optional string title = 1;
-  optional string link = 2;
-  optional string content = 3;
-  optional string reply_to_post_id = 4;
-  optional Visibility visibility = 10;
-}
-
 // A `Post` is a message that can be posted to the server. Its `visibility`
 // as well as any associated `GroupPost`s and `UserPost`s determine what users
 // see it and where.
@@ -125,6 +116,8 @@ message Post {
   // * `Visibility.PRIVATE`: Allows other users to reply to your Post.
   bool shareable = 17;
   PostContext context = 18;
+  // List of Media IDs associated with this post. Order is preserved.
+  repeated string media = 19;
 
   google.protobuf.Timestamp created_at = 20;
   optional google.protobuf.Timestamp updated_at = 21;

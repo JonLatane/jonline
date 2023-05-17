@@ -6,17 +6,17 @@ use diesel::*;
 use crate::db_connection::PgPooledConnection;
 use crate::schema::{users, follows};
 
-pub fn get_user(group_id: i32, conn: &mut PgPooledConnection,) -> Result<User, Status> {
+pub fn get_user(user_id: i64, conn: &mut PgPooledConnection,) -> Result<User, Status> {
     users::table
         .select(users::all_columns)
-        .filter(users::id.eq(group_id))
+        .filter(users::id.eq(user_id))
         .first::<User>(conn)
         .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct User {
-    pub id: i32,
+    pub id: i64,
     pub username: String,
     pub password_salted_hash: String,
     pub email: Option<serde_json::Value>,
@@ -40,9 +40,9 @@ pub struct User {
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct Follow {
-    pub id: i32,
-    pub user_id: i32,
-    pub target_user_id: i32,
+    pub id: i64,
+    pub user_id: i64,
+    pub target_user_id: i64,
     pub target_user_moderation: String,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
@@ -51,7 +51,7 @@ pub struct Follow {
 #[derive(Debug, Insertable)]
 #[diesel(table_name = follows)]
 pub struct NewFollow {
-    pub user_id: i32,
-    pub target_user_id: i32,
+    pub user_id: i64,
+    pub target_user_id: i64,
     pub target_user_moderation: String,
 }

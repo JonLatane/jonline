@@ -16,7 +16,6 @@ import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
 import { GetMediaRequest, GetMediaResponse } from "./media";
 import {
-  CreatePostRequest,
   GetGroupPostsRequest,
   GetGroupPostsResponse,
   GetPostsRequest,
@@ -111,7 +110,7 @@ export interface Jonline {
    */
   getPosts(request: DeepPartial<GetPostsRequest>, metadata?: grpc.Metadata): Promise<GetPostsResponse>;
   /** Creates a Post. *Authenticated.* */
-  createPost(request: DeepPartial<CreatePostRequest>, metadata?: grpc.Metadata): Promise<Post>;
+  createPost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post>;
   /** Updates a Post. *Authenticated.* */
   updatePost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post>;
   /** (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* */
@@ -270,8 +269,8 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineGetPostsDesc, GetPostsRequest.fromPartial(request), metadata);
   }
 
-  createPost(request: DeepPartial<CreatePostRequest>, metadata?: grpc.Metadata): Promise<Post> {
-    return this.rpc.unary(JonlineCreatePostDesc, CreatePostRequest.fromPartial(request), metadata);
+  createPost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post> {
+    return this.rpc.unary(JonlineCreatePostDesc, Post.fromPartial(request), metadata);
   }
 
   updatePost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post> {
@@ -811,7 +810,7 @@ export const JonlineCreatePostDesc: UnaryMethodDefinitionish = {
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return CreatePostRequest.encode(this).finish();
+      return Post.encode(this).finish();
     },
   } as any,
   responseType: {

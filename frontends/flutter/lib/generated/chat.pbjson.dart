@@ -60,23 +60,23 @@ const CreateConversationPostRequest$json = const {
   '1': 'CreateConversationPostRequest',
   '2': const [
     const {'1': 'conversation_id', '3': 1, '4': 1, '5': 9, '10': 'conversationId'},
-    const {'1': 'post', '3': 2, '4': 1, '5': 11, '6': '.jonline.CreatePostRequest', '10': 'post'},
+    const {'1': 'post', '3': 2, '4': 1, '5': 11, '6': '.jonline.Post', '10': 'post'},
   ],
 };
 
 /// Descriptor for `CreateConversationPostRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createConversationPostRequestDescriptor = $convert.base64Decode('Ch1DcmVhdGVDb252ZXJzYXRpb25Qb3N0UmVxdWVzdBInCg9jb252ZXJzYXRpb25faWQYASABKAlSDmNvbnZlcnNhdGlvbklkEi4KBHBvc3QYAiABKAsyGi5qb25saW5lLkNyZWF0ZVBvc3RSZXF1ZXN0UgRwb3N0');
+final $typed_data.Uint8List createConversationPostRequestDescriptor = $convert.base64Decode('Ch1DcmVhdGVDb252ZXJzYXRpb25Qb3N0UmVxdWVzdBInCg9jb252ZXJzYXRpb25faWQYASABKAlSDmNvbnZlcnNhdGlvbklkEiEKBHBvc3QYAiABKAsyDS5qb25saW5lLlBvc3RSBHBvc3Q=');
 @$core.Deprecated('Use createGroupConversationPostRequestDescriptor instead')
 const CreateGroupConversationPostRequest$json = const {
   '1': 'CreateGroupConversationPostRequest',
   '2': const [
     const {'1': 'group_id', '3': 1, '4': 1, '5': 9, '10': 'groupId'},
-    const {'1': 'post', '3': 2, '4': 1, '5': 11, '6': '.jonline.CreatePostRequest', '10': 'post'},
+    const {'1': 'post', '3': 2, '4': 1, '5': 11, '6': '.jonline.Post', '10': 'post'},
   ],
 };
 
 /// Descriptor for `CreateGroupConversationPostRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createGroupConversationPostRequestDescriptor = $convert.base64Decode('CiJDcmVhdGVHcm91cENvbnZlcnNhdGlvblBvc3RSZXF1ZXN0EhkKCGdyb3VwX2lkGAEgASgJUgdncm91cElkEi4KBHBvc3QYAiABKAsyGi5qb25saW5lLkNyZWF0ZVBvc3RSZXF1ZXN0UgRwb3N0');
+final $typed_data.Uint8List createGroupConversationPostRequestDescriptor = $convert.base64Decode('CiJDcmVhdGVHcm91cENvbnZlcnNhdGlvblBvc3RSZXF1ZXN0EhkKCGdyb3VwX2lkGAEgASgJUgdncm91cElkEiEKBHBvc3QYAiABKAsyDS5qb25saW5lLlBvc3RSBHBvc3Q=');
 @$core.Deprecated('Use getConversationsRequestDescriptor instead')
 const GetConversationsRequest$json = const {
   '1': 'GetConversationsRequest',

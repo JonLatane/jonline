@@ -86,7 +86,7 @@ service Jonline {
   rpc GetPosts(GetPostsRequest) returns (GetPostsResponse) {}
 
   // Creates a Post. *Authenticated.*
-  rpc CreatePost(CreatePostRequest) returns (Post) {}
+  rpc CreatePost(Post) returns (Post) {}
   // Updates a Post. *Authenticated.*
   rpc UpdatePost(Post) returns (Post) {}
   // (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.*

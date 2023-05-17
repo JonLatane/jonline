@@ -10,7 +10,7 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'users.pb.dart' as $4;
-import 'google/protobuf/timestamp.pb.dart' as $8;
+import 'google/protobuf/timestamp.pb.dart' as $9;
 
 class CreateAccountRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'CreateAccountRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
@@ -18,7 +18,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'password')
     ..aOM<$4.ContactMethod>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'email', subBuilder: $4.ContactMethod.create)
     ..aOM<$4.ContactMethod>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'phone', subBuilder: $4.ContactMethod.create)
-    ..aOM<$8.Timestamp>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $8.Timestamp.create)
+    ..aOM<$9.Timestamp>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
     ..aOS(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'deviceName')
     ..hasRequiredFields = false
   ;
@@ -29,7 +29,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
     $core.String? password,
     $4.ContactMethod? email,
     $4.ContactMethod? phone,
-    $8.Timestamp? expiresAt,
+    $9.Timestamp? expiresAt,
     $core.String? deviceName,
   }) {
     final _result = create();
@@ -115,15 +115,15 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   $4.ContactMethod ensurePhone() => $_ensure(3);
 
   @$pb.TagNumber(5)
-  $8.Timestamp get expiresAt => $_getN(4);
+  $9.Timestamp get expiresAt => $_getN(4);
   @$pb.TagNumber(5)
-  set expiresAt($8.Timestamp v) { setField(5, v); }
+  set expiresAt($9.Timestamp v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasExpiresAt() => $_has(4);
   @$pb.TagNumber(5)
   void clearExpiresAt() => clearField(5);
   @$pb.TagNumber(5)
-  $8.Timestamp ensureExpiresAt() => $_ensure(4);
+  $9.Timestamp ensureExpiresAt() => $_ensure(4);
 
   @$pb.TagNumber(6)
   $core.String get deviceName => $_getSZ(5);
@@ -139,7 +139,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'LoginRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'username')
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'password')
-    ..aOM<$8.Timestamp>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $8.Timestamp.create)
+    ..aOM<$9.Timestamp>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
     ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'deviceName')
     ..hasRequiredFields = false
   ;
@@ -148,7 +148,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   factory LoginRequest({
     $core.String? username,
     $core.String? password,
-    $8.Timestamp? expiresAt,
+    $9.Timestamp? expiresAt,
     $core.String? deviceName,
   }) {
     final _result = create();
@@ -206,15 +206,15 @@ class LoginRequest extends $pb.GeneratedMessage {
   void clearPassword() => clearField(2);
 
   @$pb.TagNumber(3)
-  $8.Timestamp get expiresAt => $_getN(2);
+  $9.Timestamp get expiresAt => $_getN(2);
   @$pb.TagNumber(3)
-  set expiresAt($8.Timestamp v) { setField(3, v); }
+  set expiresAt($9.Timestamp v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasExpiresAt() => $_has(2);
   @$pb.TagNumber(3)
   void clearExpiresAt() => clearField(3);
   @$pb.TagNumber(3)
-  $8.Timestamp ensureExpiresAt() => $_ensure(2);
+  $9.Timestamp ensureExpiresAt() => $_ensure(2);
 
   @$pb.TagNumber(4)
   $core.String get deviceName => $_getSZ(3);
@@ -310,14 +310,14 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
 class ExpirableToken extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ExpirableToken', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'token')
-    ..aOM<$8.Timestamp>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $8.Timestamp.create)
+    ..aOM<$9.Timestamp>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
   ExpirableToken._() : super();
   factory ExpirableToken({
     $core.String? token,
-    $8.Timestamp? expiresAt,
+    $9.Timestamp? expiresAt,
   }) {
     final _result = create();
     if (token != null) {
@@ -359,28 +359,28 @@ class ExpirableToken extends $pb.GeneratedMessage {
   void clearToken() => clearField(1);
 
   @$pb.TagNumber(2)
-  $8.Timestamp get expiresAt => $_getN(1);
+  $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($8.Timestamp v) { setField(2, v); }
+  set expiresAt($9.Timestamp v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
   void clearExpiresAt() => clearField(2);
   @$pb.TagNumber(2)
-  $8.Timestamp ensureExpiresAt() => $_ensure(1);
+  $9.Timestamp ensureExpiresAt() => $_ensure(1);
 }
 
 class AccessTokenRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'AccessTokenRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'refreshToken')
-    ..aOM<$8.Timestamp>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $8.Timestamp.create)
+    ..aOM<$9.Timestamp>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
   AccessTokenRequest._() : super();
   factory AccessTokenRequest({
     $core.String? refreshToken,
-    $8.Timestamp? expiresAt,
+    $9.Timestamp? expiresAt,
   }) {
     final _result = create();
     if (refreshToken != null) {
@@ -422,15 +422,15 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   void clearRefreshToken() => clearField(1);
 
   @$pb.TagNumber(2)
-  $8.Timestamp get expiresAt => $_getN(1);
+  $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($8.Timestamp v) { setField(2, v); }
+  set expiresAt($9.Timestamp v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
   void clearExpiresAt() => clearField(2);
   @$pb.TagNumber(2)
-  $8.Timestamp ensureExpiresAt() => $_ensure(1);
+  $9.Timestamp ensureExpiresAt() => $_ensure(1);
 }
 
 class AccessTokenResponse extends $pb.GeneratedMessage {

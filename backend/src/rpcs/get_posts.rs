@@ -194,7 +194,7 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
 }
 
 fn get_group_posts(
-    group_id: i32,
+    group_id: i64,
     user: &Option<models::User>,
     moderations: Vec<Moderation>,
     conn: &mut PgPooledConnection,
@@ -270,7 +270,7 @@ fn get_group_posts(
 }
 
 fn load_group_posts(
-    group_id: i32,
+    group_id: i64,
     moderations: Vec<Moderation>,
     conn: &mut PgPooledConnection,
 ) -> Vec<Post> {
@@ -296,7 +296,7 @@ fn load_group_posts(
 }
 
 fn get_user_posts(
-    user_id: i32,
+    user_id: i64,
     current_user: &Option<models::User>,
     conn: &mut PgPooledConnection,
 ) -> Vec<Post> {

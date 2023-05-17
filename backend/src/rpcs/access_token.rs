@@ -13,10 +13,10 @@ pub fn access_token(
     conn: &mut PgPooledConnection,
 ) -> Result<Response<AccessTokenResponse>, Status> {
     log::info!("AccessToken called.");
-    let token_and_user_id: Result<(i32, i32), _> = user_refresh_tokens
+    let token_and_user_id: Result<(i64, i64), _> = user_refresh_tokens
         .select((id, user_id))
         .filter(token.eq(request.into_inner().refresh_token))
-        .first::<(i32, i32)>(conn);
+        .first::<(i64, i64)>(conn);
 
     match token_and_user_id {
         Ok((t, u)) => {

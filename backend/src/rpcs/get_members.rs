@@ -14,7 +14,7 @@ pub fn get_members(
     user: models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<GetMembersResponse, Status> {
-    let group_id: i32 = request.group_id.to_db_id_or_err("group_id")?;
+    let group_id: i64 = request.group_id.to_db_id_or_err("group_id")?;
     match request.group_moderation() {
         Moderation::Pending => {
             let user_membership = memberships::table
@@ -73,7 +73,7 @@ pub fn get_members(
 }
 
 fn get_all_members(
-    group_id: i32,
+    group_id: i64,
     user_moderations: Vec<Moderation>,
     group_moderations: Vec<Moderation>,
     page: i32,
@@ -143,7 +143,7 @@ fn get_all_members(
 }
 
 fn get_members_by_username(
-    group_id: i32,
+    group_id: i64,
     user_moderations: Vec<Moderation>,
     group_moderations: Vec<Moderation>,
     page: i32,

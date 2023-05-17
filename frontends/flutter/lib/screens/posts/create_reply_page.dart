@@ -163,7 +163,7 @@ class CreateReplyPageState extends JonlineState<CreateReplyPage> {
     final startTime = DateTime.now();
     try {
       await client!.createPost(
-          CreatePostRequest(replyToPostId: subjectPost!.id, content: content),
+          Post(replyToPostId: subjectPost!.id, content: content),
           options: account.authenticatedCallOptions);
     } catch (e) {
       await communicationDelay;

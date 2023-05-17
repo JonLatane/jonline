@@ -1,16 +1,14 @@
-import { CreatePostRequest, EventInstance, Permission, Post, Event, Visibility, EventListingType } from '@jonline/api';
-import { Button, Heading, Input, isClient, isWeb, Paragraph, Sheet, Text, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
-import { ChevronDown, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
-import { clearPostAlerts, createEvent, createPost, loadEventsPage, RootState, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
-import React, { useEffect, useState } from 'react';
+import { Event, EventListingType, Post, Visibility } from '@jonline/api';
+import { Button, Heading, Input, Paragraph, Sheet, Text, TextArea, XStack, YStack, useMedia } from '@jonline/ui';
+import { ChevronDown, Settings } from '@tamagui/lucide-icons';
+import { RootState, clearPostAlerts, createEvent, loadEventsPage, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import React, { useState } from 'react';
 import { Platform, View } from 'react-native';
-import StickyBox from 'react-sticky-box';
-import { AddAccountSheet } from '../accounts/add_account_sheet';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
-import EventCard from './event_card';
-import { VisibilityPicker } from '../post/visibility_picker';
 import moment from 'moment';
+import { VisibilityPicker } from '../post/visibility_picker';
+import EventCard from './event_card';
 
 export type CreateEventSheetProps = {
   // primaryServer?: JonlineServer;
@@ -86,7 +84,7 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
 
   function doCreate() {
 
-    // const createPostRequest: CreatePostRequest = { title, link, content };
+    // const newPost: Post = { title, link, content };
 
     dispatch(createEvent({ ...previewEvent, ...accountOrServer })).then((action) => {
       if (action.type == createEvent.fulfilled.type) {

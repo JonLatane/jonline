@@ -16,7 +16,7 @@ pub fn get_media(media_id: i64, conn: &mut PgPooledConnection,) -> Result<Media,
 // Group Media, when/if implemented, will probably go along a "Group designated User's Media" route,
 // rather than how Group Posts and Group Events work. This is because Media is a layer "under" Posts and Events.
 
-// pub fn get_group_media(group_id: i32, media_id: i32, conn: &mut PgPooledConnection,) -> Result<GroupMedia, Status> {
+// pub fn get_group_media(group_id: i64, media_id: i32, conn: &mut PgPooledConnection,) -> Result<GroupMedia, Status> {
 //     group_posts::table
 //         .select(group_posts::all_columns)
 //         .filter(group_posts::group_id.eq(group_id))
@@ -29,7 +29,7 @@ pub fn get_media(media_id: i64, conn: &mut PgPooledConnection,) -> Result<Media,
 #[diesel(table_name = media)]
 pub struct Media {
     pub id: i64,
-    pub user_id: Option<i32>,
+    pub user_id: Option<i64>,
     pub minio_path: String,
     pub content_type: String,
     pub name: Option<String>,
@@ -43,7 +43,7 @@ pub struct Media {
 #[derive(Debug, Insertable)]
 #[diesel(table_name = media)]
 pub struct NewMedia {
-    pub user_id: Option<i32>,
+    pub user_id: Option<i64>,
     pub minio_path: String,
     pub content_type: String,
     pub name: Option<String>,

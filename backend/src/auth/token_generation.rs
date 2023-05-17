@@ -24,7 +24,7 @@ macro_rules! generate_token {
 }
 
 pub fn generate_refresh_and_access_token(
-    user_id: i32,
+    user_id: i64,
     conn: &mut PgPooledConnection,
     expires_at: Option<Timestamp>,
 ) -> RefreshTokenResponse {
@@ -34,7 +34,7 @@ pub fn generate_refresh_and_access_token(
         .map(SystemTime::try_from)
         .map(|x| x.ok())
         .flatten();
-    let (refresh_token_id, expires_at): (i32, Option<SystemTime>) =
+    let (refresh_token_id, expires_at): (i64, Option<SystemTime>) =
         insert_into(user_refresh_tokens::user_refresh_tokens)
             .values((
                 user_refresh_tokens::user_id.eq(user_id),
@@ -42,7 +42,7 @@ pub fn generate_refresh_and_access_token(
                 user_refresh_tokens::expires_at.eq(requested_expiration),
             ))
             .returning((user_refresh_tokens::id, user_refresh_tokens::expires_at))
-            .get_result::<(i32, Option<SystemTime>)>(&mut *conn)
+            .get_result::<(i64, Option<SystemTime>)>(&mut *conn)
             .unwrap();
     let auth_exp_token = ExpirableToken {
         token: refresh_token.to_owned(),
@@ -58,7 +58,7 @@ pub fn generate_refresh_and_access_token(
     }
 }
 
-pub fn generate_access_token(refresh_token_id: i32, conn: &mut PgPooledConnection) -> ExpirableToken {
+pub fn generate_access_token(refresh_token_id: i64, conn: &mut PgPooledConnection) -> ExpirableToken {
     let access_token = generate_token!(128);
     let expires_at: SystemTime = insert_into(user_access_tokens::user_access_tokens)
         .values((

@@ -159,15 +159,6 @@ export interface GetPostsResponse {
   posts: Post[];
 }
 
-/** A request to create a post. */
-export interface CreatePostRequest {
-  title?: string | undefined;
-  link?: string | undefined;
-  content?: string | undefined;
-  replyToPostId?: string | undefined;
-  visibility?: Visibility | undefined;
-}
-
 /**
  * A `Post` is a message that can be posted to the server. Its `visibility`
  * as well as any associated `GroupPost`s and `UserPost`s determine what users
@@ -244,6 +235,8 @@ export interface Post {
    */
   shareable: boolean;
   context: PostContext;
+  /** List of Media IDs associated with this post. Order is preserved. */
+  media: string[];
   createdAt: string | undefined;
   updatedAt?: string | undefined;
   lastActivityAt: string | undefined;
@@ -449,96 +442,6 @@ export const GetPostsResponse = {
   },
 };
 
-function createBaseCreatePostRequest(): CreatePostRequest {
-  return { title: undefined, link: undefined, content: undefined, replyToPostId: undefined, visibility: undefined };
-}
-
-export const CreatePostRequest = {
-  encode(message: CreatePostRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== undefined) {
-      writer.uint32(10).string(message.title);
-    }
-    if (message.link !== undefined) {
-      writer.uint32(18).string(message.link);
-    }
-    if (message.content !== undefined) {
-      writer.uint32(26).string(message.content);
-    }
-    if (message.replyToPostId !== undefined) {
-      writer.uint32(34).string(message.replyToPostId);
-    }
-    if (message.visibility !== undefined) {
-      writer.uint32(80).int32(message.visibility);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreatePostRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreatePostRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.title = reader.string();
-          break;
-        case 2:
-          message.link = reader.string();
-          break;
-        case 3:
-          message.content = reader.string();
-          break;
-        case 4:
-          message.replyToPostId = reader.string();
-          break;
-        case 10:
-          message.visibility = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CreatePostRequest {
-    return {
-      title: isSet(object.title) ? String(object.title) : undefined,
-      link: isSet(object.link) ? String(object.link) : undefined,
-      content: isSet(object.content) ? String(object.content) : undefined,
-      replyToPostId: isSet(object.replyToPostId) ? String(object.replyToPostId) : undefined,
-      visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : undefined,
-    };
-  },
-
-  toJSON(message: CreatePostRequest): unknown {
-    const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
-    message.link !== undefined && (obj.link = message.link);
-    message.content !== undefined && (obj.content = message.content);
-    message.replyToPostId !== undefined && (obj.replyToPostId = message.replyToPostId);
-    message.visibility !== undefined &&
-      (obj.visibility = message.visibility !== undefined ? visibilityToJSON(message.visibility) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<CreatePostRequest>, I>>(base?: I): CreatePostRequest {
-    return CreatePostRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<CreatePostRequest>, I>>(object: I): CreatePostRequest {
-    const message = createBaseCreatePostRequest();
-    message.title = object.title ?? undefined;
-    message.link = object.link ?? undefined;
-    message.content = object.content ?? undefined;
-    message.replyToPostId = object.replyToPostId ?? undefined;
-    message.visibility = object.visibility ?? undefined;
-    return message;
-  },
-};
-
 function createBasePost(): Post {
   return {
     id: "",
@@ -558,6 +461,7 @@ function createBasePost(): Post {
     previewImageExists: false,
     shareable: false,
     context: 0,
+    media: [],
     createdAt: undefined,
     updatedAt: undefined,
     lastActivityAt: undefined,
@@ -616,6 +520,9 @@ export const Post = {
     }
     if (message.context !== 0) {
       writer.uint32(144).int32(message.context);
+    }
+    for (const v of message.media) {
+      writer.uint32(154).string(v!);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(162).fork()).ldelim();
@@ -687,6 +594,9 @@ export const Post = {
         case 18:
           message.context = reader.int32() as any;
           break;
+        case 19:
+          message.media.push(reader.string());
+          break;
         case 20:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
@@ -723,6 +633,7 @@ export const Post = {
       previewImageExists: isSet(object.previewImageExists) ? Boolean(object.previewImageExists) : false,
       shareable: isSet(object.shareable) ? Boolean(object.shareable) : false,
       context: isSet(object.context) ? postContextFromJSON(object.context) : 0,
+      media: Array.isArray(object?.media) ? object.media.map((e: any) => String(e)) : [],
       createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
       lastActivityAt: isSet(object.lastActivityAt) ? String(object.lastActivityAt) : undefined,
@@ -754,6 +665,11 @@ export const Post = {
     message.previewImageExists !== undefined && (obj.previewImageExists = message.previewImageExists);
     message.shareable !== undefined && (obj.shareable = message.shareable);
     message.context !== undefined && (obj.context = postContextToJSON(message.context));
+    if (message.media) {
+      obj.media = message.media.map((e) => e);
+    } else {
+      obj.media = [];
+    }
     message.createdAt !== undefined && (obj.createdAt = message.createdAt);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     message.lastActivityAt !== undefined && (obj.lastActivityAt = message.lastActivityAt);
@@ -787,6 +703,7 @@ export const Post = {
     message.previewImageExists = object.previewImageExists ?? false;
     message.shareable = object.shareable ?? false;
     message.context = object.context ?? 0;
+    message.media = object.media?.map((e) => e) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     message.lastActivityAt = object.lastActivityAt ?? undefined;

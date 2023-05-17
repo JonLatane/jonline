@@ -1,4 +1,4 @@
-import { CreatePostRequest, Post, PostListingType } from "@jonline/api";
+import { Post, PostListingType } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   createEntityAdapter,
@@ -37,7 +37,7 @@ export interface PostsState {
 }
 
 export interface DraftPost {
-  createPostRequest: CreatePostRequest;
+  newPost: Post;
   groupId?: string;
 }
 
@@ -50,8 +50,7 @@ const initialState: PostsState = {
   status: "unloaded",
   baseStatus: "unloaded",
   draftPost: {
-    createPostRequest: {
-    }
+    newPost: Post.fromPartial({})
   },
   sendReplyStatus: undefined,
   previews: {},

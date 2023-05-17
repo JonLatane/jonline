@@ -32,13 +32,9 @@ RUN apt-get -y install brave-browser
 # Chrome ad/cookie blockers for screenshot generator
 # COPY backend/docker/preview_generator/preview_generator_extensions /opt/preview_generator_extensions
 
-# Background job binary
+# Only includes the background job binary.
 COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
-
-# Main Jonline binary also included, in case it's needed. Note that this doesn't include
-# the web app, which is not needed for the preview generator.
-COPY backend/target/release/jonline__server_release /opt/jonline
 
 EXPOSE 27707 8000 80 443 8001-9000 9222
 

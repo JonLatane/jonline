@@ -1,18 +1,14 @@
-import { CreatePostRequest, Permission, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, isClient, isWeb, Sheet, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
-import { ChevronDown, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
-import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
-import React, { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Permission } from '@jonline/api';
+import { Button, Heading, XStack, YStack, isWeb } from '@jonline/ui';
+import { Send as SendIcon } from '@tamagui/lucide-icons';
+import { useCredentialDispatch, useServerTheme } from 'app/store';
+import React from 'react';
 import StickyBox from 'react-sticky-box';
 import { AddAccountSheet } from '../accounts/add_account_sheet';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
-import PostCard from '../post/post_card';
-import { VisibilityPicker } from '../post/visibility_picker';
-import { CreatePostSheet } from '../post/create_post_sheet';
 import { CreateEventSheet } from '../event/create_event_sheet';
-
+import { CreatePostSheet } from '../post/create_post_sheet';
 
 interface StickyCreateButtonProps {
   // replyingToPath: string[];

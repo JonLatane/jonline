@@ -1,4 +1,4 @@
-import { CreatePostRequest, Permission, Post, Visibility } from '@jonline/api';
+import { Post, Permission, Visibility } from '@jonline/api';
 import { Button, Heading, Input, isClient, isWeb, Sheet, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
 import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
@@ -67,9 +67,9 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   const showShortPreview = shortPreview(renderType);
 
   function doCreate() {
-    const createPostRequest: CreatePostRequest = { title, link, content };
+    const newPost: Post = Post.fromPartial({ title, link, content });
 
-    dispatch(createPost({ ...createPostRequest, ...accountOrServer })).then((action) => {
+    dispatch(createPost({ ...newPost, ...accountOrServer })).then((action) => {
       if (action.type == createPost.fulfilled.type) {
         setOpen(false);
         setTitle('');

@@ -34,6 +34,11 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission PUBLISH_EVENTS_LOCALLY = Permission._(32, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_EVENTS_LOCALLY');
   static const Permission PUBLISH_EVENTS_GLOBALLY = Permission._(33, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_EVENTS_GLOBALLY');
   static const Permission MODERATE_EVENTS = Permission._(34, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MODERATE_EVENTS');
+  static const Permission VIEW_MEDIA = Permission._(40, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_MEDIA');
+  static const Permission CREATE_MEDIA = Permission._(41, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'CREATE_MEDIA');
+  static const Permission PUBLISH_MEDIA_LOCALLY = Permission._(42, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_MEDIA_LOCALLY');
+  static const Permission PUBLISH_MEDIA_GLOBALLY = Permission._(43, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_MEDIA_GLOBALLY');
+  static const Permission MODERATE_MEDIA = Permission._(44, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MODERATE_MEDIA');
   static const Permission RUN_BOTS = Permission._(9999, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'RUN_BOTS');
   static const Permission ADMIN = Permission._(10000, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'ADMIN');
   static const Permission VIEW_PRIVATE_CONTACT_METHODS = Permission._(10001, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_PRIVATE_CONTACT_METHODS');
@@ -63,6 +68,11 @@ class Permission extends $pb.ProtobufEnum {
     PUBLISH_EVENTS_LOCALLY,
     PUBLISH_EVENTS_GLOBALLY,
     MODERATE_EVENTS,
+    VIEW_MEDIA,
+    CREATE_MEDIA,
+    PUBLISH_MEDIA_LOCALLY,
+    PUBLISH_MEDIA_GLOBALLY,
+    MODERATE_MEDIA,
     RUN_BOTS,
     ADMIN,
     VIEW_PRIVATE_CONTACT_METHODS,

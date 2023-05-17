@@ -94,7 +94,7 @@ Future<void> generateConversations(
     final target = targets[_random.nextInt(targets.length)];
     try {
       final replyPost = await client.createPost(
-          CreatePostRequest(
+          Post(
             replyToPostId: target.id,
             content: reply,
           ),
@@ -552,7 +552,7 @@ final List<String> _demoReplies = [
 
 class DemoPost {
   final List<DemoGroup> groups;
-  CreatePostRequest post;
+  Post post;
 
   DemoPost(this.groups, this.post);
 }
@@ -560,31 +560,31 @@ class DemoPost {
 final List<DemoPost> _demoPosts = [
   DemoPost(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
-      CreatePostRequest(
+      Post(
         title: "Magical fountain of kinesthetic knowledge",
         link: "https://www.triangleintegratedyoga.com",
       )),
   DemoPost(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
-      CreatePostRequest(
+      Post(
         title: "Homegirl know how to make you work n have fun",
         link: "https://www.laurenaliviayoga.com",
       )),
   DemoPost(
       [DemoGroup.gamers],
-      CreatePostRequest(
+      Post(
         title: "Gonna play this with my lil second cousin",
         link: "https://frontiers.sonicthehedgehog.com",
       )),
   DemoPost(
       [DemoGroup.sports],
-      CreatePostRequest(
+      Post(
           title: "Not having fear is aid",
           link: "https://www.disneyplus.com/movies/free-solo/3ibzvuU6iPlE",
           content: "Nah but fr Alexa Handhold is one of the GOAT")),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
-      CreatePostRequest(
+      Post(
           title: "ChordCalc, my first indie app, on the Play Store",
           link:
               "https://play.google.com/store/apps/details?id=com.jonlatane.composer&hl=en_US&gl=US",
@@ -592,13 +592,13 @@ final List<DemoPost> _demoPosts = [
               "Not maintained, but still available on the Play Store. For the time (around 2011) I wrote a pretty novel algorithm for naming chords that I've reused in BeatScratch.")),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
-      CreatePostRequest(
+      Post(
           title: "ChordCalc on GitHub",
           link: "https://github.com/falrm/ChordCalcComposer",
           content: "Use or improve my algorithms 💚")),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.tech, DemoGroup.programming],
-      CreatePostRequest(
+      Post(
           title:
               "Topologica was my second app; here's an article about how it works!",
           link:
@@ -626,14 +626,14 @@ for iOS, macOS, Android and web.
 I plan to re-implement the Orbifold in BeatScratch, at which point this app will be deprecated.''')),
   DemoPost(
       [DemoGroup.music, DemoGroup.math],
-      CreatePostRequest(
+      Post(
           title: "BeatScratch Legacy (formerly Topologica) on the Play Store",
           link:
               "https://play.google.com/store/apps/details?id=com.jonlatane.beatpad.free&hl=en_US&gl=US",
           content: "Not maintained, but still available on the Play Store.")),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
-      CreatePostRequest(
+      Post(
           title: "BeatScratch Legacy (formerly Topologica) on GitHub",
           link: "https://github.com/falrm/BeatPad",
           content:
@@ -645,24 +645,24 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
         DemoGroup.toolSharing,
         DemoGroup.coolKidsClub
       ],
-      CreatePostRequest(
+      Post(
           title: "Yay socialism!",
           link: "https://www.dsanc.org",
           content: "I should go to more meetings but eh I pay my dues.")),
   DemoPost(
       [DemoGroup.restaurants, DemoGroup.coolKidsClub],
-      CreatePostRequest(
+      Post(
           title: "These burgers look soooo good 😋",
           link: "https://www.eatqueenburger.com")),
   DemoPost(
       [DemoGroup.music],
-      CreatePostRequest(
+      Post(
           title: "BeatScratch on the App Store",
           link: "https://apps.apple.com/us/app/beatscratch/id1509788448",
           content: "The freshest, slickest way to scratch your beat!")),
   DemoPost(
       [DemoGroup.music],
-      CreatePostRequest(
+      Post(
           title: "BeatScratch on the Play Store",
           link:
               "https://play.google.com/store/apps/details?id=io.beatscratch.beatscratch_flutter_redux&hl=en_US&gl=US",
@@ -670,12 +670,12 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
               "Android version of BeatScratch! FluidSynth doesn't quite keep up with AudioKit but still among the best you can get on Android.")),
   DemoPost(
       [DemoGroup.everyoneWelcome],
-      CreatePostRequest(
+      Post(
           title: "My reddit account, or at least the one I'd post here 🙃",
           link: "https://www.reddit.com/user/pseudocomposer")),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
-      CreatePostRequest(
+      Post(
           title: "These are cool! I want one",
           link: "https://www.fuell.us/products/fuell-fllow-e-motorcycle")),
   DemoPost(
@@ -685,34 +685,32 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
         DemoGroup.music,
         DemoGroup.coolKidsClub
       ],
-      CreatePostRequest(
+      Post(
           title:
               "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness.",
           link: "https://instagram.com/jons_meaningless_life")),
   DemoPost(
       [DemoGroup.everyoneWelcome],
-      CreatePostRequest(
+      Post(
         title: "My LinkedIn, if you wanna see things people have paid me to do",
         link: "https://www.linkedin.com/in/jonlatane/",
       )),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
-      CreatePostRequest(
+      Post(
         title:
             "Jonline images are on DockerHub so you can try/deploy it easily without touching anything Rust/React/Flutter",
         link: "https://hub.docker.com/r/jonlatane/jonline",
       )),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.programming],
-      CreatePostRequest(
+      Post(
           title: "Jonline on GitHub",
           link: "https://github.com/jonlatane/jonline",
           content:
               "Jonline is released under the GPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech.")),
-  DemoPost(
-      [DemoGroup.everyoneWelcome, DemoGroup.tech],
-      CreatePostRequest(
-          title: "What is Jonline?", content: '''Corporate social media sucks. 
+  DemoPost([DemoGroup.everyoneWelcome, DemoGroup.tech],
+      Post(title: "What is Jonline?", content: '''Corporate social media sucks. 
 Jonline is a new approach to social media that keeps user data hyper-local - 
 within peoples' physical communities - all wrapped up as a 
 [well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md). 

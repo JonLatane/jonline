@@ -20,7 +20,7 @@ export const MediaRenderer: React.FC<Props> = ({ media }) => {
   const subType = media.contentType.split('/')[1];
   switch (type) {
     case 'image':
-      return <img src={mediaUrl} />;
+      return <img src={mediaUrl} width='95%' />;
     case 'video':
       return <YStack w='100%' ac='center' jc='center'>
         <ReactPlayer width='100%' height={mediaQuery.gtXs ? '500px' : '300px'}

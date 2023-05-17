@@ -48,7 +48,6 @@
   
 - [posts.proto](#posts-proto)
     - [Author](#jonline-Author)
-    - [CreatePostRequest](#jonline-CreatePostRequest)
     - [GetGroupPostsRequest](#jonline-GetGroupPostsRequest)
     - [GetGroupPostsResponse](#jonline-GetGroupPostsResponse)
     - [GetPostsRequest](#jonline-GetPostsRequest)
@@ -134,7 +133,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 | DeleteMembership | [Membership](#jonline-Membership) | [.google.protobuf.Empty](#google-protobuf-Empty) | Leave a group (or cancel membership request). *Authenticated.* |
 | GetMembers | [GetMembersRequest](#jonline-GetMembersRequest) | [GetMembersResponse](#jonline-GetMembersResponse) | Get Members (User&#43;Membership) of a Group. *Authenticated.* |
 | GetPosts | [GetPostsRequest](#jonline-GetPostsRequest) | [GetPostsResponse](#jonline-GetPostsResponse) | Gets Posts. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility. |
-| CreatePost | [CreatePostRequest](#jonline-CreatePostRequest) | [Post](#jonline-Post) | Creates a Post. *Authenticated.* |
+| CreatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Creates a Post. *Authenticated.* |
 | UpdatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Updates a Post. *Authenticated.* |
 | DeletePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* |
 | CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. *Authenticated.* |
@@ -799,25 +798,6 @@ from its own cache (for things like admin/bot icons).
 
 
 
-<a name="jonline-CreatePostRequest"></a>
-
-### CreatePostRequest
-A request to create a post.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) | optional |  |
-| link | [string](#string) | optional |  |
-| content | [string](#string) | optional |  |
-| reply_to_post_id | [string](#string) | optional |  |
-| visibility | [Visibility](#jonline-Visibility) | optional |  |
-
-
-
-
-
-
 <a name="jonline-GetGroupPostsRequest"></a>
 
 ### GetGroupPostsRequest
@@ -952,6 +932,7 @@ There will never be more than `reply_count` replies. However, there may be fewer
 | preview_image_exists | [bool](#bool) |  | Always returned, even if preview_image is not. Indicates whether the UI should attempt to fetch a preview_image. |
 | shareable | [bool](#bool) |  | Sharability is based on the visibility of the post. Not applicable to all visibilities. * `Visibility.LIMITED`, `Visibility.SERVER_PUBLIC`, `Visibility.GLOBAL_PUBLIC`: Allows other users to GroupPost your Post to (other) Groups. * `Visibility.PRIVATE`: Allows other users to reply to your Post. |
 | context | [PostContext](#jonline-PostContext) |  |  |
+| media | [string](#string) | repeated | List of Media IDs associated with this post. Order is preserved. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | last_activity_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |

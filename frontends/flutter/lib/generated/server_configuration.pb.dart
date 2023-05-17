@@ -9,22 +9,23 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'permissions.pbenum.dart' as $9;
+import 'permissions.pbenum.dart' as $10;
 import 'server_configuration.pbenum.dart';
-import 'visibility_moderation.pbenum.dart' as $10;
+import 'visibility_moderation.pbenum.dart' as $11;
 
 export 'server_configuration.pbenum.dart';
 
 class ServerConfiguration extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ServerConfiguration', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ServerInfo>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'serverInfo', subBuilder: ServerInfo.create)
-    ..pc<$9.Permission>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $9.Permission.valueOf, enumValues: $9.Permission.values, defaultEnumValue: $9.Permission.PERMISSION_UNKNOWN)
-    ..pc<$9.Permission>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $9.Permission.valueOf, enumValues: $9.Permission.values, defaultEnumValue: $9.Permission.PERMISSION_UNKNOWN)
-    ..pc<$9.Permission>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $9.Permission.valueOf, enumValues: $9.Permission.values, defaultEnumValue: $9.Permission.PERMISSION_UNKNOWN)
+    ..pc<$10.Permission>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
+    ..pc<$10.Permission>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
+    ..pc<$10.Permission>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
     ..aOM<FeatureSettings>(20, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'peopleSettings', subBuilder: FeatureSettings.create)
     ..aOM<FeatureSettings>(21, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupSettings', subBuilder: FeatureSettings.create)
     ..aOM<PostSettings>(22, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postSettings', subBuilder: PostSettings.create)
     ..aOM<FeatureSettings>(23, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'eventSettings', subBuilder: FeatureSettings.create)
+    ..aOM<FeatureSettings>(24, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'mediaSettings', subBuilder: FeatureSettings.create)
     ..e<PrivateUserStrategy>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
     ..pc<AuthenticationFeature>(101, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'authenticationFeatures', $pb.PbFieldType.KE, valueOf: AuthenticationFeature.valueOf, enumValues: AuthenticationFeature.values, defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
     ..hasRequiredFields = false
@@ -33,13 +34,14 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   ServerConfiguration._() : super();
   factory ServerConfiguration({
     ServerInfo? serverInfo,
-    $core.Iterable<$9.Permission>? anonymousUserPermissions,
-    $core.Iterable<$9.Permission>? defaultUserPermissions,
-    $core.Iterable<$9.Permission>? basicUserPermissions,
+    $core.Iterable<$10.Permission>? anonymousUserPermissions,
+    $core.Iterable<$10.Permission>? defaultUserPermissions,
+    $core.Iterable<$10.Permission>? basicUserPermissions,
     FeatureSettings? peopleSettings,
     FeatureSettings? groupSettings,
     PostSettings? postSettings,
     FeatureSettings? eventSettings,
+    FeatureSettings? mediaSettings,
     PrivateUserStrategy? privateUserStrategy,
     $core.Iterable<AuthenticationFeature>? authenticationFeatures,
   }) {
@@ -67,6 +69,9 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     }
     if (eventSettings != null) {
       _result.eventSettings = eventSettings;
+    }
+    if (mediaSettings != null) {
+      _result.mediaSettings = mediaSettings;
     }
     if (privateUserStrategy != null) {
       _result.privateUserStrategy = privateUserStrategy;
@@ -109,13 +114,13 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   ServerInfo ensureServerInfo() => $_ensure(0);
 
   @$pb.TagNumber(10)
-  $core.List<$9.Permission> get anonymousUserPermissions => $_getList(1);
+  $core.List<$10.Permission> get anonymousUserPermissions => $_getList(1);
 
   @$pb.TagNumber(11)
-  $core.List<$9.Permission> get defaultUserPermissions => $_getList(2);
+  $core.List<$10.Permission> get defaultUserPermissions => $_getList(2);
 
   @$pb.TagNumber(12)
-  $core.List<$9.Permission> get basicUserPermissions => $_getList(3);
+  $core.List<$10.Permission> get basicUserPermissions => $_getList(3);
 
   @$pb.TagNumber(20)
   FeatureSettings get peopleSettings => $_getN(4);
@@ -161,24 +166,35 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(23)
   FeatureSettings ensureEventSettings() => $_ensure(7);
 
+  @$pb.TagNumber(24)
+  FeatureSettings get mediaSettings => $_getN(8);
+  @$pb.TagNumber(24)
+  set mediaSettings(FeatureSettings v) { setField(24, v); }
+  @$pb.TagNumber(24)
+  $core.bool hasMediaSettings() => $_has(8);
+  @$pb.TagNumber(24)
+  void clearMediaSettings() => clearField(24);
+  @$pb.TagNumber(24)
+  FeatureSettings ensureMediaSettings() => $_ensure(8);
+
   @$pb.TagNumber(100)
-  PrivateUserStrategy get privateUserStrategy => $_getN(8);
+  PrivateUserStrategy get privateUserStrategy => $_getN(9);
   @$pb.TagNumber(100)
   set privateUserStrategy(PrivateUserStrategy v) { setField(100, v); }
   @$pb.TagNumber(100)
-  $core.bool hasPrivateUserStrategy() => $_has(8);
+  $core.bool hasPrivateUserStrategy() => $_has(9);
   @$pb.TagNumber(100)
   void clearPrivateUserStrategy() => clearField(100);
 
   @$pb.TagNumber(101)
-  $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(9);
+  $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(10);
 }
 
 class FeatureSettings extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'FeatureSettings', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visible')
-    ..e<$10.Moderation>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
-    ..e<$10.Visibility>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
+    ..e<$11.Moderation>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$11.Visibility>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
     ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'customTitle')
     ..hasRequiredFields = false
   ;
@@ -186,8 +202,8 @@ class FeatureSettings extends $pb.GeneratedMessage {
   FeatureSettings._() : super();
   factory FeatureSettings({
     $core.bool? visible,
-    $10.Moderation? defaultModeration,
-    $10.Visibility? defaultVisibility,
+    $11.Moderation? defaultModeration,
+    $11.Visibility? defaultVisibility,
     $core.String? customTitle,
   }) {
     final _result = create();
@@ -236,18 +252,18 @@ class FeatureSettings extends $pb.GeneratedMessage {
   void clearVisible() => clearField(1);
 
   @$pb.TagNumber(2)
-  $10.Moderation get defaultModeration => $_getN(1);
+  $11.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($10.Moderation v) { setField(2, v); }
+  set defaultModeration($11.Moderation v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
   void clearDefaultModeration() => clearField(2);
 
   @$pb.TagNumber(3)
-  $10.Visibility get defaultVisibility => $_getN(2);
+  $11.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($10.Visibility v) { setField(3, v); }
+  set defaultVisibility($11.Visibility v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -266,8 +282,8 @@ class FeatureSettings extends $pb.GeneratedMessage {
 class PostSettings extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PostSettings', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visible')
-    ..e<$10.Moderation>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
-    ..e<$10.Visibility>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
+    ..e<$11.Moderation>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$11.Visibility>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
     ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'customTitle')
     ..aOB(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'enableReplies')
     ..hasRequiredFields = false
@@ -276,8 +292,8 @@ class PostSettings extends $pb.GeneratedMessage {
   PostSettings._() : super();
   factory PostSettings({
     $core.bool? visible,
-    $10.Moderation? defaultModeration,
-    $10.Visibility? defaultVisibility,
+    $11.Moderation? defaultModeration,
+    $11.Visibility? defaultVisibility,
     $core.String? customTitle,
     $core.bool? enableReplies,
   }) {
@@ -330,18 +346,18 @@ class PostSettings extends $pb.GeneratedMessage {
   void clearVisible() => clearField(1);
 
   @$pb.TagNumber(2)
-  $10.Moderation get defaultModeration => $_getN(1);
+  $11.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($10.Moderation v) { setField(2, v); }
+  set defaultModeration($11.Moderation v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
   void clearDefaultModeration() => clearField(2);
 
   @$pb.TagNumber(3)
-  $10.Visibility get defaultVisibility => $_getN(2);
+  $11.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($10.Visibility v) { setField(3, v); }
+  set defaultVisibility($11.Visibility v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)

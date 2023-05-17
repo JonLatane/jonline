@@ -6,7 +6,7 @@ use diesel::*;
 use crate::db_connection::PgPooledConnection;
 use crate::schema::{groups, memberships};
 
-pub fn get_group(group_id: i32, conn: &mut PgPooledConnection,) -> Result<Group, Status> {
+pub fn get_group(group_id: i64, conn: &mut PgPooledConnection,) -> Result<Group, Status> {
     groups::table
         .select(groups::all_columns)
         .filter(groups::id.eq(group_id))
@@ -14,7 +14,7 @@ pub fn get_group(group_id: i32, conn: &mut PgPooledConnection,) -> Result<Group,
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))
 }
 
-pub fn get_membership(group_id: i32, user_id: i32, conn: &mut PgPooledConnection,) -> Result<Membership, Status> {
+pub fn get_membership(group_id: i64, user_id: i64, conn: &mut PgPooledConnection,) -> Result<Membership, Status> {
     memberships::table
         .select(memberships::all_columns)
         .filter(memberships::user_id.eq(user_id))
@@ -25,7 +25,7 @@ pub fn get_membership(group_id: i32, user_id: i32, conn: &mut PgPooledConnection
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct Group {
-    pub id: i32,
+    pub id: i64,
     pub name: String,
     pub shortname: String,
     pub description: String,
@@ -59,9 +59,9 @@ pub struct NewGroup {
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct Membership {
-    pub id: i32,
-    pub user_id: i32,
-    pub group_id: i32,
+    pub id: i64,
+    pub user_id: i64,
+    pub group_id: i64,
     pub permissions: serde_json::Value,
     pub group_moderation: String,
     pub user_moderation: String,
@@ -71,8 +71,8 @@ pub struct Membership {
 #[derive(Debug, Insertable)]
 #[diesel(table_name = memberships)]
 pub struct NewMembership {
-    pub user_id: i32,
-    pub group_id: i32,
+    pub user_id: i64,
+    pub group_id: i64,
     pub permissions: serde_json::Value,
     pub group_moderation: String,
     pub user_moderation: String,

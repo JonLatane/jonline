@@ -91,6 +91,7 @@ impl ToProtoPost for models::Post {
             replies: vec![],  //TODO update this
             preview_image_exists: *has_preview,
             current_group_post: group_post.map(|gp| gp.to_proto()),
+            media: vec![],  //TODO update this
         }
     }
     fn proto_author(&self, username: Option<String>) -> Option<Author> {

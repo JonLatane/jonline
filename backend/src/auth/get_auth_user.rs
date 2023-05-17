@@ -11,7 +11,7 @@ use crate::schema::users::dsl as users;
 pub fn get_auth_user_id<T>(
     request: &Request<T>,
     conn: &mut PgPooledConnection,
-) -> Result<i32, Status> {
+) -> Result<i64, Status> {
     let access_token = request
         .metadata()
         .get("authorization")
@@ -28,11 +28,11 @@ pub fn get_auth_user_id<T>(
     .execute(conn)
     .unwrap_or(0);
 
-    let user_id: Result<i32, _> = schema::user_access_tokens::table
+    let user_id: Result<i64, _> = schema::user_access_tokens::table
         .inner_join(schema::user_refresh_tokens::table)
         .select(user_refresh_tokens::user_id)
         .filter(user_access_tokens::token.eq(access_token))
-        .first::<i32>(conn);
+        .first::<i64>(conn);
 
     match user_id {
         Ok(user_id) => Ok(user_id),

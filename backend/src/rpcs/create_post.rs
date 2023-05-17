@@ -10,7 +10,7 @@ use crate::schema::{posts, users};
 use super::validations::*;
 
 pub fn create_post(
-    request: Request<CreatePostRequest>,
+    request: Request<Post>,
     user: models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Response<Post>, Status> {
@@ -36,17 +36,17 @@ pub fn create_post(
     validate_max_length(req.content.to_owned(), "content", 10000)?;
 
     // Generate the list of the post's ancestors so we can increment their response_count all at once.
-    let mut ancestor_post_ids: Vec<i32> = vec![];
-    let parent_post_db_id: Option<i32> = match req.reply_to_post_id.to_owned() {
+    let mut ancestor_post_ids: Vec<i64> = vec![];
+    let parent_post_db_id: Option<i64> = match req.reply_to_post_id.to_owned() {
         Some(proto_id) => match proto_id.to_db_id() {
             Ok(db_id) => {
-                let mut ppdpid: Option<i32> = Some(db_id);
+                let mut ppdpid: Option<i64> = Some(db_id);
                 while let Some(parent_id) = ppdpid {
                     ancestor_post_ids.push(parent_id);
                     ppdpid = posts::table
                         .select(posts::parent_post_id)
                         .find(parent_id)
-                        .first::<Option<i32>>(conn)
+                        .first::<Option<i64>>(conn)
                         .unwrap();
                 }
                 Some(db_id)

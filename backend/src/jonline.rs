@@ -171,7 +171,7 @@ impl Jonline for JonLineImpl {
 
     async fn create_post(
         &self,
-        request: Request<CreatePostRequest>,
+        request: Request<Post>,
     ) -> Result<Response<Post>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;

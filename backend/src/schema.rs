@@ -1,8 +1,8 @@
 table! {
     event_instances (id) {
-        id -> Int4,
-        event_id -> Int4,
-        post_id -> Nullable<Int4>,
+        id -> Int8,
+        event_id -> Int8,
+        post_id -> Nullable<Int8>,
         info -> Jsonb,
         starts_at -> Timestamp,
         ends_at -> Timestamp,
@@ -13,8 +13,8 @@ table! {
 
 table! {
     events (id) {
-        id -> Int4,
-        post_id -> Int4,
+        id -> Int8,
+        post_id -> Int8,
         info -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
@@ -23,25 +23,25 @@ table! {
 
 table! {
     federated_accounts (id) {
-        id -> Int4,
-        federated_server_id -> Nullable<Int4>,
+        id -> Int8,
+        federated_server_id -> Nullable<Int8>,
         federated_user_id -> Varchar,
-        user_id -> Nullable<Int4>,
+        user_id -> Nullable<Int8>,
     }
 }
 
 table! {
     federated_servers (id) {
-        id -> Int4,
+        id -> Int8,
         server_location -> Varchar,
     }
 }
 
 table! {
     follows (id) {
-        id -> Int4,
-        user_id -> Int4,
-        target_user_id -> Int4,
+        id -> Int8,
+        user_id -> Int8,
+        target_user_id -> Int8,
         target_user_moderation -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -50,10 +50,10 @@ table! {
 
 table! {
     group_posts (id) {
-        id -> Int4,
-        group_id -> Int4,
-        post_id -> Int4,
-        user_id -> Int4,
+        id -> Int8,
+        group_id -> Int8,
+        post_id -> Int8,
+        user_id -> Int8,
         group_moderation -> Varchar,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
@@ -62,7 +62,7 @@ table! {
 
 table! {
     groups (id) {
-        id -> Int4,
+        id -> Int8,
         name -> Varchar,
         shortname -> Varchar,
         description -> Text,
@@ -83,7 +83,7 @@ table! {
 table! {
     media (id) {
         id -> Int8,
-        user_id -> Nullable<Int4>,
+        user_id -> Nullable<Int8>,
         minio_path -> Varchar,
         content_type -> Varchar,
         name -> Nullable<Varchar>,
@@ -97,9 +97,9 @@ table! {
 
 table! {
     memberships (id) {
-        id -> Int4,
-        user_id -> Int4,
-        group_id -> Int4,
+        id -> Int8,
+        user_id -> Int8,
+        group_id -> Int8,
         permissions -> Jsonb,
         group_moderation -> Varchar,
         user_moderation -> Varchar,
@@ -109,10 +109,18 @@ table! {
 }
 
 table! {
+    post_media (post_id, media_id) {
+        post_id -> Int8,
+        media_id -> Int8,
+        sort_order -> Int4,
+    }
+}
+
+table! {
     posts (id) {
-        id -> Int4,
-        user_id -> Nullable<Int4>,
-        parent_post_id -> Nullable<Int4>,
+        id -> Int8,
+        user_id -> Nullable<Int8>,
+        parent_post_id -> Nullable<Int8>,
         title -> Nullable<Varchar>,
         link -> Nullable<Varchar>,
         content -> Nullable<Text>,
@@ -131,7 +139,7 @@ table! {
 
 table! {
     server_configurations (id) {
-        id -> Int4,
+        id -> Int8,
         active -> Bool,
         server_info -> Jsonb,
         anonymous_user_permissions -> Jsonb,
@@ -150,8 +158,8 @@ table! {
 
 table! {
     user_access_tokens (id) {
-        id -> Int4,
-        refresh_token_id -> Int4,
+        id -> Int8,
+        refresh_token_id -> Int8,
         token -> Varchar,
         created_at -> Timestamp,
         expires_at -> Timestamp,
@@ -160,17 +168,17 @@ table! {
 
 table! {
     user_devices (id) {
-        id -> Int4,
-        user_id -> Int4,
+        id -> Int8,
+        user_id -> Int8,
         device_name -> Varchar,
     }
 }
 
 table! {
     user_posts (id) {
-        id -> Int4,
-        user_id -> Int4,
-        post_id -> Int4,
+        id -> Int8,
+        user_id -> Int8,
+        post_id -> Int8,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
     }
@@ -178,8 +186,8 @@ table! {
 
 table! {
     user_refresh_tokens (id) {
-        id -> Int4,
-        user_id -> Int4,
+        id -> Int8,
+        user_id -> Int8,
         token -> Varchar,
         created_at -> Timestamp,
         expires_at -> Nullable<Timestamp>,
@@ -188,7 +196,7 @@ table! {
 
 table! {
     users (id) {
-        id -> Int4,
+        id -> Int8,
         username -> Varchar,
         password_salted_hash -> Varchar,
         email -> Nullable<Jsonb>,
@@ -238,6 +246,7 @@ allow_tables_to_appear_in_same_query!(
     groups,
     media,
     memberships,
+    post_media,
     posts,
     server_configurations,
     user_access_tokens,

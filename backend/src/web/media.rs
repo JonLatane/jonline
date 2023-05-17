@@ -104,7 +104,7 @@ pub async fn media_file<'a>(
         .filter(
             media::id.eq(id
                 .to_string()
-                .to_db_big_id_or_err("media_id")
+                .to_db_id_or_err("media_id")
                 .map_err(|_| Status::BadRequest)?),
         )
         .first::<models::Media>(&mut state.pool.get().unwrap())
@@ -224,7 +224,7 @@ fn get_auth_user(
     Ok(user)
 }
 
-fn get_auth_user_id(access_token: String, conn: &mut PgPooledConnection) -> Result<i32, Status> {
+fn get_auth_user_id(access_token: String, conn: &mut PgPooledConnection) -> Result<i64, Status> {
     delete(
         user_access_tokens::user_access_tokens
             .filter(user_access_tokens::token.eq(access_token.to_owned()))
@@ -233,11 +233,11 @@ fn get_auth_user_id(access_token: String, conn: &mut PgPooledConnection) -> Resu
     .execute(conn)
     .unwrap_or(0);
 
-    let user_id: Result<i32, _> = schema::user_access_tokens::table
+    let user_id: Result<i64, _> = schema::user_access_tokens::table
         .inner_join(schema::user_refresh_tokens::table)
         .select(user_refresh_tokens::user_id)
         .filter(user_access_tokens::token.eq(access_token))
-        .first::<i32>(conn);
+        .first::<i64>(conn);
 
     match user_id {
         Ok(user_id) => Ok(user_id),
