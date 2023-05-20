@@ -1,16 +1,19 @@
-import { colorMeta, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { colorMeta, loadMedia, loadPostReplies, loadUser, RootState, selectMediaById, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
-import { Group, Post } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, Theme, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
+import { Group, Media, Post } from "@jonline/api";
+import { Anchor, Button, Card, Heading, Image, ScrollView, Theme, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
 import { ChevronRight } from "@tamagui/lucide-icons";
+import { useMediaUrl } from "app/hooks/use_media_url";
 import { useOnScreen } from "app/hooks/use_on_screen";
+import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 import { AuthorInfo } from "./author_info";
 import { FadeInView } from "./fade_in_view";
 import { TamaguiMarkdown } from "./tamagui_markdown";
-import { useMediaUrl } from "app/hooks/use_media_url";
+
+import { MediaRenderer } from "../media/media_renderer";
 
 interface Props {
   post: Post;
@@ -39,7 +42,18 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
 
-  const previewUrl = useMediaUrl(post?.media[0]);
+  const previewMediaId = post?.media[0];
+  const previewMedia = useTypedSelector((state: RootState) =>
+    previewMediaId ? selectMediaById(state.media, previewMediaId) : undefined);
+  useEffect(() => {
+    if (!previewMedia && previewMediaId) {
+      dispatch(loadMedia({ id: previewMediaId, ...accountOrServer }));
+    }
+  }, [previewMedia])
+  const hasPrimaryImage = previewMedia?.contentType.startsWith('image')
+    && post?.media?.length == 1;
+  const hasMediaToPreview = post?.media?.length > 1;
+  const previewUrl = useMediaUrl(hasPrimaryImage ? previewMediaId : undefined);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
@@ -125,6 +139,29 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const cannotToggleReplies = !replyPostIdPath || post.replyCount == 0
     || (post.replies.length > 0 && !toggleCollapseReplies);
   const collapsed = collapseReplies || post.replies?.length == 0;
+
+  const embedSupported = post.embedLink && post.link && post.link.length;
+  let embedComponent: React.ReactNode | undefined = undefined;
+  if (embedSupported) {
+    const url = new URL(post.link!);
+    const hostname = url.hostname.split(':')[0]!;
+    if (hostname.endsWith('twitter.com')) {
+      embedComponent = <TwitterEmbed url={post.link!} />;
+    } else if (hostname.endsWith('instagram.com')) {
+      embedComponent = <InstagramEmbed url={post.link!} />;
+    } else if (hostname.endsWith('facebook.com')) {
+      embedComponent = <FacebookEmbed url={post.link!} />;
+    } else if (hostname.endsWith('youtube.com')) {
+      embedComponent = <YouTubeEmbed url={post.link!} />;
+    } else if (hostname.endsWith('tiktok.com')) {
+      embedComponent = <TikTokEmbed url={post.link!} />;
+    } else if (hostname.endsWith('pinterest.com')) {
+      embedComponent = <PinterestEmbed url={post.link!} />;
+    } else if (hostname.endsWith('linkedin.com')) {
+      embedComponent = <LinkedInEmbed url={post.link!} />;
+    }
+  }
+
   return (
     <>
       <YStack w='100%'>
@@ -147,8 +184,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 scale={0.92}
                 opacity={1}
                 y={0}
-                enterStyle={{ y: -50, opacity: 0, }}
-                exitStyle={{ opacity: 0, }}
+                // enterStyle={{ y: -50, opacity: 0, }}
+                // exitStyle={{ opacity: 0, }}
                 pressStyle={{ scale: 0.91 }}
                 onPress={onPressParentPreview}
               >
@@ -180,8 +217,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             scale={1}
             opacity={1}
             y={0}
-            enterStyle={{ y: -50, opacity: 0, }}
-            exitStyle={{ opacity: 0, }}
+            // enterStyle={{ y: -50, opacity: 0, }}
+            // exitStyle={{ opacity: 0, }}
             {...postLinkProps}
 
           >
@@ -205,15 +242,25 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
 
               {/* {...postLinkProps}> */}
               <YStack zi={1000} width='100%' {...footerProps}>
+                {embedComponent}
+                {hasMediaToPreview ? <XStack w='100%' maw={800}>
+                  <ScrollView horizontal w={isPreview ? '260px' : '100%'}
+                    h={media.gtXs ? '400px' : '260px'} >
+                    <XStack space='$2'>
+                      {post.media.map((mediaId, i) => <YStack w={media.gtXs ? '400px' : '260px'} h='100%'>
+                        <MediaRenderer key={mediaId} media={Media.create({ id: mediaId })} />
+                      </YStack>)}
+                    </XStack>
+                  </ScrollView></XStack> : undefined}
                 <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
-                  {(!isPreview && previewUrl && previewUrl != '') ?
+                  {(!isPreview && previewUrl && previewUrl != '' && hasPrimaryImage) ?
                     <Image
                       mb='$3'
                       width={media.sm ? 300 : 400}
                       height={media.sm ? 300 : 400}
                       resizeMode="contain"
                       als="center"
-                      source={{uri: previewUrl}}
+                      source={{ uri: previewUrl }}
                       borderRadius={10}
                     /> : undefined}
                   {
@@ -264,16 +311,16 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               </YStack>
             </Card.Footer>
             <Card.Background>
-              {(isPreview && previewUrl && previewUrl != '') ?
+              {(isPreview && hasPrimaryImage) ?
                 <FadeInView>
                   <Image
                     pos="absolute"
                     width={300}
                     opacity={0.25}
                     height={300}
-                    resizeMode="contain"
+                    resizeMode="cover"
                     als="flex-start"
-                    source={{uri: previewUrl}}
+                    source={{ uri: previewUrl! }}
                     blurRadius={1.5}
                     // borderRadius={5}
                     borderBottomRightRadius={5}

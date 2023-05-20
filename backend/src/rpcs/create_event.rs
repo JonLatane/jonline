@@ -96,6 +96,7 @@ pub fn create_event(
                 link: post.link.to_link(),
                 content: post.content.to_owned(),
                 visibility: visibility.to_string_visibility(),
+                embed_link: post.embed_link.to_owned(),
                 context: PostContext::Event.as_str_name().to_string(),
                 media: post.media.iter().map(|m: &String| m.to_db_id().unwrap()).collect(),
             })
@@ -118,7 +119,8 @@ pub fn create_event(
                             link: p.link.to_link(),
                             content: p.content.to_owned(),
                             visibility: p.visibility.to_string_visibility(),
-                            context: PostContext::Event.as_str_name().to_string(),
+                            embed_link: p.embed_link.to_owned(),
+                            context: PostContext::EventInstance.as_str_name().to_string(),
                             media: p.media.iter().map(|m: &String| m.to_db_id().unwrap()).collect(),
                         })
                         .get_result::<models::Post>(conn)?,

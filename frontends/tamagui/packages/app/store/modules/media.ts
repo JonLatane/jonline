@@ -134,8 +134,8 @@ export const upsertMedia = mediaAdapter.upsertOne;
 export const upsertManyMedia = mediaAdapter.upsertMany;
 export default mediaReducer;
 
-export function getMediaPage(state: MediaState, userId: string, page: number): Media[] {
-  const pageMediaIds: string[] = (state.userMediaPages[userId] ?? {})[page] ?? [];
-  const pageMedia = pageMediaIds.map(id => selectMediaById(state, id)).filter(p => p) as Media[];
+export function getMediaPage(state: MediaState, userId: string, page: number): Media[] | undefined {
+  const pageMediaIds: string[] | undefined = (state.userMediaPages[userId] ?? {})[page];
+  const pageMedia = pageMediaIds?.map(id => selectMediaById(state, id)).filter(p => p) as Media[];
   return pageMedia;
 }

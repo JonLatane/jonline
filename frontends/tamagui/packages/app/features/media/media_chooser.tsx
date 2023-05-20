@@ -1,5 +1,5 @@
 import { Post, PostListingType, Media } from '@jonline/api';
-import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet, useMedia } from '@jonline/ui';
+import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet, useMedia, Paragraph } from '@jonline/ui';
 import { getMediaPage, getPostsPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
@@ -11,7 +11,7 @@ import { TabsNavigation } from '../tabs/tabs_navigation';
 import { MediaCard } from './media_card';
 import { useAccount, useAccountOrServer } from '../../store/store';
 import { FileUploader } from "react-drag-drop-files";
-import { Upload } from '@tamagui/lucide-icons';
+import { ChevronDown, Image as ImageIcon, Upload } from '@tamagui/lucide-icons';
 import { useMediaPage } from './media_screen';
 
 
@@ -128,7 +128,10 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
     <>
       <Button backgroundColor={navColor} color={navTextColor}
         onPress={() => setOpen((x) => !x)}>
-        {children ?? 'Choose Media'}
+        {children ?? <XStack>
+          <ImageIcon size={24} color={navTextColor} />
+          <Paragraph ml='$2' color={navTextColor}>Choose Media</Paragraph>
+        </XStack>}
       </Button>
       <Sheet
         modal
@@ -143,16 +146,33 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
         <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
-          {account && (mediaState.loadStatus == 'loading' || loadingMedia || showSpinnerForUploading) ?
-            <YStack space="$1" opacity={0.92}>
-              <Spinner size='large' color={navColor} scale={2}
-                top={dimensions.height / 2 - 50}
-              />
-            </YStack>
-            : undefined}
-          {
+
+          {account && (mediaState.loadStatus == 'loading' || mediaState.loadStatus == 'unloaded' || loadingMedia || showSpinnerForUploading) ?
+              <YStack space="$1" opacity={0.92} zi={1000}>
+                <Spinner size='large' color={navColor} scale={2}
+                  top={dimensions.height / 2 - 50}
+                />
+              </YStack>
+              : undefined}
+          <XStack space='$4' als='center' paddingHorizontal='$5' w='100%' maw={600}>
+
+            {/* <Button size='$3' icon={RefreshCw} circular
+              // disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
+              onPress={resetCredentialedData} />
+            <XStack f={1} /> */}
+            <Button
+              alignSelf='center'
+              size="$3"
+              circular
+              icon={ChevronDown}
+              onPress={() => setOpen(false)} />
+            
+            {/* <XStack f={1} />
+            <SettingsSheet size='$3' /> */}
+
+{
             accountOrServer.account
-              ? < YStack mb={-19} overflow='hidden'>
+              ? <YStack mb={-19} maw={600} p='$5' ml='auto' als='center' overflow='hidden'>
                 <Text fontFamily='$body' fontSize='$3' mx='auto' mb='$3'>
                   <FileUploader handleChange={handleUpload} name="file"
                     label='Add Media'
@@ -185,20 +205,31 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                 <Heading size='$3' ta='center'>You can log in by clicking the button in the top right corner.</Heading>
               </YStack>
           }
+          </XStack>
           <Sheet.ScrollView p="$4" space>
             <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' space>
 
               {media && media.length == 0
                 ? mediaState.loadStatus != 'loading' && mediaState.loadStatus != 'unloaded'
-                  ? <XStack width='100%' mx='auto' jc="center" ai="center">
+                  ? <YStack width='100%' mx='auto' jc="center" ai="center">
                     <Heading size='$5' mb='$3'>No media found.</Heading>
                     <Heading size='$3' ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                  </XStack>
+                  </YStack>
                   : undefined
                 : <>
-                  <XStack space='$2' flexWrap='wrap' jc="center">
+                  <XStack space='$0' flexWrap='wrap' als='center' mx='auto'>
                     {media?.map((item) => {
-                      return <YStack w={mediaQuery.gtXs ? '260px' : '170px'} mb='$2'>
+                      const _selectionIndex = selectedMedia.indexOf(item.id);
+                      const selectionIndexBase1 = _selectionIndex == -1 ? undefined : _selectionIndex + 1;
+                      return <YStack w={mediaQuery.gtXs ? '260px' : '108px'} mah={mediaQuery.gtXs ? '300px' : '260px'} mb='$2'>
+
+                        {selectionIndexBase1
+                          ? <Paragraph zi={1000} px={5} position='absolute' top='$2' right='$2'
+                            borderRadius={5}
+                            backgroundColor={media.length > 0 ? primaryColor : navColor} color={media.length > 0 ? primaryTextColor : navTextColor}>
+                            {selectionIndexBase1}
+                          </Paragraph>
+                          : undefined}
                         <MediaCard media={item}
                           selected={selectedMedia.includes(item.id)}
                           onSelect={onMediaSelected ? () => selectMedia(item.id) : undefined}

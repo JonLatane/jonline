@@ -50,14 +50,14 @@ const AccountCard: React.FC<Props> = ({ account }) => {
           <XStack>
           {(avatarUrl && avatarUrl != '') ?
         
-            <XStack w={mediaQuery.gtXs ? 50 : 26} h={mediaQuery.gtXs ? 50 : 26}
-              mr={mediaQuery.gtXs ? '$3' : '$2'}>
+            <XStack w={mediaQuery.gtXs || true ? 50 : 26} h={mediaQuery.gtXs || true ? 50 : 26}
+              mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
               <Image
                 pos="absolute"
-                width={mediaQuery.gtXs ? 50 : 26}
+                width={mediaQuery.gtXs || true ? 50 : 26}
                 // opacity={0.25}
-                height={mediaQuery.gtXs ? 50 : 26}
-                borderRadius={mediaQuery.gtXs ? 25 : 13}
+                height={mediaQuery.gtXs || true ? 50 : 26}
+                borderRadius={mediaQuery.gtXs || true ? 25 : 13}
                 resizeMode="cover"
                 als="flex-start"
                 source={{ uri: avatarUrl }}

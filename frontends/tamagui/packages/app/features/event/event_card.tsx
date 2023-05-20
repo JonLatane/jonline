@@ -174,8 +174,8 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
             scale={1}
             opacity={1}
             y={0}
-            enterStyle={{ y: -50, opacity: 0, }}
-            exitStyle={{ opacity: 0, }}
+            // enterStyle={{ y: -50, opacity: 0, }}
+            // exitStyle={{ opacity: 0, }}
             {...eventLinkProps}
 
           >

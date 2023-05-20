@@ -191,7 +191,7 @@ export function useMediaPage(userId: string | undefined, page: number, onLoaded?
   const media: Media[] | undefined = useTypedSelector((state: RootState) => userId ? getMediaPage(state.media, userId, 0) : undefined);
 
   useEffect(() => {
-    if (mediaState.loadStatus == 'unloaded' && !loadingMedia) {
+    if (!loadingMedia && (mediaState.loadStatus == 'unloaded' || media == undefined)) {
       if (!accountOrServer.server) return;
 
       console.log("Loading media...");
@@ -201,7 +201,7 @@ export function useMediaPage(userId: string | undefined, page: number, onLoaded?
       setLoadingMedia(false);
       onLoaded?.();
     }
-  });
+  }, [media]);
 
   function reloadMedia() {
     dispatch(loadMediaPage({ ...accountOrServer, userId, page }))

@@ -62,6 +62,7 @@ pub struct NewPost {
     pub visibility: String,
     pub context: String,
     pub media: Vec<i64>,
+    pub embed_link: bool,
 }
 
 

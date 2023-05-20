@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:http/http.dart' as http;
-import 'package:image/image.dart';
 import 'package:jonline/utils/proto_utils.dart';
 import 'package:username_gen/username_gen.dart';
 
@@ -239,10 +238,8 @@ Future<List<JonlineAccount>> generateSideAccounts(
     AppState appState,
     int count) async {
   final List<int> range = [for (var i = 0; i < count; i += 1) i];
-  final Set<int> avatarHashcodes = {};
   final List<Uint8List> avatars = [];
   final httpClient = http.Client();
-  int avatarFailureCount = 0;
 
   var lastMessageTime = DateTime.now();
   while (avatars.length < range.length) {
@@ -584,7 +581,7 @@ final List<DemoPost> _demoPosts = [
       [DemoGroup.sports],
       Post(
           title: "Not having fear is aid",
-          link: "https://www.disneyplus.com/movies/free-solo/3ibzvuU6iPlE",
+          link: "https://www.youtube.com/watch?v=7XhsuT0xctI",
           content: "Nah but fr Alexa Handhold is one of the GOAT")),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
@@ -676,7 +673,8 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
       [DemoGroup.everyoneWelcome],
       Post(
           title: "My reddit account, or at least the one I'd post here 🙃",
-          link: "https://www.reddit.com/user/pseudocomposer")),
+          link: "https://www.reddit.com/user/pseudocomposer",
+          embedLink: true)),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
       Post(
@@ -696,9 +694,15 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
   DemoPost(
       [DemoGroup.everyoneWelcome],
       Post(
-        title: "My LinkedIn, if you wanna see things people have paid me to do",
-        link: "https://www.linkedin.com/in/jonlatane/",
-      )),
+          title:
+              "My LinkedIn, if you wanna see things people have paid me to do",
+          link: "https://www.linkedin.com/in/jonlatane/")),
+  DemoPost(
+      [DemoGroup.music],
+      Post(
+          title: "Jack Stratton rockin a Harpejji",
+          link: "https://www.instagram.com/reel/CsY_NinvWDW/",
+          embedLink: true)),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
       Post(

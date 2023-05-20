@@ -1,6 +1,6 @@
-import { Post, Permission, Visibility } from '@jonline/api';
-import { Button, Heading, Input, isClient, isWeb, Sheet, TextArea, useMedia, XStack, YStack } from '@jonline/ui';
-import { ChevronDown, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
+import { Post, Permission, Visibility, Media } from '@jonline/api';
+import { Button, Heading, Input, isClient, isWeb, Paragraph, ScrollView, Sheet, TextArea, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
+import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
 import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
@@ -10,6 +10,9 @@ import { AddAccountSheet } from '../accounts/add_account_sheet';
 // import ServerCard from './server_card';
 import PostCard from './post_card';
 import { VisibilityPicker } from './visibility_picker';
+import { ToggleRow } from '../settings_sheet';
+import { MediaChooser } from '../media/media_chooser';
+import { MediaRenderer } from '../media/media_renderer';
 
 export type CreatePostSheetProps = {
   // primaryServer?: JonlineServer;
@@ -26,22 +29,47 @@ const shortPreview = (r: RenderType) => r == RenderType.ShortPreview;
 //   CreateAccount = 'create_account',
 // }
 export function CreatePostSheet({ }: CreatePostSheetProps) {
-  const media = useMedia();
+  const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const account = accountOrServer.account!;
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(0);
 
   const [renderType, setRenderType] = useState(RenderType.Edit);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, _setShowSettings] = useState(true);
+  const [showMedia, _setShowMedia] = useState(false);
+  function setShowSettings(value: boolean) {
+    _setShowSettings(value);
+    if (value) {
+      _setShowMedia(false);
+    }
+  }
+  function setShowMedia(value: boolean) {
+    _setShowMedia(value);
+    if (value) {
+      _setShowSettings(false);
+    }
+  }
 
   // Form fields
   const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
+  const [shareable, setShareable] = useState(false);
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
   const [content, setContent] = useState('');
+  const [embedLink, setEmbedLink] = useState(false);
+  const [media, setMedia] = useState<string[]>([]);
 
-  const previewPost = Post.create({ title, link, content, author: { userId: account?.user.id, username: account?.user.username } })
+  useEffect(() => {
+    if (!open) {
+      setShowSettings(true);
+    }
+  }, [open]);
+
+  const previewPost = Post.create({
+    title, link, content, shareable, embedLink, media, visibility,
+    author: { userId: account?.user.id, username: account?.user.username }
+  })
   const textAreaRef = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
   const [posting, setPosting] = useState(false);
@@ -67,7 +95,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   const showShortPreview = shortPreview(renderType);
 
   function doCreate() {
-    const newPost: Post = Post.fromPartial({ title, link, content });
+    const newPost: Post = Post.create({ title, link, content, shareable, embedLink, media, visibility });
 
     dispatch(createPost({ ...newPost, ...accountOrServer })).then((action) => {
       if (action.type == createPost.fulfilled.type) {
@@ -106,14 +134,15 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
           <Sheet.Handle />
           <Button
             alignSelf='center'
-            size="$6"
+            size="$3"
             circular
             icon={ChevronDown}
+            mb='$2'
             onPress={() => {
               setOpen(false)
             }}
           />
-          <XStack marginHorizontal='$5' mb='$2'>
+          <XStack als='center' w='100%' px='$5' mb='$2' maw={800}>
             <Heading marginVertical='auto' f={1} size='$7'>Create Post</Heading>
             <Button backgroundColor={showSettings ? navColor : undefined} onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
               <Settings color={showSettings ? navTextColor : textColor} />
@@ -125,7 +154,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
           {postsState.createPostStatus == "errored" && postsState.errorMessage ?
             <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined}
           {showSettings
-            ? <XStack ac='center' jc='center' marginHorizontal='$5' animation="bouncy"
+            ? <YStack ac='center' jc='center' mx='auto' animation="bouncy"
               p='$3'
               opacity={1}
               scale={1}
@@ -148,8 +177,12 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                       return 'Unknown';
                   }
                 }} />
-            </XStack> : undefined}
-            <XStack marginHorizontal='auto' marginVertical='$3'>
+              <ToggleRow name='Allow others to share this Post'
+                value={shareable}
+                setter={(v) => setShareable(v)}
+                disabled={disableInputs} />
+            </YStack> : undefined}
+          <XStack marginHorizontal='auto' marginVertical='$3'>
             <Button backgroundColor={showEditor ? navColor : undefined}
               transparent={!showEditor}
               borderTopRightRadius={0} borderBottomRightRadius={0}
@@ -181,16 +214,78 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                   {/* <Heading size="$6">{server?.host}/</Heading> */}
                   <Input textContentType="name" placeholder="Post Title"
                     disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
+                    onFocus={() => setShowSettings(false)}
                     autoCapitalize='words'
                     value={title}
                     onChange={(data) => { setTitle(data.nativeEvent.text) }} />
-                  <Input textContentType="URL" autoCorrect={false} placeholder="Optional Link"
-                    disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
-                    // autoCapitalize='words'
-                    value={link}
-                    onChange={(data) => { setLink(data.nativeEvent.text) }} />
+                  <XStack space='$2'>
+                    <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Optional Link"
+                      disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
+                      onFocus={() => setShowSettings(false)}
+                      // autoCapitalize='words'
+                      value={link}
+                      onChange={(data) => { setLink(data.nativeEvent.text) }} />
+
+                    <ZStack w='$4' ml='$2'>
+                      <Paragraph zi={1000} pointerEvents='none' size='$1' mt='auto' ml='auto' px={5} o={media.length > 0 ? 0.93 : 0.5}
+                        borderRadius={5}
+                        backgroundColor={media.length > 0 ? primaryColor : navColor} color={media.length > 0 ? primaryTextColor : navTextColor}>
+                        {media.length}
+                      </Paragraph>
+                      <Button backgroundColor={showMedia ? navColor : undefined} onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
+                        <ImageIcon color={showMedia ? navTextColor : textColor} />
+                      </Button>
+                    </ZStack>
+                  </XStack>
+
+
+                  {showMedia
+                    ? <YStack ac='center' jc='center' marginHorizontal='$5' animation="bouncy"
+                      p='$3'
+                      opacity={1}
+                      scale={1}
+                      y={0}
+                      enterStyle={{ y: -50, opacity: 0, }}
+                      exitStyle={{ opacity: 0, }}>
+                      {media.length > 0 ? <ScrollView horizontal w='100%'>
+                        <XStack space='$2'>
+                          {media.map((mediaId, index) =>
+                            <ZStack w={mediaQuery.gtXs ? 350 : 148} h={mediaQuery.gtXs ? 280 : 195}>
+                              {/* <ZStack> */}
+                              <MediaRenderer key={mediaId} media={Media.create({ id: mediaId })} />
+                              <XStack w='100%' my='auto' zi={1000}>
+                                <Button ml='$2' circular o={index == 0 ? 0.3 : 0.9} icon={ArrowLeft} onPress={() => {
+                                  const updatedMedia = new Array<string>(...media);
+                                  const leftValue = updatedMedia[index - 1]!;
+                                  updatedMedia[index - 1] = mediaId;
+                                  updatedMedia[index] = leftValue;
+                                  setMedia(updatedMedia);
+                                 }} />
+                                <YStack f={1} />
+                                <Button mr='$2' circular o={index < media.length - 1 ? 0.9 : 0.3} icon={ArrowRight} onPress={() => {
+                                  const updatedMedia = new Array<string>(...media);
+                                  const rightValue = updatedMedia[index + 1]!;
+                                  updatedMedia[index + 1] = mediaId;
+                                  updatedMedia[index] = rightValue;
+                                  setMedia(updatedMedia);
+                                  }} />
+                              </XStack>
+                              {/* </ZStack> */}
+                            </ZStack>
+                          )}
+                        </XStack>
+                      </ScrollView> : undefined}
+                      {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
+                      <MediaChooser selectedMedia={media} onMediaSelected={setMedia} multiselect />
+                      <YStack h='$0' mt='$2' />
+                      <ToggleRow name='Embed Link'
+                        value={embedLink && link.length > 0}
+                        setter={(v) => setEmbedLink(v)}
+                        disabled={disableInputs || link.length == 0} />
+                    </YStack> : undefined}
 
                   <TextArea f={1} h='$19' value={content} ref={textAreaRef}
+                    onFocus={() => setShowSettings(false)}
                     disabled={posting} opacity={posting ? 0.5 : 1}
                     onChangeText={t => setContent(t)}
                     // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}

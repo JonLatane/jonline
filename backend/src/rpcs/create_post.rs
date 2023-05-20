@@ -89,6 +89,7 @@ pub fn create_post(
                 content: req.content.to_owned(),
                 context: PostContext::Post.as_str_name().to_string(),
                 visibility: visibility.to_string_visibility(),
+                embed_link: req.embed_link.to_owned(),
                 media: req.media.iter().map(|m: &String| m.to_db_id().unwrap()).collect(),
             })
             .get_result::<models::Post>(conn)?;

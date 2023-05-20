@@ -75,8 +75,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
         scale={1}
         opacity={1}
         y={0}
-        enterStyle={{ y: -50, opacity: 0, }}
-        exitStyle={{ opacity: 0, }}
+        // enterStyle={{ y: -50, opacity: 0, }}
+        // exitStyle={{ opacity: 0, }}
       // width={400}
       // hoverStyle={isPreview ? { scale: 0.97 } : {}}
       // pressStyle={isPreview ? { scale: 0.95 } : {}}
