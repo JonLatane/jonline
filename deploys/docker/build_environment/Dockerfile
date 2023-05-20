@@ -1,4 +1,4 @@
-FROM rust:1.63.0
+FROM rust:1.69.0
 
 # Install depends for grpcio.
 RUN cargo install protobuf-codegen

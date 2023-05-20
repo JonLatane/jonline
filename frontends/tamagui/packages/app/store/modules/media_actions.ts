@@ -64,21 +64,3 @@ export const deleteMedia: AsyncThunk<Empty, DeleteMedia, any> = createAsyncThunk
     return response;
   }
 );
-
-// export type LoadMediaReplies = AccountOrServer & {
-//   mediaIdPath: string[];
-// }
-// export const loadMediaReplies: AsyncThunk<GetMediaResponse, LoadMediaReplies, any> = createAsyncThunk<GetMediaResponse, LoadMediaReplies>(
-//   "media/loadReplies",
-//   async (repliesRequest) => {
-//     console.log("loadMediaReplies:", repliesRequest)
-//     const getMediaRequest = GetMediaRequest.create({
-//       mediaId: repliesRequest.mediaIdPath.at(-1),
-//       replyDepth: 2,
-//     })
-
-//     const client = await getCredentialClient(repliesRequest);
-//     const replies = await client.getMedia(getMediaRequest, client.credential);
-//     return replies;
-//   }
-// );

@@ -51,6 +51,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
   // debugger;
 
   return <XStack f={1} ml={media.gtXs ? 0 : -7} alignContent='flex-start'>
+    <YStack w={detailsMargins}/>
     {(avatarUrl && avatarUrl != '') ?
       <YStack marginVertical='auto'>
         {isPreview
@@ -63,7 +64,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
                 // opacity={0.25}
                 height={media.gtXs ? 50 : 26}
                 borderRadius={media.gtXs ? 25 : 13}
-                resizeMode="contain"
+                resizeMode="cover"
                 als="flex-start"
                 source={{ uri: avatarUrl }}
               // blurRadius={1.5}
@@ -82,7 +83,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
                   // opacity={0.25}
                   height={media.gtXs ? 50 : 26}
                   borderRadius={media.gtXs ? 25 : 13}
-                  resizeMode="contain"
+                  resizeMode="cover"
                   als="flex-start"
                   source={{ uri: avatarUrl }}
                 // blurRadius={1.5}
@@ -93,7 +94,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
           </FadeInView>}
       </YStack>
       : undefined}
-    <YStack marginLeft={detailsMargins}>
+    <YStack>
       <XStack>
         {/* <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading> */}
 

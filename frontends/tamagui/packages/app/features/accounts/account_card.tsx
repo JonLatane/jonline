@@ -1,11 +1,13 @@
 import { Permission } from "@jonline/api";
-import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
+import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack, Image, useMedia } from "@jonline/ui";
 
 import { Bot, Shield, Trash, User as UserIcon } from "@tamagui/lucide-icons";
+import { useMediaUrl } from "app/hooks/use_media_url";
 import { accountId, JonlineAccount, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
 import React from "react";
 import { View } from "react-native";
 import { useLink } from "solito/link";
+import { FadeInView } from "../post/fade_in_view";
 
 interface Props {
   account: JonlineAccount;
@@ -29,6 +31,8 @@ const AccountCard: React.FC<Props> = ({ account }) => {
   function doLogout() {
     dispatch(selectAccount(undefined));
   }
+  const avatarUrl = useMediaUrl(account.user.avatarMediaId, account.server);
+  const mediaQuery = useMedia();
 
   return (
     <Theme inverse={selected}>
@@ -44,6 +48,24 @@ const AccountCard: React.FC<Props> = ({ account }) => {
       >
         <Card.Header>
           <XStack>
+          {(avatarUrl && avatarUrl != '') ?
+        
+            <XStack w={mediaQuery.gtXs ? 50 : 26} h={mediaQuery.gtXs ? 50 : 26}
+              mr={mediaQuery.gtXs ? '$3' : '$2'}>
+              <Image
+                pos="absolute"
+                width={mediaQuery.gtXs ? 50 : 26}
+                // opacity={0.25}
+                height={mediaQuery.gtXs ? 50 : 26}
+                borderRadius={mediaQuery.gtXs ? 25 : 13}
+                resizeMode="cover"
+                als="flex-start"
+                source={{ uri: avatarUrl }}
+              // blurRadius={1.5}
+              // borderRadius={5}
+              />
+            </XStack>
+      : undefined}
             <YStack style={{ flex: 1 }}>
               <Heading size="$1" style={{ marginRight: 'auto' }}>{account.server.host}/</Heading>
               <Heading size="$7" style={{ marginRight: 'auto' }}>{account.user.username}</Heading>

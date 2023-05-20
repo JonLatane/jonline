@@ -443,7 +443,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
           </ZStack>
           <YStack mr='$2' ml='$2' mt='auto' ac='flex-end' >
             <YStack f={1} />
-            <Tooltip placement="top-end">
+            <Tooltip placement="top-end" key={`preview-button-${previewReply}`}>
               <Tooltip.Trigger>
                 <Button circular mb='$2' icon={previewReply ? Edit : Eye}
                   backgroundColor={navColor} color={navTextColor}
@@ -456,7 +456,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
                   }} />
               </Tooltip.Trigger>
               <Tooltip.Content>
-                <Heading size='$2' ta='center' als='center'>{previewReply ? 'Edit reply' : 'Preview reply'}</Heading>
+                <Heading size='$2'>{previewReply ? 'Edit reply' : 'Preview reply'}</Heading>
               </Tooltip.Content>
             </Tooltip>
             {/* <YStack f={1}/> */}

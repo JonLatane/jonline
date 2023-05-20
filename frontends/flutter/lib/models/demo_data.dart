@@ -285,8 +285,8 @@ Future<List<JonlineAccount>> generateSideAccounts(
                     headers: {
                       "Content-Type": "image/jpeg",
                       "Filename": "avatar.jpeg",
-                      // Really should use sideAccount.accessToken but this can be handy
-                      "Authorization": account.accessToken
+                      // Can be handy to use main account access token as well here...
+                      "Authorization": sideAccount.accessToken
                     },
                     body: avatar,
                   )
@@ -295,7 +295,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
                         headers: {
                           "Content-Type": "image/jpeg",
                           "Filename": "avatar.jpeg",
-                          "Authorization": account.accessToken
+                          "Authorization": sideAccount.accessToken
                         },
                         body: avatar,
                       ))

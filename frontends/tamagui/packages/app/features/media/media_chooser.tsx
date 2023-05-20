@@ -1,5 +1,5 @@
 import { Post, PostListingType, Media } from '@jonline/api';
-import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet } from '@jonline/ui';
+import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet, useMedia } from '@jonline/ui';
 import { getMediaPage, getPostsPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
@@ -23,6 +23,7 @@ interface MediaChooserProps {
 }
 
 export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMedia, onMediaSelected, multiselect = false }) => {
+  const mediaQuery = useMedia();
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(0);
   const serversState = useTypedSelector((state: RootState) => state.servers);
@@ -41,6 +42,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
+  const [uploadedMediaId, setUploadedMediaId] = useState<string | undefined>(undefined);
 
   const { media, loadingMedia, reloadMedia } = useMediaPage(
     accountOrServer.account?.user?.id,
@@ -80,6 +82,12 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
         setTimeout(() => setUploadProgress(undefined), 1000);
         reloadMedia();
       });
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === 4) {
+          const newMediaId = xhr.responseText;
+          setUploadedMediaId(newMediaId);
+        }
+      };
       xhr.open("POST", uploadUrl, true);
       xhr.setRequestHeader("Authorization", accountOrServer.account?.accessToken?.token || '');
       xhr.setRequestHeader("Filename", file.name);
@@ -92,6 +100,25 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
     } else {
       for (const file of arg) {
         uploadFile(file);
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (uploadedMediaId && (media ?? []).filter((m) => m.id == uploadedMediaId).length > 0) {
+      selectMedia(uploadedMediaId);
+      setUploadedMediaId(undefined);
+    }
+  }, [uploadedMediaId, media]);
+
+  function selectMedia(itemId: string) {
+    if (selectedMedia.includes(itemId)) {
+      onMediaSelected?.(selectedMedia.filter((x) => x != itemId))
+    } else {
+      if (multiselect) {
+        onMediaSelected?.([...selectedMedia, itemId])
+      } else {
+        onMediaSelected?.([itemId])
       }
     }
   }
@@ -171,20 +198,10 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                 : <>
                   <XStack space='$2' flexWrap='wrap' jc="center">
                     {media?.map((item) => {
-                      return <YStack w='260px' mb='$2'>
+                      return <YStack w={mediaQuery.gtXs ? '260px' : '170px'} mb='$2'>
                         <MediaCard media={item}
                           selected={selectedMedia.includes(item.id)}
-                          onSelect={onMediaSelected ? () => {
-                            if (selectedMedia.includes(item.id)) {
-                              onMediaSelected?.(selectedMedia.filter((x) => x != item.id))
-                            } else {
-                              if (multiselect) {
-                                onMediaSelected?.([...selectedMedia, item.id])
-                              } else {
-                                onMediaSelected?.([item.id])
-                              }
-                            }
-                          } : undefined}
+                          onSelect={onMediaSelected ? () => selectMedia(item.id) : undefined}
                           chooser />
                       </YStack>;
                     })}

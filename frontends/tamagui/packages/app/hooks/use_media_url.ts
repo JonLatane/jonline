@@ -1,7 +1,8 @@
-import { serverUrl, useCredentialDispatch } from 'app/store';
+import { JonlineServer, serverUrl, useCredentialDispatch } from 'app/store';
 
-export function useMediaUrl(mediaId: string | undefined): string | undefined {
-  const { accountOrServer: { account, server } } = useCredentialDispatch();
+export function useMediaUrl(mediaId?: string, overrideServer?: JonlineServer): string | undefined {
+  const { accountOrServer: { account, server: currentServer } } = useCredentialDispatch();
+  const server = overrideServer ?? currentServer;
   if (!mediaId || mediaId == '') return undefined;
 
   if (account) {

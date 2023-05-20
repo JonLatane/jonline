@@ -66,6 +66,10 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/UpdateUser',
       ($4.User value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $4.User.fromBuffer(value));
+  static final _$deleteUser = $grpc.ClientMethod<$4.User, $0.Empty>(
+      '/jonline.Jonline/DeleteUser',
+      ($4.User value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$createFollow = $grpc.ClientMethod<$4.Follow, $4.Follow>(
       '/jonline.Jonline/CreateFollow',
       ($4.Follow value) => value.writeToBuffer(),
@@ -84,6 +88,10 @@ class JonlineClient extends $grpc.Client {
           ($5.GetMediaRequest value) => value.writeToBuffer(),
           ($core.List<$core.int> value) =>
               $5.GetMediaResponse.fromBuffer(value));
+  static final _$deleteMedia = $grpc.ClientMethod<$5.Media, $0.Empty>(
+      '/jonline.Jonline/DeleteMedia',
+      ($5.Media value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$getGroups =
       $grpc.ClientMethod<$6.GetGroupsRequest, $6.GetGroupsResponse>(
           '/jonline.Jonline/GetGroups',
@@ -235,6 +243,11 @@ class JonlineClient extends $grpc.Client {
     return $createUnaryCall(_$updateUser, request, options: options);
   }
 
+  $grpc.ResponseFuture<$0.Empty> deleteUser($4.User request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteUser, request, options: options);
+  }
+
   $grpc.ResponseFuture<$4.Follow> createFollow($4.Follow request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createFollow, request, options: options);
@@ -253,6 +266,11 @@ class JonlineClient extends $grpc.Client {
   $grpc.ResponseFuture<$5.GetMediaResponse> getMedia($5.GetMediaRequest request,
       {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getMedia, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> deleteMedia($5.Media request,
+      {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteMedia, request, options: options);
   }
 
   $grpc.ResponseFuture<$6.GetGroupsResponse> getGroups(
@@ -432,6 +450,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $4.User.fromBuffer(value),
         ($4.User value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.User, $0.Empty>(
+        'DeleteUser',
+        deleteUser_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.User.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$4.Follow, $4.Follow>(
         'CreateFollow',
         createFollow_Pre,
@@ -460,6 +485,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $5.GetMediaRequest.fromBuffer(value),
         ($5.GetMediaResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$5.Media, $0.Empty>(
+        'DeleteMedia',
+        deleteMedia_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $5.Media.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$6.GetGroupsRequest, $6.GetGroupsResponse>(
         'GetGroups',
         getGroups_Pre,
@@ -654,6 +686,11 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return updateUser(call, await request);
   }
 
+  $async.Future<$0.Empty> deleteUser_Pre(
+      $grpc.ServiceCall call, $async.Future<$4.User> request) async {
+    return deleteUser(call, await request);
+  }
+
   $async.Future<$4.Follow> createFollow_Pre(
       $grpc.ServiceCall call, $async.Future<$4.Follow> request) async {
     return createFollow(call, await request);
@@ -672,6 +709,11 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$5.GetMediaResponse> getMedia_Pre(
       $grpc.ServiceCall call, $async.Future<$5.GetMediaRequest> request) async {
     return getMedia(call, await request);
+  }
+
+  $async.Future<$0.Empty> deleteMedia_Pre(
+      $grpc.ServiceCall call, $async.Future<$5.Media> request) async {
+    return deleteMedia(call, await request);
   }
 
   $async.Future<$6.GetGroupsResponse> getGroups_Pre($grpc.ServiceCall call,
@@ -796,6 +838,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$4.GetUsersResponse> getUsers(
       $grpc.ServiceCall call, $4.GetUsersRequest request);
   $async.Future<$4.User> updateUser($grpc.ServiceCall call, $4.User request);
+  $async.Future<$0.Empty> deleteUser($grpc.ServiceCall call, $4.User request);
   $async.Future<$4.Follow> createFollow(
       $grpc.ServiceCall call, $4.Follow request);
   $async.Future<$4.Follow> updateFollow(
@@ -804,6 +847,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
       $grpc.ServiceCall call, $4.Follow request);
   $async.Future<$5.GetMediaResponse> getMedia(
       $grpc.ServiceCall call, $5.GetMediaRequest request);
+  $async.Future<$0.Empty> deleteMedia($grpc.ServiceCall call, $5.Media request);
   $async.Future<$6.GetGroupsResponse> getGroups(
       $grpc.ServiceCall call, $6.GetGroupsRequest request);
   $async.Future<$6.Group> createGroup($grpc.ServiceCall call, $6.Group request);

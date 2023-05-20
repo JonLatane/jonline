@@ -15,6 +15,7 @@ pub fn reset_data(
     validate_permission(&user, Permission::Admin)?;
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
+        update(media::table).set(media::user_id.eq(None::<i64>)).execute(conn)?;
         delete(user_posts::table).execute(conn)?;
         delete(group_posts::table).execute(conn)?;
         delete(posts::table).execute(conn)?;

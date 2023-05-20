@@ -643,7 +643,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                                             options: account!
                                                 .authenticatedCallOptions);
                                     showSnackBar(
-                                        "Server data reset. All Groups/Posts/Comments/Users (except ${account!.username}) deleted.");
+                                        "Server data reset. All Media/Groups/Posts/Comments/Users (except ${account!.username}) deleted.");
                                     for (var a in appState.accounts.value) {
                                       if (a.server == account!.server &&
                                           a.id != account!.id) {
