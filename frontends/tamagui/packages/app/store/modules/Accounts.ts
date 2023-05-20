@@ -1,5 +1,5 @@
 import { grpc } from "@improbable-eng/grpc-web";
-import { CreateAccountRequest, ExpirableToken, LoginRequest } from "@jonline/api";
+import { CreateAccountRequest, ExpirableToken, LoginRequest, User } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   createAsyncThunk,
@@ -21,11 +21,11 @@ let _accessFetchLock = false;
 let _newAccessToken: ExpirableToken | undefined = undefined;
 let _newRefreshToken: ExpirableToken | undefined = undefined;
 export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
-  let { account, server } = accountOrServer;
-  if (!account) {
-    setCookie('jonline_access_token', null);
+  const { account: currentAccount, server } = accountOrServer;
+  if (!currentAccount) {
     return getServerClient(server!);
   } else {
+    let account: JonlineAccount = currentAccount;
     const client = await getServerClient(account.server);
     const metadata = new grpc.Metadata();
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
@@ -50,13 +50,23 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
         newRefreshToken = fetchedRefreshToken!;
         _newRefreshToken = newRefreshToken;
         _accessFetchLock = false;
-        account = { ...account, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken };
+        account = { ...account, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken! };
         store.dispatch(accountsSlice.actions.upsertAccount(account));
+        metadata.append('authorization', account.accessToken.token);
+
+        // Update the current user asynchronously.
+        client.getCurrentUser({}, metadata).then(user => {
+          account = { ...account, user };
+          store.dispatch(accountsSlice.actions.upsertAccount(account));
+        });
+      } else {
+        metadata.append('authorization', account.accessToken.token);
       }
       // account = { ...account, accessToken: newAccessToken! };
       // store.dispatch(accountsSlice.actions.upsertAccount(account));
+    } else {
+      metadata.append('authorization', account.accessToken.token);
     }
-    metadata.append('authorization', account.accessToken.token);
     // setCookie('jonline_access_token', account.accessToken.token);
     return { ...client, credential: metadata };
   }
@@ -154,6 +164,17 @@ export const accountsSlice = createSlice({
       state.successMessage = undefined;
       state.error = undefined;
     },
+    upsertUserDataToAccounts(state, action: PayloadAction<{ user: User, server: JonlineServer }>) {
+      for (const accountId in state.entities) {
+        const account = state.entities[accountId]!;
+        const { user: accountUser, server: accountServer } = account;
+        const { user: payloadUser, server: payloadServer } = action.payload;
+        if (serverID(accountServer) === serverID(payloadServer) && accountUser.id == payloadUser.id) {
+          account.user = action.payload.user;
+        }
+        //TODO does this work as expected?
+      }
+    }
   },
   extraReducers: (builder) => {
     builder.addCase(createAccount.pending, (state) => {
@@ -193,7 +214,7 @@ export const accountsSlice = createSlice({
   },
 });
 
-export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts } = accountsSlice.actions;
+export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts, upsertUserDataToAccounts } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;

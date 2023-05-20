@@ -21,6 +21,7 @@ const Stack = createNativeStackNavigator<{
   posts: undefined,
   events: undefined,
   about: undefined,
+  about_jonline: undefined,
   userDetails: {
     id: string
   },

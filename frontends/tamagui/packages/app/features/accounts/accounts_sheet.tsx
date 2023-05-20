@@ -9,6 +9,7 @@ import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
 import ServerCard from './server_card';
+import { physicallyHostingServerId } from '../about/about_screen';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -113,7 +114,11 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     setBrowsingServers(false);
   }
   const serversDiffer = onlyShowServer && serversState.server && serverID(onlyShowServer) != serverID(serversState.server);
-  const currentServerInfoLink = serversState.server && useLink({ href: `/server/${serverID(serversState.server)}` });
+  const serverId = serversState.server ? serverID(serversState.server) : undefined;
+  // debugger;
+  const currentServerInfoLink = serversState.server && useLink({ 
+    href: serverId === physicallyHostingServerId() ? '/about' : `/server/${serverId!}` 
+  });
   // bc react native may render multiple accounts sheets at a time
   const secureLabelUuid = uuidv4();
   const disableSecureSelection = serversLoading || (Platform.OS == 'web' && window.location.protocol == 'https');

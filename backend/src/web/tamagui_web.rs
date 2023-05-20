@@ -11,6 +11,7 @@ lazy_static! {
         tamagui_posts,
         tamagui_events,
         tamagui_about,
+        tamagui_about_jonline,
         tamagui_post,
         tamagui_user,
         tamagui_people,
@@ -65,6 +66,10 @@ async fn tamagui_events() -> CacheResponse<Result<NamedFile, Status>> {
 #[rocket::get("/about")]
 async fn tamagui_about() -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("about.html").await
+}
+#[rocket::get("/about_jonline")]
+async fn tamagui_about_jonline() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("about_jonline.html").await
 }
 
 #[rocket::get("/post/<_id_etc..>")]

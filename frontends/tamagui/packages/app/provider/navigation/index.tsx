@@ -26,6 +26,8 @@ export function NavigationProvider({
               groupPostDetails: 'g/:shortname/p/:postId',
               people: 'people',
               followRequests: 'people/follow_requests',
+              about: 'about',
+              about_jonline: 'about_jonline',
             },
           },
         }),

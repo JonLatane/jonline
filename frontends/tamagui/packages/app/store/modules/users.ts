@@ -16,7 +16,7 @@ import { passes } from "app/utils/moderation";
 import moment from "moment";
 import store from "../store";
 import { AccountOrServer } from "../types";
-import { getCredentialClient } from "./accounts";
+import { getCredentialClient, upsertUserDataToAccounts } from "./accounts";
 import { UserListingType } from '../../../api/generated/users';
 
 export interface UsersState {
@@ -208,6 +208,15 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       state.userPages[listingType]![page] = userIds;
 
       state.successMessage = `Users loaded.`;
+
+      // Update the users in any relevant accounts.
+      const server = action.meta.arg.server!;
+
+      setTimeout(() => {
+        for (const user of action.payload.users) {
+          store.dispatch(upsertUserDataToAccounts({ server, user }));
+        }
+      }, 1);
     });
     builder.addCase(loadUsersPage.rejected, (state, action) => {
       state.status = "errored";
@@ -218,18 +227,24 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
     });
     [loadUser, loadUsername, updateUser].forEach((loader) => {
       builder.addCase(loader.pending, (state) => {
-        // debugger;
         state.status = "loading";
         state.error = undefined;
       });
       builder.addCase(loader.fulfilled, (state, action) => {
         state.status = "loaded";
-        usersAdapter.upsertOne(state, action.payload);
-        state.usernameIds[action.payload.username] = action.payload.id;
-        state.successMessage = `User data for ${action.payload.id}:${action.payload.username} loaded.`;
+        const user = action.payload;
+        usersAdapter.upsertOne(state, user);
+        state.usernameIds[action.payload.username] = user.id;
+        state.successMessage = `User data for ${user.id}:${user.username} loaded.`;
         if (loader == updateUser) {
           state.successMessage = userSaved;
         }
+
+        // Update the user in any relevant accounts.
+        const server = action.meta.arg.server!;
+        setTimeout(() => {
+          store.dispatch(upsertUserDataToAccounts({ server, user }));
+        }, 1);
       });
       builder.addCase(loader.rejected, (state, action) => {
         state.status = "errored";

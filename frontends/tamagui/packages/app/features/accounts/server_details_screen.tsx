@@ -16,7 +16,11 @@ import { PermissionsEditor, PermissionsEditorProps } from '../user/username_deta
 const { useParam } = createParam<{ id: string }>()
 
 export function ServerDetailsScreen() {
-  const [requestedServerUrl] = useParam('id')
+  return BaseServerDetailsScreen();
+}
+
+export function BaseServerDetailsScreen(specificServer?: string) {
+  const [requestedServerUrl] = specificServer ? [specificServer] : useParam('id');
   const requestedServerUrlParts = requestedServerUrl?.split(':')
   const requestedServerUrlValid = requestedServerUrlParts?.length == 2
     && ['http', 'https'].includes(requestedServerUrlParts[0]!);
@@ -33,7 +37,7 @@ export function ServerDetailsScreen() {
     account?.user?.permissions.includes(Permission.ADMIN);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
-  const aboutLink = useLink({ href: '/about' })
+  const aboutJonlineLink = useLink({ href: '/about_jonline' })
 
   const { serviceVersion, serverConfiguration } = server || {};
 
@@ -166,7 +170,7 @@ export function ServerDetailsScreen() {
                     Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
                   </Button>
                 </>}
-                <Heading size='$10' als='center' mt='$3'>Server Info</Heading>
+                <Heading size='$10' als='center' mt='$3'>{specificServer ? 'Community' : 'Server'} Information</Heading>
                 <ServerCard server={server!} />
                 <XStack mt='$4'>
                   <Heading size='$3' f={1}>Service Version</Heading>
@@ -203,7 +207,7 @@ export function ServerDetailsScreen() {
                   {...defaultPermissionsEditorProps} />}
 
 
-                <Button {...aboutLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
+                <Button {...aboutJonlineLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
                   <Heading size='$2' color={navTextColor}>About Jonline...</Heading>
                 </Button>
 
