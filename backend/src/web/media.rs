@@ -32,17 +32,17 @@ use uuid::Uuid;
 
 lazy_static! {
     pub static ref MEDIA_ENDPOINTS: Vec<Route> =
-        routes![add_media_options, add_media, media_file_options, media_file];
+        routes![create_media_options, create_media, media_file_options, media_file];
 }
 
 /// Used to manage CORS for the media upload endpoint.
 #[rocket::options("/media")]
-pub async fn add_media_options() -> &'static str {
+pub async fn create_media_options() -> &'static str {
     return "";
 }
 
 #[rocket::post("/media", data = "<media>")]
-pub async fn add_media(
+pub async fn create_media(
     media: Data<'_>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
@@ -50,7 +50,7 @@ pub async fn add_media(
     content_type_header: ContentTypeHeader<'_>,
     filename_header: FilenameHeader<'_>,
 ) -> Result<String, Status> {
-    log::info!("add_media");
+    log::info!("create_media");
     let user = get_media_user(None, auth_header, cookies, state)?;
     let uuid = Uuid::new_v4();
     let minio_path = format!(
@@ -67,7 +67,7 @@ pub async fn add_media(
         .await
         .map_err(|_| Status::InternalServerError)?;
 
-    log::info!("add_media status_code: {:?}", status_code);
+    log::info!("create_media status_code: {:?}", status_code);
 
     let media = insert_into(media::table)
         .values(&models::NewMedia {
@@ -76,6 +76,7 @@ pub async fn add_media(
             content_type: content_type_header.0.to_string(),
             name: Some(filename_header.0.to_string()),
             description: None,
+            generated: false,
             visibility: Visibility::GlobalPublic.to_string_visibility(),
         })
         .get_result::<models::Media>(&mut state.pool.get().unwrap());

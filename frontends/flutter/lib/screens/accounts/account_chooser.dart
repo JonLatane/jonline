@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
@@ -10,6 +8,7 @@ import '../../app_state.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_server.dart';
+import '../media/media_image.dart';
 
 // import 'package:jonline/db.dart';
 
@@ -332,12 +331,13 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
                 SizedBox(
                     height: 36,
                     width: 36,
-                    child: ((a.user?.avatar ?? []).isNotEmpty)
+                    child: a.user?.avatarMediaId.isNotEmpty == true
                         ? CircleAvatar(
                             key: Key('avatar-${a.id}'),
                             backgroundImage:
-                                MemoryImage(Uint8List.fromList(a.user!.avatar)),
-                          )
+                                mediaImageProvider(a.user!.avatarMediaId)
+                            // MemoryImage(Uint8List.fromList(a.user!.avatar)),
+                            )
                         : const CircleAvatar(
                             backgroundColor: Colors.black12,
                             child: Icon(
@@ -412,8 +412,8 @@ Widget _serverItem(JonlineServer s, BuildContext context) {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                Column(
-                  children: const [Icon(Icons.computer, size: 20)],
+                const Column(
+                  children: [Icon(Icons.computer, size: 20)],
                 ),
                 const SizedBox(width: 8),
                 Column(

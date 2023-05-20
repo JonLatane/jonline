@@ -1,4 +1,4 @@
-import { colorMeta, loadPostPreview, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { colorMeta, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
@@ -11,6 +11,7 @@ import { AuthorInfo } from "../post/author_info";
 import { FadeInView } from "../post/fade_in_view";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import moment from "moment";
+import { useMediaUrl } from "app/hooks/use_media_url";
 
 interface Props {
   event: Event;
@@ -32,19 +33,19 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   const { luma: themeBgLuma } = colorMeta(themeBgColor);
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
-  const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
+  // const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
   const onScreen = useOnScreen(ref, "-1px");
-  useEffect(() => {
-    if (!preview && !loadingPreview && onScreen && post.previewImageExists != false) {
-      post.content
-      setLoadingPreview(true);
-      setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
-    }
-  });
+  // useEffect(() => {
+  //   if (!preview && !loadingPreview && onScreen && post.previewImageExists != false) {
+  //     post.content
+  //     setLoadingPreview(true);
+  //     setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
+  //   }
+  // });
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
@@ -53,7 +54,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   const startsAtHeader = instances.length == 1 ? instance?.startsAt : undefined;
   const endsAtHeader = instances.length == 1 ? instance?.endsAt : undefined;
 
-  const postLink = {};
+  const eventLink = {};
   // useLink({
   //   href: groupContext
   //     ? `/g/${groupContext.shortname}/p/${post.id}`
@@ -66,7 +67,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   });
 
   const maxContentHeight = isPreview ? horizontal ? 100 : 300 : undefined;
-  const postLinkProps = isPreview ? postLink : undefined;
+  const eventLinkProps = isPreview ? eventLink : undefined;
   const authorLinkProps = post.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;
   const showDetailsShadow = isPreview && post.content && post.content.length > contentLengthShadowThreshold;
@@ -93,15 +94,16 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   } : {
     // mr: -2 * detailsMargins,
   };
+  const previewUrl = useMediaUrl(post?.media[0]);
 
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
-  const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
+  // const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
   const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   useEffect(() => {
     if (authorId) {
-      if (!loadingAuthor && (!author || authorAvatar == undefined) && !authorLoadFailed) {
+      if (!loadingAuthor && !author && !authorLoadFailed) {
         setLoadingAuthor(true);
         setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
       } else if (loadingAuthor && author) {
@@ -167,9 +169,14 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
             padding='$0'
             f={isPreview ? undefined : 1}
             animation="bouncy"
-            pressStyle={preview || post.replyToPostId ? { scale: 0.990 } : {}}
+            pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
             ref={ref!}
-            {...postLinkProps}
+            scale={1}
+            opacity={1}
+            y={0}
+            enterStyle={{ y: -50, opacity: 0, }}
+            exitStyle={{ opacity: 0, }}
+            {...eventLinkProps}
 
           >
             {post.link || post.title
@@ -196,14 +203,14 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
               {/* {...postLinkProps}> */}
               <YStack zi={1000} width='100%' {...footerProps}>
                 <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
-                  {(!isPreview && preview && preview != '') ?
+                  {(!isPreview && previewUrl && previewUrl != '') ?
                     <Image
                       mb='$3'
                       width={media.sm ? 300 : 400}
                       height={media.sm ? 300 : 400}
                       resizeMode="contain"
                       als="center"
-                      src={preview}
+                      source={{uri: previewUrl}}
                       borderRadius={10}
                     /> : undefined}
                   {
@@ -220,7 +227,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
               </YStack>
             </Card.Footer>
             <Card.Background>
-              {(isPreview && preview && preview != '') ?
+              {(isPreview && previewUrl && previewUrl != '') ?
                 <FadeInView>
                   <Image
                     pos="absolute"
@@ -229,7 +236,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
                     height={300}
                     resizeMode="contain"
                     als="flex-start"
-                    src={preview}
+                    source={{uri: previewUrl}}
                     blurRadius={1.5}
                     // borderRadius={5}
                     borderBottomRightRadius={5}

@@ -57,7 +57,7 @@ pub fn create_group(
                     name: request.name.to_owned(),
                     shortname: derive_shortname(&request),
                     description: request.description,
-                    avatar: request.avatar,
+                    avatar_media_id: request.avatar_media_id.map(|id| id.to_db_id().unwrap()),
                     visibility: visibility,
                     default_membership_permissions: default_membership_permissions,
                     default_membership_moderation: default_membership_moderation,

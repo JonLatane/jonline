@@ -19,11 +19,12 @@ pub struct User {
     pub id: i64,
     pub username: String,
     pub password_salted_hash: String,
+    pub real_name: String,
     pub email: Option<serde_json::Value>,
     pub phone: Option<serde_json::Value>,
     /// A serialized (by name) list of [crate::protos::Permission]s.
     pub permissions: serde_json::Value,
-    pub avatar: Option<Vec<u8>>,
+    pub avatar_media_id: Option<i64>,
     pub bio: String,
     pub visibility: String,
     pub moderation: String,

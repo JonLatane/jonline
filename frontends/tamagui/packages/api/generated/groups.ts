@@ -64,7 +64,7 @@ export interface Group {
   name: string;
   shortname: string;
   description: string;
-  avatar?: Uint8Array | undefined;
+  avatarMediaId?: string | undefined;
   defaultMembershipPermissions: Permission[];
   /** Valid values are PENDING (requires a moderator to let you join) and UNMODERATED. */
   defaultMembershipModeration: Moderation;
@@ -125,7 +125,7 @@ function createBaseGroup(): Group {
     name: "",
     shortname: "",
     description: "",
-    avatar: undefined,
+    avatarMediaId: undefined,
     defaultMembershipPermissions: [],
     defaultMembershipModeration: 0,
     defaultPostModeration: 0,
@@ -153,8 +153,8 @@ export const Group = {
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
     }
-    if (message.avatar !== undefined) {
-      writer.uint32(42).bytes(message.avatar);
+    if (message.avatarMediaId !== undefined) {
+      writer.uint32(42).string(message.avatarMediaId);
     }
     writer.uint32(50).fork();
     for (const v of message.defaultMembershipPermissions) {
@@ -211,7 +211,7 @@ export const Group = {
           message.description = reader.string();
           break;
         case 5:
-          message.avatar = reader.bytes();
+          message.avatarMediaId = reader.string();
           break;
         case 6:
           if ((tag & 7) === 2) {
@@ -264,7 +264,7 @@ export const Group = {
       name: isSet(object.name) ? String(object.name) : "",
       shortname: isSet(object.shortname) ? String(object.shortname) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      avatar: isSet(object.avatar) ? bytesFromBase64(object.avatar) : undefined,
+      avatarMediaId: isSet(object.avatarMediaId) ? String(object.avatarMediaId) : undefined,
       defaultMembershipPermissions: Array.isArray(object?.defaultMembershipPermissions)
         ? object.defaultMembershipPermissions.map((e: any) => permissionFromJSON(e))
         : [],
@@ -292,8 +292,7 @@ export const Group = {
     message.name !== undefined && (obj.name = message.name);
     message.shortname !== undefined && (obj.shortname = message.shortname);
     message.description !== undefined && (obj.description = message.description);
-    message.avatar !== undefined &&
-      (obj.avatar = message.avatar !== undefined ? base64FromBytes(message.avatar) : undefined);
+    message.avatarMediaId !== undefined && (obj.avatarMediaId = message.avatarMediaId);
     if (message.defaultMembershipPermissions) {
       obj.defaultMembershipPermissions = message.defaultMembershipPermissions.map((e) => permissionToJSON(e));
     } else {
@@ -326,7 +325,7 @@ export const Group = {
     message.name = object.name ?? "";
     message.shortname = object.shortname ?? "";
     message.description = object.description ?? "";
-    message.avatar = object.avatar ?? undefined;
+    message.avatarMediaId = object.avatarMediaId ?? undefined;
     message.defaultMembershipPermissions = object.defaultMembershipPermissions?.map((e) => e) || [];
     message.defaultMembershipModeration = object.defaultMembershipModeration ?? 0;
     message.defaultPostModeration = object.defaultPostModeration ?? 0;
@@ -711,50 +710,6 @@ export const GetMembersResponse = {
     return message;
   },
 };
-
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if (tsProtoGlobalThis.Buffer) {
-    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = tsProtoGlobalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if (tsProtoGlobalThis.Buffer) {
-    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(String.fromCharCode(byte));
-    });
-    return tsProtoGlobalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

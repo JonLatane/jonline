@@ -2,14 +2,12 @@
 extern crate diesel;
 extern crate bcrypt;
 extern crate bs58;
-extern crate uuid;
 extern crate diesel_migrations;
 extern crate dotenv;
 extern crate env_logger;
 extern crate futures;
 extern crate itertools;
 extern crate log;
-extern crate markdown;
 extern crate prost_types;
 extern crate prost_wkt_types;
 extern crate regex;
@@ -20,14 +18,15 @@ extern crate rocket_cache_response;
 extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
+extern crate uuid;
 #[macro_use]
 extern crate lazy_static;
 extern crate awscreds;
 extern crate awsregion;
-extern crate s3;
 extern crate bytes;
-extern crate tokio_stream;
+extern crate s3;
 extern crate tempfile;
+extern crate tokio_stream;
 
 pub mod auth;
 pub mod db_connection;
@@ -53,22 +52,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db_connection::migrate_database();
 
     let pool = Arc::new(db_connection::establish_pool());
-
-    let raw_bucket = minio_connection::get_and_test_bucket().await.map_err(|e| {
-        log::error!("Failed to connect to MinIO: {:?}", e);
-        std::io::Error::new(std::io::ErrorKind::Other, "Failed to connect to MinIO")
-    })?;
-    let bucket = Arc::new(raw_bucket);
+    let bucket = Arc::new(
+        minio_connection::get_and_test_bucket()
+            .await
+            .expect("Failed to connect to MinIO"),
+    );
 
     let tempdir = Arc::new(tempfile::tempdir().map_err(|e| {
         log::error!("Failed to create tempdir: {:?}", e);
         e
     })?);
 
-    let secure_mode = start_tonic_server(pool.clone(), bucket.clone())?;
+    let tls_configuration_successful = start_tonic_server(pool.clone(), bucket.clone())?;
 
-    let rocket_unsecure_8000 = start_rocket_unsecured(8000, pool.clone(), bucket.clone(), tempdir.clone(), secure_mode);
-    let rocket_unsecure_80 = start_rocket_unsecured(80, pool.clone(), bucket.clone(), tempdir.clone(), secure_mode);
+    let rocket_unsecure_8000 = start_rocket_unsecured(
+        8000,
+        pool.clone(),
+        bucket.clone(),
+        tempdir.clone(),
+        tls_configuration_successful,
+    );
+    let rocket_unsecure_80 = start_rocket_unsecured(
+        80,
+        pool.clone(),
+        bucket.clone(),
+        tempdir.clone(),
+        tls_configuration_successful,
+    );
     let rocket_secure = start_rocket_secure(pool.clone(), bucket.clone(), tempdir.clone());
 
     join_all::<_>([

@@ -24,7 +24,7 @@ class Group extends $pb.GeneratedMessage {
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'name')
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'shortname')
     ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'description')
-    ..a<$core.List<$core.int>>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'avatar', $pb.PbFieldType.OY)
+    ..aOS(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'avatarMediaId')
     ..pc<$10.Permission>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
     ..e<$11.Moderation>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..e<$11.Moderation>(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
@@ -44,7 +44,7 @@ class Group extends $pb.GeneratedMessage {
     $core.String? name,
     $core.String? shortname,
     $core.String? description,
-    $core.List<$core.int>? avatar,
+    $core.String? avatarMediaId,
     $core.Iterable<$10.Permission>? defaultMembershipPermissions,
     $11.Moderation? defaultMembershipModeration,
     $11.Moderation? defaultPostModeration,
@@ -69,8 +69,8 @@ class Group extends $pb.GeneratedMessage {
     if (description != null) {
       _result.description = description;
     }
-    if (avatar != null) {
-      _result.avatar = avatar;
+    if (avatarMediaId != null) {
+      _result.avatarMediaId = avatarMediaId;
     }
     if (defaultMembershipPermissions != null) {
       _result.defaultMembershipPermissions.addAll(defaultMembershipPermissions);
@@ -162,13 +162,13 @@ class Group extends $pb.GeneratedMessage {
   void clearDescription() => clearField(4);
 
   @$pb.TagNumber(5)
-  $core.List<$core.int> get avatar => $_getN(4);
+  $core.String get avatarMediaId => $_getSZ(4);
   @$pb.TagNumber(5)
-  set avatar($core.List<$core.int> v) { $_setBytes(4, v); }
+  set avatarMediaId($core.String v) { $_setString(4, v); }
   @$pb.TagNumber(5)
-  $core.bool hasAvatar() => $_has(4);
+  $core.bool hasAvatarMediaId() => $_has(4);
   @$pb.TagNumber(5)
-  void clearAvatar() => clearField(5);
+  void clearAvatarMediaId() => clearField(5);
 
   @$pb.TagNumber(6)
   $core.List<$10.Permission> get defaultMembershipPermissions => $_getList(5);

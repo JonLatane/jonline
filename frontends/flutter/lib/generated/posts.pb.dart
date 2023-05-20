@@ -184,19 +184,20 @@ class Post extends $pb.GeneratedMessage {
     ..aOS(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'content')
     ..a<$core.int>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'responseCount', $pb.PbFieldType.O3)
     ..a<$core.int>(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'replyCount', $pb.PbFieldType.O3)
-    ..pc<Post>(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'replies', $pb.PbFieldType.PM, subBuilder: Post.create)
-    ..a<$core.List<$core.int>>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'previewImage', $pb.PbFieldType.OY)
-    ..e<$11.Visibility>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
-    ..e<$11.Moderation>(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..a<$core.int>(14, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupCount', $pb.PbFieldType.O3)
-    ..aOM<GroupPost>(15, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
-    ..aOB(16, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'previewImageExists')
-    ..aOB(17, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'shareable')
-    ..e<PostContext>(18, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
-    ..pPS(19, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'media')
+    ..a<$core.int>(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupCount', $pb.PbFieldType.O3)
+    ..pPS(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'media')
+    ..aOB(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'mediaGenerated')
+    ..aOB(12, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'embedLink')
+    ..aOB(13, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'shareable')
+    ..e<PostContext>(14, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
+    ..e<$11.Visibility>(15, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$11.Moderation>(16, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..aOM<GroupPost>(18, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
+    ..pc<Post>(19, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'replies', $pb.PbFieldType.PM, subBuilder: Post.create)
     ..aOM<$9.Timestamp>(20, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(21, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(22, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'lastActivityAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$9.Timestamp>(22, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'publishedAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$9.Timestamp>(23, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'lastActivityAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -210,18 +211,19 @@ class Post extends $pb.GeneratedMessage {
     $core.String? content,
     $core.int? responseCount,
     $core.int? replyCount,
-    $core.Iterable<Post>? replies,
-    $core.List<$core.int>? previewImage,
-    $11.Visibility? visibility,
-    $11.Moderation? moderation,
     $core.int? groupCount,
-    GroupPost? currentGroupPost,
-    $core.bool? previewImageExists,
+    $core.Iterable<$core.String>? media,
+    $core.bool? mediaGenerated,
+    $core.bool? embedLink,
     $core.bool? shareable,
     PostContext? context,
-    $core.Iterable<$core.String>? media,
+    $11.Visibility? visibility,
+    $11.Moderation? moderation,
+    GroupPost? currentGroupPost,
+    $core.Iterable<Post>? replies,
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
+    $9.Timestamp? publishedAt,
     $9.Timestamp? lastActivityAt,
   }) {
     final _result = create();
@@ -249,26 +251,17 @@ class Post extends $pb.GeneratedMessage {
     if (replyCount != null) {
       _result.replyCount = replyCount;
     }
-    if (replies != null) {
-      _result.replies.addAll(replies);
-    }
-    if (previewImage != null) {
-      _result.previewImage = previewImage;
-    }
-    if (visibility != null) {
-      _result.visibility = visibility;
-    }
-    if (moderation != null) {
-      _result.moderation = moderation;
-    }
     if (groupCount != null) {
       _result.groupCount = groupCount;
     }
-    if (currentGroupPost != null) {
-      _result.currentGroupPost = currentGroupPost;
+    if (media != null) {
+      _result.media.addAll(media);
     }
-    if (previewImageExists != null) {
-      _result.previewImageExists = previewImageExists;
+    if (mediaGenerated != null) {
+      _result.mediaGenerated = mediaGenerated;
+    }
+    if (embedLink != null) {
+      _result.embedLink = embedLink;
     }
     if (shareable != null) {
       _result.shareable = shareable;
@@ -276,14 +269,26 @@ class Post extends $pb.GeneratedMessage {
     if (context != null) {
       _result.context = context;
     }
-    if (media != null) {
-      _result.media.addAll(media);
+    if (visibility != null) {
+      _result.visibility = visibility;
+    }
+    if (moderation != null) {
+      _result.moderation = moderation;
+    }
+    if (currentGroupPost != null) {
+      _result.currentGroupPost = currentGroupPost;
+    }
+    if (replies != null) {
+      _result.replies.addAll(replies);
     }
     if (createdAt != null) {
       _result.createdAt = createdAt;
     }
     if (updatedAt != null) {
       _result.updatedAt = updatedAt;
+    }
+    if (publishedAt != null) {
+      _result.publishedAt = publishedAt;
     }
     if (lastActivityAt != null) {
       _result.lastActivityAt = lastActivityAt;
@@ -386,84 +391,84 @@ class Post extends $pb.GeneratedMessage {
   void clearReplyCount() => clearField(8);
 
   @$pb.TagNumber(9)
-  $core.List<Post> get replies => $_getList(8);
+  $core.int get groupCount => $_getIZ(8);
+  @$pb.TagNumber(9)
+  set groupCount($core.int v) { $_setSignedInt32(8, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasGroupCount() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearGroupCount() => clearField(9);
 
   @$pb.TagNumber(10)
-  $core.List<$core.int> get previewImage => $_getN(9);
-  @$pb.TagNumber(10)
-  set previewImage($core.List<$core.int> v) { $_setBytes(9, v); }
-  @$pb.TagNumber(10)
-  $core.bool hasPreviewImage() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearPreviewImage() => clearField(10);
+  $core.List<$core.String> get media => $_getList(9);
 
   @$pb.TagNumber(11)
-  $11.Visibility get visibility => $_getN(10);
+  $core.bool get mediaGenerated => $_getBF(10);
   @$pb.TagNumber(11)
-  set visibility($11.Visibility v) { setField(11, v); }
+  set mediaGenerated($core.bool v) { $_setBool(10, v); }
   @$pb.TagNumber(11)
-  $core.bool hasVisibility() => $_has(10);
+  $core.bool hasMediaGenerated() => $_has(10);
   @$pb.TagNumber(11)
-  void clearVisibility() => clearField(11);
+  void clearMediaGenerated() => clearField(11);
 
   @$pb.TagNumber(12)
-  $11.Moderation get moderation => $_getN(11);
+  $core.bool get embedLink => $_getBF(11);
   @$pb.TagNumber(12)
-  set moderation($11.Moderation v) { setField(12, v); }
+  set embedLink($core.bool v) { $_setBool(11, v); }
   @$pb.TagNumber(12)
-  $core.bool hasModeration() => $_has(11);
+  $core.bool hasEmbedLink() => $_has(11);
   @$pb.TagNumber(12)
-  void clearModeration() => clearField(12);
+  void clearEmbedLink() => clearField(12);
+
+  @$pb.TagNumber(13)
+  $core.bool get shareable => $_getBF(12);
+  @$pb.TagNumber(13)
+  set shareable($core.bool v) { $_setBool(12, v); }
+  @$pb.TagNumber(13)
+  $core.bool hasShareable() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearShareable() => clearField(13);
 
   @$pb.TagNumber(14)
-  $core.int get groupCount => $_getIZ(12);
+  PostContext get context => $_getN(13);
   @$pb.TagNumber(14)
-  set groupCount($core.int v) { $_setSignedInt32(12, v); }
+  set context(PostContext v) { setField(14, v); }
   @$pb.TagNumber(14)
-  $core.bool hasGroupCount() => $_has(12);
+  $core.bool hasContext() => $_has(13);
   @$pb.TagNumber(14)
-  void clearGroupCount() => clearField(14);
+  void clearContext() => clearField(14);
 
   @$pb.TagNumber(15)
-  GroupPost get currentGroupPost => $_getN(13);
+  $11.Visibility get visibility => $_getN(14);
   @$pb.TagNumber(15)
-  set currentGroupPost(GroupPost v) { setField(15, v); }
+  set visibility($11.Visibility v) { setField(15, v); }
   @$pb.TagNumber(15)
-  $core.bool hasCurrentGroupPost() => $_has(13);
+  $core.bool hasVisibility() => $_has(14);
   @$pb.TagNumber(15)
-  void clearCurrentGroupPost() => clearField(15);
-  @$pb.TagNumber(15)
-  GroupPost ensureCurrentGroupPost() => $_ensure(13);
+  void clearVisibility() => clearField(15);
 
   @$pb.TagNumber(16)
-  $core.bool get previewImageExists => $_getBF(14);
+  $11.Moderation get moderation => $_getN(15);
   @$pb.TagNumber(16)
-  set previewImageExists($core.bool v) { $_setBool(14, v); }
+  set moderation($11.Moderation v) { setField(16, v); }
   @$pb.TagNumber(16)
-  $core.bool hasPreviewImageExists() => $_has(14);
+  $core.bool hasModeration() => $_has(15);
   @$pb.TagNumber(16)
-  void clearPreviewImageExists() => clearField(16);
-
-  @$pb.TagNumber(17)
-  $core.bool get shareable => $_getBF(15);
-  @$pb.TagNumber(17)
-  set shareable($core.bool v) { $_setBool(15, v); }
-  @$pb.TagNumber(17)
-  $core.bool hasShareable() => $_has(15);
-  @$pb.TagNumber(17)
-  void clearShareable() => clearField(17);
+  void clearModeration() => clearField(16);
 
   @$pb.TagNumber(18)
-  PostContext get context => $_getN(16);
+  GroupPost get currentGroupPost => $_getN(16);
   @$pb.TagNumber(18)
-  set context(PostContext v) { setField(18, v); }
+  set currentGroupPost(GroupPost v) { setField(18, v); }
   @$pb.TagNumber(18)
-  $core.bool hasContext() => $_has(16);
+  $core.bool hasCurrentGroupPost() => $_has(16);
   @$pb.TagNumber(18)
-  void clearContext() => clearField(18);
+  void clearCurrentGroupPost() => clearField(18);
+  @$pb.TagNumber(18)
+  GroupPost ensureCurrentGroupPost() => $_ensure(16);
 
   @$pb.TagNumber(19)
-  $core.List<$core.String> get media => $_getList(17);
+  $core.List<Post> get replies => $_getList(17);
 
   @$pb.TagNumber(20)
   $9.Timestamp get createdAt => $_getN(18);
@@ -488,15 +493,26 @@ class Post extends $pb.GeneratedMessage {
   $9.Timestamp ensureUpdatedAt() => $_ensure(19);
 
   @$pb.TagNumber(22)
-  $9.Timestamp get lastActivityAt => $_getN(20);
+  $9.Timestamp get publishedAt => $_getN(20);
   @$pb.TagNumber(22)
-  set lastActivityAt($9.Timestamp v) { setField(22, v); }
+  set publishedAt($9.Timestamp v) { setField(22, v); }
   @$pb.TagNumber(22)
-  $core.bool hasLastActivityAt() => $_has(20);
+  $core.bool hasPublishedAt() => $_has(20);
   @$pb.TagNumber(22)
-  void clearLastActivityAt() => clearField(22);
+  void clearPublishedAt() => clearField(22);
   @$pb.TagNumber(22)
-  $9.Timestamp ensureLastActivityAt() => $_ensure(20);
+  $9.Timestamp ensurePublishedAt() => $_ensure(20);
+
+  @$pb.TagNumber(23)
+  $9.Timestamp get lastActivityAt => $_getN(21);
+  @$pb.TagNumber(23)
+  set lastActivityAt($9.Timestamp v) { setField(23, v); }
+  @$pb.TagNumber(23)
+  $core.bool hasLastActivityAt() => $_has(21);
+  @$pb.TagNumber(23)
+  void clearLastActivityAt() => clearField(23);
+  @$pb.TagNumber(23)
+  $9.Timestamp ensureLastActivityAt() => $_ensure(21);
 }
 
 class Author extends $pb.GeneratedMessage {

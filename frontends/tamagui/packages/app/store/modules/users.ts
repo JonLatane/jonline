@@ -28,7 +28,6 @@ export interface UsersState {
   ids: EntityId[];
   entities: Dictionary<User>;
   usernameIds: Dictionary<string>;
-  avatars: Dictionary<string>;
   failedUsernames: string[];
   failedUserIds: string[];
   idPosts: Dictionary<string[]>;
@@ -63,36 +62,15 @@ export const loadUsersPage: AsyncThunk<GetUsersResponse, LoadUsersRequest, any> 
   }
 );
 
-// export type LoadUserAvatar = User & AccountOrServer;
-// export const loadUserAvatar: AsyncThunk<string, LoadUserAvatar, any> = createAsyncThunk<string, LoadUserAvatar>(
-//   "users/loadAvatar",
-//   async (request) => {
-//     let client = await getCredentialClient(request);
-//     let response = await client.getUsers(GetUsersRequest.create({ userId: request.id }), client.credential);
-//     let user = response.users[0]!;
-//     return user.avatar
-//       ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
-//       : '';
-//   }
-// );
-
 export type LoadUser = { id: string } & AccountOrServer;
-export type LoadUserResult = {
-  user: User;
-  avatar: string;
-}
 const _loadingUserIds = new Set<string>();
-export const loadUser: AsyncThunk<LoadUserResult, LoadUser, any> = createAsyncThunk<LoadUserResult, LoadUser>(
+export const loadUser: AsyncThunk<User, LoadUser, any> = createAsyncThunk<User, LoadUser>(
   "users/loadById",
   async (request) => {
     let user: User | undefined = undefined;
-    let avatar: string | undefined = undefined;
     while (_loadingUserIds.has(request.id)) {
       await new Promise(resolve => setTimeout(resolve, 100));
       user = usersAdapter.getSelectors().selectById(store.getState().users, request.id);
-      if (user) {
-        avatar = store.getState().users.avatars[request.id];
-      }
     }
     if (store.getState().users.failedUserIds.includes(request.id)) {
       throw 'User not found';
@@ -105,28 +83,21 @@ export const loadUser: AsyncThunk<LoadUserResult, LoadUser, any> = createAsyncTh
       if (response.users.length == 0) throw 'User not found';
 
       user = response.users[0]!;
-      avatar = user.avatar
-        ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
-        : '';
     }
-    return { user: { ...user!, avatar: undefined }, avatar: avatar! };
+    return user;
   }
 );
 
 export type LoadUsername = { username: string } & AccountOrServer;
 const _loadingUsernames = new Set<string>();
-export const loadUsername: AsyncThunk<LoadUserResult, LoadUsername, any> = createAsyncThunk<LoadUserResult, LoadUsername>(
+export const loadUsername: AsyncThunk<User, LoadUsername, any> = createAsyncThunk<User, LoadUsername>(
   "users/loadByName",
   async (request) => {
     let user: User | undefined = undefined;
-    let avatar: string | undefined = undefined;
     while (_loadingUsernames.has(request.username)) {
       await new Promise(resolve => setTimeout(resolve, 100));
       const userId = store.getState().users.usernameIds[request.username];
       user = userId ? usersAdapter.getSelectors().selectById(store.getState().users, userId) : undefined;
-      if (user) {
-        avatar = store.getState().users.avatars[user.id];
-      }
     }
     if (!user) {
       _loadingUsernames.add(request.username);
@@ -136,11 +107,8 @@ export const loadUsername: AsyncThunk<LoadUserResult, LoadUsername, any> = creat
       if (response.users.length == 0) throw 'User not found';
 
       user = response.users[0]!;
-      avatar = user.avatar
-        ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
-        : '';
     }
-    return { user: { ...user!, avatar: undefined }, avatar: avatar! };
+    return user;
   }
 );
 
@@ -164,30 +132,15 @@ export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEvents, any> 
 );
 
 
-export type UpdateUser = { user: User, avatar?: string } & AccountOrServer;
-// export type LoadUserResult = {
-//   user: User;
-//   avatar: string;
-// }
+export type UpdateUser = User & AccountOrServer;
 export const userSaved = 'User Saved';
-export const updateUser: AsyncThunk<LoadUserResult, UpdateUser, any> = createAsyncThunk<LoadUserResult, UpdateUser>(
+export const updateUser: AsyncThunk<User, UpdateUser, any> = createAsyncThunk<User, UpdateUser>(
   "users/update",
   async (request) => {
     const client = await getCredentialClient(request);
-    const updatedUser = { ...request.user };
-    if (request.avatar) {
-      const updatedAvatar = await (await fetch(request.avatar)).arrayBuffer().then(buffer => {
-        const uint = new Uint8Array(buffer);
-        console.log("Uint8Array", uint);
-        return uint;
-      });
-      updatedUser.avatar = updatedAvatar;
-    }
+    const updatedUser = { ...request };
     const user = await client.updateUser(updatedUser, client.credential);
-    const avatar = user.avatar
-      ? URL.createObjectURL(new Blob([user.avatar!], { type: 'image/png' }))
-      : '';
-    return { user: { ...user, avatar: undefined }, avatar };
+    return user;
   }
 );
 
@@ -214,7 +167,6 @@ export const respondToFollowRequest: AsyncThunk<Follow | Empty, RespondToFollowR
 const initialState: UsersState = {
   status: "unloaded",
   pagesStatus: "unloaded",
-  avatars: {},
   usernameIds: {},
   failedUsernames: [],
   failedUserIds: [],
@@ -235,9 +187,6 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       state.errorMessage = undefined;
       state.successMessage = undefined;
       state.error = undefined;
-    },
-    removeAvatarById: (state, action: PayloadAction<string>) => {
-      state.avatars[action.payload] = undefined;
     },
   },
   extraReducers: (builder) => {
@@ -275,10 +224,9 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       });
       builder.addCase(loader.fulfilled, (state, action) => {
         state.status = "loaded";
-        usersAdapter.upsertOne(state, action.payload.user);
-        state.avatars[action.payload.user.id] = action.payload.avatar;
-        state.usernameIds[action.payload.user.username] = action.payload.user.id;
-        state.successMessage = `User data for ${action.payload.user.id}:${action.payload.user.username} loaded.`;
+        usersAdapter.upsertOne(state, action.payload);
+        state.usernameIds[action.payload.username] = action.payload.id;
+        state.successMessage = `User data for ${action.payload.id}:${action.payload.username} loaded.`;
         if (loader == updateUser) {
           state.successMessage = userSaved;
         }

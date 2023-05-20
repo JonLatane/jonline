@@ -18,7 +18,7 @@ import '../../models/jonline_server.dart';
 import '../../utils/colors.dart';
 import '../../models/settings.dart';
 import '../home_page.dart';
-import '../user-data/data_collector.dart';
+import '../media/media_image.dart';
 
 class AccountsPage extends StatefulWidget {
   const AccountsPage({Key? key}) : super(key: key);
@@ -28,7 +28,6 @@ class AccountsPage extends StatefulWidget {
 }
 
 class AccountsPageState extends JonlineState<AccountsPage> {
-  UserData? userData;
   List<JonlineAccount> get allAccounts => appState.accounts.value;
   List<JonlineAccount> get accounts {
     final result = allAccounts;
@@ -445,7 +444,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                       children: [
                         Text(
                           'No Accounts',
-                          style: textTheme.headline5,
+                          style: textTheme.headlineSmall,
                         ),
                         if (showServers && uiSelectedServer != null)
                           Text(
@@ -524,11 +523,6 @@ class AccountsPageState extends JonlineState<AccountsPage> {
     final backgroundColor =
         appState.selectedAccount?.id == account.id ? appState.navColor : null;
     final textColor = backgroundColor?.textColor;
-    final avatar = accountAvatars.putIfAbsent(
-        account.id,
-        () => (account.user?.avatar ?? []).isNotEmpty
-            ? Uint8List.fromList(account.user!.avatar)
-            : null);
     return AnimatedContainer(
       // constraints: const BoxConstraints(maxWidth: 600),
       duration: animationDuration,
@@ -582,11 +576,12 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                   context.navigateNamedTo(
                                       'account/${account.id}/profile');
                                 },
-                                child: (avatar != null)
+                                child: (account.user?.avatarMediaId != null)
                                     ? CircleAvatar(
                                         key: Key('avatar-${account.id}'),
-                                        backgroundImage: MemoryImage(avatar),
-                                      )
+                                        backgroundImage: mediaImageProvider(
+                                            account.user!.avatarMediaId,
+                                            serverOverride: account.server))
                                     : const CircleAvatar(
                                         backgroundColor: Colors.black12,
                                         child: Icon(

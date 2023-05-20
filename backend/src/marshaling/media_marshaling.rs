@@ -16,6 +16,8 @@ impl ToProtoMedia for models::Media {
             description: self.description.to_owned(),
             visibility: self.visibility.to_i32_visibility(),
             moderation: self.moderation.to_i32_moderation(),
+            generated: self.generated,
+            processed: self.processed,
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
         }

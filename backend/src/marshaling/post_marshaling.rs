@@ -1,97 +1,67 @@
 use std::mem::transmute;
 
 use diesel::*;
+use itertools::Itertools;
 use tonic::Code;
 use tonic::Status;
 
 use super::{ToI32Moderation, ToI32Visibility, ToLink, ToProtoId, ToProtoTime};
-use crate::db_connection::PgPooledConnection;
+use crate::db_connection::{PgPooledConnection};
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
-use crate::schema::{groups, posts, group_posts};
+use crate::schema::{group_posts, groups, posts};
 
 pub trait ToProtoPost {
-    fn to_proto(&self, username: Option<String>, has_preview: &bool) -> Post;
+    fn to_proto(&self, username: Option<String>) -> Post;
     fn to_group_proto(
         &self,
         username: Option<String>,
-        has_preview: &bool,
         group_post: Option<&models::GroupPost>,
     ) -> Post;
     fn proto_author(&self, username: Option<String>) -> Option<Author>;
 }
-impl ToProtoPost for models::MinimalPost {
-    fn to_proto(&self, username: Option<String>, has_preview: &bool) -> Post {
-        self.to_group_proto(username, has_preview, None)
-    }
-    fn to_group_proto(
-        &self,
-        username: Option<String>,
-        has_preview: &bool,
-        group_post: Option<&models::GroupPost>,
-    ) -> Post {
-        Post {
-            id: self.id.to_proto_id(),
-            reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
-            title: self.title.to_owned(),
-            link: self.link.to_link(),
-            content: self.content.to_owned(),
-            created_at: Some(self.created_at.to_proto()),
-            updated_at: self.updated_at.map(|t| t.to_proto()),
-            author: self.proto_author(username),
-            response_count: self.response_count,
-            reply_count: self.reply_count,
-            group_count: self.group_count,
-            context: self.context.to_i32_post_context(),
-            preview_image: None,
-            visibility: self.visibility.to_i32_visibility(),
-            moderation: self.moderation.to_i32_moderation(),
-            preview_image_exists: *has_preview,
-            current_group_post: group_post.map(|gp| gp.to_proto()),
-            ..Default::default()
-        }
-    }
-    fn proto_author(&self, username: Option<String>) -> Option<Author> {
-        self.user_id.map(|user_id| Author {
-            user_id: user_id.to_proto_id(),
-            username: username,
-        })
-    }
-}
 
 impl ToProtoPost for models::Post {
-    fn to_proto(&self, username: Option<String>, has_preview: &bool) -> Post {
-        self.to_group_proto(username, has_preview, None)
+    fn to_proto(&self, username: Option<String>) -> Post {
+        self.to_group_proto(username, None)
     }
     fn to_group_proto(
         &self,
         username: Option<String>,
-        has_preview: &bool,
         group_post: Option<&models::GroupPost>,
     ) -> Post {
         Post {
             id: self.id.to_proto_id(),
             reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
+            author: self.proto_author(username),
+
             title: self.title.to_owned(),
             link: self.link.to_link(),
             content: self.content.to_owned(),
-            created_at: Some(self.created_at.to_proto()),
-            updated_at: self.updated_at.map(|t| t.to_proto()),
-            last_activity_at: Some(self.last_activity_at.to_proto()),
-            author: self.proto_author(username),
+
             response_count: self.response_count,
             reply_count: self.reply_count,
             group_count: self.group_count,
-            context: self.context.to_i32_post_context(),
-            preview_image: self.preview.to_owned(),
-            visibility: self.visibility.to_i32_visibility(),
-            moderation: self.moderation.to_i32_moderation(),
-            shareable: false, //TODO update this
-            replies: vec![],  //TODO update this
-            preview_image_exists: *has_preview,
             current_group_post: group_post.map(|gp| gp.to_proto()),
-            media: vec![],  //TODO update this
+            media: self.media
+                .iter()
+                .map(|v| v.to_proto_id())
+                .collect_vec(),
+                media_generated: self.media_generated,
+                embed_link: self.embed_link,
+                shareable: self.shareable,
+
+                context: self.context.to_i32_post_context(),
+                visibility: self.visibility.to_i32_visibility(),
+                moderation: self.moderation.to_i32_moderation(),
+
+                replies: vec![],  //TODO update this
+
+            created_at: Some(self.created_at.to_proto()),
+            updated_at: self.updated_at.map(|t| t.to_proto()),
+            published_at: self.published_at.map(|t| t.to_proto()),
+            last_activity_at: Some(self.last_activity_at.to_proto()),
         }
     }
     fn proto_author(&self, username: Option<String>) -> Option<Author> {

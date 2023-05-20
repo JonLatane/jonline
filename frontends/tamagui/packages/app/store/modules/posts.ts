@@ -10,7 +10,7 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { loadGroupPosts } from "./groups";
-import { createPost, defaultPostListingType, LoadPost, loadPost, loadPostPreview, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
+import { createPost, defaultPostListingType, LoadPost, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
 import { loadUserPosts } from "./users";
 import { Visibility } from '../../../api/generated/visibility_moderation';
 import { publicVisibility } from "app/utils/visibility";
@@ -27,7 +27,6 @@ export interface PostsState {
   draftPost: DraftPost;
   ids: EntityId[];
   entities: Dictionary<Post>;
-  previews: Dictionary<string>;
   // Stores pages of listed posts for listing types used in the UI.
   // i.e.: postPages[PostListingType.PUBLIC_POSTS][0] -> ["postId1", "postId2"].
   // Posts should be loaded from the adapter/slice's entities.
@@ -53,7 +52,6 @@ const initialState: PostsState = {
     newPost: Post.fromPartial({})
   },
   sendReplyStatus: undefined,
-  previews: {},
   failedPostIds: [],
   postPages: {},
   ...postsAdapter.getInitialState(),
@@ -172,9 +170,8 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(loadPost.fulfilled, (state, action) => {
       state.status = "loaded";
-      const oldPost = selectPostById(state, action.payload.post.id);
-      postsAdapter.upsertOne(state, { ...action.payload.post, replies: oldPost?.replies ?? action.payload.post.replies });
-      state.previews[action.meta.arg.id] = action.payload.preview;
+      const oldPost = selectPostById(state, action.payload.id);
+      postsAdapter.upsertOne(state, { ...action.payload, replies: oldPost?.replies ?? action.payload.replies });
       state.successMessage = `Post data loaded.`;
     });
     builder.addCase(loadPost.rejected, (state, action) => {
@@ -222,10 +219,6 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.error = action.error as Error;
       state.errorMessage = `Error loading replies: ${formatError(action.error as Error)}`;
       state.error = action.error as Error;
-    });
-    builder.addCase(loadPostPreview.fulfilled, (state, action) => {
-      state.previews[action.meta.arg.id] = action.payload;
-      state.successMessage = `Preview image loaded.`;
     });
 
     builder.addCase(loadUserPosts.fulfilled, (state, action) => {

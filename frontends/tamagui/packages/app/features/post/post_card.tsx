@@ -1,4 +1,4 @@
-import { colorMeta, loadPostPreview, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { colorMeta, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
@@ -10,6 +10,7 @@ import { useLink } from "solito/link";
 import { AuthorInfo } from "./author_info";
 import { FadeInView } from "./fade_in_view";
 import { TamaguiMarkdown } from "./tamagui_markdown";
+import { useMediaUrl } from "app/hooks/use_media_url";
 
 interface Props {
   post: Post;
@@ -37,19 +38,13 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const { server, primaryColor, navAnchorColor: navColor } = useServerTheme();
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
-  const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
+
+  const previewUrl = useMediaUrl(post?.media[0]);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
   const onScreen = useOnScreen(ref, "-1px");
-  useEffect(() => {
-    if (!preview && !loadingPreview && onScreen && post.previewImageExists != false) {
-      post.content
-      setLoadingPreview(true);
-      setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
-    }
-  });
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
@@ -92,13 +87,12 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   };
 
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
-  const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
   const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   useEffect(() => {
     if (authorId) {
-      if (!loadingAuthor && (!author || authorAvatar == undefined) && !authorLoadFailed) {
+      if (!loadingAuthor && !author && !authorLoadFailed) {
         setLoadingAuthor(true);
         setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
       } else if (loadingAuthor && author) {
@@ -151,6 +145,10 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 // f={isPreview ? undefined : 1}
                 animation="bouncy"
                 scale={0.92}
+                opacity={1}
+                y={0}
+                enterStyle={{ y: -50, opacity: 0, }}
+                exitStyle={{ opacity: 0, }}
                 pressStyle={{ scale: 0.91 }}
                 onPress={onPressParentPreview}
               >
@@ -177,8 +175,13 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             padding='$0'
             f={isPreview ? undefined : 1}
             animation="bouncy"
-            pressStyle={preview || post.replyToPostId ? { scale: 0.990 } : {}}
+            pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
             ref={ref!}
+            scale={1}
+            opacity={1}
+            y={0}
+            enterStyle={{ y: -50, opacity: 0, }}
+            exitStyle={{ opacity: 0, }}
             {...postLinkProps}
 
           >
@@ -203,14 +206,14 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               {/* {...postLinkProps}> */}
               <YStack zi={1000} width='100%' {...footerProps}>
                 <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
-                  {(!isPreview && preview && preview != '') ?
+                  {(!isPreview && previewUrl && previewUrl != '') ?
                     <Image
                       mb='$3'
                       width={media.sm ? 300 : 400}
                       height={media.sm ? 300 : 400}
                       resizeMode="contain"
                       als="center"
-                      src={preview}
+                      source={{uri: previewUrl}}
                       borderRadius={10}
                     /> : undefined}
                   {
@@ -261,7 +264,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               </YStack>
             </Card.Footer>
             <Card.Background>
-              {(isPreview && preview && preview != '') ?
+              {(isPreview && previewUrl && previewUrl != '') ?
                 <FadeInView>
                   <Image
                     pos="absolute"
@@ -270,7 +273,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     height={300}
                     resizeMode="contain"
                     als="flex-start"
-                    src={preview}
+                    source={{uri: previewUrl}}
                     blurRadius={1.5}
                     // borderRadius={5}
                     borderBottomRightRadius={5}

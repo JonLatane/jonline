@@ -34,6 +34,8 @@ pub struct Media {
     pub content_type: String,
     pub name: Option<String>,
     pub description: Option<String>,
+    pub generated: bool,
+    pub processed: bool,
     pub visibility: String,
     pub moderation: String,
     pub created_at: SystemTime,
@@ -48,5 +50,6 @@ pub struct NewMedia {
     pub content_type: String,
     pub name: Option<String>,
     pub description: Option<String>,
+    pub generated: bool,
     pub visibility: String,
 }

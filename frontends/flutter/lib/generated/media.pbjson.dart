@@ -19,6 +19,8 @@ const Media$json = const {
     const {'1': 'description', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'description', '17': true},
     const {'1': 'visibility', '3': 6, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
     const {'1': 'moderation', '3': 7, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
+    const {'1': 'generated', '3': 8, '4': 1, '5': 8, '10': 'generated'},
+    const {'1': 'processed', '3': 9, '4': 1, '5': 8, '10': 'processed'},
     const {'1': 'created_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     const {'1': 'updated_at', '3': 16, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'updatedAt'},
   ],
@@ -30,7 +32,7 @@ const Media$json = const {
 };
 
 /// Descriptor for `Media`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List mediaDescriptor = $convert.base64Decode('CgVNZWRpYRIOCgJpZBgBIAEoCVICaWQSIQoMY29udGVudF90eXBlGAMgASgJUgtjb250ZW50VHlwZRIcCgd1c2VyX2lkGAIgASgJSABSBnVzZXJJZIgBARIXCgRuYW1lGAQgASgJSAFSBG5hbWWIAQESJQoLZGVzY3JpcHRpb24YBSABKAlIAlILZGVzY3JpcHRpb26IAQESMwoKdmlzaWJpbGl0eRgGIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIzCgptb2RlcmF0aW9uGAcgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEjkKCmNyZWF0ZWRfYXQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSOQoKdXBkYXRlZF9hdBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCXVwZGF0ZWRBdEIKCghfdXNlcl9pZEIHCgVfbmFtZUIOCgxfZGVzY3JpcHRpb24=');
+final $typed_data.Uint8List mediaDescriptor = $convert.base64Decode('CgVNZWRpYRIOCgJpZBgBIAEoCVICaWQSIQoMY29udGVudF90eXBlGAMgASgJUgtjb250ZW50VHlwZRIcCgd1c2VyX2lkGAIgASgJSABSBnVzZXJJZIgBARIXCgRuYW1lGAQgASgJSAFSBG5hbWWIAQESJQoLZGVzY3JpcHRpb24YBSABKAlIAlILZGVzY3JpcHRpb26IAQESMwoKdmlzaWJpbGl0eRgGIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIzCgptb2RlcmF0aW9uGAcgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEhwKCWdlbmVyYXRlZBgIIAEoCFIJZ2VuZXJhdGVkEhwKCXByb2Nlc3NlZBgJIAEoCFIJcHJvY2Vzc2VkEjkKCmNyZWF0ZWRfYXQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSOQoKdXBkYXRlZF9hdBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCXVwZGF0ZWRBdEIKCghfdXNlcl9pZEIHCgVfbmFtZUIOCgxfZGVzY3JpcHRpb24=');
 @$core.Deprecated('Use getMediaRequestDescriptor instead')
 const GetMediaRequest$json = const {
   '1': 'GetMediaRequest',

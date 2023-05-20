@@ -67,10 +67,15 @@ export function userListingTypeToJSON(object: UserListingType): string {
 export interface User {
   id: string;
   username: string;
+  realName: string;
   email?: ContactMethod | undefined;
   phone?: ContactMethod | undefined;
   permissions: Permission[];
-  avatar?: Uint8Array | undefined;
+  /**
+   * Media ID for the user's avatar. Note that its visibility is managed by the User and thus
+   * it may not be accessible to the current user.
+   */
+  avatarMediaId?: string | undefined;
   bio: string;
   /**
    * User visibility is a bit different from Post visibility.
@@ -167,10 +172,11 @@ function createBaseUser(): User {
   return {
     id: "",
     username: "",
+    realName: "",
     email: undefined,
     phone: undefined,
     permissions: [],
-    avatar: undefined,
+    avatarMediaId: undefined,
     bio: "",
     visibility: 0,
     moderation: 0,
@@ -196,22 +202,25 @@ export const User = {
     if (message.username !== "") {
       writer.uint32(18).string(message.username);
     }
+    if (message.realName !== "") {
+      writer.uint32(26).string(message.realName);
+    }
     if (message.email !== undefined) {
-      ContactMethod.encode(message.email, writer.uint32(26).fork()).ldelim();
+      ContactMethod.encode(message.email, writer.uint32(34).fork()).ldelim();
     }
     if (message.phone !== undefined) {
-      ContactMethod.encode(message.phone, writer.uint32(34).fork()).ldelim();
+      ContactMethod.encode(message.phone, writer.uint32(42).fork()).ldelim();
     }
-    writer.uint32(42).fork();
+    writer.uint32(50).fork();
     for (const v of message.permissions) {
       writer.int32(v);
     }
     writer.ldelim();
-    if (message.avatar !== undefined) {
-      writer.uint32(50).bytes(message.avatar);
+    if (message.avatarMediaId !== undefined) {
+      writer.uint32(58).string(message.avatarMediaId);
     }
     if (message.bio !== "") {
-      writer.uint32(58).string(message.bio);
+      writer.uint32(66).string(message.bio);
     }
     if (message.visibility !== 0) {
       writer.uint32(160).int32(message.visibility);
@@ -269,12 +278,15 @@ export const User = {
           message.username = reader.string();
           break;
         case 3:
-          message.email = ContactMethod.decode(reader, reader.uint32());
+          message.realName = reader.string();
           break;
         case 4:
-          message.phone = ContactMethod.decode(reader, reader.uint32());
+          message.email = ContactMethod.decode(reader, reader.uint32());
           break;
         case 5:
+          message.phone = ContactMethod.decode(reader, reader.uint32());
+          break;
+        case 6:
           if ((tag & 7) === 2) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
@@ -284,10 +296,10 @@ export const User = {
             message.permissions.push(reader.int32() as any);
           }
           break;
-        case 6:
-          message.avatar = reader.bytes();
-          break;
         case 7:
+          message.avatarMediaId = reader.string();
+          break;
+        case 8:
           message.bio = reader.string();
           break;
         case 20:
@@ -341,10 +353,11 @@ export const User = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       username: isSet(object.username) ? String(object.username) : "",
+      realName: isSet(object.realName) ? String(object.realName) : "",
       email: isSet(object.email) ? ContactMethod.fromJSON(object.email) : undefined,
       phone: isSet(object.phone) ? ContactMethod.fromJSON(object.phone) : undefined,
       permissions: Array.isArray(object?.permissions) ? object.permissions.map((e: any) => permissionFromJSON(e)) : [],
-      avatar: isSet(object.avatar) ? bytesFromBase64(object.avatar) : undefined,
+      avatarMediaId: isSet(object.avatarMediaId) ? String(object.avatarMediaId) : undefined,
       bio: isSet(object.bio) ? String(object.bio) : "",
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
@@ -372,6 +385,7 @@ export const User = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.username !== undefined && (obj.username = message.username);
+    message.realName !== undefined && (obj.realName = message.realName);
     message.email !== undefined && (obj.email = message.email ? ContactMethod.toJSON(message.email) : undefined);
     message.phone !== undefined && (obj.phone = message.phone ? ContactMethod.toJSON(message.phone) : undefined);
     if (message.permissions) {
@@ -379,8 +393,7 @@ export const User = {
     } else {
       obj.permissions = [];
     }
-    message.avatar !== undefined &&
-      (obj.avatar = message.avatar !== undefined ? base64FromBytes(message.avatar) : undefined);
+    message.avatarMediaId !== undefined && (obj.avatarMediaId = message.avatarMediaId);
     message.bio !== undefined && (obj.bio = message.bio);
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
     message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
@@ -412,6 +425,7 @@ export const User = {
     const message = createBaseUser();
     message.id = object.id ?? "";
     message.username = object.username ?? "";
+    message.realName = object.realName ?? "";
     message.email = (object.email !== undefined && object.email !== null)
       ? ContactMethod.fromPartial(object.email)
       : undefined;
@@ -419,7 +433,7 @@ export const User = {
       ? ContactMethod.fromPartial(object.phone)
       : undefined;
     message.permissions = object.permissions?.map((e) => e) || [];
-    message.avatar = object.avatar ?? undefined;
+    message.avatarMediaId = object.avatarMediaId ?? undefined;
     message.bio = object.bio ?? "";
     message.visibility = object.visibility ?? 0;
     message.moderation = object.moderation ?? 0;
@@ -871,50 +885,6 @@ export const GetUsersResponse = {
     return message;
   },
 };
-
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if (tsProtoGlobalThis.Buffer) {
-    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = tsProtoGlobalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if (tsProtoGlobalThis.Buffer) {
-    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(String.fromCharCode(byte));
-    });
-    return tsProtoGlobalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -26,6 +26,11 @@ pub fn create_event(
         None => return Err(Status::new(Code::InvalidArgument, "post_required")),
         Some(p) => p,
     };
+
+    for media_proto_id in &post.media {
+        media_proto_id.to_db_id_or_err("media")?;
+        //TODO further media ID validations?
+    }
     let instances = req.instances;
     if instances.len() == 0 {
         return Err(Status::new(
@@ -38,7 +43,9 @@ pub fn create_event(
             Some(p) => {
                 validate_max_length(p.link.to_owned(), "instance.post.link", 10000)?;
                 validate_max_length(p.content.to_owned(), "instance.post.content", 10000)?;
-
+                for media_proto_id in &p.media {
+                    media_proto_id.to_db_id_or_err("instance.media")?;
+                }
                 let visibility = match p.visibility() {
                     Visibility::Unknown => Visibility::GlobalPublic,
                     v => v,
@@ -90,7 +97,7 @@ pub fn create_event(
                 content: post.content.to_owned(),
                 visibility: visibility.to_string_visibility(),
                 context: PostContext::Event.as_str_name().to_string(),
-                preview: None,
+                media: post.media.iter().map(|m: &String| m.to_db_id().unwrap()).collect(),
             })
             .get_result::<models::Post>(conn)?;
         let inserted_event = insert_into(events::table)
@@ -112,7 +119,7 @@ pub fn create_event(
                             content: p.content.to_owned(),
                             visibility: p.visibility.to_string_visibility(),
                             context: PostContext::Event.as_str_name().to_string(),
-                            preview: None,
+                            media: p.media.iter().map(|m: &String| m.to_db_id().unwrap()).collect(),
                         })
                         .get_result::<models::Post>(conn)?,
                 ),

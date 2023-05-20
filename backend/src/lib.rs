@@ -45,6 +45,7 @@ mod tests {
     #[test]
     fn id_conversions_work() {
         assert_eq!(10, 10.to_proto_id().to_db_id().unwrap());
+        assert_eq!(10000000000000, 10000000000000.to_proto_id().to_db_id().unwrap());
     }
 }
 
@@ -53,20 +54,20 @@ where
     E: std::error::Error,
     E: Send + Sync,
 {
-    log::error!("[ERROR] {}", err);
+    let mut stack = String::from("\n");
     if let Some(cause) = err.source() {
-        log::error!("[ERROR] {}", err);
-        log::error!("Caused by:");
         for (i, e) in std::iter::successors(Some(cause), |e| e.source()).enumerate() {
-            log::error!("   {}: {}", i, e);
+            stack.push_str(&format!("   {}: {}\n", i, e));
         }
     }
+    log::error!("[ERROR] {}\nCaused by: {}", err, stack);
 }
 
 pub fn env_var(name: &str) -> Option<String> {
     env::var(name).ok().filter(|s| !s.is_empty())
 }
 
+/// Designed to be called from the main function of a service.
 pub fn init_service_logging() {
     env_logger::builder()
         .target(env_logger::Target::Stdout)
@@ -75,6 +76,8 @@ pub fn init_service_logging() {
         .init();
 }
 
+/// Designed to be called from the main function of a bin command.
+/// Writes to STDOUT without timestamps.
 pub fn init_bin_logging() {
     env_logger::builder()
         .target(env_logger::Target::Stdout)

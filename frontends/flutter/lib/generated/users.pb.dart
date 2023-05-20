@@ -21,11 +21,12 @@ class User extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'User', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'id')
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'username')
-    ..aOM<ContactMethod>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'email', subBuilder: ContactMethod.create)
-    ..aOM<ContactMethod>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'phone', subBuilder: ContactMethod.create)
-    ..pc<$10.Permission>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
-    ..a<$core.List<$core.int>>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'avatar', $pb.PbFieldType.OY)
-    ..aOS(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'bio')
+    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'realName')
+    ..aOM<ContactMethod>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'email', subBuilder: ContactMethod.create)
+    ..aOM<ContactMethod>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'phone', subBuilder: ContactMethod.create)
+    ..pc<$10.Permission>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
+    ..aOS(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'avatarMediaId')
+    ..aOS(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'bio')
     ..e<$11.Visibility>(20, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
     ..e<$11.Moderation>(21, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..e<$11.Moderation>(30, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
@@ -46,10 +47,11 @@ class User extends $pb.GeneratedMessage {
   factory User({
     $core.String? id,
     $core.String? username,
+    $core.String? realName,
     ContactMethod? email,
     ContactMethod? phone,
     $core.Iterable<$10.Permission>? permissions,
-    $core.List<$core.int>? avatar,
+    $core.String? avatarMediaId,
     $core.String? bio,
     $11.Visibility? visibility,
     $11.Moderation? moderation,
@@ -72,6 +74,9 @@ class User extends $pb.GeneratedMessage {
     if (username != null) {
       _result.username = username;
     }
+    if (realName != null) {
+      _result.realName = realName;
+    }
     if (email != null) {
       _result.email = email;
     }
@@ -81,8 +86,8 @@ class User extends $pb.GeneratedMessage {
     if (permissions != null) {
       _result.permissions.addAll(permissions);
     }
-    if (avatar != null) {
-      _result.avatar = avatar;
+    if (avatarMediaId != null) {
+      _result.avatarMediaId = avatarMediaId;
     }
     if (bio != null) {
       _result.bio = bio;
@@ -168,174 +173,183 @@ class User extends $pb.GeneratedMessage {
   void clearUsername() => clearField(2);
 
   @$pb.TagNumber(3)
-  ContactMethod get email => $_getN(2);
+  $core.String get realName => $_getSZ(2);
   @$pb.TagNumber(3)
-  set email(ContactMethod v) { setField(3, v); }
+  set realName($core.String v) { $_setString(2, v); }
   @$pb.TagNumber(3)
-  $core.bool hasEmail() => $_has(2);
+  $core.bool hasRealName() => $_has(2);
   @$pb.TagNumber(3)
-  void clearEmail() => clearField(3);
-  @$pb.TagNumber(3)
-  ContactMethod ensureEmail() => $_ensure(2);
+  void clearRealName() => clearField(3);
 
   @$pb.TagNumber(4)
-  ContactMethod get phone => $_getN(3);
+  ContactMethod get email => $_getN(3);
   @$pb.TagNumber(4)
-  set phone(ContactMethod v) { setField(4, v); }
+  set email(ContactMethod v) { setField(4, v); }
   @$pb.TagNumber(4)
-  $core.bool hasPhone() => $_has(3);
+  $core.bool hasEmail() => $_has(3);
   @$pb.TagNumber(4)
-  void clearPhone() => clearField(4);
+  void clearEmail() => clearField(4);
   @$pb.TagNumber(4)
-  ContactMethod ensurePhone() => $_ensure(3);
+  ContactMethod ensureEmail() => $_ensure(3);
 
   @$pb.TagNumber(5)
-  $core.List<$10.Permission> get permissions => $_getList(4);
+  ContactMethod get phone => $_getN(4);
+  @$pb.TagNumber(5)
+  set phone(ContactMethod v) { setField(5, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasPhone() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPhone() => clearField(5);
+  @$pb.TagNumber(5)
+  ContactMethod ensurePhone() => $_ensure(4);
 
   @$pb.TagNumber(6)
-  $core.List<$core.int> get avatar => $_getN(5);
-  @$pb.TagNumber(6)
-  set avatar($core.List<$core.int> v) { $_setBytes(5, v); }
-  @$pb.TagNumber(6)
-  $core.bool hasAvatar() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearAvatar() => clearField(6);
+  $core.List<$10.Permission> get permissions => $_getList(5);
 
   @$pb.TagNumber(7)
-  $core.String get bio => $_getSZ(6);
+  $core.String get avatarMediaId => $_getSZ(6);
   @$pb.TagNumber(7)
-  set bio($core.String v) { $_setString(6, v); }
+  set avatarMediaId($core.String v) { $_setString(6, v); }
   @$pb.TagNumber(7)
-  $core.bool hasBio() => $_has(6);
+  $core.bool hasAvatarMediaId() => $_has(6);
   @$pb.TagNumber(7)
-  void clearBio() => clearField(7);
+  void clearAvatarMediaId() => clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get bio => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set bio($core.String v) { $_setString(7, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasBio() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearBio() => clearField(8);
 
   @$pb.TagNumber(20)
-  $11.Visibility get visibility => $_getN(7);
+  $11.Visibility get visibility => $_getN(8);
   @$pb.TagNumber(20)
   set visibility($11.Visibility v) { setField(20, v); }
   @$pb.TagNumber(20)
-  $core.bool hasVisibility() => $_has(7);
+  $core.bool hasVisibility() => $_has(8);
   @$pb.TagNumber(20)
   void clearVisibility() => clearField(20);
 
   @$pb.TagNumber(21)
-  $11.Moderation get moderation => $_getN(8);
+  $11.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(21)
   set moderation($11.Moderation v) { setField(21, v); }
   @$pb.TagNumber(21)
-  $core.bool hasModeration() => $_has(8);
+  $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(21)
   void clearModeration() => clearField(21);
 
   @$pb.TagNumber(30)
-  $11.Moderation get defaultFollowModeration => $_getN(9);
+  $11.Moderation get defaultFollowModeration => $_getN(10);
   @$pb.TagNumber(30)
   set defaultFollowModeration($11.Moderation v) { setField(30, v); }
   @$pb.TagNumber(30)
-  $core.bool hasDefaultFollowModeration() => $_has(9);
+  $core.bool hasDefaultFollowModeration() => $_has(10);
   @$pb.TagNumber(30)
   void clearDefaultFollowModeration() => clearField(30);
 
   @$pb.TagNumber(31)
-  $core.int get followerCount => $_getIZ(10);
+  $core.int get followerCount => $_getIZ(11);
   @$pb.TagNumber(31)
-  set followerCount($core.int v) { $_setSignedInt32(10, v); }
+  set followerCount($core.int v) { $_setSignedInt32(11, v); }
   @$pb.TagNumber(31)
-  $core.bool hasFollowerCount() => $_has(10);
+  $core.bool hasFollowerCount() => $_has(11);
   @$pb.TagNumber(31)
   void clearFollowerCount() => clearField(31);
 
   @$pb.TagNumber(32)
-  $core.int get followingCount => $_getIZ(11);
+  $core.int get followingCount => $_getIZ(12);
   @$pb.TagNumber(32)
-  set followingCount($core.int v) { $_setSignedInt32(11, v); }
+  set followingCount($core.int v) { $_setSignedInt32(12, v); }
   @$pb.TagNumber(32)
-  $core.bool hasFollowingCount() => $_has(11);
+  $core.bool hasFollowingCount() => $_has(12);
   @$pb.TagNumber(32)
   void clearFollowingCount() => clearField(32);
 
   @$pb.TagNumber(33)
-  $core.int get groupCount => $_getIZ(12);
+  $core.int get groupCount => $_getIZ(13);
   @$pb.TagNumber(33)
-  set groupCount($core.int v) { $_setSignedInt32(12, v); }
+  set groupCount($core.int v) { $_setSignedInt32(13, v); }
   @$pb.TagNumber(33)
-  $core.bool hasGroupCount() => $_has(12);
+  $core.bool hasGroupCount() => $_has(13);
   @$pb.TagNumber(33)
   void clearGroupCount() => clearField(33);
 
   @$pb.TagNumber(34)
-  $core.int get postCount => $_getIZ(13);
+  $core.int get postCount => $_getIZ(14);
   @$pb.TagNumber(34)
-  set postCount($core.int v) { $_setSignedInt32(13, v); }
+  set postCount($core.int v) { $_setSignedInt32(14, v); }
   @$pb.TagNumber(34)
-  $core.bool hasPostCount() => $_has(13);
+  $core.bool hasPostCount() => $_has(14);
   @$pb.TagNumber(34)
   void clearPostCount() => clearField(34);
 
   @$pb.TagNumber(35)
-  $core.int get responseCount => $_getIZ(14);
+  $core.int get responseCount => $_getIZ(15);
   @$pb.TagNumber(35)
-  set responseCount($core.int v) { $_setSignedInt32(14, v); }
+  set responseCount($core.int v) { $_setSignedInt32(15, v); }
   @$pb.TagNumber(35)
-  $core.bool hasResponseCount() => $_has(14);
+  $core.bool hasResponseCount() => $_has(15);
   @$pb.TagNumber(35)
   void clearResponseCount() => clearField(35);
 
   @$pb.TagNumber(50)
-  Follow get currentUserFollow => $_getN(15);
+  Follow get currentUserFollow => $_getN(16);
   @$pb.TagNumber(50)
   set currentUserFollow(Follow v) { setField(50, v); }
   @$pb.TagNumber(50)
-  $core.bool hasCurrentUserFollow() => $_has(15);
+  $core.bool hasCurrentUserFollow() => $_has(16);
   @$pb.TagNumber(50)
   void clearCurrentUserFollow() => clearField(50);
   @$pb.TagNumber(50)
-  Follow ensureCurrentUserFollow() => $_ensure(15);
+  Follow ensureCurrentUserFollow() => $_ensure(16);
 
   @$pb.TagNumber(51)
-  Follow get targetCurrentUserFollow => $_getN(16);
+  Follow get targetCurrentUserFollow => $_getN(17);
   @$pb.TagNumber(51)
   set targetCurrentUserFollow(Follow v) { setField(51, v); }
   @$pb.TagNumber(51)
-  $core.bool hasTargetCurrentUserFollow() => $_has(16);
+  $core.bool hasTargetCurrentUserFollow() => $_has(17);
   @$pb.TagNumber(51)
   void clearTargetCurrentUserFollow() => clearField(51);
   @$pb.TagNumber(51)
-  Follow ensureTargetCurrentUserFollow() => $_ensure(16);
+  Follow ensureTargetCurrentUserFollow() => $_ensure(17);
 
   @$pb.TagNumber(52)
-  Membership get currentGroupMembership => $_getN(17);
+  Membership get currentGroupMembership => $_getN(18);
   @$pb.TagNumber(52)
   set currentGroupMembership(Membership v) { setField(52, v); }
   @$pb.TagNumber(52)
-  $core.bool hasCurrentGroupMembership() => $_has(17);
+  $core.bool hasCurrentGroupMembership() => $_has(18);
   @$pb.TagNumber(52)
   void clearCurrentGroupMembership() => clearField(52);
   @$pb.TagNumber(52)
-  Membership ensureCurrentGroupMembership() => $_ensure(17);
+  Membership ensureCurrentGroupMembership() => $_ensure(18);
 
   @$pb.TagNumber(100)
-  $9.Timestamp get createdAt => $_getN(18);
+  $9.Timestamp get createdAt => $_getN(19);
   @$pb.TagNumber(100)
   set createdAt($9.Timestamp v) { setField(100, v); }
   @$pb.TagNumber(100)
-  $core.bool hasCreatedAt() => $_has(18);
+  $core.bool hasCreatedAt() => $_has(19);
   @$pb.TagNumber(100)
   void clearCreatedAt() => clearField(100);
   @$pb.TagNumber(100)
-  $9.Timestamp ensureCreatedAt() => $_ensure(18);
+  $9.Timestamp ensureCreatedAt() => $_ensure(19);
 
   @$pb.TagNumber(101)
-  $9.Timestamp get updatedAt => $_getN(19);
+  $9.Timestamp get updatedAt => $_getN(20);
   @$pb.TagNumber(101)
   set updatedAt($9.Timestamp v) { setField(101, v); }
   @$pb.TagNumber(101)
-  $core.bool hasUpdatedAt() => $_has(19);
+  $core.bool hasUpdatedAt() => $_has(20);
   @$pb.TagNumber(101)
   void clearUpdatedAt() => clearField(101);
   @$pb.TagNumber(101)
-  $9.Timestamp ensureUpdatedAt() => $_ensure(19);
+  $9.Timestamp ensureUpdatedAt() => $_ensure(20);
 }
 
 class Follow extends $pb.GeneratedMessage {

@@ -8,18 +8,13 @@ use crate::protos::*;
 pub fn validate_group(group: &Group) -> Result<(), Status> {
     validate_length(&group.name, "name", 1, 128)?;
     validate_max_length(Some(group.description.to_owned()), "description", 10000)?;
-    match group.avatar {
+
+    match group.avatar_media_id {
         None => {}
-        Some(ref avatar) => {
-            if avatar.len() > 1000000 {
-                return Err(Status::new(
-                    Code::InvalidArgument,
-                    "avatar_too_large_max_1000000",
-                ));
-            }
+        Some(ref avatar_media_id) => {
+            avatar_media_id.to_db_id_or_err("avatar_media_id")?;
         }
-    };
-    match group.visibility.to_proto_visibility().unwrap() {
+    };    match group.visibility.to_proto_visibility().unwrap() {
         Visibility::Unknown => return Err(Status::new(Code::InvalidArgument, "invalid_visibility")),
         _ => (),
     };

@@ -15,21 +15,6 @@ export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk
   }
 );
 
-// export type ReplyToEvent = AccountOrServer & { eventIdPath: string[], content: string };
-// export const replyToEvent: AsyncThunk<Event, ReplyToEvent, any> = createAsyncThunk<Event, ReplyToEvent>(
-//   "events/reply",
-//   async (request) => {
-//     const client = await getCredentialClient(request);
-//     const createEventRequest: CreateEventRequest = {
-//       replyToEventId: request.eventIdPath[request.eventIdPath.length - 1],
-//       content: request.content,
-//     };
-//     // TODO: Why doesn't the BE return the correct created date? We "estimate" it here.
-//     const result = await client.createEvent(createEventRequest, client.credential);
-//     return { ...result, createdAt: new Date().toISOString() }
-//   }
-// );
-
 export type LoadEventsRequest = AccountOrServer & {
   listingType?: EventListingType,
   page?: number
@@ -47,52 +32,14 @@ export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, an
   }
 );
 
-export type LoadEventPreview = Event & AccountOrServer;
-export const loadEventPreview: AsyncThunk<string, LoadEventPreview, any> = createAsyncThunk<string, LoadEventPreview>(
-  "events/loadPreview",
-  async (request) => {
-    let client = await getCredentialClient(request);
-    let response = await client.getEvents(GetEventsRequest.create({ eventId: request.id }), client.credential);
-    let event = response.events[0]!;
-    return event.post?.previewImage
-      ? URL.createObjectURL(new Blob([event.post!.previewImage!], { type: 'image/png' }))
-      : '';
-  }
-);
-
 export type LoadEvent = { id: string } & AccountOrServer;
-export type LoadEventResult = {
-  event: Event;
-  preview: string;
-}
-export const loadEvent: AsyncThunk<LoadEventResult, LoadEvent, any> = createAsyncThunk<LoadEventResult, LoadEvent>(
+export const loadEvent: AsyncThunk<Event, LoadEvent, any> = createAsyncThunk<Event, LoadEvent>(
   "events/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
     const response = await client.getEvents(GetEventsRequest.create({ eventId: request.id }), client.credential);
     if (response.events.length == 0) throw 'Event not found';
     const event = response.events[0]!;
-    const preview = event.post?.previewImage
-      ? URL.createObjectURL(new Blob([event.post!.previewImage!], { type: 'image/png' }))
-      : '';
-    return { event: { ...event, previewImage: undefined }, preview };
+    return event;
   }
 );
-
-// export type LoadEventReplies = AccountOrServer & {
-//   eventIdPath: string[];
-// }
-// export const loadEventReplies: AsyncThunk<GetEventsResponse, LoadEventReplies, any> = createAsyncThunk<GetEventsResponse, LoadEventReplies>(
-//   "events/loadReplies",
-//   async (repliesRequest) => {
-//     console.log("loadEventReplies:", repliesRequest)
-//     const getEventsRequest = GetEventsRequest.create({
-//       eventId: repliesRequest.eventIdPath.at(-1),
-//       replyDepth: 2,
-//     })
-
-//     const client = await getCredentialClient(repliesRequest);
-//     const replies = await client.getEvents(getEventsRequest, client.credential);
-//     return replies;
-//   }
-// );

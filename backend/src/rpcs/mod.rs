@@ -28,6 +28,9 @@ pub use get_current_user::get_current_user;
 mod update_user;
 pub use update_user::update_user;
 
+mod delete_user;
+pub use delete_user::delete_user;
+
 mod get_users;
 pub use get_users::get_users;
 

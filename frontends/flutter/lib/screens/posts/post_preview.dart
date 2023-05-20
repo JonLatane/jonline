@@ -1,9 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-// import 'package:get_storage/get_storage.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:jonline/jonline_state.dart';
@@ -13,7 +11,6 @@ import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:memory_cache/memory_cache.dart';
 
 import '../../app_state.dart';
 import '../../generated/groups.pb.dart';
@@ -24,6 +21,7 @@ import '../../jonotifier.dart';
 import '../../models/jonline_clients.dart';
 import '../../models/jonline_server.dart';
 import '../../models/settings.dart';
+import '../media/media_image.dart';
 
 // import 'package:jonline/db.dart';
 // final previewStorage = GetStorage('preview');
@@ -78,8 +76,9 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
       : post.link.startsWith(RegExp(r'https?://'))
           ? post.link
           : 'http://${post.link}';
-  String get previewKey => "post-preview-${widget.server}:${post.id}";
-  List<int>? previewImage;
+  String? get previewMediaId => post.media.firstOrNull;
+  // String get previewKey => "post-preview-${widget.server}:${post.id}";
+  // List<int>? previewImage;
   String? get content => post.content.isEmpty ? null : post.content;
   String? get username =>
       post.author.username.isEmpty ? null : post.author.username;
@@ -98,14 +97,11 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
   @override
   void initState() {
     super.initState();
-    final key = previewKey;
-    if (MemoryCache.instance.contains(key)) {
-      previewImage = MemoryCache.instance.read(key);
-      hasLoadedServerPreview = true;
-    }
-    if (post.link.isNotEmpty) {
-      loadServerPreview();
-    }
+    // final key = previewKey;
+    // if (MemoryCache.instance.contains(key)) {
+    //   previewImage = MemoryCache.instance.read(key);
+    //   hasLoadedServerPreview = true;
+    // }
 
     loadGroupPosts();
 
@@ -120,64 +116,6 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
 
   refreshContent() async {
     await loadGroupPosts();
-  }
-
-  loadServerPreview() async {
-    if (previewImage != null ||
-        hasLoadedServerPreview ||
-        failedToLoadServerPreview ||
-        loadingServerPreview ||
-        !post.previewImageExists) return;
-
-    setState(() => loadingServerPreview = true);
-    await _loadServerPreview();
-  }
-
-  _loadServerPreview() async {
-    if (previewImage != null ||
-        hasLoadedServerPreview ||
-        !post.previewImageExists ||
-        failedToLoadServerPreview) return;
-
-    try {
-      final key = previewKey;
-      List<int>? previewData;
-      // if (previewStorage.hasData(key)) {
-      //   print("Loading stored preview for ${post.id}");
-      //   previewData = previewStorage.read(key).cast<int>();
-      // }
-
-      if (MemoryCache.instance.contains(key)) {
-        // print("Loading stored preview for ${post.id}");
-        previewData = MemoryCache.instance.read(key);
-      }
-      if (previewData == null) {
-        // print("Loading preview from web for ${post.id}");
-        previewData = (await JonlineOperations.getPosts(
-                request: GetPostsRequest(postId: post.id),
-                showMessage: showSnackBar))
-            ?.posts
-            .firstOrNull
-            ?.previewImage;
-        MemoryCache.instance.create(key, previewData);
-      }
-      if (!mounted) return;
-      if (previewData != null && previewData.isNotEmpty) {
-        setState(() {
-          previewImage = previewData;
-        });
-      }
-      if (!mounted) return;
-      setState(() {
-        hasLoadedServerPreview = true;
-      });
-    } catch (e) {
-      setState(() => failedToLoadServerPreview = true);
-    } finally {
-      if (mounted) {
-        setState(() => loadingServerPreview = false);
-      }
-    }
   }
 
   loadGroupPosts() async {
@@ -262,7 +200,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                               //   SizedBox(
                               //       height: previewHeight,
                               //       child: buildLocalPreview(context)),
-                              if (previewImage != null) // &&
+                              if (previewMediaId?.isNotEmpty == true) // &&
                                 // Settings.preferServerPreviews)
                                 buildServerPreview(context),
                               if (link != null &&
@@ -453,13 +391,8 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Image.memory(
-                        Uint8List.fromList(
-                          previewImage!,
-                        ),
-                        fit: BoxFit.fitWidth,
-                        alignment: Alignment.topLeft),
-                  ),
+                    child: MediaImage(mediaId: previewMediaId!),
+                  )
                 ],
               ),
             ),
@@ -544,7 +477,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
         linkPreviewStyle:
             content != null ? LinkPreviewStyle.small : LinkPreviewStyle.large,
         // errorBody: '',
-        errorWidget: (previewImage != null && previewImage!.isNotEmpty)
+        errorWidget: (previewMediaId != null && previewMediaId!.isNotEmpty)
             ? buildServerPreview(context)
             : buildPreviewUnavailable(context),
         showGraphic: true,
@@ -579,8 +512,8 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
         child: Column(
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Expanded(child: Text('Preview unavailable 😔')),
               ],
             ),
@@ -618,8 +551,8 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
         padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
         child: Column(
           children: [
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Expanded(child: Text('Preview loading...')),
               ],
             ),
@@ -914,9 +847,9 @@ class _PostPreviewGroupChooserState
                 ),
               ...myGroups.map((a) => _groupItem(a, context)),
               if (pendingGroups
-                  .isNotEmpty /*&&
+                      .isNotEmpty /*&&
                   (myGroups.isNotEmpty || otherGroups.isNotEmpty)*/
-              )
+                  )
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
@@ -995,8 +928,8 @@ class _PostPreviewGroupChooserState
               padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
-                  Column(
-                    children: const [Icon(Icons.group_work)],
+                  const Column(
+                    children: [Icon(Icons.group_work)],
                   ),
                   const SizedBox(width: 8),
                   Expanded(

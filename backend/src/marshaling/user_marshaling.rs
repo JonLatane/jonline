@@ -39,14 +39,16 @@ impl ToProtoUser for models::User {
             .to_owned()
             .map(|cm| serde_json::from_value(cm).unwrap());
 
+            log::info!("user.avatar_media_id={:?}", &self.avatar_media_id);
         let user = User {
             id: self.id.to_proto_id().to_string(),
             username: self.username.to_owned(),
+            real_name: self.real_name.to_owned(),
             email: email,
             phone: phone,
             permissions: self.permissions.to_i32_permissions(),
             bio: self.bio.to_owned(),
-            avatar: self.avatar.to_owned(),
+            avatar_media_id: self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
             visibility: self.visibility.to_proto_visibility().unwrap() as i32,
             moderation: self.moderation.to_proto_moderation().unwrap() as i32,
             follower_count: Some(self.follower_count),

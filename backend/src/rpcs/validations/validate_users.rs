@@ -15,17 +15,7 @@ pub fn validate_user(user: &User) -> Result<(), Status> {
         Some(e) => validate_phone(&e.value)?,
         None => {}
     }
-    match user.avatar {
-        None => {}
-        Some(ref avatar) => {
-            if avatar.len() > 1000000 {
-                return Err(Status::new(
-                    Code::InvalidArgument,
-                    "avatar_too_large_max_1000000",
-                ));
-            }
-        }
-    };
+    user.avatar_media_id.to_db_opt_id_or_err("avatar_media_id")?;
     match user.visibility.to_proto_visibility().unwrap() {
         Visibility::Unknown => return Err(Status::new(Code::NotFound, "invalid_visibility")),
         _ => (),

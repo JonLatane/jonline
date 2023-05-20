@@ -66,7 +66,7 @@ table! {
         name -> Varchar,
         shortname -> Varchar,
         description -> Text,
-        avatar -> Nullable<Bytea>,
+        avatar_media_id -> Nullable<Int8>,
         visibility -> Varchar,
         default_membership_permissions -> Jsonb,
         default_membership_moderation -> Varchar,
@@ -88,6 +88,8 @@ table! {
         content_type -> Varchar,
         name -> Nullable<Varchar>,
         description -> Nullable<Text>,
+        generated -> Bool,
+        processed -> Bool,
         visibility -> Varchar,
         moderation -> Varchar,
         created_at -> Timestamp,
@@ -109,14 +111,6 @@ table! {
 }
 
 table! {
-    post_media (post_id, media_id) {
-        post_id -> Int8,
-        media_id -> Int8,
-        sort_order -> Int4,
-    }
-}
-
-table! {
     posts (id) {
         id -> Int8,
         user_id -> Nullable<Int8>,
@@ -124,15 +118,19 @@ table! {
         title -> Nullable<Varchar>,
         link -> Nullable<Varchar>,
         content -> Nullable<Text>,
-        visibility -> Varchar,
-        moderation -> Varchar,
         response_count -> Int4,
         reply_count -> Int4,
         group_count -> Int4,
-        preview -> Nullable<Bytea>,
+        media -> Array<Int8>,
+        media_generated -> Bool,
+        embed_link -> Bool,
+        shareable -> Bool,
         context -> Varchar,
+        visibility -> Varchar,
+        moderation -> Varchar,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
+        published_at -> Nullable<Timestamp>,
         last_activity_at -> Timestamp,
     }
 }
@@ -199,10 +197,11 @@ table! {
         id -> Int8,
         username -> Varchar,
         password_salted_hash -> Varchar,
+        real_name -> Varchar,
         email -> Nullable<Jsonb>,
         phone -> Nullable<Jsonb>,
         permissions -> Jsonb,
-        avatar -> Nullable<Bytea>,
+        avatar_media_id -> Nullable<Int8>,
         bio -> Text,
         visibility -> Varchar,
         moderation -> Varchar,
@@ -226,7 +225,7 @@ joinable!(federated_accounts -> users (user_id));
 joinable!(group_posts -> groups (group_id));
 joinable!(group_posts -> posts (post_id));
 joinable!(group_posts -> users (user_id));
-joinable!(media -> users (user_id));
+joinable!(groups -> media (avatar_media_id));
 joinable!(memberships -> groups (group_id));
 joinable!(memberships -> users (user_id));
 joinable!(posts -> users (user_id));
@@ -246,7 +245,6 @@ allow_tables_to_appear_in_same_query!(
     groups,
     media,
     memberships,
-    post_media,
     posts,
     server_configurations,
     user_access_tokens,

@@ -1,10 +1,10 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/fa_solid.dart';
 import 'package:intl/intl.dart';
 import 'package:jonline/models/jonline_clients.dart';
+import 'package:jonline/screens/media/media_image.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 
 import '../../app_state.dart';
@@ -69,9 +69,6 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
     appState.selectedAccountChanged.addListener(updateState);
     widget.usernameController?.addListener(updateGroupName);
     widget.usernameController?.text = user.username;
-    if (user.avatar.isNotEmpty) {
-      avatar = Uint8List.fromList(user.avatar);
-    }
   }
 
   @override
@@ -109,7 +106,6 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   bool get wantsToJoinGroup => membership?.wantsToJoinGroup ?? false;
 
   bool get currentUserProfile => user.id == appState.selectedAccount?.userId;
-  Uint8List? avatar;
 
   @override
   Widget build(BuildContext context) {
@@ -153,9 +149,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                         SizedBox(
                             height: 48,
                             width: 48,
-                            child: (avatar != null)
+                            child: (user.avatarMediaId.isNotEmpty)
                                 ? CircleAvatar(
-                                    backgroundImage: MemoryImage(avatar!),
+                                    backgroundImage:
+                                        mediaImageProvider(user.avatarMediaId),
                                   )
                                 : const CircleAvatar(
                                     backgroundColor: Colors.black12,
@@ -304,10 +301,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                               onPressed: cannotFollow
                                                   ? null
                                                   : () => approveMembership(),
-                                              child: Row(
+                                              child: const Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
-                                                children: const [
+                                                children: [
                                                   Icon(Icons.check),
                                                   SizedBox(width: 4),
                                                   Text("APPROVE")
@@ -327,10 +324,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                               onPressed: cannotFollow
                                                   ? null
                                                   : () => rejectMembership(),
-                                              child: Row(
+                                              child: const Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
-                                                children: const [
+                                                children: [
                                                   Icon(Icons
                                                       .remove_circle_outline),
                                                   SizedBox(width: 4),
@@ -368,10 +365,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                                   ? null
                                                   : () =>
                                                       approveFollowRequest(),
-                                              child: Row(
+                                              child: const Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
-                                                children: const [
+                                                children: [
                                                   Icon(Icons.check),
                                                   SizedBox(width: 4),
                                                   Text("APPROVE")
@@ -391,10 +388,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                               onPressed: cannotFollow
                                                   ? null
                                                   : () => rejectFollowRequest(),
-                                              child: Row(
+                                              child: const Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,
-                                                children: const [
+                                                children: [
                                                   Icon(Icons
                                                       .remove_circle_outline),
                                                   SizedBox(width: 4),

@@ -10,37 +10,58 @@ use diesel::*;
 use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
-use jonline::marshaling::ToLink;
-use jonline::{db_connection, init_bin_logging};
-use jonline::models::Post;
-use jonline::schema::posts::dsl::*;
+use jonline::db_connection::PgPooledConnection;
+use jonline::marshaling::*;
+use jonline::models;
+use jonline::models::{get_user, Post};
+use jonline::protos::Visibility;
+use jonline::{db_connection, init_bin_logging, minio_connection};
+// use jonline::schema::posts::dsl::*;
+use jonline::schema::{media, posts};
+use s3::Bucket;
+use uuid::Uuid;
 
-pub fn main() {
+#[tokio::main]
+async fn main() {
     init_bin_logging();
     log::info!("Generating preview images...");
-    log::info!("Connecting to DB...");
-    let mut conn = db_connection::establish_connection();
+    log::info!("Connecting to DB and MinIO...");
+    let pool = db_connection::establish_pool();
+    let mut conn = pool.get().expect("Failed to get DB connection");
+    let bucket = minio_connection::get_and_test_bucket()
+        .await
+        .expect("Failed to connect to MinIO");
 
     log::info!("Starting browser...");
     let browser = start_browser().expect("Failed to start browser");
 
-    let posts_to_update = posts
-        .filter(preview.is_null())
-        .filter(link.is_not_null())
+    let posts_to_update = posts::table
+        .filter(posts::link.is_not_null())
+        .filter(posts::media_generated.eq(false))
         .limit(100)
         .load::<Post>(&mut conn)
         .unwrap();
     log::info!("Got {} posts to update.", posts_to_update.len());
 
     for post in posts_to_update {
-        update_post(&post, &browser, &mut conn);
+        update_post(&post, &browser, &mut conn, &bucket).await;
     }
 
     log::info!("Done generating preview images.");
 }
 
-fn update_post(post: &Post, browser: &Browser, conn: &mut PgConnection) {
+async fn update_post(
+    post: &Post,
+    browser: &Browser,
+    conn: &mut PgPooledConnection,
+    bucket: &Bucket,
+) {
+    if post.user_id.is_none() {
+        log::warn!("Post {} has no user_id, skipping.", post.id);
+        return;
+    }
     log::info!("Generating preview image for post: {}", post.id);
+    let user = get_user(post.user_id.unwrap(), conn).unwrap();
     match post.link.to_link() {
         None => log::warn!("Invalid link: {:?}", post.link),
         Some(url) => {
@@ -52,9 +73,47 @@ fn update_post(post: &Post, browser: &Browser, conn: &mut PgConnection) {
                         post.id,
                         screenshot.len()
                     );
-                    update(posts)
-                        .filter(id.eq(post.id))
-                        .set(preview.eq(screenshot))
+
+                    let filename = format!("post-{}-generated-preview.png", post.id);
+                    let uuid = Uuid::new_v4();
+                    let minio_path = format!(
+                        "user/{}-{}/{}-{}",
+                        user.id.to_proto_id(),
+                        user.username,
+                        uuid,
+                        filename
+                    );
+                    let upload_status = bucket
+                        .put_object(&minio_path, screenshot.as_slice())
+                        .await
+                        .map_err(|e| {
+                            log::warn!("Failed to upload screenshot for link {}: {}", url, e);
+                            return;
+                        });
+
+                    log::info!("generate_preview_images upload_status: {:?}", upload_status);
+
+                    let media = insert_into(media::table)
+                        .values(&models::NewMedia {
+                            user_id: post.user_id,
+                            minio_path,
+                            content_type: "image/png".to_string(),
+                            name: Some(filename.to_string()),
+                            description: None,
+                            generated: true,
+                            visibility: Visibility::GlobalPublic.to_string_visibility(),
+                        })
+                        .get_result::<models::Media>(conn)
+                        .unwrap();
+
+                    let mut new_media = vec![media.id];
+                    new_media.append(&mut post.media.clone());
+                    update(posts::table)
+                        .filter(posts::id.eq(post.id))
+                        .set((
+                            posts::media.eq(new_media),
+                            posts::media_generated.eq(true)
+                        ))
                         .execute(conn)
                         .unwrap();
                 }
@@ -64,7 +123,6 @@ fn update_post(post: &Post, browser: &Browser, conn: &mut PgConnection) {
             };
         }
     }
-
 }
 
 fn generate_preview(url: &str, browser: &Browser) -> Result<Vec<u8>, anyhow::Error> {
@@ -97,7 +155,6 @@ fn start_browser() -> Result<Browser, anyhow::Error> {
                 std::ffi::OsStr::new("--headless=chrome"),
                 std::ffi::OsStr::new("--hide-scrollbars"),
                 std::ffi::OsStr::new("--lang=en_US"),
-
                 // Default args but with extensions enabled
                 std::ffi::OsStr::new("--disable-background-networking"),
                 std::ffi::OsStr::new("--enable-features=NetworkService,NetworkServiceInProcess"),

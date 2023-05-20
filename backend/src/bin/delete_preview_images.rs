@@ -4,17 +4,21 @@ extern crate jonline;
 use diesel::*;
 
 use jonline::{db_connection, init_bin_logging};
-use jonline::schema::posts::dsl::*;
+use jonline::schema::*;
 
 pub fn main() {
     init_bin_logging();
-    log::info!("Deleting all preview images...");
+    log::info!("Unlinking all preview images...");
     log::info!("Connecting to DB...");
     let mut conn = db_connection::establish_connection();
-    update(posts)
-        .set(preview.eq(None::<Vec<u8>>))
-        .execute(&mut conn)
-        .unwrap();
 
-    log::info!("Done deleting preview images.");
+    // The delete_unowned_media job should take care of the old media.
+    update(media::table).filter(media::generated.eq(true))
+        .set(media::user_id.eq(None::<i64>))
+        .execute(&mut conn).unwrap();
+    update(posts::table)
+        .set(posts::media_generated.eq(false))
+        .execute(&mut conn).unwrap();
+
+    log::info!("Done unlinking preview images.");
 }

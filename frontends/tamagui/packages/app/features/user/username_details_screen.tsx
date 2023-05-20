@@ -16,6 +16,7 @@ import { VisibilityPicker } from '../post/visibility_picker';
 import { ToggleRow } from '../settings_sheet';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import  { UserCard, useFullAvatarHeight } from './user_card';
+import {useMediaUrl} from '../../hooks/use_media_url';
 
 
 const { useParam } = createParam<{ username: string }>()
@@ -38,8 +39,7 @@ export function UsernameDetailsScreen() {
   const canEdit = isCurrentUser || isAdmin;
   const [name, setName] = useState(user?.username);
   const [bio, setBio] = useState(user?.bio);
-  const avatar = useTypedSelector((state: RootState) => userId ? state.users.avatars[userId] : undefined);
-  const [updatedAvatar, setUpdatedAvatar] = useState(avatar);
+  const [avatarMediaId, setAvatarMediaId] = useState(user?.avatarMediaId);
   const [editMode, setEditMode] = useState(false);
   const [defaultFollowModeration, setDefaultFollowModeration] = useState(user?.defaultFollowModeration ?? Moderation.MODERATION_UNKNOWN);
   const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
@@ -64,7 +64,7 @@ export function UsernameDetailsScreen() {
 
   const successSaving = useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
   const permissionsModified = JSON.stringify(permissions) !== JSON.stringify(user?.permissions ?? []);
-  const dirtyData = name != user?.username || bio != user?.bio || updatedAvatar != avatar
+  const dirtyData = name != user?.username || bio != user?.bio || avatarMediaId != user?.avatarMediaId
     || defaultFollowModeration != user?.defaultFollowModeration || visibility != user?.visibility
     || permissionsModified;
 
@@ -78,7 +78,7 @@ export function UsernameDetailsScreen() {
     if (!user) {
       setName(undefined);
       setBio(undefined);
-      setUpdatedAvatar(undefined);
+      setAvatarMediaId(undefined);
       setDefaultFollowModeration(Moderation.MODERATION_UNKNOWN);
       setVisibility(Visibility.VISIBILITY_UNKNOWN);
       setPermissions([]);
@@ -86,7 +86,7 @@ export function UsernameDetailsScreen() {
     };
 
     setBio(user.bio);
-    setUpdatedAvatar(avatar);
+    setAvatarMediaId(user.avatarMediaId);
     setDefaultFollowModeration(user.defaultFollowModeration);
     setVisibility(user.visibility);
     setName(user.username);
@@ -140,8 +140,7 @@ export function UsernameDetailsScreen() {
 
     setTimeout(() => dispatch(updateUser({
       ...accountOrServer,
-      user: { ...user!, bio: bio ?? '', defaultFollowModeration, visibility, permissions },
-      avatar: avatar,
+      ...{ ...user!, bio: bio ?? '', avatarMediaId, defaultFollowModeration, visibility, permissions },
     })));
   }
   const postsState = useTypedSelector((state: RootState) => state.posts);
@@ -154,7 +153,7 @@ export function UsernameDetailsScreen() {
         {user ? <>
           <ScrollView w='100%'>
             <YStack maw={800} w='100%' als='center' p='$2' marginHorizontal='auto'>
-              <UserCard user={user} setUsername={editMode ? setName : undefined} setAvatar={editMode ? setUpdatedAvatar : undefined} />
+              <UserCard user={user} setUsername={editMode ? setName : undefined} setAvatar={editMode ? setAvatarMediaId : undefined} />
               <YStack als='center' w='100%' paddingHorizontal='$2' paddingVertical='$3' space>
                 {editMode ?
                   <TextArea value={bio} onChangeText={t => setBio(t)}
@@ -233,7 +232,7 @@ export function UsernameDetailsScreen() {
                         onPress={() => {
                           setEditMode(true);
                           setShowPermissionsAndVisibility(true);
-                          const maxScrollPosition = 270 + (avatar ? fullAvatarHeight : 0);
+                          const maxScrollPosition = 270 + (avatarMediaId ? fullAvatarHeight : 0);
                           if (window.scrollY > maxScrollPosition) {
                             isClient && window.scrollTo({ top: maxScrollPosition, behavior: 'smooth' });
                           }

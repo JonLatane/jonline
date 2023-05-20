@@ -21,8 +21,8 @@ export const MediaCard: React.FC<Props> = ({ media }) => {
         padding='$0'
         animation="bouncy"
         width='100%'
-        opacity={1}
         scale={1}
+        opacity={1}
         y={0}
         enterStyle={{ y: -50, opacity: 0, }}
         exitStyle={{ opacity: 0, }} >

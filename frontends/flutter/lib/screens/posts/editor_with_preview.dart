@@ -169,10 +169,10 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
               // doingStuff || username.isEmpty || password.isEmpty
               //     ? null
               //     : createAccount,
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
+              child: const Padding(
+                padding: EdgeInsets.all(4.0),
                 child: Column(
-                  children: const [
+                  children: [
                     Text('EDIT'),
                   ],
                 ),
@@ -188,10 +188,10 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
               style: ButtonStyle(
                   backgroundColor: MaterialStateProperty.all(
                       showPreview ? Colors.white : Colors.transparent)),
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
+              child: const Padding(
+                padding: EdgeInsets.all(4.0),
                 child: Column(
-                  children: const [
+                  children: [
                     Text('PREVIEW'),
                   ],
                 ),

@@ -21,6 +21,7 @@ pub fn update_group(
     conn: &mut PgPooledConnection,
 ) -> Result<Group, Status> {
     validate_group(&request)?;
+
     match memberships::table
         .select(memberships::all_columns)
         .filter(memberships::user_id.eq(user.id))
@@ -42,7 +43,7 @@ pub fn update_group(
 
     group.name = request.name;
     group.description = request.description;
-    group.avatar = request.avatar;
+    group.avatar_media_id = request.avatar_media_id.map(|id| id.to_db_id().unwrap());
     group.visibility = request.visibility.to_string_visibility();
     group.default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();

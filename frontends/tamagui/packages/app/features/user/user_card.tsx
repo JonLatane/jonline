@@ -12,12 +12,13 @@ import { useLocalApp } from '../../store/store';
 import { FadeInView } from "../post/fade_in_view";
 import { } from "../post/post_card";
 import { useLink } from 'solito/link';
+import { useMediaUrl } from "app/hooks/use_media_url";
 
 interface Props {
   user: User;
   isPreview?: boolean;
   setUsername?: (username: string) => void;
-  setAvatar?: (encodedBlob: string) => void;
+  setAvatar?: (mediaId: string) => void;
 }
 
 export function useFullAvatarHeight(): number {
@@ -32,7 +33,6 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
 
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
   const { server, primaryColor, navColor, primaryTextColor, textColor } = useServerTheme();
-  const avatar = useTypedSelector((state: RootState) => state.users.avatars[user.id]);
   const [loadingAvatar, setLoadingAvatar] = React.useState(false);
 
   const following = passes(user.currentUserFollow?.targetUserModeration);
@@ -56,17 +56,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
   };
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const onScreen = useOnScreen(ref, "-1px");
-
-  useEffect(() => {
-    if (!loadingAvatar) {
-      if (avatar == undefined && onScreen) {
-        setLoadingAvatar(true);
-        setTimeout(() => dispatch(loadUser({ id: user.id, ...accountOrServer })), 1);
-      } else if (avatar != undefined) {
-        setLoadingAvatar(false);
-      }
-    }
-  });
+  const avatarUrl = useMediaUrl(user?.avatarMediaId);
+  // debugger;
 
   return (
     <Theme inverse={isCurrentUser}>
@@ -76,6 +67,11 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
         // scale={0.9}
         margin='$0'
         width={'100%'}
+        scale={1}
+        opacity={1}
+        y={0}
+        enterStyle={{ y: -50, opacity: 0, }}
+        exitStyle={{ opacity: 0, }}
         // width={400}
         // hoverStyle={isPreview ? { scale: 0.97 } : {}}
         // pressStyle={isPreview ? { scale: 0.95 } : {}}
@@ -122,7 +118,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
         </Card.Header>
         <Card.Footer>
           <YStack mt='$2' mr='$3' w='100%'>
-            {(!isPreview && avatar && avatar != '') ?
+            {(!isPreview && avatarUrl && avatarUrl != '') ?
               <FadeInView>
                 <Image
                   // pos="absolute"
@@ -138,7 +134,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                   height={fullAvatarHeight}
                   resizeMode="contain"
                   als="center"
-                  src={avatar}
+                  // source={{uri: avatarUrl}}
+                  src={avatarUrl}
                   borderRadius={10}
                 // borderBottomRightRadius={5}
                 />
@@ -194,7 +191,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
         <Card.Background>
           {/* <XStack>
             <YStack h='100%' w={5} backgroundColor={primaryColor} /> */}
-          {(isPreview && avatar && avatar != '') ?
+          {(isPreview && avatarUrl && avatarUrl != '') ?
             <FadeInView>
               <Image
                 pos="absolute"
@@ -203,7 +200,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                 opacity={0.25}
                 resizeMode="contain"
                 als="flex-start"
-                src={avatar}
+                // source={{uri: avatarUrl}}
+                src={avatarUrl}
                 blurRadius={1.5}
                 // borderRadius={5}
                 borderBottomRightRadius={5}

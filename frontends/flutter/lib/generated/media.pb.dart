@@ -22,6 +22,8 @@ class Media extends $pb.GeneratedMessage {
     ..aOS(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'description')
     ..e<$11.Visibility>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
     ..e<$11.Moderation>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..aOB(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'generated')
+    ..aOB(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'processed')
     ..aOM<$9.Timestamp>(15, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(16, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
@@ -36,6 +38,8 @@ class Media extends $pb.GeneratedMessage {
     $core.String? description,
     $11.Visibility? visibility,
     $11.Moderation? moderation,
+    $core.bool? generated,
+    $core.bool? processed,
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
@@ -60,6 +64,12 @@ class Media extends $pb.GeneratedMessage {
     }
     if (moderation != null) {
       _result.moderation = moderation;
+    }
+    if (generated != null) {
+      _result.generated = generated;
+    }
+    if (processed != null) {
+      _result.processed = processed;
     }
     if (createdAt != null) {
       _result.createdAt = createdAt;
@@ -153,27 +163,45 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   void clearModeration() => clearField(7);
 
+  @$pb.TagNumber(8)
+  $core.bool get generated => $_getBF(7);
+  @$pb.TagNumber(8)
+  set generated($core.bool v) { $_setBool(7, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasGenerated() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearGenerated() => clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.bool get processed => $_getBF(8);
+  @$pb.TagNumber(9)
+  set processed($core.bool v) { $_setBool(8, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasProcessed() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearProcessed() => clearField(9);
+
   @$pb.TagNumber(15)
-  $9.Timestamp get createdAt => $_getN(7);
+  $9.Timestamp get createdAt => $_getN(9);
   @$pb.TagNumber(15)
   set createdAt($9.Timestamp v) { setField(15, v); }
   @$pb.TagNumber(15)
-  $core.bool hasCreatedAt() => $_has(7);
+  $core.bool hasCreatedAt() => $_has(9);
   @$pb.TagNumber(15)
   void clearCreatedAt() => clearField(15);
   @$pb.TagNumber(15)
-  $9.Timestamp ensureCreatedAt() => $_ensure(7);
+  $9.Timestamp ensureCreatedAt() => $_ensure(9);
 
   @$pb.TagNumber(16)
-  $9.Timestamp get updatedAt => $_getN(8);
+  $9.Timestamp get updatedAt => $_getN(10);
   @$pb.TagNumber(16)
   set updatedAt($9.Timestamp v) { setField(16, v); }
   @$pb.TagNumber(16)
-  $core.bool hasUpdatedAt() => $_has(8);
+  $core.bool hasUpdatedAt() => $_has(10);
   @$pb.TagNumber(16)
   void clearUpdatedAt() => clearField(16);
   @$pb.TagNumber(16)
-  $9.Timestamp ensureUpdatedAt() => $_ensure(8);
+  $9.Timestamp ensureUpdatedAt() => $_ensure(10);
 }
 
 class GetMediaRequest extends $pb.GeneratedMessage {

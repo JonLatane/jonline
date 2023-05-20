@@ -27,74 +27,29 @@ pub struct Post {
     pub id: i64,
     pub user_id: Option<i64>,
     pub parent_post_id: Option<i64>,
+
     pub title: Option<String>,
     pub link: Option<String>,
     pub content: Option<String>,
-    pub visibility: String,
-    pub moderation: String,
+
     pub response_count: i32,
     pub reply_count: i32,
     pub group_count: i32,
-    pub preview: Option<Vec<u8>>,
-    pub context: String,
-    pub created_at: SystemTime,
-    pub updated_at: Option<SystemTime>,
-    pub last_activity_at: SystemTime,
-}
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
-#[diesel(table_name = posts)]
-pub struct MinimalPost {
-    pub id: i64,
-    pub user_id: Option<i64>,
-    pub parent_post_id: Option<i64>,
-    pub title: Option<String>,
-    pub link: Option<String>,
-    pub content: Option<String>,
-    pub response_count: i32,
-    pub reply_count: i32,
-    pub group_count: i32,
+    pub media: Vec<i64>,
+    pub media_generated: bool,
+    pub embed_link: bool,
+    pub shareable: bool,
+
     pub context: String,
     pub visibility: String,
     pub moderation: String,
+
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
+    pub published_at: Option<SystemTime>,
     pub last_activity_at: SystemTime,
 }
-
-pub static MINIMAL_POST_COLUMNS: (
-    posts::id,
-    posts::user_id,
-    posts::parent_post_id,
-    posts::title,
-    posts::link,
-    posts::content,
-    posts::response_count,
-    posts::reply_count,
-    posts::group_count,
-    posts::context,
-    posts::visibility,
-    posts::moderation,
-    posts::created_at,
-    posts::updated_at,
-    posts::last_activity_at,
-) = (
-    posts::id,
-    posts::user_id,
-    posts::parent_post_id,
-    posts::title,
-    posts::link,
-    posts::content,
-    posts::response_count,
-    posts::reply_count,
-    posts::group_count,
-    posts::context,
-    posts::visibility,
-    posts::moderation,
-    posts::created_at,
-    posts::updated_at,
-    posts::last_activity_at,
-);
 
 #[derive(Debug, Insertable)]
 #[diesel(table_name = posts)]
@@ -106,7 +61,7 @@ pub struct NewPost {
     pub content: Option<String>,
     pub visibility: String,
     pub context: String,
-    pub preview: Option<Vec<u8>>,
+    pub media: Vec<i64>,
 }
 
 

@@ -550,9 +550,9 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 onPressed: applyServerConfiguration,
                 child: SizedBox(
                   height: 20 + 20 * mq.textScaleFactor,
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.check),
                       Text('Apply Configuration Changes'),
                     ],
@@ -580,9 +580,9 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 },
                 child: SizedBox(
                   height: 20 + 20 * mq.textScaleFactor,
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.developer_mode),
                       Text('Post Demo Data'),
                     ],
@@ -608,9 +608,9 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 },
                 child: SizedBox(
                   height: 20 + 20 * mq.textScaleFactor,
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.developer_mode),
                       Text('Post *Randomized* Demo Data'),
                     ],
@@ -714,9 +714,9 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
             TextButton(
               child: SizedBox(
                 height: 20 + 20 * mq.textScaleFactor,
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.check),
                     Text('Apply'),
                   ],

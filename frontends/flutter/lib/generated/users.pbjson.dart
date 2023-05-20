@@ -28,11 +28,12 @@ const User$json = const {
   '2': const [
     const {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
     const {'1': 'username', '3': 2, '4': 1, '5': 9, '10': 'username'},
-    const {'1': 'email', '3': 3, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 0, '10': 'email', '17': true},
-    const {'1': 'phone', '3': 4, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 1, '10': 'phone', '17': true},
-    const {'1': 'permissions', '3': 5, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'permissions'},
-    const {'1': 'avatar', '3': 6, '4': 1, '5': 12, '9': 2, '10': 'avatar', '17': true},
-    const {'1': 'bio', '3': 7, '4': 1, '5': 9, '10': 'bio'},
+    const {'1': 'real_name', '3': 3, '4': 1, '5': 9, '10': 'realName'},
+    const {'1': 'email', '3': 4, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 0, '10': 'email', '17': true},
+    const {'1': 'phone', '3': 5, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 1, '10': 'phone', '17': true},
+    const {'1': 'permissions', '3': 6, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'permissions'},
+    const {'1': 'avatar_media_id', '3': 7, '4': 1, '5': 9, '9': 2, '10': 'avatarMediaId', '17': true},
+    const {'1': 'bio', '3': 8, '4': 1, '5': 9, '10': 'bio'},
     const {'1': 'visibility', '3': 20, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
     const {'1': 'moderation', '3': 21, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
     const {'1': 'default_follow_moderation', '3': 30, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultFollowModeration'},
@@ -50,7 +51,7 @@ const User$json = const {
   '8': const [
     const {'1': '_email'},
     const {'1': '_phone'},
-    const {'1': '_avatar'},
+    const {'1': '_avatar_media_id'},
     const {'1': '_follower_count'},
     const {'1': '_following_count'},
     const {'1': '_group_count'},
@@ -64,7 +65,7 @@ const User$json = const {
 };
 
 /// Descriptor for `User`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List userDescriptor = $convert.base64Decode('CgRVc2VyEg4KAmlkGAEgASgJUgJpZBIaCgh1c2VybmFtZRgCIAEoCVIIdXNlcm5hbWUSMQoFZW1haWwYAyABKAsyFi5qb25saW5lLkNvbnRhY3RNZXRob2RIAFIFZW1haWyIAQESMQoFcGhvbmUYBCABKAsyFi5qb25saW5lLkNvbnRhY3RNZXRob2RIAVIFcGhvbmWIAQESNQoLcGVybWlzc2lvbnMYBSADKA4yEy5qb25saW5lLlBlcm1pc3Npb25SC3Blcm1pc3Npb25zEhsKBmF2YXRhchgGIAEoDEgCUgZhdmF0YXKIAQESEAoDYmlvGAcgASgJUgNiaW8SMwoKdmlzaWJpbGl0eRgUIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIzCgptb2RlcmF0aW9uGBUgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEk8KGWRlZmF1bHRfZm9sbG93X21vZGVyYXRpb24YHiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SF2RlZmF1bHRGb2xsb3dNb2RlcmF0aW9uEioKDmZvbGxvd2VyX2NvdW50GB8gASgFSANSDWZvbGxvd2VyQ291bnSIAQESLAoPZm9sbG93aW5nX2NvdW50GCAgASgFSARSDmZvbGxvd2luZ0NvdW50iAEBEiQKC2dyb3VwX2NvdW50GCEgASgFSAVSCmdyb3VwQ291bnSIAQESIgoKcG9zdF9jb3VudBgiIAEoBUgGUglwb3N0Q291bnSIAQESKgoOcmVzcG9uc2VfY291bnQYIyABKAVIB1INcmVzcG9uc2VDb3VudIgBARJEChNjdXJyZW50X3VzZXJfZm9sbG93GDIgASgLMg8uam9ubGluZS5Gb2xsb3dICFIRY3VycmVudFVzZXJGb2xsb3eIAQESUQoadGFyZ2V0X2N1cnJlbnRfdXNlcl9mb2xsb3cYMyABKAsyDy5qb25saW5lLkZvbGxvd0gJUhd0YXJnZXRDdXJyZW50VXNlckZvbGxvd4gBARJSChhjdXJyZW50X2dyb3VwX21lbWJlcnNoaXAYNCABKAsyEy5qb25saW5lLk1lbWJlcnNoaXBIClIWY3VycmVudEdyb3VwTWVtYmVyc2hpcIgBARI5CgpjcmVhdGVkX2F0GGQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYZSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAtSCXVwZGF0ZWRBdIgBAUIICgZfZW1haWxCCAoGX3Bob25lQgkKB19hdmF0YXJCEQoPX2ZvbGxvd2VyX2NvdW50QhIKEF9mb2xsb3dpbmdfY291bnRCDgoMX2dyb3VwX2NvdW50Qg0KC19wb3N0X2NvdW50QhEKD19yZXNwb25zZV9jb3VudEIWChRfY3VycmVudF91c2VyX2ZvbGxvd0IdChtfdGFyZ2V0X2N1cnJlbnRfdXNlcl9mb2xsb3dCGwoZX2N1cnJlbnRfZ3JvdXBfbWVtYmVyc2hpcEINCgtfdXBkYXRlZF9hdA==');
+final $typed_data.Uint8List userDescriptor = $convert.base64Decode('CgRVc2VyEg4KAmlkGAEgASgJUgJpZBIaCgh1c2VybmFtZRgCIAEoCVIIdXNlcm5hbWUSGwoJcmVhbF9uYW1lGAMgASgJUghyZWFsTmFtZRIxCgVlbWFpbBgEIAEoCzIWLmpvbmxpbmUuQ29udGFjdE1ldGhvZEgAUgVlbWFpbIgBARIxCgVwaG9uZRgFIAEoCzIWLmpvbmxpbmUuQ29udGFjdE1ldGhvZEgBUgVwaG9uZYgBARI1CgtwZXJtaXNzaW9ucxgGIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblILcGVybWlzc2lvbnMSKwoPYXZhdGFyX21lZGlhX2lkGAcgASgJSAJSDWF2YXRhck1lZGlhSWSIAQESEAoDYmlvGAggASgJUgNiaW8SMwoKdmlzaWJpbGl0eRgUIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIzCgptb2RlcmF0aW9uGBUgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEk8KGWRlZmF1bHRfZm9sbG93X21vZGVyYXRpb24YHiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SF2RlZmF1bHRGb2xsb3dNb2RlcmF0aW9uEioKDmZvbGxvd2VyX2NvdW50GB8gASgFSANSDWZvbGxvd2VyQ291bnSIAQESLAoPZm9sbG93aW5nX2NvdW50GCAgASgFSARSDmZvbGxvd2luZ0NvdW50iAEBEiQKC2dyb3VwX2NvdW50GCEgASgFSAVSCmdyb3VwQ291bnSIAQESIgoKcG9zdF9jb3VudBgiIAEoBUgGUglwb3N0Q291bnSIAQESKgoOcmVzcG9uc2VfY291bnQYIyABKAVIB1INcmVzcG9uc2VDb3VudIgBARJEChNjdXJyZW50X3VzZXJfZm9sbG93GDIgASgLMg8uam9ubGluZS5Gb2xsb3dICFIRY3VycmVudFVzZXJGb2xsb3eIAQESUQoadGFyZ2V0X2N1cnJlbnRfdXNlcl9mb2xsb3cYMyABKAsyDy5qb25saW5lLkZvbGxvd0gJUhd0YXJnZXRDdXJyZW50VXNlckZvbGxvd4gBARJSChhjdXJyZW50X2dyb3VwX21lbWJlcnNoaXAYNCABKAsyEy5qb25saW5lLk1lbWJlcnNoaXBIClIWY3VycmVudEdyb3VwTWVtYmVyc2hpcIgBARI5CgpjcmVhdGVkX2F0GGQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYZSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAtSCXVwZGF0ZWRBdIgBAUIICgZfZW1haWxCCAoGX3Bob25lQhIKEF9hdmF0YXJfbWVkaWFfaWRCEQoPX2ZvbGxvd2VyX2NvdW50QhIKEF9mb2xsb3dpbmdfY291bnRCDgoMX2dyb3VwX2NvdW50Qg0KC19wb3N0X2NvdW50QhEKD19yZXNwb25zZV9jb3VudEIWChRfY3VycmVudF91c2VyX2ZvbGxvd0IdChtfdGFyZ2V0X2N1cnJlbnRfdXNlcl9mb2xsb3dCGwoZX2N1cnJlbnRfZ3JvdXBfbWVtYmVyc2hpcEINCgtfdXBkYXRlZF9hdA==');
 @$core.Deprecated('Use followDescriptor instead')
 const Follow$json = const {
   '1': 'Follow',

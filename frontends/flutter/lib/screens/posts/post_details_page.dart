@@ -170,10 +170,10 @@ class PostDetailsPageState extends JonlineState<PostDetailsPage> {
                   ),
                 ),
               )
-            : Center(
+            : const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Text("Loading post data..."),
                   ],
                 ),
@@ -216,12 +216,12 @@ class HeaderSliver extends SliverPersistentHeaderDelegate {
               Expanded(
                   child: TextButton(
                 onPressed: updatingReplies.value ? null : () => updateReplies(),
-                child: Column(
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
+                        children: [
                           // Expanded(flex: 1, child: SizedBox()),
                           Icon(Icons.refresh),
                           Text(
@@ -242,12 +242,12 @@ class HeaderSliver extends SliverPersistentHeaderDelegate {
                             postId: subjectPost.id, server: server));
                       }
                     : null,
-                child: Column(
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
+                        children: [
                           Icon(Icons.reply),
                           Text("Reply"),
                         ]),

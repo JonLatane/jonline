@@ -6,6 +6,7 @@ import { Anchor, DateViewer, Heading, Image, useMedia, XStack, YStack } from "@j
 import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
 import { useLink } from "solito/link";
 import { FadeInView } from "./fade_in_view";
+import { useMediaUrl } from "app/hooks/use_media_url";
 
 export type AuthorInfoProps = {
   post: Post;
@@ -19,7 +20,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
   const { server, primaryColor, navColor } = useServerTheme();
   const media = useMedia();
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
-  const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
+  // const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
   const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
@@ -38,7 +39,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
   }
   useEffect(() => {
     if (authorId) {
-      if (!loadingAuthor && (!author || authorAvatar == undefined) && !authorLoadFailed) {
+      if (!loadingAuthor && !author && !authorLoadFailed) {
         setLoadingAuthor(true);
         setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
       } else if (loadingAuthor && author) {
@@ -46,8 +47,11 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
       }
     }
   });
+  const avatarUrl = useMediaUrl(author?.avatarMediaId);
+  // debugger;
+
   return <XStack f={1} ml={media.gtXs ? 0 : -7} alignContent='flex-start'>
-    {(authorAvatar && authorAvatar != '') ?
+    {(avatarUrl && avatarUrl != '') ?
       <YStack marginVertical='auto'>
         {isPreview
           ? <FadeInView>
@@ -61,7 +65,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
                 borderRadius={media.gtXs ? 25 : 13}
                 resizeMode="contain"
                 als="flex-start"
-                src={authorAvatar}
+                source={{ uri: avatarUrl }}
               // blurRadius={1.5}
               // borderRadius={5}
               />
@@ -80,7 +84,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
                   borderRadius={media.gtXs ? 25 : 13}
                   resizeMode="contain"
                   als="flex-start"
-                  src={authorAvatar}
+                  source={{ uri: avatarUrl }}
                 // blurRadius={1.5}
                 // borderRadius={5}
                 />

@@ -29,12 +29,14 @@ const PostContext$json = const {
   '1': 'PostContext',
   '2': const [
     const {'1': 'POST', '2': 0},
-    const {'1': 'EVENT', '2': 1},
+    const {'1': 'REPLY', '2': 1},
+    const {'1': 'EVENT', '2': 2},
+    const {'1': 'EVENT_INSTANCE', '2': 3},
   ],
 };
 
 /// Descriptor for `PostContext`. Decode as a `google.protobuf.EnumDescriptorProto`.
-final $typed_data.Uint8List postContextDescriptor = $convert.base64Decode('CgtQb3N0Q29udGV4dBIICgRQT1NUEAASCQoFRVZFTlQQAQ==');
+final $typed_data.Uint8List postContextDescriptor = $convert.base64Decode('CgtQb3N0Q29udGV4dBIICgRQT1NUEAASCQoFUkVQTFkQARIJCgVFVkVOVBACEhIKDkVWRU5UX0lOU1RBTkNFEAM=');
 @$core.Deprecated('Use getPostsRequestDescriptor instead')
 const GetPostsRequest$json = const {
   '1': 'GetPostsRequest',
@@ -78,19 +80,20 @@ const Post$json = const {
     const {'1': 'content', '3': 6, '4': 1, '5': 9, '9': 4, '10': 'content', '17': true},
     const {'1': 'response_count', '3': 7, '4': 1, '5': 5, '10': 'responseCount'},
     const {'1': 'reply_count', '3': 8, '4': 1, '5': 5, '10': 'replyCount'},
-    const {'1': 'replies', '3': 9, '4': 3, '5': 11, '6': '.jonline.Post', '10': 'replies'},
-    const {'1': 'preview_image', '3': 10, '4': 1, '5': 12, '9': 5, '10': 'previewImage', '17': true},
-    const {'1': 'visibility', '3': 11, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
-    const {'1': 'moderation', '3': 12, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
-    const {'1': 'group_count', '3': 14, '4': 1, '5': 5, '10': 'groupCount'},
-    const {'1': 'current_group_post', '3': 15, '4': 1, '5': 11, '6': '.jonline.GroupPost', '9': 6, '10': 'currentGroupPost', '17': true},
-    const {'1': 'preview_image_exists', '3': 16, '4': 1, '5': 8, '10': 'previewImageExists'},
-    const {'1': 'shareable', '3': 17, '4': 1, '5': 8, '10': 'shareable'},
-    const {'1': 'context', '3': 18, '4': 1, '5': 14, '6': '.jonline.PostContext', '10': 'context'},
-    const {'1': 'media', '3': 19, '4': 3, '5': 9, '10': 'media'},
+    const {'1': 'group_count', '3': 9, '4': 1, '5': 5, '10': 'groupCount'},
+    const {'1': 'media', '3': 10, '4': 3, '5': 9, '10': 'media'},
+    const {'1': 'media_generated', '3': 11, '4': 1, '5': 8, '10': 'mediaGenerated'},
+    const {'1': 'embed_link', '3': 12, '4': 1, '5': 8, '10': 'embedLink'},
+    const {'1': 'shareable', '3': 13, '4': 1, '5': 8, '10': 'shareable'},
+    const {'1': 'context', '3': 14, '4': 1, '5': 14, '6': '.jonline.PostContext', '10': 'context'},
+    const {'1': 'visibility', '3': 15, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
+    const {'1': 'moderation', '3': 16, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
+    const {'1': 'current_group_post', '3': 18, '4': 1, '5': 11, '6': '.jonline.GroupPost', '9': 5, '10': 'currentGroupPost', '17': true},
+    const {'1': 'replies', '3': 19, '4': 3, '5': 11, '6': '.jonline.Post', '10': 'replies'},
     const {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    const {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 7, '10': 'updatedAt', '17': true},
-    const {'1': 'last_activity_at', '3': 22, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'lastActivityAt'},
+    const {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 6, '10': 'updatedAt', '17': true},
+    const {'1': 'published_at', '3': 22, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 7, '10': 'publishedAt', '17': true},
+    const {'1': 'last_activity_at', '3': 23, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'lastActivityAt'},
   ],
   '8': const [
     const {'1': '_author'},
@@ -98,14 +101,14 @@ const Post$json = const {
     const {'1': '_title'},
     const {'1': '_link'},
     const {'1': '_content'},
-    const {'1': '_preview_image'},
     const {'1': '_current_group_post'},
     const {'1': '_updated_at'},
+    const {'1': '_published_at'},
   ],
 };
 
 /// Descriptor for `Post`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List postDescriptor = $convert.base64Decode('CgRQb3N0Eg4KAmlkGAEgASgJUgJpZBIsCgZhdXRob3IYAiABKAsyDy5qb25saW5lLkF1dGhvckgAUgZhdXRob3KIAQESLAoQcmVwbHlfdG9fcG9zdF9pZBgDIAEoCUgBUg1yZXBseVRvUG9zdElkiAEBEhkKBXRpdGxlGAQgASgJSAJSBXRpdGxliAEBEhcKBGxpbmsYBSABKAlIA1IEbGlua4gBARIdCgdjb250ZW50GAYgASgJSARSB2NvbnRlbnSIAQESJQoOcmVzcG9uc2VfY291bnQYByABKAVSDXJlc3BvbnNlQ291bnQSHwoLcmVwbHlfY291bnQYCCABKAVSCnJlcGx5Q291bnQSJwoHcmVwbGllcxgJIAMoCzINLmpvbmxpbmUuUG9zdFIHcmVwbGllcxIoCg1wcmV2aWV3X2ltYWdlGAogASgMSAVSDHByZXZpZXdJbWFnZYgBARIzCgp2aXNpYmlsaXR5GAsgASgOMhMuam9ubGluZS5WaXNpYmlsaXR5Ugp2aXNpYmlsaXR5EjMKCm1vZGVyYXRpb24YDCABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SCm1vZGVyYXRpb24SHwoLZ3JvdXBfY291bnQYDiABKAVSCmdyb3VwQ291bnQSRQoSY3VycmVudF9ncm91cF9wb3N0GA8gASgLMhIuam9ubGluZS5Hcm91cFBvc3RIBlIQY3VycmVudEdyb3VwUG9zdIgBARIwChRwcmV2aWV3X2ltYWdlX2V4aXN0cxgQIAEoCFIScHJldmlld0ltYWdlRXhpc3RzEhwKCXNoYXJlYWJsZRgRIAEoCFIJc2hhcmVhYmxlEi4KB2NvbnRleHQYEiABKA4yFC5qb25saW5lLlBvc3RDb250ZXh0Ugdjb250ZXh0EhQKBW1lZGlhGBMgAygJUgVtZWRpYRI5CgpjcmVhdGVkX2F0GBQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYFSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAdSCXVwZGF0ZWRBdIgBARJEChBsYXN0X2FjdGl2aXR5X2F0GBYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIObGFzdEFjdGl2aXR5QXRCCQoHX2F1dGhvckITChFfcmVwbHlfdG9fcG9zdF9pZEIICgZfdGl0bGVCBwoFX2xpbmtCCgoIX2NvbnRlbnRCEAoOX3ByZXZpZXdfaW1hZ2VCFQoTX2N1cnJlbnRfZ3JvdXBfcG9zdEINCgtfdXBkYXRlZF9hdA==');
+final $typed_data.Uint8List postDescriptor = $convert.base64Decode('CgRQb3N0Eg4KAmlkGAEgASgJUgJpZBIsCgZhdXRob3IYAiABKAsyDy5qb25saW5lLkF1dGhvckgAUgZhdXRob3KIAQESLAoQcmVwbHlfdG9fcG9zdF9pZBgDIAEoCUgBUg1yZXBseVRvUG9zdElkiAEBEhkKBXRpdGxlGAQgASgJSAJSBXRpdGxliAEBEhcKBGxpbmsYBSABKAlIA1IEbGlua4gBARIdCgdjb250ZW50GAYgASgJSARSB2NvbnRlbnSIAQESJQoOcmVzcG9uc2VfY291bnQYByABKAVSDXJlc3BvbnNlQ291bnQSHwoLcmVwbHlfY291bnQYCCABKAVSCnJlcGx5Q291bnQSHwoLZ3JvdXBfY291bnQYCSABKAVSCmdyb3VwQ291bnQSFAoFbWVkaWEYCiADKAlSBW1lZGlhEicKD21lZGlhX2dlbmVyYXRlZBgLIAEoCFIObWVkaWFHZW5lcmF0ZWQSHQoKZW1iZWRfbGluaxgMIAEoCFIJZW1iZWRMaW5rEhwKCXNoYXJlYWJsZRgNIAEoCFIJc2hhcmVhYmxlEi4KB2NvbnRleHQYDiABKA4yFC5qb25saW5lLlBvc3RDb250ZXh0Ugdjb250ZXh0EjMKCnZpc2liaWxpdHkYDyABKA4yEy5qb25saW5lLlZpc2liaWxpdHlSCnZpc2liaWxpdHkSMwoKbW9kZXJhdGlvbhgQIAEoDjITLmpvbmxpbmUuTW9kZXJhdGlvblIKbW9kZXJhdGlvbhJFChJjdXJyZW50X2dyb3VwX3Bvc3QYEiABKAsyEi5qb25saW5lLkdyb3VwUG9zdEgFUhBjdXJyZW50R3JvdXBQb3N0iAEBEicKB3JlcGxpZXMYEyADKAsyDS5qb25saW5lLlBvc3RSB3JlcGxpZXMSOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgGUgl1cGRhdGVkQXSIAQESQgoMcHVibGlzaGVkX2F0GBYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgHUgtwdWJsaXNoZWRBdIgBARJEChBsYXN0X2FjdGl2aXR5X2F0GBcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIObGFzdEFjdGl2aXR5QXRCCQoHX2F1dGhvckITChFfcmVwbHlfdG9fcG9zdF9pZEIICgZfdGl0bGVCBwoFX2xpbmtCCgoIX2NvbnRlbnRCFQoTX2N1cnJlbnRfZ3JvdXBfcG9zdEINCgtfdXBkYXRlZF9hdEIPCg1fcHVibGlzaGVkX2F0');
 @$core.Deprecated('Use authorDescriptor instead')
 const Author$json = const {
   '1': 'Author',

@@ -24,7 +24,6 @@ export interface GroupsState {
   draftGroup: Group;
   ids: EntityId[];
   entities: Dictionary<Group>;
-  avatars: Dictionary<string>;
   shortnameIds: Dictionary<string>;
   idGroupPosts: Dictionary<GroupPost[]>;
   failedShortnames: string[];
@@ -54,19 +53,6 @@ export const updateGroups: AsyncThunk<GetGroupsResponse, UpdateGroups, any> = cr
   }
 );
 
-export type LoadGroupAvatar = Group & AccountOrServer;
-export const loadGroupAvatar: AsyncThunk<string, LoadGroupAvatar, any> = createAsyncThunk<string, LoadGroupAvatar>(
-  "groups/loadAvatar",
-  async (request) => {
-    let client = await getCredentialClient(request);
-    let response = await client.getGroups(GetGroupsRequest.create({ groupId: request.id }), client.credential);
-    let group = response.groups[0]!;
-    return group.avatar
-      ? URL.createObjectURL(new Blob([group.avatar!], { type: 'image/png' }))
-      : '';
-  }
-);
-
 export type LoadGroupPosts = AccountOrServer & { groupId: string };
 export const loadGroupPosts: AsyncThunk<GetPostsResponse, LoadGroupPosts, any> = createAsyncThunk<GetPostsResponse, LoadGroupPosts>(
   "groups/laodPosts",
@@ -79,27 +65,19 @@ export const loadGroupPosts: AsyncThunk<GetPostsResponse, LoadGroupPosts, any> =
 
 
 export type LoadGroup = { id: string } & AccountOrServer;
-export type LoadGroupResult = {
-  group: Group;
-  avatar: string;
-}
-export const loadGroup: AsyncThunk<LoadGroupResult, LoadGroup, any> = createAsyncThunk<LoadGroupResult, LoadGroup>(
+export const loadGroup: AsyncThunk<Group, LoadGroup, any> = createAsyncThunk<Group, LoadGroup>(
   "groups/loadOne",
   async (request) => {
     let client = await getCredentialClient(request);
     let response = await client.getGroups(GetGroupsRequest.create({ groupId: request.id }), client.credential);
     let group = response.groups[0]!;
-    let avatar = group.avatar
-      ? URL.createObjectURL(new Blob([group.avatar!], { type: 'image/png' }))
-      : '';
-    return { group: { ...group, avatar: undefined }, avatar };
+    return group;
   }
 );
 
 const initialState: GroupsState = {
   status: "unloaded",
   draftGroup: Group.create(),
-  avatars: {},
   shortnameIds: {},
   idGroupPosts: {},
   recentGroups: [],
@@ -188,10 +166,9 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
     });
     builder.addCase(loadGroup.fulfilled, (state, action) => {
       state.status = "loaded";
-      const { group, avatar } = action.payload;
+      const group = action.payload;
       groupsAdapter.upsertOne(state, group);
       state.shortnameIds[group.shortname] = group.id;
-      state.avatars[action.meta.arg.id] = avatar;
       state.successMessage = `Group data loaded.`;
     });
     builder.addCase(loadGroup.rejected, (state, action) => {
@@ -199,10 +176,6 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
-    });
-    builder.addCase(loadGroupAvatar.fulfilled, (state, action) => {
-      state.avatars[action.meta.arg.id] = action.payload;
-      state.successMessage = `Avatar image loaded.`;
     });
   },
 });

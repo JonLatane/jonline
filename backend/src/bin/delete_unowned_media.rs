@@ -8,7 +8,7 @@ use jonline::schema::media;
 async fn main() {
     init_bin_logging();
     log::info!("Deleting Unowned Media...");
-    log::info!("Connecting to DB...");
+    log::info!("Connecting to DB and MinIO...");
     let mut conn = db_connection::establish_connection();
     let bucket = minio_connection::get_and_test_bucket().await.expect("Failed to connect to MinIO");
 

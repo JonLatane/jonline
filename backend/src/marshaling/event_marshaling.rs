@@ -42,10 +42,10 @@ impl ToProtoEvent for models::Event {
             Option<&models::User>
         )>,
     ) -> Event {
-        // self.to_group_proto(username, has_preview, None)
+        // self.to_group_proto(username, None)
         Event {
             id: self.id.to_proto_id(),
-            post: Some(post.to_proto(user.map(|u| u.username.to_owned()), &post.preview.is_some())),
+            post: Some(post.to_proto(user.map(|u| u.username.to_owned()))),
             instances: instances.iter().map(|(i, p, u)| i.to_proto(p, u)).collect(),
             info: Some(EventInfo {
                 // start_time: self.start_time.map(|t| t.to_proto()),
@@ -68,7 +68,7 @@ impl ToProtoEventInstance for models::EventInstance {
         EventInstance {
             id: self.id.to_proto_id(),
             event_id: self.event_id.to_proto_id(),
-            post: post.map(|p| p.to_proto(user.map(|u| u.username.to_owned()), &p.preview.is_some())),
+            post: post.map(|p| p.to_proto(user.map(|u| u.username.to_owned()))),
             starts_at: Some(self.starts_at.to_proto()),
             ends_at: Some(self.ends_at.to_proto()),
             info: Some(EventInstanceInfo {

@@ -210,7 +210,11 @@ class JonlineAccount {
   Future<void> save() async {
     List<JonlineAccount> jsonArray = await accounts;
     final index = jsonArray.indexWhere((element) => element.id == id);
-    jsonArray[index] = this;
+    if (index == -1) {
+      jsonArray.add(this);
+    } else {
+      jsonArray[index] = this;
+    }
     await updateAccountList(jsonArray);
   }
 

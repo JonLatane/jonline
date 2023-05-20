@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:fixnum/fixnum.dart';
@@ -42,7 +43,7 @@ postDemoData(
       client, account, showSnackBar, appState, demoGroups, randomizePosts);
 
   List<JonlineAccount> sideAccounts =
-      await generateSideAccounts(client, account, showSnackBar, appState, 30);
+      await generateSideAccounts(client, account, showSnackBar, appState, 1);
 
   showSnackBar("Generating conversations...");
   await generateConversations(
@@ -85,7 +86,7 @@ Future<void> generateConversations(
   ];
   int replyCount = 0;
   var lastMessageTime = DateTime.now();
-  final totalReplies = 1 + Random().nextInt(posts.length * 200);
+  const totalReplies = 0; //1 + Random().nextInt(posts.length * 200);
   final targets = posts;
   // showSnackBar('Replying to "${post.title}"...');
   for (int i = 0; i < totalReplies; i++) {
@@ -239,7 +240,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
     int count) async {
   final List<int> range = [for (var i = 0; i < count; i += 1) i];
   final Set<int> avatarHashcodes = {};
-  final List<Image> avatars = [];
+  final List<Uint8List> avatars = [];
   final httpClient = http.Client();
   int avatarFailureCount = 0;
 
@@ -250,36 +251,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
       if (!MyPlatform.isWeb) "User-Agent": "Jonline Flutter Client",
       // if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
     });
-    // print("Got response: ${response.statusCode} ${response.bodyBytes.length}");
-    Image? image;
-    try {
-      image = decodeJpg(response.bodyBytes);
-    } catch (e) {
-      // showSnackBar("Failed to decode avatar...");
-    }
-    if (image != null) {
-      final hashCode = const ListEquality().hash(image.data);
-      final Image avatar = copyResize(image, width: 128);
-      if (!avatarHashcodes.contains(hashCode)) {
-        avatarHashcodes.add(hashCode);
-        avatars.add(avatar);
-
-        if (shouldNotify(lastMessageTime)) {
-          showSnackBar("Loaded ${avatars.length}/$count avatars...");
-          lastMessageTime = DateTime.now();
-        }
-      } else {
-        await Future.delayed(const Duration(milliseconds: 1000));
-      }
-    } else {
-      showSnackBar("Failed to load avatar...");
-      avatarFailureCount++;
-      await Future.delayed(const Duration(milliseconds: 1000));
-      if (avatarFailureCount > 4) {
-        showSnackBar("Generating accounts without avatars...");
-        break;
-      }
-    }
+    avatars.add(response.bodyBytes);
   }
 
   showSnackBar("Loaded ${avatars.length} avatars.");
@@ -305,7 +277,39 @@ Future<List<JonlineAccount>> generateSideAccounts(
           if (user != null) {
             user.permissions.add(Permission.RUN_BOTS);
             if (avatars.length > i) {
-              user.avatar = encodeJpg(avatars[i]);
+              final avatar = avatars[i];
+              // final compressedAvatar = encodeJpg(avatar);
+              final uploadResult = await http
+                  .post(
+                    Uri.parse("https://${account.server}/media"),
+                    headers: {
+                      "Content-Type": "image/jpeg",
+                      "Filename": "avatar.jpeg",
+                      // Really should use sideAccount.accessToken but this can be handy
+                      "Authorization": account.accessToken
+                    },
+                    body: avatar,
+                  )
+                  .onError((error, stackTrace) => http.post(
+                        Uri.parse("http://${account.server}/media"),
+                        headers: {
+                          "Content-Type": "image/jpeg",
+                          "Filename": "avatar.jpeg",
+                          "Authorization": account.accessToken
+                        },
+                        body: avatar,
+                      ))
+                  .onError((error, stackTrace) =>
+                      showSnackBar("Failed to upload avatar: $error"));
+              if (uploadResult.statusCode == 200) {
+                user.avatarMediaId = uploadResult.body;
+              }
+              // client.get
+              // JonlineServer? server = account.server;
+              // await client.updateUser(user,
+              //     options: account.authenticatedCallOptions);
+
+              // user.avatar = encodeJpg(avatar);
             }
             await client.updateUser(user,
                 options: account.authenticatedCallOptions);

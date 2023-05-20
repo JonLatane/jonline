@@ -36,11 +36,15 @@ class PostListingType extends $pb.ProtobufEnum {
 
 class PostContext extends $pb.ProtobufEnum {
   static const PostContext POST = PostContext._(0, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'POST');
-  static const PostContext EVENT = PostContext._(1, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'EVENT');
+  static const PostContext REPLY = PostContext._(1, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'REPLY');
+  static const PostContext EVENT = PostContext._(2, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'EVENT');
+  static const PostContext EVENT_INSTANCE = PostContext._(3, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'EVENT_INSTANCE');
 
   static const $core.List<PostContext> values = <PostContext> [
     POST,
+    REPLY,
     EVENT,
+    EVENT_INSTANCE,
   ];
 
   static final $core.Map<$core.int, PostContext> _byValue = $pb.ProtobufEnum.initByValue(values);

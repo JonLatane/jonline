@@ -36,4 +36,24 @@ impl ToDbId for String {
 
 }
 
+pub trait ToDbOptId {
+    fn to_db_opt_id(&self) -> Result<Option<i64>, bs58::decode::Error>;
+    fn to_db_opt_id_or_err(&self, field_name: &str) -> Result<Option<i64>, Status>;
+}
+impl ToDbOptId for Option<String> {
+    fn to_db_opt_id(&self) -> Result<Option<i64>, bs58::decode::Error> {
+        match self {
+            None => Ok(None),
+            Some(string) => Ok(Some(string.to_db_id()?))
+        }
+    }
+
+    fn to_db_opt_id_or_err(&self, field_name: &str) -> Result<Option<i64>, Status> {
+        match self {
+            None => Ok(None),
+            Some(string) => Ok(Some(string.to_db_id_or_err(field_name)?))
+        }
+    }
+}
+
 const OFFSET: i64 = 7;

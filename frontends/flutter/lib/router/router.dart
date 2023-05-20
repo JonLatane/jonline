@@ -9,7 +9,6 @@ import '../screens/login_page.dart';
 import '../screens/people/routes.dart';
 import '../screens/posts/routes.dart';
 import '../screens/settings_page.dart';
-import '../screens/user-data/routes.dart';
 
 @MaterialAutoRouter(
   replaceInRouteName: 'Page|Screen,Route',
@@ -33,7 +32,6 @@ import '../screens/user-data/routes.dart';
         ),
       ],
     ),
-    userDataRoutes,
     // auth
     AutoRoute(page: LoginPage, path: '/login'),
     RedirectRoute(path: '*', redirectTo: '/'),

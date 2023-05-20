@@ -342,8 +342,8 @@ extension HomePageAppBar on HomePageState {
                   padding: const EdgeInsets.all(4.0),
                   child: Opacity(
                     opacity: canCreateGroup.value ? 1 : 0.5,
-                    child: Column(
-                      children: const [
+                    child: const Column(
+                      children: [
                         Expanded(child: SizedBox()),
                         Icon(Icons.add),
                         // Text('jonline.io/', style: TextStyle(fontSize: 11)),
@@ -414,8 +414,8 @@ extension HomePageAppBar on HomePageState {
                   padding: const EdgeInsets.all(4.0),
                   child: Opacity(
                     opacity: canCreatePost.value ? 1 : 0.5,
-                    child: Column(
-                      children: const [
+                    child: const Column(
+                      children: [
                         Expanded(child: SizedBox()),
                         Icon(Icons.add),
                         // Text('jonline.io/', style: TextStyle(fontSize: 11)),
@@ -451,8 +451,8 @@ extension HomePageAppBar on HomePageState {
                   padding: const EdgeInsets.all(4.0),
                   child: Opacity(
                     opacity: canCreateReply.value ? 1 : 0.5,
-                    child: Column(
-                      children: const [
+                    child: const Column(
+                      children: [
                         Expanded(child: SizedBox()),
                         Icon(Icons.reply),
                         // Text('jonline.io/', style: TextStyle(fontSize: 11)),

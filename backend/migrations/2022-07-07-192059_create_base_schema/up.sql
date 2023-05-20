@@ -26,10 +26,11 @@ CREATE TABLE users (
   id BIGSERIAL PRIMARY KEY,
   username VARCHAR NOT NULL UNIQUE,
   password_salted_hash VARCHAR NOT NULL,
+  real_name VARCHAR NOT NULL DEFAULT '',
   email JSONB NULL DEFAULT NULL,
   phone JSONB NULL DEFAULT NULL,
   permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
-  avatar BYTEA NULL DEFAULT NULL,
+  avatar_media_id BIGINT NULL DEFAULT NULL,
   bio TEXT NOT NULL DEFAULT '',
   -- For user visibilities, PRIVATE is equivalent to a "frozen" account.
   -- LIMITED will be visible only to user the user is following.
@@ -82,12 +83,33 @@ CREATE TABLE follows (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- MEDIA MODELS. Actual media data lives in MinIO/S3.
+CREATE TABLE media (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NULL REFERENCES users ON DELETE CASCADE,
+  minio_path VARCHAR NOT NULL,
+  content_type VARCHAR NOT NULL,
+  name VARCHAR NULL DEFAULT NULL,
+  description TEXT NULL DEFAULT NULL,
+  generated BOOLEAN NOT NULL DEFAULT FALSE,
+  processed BOOLEAN NOT NULL DEFAULT FALSE,
+  visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Users and Media have a cyclic dependency for the sake of the user avatar.
+ALTER TABLE users ADD CONSTRAINT fk_user_avatar FOREIGN KEY (avatar_media_id) REFERENCES media(id);
+
+
+-- GROUP MODELS
 CREATE TABLE groups (
   id BIGSERIAL PRIMARY KEY,
   name VARCHAR NOT NULL UNIQUE,
   shortname VARCHAR NOT NULL UNIQUE,
   description TEXT NOT NULL DEFAULT '',
-  avatar BYTEA NULL DEFAULT NULL,
+  avatar_media_id BIGINT NULL REFERENCES media ON DELETE SET NULL,
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
   default_membership_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   default_membership_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
@@ -113,40 +135,35 @@ CREATE TABLE memberships (
 );
 CREATE UNIQUE INDEX idx_membership ON memberships(user_id, group_id);
 
--- MEDIA MODELS
-CREATE TABLE media (
-  id BIGSERIAL PRIMARY KEY,
-  user_id BIGINT NULL REFERENCES users ON DELETE CASCADE,
-  minio_path VARCHAR NOT NULL,
-  content_type VARCHAR NOT NULL,
-  name VARCHAR NULL DEFAULT NULL,
-  description TEXT NULL DEFAULT NULL, 
-  visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
-  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
 
 -- CORE SOCIAL/POST MODELS
-
 CREATE TABLE posts (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NULL REFERENCES users ON DELETE SET NULL,
   parent_post_id BIGINT NULL DEFAULT NULL REFERENCES posts ON DELETE SET NULL,
+
   -- In the APIs title is treated as optional. However, for ease of loading,
   -- the replying-to Post's title will always be duplicated in child posts/replies.
   title VARCHAR NULL DEFAULT NULL,
   link VARCHAR NULL DEFAULT NULL,
   content TEXT NULL DEFAULT NULL,
-  visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
-  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+
   response_count INTEGER NOT NULL DEFAULT 0,
   reply_count INTEGER NOT NULL DEFAULT 0,
   group_count INTEGER NOT NULL DEFAULT 0,
-  preview BYTEA NULL DEFAULT NULL,
+
+  media BIGINT[] NOT NULL DEFAULT '{}',
+  media_generated BOOLEAN NOT NULL DEFAULT FALSE,
+  embed_link BOOLEAN NOT NULL DEFAULT FALSE,
+  shareable BOOLEAN NOT NULL DEFAULT FALSE,
+
   context VARCHAR NOT NULL DEFAULT 'POST',
+  visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+  moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
+
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL,
+  published_at TIMESTAMP NULL DEFAULT NULL,
   last_activity_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 -- Speed up loading of posts by user.
@@ -154,15 +171,8 @@ CREATE INDEX idx_post_vis_parent_created ON posts(context, visibility, parent_po
 CREATE INDEX idx_post_vis_parent_activity ON posts(context, visibility, parent_post_id, last_activity_at);
 CREATE INDEX idx_post_vis_user_created ON posts(context, visibility, user_id, created_at);
 CREATE INDEX idx_post_vis_user_activity ON posts(context, visibility, user_id, last_activity_at);
+CREATE INDEX idx_post_link_media ON posts(link, media_generated);
 CREATE INDEX idx_post_vis ON posts(visibility);
-
-CREATE TABLE post_media (
-  post_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
-  media_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
-  sort_order INT NOT NULL DEFAULT 0,
-  PRIMARY KEY (post_id, media_id)
-);
-CREATE INDEX idx_post_media ON post_media(post_id, sort_order);
 
 CREATE TABLE group_posts(
   id BIGSERIAL PRIMARY KEY,

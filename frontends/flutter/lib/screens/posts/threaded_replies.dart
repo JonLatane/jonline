@@ -239,9 +239,9 @@ class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
                             server: widget.server));
                       }
                     : null,
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.reply),
                     Text("Reply"),
                   ],

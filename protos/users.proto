@@ -9,11 +9,14 @@ import "visibility_moderation.proto";
 message User {
   string id = 1;
   string username = 2;
-  optional ContactMethod email = 3;
-  optional ContactMethod phone = 4;
-  repeated Permission permissions = 5;
-  optional bytes avatar = 6;
-  string bio = 7;
+  string real_name = 3;
+  optional ContactMethod email = 4;
+  optional ContactMethod phone = 5;
+  repeated Permission permissions = 6;
+  // Media ID for the user's avatar. Note that its visibility is managed by the User and thus
+  // it may not be accessible to the current user.
+  optional string avatar_media_id = 7;
+  string bio = 8;
 
   // User visibility is a bit different from Post visibility.
   // LIMITED means the user can only be seen by users they follow

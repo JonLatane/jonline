@@ -10,7 +10,7 @@ import {
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility";
 import moment from "moment";
-import { LoadEvent, createEvent, defaultEventListingType, loadEvent, loadEventPreview, loadEventsPage } from './event_actions';
+import { LoadEvent, createEvent, defaultEventListingType, loadEvent, loadEventsPage } from './event_actions';
 import { loadUserEvents } from "./users";
 // import { loadEventsPage } from "./event_actions";
 export * from './event_actions';
@@ -24,7 +24,6 @@ export interface EventsState {
   errorMessage?: string;
   ids: EntityId[];
   entities: Dictionary<Event>;
-  previews: Dictionary<string>;
   // Links instance IDs to Event IDs.
   instanceEvents: Dictionary<string>;
   instances: Dictionary<EventInstance>;
@@ -46,7 +45,6 @@ const initialState: EventsState = {
   loadStatus: "unloaded",
   createStatus: undefined,
   updateStatus: undefined,
-  previews: {},
   failedEventIds: [],
   eventPages: {},
   instances: {},
@@ -167,9 +165,8 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     builder.addCase(loadEvent.fulfilled, (state, action) => {
       state.loadStatus = "loaded";
       // const oldPost = selectEventById(state, action.payload.event.id);
-      const event = action.payload.event;
+      const event = action.payload;
       eventsAdapter.upsertOne(state, event);
-      state.previews[action.meta.arg.id] = action.payload.preview;
       state.successMessage = `Post data loaded.`;
     });
     builder.addCase(loadEvent.rejected, (state, action) => {
@@ -179,49 +176,6 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       state.error = action.error as Error;
       state.failedEventIds = [...state.failedEventIds, (action.meta.arg as LoadEvent).id];
     });
-    // builder.addCase(loadEventReplies.pending, (state) => {
-    //   state.status = "loading";
-    //   state.error = undefined;
-    // });
-    // builder.addCase(loadEventReplies.fulfilled, (state, action) => {
-    //   state.status = "loaded";
-    //   // Load the replies into the post tree.
-    //   const postIdPath = action.meta.arg.postIdPath;
-    //   const basePost = eventsAdapter.getSelectors().selectById(state, postIdPath[0]!);
-    //   if (!basePost) {
-    //     console.error(`Root post ID (${postIdPath[0]}) not found.`);
-    //     return;
-    //   }
-    //   const rootPost: Post = { ...basePost }
-
-    //   let post: Post = rootPost;
-    //   for (const postId of postIdPath.slice(1)) {
-    //     post.replies = post.replies.map(p => ({ ...p }));
-    //     const nextPost = post.replies.find((reply) => reply.id === postId);
-    //     if (!nextPost) {
-    //       console.error(`Post ID (${postId}) not found along path ${JSON.stringify(postIdPath)}.`);
-    //       return;
-    //     }
-    //     post = nextPost;
-    //   }
-    //   const mergedReplies = action.payload.posts.map(reply => {
-    //     const oldReply = post.replies.find(r => r.id === reply.id);
-    //     return { ...reply, replies: oldReply?.replies ?? reply.replies };
-    //   });
-    //   post.replies = mergedReplies;
-    //   eventsAdapter.upsertOne(state, rootPost);
-    //   state.successMessage = `Replies loaded.`;
-    // });
-    // builder.addCase(loadEventReplies.rejected, (state, action) => {
-    //   state.status = "errored";
-    //   state.error = action.error as Error;
-    //   state.errorMessage = `Error loading replies: ${formatError(action.error as Error)}`;
-    //   state.error = action.error as Error;
-    // });
-    builder.addCase(loadEventPreview.fulfilled, (state, action) => {
-      state.previews[action.meta.arg.id] = action.payload;
-      state.successMessage = `Preview image loaded.`;
-    });
 
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
       const { events } = action.payload;
@@ -229,7 +183,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
 
       upsertEvents(state, events);
     });
-    // builder.addCase(loadGroupPosts.fulfilled, (state, action) => {
+    // builder.addCase(loadGroupEvents.fulfilled, (state, action) => {
     //   const { events } = action.payload;
     //   upsertEvents(state, posts);
     // });

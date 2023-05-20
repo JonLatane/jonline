@@ -44,35 +44,15 @@ export const loadPostsPage: AsyncThunk<GetPostsResponse, LoadPostsRequest, any> 
   }
 );
 
-export type LoadPostPreview = Post & AccountOrServer;
-export const loadPostPreview: AsyncThunk<string, LoadPostPreview, any> = createAsyncThunk<string, LoadPostPreview>(
-  "posts/loadPreview",
-  async (request) => {
-    let client = await getCredentialClient(request);
-    let response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
-    let post = response.posts[0]!;
-    return post.previewImage
-      ? URL.createObjectURL(new Blob([post.previewImage!], { type: 'image/png' }))
-      : '';
-  }
-);
-
 export type LoadPost = { id: string } & AccountOrServer;
-export type LoadPostResult = {
-  post: Post;
-  preview: string;
-}
-export const loadPost: AsyncThunk<LoadPostResult, LoadPost, any> = createAsyncThunk<LoadPostResult, LoadPost>(
+export const loadPost: AsyncThunk<Post, LoadPost, any> = createAsyncThunk<Post, LoadPost>(
   "posts/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
     const response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
     if (response.posts.length == 0) throw 'Post not found';
     const post = response.posts[0]!;
-    const preview = post.previewImage
-      ? URL.createObjectURL(new Blob([post.previewImage!], { type: 'image/png' }))
-      : '';
-    return { post: { ...post, previewImage: undefined }, preview };
+    return post;
   }
 );
 

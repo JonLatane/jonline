@@ -61,15 +61,18 @@ enum PostListingType {
 
 enum PostContext {
   POST = 0;
-  EVENT = 1;
+  REPLY = 1;
+  EVENT = 2;
+  EVENT_INSTANCE = 3;
 }
 
 // A `Post` is a message that can be posted to the server. Its `visibility`
 // as well as any associated `GroupPost`s and `UserPost`s determine what users
 // see it and where.
 //
-// `Post`s are a fundamental unit of the system. `Event`s are a higher-level
-// concept that are built on top of `Post`s.
+// `Post`s are also a fundamental unit of the system. They provide a building block
+// of Visibility and Moderation management that is used throughout Posts, Replies, Events,
+// and Event Instances.
 message Post {
   // Unique ID of the post.
   string id = 1;
@@ -77,16 +80,42 @@ message Post {
   optional Author author = 2;
   // If this is a reply, this is the ID of the post it's replying to.
   optional string reply_to_post_id = 3;
+
   // The title of the post. This is invalid for replies.
   optional string title = 4;
   // The link of the post. This is invalid for replies.
   optional string link = 5;
   // The content of the post. This is required for replies.
   optional string content = 6;
+
   // The number of responses (replies *and* replies to replies, etc.) to this post.
   int32 response_count = 7;
   // The number of *direct* replies to this post.
   int32 reply_count = 8;
+  // The number of groups this post is in.
+  int32 group_count = 9;
+
+  // List of Media IDs associated with this post. Order is preserved.
+  repeated string media = 10;
+  // Flag indicating whether Media has been generated for this Post.
+  // Currently previews are generated for any Link post.
+  bool media_generated = 11;
+  // Flag indicating
+  bool embed_link = 12;
+  // Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
+  // and a `DIRECT` post can be shared with individuals.
+  bool shareable = 13;
+  // Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.)
+  PostContext context = 14;
+  // The visibility of the Post.
+  Visibility visibility = 15;
+  // The moderation of the Post.
+  Moderation moderation = 16;
+
+  // If the Post was retrieved from GetPosts with a group_id, the GroupPost
+  // metadata may be returned along with the Post.
+  optional GroupPost current_group_post = 18;
+
   // Hierarchical replies to this post.
   //
   // There will never be more than `reply_count` replies. However,
@@ -94,34 +123,12 @@ message Post {
   // hidden by moderation or visibility.
   // Replies are not generally loaded by default, but can be added to Posts
   // in the frontend.
-  repeated Post replies = 9;
-  // Preview image for the Post. Generally not returned by default.
-  optional bytes preview_image = 10;
-  // The visibility of the Post.
-  Visibility visibility = 11;
-  // The moderation of the Post.
-  Moderation moderation = 12;
-  // The number of groups this post is in.
-  int32 group_count = 14;
-  // When the post is returned in the context of a group_id parameter,
-  // `current_group_post` is returned. It lets the UI know whether the post can be
-  // cross-posted to a group, and of course, information about the cross-post
-  // (time, moderation) if that's relevant.
-  optional GroupPost current_group_post = 15;
-  // Always returned, even if preview_image is not. Indicates whether the UI
-  // should attempt to fetch a preview_image.
-  bool preview_image_exists = 16;
-  // Sharability is based on the visibility of the post. Not applicable to all visibilities.
-  // * `Visibility.LIMITED`, `Visibility.SERVER_PUBLIC`, `Visibility.GLOBAL_PUBLIC`: Allows other users to GroupPost your Post to (other) Groups.
-  // * `Visibility.PRIVATE`: Allows other users to reply to your Post.
-  bool shareable = 17;
-  PostContext context = 18;
-  // List of Media IDs associated with this post. Order is preserved.
-  repeated string media = 19;
+  repeated Post replies = 19;
 
   google.protobuf.Timestamp created_at = 20;
   optional google.protobuf.Timestamp updated_at = 21;
-  google.protobuf.Timestamp last_activity_at = 22;
+  optional google.protobuf.Timestamp published_at = 22;
+  google.protobuf.Timestamp last_activity_at = 23;
 }
 
 // Post-centric version of User. UI can cross-reference user details

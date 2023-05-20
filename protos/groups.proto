@@ -12,7 +12,7 @@ message Group {
   string name = 2;
   string shortname = 3;
   string description = 4;
-  optional bytes avatar = 5;
+  optional string avatar_media_id = 5;
   repeated Permission default_membership_permissions = 6;
   // Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
   Moderation default_membership_moderation = 7;

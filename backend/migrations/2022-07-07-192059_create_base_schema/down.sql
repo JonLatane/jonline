@@ -8,11 +8,11 @@ DROP TABLE events;
 
 DROP TABLE group_posts;
 DROP TABLE user_posts;
-DROP TABLE post_media;
 DROP TABLE posts;
 
 DROP TABLE memberships;
 DROP TABLE groups;
+ALTER TABLE users DROP CONSTRAINT fk_user_avatar;
 DROP TABLE media;
 
 DROP TABLE follows;

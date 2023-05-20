@@ -81,11 +81,10 @@ fn get_by_post_id(
         .select((
             posts::all_columns,
             users::username.nullable(),
-            posts::preview.is_not_null(),
         ))
         .filter(posts::id.eq(post_db_id))
-        .get_result::<(models::Post, Option<String>, bool)>(conn)
-        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), &has_preview));
+        .get_result::<(models::Post, Option<String>)>(conn)
+        .map(|(post, username)| post.to_proto(username.to_owned()));
 
     match result {
         Ok(post) => match (post.visibility(), user) {
@@ -114,9 +113,8 @@ fn get_top_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> 
                 .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)))),
         )
         .select((
-            models::MINIMAL_POST_COLUMNS,
+            posts::all_columns,
             users::username.nullable(),
-            posts::preview.is_not_null(),
         ))
         // .filter(posts::visibility.eq_any(visibilities))
         .filter(public.or(limited_to_followers))
@@ -124,10 +122,10 @@ fn get_top_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> 
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::created_at.desc())
         .limit(100)
-        .load::<(models::MinimalPost, Option<String>, bool)>(conn)
+        .load::<(models::Post, Option<String>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
+        .map(|(post, username)| post.to_proto(username.to_owned()))
         .collect()
 }
 
@@ -143,9 +141,8 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
             .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
             .select((
-                models::MINIMAL_POST_COLUMNS,
+                posts::all_columns,
                 users::username.nullable(),
-                posts::preview.is_not_null(),
             ))
             .filter(memberships::user_id.eq(user.id))
             .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
@@ -156,10 +153,10 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
             .order(posts::id.desc())
             .distinct_on(posts::id)
             .limit(100)
-            .load::<(models::MinimalPost, Option<String>, bool)>(conn)
+            .load::<(models::Post, Option<String>)>(conn)
             .unwrap()
             .iter()
-            .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
+            .map(|(post, username)| post.to_proto(username.to_owned()))
             .collect();
     }
     memberships::table
@@ -168,9 +165,8 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((
-            models::MINIMAL_POST_COLUMNS,
+            posts::all_columns,
             users::username.nullable(),
-            posts::preview.is_not_null(),
         ))
         .filter(memberships::user_id.eq(user.id))
         .filter(
@@ -186,10 +182,10 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
         .order(posts::id.desc())
         .distinct_on(posts::id)
         .limit(100)
-        .load::<(models::MinimalPost, Option<String>, bool)>(conn)
+        .load::<(models::Post, Option<String>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
+        .map(|(post, username)| post.to_proto(username.to_owned()))
         .collect()
 }
 
@@ -206,9 +202,8 @@ fn get_group_posts(
             .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
             .select((
-                models::MINIMAL_POST_COLUMNS,
+                posts::all_columns,
                 users::username.nullable(),
-                posts::preview.is_not_null(),
                 group_posts::all_columns,
             ))
             .filter(group_posts::group_id.eq(group_id))
@@ -217,20 +212,19 @@ fn get_group_posts(
             .filter(posts::context.eq(PostContext::Post.as_str_name()))
             .order(posts::created_at.desc())
             .limit(100)
-            .load::<(models::MinimalPost, Option<String>, bool, models::GroupPost)>(conn)
+            .load::<(models::Post, Option<String>, models::GroupPost)>(conn)
             .unwrap()
             .iter()
-            .map(|(post, username, has_preview, group_post)| {
-                post.to_group_proto(username.to_owned(), has_preview, Some(group_post))
+            .map(|(post, username, group_post)| {
+                post.to_group_proto(username.to_owned(), Some(group_post))
             })
             .collect::<Vec<Post>>(),
         (Visibility::GlobalPublic, Some(_)) => group_posts::table
             .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
             .select((
-                models::MINIMAL_POST_COLUMNS,
+                posts::all_columns,
                 users::username.nullable(),
-                posts::preview.is_not_null(),
                 group_posts::all_columns,
             ))
             .filter(group_posts::group_id.eq(group_id))
@@ -239,11 +233,11 @@ fn get_group_posts(
             .filter(posts::context.eq(PostContext::Post.as_str_name()))
             .order(posts::created_at.desc())
             .limit(100)
-            .load::<(models::MinimalPost, Option<String>, bool, models::GroupPost)>(conn)
+            .load::<(models::Post, Option<String>, models::GroupPost)>(conn)
             .unwrap()
             .iter()
-            .map(|(post, username, has_preview, group_post)| {
-                post.to_group_proto(username.to_owned(), has_preview, Some(group_post))
+            .map(|(post, username, group_post)| {
+                post.to_group_proto(username.to_owned(), Some(group_post))
             })
             .collect::<Vec<Post>>(),
         (_, None) => return Err(Status::new(Code::NotFound, "group_not_found")),
@@ -278,9 +272,8 @@ fn load_group_posts(
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((
-            models::MINIMAL_POST_COLUMNS,
+            posts::all_columns,
             users::username.nullable(),
-            posts::preview.is_not_null(),
         ))
         .filter(group_posts::group_id.eq(group_id))
         .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
@@ -288,10 +281,10 @@ fn load_group_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::created_at.desc())
         .limit(100)
-        .load::<(models::MinimalPost, Option<String>, bool)>(conn)
+        .load::<(models::Post, Option<String>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
+        .map(|(post, username)| post.to_proto(username.to_owned()))
         .collect::<Vec<Post>>()
 }
 
@@ -308,9 +301,8 @@ fn get_user_posts(
     posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((
-            models::MINIMAL_POST_COLUMNS,
+            posts::all_columns,
             users::username.nullable(),
-            posts::preview.is_not_null(),
         ))
         .filter(posts::visibility.eq_any(visibilities))
         // .filter(posts::parent_post_id.is_null())
@@ -318,10 +310,10 @@ fn get_user_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::last_activity_at.desc())
         .limit(100)
-        .load::<(models::MinimalPost, Option<String>, bool)>(conn)
+        .load::<(models::Post, Option<String>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
+        .map(|(post, username)| post.to_proto(username.to_owned()))
         .collect()
 }
 
@@ -330,9 +322,8 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
         .inner_join(posts::table.on(follows::target_user_id.nullable().eq(posts::user_id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((
-            models::MINIMAL_POST_COLUMNS,
+            posts::all_columns,
             users::username.nullable(),
-            posts::preview.is_not_null(),
         ))
         .filter(follows::user_id.eq(user.id))
         .filter(follows::target_user_moderation.eq_any(PASSING_MODERATIONS))
@@ -342,10 +333,10 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::created_at.desc())
         .limit(100)
-        .load::<(models::MinimalPost, Option<String>, bool)>(conn)
+        .load::<(models::Post, Option<String>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
+        .map(|(post, username)| post.to_proto(username.to_owned()))
         .collect()
 }
 fn get_replies_to_post_id(
@@ -366,18 +357,17 @@ fn get_replies_to_post_id(
     let result: Vec<Post> = posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((
-            models::MINIMAL_POST_COLUMNS,
+            posts::all_columns,
             users::username.nullable(),
-            posts::preview.is_not_null(),
         ))
         .filter(posts::visibility.eq(Visibility::GlobalPublic.as_str_name()))
         .filter(posts::parent_post_id.eq(post_db_id))
         .order(posts::created_at.desc())
         .limit(100)
-        .load::<(models::MinimalPost, Option<String>, bool)>(conn)
+        .load::<(models::Post, Option<String>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, username, has_preview)| post.to_proto(username.to_owned(), has_preview))
+        .map(|(post, username)| post.to_proto(username.to_owned()))
         .collect();
     if reply_depth > 1 {
         let extended_result: Vec<Post> = result

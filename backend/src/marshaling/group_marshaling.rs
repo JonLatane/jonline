@@ -35,7 +35,7 @@ impl ToProtoGroup for models::Group {
             name: self.name.to_owned(),
             shortname: self.shortname.to_owned(),
             description: self.description.to_owned(),
-            avatar: self.avatar.to_owned(),
+            avatar_media_id: self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
             default_membership_permissions: self
                 .default_membership_permissions
                 .to_i32_permissions(),

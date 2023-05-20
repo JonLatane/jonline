@@ -262,8 +262,8 @@ Widget _groupItem(Group g, BuildContext context) {
             padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                Column(
-                  children: const [Icon(Icons.group_work)],
+                const Column(
+                  children: [Icon(Icons.group_work)],
                 ),
                 const SizedBox(width: 8),
                 Expanded(

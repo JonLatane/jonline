@@ -86,7 +86,9 @@ export function postListingTypeToJSON(object: PostListingType): string {
 
 export enum PostContext {
   POST = 0,
-  EVENT = 1,
+  REPLY = 1,
+  EVENT = 2,
+  EVENT_INSTANCE = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -96,8 +98,14 @@ export function postContextFromJSON(object: any): PostContext {
     case "POST":
       return PostContext.POST;
     case 1:
+    case "REPLY":
+      return PostContext.REPLY;
+    case 2:
     case "EVENT":
       return PostContext.EVENT;
+    case 3:
+    case "EVENT_INSTANCE":
+      return PostContext.EVENT_INSTANCE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -109,8 +117,12 @@ export function postContextToJSON(object: PostContext): string {
   switch (object) {
     case PostContext.POST:
       return "POST";
+    case PostContext.REPLY:
+      return "REPLY";
     case PostContext.EVENT:
       return "EVENT";
+    case PostContext.EVENT_INSTANCE:
+      return "EVENT_INSTANCE";
     case PostContext.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -164,8 +176,9 @@ export interface GetPostsResponse {
  * as well as any associated `GroupPost`s and `UserPost`s determine what users
  * see it and where.
  *
- * `Post`s are a fundamental unit of the system. `Event`s are a higher-level
- * concept that are built on top of `Post`s.
+ * `Post`s are also a fundamental unit of the system. They provide a building block
+ * of Visibility and Moderation management that is used throughout Posts, Replies, Events,
+ * and Event Instances.
  */
 export interface Post {
   /** Unique ID of the post. */
@@ -194,6 +207,35 @@ export interface Post {
   responseCount: number;
   /** The number of *direct* replies to this post. */
   replyCount: number;
+  /** The number of groups this post is in. */
+  groupCount: number;
+  /** List of Media IDs associated with this post. Order is preserved. */
+  media: string[];
+  /**
+   * Flag indicating whether Media has been generated for this Post.
+   * Currently previews are generated for any Link post.
+   */
+  mediaGenerated: boolean;
+  /** Flag indicating */
+  embedLink: boolean;
+  /**
+   * Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
+   * and a `DIRECT` post can be shared with individuals.
+   */
+  shareable: boolean;
+  /** Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.) */
+  context: PostContext;
+  /** The visibility of the Post. */
+  visibility: Visibility;
+  /** The moderation of the Post. */
+  moderation: Moderation;
+  /**
+   * If the Post was retrieved from GetPosts with a group_id, the GroupPost
+   * metadata may be returned along with the Post.
+   */
+  currentGroupPost?:
+    | GroupPost
+    | undefined;
   /**
    * Hierarchical replies to this post.
    *
@@ -204,41 +246,9 @@ export interface Post {
    * in the frontend.
    */
   replies: Post[];
-  /** Preview image for the Post. Generally not returned by default. */
-  previewImage?:
-    | Uint8Array
-    | undefined;
-  /** The visibility of the Post. */
-  visibility: Visibility;
-  /** The moderation of the Post. */
-  moderation: Moderation;
-  /** The number of groups this post is in. */
-  groupCount: number;
-  /**
-   * When the post is returned in the context of a group_id parameter,
-   * `current_group_post` is returned. It lets the UI know whether the post can be
-   * cross-posted to a group, and of course, information about the cross-post
-   * (time, moderation) if that's relevant.
-   */
-  currentGroupPost?:
-    | GroupPost
-    | undefined;
-  /**
-   * Always returned, even if preview_image is not. Indicates whether the UI
-   * should attempt to fetch a preview_image.
-   */
-  previewImageExists: boolean;
-  /**
-   * Sharability is based on the visibility of the post. Not applicable to all visibilities.
-   * * `Visibility.LIMITED`, `Visibility.SERVER_PUBLIC`, `Visibility.GLOBAL_PUBLIC`: Allows other users to GroupPost your Post to (other) Groups.
-   * * `Visibility.PRIVATE`: Allows other users to reply to your Post.
-   */
-  shareable: boolean;
-  context: PostContext;
-  /** List of Media IDs associated with this post. Order is preserved. */
-  media: string[];
   createdAt: string | undefined;
   updatedAt?: string | undefined;
+  publishedAt?: string | undefined;
   lastActivityAt: string | undefined;
 }
 
@@ -452,18 +462,19 @@ function createBasePost(): Post {
     content: undefined,
     responseCount: 0,
     replyCount: 0,
-    replies: [],
-    previewImage: undefined,
-    visibility: 0,
-    moderation: 0,
     groupCount: 0,
-    currentGroupPost: undefined,
-    previewImageExists: false,
+    media: [],
+    mediaGenerated: false,
+    embedLink: false,
     shareable: false,
     context: 0,
-    media: [],
+    visibility: 0,
+    moderation: 0,
+    currentGroupPost: undefined,
+    replies: [],
     createdAt: undefined,
     updatedAt: undefined,
+    publishedAt: undefined,
     lastActivityAt: undefined,
   };
 }
@@ -494,35 +505,35 @@ export const Post = {
     if (message.replyCount !== 0) {
       writer.uint32(64).int32(message.replyCount);
     }
-    for (const v of message.replies) {
-      Post.encode(v!, writer.uint32(74).fork()).ldelim();
-    }
-    if (message.previewImage !== undefined) {
-      writer.uint32(82).bytes(message.previewImage);
-    }
-    if (message.visibility !== 0) {
-      writer.uint32(88).int32(message.visibility);
-    }
-    if (message.moderation !== 0) {
-      writer.uint32(96).int32(message.moderation);
-    }
     if (message.groupCount !== 0) {
-      writer.uint32(112).int32(message.groupCount);
-    }
-    if (message.currentGroupPost !== undefined) {
-      GroupPost.encode(message.currentGroupPost, writer.uint32(122).fork()).ldelim();
-    }
-    if (message.previewImageExists === true) {
-      writer.uint32(128).bool(message.previewImageExists);
-    }
-    if (message.shareable === true) {
-      writer.uint32(136).bool(message.shareable);
-    }
-    if (message.context !== 0) {
-      writer.uint32(144).int32(message.context);
+      writer.uint32(72).int32(message.groupCount);
     }
     for (const v of message.media) {
-      writer.uint32(154).string(v!);
+      writer.uint32(82).string(v!);
+    }
+    if (message.mediaGenerated === true) {
+      writer.uint32(88).bool(message.mediaGenerated);
+    }
+    if (message.embedLink === true) {
+      writer.uint32(96).bool(message.embedLink);
+    }
+    if (message.shareable === true) {
+      writer.uint32(104).bool(message.shareable);
+    }
+    if (message.context !== 0) {
+      writer.uint32(112).int32(message.context);
+    }
+    if (message.visibility !== 0) {
+      writer.uint32(120).int32(message.visibility);
+    }
+    if (message.moderation !== 0) {
+      writer.uint32(128).int32(message.moderation);
+    }
+    if (message.currentGroupPost !== undefined) {
+      GroupPost.encode(message.currentGroupPost, writer.uint32(146).fork()).ldelim();
+    }
+    for (const v of message.replies) {
+      Post.encode(v!, writer.uint32(154).fork()).ldelim();
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(162).fork()).ldelim();
@@ -530,8 +541,11 @@ export const Post = {
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(170).fork()).ldelim();
     }
+    if (message.publishedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.publishedAt), writer.uint32(178).fork()).ldelim();
+    }
     if (message.lastActivityAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastActivityAt), writer.uint32(178).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.lastActivityAt), writer.uint32(186).fork()).ldelim();
     }
     return writer;
   },
@@ -568,34 +582,34 @@ export const Post = {
           message.replyCount = reader.int32();
           break;
         case 9:
-          message.replies.push(Post.decode(reader, reader.uint32()));
-          break;
-        case 10:
-          message.previewImage = reader.bytes();
-          break;
-        case 11:
-          message.visibility = reader.int32() as any;
-          break;
-        case 12:
-          message.moderation = reader.int32() as any;
-          break;
-        case 14:
           message.groupCount = reader.int32();
           break;
-        case 15:
-          message.currentGroupPost = GroupPost.decode(reader, reader.uint32());
+        case 10:
+          message.media.push(reader.string());
           break;
-        case 16:
-          message.previewImageExists = reader.bool();
+        case 11:
+          message.mediaGenerated = reader.bool();
           break;
-        case 17:
+        case 12:
+          message.embedLink = reader.bool();
+          break;
+        case 13:
           message.shareable = reader.bool();
           break;
-        case 18:
+        case 14:
           message.context = reader.int32() as any;
           break;
+        case 15:
+          message.visibility = reader.int32() as any;
+          break;
+        case 16:
+          message.moderation = reader.int32() as any;
+          break;
+        case 18:
+          message.currentGroupPost = GroupPost.decode(reader, reader.uint32());
+          break;
         case 19:
-          message.media.push(reader.string());
+          message.replies.push(Post.decode(reader, reader.uint32()));
           break;
         case 20:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
@@ -604,6 +618,9 @@ export const Post = {
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         case 22:
+          message.publishedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 23:
           message.lastActivityAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
@@ -624,18 +641,19 @@ export const Post = {
       content: isSet(object.content) ? String(object.content) : undefined,
       responseCount: isSet(object.responseCount) ? Number(object.responseCount) : 0,
       replyCount: isSet(object.replyCount) ? Number(object.replyCount) : 0,
-      replies: Array.isArray(object?.replies) ? object.replies.map((e: any) => Post.fromJSON(e)) : [],
-      previewImage: isSet(object.previewImage) ? bytesFromBase64(object.previewImage) : undefined,
-      visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
-      moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
       groupCount: isSet(object.groupCount) ? Number(object.groupCount) : 0,
-      currentGroupPost: isSet(object.currentGroupPost) ? GroupPost.fromJSON(object.currentGroupPost) : undefined,
-      previewImageExists: isSet(object.previewImageExists) ? Boolean(object.previewImageExists) : false,
+      media: Array.isArray(object?.media) ? object.media.map((e: any) => String(e)) : [],
+      mediaGenerated: isSet(object.mediaGenerated) ? Boolean(object.mediaGenerated) : false,
+      embedLink: isSet(object.embedLink) ? Boolean(object.embedLink) : false,
       shareable: isSet(object.shareable) ? Boolean(object.shareable) : false,
       context: isSet(object.context) ? postContextFromJSON(object.context) : 0,
-      media: Array.isArray(object?.media) ? object.media.map((e: any) => String(e)) : [],
+      visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
+      moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
+      currentGroupPost: isSet(object.currentGroupPost) ? GroupPost.fromJSON(object.currentGroupPost) : undefined,
+      replies: Array.isArray(object?.replies) ? object.replies.map((e: any) => Post.fromJSON(e)) : [],
       createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+      publishedAt: isSet(object.publishedAt) ? String(object.publishedAt) : undefined,
       lastActivityAt: isSet(object.lastActivityAt) ? String(object.lastActivityAt) : undefined,
     };
   },
@@ -650,28 +668,28 @@ export const Post = {
     message.content !== undefined && (obj.content = message.content);
     message.responseCount !== undefined && (obj.responseCount = Math.round(message.responseCount));
     message.replyCount !== undefined && (obj.replyCount = Math.round(message.replyCount));
-    if (message.replies) {
-      obj.replies = message.replies.map((e) => e ? Post.toJSON(e) : undefined);
-    } else {
-      obj.replies = [];
-    }
-    message.previewImage !== undefined &&
-      (obj.previewImage = message.previewImage !== undefined ? base64FromBytes(message.previewImage) : undefined);
-    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
-    message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
     message.groupCount !== undefined && (obj.groupCount = Math.round(message.groupCount));
-    message.currentGroupPost !== undefined &&
-      (obj.currentGroupPost = message.currentGroupPost ? GroupPost.toJSON(message.currentGroupPost) : undefined);
-    message.previewImageExists !== undefined && (obj.previewImageExists = message.previewImageExists);
-    message.shareable !== undefined && (obj.shareable = message.shareable);
-    message.context !== undefined && (obj.context = postContextToJSON(message.context));
     if (message.media) {
       obj.media = message.media.map((e) => e);
     } else {
       obj.media = [];
     }
+    message.mediaGenerated !== undefined && (obj.mediaGenerated = message.mediaGenerated);
+    message.embedLink !== undefined && (obj.embedLink = message.embedLink);
+    message.shareable !== undefined && (obj.shareable = message.shareable);
+    message.context !== undefined && (obj.context = postContextToJSON(message.context));
+    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
+    message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
+    message.currentGroupPost !== undefined &&
+      (obj.currentGroupPost = message.currentGroupPost ? GroupPost.toJSON(message.currentGroupPost) : undefined);
+    if (message.replies) {
+      obj.replies = message.replies.map((e) => e ? Post.toJSON(e) : undefined);
+    } else {
+      obj.replies = [];
+    }
     message.createdAt !== undefined && (obj.createdAt = message.createdAt);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    message.publishedAt !== undefined && (obj.publishedAt = message.publishedAt);
     message.lastActivityAt !== undefined && (obj.lastActivityAt = message.lastActivityAt);
     return obj;
   },
@@ -692,20 +710,21 @@ export const Post = {
     message.content = object.content ?? undefined;
     message.responseCount = object.responseCount ?? 0;
     message.replyCount = object.replyCount ?? 0;
-    message.replies = object.replies?.map((e) => Post.fromPartial(e)) || [];
-    message.previewImage = object.previewImage ?? undefined;
+    message.groupCount = object.groupCount ?? 0;
+    message.media = object.media?.map((e) => e) || [];
+    message.mediaGenerated = object.mediaGenerated ?? false;
+    message.embedLink = object.embedLink ?? false;
+    message.shareable = object.shareable ?? false;
+    message.context = object.context ?? 0;
     message.visibility = object.visibility ?? 0;
     message.moderation = object.moderation ?? 0;
-    message.groupCount = object.groupCount ?? 0;
     message.currentGroupPost = (object.currentGroupPost !== undefined && object.currentGroupPost !== null)
       ? GroupPost.fromPartial(object.currentGroupPost)
       : undefined;
-    message.previewImageExists = object.previewImageExists ?? false;
-    message.shareable = object.shareable ?? false;
-    message.context = object.context ?? 0;
-    message.media = object.media?.map((e) => e) || [];
+    message.replies = object.replies?.map((e) => Post.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.publishedAt = object.publishedAt ?? undefined;
     message.lastActivityAt = object.lastActivityAt ?? undefined;
     return message;
   },
@@ -1051,50 +1070,6 @@ export const GetGroupPostsResponse = {
     return message;
   },
 };
-
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if (tsProtoGlobalThis.Buffer) {
-    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = tsProtoGlobalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if (tsProtoGlobalThis.Buffer) {
-    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(String.fromCharCode(byte));
-    });
-    return tsProtoGlobalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
