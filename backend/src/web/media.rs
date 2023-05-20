@@ -26,13 +26,18 @@ use rocket::http::MediaType;
 use rocket::{data::ToByteUnit, http::CookieJar, routes, Data, Route, State};
 
 use rocket::http::Status;
+use rocket_cache_response::CacheResponse;
 // use s3::request::ResponseDataStream;
 // use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 lazy_static! {
-    pub static ref MEDIA_ENDPOINTS: Vec<Route> =
-        routes![create_media_options, create_media, media_file_options, media_file];
+    pub static ref MEDIA_ENDPOINTS: Vec<Route> = routes![
+        create_media_options,
+        create_media,
+        media_file_options,
+        media_file
+    ];
 }
 
 /// Used to manage CORS for the media upload endpoint.
@@ -97,7 +102,7 @@ pub async fn media_file<'a>(
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
     auth_header: Option<AuthHeader<'_>>,
-) -> Result<(ContentType, NamedFile), Status> {
+) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
     log::info!("media_file: {:?}", id);
     let _user = get_media_user(authorization, auth_header, cookies, state).ok();
 
@@ -148,7 +153,11 @@ pub async fn media_file<'a>(
     let result = NamedFile::open(local_filename)
         .await
         .map_err(|_| Status::ImATeapot)?;
-    Ok((media_type, result))
+    Ok(CacheResponse::Public {
+        responder: (media_type, result),
+        max_age: 3600 * 12,
+        must_revalidate: true,
+    })
 
     // let mut _stream = state
     //     .bucket

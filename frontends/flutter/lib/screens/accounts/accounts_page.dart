@@ -576,19 +576,21 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                   context.navigateNamedTo(
                                       'account/${account.id}/profile');
                                 },
-                                child: (account.user?.avatarMediaId != null)
-                                    ? CircleAvatar(
-                                        key: Key('avatar-${account.id}'),
-                                        backgroundImage: mediaImageProvider(
-                                            account.user!.avatarMediaId,
-                                            serverOverride: account.server))
-                                    : const CircleAvatar(
-                                        backgroundColor: Colors.black12,
-                                        child: Icon(
-                                          Icons.person,
-                                          color: Colors.white,
-                                        ),
-                                      )
+                                child:
+                                    (account.user?.avatarMediaId.isNotEmpty ==
+                                            true)
+                                        ? CircleAvatar(
+                                            key: Key('avatar-${account.id}'),
+                                            backgroundImage: mediaImageProvider(
+                                                account.user!.avatarMediaId,
+                                                serverOverride: account.server))
+                                        : const CircleAvatar(
+                                            backgroundColor: Colors.black12,
+                                            child: Icon(
+                                              Icons.person,
+                                              color: Colors.white,
+                                            ),
+                                          )
                                 // : Icon(Icons.account_circle,
                                 //     size: 32,
                                 //     color: textColor ?? Colors.white),

@@ -43,7 +43,7 @@ postDemoData(
       client, account, showSnackBar, appState, demoGroups, randomizePosts);
 
   List<JonlineAccount> sideAccounts =
-      await generateSideAccounts(client, account, showSnackBar, appState, 1);
+      await generateSideAccounts(client, account, showSnackBar, appState, 30);
 
   showSnackBar("Generating conversations...");
   await generateConversations(
@@ -86,7 +86,7 @@ Future<void> generateConversations(
   ];
   int replyCount = 0;
   var lastMessageTime = DateTime.now();
-  const totalReplies = 0; //1 + Random().nextInt(posts.length * 200);
+  final totalReplies = 1 + Random().nextInt(posts.length * 200);
   final targets = posts;
   // showSnackBar('Replying to "${post.title}"...');
   for (int i = 0; i < totalReplies; i++) {
