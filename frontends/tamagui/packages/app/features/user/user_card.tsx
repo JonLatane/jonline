@@ -13,12 +13,15 @@ import { FadeInView } from "../post/fade_in_view";
 import { } from "../post/post_card";
 import { useLink } from 'solito/link';
 import { useMediaUrl } from "app/hooks/use_media_url";
+import { MediaChooser } from "../media/media_chooser";
 
 interface Props {
   user: User;
   isPreview?: boolean;
+  username?: string;
   setUsername?: (username: string) => void;
-  setAvatar?: (mediaId: string) => void;
+  avatarMediaId?: string;
+  setAvatarMediaId?: (mediaId?: string) => void;
 }
 
 export function useFullAvatarHeight(): number {
@@ -26,13 +29,15 @@ export function useFullAvatarHeight(): number {
   return media.gtXs ? 400 : 300;
 }
 
-export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, setAvatar }) => {
+export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, avatarMediaId: avatarMediaIdProp, setAvatarMediaId }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
   const app = useLocalApp();
+  const avatarMediaId = setAvatarMediaId ? avatarMediaIdProp : user.avatarMediaId;
 
+  const isAdmin = accountOrServer?.account?.user?.permissions?.includes(Permission.ADMIN);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
-  const { server, primaryColor, navColor, primaryTextColor, textColor } = useServerTheme();
+  const { server, primaryColor, navColor, primaryTextColor, navTextColor, textColor } = useServerTheme();
   const [loadingAvatar, setLoadingAvatar] = React.useState(false);
 
   const following = passes(user.currentUserFollow?.targetUserModeration);
@@ -56,7 +61,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
   };
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const onScreen = useOnScreen(ref, "-1px");
-  const avatarUrl = useMediaUrl(user?.avatarMediaId);
+  const avatarUrl = useMediaUrl(avatarMediaId ?? user?.avatarMediaId);
   // debugger;
 
   return (
@@ -72,20 +77,20 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
         y={0}
         enterStyle={{ y: -50, opacity: 0, }}
         exitStyle={{ opacity: 0, }}
-        // width={400}
-        // hoverStyle={isPreview ? { scale: 0.97 } : {}}
-        // pressStyle={isPreview ? { scale: 0.95 } : {}}
-        // {...(isPreview ? userLink : {})}
+      // width={400}
+      // hoverStyle={isPreview ? { scale: 0.97 } : {}}
+      // pressStyle={isPreview ? { scale: 0.95 } : {}}
+      // {...(isPreview ? userLink : {})}
       >
         <Card.Header>
           <XStack>
             <Anchor f={1} {...(isPreview ? userLink : {})}>
-            <YStack f={1}>
-              <Heading size="$1" style={{ marginRight: 'auto' }}>{server?.host}/</Heading>
+              <YStack f={1}>
+                <Heading size="$1" style={{ marginRight: 'auto' }}>{server?.host}/</Heading>
 
-              {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
-              <Heading size="$7" marginRight='auto'>{user.username}</Heading>
-            </YStack>
+                {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
+                <Heading size="$7" marginRight='auto'>{user.username}</Heading>
+              </YStack>
             </Anchor>
 
             {app.showUserIds ? <XStack o={0.6}>
@@ -134,12 +139,24 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                   height={fullAvatarHeight}
                   resizeMode="contain"
                   als="center"
-                  // source={{uri: avatarUrl}}
-                  src={avatarUrl}
+                  source={{uri: avatarUrl}}
+                  // src={avatarUrl}
                   borderRadius={10}
                 // borderBottomRightRadius={5}
                 />
               </FadeInView> : undefined}
+            {(isCurrentUser || isAdmin) && setAvatarMediaId
+              ? <YStack mb='$2'>
+                <MediaChooser 
+                selectedMedia={avatarMediaId ? [avatarMediaId] : []}
+                onMediaSelected={media => { setAvatarMediaId?.(media.length == 0 ? undefined : media[0]) }} >
+                <XStack>
+                  <Camera color={navTextColor}/>
+                  <Heading color={navTextColor} ml='$3' my='auto' size='$1'>Choose Avatar</Heading>
+                </XStack>
+              </MediaChooser>
+              </YStack>
+              : undefined}
             {followsCurrentUser ? <Heading size='$1' ta='center'>{following ? 'Friends' : 'Follows You'}</Heading> : undefined}
             {followRequestReceived ? <>
               <Heading size='$1' ta='center'>Wants to follow you</Heading>
@@ -185,7 +202,6 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
               <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
               <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
             </XStack>
-            {isCurrentUser && setAvatar ? <Camera /> : undefined}
           </YStack>
         </Card.Footer>
         <Card.Background>
@@ -200,8 +216,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                 opacity={0.25}
                 resizeMode="contain"
                 als="flex-start"
-                // source={{uri: avatarUrl}}
-                src={avatarUrl}
+                source={{uri: avatarUrl}}
+                // src={avatarUrl}
                 blurRadius={1.5}
                 // borderRadius={5}
                 borderBottomRightRadius={5}

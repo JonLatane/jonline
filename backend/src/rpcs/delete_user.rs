@@ -1,6 +1,3 @@
-use diesel::result::DatabaseErrorKind::UniqueViolation;
-use diesel::result::Error::DatabaseError;
-use diesel::result::Error::RollbackTransaction;
 use diesel::NotFound;
 use diesel::*;
 use tonic::{Code, Status};
@@ -43,15 +40,8 @@ pub fn delete_user(
         Ok(size) if size == 0 => Err(Status::new(Code::NotFound, "user_not_found")),
         Ok(_) => Ok(()),
         Err(NotFound) => Err(Status::new(Code::NotFound, "user_not_found")),
-        Err(RollbackTransaction) => Err(Status::new(
-            Code::InvalidArgument,
-            "cannot_publish_globally",
-        )),
-        Err(DatabaseError(UniqueViolation, _)) => {
-            Err(Status::new(Code::NotFound, "duplicate_username"))
-        }
         Err(e) => {
-            log::error!("Error updating user: {:?}", e);
+            log::error!("Error deleting user: {:?}", e);
             Err(Status::new(Code::Internal, "data_error"))
         }
     };

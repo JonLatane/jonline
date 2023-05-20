@@ -30,10 +30,10 @@ import "visibility_moderation.proto";
 message Media {
   // The ID of the media item.
   string id = 1;
-  // The MIME content type of the media item.
-  string content_type = 3;
   // The ID of the user who created the media item.
   optional string user_id = 2;
+  // The MIME content type of the media item.
+  string content_type = 3;
   // An optional title for the media item.
   optional string name = 4;
   // An optional description for the media item.

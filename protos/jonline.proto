@@ -30,13 +30,16 @@ service Jonline {
 
   // Creates a user account and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.*
   rpc CreateAccount(CreateAccountRequest) returns (RefreshTokenResponse) {}
+
   // Logs in a user and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.*
   rpc Login(LoginRequest) returns (RefreshTokenResponse) {}
+
   // Gets a new `access_token` (and possibly a new `refresh_token`, which should replace the old one in client storage), given a `refresh_token`. *Publicly accessible.*
   rpc AccessToken(AccessTokenRequest) returns (AccessTokenResponse) {}
 
   // Gets the current user. *Authenticated.*
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
+
   // Gets Users. *Publicly accessible **or** Authenticated.*
   // Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
@@ -45,15 +48,25 @@ service Jonline {
   // Updating other users requires `ADMIN` permissions.
   rpc UpdateUser(User) returns (User) {}
 
+  // Deletes a user by ID. *Authenticated.*
+  // Deleting other users requires `ADMIN` permissions.
+  rpc DeleteUser(User) returns (google.protobuf.Empty) {}
+
   // Follow (or request to follow) a user. *Authenticated.*
   rpc CreateFollow(Follow) returns (Follow) {}
+
   // Used to approve follow requests. *Authenticated.*
   rpc UpdateFollow(Follow) returns (Follow) {}
+
   // Unfollow (or unrequest) a user. *Authenticated.*
   rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
 
   // (TODO) Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.*
   rpc GetMedia(GetMediaRequest) returns (GetMediaResponse) {}
+
+  // Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO.
+  // Deleting other users' media requires `ADMIN` permissions.
+  rpc DeleteMedia(Media) returns (google.protobuf.Empty) {}
   
   // Gets Groups. *Publicly accessible **or** Authenticated.*
   // Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
@@ -62,9 +75,11 @@ service Jonline {
   // Creates a group with the current user as its admin. *Authenticated.*
   // Requires the `CREATE_GROUPS` permission.
   rpc CreateGroup(Group) returns (Group) {}
+
   // Update a Groups's information, default membership permissions or moderation. *Authenticated.*
   // Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   rpc UpdateGroup(Group) returns (Group) {}
+
   // Delete a Group. *Authenticated.*
   // Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   rpc DeleteGroup(Group) returns (google.protobuf.Empty) {}
@@ -72,12 +87,15 @@ service Jonline {
   // Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.*
   // Memberships and moderations are set to their defaults.
   rpc CreateMembership(Membership) returns (Membership) {}
+
   // Update aspects of a user's membership. *Authenticated.*
   // Updating permissions requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   // Updating moderation (approving/denying/banning) requires the same, or `MODERATE_USERS` permissions within the group.
   rpc UpdateMembership(Membership) returns (Membership) {}
+
   // Leave a group (or cancel membership request). *Authenticated.*
   rpc DeleteMembership(Membership) returns (google.protobuf.Empty) {}
+
   // Get Members (User+Membership) of a Group. *Authenticated.*
   rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {}
 
@@ -87,17 +105,22 @@ service Jonline {
 
   // Creates a Post. *Authenticated.*
   rpc CreatePost(Post) returns (Post) {}
+
   // Updates a Post. *Authenticated.*
   rpc UpdatePost(Post) returns (Post) {}
+
   // (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.*
   rpc DeletePost(Post) returns (Post) {}
 
   // Cross-post a Post to a Group. *Authenticated.*
   rpc CreateGroupPost(GroupPost) returns (GroupPost) {}
+
   // Group Moderators: Approve/Reject a GroupPost. *Authenticated.*
   rpc UpdateGroupPost(GroupPost) returns (GroupPost) {}
+
   // Delete a GroupPost. *Authenticated.*
   rpc DeleteGroupPost(GroupPost) returns (google.protobuf.Empty) {}
+
   // Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.*
   rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsResponse) {}
 

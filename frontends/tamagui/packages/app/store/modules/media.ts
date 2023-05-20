@@ -9,13 +9,14 @@ import {
   createSlice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import { LoadMedia, loadMedia, loadMediaPage } from './media_actions';
+import { LoadMedia, deleteMedia, loadMedia, loadMediaPage } from './media_actions';
 export * from './media_actions';
 
 export interface MediaState {
   loadStatus: "unloaded" | "loading" | "loaded" | "errored";
   createStatus: "creating" | "created" | "errored" | undefined;
   updateStatus: "creating" | "created" | "errored" | undefined;
+  deleteStatus: "deleting" | "deleted" | "errored" | undefined;
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -38,6 +39,7 @@ const initialState: MediaState = {
   loadStatus: "unloaded",
   createStatus: undefined,
   updateStatus: undefined,
+  deleteStatus: undefined,
   userMediaPages: {},
   failedMediaIds: [],
   ...mediaAdapter.getInitialState(),
@@ -89,10 +91,34 @@ export const mediaSlice: Slice<Draft<MediaState>, any, "media"> = createSlice({
       state.loadStatus = "loaded";
       const media = action.payload;
       mediaAdapter.upsertOne(state, media);
-      state.successMessage = `Post data loaded.`;
+      state.successMessage = `Media loaded.`;
     });
     builder.addCase(loadMedia.rejected, (state, action) => {
       state.loadStatus = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
+      state.failedMediaIds = [...state.failedMediaIds, (action.meta.arg as LoadMedia).id];
+    });
+    builder.addCase(deleteMedia.pending, (state) => {
+      state.deleteStatus = "deleting";
+      state.error = undefined;
+    });
+    builder.addCase(deleteMedia.fulfilled, (state, action) => {
+      state.deleteStatus = "deleted";
+      mediaAdapter.removeOne(state, action.meta.arg.id);
+      for (const i in state.userMediaPages) {
+        const userPages = state.userMediaPages[i]!;
+        for (const j in userPages) {
+          const page = userPages[j]!;
+          const filteredPage = page.filter(id => id !== action.meta.arg.id);
+          userPages[j] = filteredPage;
+        }
+      }
+      state.successMessage = `Media deleted.`;
+    });
+    builder.addCase(deleteMedia.rejected, (state, action) => {
+      state.deleteStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;

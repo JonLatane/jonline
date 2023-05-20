@@ -14,7 +14,7 @@ import { Event, GetEventsRequest, GetEventsResponse } from "./events";
 import { GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
-import { GetMediaRequest, GetMediaResponse } from "./media";
+import { GetMediaRequest, GetMediaResponse, Media } from "./media";
 import {
   GetGroupPostsRequest,
   GetGroupPostsResponse,
@@ -61,6 +61,11 @@ export interface Jonline {
    * Updating other users requires `ADMIN` permissions.
    */
   updateUser(request: DeepPartial<User>, metadata?: grpc.Metadata): Promise<User>;
+  /**
+   * Deletes a user by ID. *Authenticated.*
+   * Deleting other users requires `ADMIN` permissions.
+   */
+  deleteUser(request: DeepPartial<User>, metadata?: grpc.Metadata): Promise<Empty>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow>;
   /** Used to approve follow requests. *Authenticated.* */
@@ -69,6 +74,11 @@ export interface Jonline {
   deleteFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Empty>;
   /** (TODO) Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* */
   getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse>;
+  /**
+   * Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO.
+   * Deleting other users' media requires `ADMIN` permissions.
+   */
+  deleteMedia(request: DeepPartial<Media>, metadata?: grpc.Metadata): Promise<Empty>;
   /**
    * Gets Groups. *Publicly accessible **or** Authenticated.*
    * Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
@@ -158,10 +168,12 @@ export class JonlineClientImpl implements Jonline {
     this.getCurrentUser = this.getCurrentUser.bind(this);
     this.getUsers = this.getUsers.bind(this);
     this.updateUser = this.updateUser.bind(this);
+    this.deleteUser = this.deleteUser.bind(this);
     this.createFollow = this.createFollow.bind(this);
     this.updateFollow = this.updateFollow.bind(this);
     this.deleteFollow = this.deleteFollow.bind(this);
     this.getMedia = this.getMedia.bind(this);
+    this.deleteMedia = this.deleteMedia.bind(this);
     this.getGroups = this.getGroups.bind(this);
     this.createGroup = this.createGroup.bind(this);
     this.updateGroup = this.updateGroup.bind(this);
@@ -217,6 +229,10 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineUpdateUserDesc, User.fromPartial(request), metadata);
   }
 
+  deleteUser(request: DeepPartial<User>, metadata?: grpc.Metadata): Promise<Empty> {
+    return this.rpc.unary(JonlineDeleteUserDesc, User.fromPartial(request), metadata);
+  }
+
   createFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow> {
     return this.rpc.unary(JonlineCreateFollowDesc, Follow.fromPartial(request), metadata);
   }
@@ -231,6 +247,10 @@ export class JonlineClientImpl implements Jonline {
 
   getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse> {
     return this.rpc.unary(JonlineGetMediaDesc, GetMediaRequest.fromPartial(request), metadata);
+  }
+
+  deleteMedia(request: DeepPartial<Media>, metadata?: grpc.Metadata): Promise<Empty> {
+    return this.rpc.unary(JonlineDeleteMediaDesc, Media.fromPartial(request), metadata);
   }
 
   getGroups(request: DeepPartial<GetGroupsRequest>, metadata?: grpc.Metadata): Promise<GetGroupsResponse> {
@@ -504,6 +524,29 @@ export const JonlineUpdateUserDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
+export const JonlineDeleteUserDesc: UnaryMethodDefinitionish = {
+  methodName: "DeleteUser",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return User.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Empty.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
 export const JonlineCreateFollowDesc: UnaryMethodDefinitionish = {
   methodName: "CreateFollow",
   service: JonlineDesc,
@@ -586,6 +629,29 @@ export const JonlineGetMediaDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = GetMediaResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineDeleteMediaDesc: UnaryMethodDefinitionish = {
+  methodName: "DeleteMedia",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return Media.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Empty.decode(data);
       return {
         ...value,
         toObject() {

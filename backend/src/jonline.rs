@@ -76,6 +76,12 @@ impl Jonline for JonLineImpl {
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::update_user(request.into_inner(), user, &mut conn).map(Response::new)
     }
+
+    async fn delete_user(&self, request: Request<User>) -> Result<Response<()>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
+        rpcs::delete_user(request.into_inner(), user, &mut conn).map(Response::new)
+    }
     async fn get_users(
         &self,
         request: Request<GetUsersRequest>,
@@ -108,6 +114,12 @@ impl Jonline for JonLineImpl {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn).ok();
         rpcs::get_media(request.into_inner(), user, &mut conn).map(Response::new)
+    }
+
+    async fn delete_media(&self, request: Request<Media>) -> Result<Response<()>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
+        rpcs::delete_media(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
     async fn get_groups(

@@ -1,5 +1,5 @@
 import { Post, PostListingType, Media } from '@jonline/api';
-import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress } from '@jonline/ui';
+import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet } from '@jonline/ui';
 import { getMediaPage, getPostsPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
@@ -16,12 +16,15 @@ import { useMediaPage } from './media_screen';
 
 
 interface MediaChooserProps {
-  selectedMedia: Media[];
-  onMediaSelected?: (media: Media[]) => void;
+  children?: React.ReactNode;
+  selectedMedia: string[];
+  onMediaSelected?: (media: string[]) => void;
   multiselect?: boolean;
 }
 
-export const MediaChooser: React.FC<MediaChooserProps> = ({ selectedMedia, onMediaSelected, multiselect = false }) => {
+export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMedia, onMediaSelected, multiselect = false }) => {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(0);
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const mediaState = useTypedSelector((state: RootState) => state.media);
   const app = useTypedSelector((state: RootState) => state.app);
@@ -38,12 +41,6 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ selectedMedia, onMed
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
-
-  useEffect(() => {
-    let title = 'Media';
-    title += ` - ${server?.serverConfiguration?.serverInfo?.name || 'Jonline'}`;
-    document.title = title;
-  });
 
   const { media, loadingMedia, reloadMedia } = useMediaPage(
     accountOrServer.account?.user?.id,
@@ -64,21 +61,6 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ selectedMedia, onMed
       const uploadUrl = `${serverUrl(currentServer)}/media`
 
       setUploading(true);
-      // fetch(uploadUrl,
-      //   {
-      //     method: 'POST',
-      //     body: file,
-      //     headers: {
-      //       'Authorization': accountOrServer.account?.accessToken?.token || '',
-      //       'Content-Type': file.type,
-      //       'Filename': file.name
-      //     }
-      //   }
-      // ).then(() => {
-      //   setUploading(false);
-      //   reloadMedia();
-      // });
-
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) {
@@ -116,75 +98,102 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ selectedMedia, onMed
 
   const showSpinnerForUploading = uploading && (uploadProgress == undefined || uploadProgress < 0.1 || uploadProgress > 0.9);
   return (
-    <TabsNavigation appSection={AppSection.MEDIA}>
-      {account && (mediaState.loadStatus == 'loading' || loadingMedia || showSpinnerForUploading) ? <StickyBox style={{ zIndex: 10, height: 0 }}>
-        <YStack space="$1" opacity={0.92}>
-          <Spinner size='large' color={navColor} scale={2}
-            top={dimensions.height / 2 - 50}
-          />
-        </YStack>
-      </StickyBox> : undefined}
-      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
-        {
-          accountOrServer.account
-            ? < YStack mb={-19} overflow='hidden'>
-              <Text fontFamily='$body' fontSize='$3' mx='auto' mb='$3'>
-                <FileUploader handleChange={handleUpload} name="file"
-                  label='Add Media'
-                  width='250px'
-                  onDraggingStateChange={setDragging}
-                  types={["JPG", "JPEG", "PNG", "GIF", "PDF", "MOV", "AVI", "OGG", "MP3", "MP4", "MPG", "WEBM", "WEBP", "WMV"]}>
-                  <Button onPress={() => { }} backgroundColor={dragging ? primaryColor : navColor}>
-                    <XStack space='$2'>
-                      <XStack my='auto'>
-                        <Upload size={24} color={dragging ? primaryTextColor : navTextColor} />
+    <>
+      <Button backgroundColor={navColor} color={navTextColor}
+        onPress={() => setOpen((x) => !x)}>
+        {children ?? 'Choose Media'}
+      </Button>
+      <Sheet
+        modal
+        open={open}
+        onOpenChange={setOpen}
+        // snapPoints={[80]}
+        snapPoints={[87, 57, 37]}
+        position={position}
+        onPositionChange={setPosition}
+        dismissOnSnapToBottom
+      >
+        <Sheet.Overlay />
+        <Sheet.Frame>
+          <Sheet.Handle />
+          {account && (mediaState.loadStatus == 'loading' || loadingMedia || showSpinnerForUploading) ?
+            <YStack space="$1" opacity={0.92}>
+              <Spinner size='large' color={navColor} scale={2}
+                top={dimensions.height / 2 - 50}
+              />
+            </YStack>
+            : undefined}
+          {
+            accountOrServer.account
+              ? < YStack mb={-19} overflow='hidden'>
+                <Text fontFamily='$body' fontSize='$3' mx='auto' mb='$3'>
+                  <FileUploader handleChange={handleUpload} name="file"
+                    label='Add Media'
+                    width='250px'
+                    onDraggingStateChange={setDragging}
+                    types={["JPG", "JPEG", "PNG", "GIF", "PDF", "MOV", "AVI", "OGG", "MP3", "MP4", "MPG", "WEBM", "WEBP", "WMV"]}>
+                    <Button onPress={() => { }} backgroundColor={dragging ? primaryColor : navColor}>
+                      <XStack space='$2'>
+                        <XStack my='auto'>
+                          <Upload size={24} color={dragging ? primaryTextColor : navTextColor} />
+                        </XStack>
+                        <YStack jc="center" ai="center" f={1} my='auto' p='$3'>
+                          <Heading size='$3' ta='center' color={dragging ? primaryTextColor : navTextColor}>
+                            Upload Media
+                          </Heading>
+                          <Heading size='$1' ta='center' color={dragging ? primaryTextColor : navTextColor}>
+                            {isTouchable || isWebTouchable ? 'Tap' : 'Drag/drop or click'} to choose
+                          </Heading>
+                        </YStack>
                       </XStack>
-                      <YStack jc="center" ai="center" f={1} my='auto' p='$3'>
-                        <Heading size='$3' ta='center' color={dragging ? primaryTextColor : navTextColor}>
-                          Upload Media
-                        </Heading>
-                        <Heading size='$1' ta='center' color={dragging ? primaryTextColor : navTextColor}>
-                          {isTouchable || isWebTouchable ? 'Tap' : 'Drag/drop or click'} to choose
-                        </Heading>
-                      </YStack>
-                    </XStack>
-                  </Button>
-                </FileUploader>
-              </Text>
-              <Progress value={(uploadProgress ?? 0) * 100} >
-                <Progress.Indicator animation="quick" />
-              </Progress>
+                    </Button>
+                  </FileUploader>
+                </Text>
+                <Progress value={(uploadProgress ?? 0) * 100} >
+                  <Progress.Indicator animation="quick" />
+                </Progress>
+              </YStack>
+              : <YStack width='100%' maw={600} jc="center" ai="center">
+                <Heading size='$5' mb='$3'>You must be logged in to view media.</Heading>
+                <Heading size='$3' ta='center'>You can log in by clicking the button in the top right corner.</Heading>
+              </YStack>
+          }
+          <Sheet.ScrollView p="$4" space>
+            <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' space>
+
+              {media && media.length == 0
+                ? mediaState.loadStatus != 'loading' && mediaState.loadStatus != 'unloaded'
+                  ? <XStack width='100%' mx='auto' jc="center" ai="center">
+                    <Heading size='$5' mb='$3'>No media found.</Heading>
+                    <Heading size='$3' ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                  </XStack>
+                  : undefined
+                : <>
+                  <XStack space='$2' flexWrap='wrap' jc="center">
+                    {media?.map((item) => {
+                      return <YStack w='260px' mb='$2'>
+                        <MediaCard media={item}
+                          selected={selectedMedia.includes(item.id)}
+                          onSelect={onMediaSelected ? () => {
+                            if (selectedMedia.includes(item.id)) {
+                              onMediaSelected?.(selectedMedia.filter((x) => x != item.id))
+                            } else {
+                              if (multiselect) {
+                                onMediaSelected?.([...selectedMedia, item.id])
+                              } else {
+                                onMediaSelected?.([item.id])
+                              }
+                            }
+                          } : undefined}
+                          chooser />
+                      </YStack>;
+                    })}
+                  </XStack>
+                </>}
             </YStack>
-            : <YStack width='100%' maw={600} jc="center" ai="center">
-              <Heading size='$5' mb='$3'>You must be logged in to view media.</Heading>
-              <Heading size='$3' ta='center'>You can log in by clicking the button in the top right corner.</Heading>
-            </YStack>
-        }
-        {media && media.length == 0
-          ? mediaState.loadStatus != 'loading' && mediaState.loadStatus != 'unloaded'
-            ? <YStack width='100%' maw={600} jc="center" ai="center">
-              <Heading size='$5' mb='$3'>No media found.</Heading>
-              <Heading size='$3' ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-            </YStack>
-            : undefined
-          : <>
-            {/* <FlatList data={media}
-            // onRefresh={reloadMedia}
-            // refreshing={mediaState.loadStatus == 'loading'}
-            // Allow easy restoring of scroll position
-            contentContainerStyle={{width:'100%'}}
-            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-            keyExtractor={(user) => user.id}
-            renderItem={({ item: user }) => {
-              return <YStack w='100%' mb='$3'><MediaCard user={user} isPreview /></YStack>;
-            }} /> */}
-            {media?.map((item) => {
-              return <YStack w='100%' mb='$3'><MediaCard media={item} /></YStack>;
-            })}
-            {showScrollPreserver ? <YStack h={100000} /> : undefined}
-          </>}
-      </YStack>
-      {/* <StickyCreateButton /> */}
-    </TabsNavigation >
+          </Sheet.ScrollView>
+        </Sheet.Frame>
+      </Sheet>
+    </>
   )
 }

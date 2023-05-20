@@ -1,4 +1,4 @@
-import { GetMediaRequest, GetMediaResponse, Media } from "@jonline/api";
+import { Empty, GetMediaRequest, GetMediaResponse, Media } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -52,6 +52,16 @@ export const loadMedia: AsyncThunk<Media, LoadMedia, any> = createAsyncThunk<Med
     const response = await client.getMedia(GetMediaRequest.create({ mediaId: request.id }), client.credential);
     if (response.media.length == 0) throw 'Media not found';
     return response.media[0]!;
+  }
+);
+
+export type DeleteMedia = { id: string } & AccountOrServer;
+export const deleteMedia: AsyncThunk<Empty, DeleteMedia, any> = createAsyncThunk<Empty, DeleteMedia>(
+  "media/deleteOne",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const response = await client.deleteMedia(Media.fromJSON(request), client.credential);
+    return response;
   }
 );
 

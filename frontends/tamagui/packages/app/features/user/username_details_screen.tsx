@@ -153,7 +153,7 @@ export function UsernameDetailsScreen() {
         {user ? <>
           <ScrollView w='100%'>
             <YStack maw={800} w='100%' als='center' p='$2' marginHorizontal='auto'>
-              <UserCard user={user} setUsername={editMode ? setName : undefined} setAvatar={editMode ? setAvatarMediaId : undefined} />
+              <UserCard user={user} setUsername={editMode ? setName : undefined} avatarMediaId={avatarMediaId} setAvatarMediaId={editMode ? setAvatarMediaId : undefined} />
               <YStack als='center' w='100%' paddingHorizontal='$2' paddingVertical='$3' space>
                 {editMode ?
                   <TextArea value={bio} onChangeText={t => setBio(t)}

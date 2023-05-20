@@ -1,20 +1,31 @@
 import React from "react";
 import { View } from "react-native";
 
-import { Media } from "@jonline/api";
-import { Card, Heading, Theme, XStack, YStack } from "@jonline/ui";
+import { Media, Permission } from "@jonline/api";
+import { AlertDialog, Button, Card, Heading, Theme, XStack, YStack } from "@jonline/ui";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { MediaRenderer } from "./media_renderer";
 import { DateViewer } from "@jonline/ui";
+import { deleteMedia, useAccountOrServer, useCredentialDispatch } from "app/store";
+import { Trash } from '@tamagui/lucide-icons';
 
 interface Props {
   media: Media;
+  chooser?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
-export const MediaCard: React.FC<Props> = ({ media }) => {
+export const MediaCard: React.FC<Props> = ({ media, chooser = false, onSelect, selected = false }) => {
+  const { dispatch, accountOrServer} = useCredentialDispatch();
+  const {account, server} = accountOrServer;
+  const isAdmin = account?.user?.permissions.includes(Permission.ADMIN);
+  const isOwnMedia = media.userId != null && media.userId == account?.user?.id;
+  const canDelete = isAdmin || isOwnMedia;
   return (
-    <Theme inverse={false}>
+    <Theme inverse={selected}>
       <Card theme="dark" elevate size="$4" bordered
+        key={`media-card-${media.id}`}
         margin='$0'
         marginBottom='$3'
         marginTop='$3'
@@ -24,15 +35,15 @@ export const MediaCard: React.FC<Props> = ({ media }) => {
         scale={1}
         opacity={1}
         y={0}
-        enterStyle={{ y: -50, opacity: 0, }}
-        exitStyle={{ opacity: 0, }} >
+        enterStyle={chooser ? {} : { y: -50, opacity: 0, }}
+        exitStyle={chooser ? {} : { opacity: 0, }}
+        pressStyle={onSelect ? { scale: 0.990 } : {}}
+        onPress={onSelect} >
         <Card.Header>
           <YStack>
             <XStack>
               <View style={{ flex: 1 }}>
-
-                <Heading size="$7" marginRight='auto'>{media.name}</Heading>
-
+                <Heading size={chooser ? '$1' : '$7'} marginRight='auto'>{media.name}</Heading>
               </View>
             </XStack>
           </YStack>
@@ -45,9 +56,66 @@ export const MediaCard: React.FC<Props> = ({ media }) => {
               <TamaguiMarkdown text={media.description} />
             </YStack>
             <DateViewer date={media.createdAt} />
+            {canDelete
+              ? <>
+              <AlertDialog native>
+      <AlertDialog.Trigger asChild>
+              <Button circular icon={Trash} ml='auto' />
+      </AlertDialog.Trigger>
+
+      <AlertDialog.Portal>
+        <AlertDialog.Overlay
+          key="overlay"
+          animation="quick"
+          opacity={0.5}
+          enterStyle={{ opacity: 0 }}
+          exitStyle={{ opacity: 0 }}
+        />
+        <AlertDialog.Content
+          bordered
+          elevate
+          key="content"
+          animation={[
+            'quick',
+            {
+              opacity: {
+                overshootClamping: true,
+              },
+            },
+          ]}
+          enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+          exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+          x={0}
+          scale={1}
+          opacity={1}
+          y={0}
+        >
+          <YStack space>
+            <AlertDialog.Title>Confirmation</AlertDialog.Title>
+            <AlertDialog.Description>
+              Are you sure you want to delete {media.name ?? 'this media'}?
+            </AlertDialog.Description>
+
+            <XStack space="$3" justifyContent="flex-end">
+              <AlertDialog.Cancel asChild>
+                <Button>Cancel</Button>
+              </AlertDialog.Cancel>
+              <AlertDialog.Action asChild>
+                <Button theme="active" onPress={() => {
+                  console.log("calling deleteMedia!");
+                  dispatch(deleteMedia({ id: media.id, ...accountOrServer }));
+                }}>Delete</Button>
+              </AlertDialog.Action>
+            </XStack>
+          </YStack>
+        </AlertDialog.Content>
+      </AlertDialog.Portal>
+    </AlertDialog>
+              </>
+              : undefined}
           </YStack>
         </Card.Footer>
       </Card>
-    </Theme>
+    </Theme >
   );
 };
