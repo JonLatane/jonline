@@ -132,6 +132,16 @@ spec:
             env:
               - name: DATABASE_URL
                 value: postgres://admin:secure_password1@jonline-postgres/jonline
+              - name: MINIO_ENDPOINT
+                value: http://jonline-minio:9000
+              - name: MINIO_REGION
+                value: ''
+              - name: MINIO_BUCKET
+                value: jonline
+              - name: MINIO_ACCESS_KEY
+                value: minio
+              - name: MINIO_SECRET_KEY
+                value: minio123
             command:
             - /opt/delete_unowned_media
           restartPolicy: Never
@@ -154,6 +164,16 @@ spec:
             env:
               - name: DATABASE_URL
                 value: postgres://admin:secure_password1@jonline-postgres/jonline
+              - name: MINIO_ENDPOINT
+                value: http://jonline-minio:9000
+              - name: MINIO_REGION
+                value: ''
+              - name: MINIO_BUCKET
+                value: jonline
+              - name: MINIO_ACCESS_KEY
+                value: minio
+              - name: MINIO_SECRET_KEY
+                value: minio123
               - name: RUST_BACKTRACE
                 value: full
               - name: RUST_LOG

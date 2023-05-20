@@ -86,7 +86,7 @@ Future<void> generateConversations(
   ];
   int replyCount = 0;
   var lastMessageTime = DateTime.now();
-  final totalReplies = 1 + Random().nextInt(posts.length * 200);
+  final totalReplies = 1 + Random().nextInt(posts.length * 30);
   final targets = posts;
   // showSnackBar('Replying to "${post.title}"...');
   for (int i = 0; i < totalReplies; i++) {
