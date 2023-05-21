@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 
 import { Media, Permission } from "@jonline/api";
-import { AlertDialog, Button, Card, Heading, Theme, XStack, YStack, useMedia } from "@jonline/ui";
+import { AlertDialog, Button, Card, Heading, Paragraph, Theme, XStack, YStack, useMedia } from "@jonline/ui";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { MediaRenderer } from "./media_renderer";
 import { DateViewer } from "@jonline/ui";
@@ -17,7 +17,7 @@ interface Props {
 
 export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }) => {
   const mediaQuery = useMedia();
-  const {primaryColor, navColor, navTextColor} = useServerTheme();
+  const { primaryColor, navColor, navTextColor } = useServerTheme();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { account, server } = accountOrServer;
   const isAdmin = account?.user?.permissions.includes(Permission.ADMIN);
@@ -57,65 +57,72 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
             </YStack>
 
             <TamaguiMarkdown text={media.description} />
-            <DateViewer date={media.createdAt} />
 
-            {canDelete
-              ? <>
-                <AlertDialog native>
-                  <AlertDialog.Trigger asChild mb='$3'>
-                    <Button size='$2' circular icon={Trash} ml='auto' />
-                  </AlertDialog.Trigger>
+            <XStack>
+              <YStack my='auto'>
+                {media.generated ?
+                  <Heading size='$1' color={selected ? navTextColor : '$textColor'}>Generated</Heading>
+                  : undefined}
+                <DateViewer date={media.createdAt} />
+              </YStack>
+              {canDelete
+                ? <>
+                  <AlertDialog native>
+                    <AlertDialog.Trigger asChild mb='$3'>
+                      <Button size='$2' circular icon={Trash} my='auto' ml='auto' />
+                    </AlertDialog.Trigger>
 
-                  <AlertDialog.Portal>
-                    <AlertDialog.Overlay
-                      key="overlay"
-                      animation="quick"
-                      opacity={0.5}
-                      enterStyle={{ opacity: 0 }}
-                      exitStyle={{ opacity: 0 }}
-                    />
-                    <AlertDialog.Content
-                      bordered
-                      elevate
-                      key="content"
-                      animation={[
-                        'quick',
-                        {
-                          opacity: {
-                            overshootClamping: true,
+                    <AlertDialog.Portal>
+                      <AlertDialog.Overlay
+                        key="overlay"
+                        animation="quick"
+                        opacity={0.5}
+                        enterStyle={{ opacity: 0 }}
+                        exitStyle={{ opacity: 0 }}
+                      />
+                      <AlertDialog.Content
+                        bordered
+                        elevate
+                        key="content"
+                        animation={[
+                          'quick',
+                          {
+                            opacity: {
+                              overshootClamping: true,
+                            },
                           },
-                        },
-                      ]}
-                      // enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                      // exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                      x={0}
-                      scale={1}
-                      opacity={1}
-                      y={0}
-                    >
-                      <YStack space>
-                        <AlertDialog.Title>Confirmation</AlertDialog.Title>
-                        <AlertDialog.Description>
-                          Are you sure you want to delete {mediaName ?? 'this media'}? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
-                        </AlertDialog.Description>
+                        ]}
+                        // enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                        // exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                        x={0}
+                        scale={1}
+                        opacity={1}
+                        y={0}
+                      >
+                        <YStack space>
+                          <AlertDialog.Title>Confirmation</AlertDialog.Title>
+                          <AlertDialog.Description>
+                            Are you sure you want to delete {mediaName ?? 'this media'}? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
+                          </AlertDialog.Description>
 
-                        <XStack space="$3" justifyContent="flex-end">
-                          <AlertDialog.Cancel asChild>
-                            <Button>Cancel</Button>
-                          </AlertDialog.Cancel>
-                          <AlertDialog.Action asChild>
-                            <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
-                              console.log("calling deleteMedia!");
-                              dispatch(deleteMedia({ id: media.id, ...accountOrServer }));
-                            }}>Delete</Button>
-                          </AlertDialog.Action>
-                        </XStack>
-                      </YStack>
-                    </AlertDialog.Content>
-                  </AlertDialog.Portal>
-                </AlertDialog>
-              </>
-              : undefined}
+                          <XStack space="$3" justifyContent="flex-end">
+                            <AlertDialog.Cancel asChild>
+                              <Button>Cancel</Button>
+                            </AlertDialog.Cancel>
+                            <AlertDialog.Action asChild>
+                              <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
+                                console.log("calling deleteMedia!");
+                                dispatch(deleteMedia({ id: media.id, ...accountOrServer }));
+                              }}>Delete</Button>
+                            </AlertDialog.Action>
+                          </XStack>
+                        </YStack>
+                      </AlertDialog.Content>
+                    </AlertDialog.Portal>
+                  </AlertDialog>
+                </>
+                : undefined}
+            </XStack>
           </YStack>
         </Card.Footer>
       </Card>

@@ -246,7 +246,10 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                           selected={selectedMedia.includes(item.id)}
                           onSelect={onMediaSelected ? () => selectMedia(item.id) : undefined}
                           chooser /> */}
-                        <>
+                        <XStack>
+                          {item.generated ? 
+                            <Paragraph size='$1' my='auto' ml='$2' color={selected?navTextColor:'$textColor'} ta='center'>Generated</Paragraph> 
+                            : undefined}
                           <AlertDialog native>
                             <AlertDialog.Trigger asChild my='$2' mr='$2'>
                               <Button size='$2' circular icon={Trash} ml='auto' />
@@ -300,7 +303,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                               </AlertDialog.Content>
                             </AlertDialog.Portal>
                           </AlertDialog>
-                        </>
+                        </XStack>
                       </YStack>;
                     })}
                   </XStack>
