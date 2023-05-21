@@ -10,7 +10,7 @@ import EventCard from '../event/event_card';
 import { StickyCreateButton } from './sticky_create_button';
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
-import { useEventsPage } from './events_screen';
+import { useEventPages } from './events_screen';
 import { usePostPages } from './posts_screen';
 
 export function HomeScreen() {
@@ -38,7 +38,7 @@ export function HomeScreen() {
     () => dismissScrollPreserver(setShowScrollPreserver)
   );
 
-  const { events, loadingEvents, reloadEvents } = useEventsPage(
+  const { events, loadingEvents, reloadEvents } = useEventPages(
     EventListingType.PUBLIC_EVENTS,
     0,
     () => dismissScrollPreserver(setShowScrollPreserver)
@@ -119,7 +119,7 @@ export function HomeScreen() {
               const isLast = index == posts.length - 1;
               return <PostCard post={post} isPreview
               onOnScreen={isLast ? () => {
-                console.log("Loading next page...");
+                console.log(`Loading Post page ${currentPostsPage + 1}...`);
                 setCurrentPostsPage(currentPostsPage + 1);
               }: undefined} />;
             }} />}

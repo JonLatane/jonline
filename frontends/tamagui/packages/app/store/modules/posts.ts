@@ -155,18 +155,17 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       if (!state.postPages[listingType] || page === 0) state.postPages[listingType] = {};
       const postPages: Dictionary<string[]> = state.postPages[listingType]!;
       // Sensible approach:
-      // state.postPages[listingType]![page] = postIds;
+      // postPages[page] = postIds;
 
-      // Chunking approach: (note that we re-initialize `postPages` when `page` == 0)
+      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
       let initialPage: number = 0;
       while (postPages[initialPage]) {
         initialPage++;
       }
       const chunkSize = 10;
-      let chunkNumber = 0;
       for (let i = 0; i < postIds.length; i += chunkSize) {
         const chunk = postIds.slice(i, i + chunkSize);
-        state.postPages[listingType]![initialPage + chunkNumber++] = chunk;
+        state.postPages[listingType]![initialPage + (i/chunkSize)] = chunk;
       }
 
       state.successMessage = `Posts loaded.`;
@@ -261,11 +260,8 @@ export function getPostsPage(state: PostsState, listingType: PostListingType, pa
 
 export function getPostPages(state: PostsState, listingType: PostListingType, throughPage: number): Post[] {
   const result: Post[] = [];
-  // console.log('Page listing data' ,state.postPages[listingType]);
   for (let page = 0; page <= throughPage; page++) {
-    const pagePostIds: string[] = (state.postPages[listingType] ?? {})[page] ?? [];
-    const pagePosts = pagePostIds.map(id => selectPostById(state, id)).filter(p => p) as Post[];
-    // console.log('Page posts', pagePosts);
+    const pagePosts = getPostsPage(state, listingType, page);
     result.push(...pagePosts);
   }
   return result;

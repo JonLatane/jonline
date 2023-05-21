@@ -1,6 +1,6 @@
 import { Event, EventListingType } from '@jonline/api';
 import { dismissScrollPreserver, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
-import { getEventsPage, loadEventsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { getEventPages, getEventsPage, loadEventsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
@@ -21,9 +21,10 @@ export function EventsScreen() {
     document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
-  const { events, loadingEvents, reloadEvents } = useEventsPage(
+  const [currentPage, setCurrentPage] = useState(0);
+  const { events, loadingEvents, reloadEvents } = useEventPages(
     EventListingType.PUBLIC_EVENTS,
-    0,
+    currentPage,
     () => dismissScrollPreserver(setShowScrollPreserver)
   );
 
@@ -49,9 +50,14 @@ export function EventsScreen() {
             // refreshing={eventsState.status == 'loading'}
             // Allow easy restoring of scroll position
             ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-            keyExtractor={(event) => event.id}
-            renderItem={({ item: event }) => {
-              return <EventCard event={event} isPreview />;
+            keyExtractor={(event) => `${event.id}-${event.instances[0]?.id}`}
+            renderItem={({ item: event, index }) => {
+              const isLast = index == events.length - 1;
+              return <EventCard event={event} isPreview
+              onOnScreen={isLast ? () => {
+                console.log(`Loading page ${currentPage + 1}...`);
+                setCurrentPage(currentPage + 1);
+              }: undefined} />;
               // return <PostCard post={event.post!} isPreview />;
             }} />}
       </YStack>
@@ -60,12 +66,12 @@ export function EventsScreen() {
   )
 }
 
-export function useEventsPage(listingType: EventListingType, page: number, onLoaded?: () => void) {
+export function useEventPages(listingType: EventListingType, throughPage: number, onLoaded?: () => void) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const eventsState = useTypedSelector((state: RootState) => state.events);
   const [loadingEvents, setLoadingEvents] = useState(false);
 
-  const events: Event[] = useTypedSelector((state: RootState) => getEventsPage(state.events, EventListingType.PUBLIC_EVENTS, 0));
+  const events: Event[] = useTypedSelector((state: RootState) => getEventPages(state.events, EventListingType.PUBLIC_EVENTS, throughPage));
 
   useEffect(() => {
     if (eventsState.loadStatus == 'unloaded' && !loadingEvents) {
@@ -81,7 +87,7 @@ export function useEventsPage(listingType: EventListingType, page: number, onLoa
   });
 
   function reloadEvents() {
-    dispatch(loadEventsPage({ ...accountOrServer, listingType, page }))
+    dispatch(loadEventsPage({ ...accountOrServer, listingType }))
   }
 
   return { events, loadingEvents, reloadEvents };

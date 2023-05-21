@@ -716,7 +716,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
           title: "Jonline on GitHub",
           link: "https://github.com/jonlatane/jonline",
           content:
-              "Jonline is released under the GPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech.")),
+              "Jonline is released under the AGPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech.")),
   DemoPost([DemoGroup.everyoneWelcome, DemoGroup.tech],
       Post(title: "What is Jonline?", content: '''Corporate social media sucks. 
 Jonline is a new approach to social media that keeps user data hyper-local - 

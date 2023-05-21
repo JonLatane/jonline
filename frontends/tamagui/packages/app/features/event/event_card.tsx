@@ -18,9 +18,10 @@ interface Props {
   isPreview?: boolean;
   groupContext?: Group;
   horizontal?: boolean;
+  onOnScreen?: () => void;
 }
 
-export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, horizontal }) => {
+export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, horizontal, onOnScreen }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -39,6 +40,11 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
   const onScreen = useOnScreen(ref, "-1px");
+  useEffect(() => {
+    if( onScreen) {
+      onOnScreen?.();
+    }
+  }, [onScreen]);
   // useEffect(() => {
   //   if (!preview && !loadingPreview && onScreen && post.previewImageExists != false) {
   //     post.content

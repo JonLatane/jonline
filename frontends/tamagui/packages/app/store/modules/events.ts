@@ -147,8 +147,21 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
 
-      if (!state.eventPages[listingType]) state.eventPages[listingType] = {};
-      state.eventPages[listingType]![page] = instanceIds;
+      if (!state.eventPages[listingType] || page ===0) state.eventPages[listingType] = {};
+      const eventPages: Dictionary<string[]> = state.eventPages[listingType]!;
+      // Sensible approach:
+      // eventPages[page] = postIds;
+
+      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
+      let initialPage: number = 0;
+      while (eventPages[initialPage]) {
+        initialPage++;
+      }
+      const chunkSize = 10;
+      for (let i = 0; i < instanceIds.length; i += chunkSize) {
+        const chunk = instanceIds.slice(i, i + chunkSize);
+        state.eventPages[listingType]![initialPage + (i/chunkSize)] = chunk;
+      }
 
       state.successMessage = `Events loaded.`;
     });
@@ -205,4 +218,13 @@ export function getEventsPage(state: EventsState, listingType: EventListingType,
     return event ? { ...event, instances: [instance] } : undefined;
   }).filter(p => p) as Event[];
   return pageEvents;
+}
+
+export function getEventPages(state: EventsState, listingType: EventListingType, throughPage: number): Event[] {
+  const result: Event[] = [];
+  for (let page = 0; page <= throughPage; page++) {
+    const pageEvents = getEventsPage(state, listingType, page);
+    result.push(...pageEvents);
+  }
+  return result;
 }

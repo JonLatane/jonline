@@ -16,12 +16,12 @@ export function PostsScreen() {
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
 
   const dimensions = useWindowDimensions();
-  const [currentPage, setCurrentPage] = useState(0);
 
   useEffect(() => {
     document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
+  const [currentPage, setCurrentPage] = useState(0);
   const { posts, loadingPosts, reloadPosts } = usePostPages(
     PostListingType.PUBLIC_POSTS,
     currentPage,
@@ -56,7 +56,7 @@ export function PostsScreen() {
               const isLast = index == posts.length - 1;
               return <PostCard post={post} isPreview
                 onOnScreen={isLast ? () => {
-                  console.log("Loading next page...");
+                  console.log(`Loading page ${currentPage + 1}...`);
                   setCurrentPage(currentPage + 1);
                 }: undefined} />;
             }} />}
@@ -87,7 +87,7 @@ export function usePostPages(listingType: PostListingType, throughPage: number, 
   });
 
   function reloadPosts() {
-    dispatch(loadPostsPage({ ...accountOrServer, listingType, page: throughPage }))
+    dispatch(loadPostsPage({ ...accountOrServer, listingType }))
   }
 
   return { posts, loadingPosts, reloadPosts };
