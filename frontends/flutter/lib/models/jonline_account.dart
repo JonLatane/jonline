@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:jonline/models/jonline_server.dart';
+import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
 
 import '../app_state.dart';
@@ -18,6 +19,7 @@ const uuid = Uuid();
 /// Constructors are private; factory methods [loginToAccount] and [createAccount]
 /// should be used instead.
 class JonlineAccount {
+  static final log = Logger('JonlineAccount');
   static bool get loggedIn => _selectedAccount != null;
   static JonlineAccount? _selectedAccount;
   static JonlineAccount? get selectedAccount => _selectedAccount;
@@ -188,7 +190,7 @@ class JonlineAccount {
     try {
       return User.fromJson(json);
     } catch (e) {
-      print(e);
+      log.severe(e);
       return null;
     }
   }

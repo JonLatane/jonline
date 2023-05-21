@@ -11,6 +11,7 @@ import { AddAccountSheet } from '../accounts/add_account_sheet'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import PostCard from './post_card'
 import { TamaguiMarkdown } from './tamagui_markdown'
+import { AppSection } from '../tabs/features_navigation'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -197,7 +198,7 @@ export function PostDetailsScreen() {
 
   let logicallyReplyingTo: Post | undefined = undefined;
   return (
-    <TabsNavigation selectedGroup={group}>
+    <TabsNavigation appSection={AppSection.POST} selectedGroup={group}>
       {!subjectPost
         ? failedToLoadPost
           ? <>

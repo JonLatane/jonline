@@ -48,21 +48,32 @@ async fn sitemap(
 
     let response = RawXml(
         format!(
-            "
-<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"> 
     <url>
-    <loc>https://{}/</loc>
+        <loc>https://{}/</loc>
     </url>
     <url>
-    <loc>https://{}/people</loc> 
+        <loc>https://{}/posts</loc> 
     </url>
-    <url>Ø
-    <loc>https://{}/flutter</loc> 
+    <url>
+        <loc>https://{}/events</loc> 
+    </url>
+    <url>
+        <loc>https://{}/people</loc> 
+    </url>
+    <url>
+        <loc>https://{}/about</loc> 
+    </url>
+    <url>
+        <loc>https://{}/about_jonline</loc> 
+    </url>
+    <url>
+        <loc>https://{}/flutter</loc> 
     </url>
 </urlset>
-    ",
-            domain, domain, domain
+",
+            domain, domain, domain, domain, domain, domain, domain
         )
         .to_string(),
     );

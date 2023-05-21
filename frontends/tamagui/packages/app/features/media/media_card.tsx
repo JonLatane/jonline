@@ -2,21 +2,22 @@ import React from "react";
 import { View } from "react-native";
 
 import { Media, Permission } from "@jonline/api";
-import { AlertDialog, Button, Card, Heading, Theme, XStack, YStack } from "@jonline/ui";
+import { AlertDialog, Button, Card, Heading, Theme, XStack, YStack, useMedia } from "@jonline/ui";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { MediaRenderer } from "./media_renderer";
 import { DateViewer } from "@jonline/ui";
-import { deleteMedia, useAccountOrServer, useCredentialDispatch } from "app/store";
+import { deleteMedia, useAccountOrServer, useCredentialDispatch, useServerTheme } from "app/store";
 import { Trash } from '@tamagui/lucide-icons';
 
 interface Props {
   media: Media;
-  chooser?: boolean;
   selected?: boolean;
   onSelect?: () => void;
 }
 
-export const MediaCard: React.FC<Props> = ({ media, chooser = false, onSelect, selected = false }) => {
+export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }) => {
+  const mediaQuery = useMedia();
+  const {primaryColor, navColor, navTextColor} = useServerTheme();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { account, server } = accountOrServer;
   const isAdmin = account?.user?.permissions.includes(Permission.ADMIN);
@@ -28,38 +29,40 @@ export const MediaCard: React.FC<Props> = ({ media, chooser = false, onSelect, s
       <Card theme="dark" elevate size="$4" bordered
         key={`media-card-${media.id}`}
         margin='$0'
-        my={chooser ? '$0' : '$3'}
+        my='$3'
         p='$0'
         animation="bouncy"
         width='100%'
         scale={1}
         opacity={1}
         y={0}
-        enterStyle={chooser ? {} : { y: -50, opacity: 0, }}
-        exitStyle={chooser ? {} : { opacity: 0, }}
+        enterStyle={{ y: -50, opacity: 0, }}
+        exitStyle={{ opacity: 0, }}
         pressStyle={onSelect ? { scale: 0.990 } : {}}
         onPress={onSelect} >
-        {chooser ? undefined : <Card.Header>
+        <Card.Header>
           <YStack>
             <XStack>
               <View style={{ flex: 1 }}>
-                <Heading size={chooser ? '$1' : '$7'} marginRight='auto'>{media.name}</Heading>
+                <Heading size='$7' marginRight='auto'>{media.name}</Heading>
               </View>
             </XStack>
           </YStack>
-        </Card.Header>}
+        </Card.Header>
         <Card.Footer>
 
-          <YStack zi={1000} width='100%'>
-            <MediaRenderer media={media} />
-            <YStack>
-              <TamaguiMarkdown text={media.description} />
+          <YStack zi={1000} width='100%' mih={mediaQuery.gtXs ? '400px' : '260px'}>
+            <YStack f={1}>
+              <MediaRenderer media={media} />
             </YStack>
-            {chooser ? <YStack h='$0' mt='$1' /> : <DateViewer date={media.createdAt} />}
+
+            <TamaguiMarkdown text={media.description} />
+            <DateViewer date={media.createdAt} />
+
             {canDelete
               ? <>
                 <AlertDialog native>
-                  <AlertDialog.Trigger asChild mb={chooser ? '$3' : undefined}>
+                  <AlertDialog.Trigger asChild mb='$3'>
                     <Button size='$2' circular icon={Trash} ml='auto' />
                   </AlertDialog.Trigger>
 
@@ -101,7 +104,7 @@ export const MediaCard: React.FC<Props> = ({ media, chooser = false, onSelect, s
                             <Button>Cancel</Button>
                           </AlertDialog.Cancel>
                           <AlertDialog.Action asChild>
-                            <Button theme="active" onPress={() => {
+                            <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
                               console.log("calling deleteMedia!");
                               dispatch(deleteMedia({ id: media.id, ...accountOrServer }));
                             }}>Delete</Button>

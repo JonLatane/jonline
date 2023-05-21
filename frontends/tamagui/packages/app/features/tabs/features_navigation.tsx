@@ -8,30 +8,47 @@ import { AlertTriangle } from "@tamagui/lucide-icons";
 export enum AppSection {
   HOME = 'home',
   POSTS = 'posts',
+  POST = 'post',
   EVENTS = 'events',
+  EVENT = 'event',
   PEOPLE = 'people',
+  PROFILE = 'profile',
   GROUPS = 'groups',
+  GROUP = 'group',
   MEDIA = 'media',
+  INFO = 'info',
 }
 
 export enum AppSubsection {
   FOLLOW_REQUESTS = 'follow_requests',
 }
 
-export function sectionTitle(section: AppSection) {
+export function sectionTitle(section: AppSection): string {
   switch (section) {
     case AppSection.HOME:
       return 'Latest';
     case AppSection.POSTS:
       return 'Posts';
+    case AppSection.POST:
+      return 'Post';
     case AppSection.EVENTS:
       return 'Events';
+    case AppSection.EVENT:
+      return 'Event';
     case AppSection.PEOPLE:
       return 'People';
+    case AppSection.PROFILE:
+      return 'Profile';
     case AppSection.GROUPS:
       return 'Groups';
-    default:
-      return 'Latest';
+    case AppSection.GROUP:
+      return 'Group';
+    case AppSection.MEDIA:
+      return 'Media';
+    case AppSection.INFO:
+      return 'Info';
+    // default:
+    //   return 'Latest';
   }
 }
 export function subsectionTitle(subsection?: AppSubsection): string | undefined {

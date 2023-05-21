@@ -42,6 +42,7 @@ dependencies:
   username_gen: ^1.0.4
   memory_cache: ^1.2.0
   fixnum: ^1.1.0
+  logging: ^1.1.1
   # smooth: 
   #   path: ../../flutter_smooth/packages/smooth
 

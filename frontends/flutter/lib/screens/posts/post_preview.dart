@@ -10,6 +10,7 @@ import 'package:jonline/models/jonline_operations.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/moderation_accessors.dart';
 import 'package:link_preview_generator/link_preview_generator.dart';
+import 'package:logging/logging.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
@@ -55,6 +56,7 @@ class PostPreview extends StatefulWidget {
 }
 
 class PostPreviewState extends JonlineBaseState<PostPreview> {
+  static final log = Logger('PostPreviewState');
   Post get post => widget.post;
   GroupPost? get currentGroupPost {
     final groupId = appState.selectedGroup.value?.id;
@@ -126,10 +128,10 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
 
     setState(() => loadingGroupPosts = true);
     try {
-      print("Loading group posts for ${post.id}");
+      log.fine("Loading group posts for ${post.id}");
       final groupPosts = await JonlineOperations.getGroupPosts(
           GetGroupPostsRequest(postId: post.id),
-          showMessage: (e) => print(e));
+          showMessage: (e) => log.info(e));
       if (!mounted) return;
       setState(() {
         this.groupPosts = groupPosts;

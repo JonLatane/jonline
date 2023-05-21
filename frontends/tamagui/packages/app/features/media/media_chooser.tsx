@@ -1,6 +1,6 @@
 import { Post, PostListingType, Media } from '@jonline/api';
-import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet, useMedia, Paragraph } from '@jonline/ui';
-import { getMediaPage, getPostsPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl } from 'app/store';
+import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet, useMedia, Paragraph, AlertDialog, Theme } from '@jonline/ui';
+import { getMediaPage, getPostsPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl, deleteMedia } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
@@ -11,8 +11,9 @@ import { TabsNavigation } from '../tabs/tabs_navigation';
 import { MediaCard } from './media_card';
 import { useAccount, useAccountOrServer } from '../../store/store';
 import { FileUploader } from "react-drag-drop-files";
-import { ChevronDown, Image as ImageIcon, Upload } from '@tamagui/lucide-icons';
+import { ChevronDown, Image as ImageIcon, Trash, Upload } from '@tamagui/lucide-icons';
 import { useMediaPage } from './media_screen';
+import { MediaRenderer } from './media_renderer';
 
 
 interface MediaChooserProps {
@@ -148,31 +149,31 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
           <Sheet.Handle />
 
           {account && (mediaState.loadStatus == 'loading' || mediaState.loadStatus == 'unloaded' || loadingMedia || showSpinnerForUploading) ?
-              <YStack space="$1" opacity={0.92} zi={1000}>
-                <Spinner size='large' color={navColor} scale={2}
-                  top={dimensions.height / 2 - 50}
-                />
-              </YStack>
-              : undefined}
-          <XStack space='$4' als='center' paddingHorizontal='$5' w='100%' maw={600}>
+            <YStack space="$1" opacity={0.92} zi={1000} position='absolute' als='center' pointerEvents='none'>
+              <Spinner size='large' color={navColor} scale={2}
+                top={dimensions.height / 2 - 50}
+              />
+            </YStack>
+            : undefined}
+          {/* <XStack space='$4' als='center' paddingHorizontal='$5' w='100%' maw={600}> */}
 
-            {/* <Button size='$3' icon={RefreshCw} circular
+          {/* <Button size='$3' icon={RefreshCw} circular
               // disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
               onPress={resetCredentialedData} />
             <XStack f={1} /> */}
-            <Button
+          {/* <Button
               alignSelf='center'
               size="$3"
               circular
               icon={ChevronDown}
-              onPress={() => setOpen(false)} />
-            
-            {/* <XStack f={1} />
+              onPress={() => setOpen(false)} /> */}
+
+          {/* <XStack f={1} />
             <SettingsSheet size='$3' /> */}
 
-{
+          {
             accountOrServer.account
-              ? <YStack mb={-19} maw={600} p='$5' ml='auto' als='center' overflow='hidden'>
+              ? <YStack mb={-19} maw={600} p='$5' als='center' overflow='hidden'>
                 <Text fontFamily='$body' fontSize='$3' mx='auto' mb='$3'>
                   <FileUploader handleChange={handleUpload} name="file"
                     label='Add Media'
@@ -205,7 +206,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                 <Heading size='$3' ta='center'>You can log in by clicking the button in the top right corner.</Heading>
               </YStack>
           }
-          </XStack>
+          {/* </XStack> */}
           <Sheet.ScrollView p="$4" space>
             <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' space>
 
@@ -221,8 +222,16 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                     {media?.map((item) => {
                       const _selectionIndex = selectedMedia.indexOf(item.id);
                       const selectionIndexBase1 = _selectionIndex == -1 ? undefined : _selectionIndex + 1;
-                      return <YStack w={mediaQuery.gtXs ? '260px' : '108px'} mah={mediaQuery.gtXs ? '300px' : '260px'} mb='$2'>
+                      const mediaName = item.name && item.name.length > 0 ? item.name : undefined;
+                      const selected = selectedMedia.includes(item.id);
+                      const onSelect = onMediaSelected ? () => selectMedia(item.id) : undefined;
 
+                      return <YStack w={mediaQuery.gtXs ? '260px' : '105px'} 
+                      mih='160px'
+                      mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
+                        borderColor={selected ? primaryColor : navColor} borderWidth={selected ? 2 : 1} borderRadius={5}
+                        animation="bouncy" pressStyle={{ scale: 0.95 }}
+                        backgroundColor={selected ? navColor : undefined} onPress={onSelect}>
                         {selectionIndexBase1
                           ? <Paragraph zi={1000} px={5} position='absolute' top='$2' right='$2'
                             borderRadius={5}
@@ -230,10 +239,68 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                             {selectionIndexBase1}
                           </Paragraph>
                           : undefined}
-                        <MediaCard media={item}
+                        <YStack f={1} pointerEvents='none' w='100%' jc='center' ac='center'>
+                          <MediaRenderer media={item} />
+                        </YStack>
+                        {/* <MediaCard media={item}
                           selected={selectedMedia.includes(item.id)}
                           onSelect={onMediaSelected ? () => selectMedia(item.id) : undefined}
-                          chooser />
+                          chooser /> */}
+                        <>
+                          <AlertDialog native>
+                            <AlertDialog.Trigger asChild my='$2' mr='$2'>
+                              <Button size='$2' circular icon={Trash} ml='auto' />
+                            </AlertDialog.Trigger>
+
+                            <AlertDialog.Portal>
+                              <AlertDialog.Overlay
+                                key="overlay"
+                                animation="quick"
+                                opacity={0.5}
+                                enterStyle={{ opacity: 0 }}
+                                exitStyle={{ opacity: 0 }}
+                              />
+                              <AlertDialog.Content
+                                bordered
+                                elevate
+                                key="content"
+                                animation={[
+                                  'quick',
+                                  {
+                                    opacity: {
+                                      overshootClamping: true,
+                                    },
+                                  },
+                                ]}
+                                // enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                                // exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                                x={0}
+                                scale={1}
+                                opacity={1}
+                                y={0}
+                              >
+                                <YStack space>
+                                  <AlertDialog.Title>Confirmation</AlertDialog.Title>
+                                  <AlertDialog.Description>
+                                    Are you sure you want to delete {mediaName ?? 'this media'}? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
+                                  </AlertDialog.Description>
+
+                                  <XStack space="$3" justifyContent="flex-end">
+                                    <AlertDialog.Cancel asChild>
+                                      <Button>Cancel</Button>
+                                    </AlertDialog.Cancel>
+                                    <AlertDialog.Action asChild>
+                                      <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
+                                        console.log("calling deleteMedia!");
+                                        dispatch(deleteMedia({ id: item.id, ...accountOrServer }));
+                                      }}>Delete</Button>
+                                    </AlertDialog.Action>
+                                  </XStack>
+                                </YStack>
+                              </AlertDialog.Content>
+                            </AlertDialog.Portal>
+                          </AlertDialog>
+                        </>
                       </YStack>;
                     })}
                   </XStack>

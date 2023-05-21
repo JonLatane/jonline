@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Media } from "@jonline/api";
 import { Anchor, Image, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
 import ReactPlayer from 'react-player/lazy';
+import { useMediaUrl } from '../../hooks/use_media_url';
 
 interface Props {
   media: Media;
@@ -24,7 +25,7 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia }) => {
   const media = reduxMedia ?? sourceMedia;
 
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  const mediaUrl = `${serverUrl(server)}/media/${media.id}`;
+  const mediaUrl = useMediaUrl(media.id);
   const type = media.contentType.split('/')[0];
   const subType = media.contentType.split('/')[1];
   switch (type) {
@@ -34,8 +35,8 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia }) => {
         height='95%'
         width='95%' />;
     case 'video':
-      return <YStack w='100%' ac='center' jc='center'>
-        <ReactPlayer width='100%' height={mediaQuery.gtXs ? '500px' : '300px'}
+      return <YStack w='100%' ac='center' jc='center' h='100%'>
+        <ReactPlayer width='100%' style={{maxHeight: mediaQuery.gtXs ? '500px' : '300px'}} height='100%'
           url={mediaUrl} controls muted />
       </YStack>;
     default:

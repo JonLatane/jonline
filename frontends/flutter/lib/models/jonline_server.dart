@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:jonline/my_platform.dart';
+import 'package:logging/logging.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/server_configuration.pb.dart';
@@ -14,6 +15,7 @@ import 'storage.dart';
 const uuid = Uuid();
 
 class JonlineServer {
+  static final log = Logger('JonlineServer');
   static JonlineServer _selectedServer = JonlineServer("jonline.io");
   static JonlineServer get selectedServer {
     return _selectedServer;
@@ -103,7 +105,7 @@ class JonlineServer {
   Future<ServerConfiguration?> updateConfiguration(
       {Function(String)? showMessage}) async {
     final client = await JonlineClients.getServerClient(this,
-        showMessage: (m) => print(m),
+        showMessage: (m) => log.info(m),
         allowInsecure: server == "localhost" || server == "Armothy");
     if (client == null) return null;
 
@@ -113,7 +115,7 @@ class JonlineServer {
   }
 
   Future<void> updateServiceVersion({Function(String)? showMessage}) async {
-    showMessage ??= (m) => print(m);
+    showMessage ??= (m) => log.info(m);
     final client = await JonlineClients.getServerClient(this,
         showMessage: showMessage, allowInsecure: true);
     if (client == null) return;

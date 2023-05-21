@@ -42,18 +42,6 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
 
-  const previewMediaId = post?.media[0];
-  const previewMedia = useTypedSelector((state: RootState) =>
-    previewMediaId ? selectMediaById(state.media, previewMediaId) : undefined);
-  useEffect(() => {
-    if (!previewMedia && previewMediaId) {
-      dispatch(loadMedia({ id: previewMediaId, ...accountOrServer }));
-    }
-  }, [previewMedia])
-  const hasPrimaryImage = previewMedia?.contentType.startsWith('image')
-    && post?.media?.length == 1;
-  const hasMediaToPreview = post?.media?.length > 1;
-  const previewUrl = useMediaUrl(hasPrimaryImage ? previewMediaId : undefined);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
@@ -161,6 +149,19 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
       embedComponent = <LinkedInEmbed url={post.link!} />;
     }
   }
+
+  const previewMediaId = post?.media[0];
+  const previewMedia = useTypedSelector((state: RootState) =>
+    previewMediaId ? selectMediaById(state.media, previewMediaId) : undefined);
+  useEffect(() => {
+    if (!previewMedia && previewMediaId) {
+      dispatch(loadMedia({ id: previewMediaId, ...accountOrServer }));
+    }
+  }, [previewMedia])
+  const hasPrimaryImage = previewMedia?.contentType.startsWith('image')
+    && post?.media?.length == 1 && !embedComponent;
+  const hasMediaToPreview = post?.media?.length > 1;
+  const previewUrl = useMediaUrl(hasPrimaryImage ? previewMediaId : undefined);
 
   return (
     <>

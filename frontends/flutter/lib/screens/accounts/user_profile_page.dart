@@ -8,6 +8,7 @@ import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/screens/people/person_preview.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
+import 'package:logging/logging.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import '../../app_state.dart';
@@ -23,6 +24,8 @@ import '../../router/router.gr.dart';
 import '../../utils/proto_utils.dart';
 
 class UserProfilePage extends StatefulWidget {
+  static final log = Logger('UserProfilePage');
+
   final String? accountId;
   final String? server;
   final String? userId;
@@ -60,6 +63,7 @@ class MyProfilePage extends UserProfilePage {
 }
 
 class _UserProfilePageState extends JonlineState<UserProfilePage> {
+  static final log = Logger('_UserProfilePageState');
   bool loading = true;
   JonlineAccount? account;
   User? userData;
@@ -420,7 +424,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
                             vm.Visibility.VISIBILITY_UNKNOWN);
                         setState(() => userData?.visibility = values.first!);
                       }
-                      print("User visibility: ${userData?.visibility}");
+                      log.info("User visibility: ${userData?.visibility}");
                     },
                   ),
                 ),

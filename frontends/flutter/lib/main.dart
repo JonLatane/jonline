@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:jonline/models/storage.dart';
+import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
-// import 'package:smooth/smooth.dart';
 
 import 'app_state.dart';
 import 'my_platform.dart';
 
-// void main() => runApp(const MyApp());
 main() async {
-  // SmoothWidgetsFlutterBinding.ensureInitialized();
-  // await GetStorage.init();
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    // ignore: avoid_print
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
+
   WidgetsFlutterBinding.ensureInitialized();
   await initStorage();
   if (MyPlatform.isMacOS) {
-    // Must add this line.
     await windowManager.ensureInitialized();
 
     // Use it only after calling `hiddenWindowAtLaunch`

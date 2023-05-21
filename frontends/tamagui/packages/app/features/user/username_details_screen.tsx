@@ -17,6 +17,7 @@ import { ToggleRow } from '../settings_sheet';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import  { UserCard, useFullAvatarHeight } from './user_card';
 import {useMediaUrl} from '../../hooks/use_media_url';
+import { AppSection } from '../tabs/features_navigation';
 
 
 const { useParam } = createParam<{ username: string }>()
@@ -148,7 +149,7 @@ export function UsernameDetailsScreen() {
     || postsState.status == 'loading' || postsState.status == 'unloaded';
 
   return (
-    <TabsNavigation>
+    <TabsNavigation appSection={AppSection.PROFILE}>
       <YStack f={1} jc="center" ai="center" space margin='$3' w='100%'>
         {user ? <>
           <ScrollView w='100%'>
@@ -231,7 +232,7 @@ export function UsernameDetailsScreen() {
                         backgroundColor={!editMode ? undefined : navColor} color={!editMode ? undefined : navTextColor}
                         onPress={() => {
                           setEditMode(true);
-                          setShowPermissionsAndVisibility(true);
+                          // setShowPermissionsAndVisibility(true);
                           const maxScrollPosition = 270 + (avatarMediaId ? fullAvatarHeight : 0);
                           if (window.scrollY > maxScrollPosition) {
                             isClient && window.scrollTo({ top: maxScrollPosition, behavior: 'smooth' });

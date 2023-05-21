@@ -8,6 +8,7 @@ import 'package:jonline/models/jonline_clients.dart';
 import 'package:jonline/screens/groups/group_preview.dart';
 import 'package:jonline/utils/colors.dart';
 import 'package:jonline/utils/enum_conversions.dart';
+import 'package:logging/logging.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 import '../../app_state.dart';
@@ -24,6 +25,7 @@ import '../../router/router.gr.dart';
 import '../../utils/proto_utils.dart';
 
 class GroupDetailsPage extends StatefulWidget {
+  static final log = Logger('GroupDetailsPage');
   final String server;
   final String groupId;
 
@@ -36,6 +38,7 @@ class GroupDetailsPage extends StatefulWidget {
 }
 
 class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
+  static final log = Logger('_GroupDetailsPageState');
   bool loading = true;
   Group? group;
   // JonlineAccount? account;
@@ -226,7 +229,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
                             vm.Visibility.VISIBILITY_UNKNOWN);
                         setState(() => group?.visibility = values.first!);
                       }
-                      print("User visibility: ${group?.visibility}");
+                      log.info("User visibility: ${group?.visibility}");
                     },
                   ),
                 ),

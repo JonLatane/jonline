@@ -12,6 +12,7 @@ import { TamaguiMarkdown } from '../post/tamagui_markdown'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import ServerCard from './server_card'
 import { PermissionsEditor, PermissionsEditorProps } from '../user/username_details_screen'
+import { AppSection } from '../tabs/features_navigation'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -151,7 +152,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
   const windowHeight = useWindowDimensions().height;
   return (
-    <TabsNavigation onlyShowServer={server}>
+    <TabsNavigation appSection={AppSection.INFO} onlyShowServer={server}>
       <YStack f={1} jc="center" ai="center" space w='100%'>
         {server ?
           <YStack mb='$2' w='100%' jc="center" ai="center" >
