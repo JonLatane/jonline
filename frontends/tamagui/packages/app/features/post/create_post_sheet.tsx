@@ -1,6 +1,6 @@
 import { Post, Permission, Visibility, Media } from '@jonline/api';
 import { Button, Heading, Input, isClient, isWeb, Paragraph, ScrollView, Sheet, TextArea, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
-import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Send as SendIcon, Settings } from '@tamagui/lucide-icons';
+import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Send as SendIcon, Settings, Unlock } from '@tamagui/lucide-icons';
 import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
@@ -36,8 +36,8 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   const [position, setPosition] = useState(0);
 
   const [renderType, setRenderType] = useState(RenderType.Edit);
-  const [showSettings, _setShowSettings] = useState(true);
-  const [showMedia, _setShowMedia] = useState(false);
+  const [showSettings, _setShowSettings] = useState(false);
+  const [showMedia, _setShowMedia] = useState(true);
   function setShowSettings(value: boolean) {
     _setShowSettings(value);
     if (value) {
@@ -53,7 +53,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
 
   // Form fields
   const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
-  const [shareable, setShareable] = useState(false);
+  const [shareable, setShareable] = useState(true);
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
   const [content, setContent] = useState('');
@@ -62,7 +62,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
 
   useEffect(() => {
     if (!open) {
-      setShowSettings(true);
+      setTimeout(() => setShowMedia(true), 1000);
     }
   }, [open]);
 
@@ -109,6 +109,10 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
       }
     });
   }
+
+  const canEmbedLink = ['instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'twitter', 'pinterest']
+    .map(x => link.includes(x)).reduce((a, b) => a || b, false);
+
   const disableInputs = ['posting', 'posted'].includes(postsState.createPostStatus!);
   const disablePreview = disableInputs || !valid;
   const disableCreate = disableInputs || !valid;
@@ -145,7 +149,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
           <XStack als='center' w='100%' px='$5' mb='$2' maw={800}>
             <Heading marginVertical='auto' f={1} size='$7'>Create Post</Heading>
             <Button backgroundColor={showSettings ? navColor : undefined} onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
-              <Settings color={showSettings ? navTextColor : textColor} />
+              <Unlock color={showSettings ? navTextColor : textColor} />
             </Button>
             <Button backgroundColor={primaryColor} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1} onPress={doCreate}>
               <Heading size='$1' color={primaryTextColor}>Create</Heading>
@@ -232,12 +236,12 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                         backgroundColor={media.length > 0 ? primaryColor : navColor} color={media.length > 0 ? primaryTextColor : navTextColor}>
                         {media.length}
                       </Paragraph>
-                      <Button backgroundColor={showMedia ? navColor : undefined} onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
+                      <Button backgroundColor={showMedia ? navColor : undefined}
+                        onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
                         <ImageIcon color={showMedia ? navTextColor : textColor} />
                       </Button>
                     </ZStack>
                   </XStack>
-
 
                   {showMedia
                     ? <YStack ac='center' jc='center' marginHorizontal='$5' animation="bouncy"
@@ -245,8 +249,9 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                       opacity={1}
                       scale={1}
                       y={0}
-                      enterStyle={{ y: -50, opacity: 0, }}
-                      exitStyle={{ opacity: 0, }}>
+                    // enterStyle={{ y: -50, opacity: 0, }}
+                    // exitStyle={{ opacity: 0, }}
+                    >
                       {media.length > 0 ? <ScrollView horizontal w='100%'>
                         <XStack space='$2'>
                           {media.map((mediaId, index) =>
@@ -260,7 +265,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                                   updatedMedia[index - 1] = mediaId;
                                   updatedMedia[index] = leftValue;
                                   setMedia(updatedMedia);
-                                 }} />
+                                }} />
                                 <YStack f={1} />
                                 <Button mr='$2' circular o={index < media.length - 1 ? 0.9 : 0.3} icon={ArrowRight} onPress={() => {
                                   const updatedMedia = new Array<string>(...media);
@@ -268,7 +273,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                                   updatedMedia[index + 1] = mediaId;
                                   updatedMedia[index] = rightValue;
                                   setMedia(updatedMedia);
-                                  }} />
+                                }} />
                               </XStack>
                               {/* </ZStack> */}
                             </ZStack>
@@ -278,10 +283,12 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                       {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
                       <MediaChooser selectedMedia={media} onMediaSelected={setMedia} multiselect />
                       <YStack h='$0' mt='$2' />
-                      <ToggleRow name='Embed Link'
-                        value={embedLink && link.length > 0}
-                        setter={(v) => setEmbedLink(v)}
-                        disabled={disableInputs || link.length == 0} />
+                      {canEmbedLink
+                        ? <ToggleRow name='Embed Link'
+                          value={embedLink && canEmbedLink}
+                          setter={(v) => setEmbedLink(v)}
+                          disabled={disableInputs || !canEmbedLink} />
+                        : undefined}
                     </YStack> : undefined}
 
                   <TextArea f={1} h='$19' value={content} ref={textAreaRef}

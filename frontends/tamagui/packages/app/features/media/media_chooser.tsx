@@ -226,9 +226,9 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                       const selected = selectedMedia.includes(item.id);
                       const onSelect = onMediaSelected ? () => selectMedia(item.id) : undefined;
 
-                      return <YStack w={mediaQuery.gtXs ? '260px' : '105px'} 
-                      mih='160px'
-                      mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
+                      return <YStack w={mediaQuery.gtXs ? '260px' : '105px'}
+                        mih='160px'
+                        mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
                         borderColor={selected ? primaryColor : navColor} borderWidth={selected ? 2 : 1} borderRadius={5}
                         animation="bouncy" pressStyle={{ scale: 0.95 }}
                         backgroundColor={selected ? navColor : undefined} onPress={onSelect}>

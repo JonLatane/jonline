@@ -295,6 +295,14 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  Widget buildTopPadding() => AnimatedContainer(
+        duration: animationDuration,
+        height: (MyPlatform.isIPad &&
+                orientation == NativeDeviceOrientation.landscapeLeft)
+            ? 0
+            : 0,
+      );
+
   Widget buildLeftPadding() => AnimatedContainer(
         duration: animationDuration,
         width: (orientation == NativeDeviceOrientation.landscapeLeft)
@@ -621,7 +629,9 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     SizedBox(
-                      height: appBarHeight + appBarPadding,
+                      height: appBarHeight +
+                          appBarPadding +
+                          Settings.sidebarTopPadding,
                     ),
                     Expanded(
                         child: SingleChildScrollView(

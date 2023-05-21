@@ -26,10 +26,11 @@ interface Props {
   previewParent?: Post;
   onPress?: () => void;
   onPressParentPreview?: () => void;
+  onOnScreen?: () => void;
   selectedPostId?: string;
 }
 
-export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
+export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId, onOnScreen }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -47,6 +48,11 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
   const onScreen = useOnScreen(ref, "-1px");
+  useEffect(() => {
+    if( onScreen) {
+      onOnScreen?.();
+    }
+  }, [onScreen]);
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;

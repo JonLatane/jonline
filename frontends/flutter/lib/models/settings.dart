@@ -110,10 +110,20 @@ class Settings {
     }
   }
 
+  static int _sidebarTopPadding = 0;
+  static int get sidebarTopPadding => _sidebarTopPadding;
+  static set sidebarTopPadding(int v) {
+    {
+      _sidebarTopPadding = v;
+      Future.microtask(() async => appStorage.setInt("sidebar_top_padding", v));
+    }
+  }
+
   static initialize(VoidCallback onComplete) async {
     _powerUserMode = appStorage.getBool("power_user_mode") ?? false;
     _developerMode = appStorage.getBool("developer_mode") ?? false;
     _replyLayersToLoad = appStorage.getInt("reply_layers_to_load") ?? 1;
+    _sidebarTopPadding = appStorage.getInt("sidebar_top_padding") ?? 0;
     _preferServerPreviews =
         appStorage.getBool("prefer_server_previews") ?? MyPlatform.isWeb;
     _forceServerPreviews =

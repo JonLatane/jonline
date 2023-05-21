@@ -11,7 +11,7 @@ import { StickyCreateButton } from './sticky_create_button';
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { useEventsPage } from './events_screen';
-import { usePostsPage } from './posts_screen';
+import { usePostPages } from './posts_screen';
 
 export function HomeScreen() {
   const dispatch = useTypedDispatch();
@@ -31,9 +31,10 @@ export function HomeScreen() {
     document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
-  const { posts, loadingPosts, reloadPosts } = usePostsPage(
+  const [currentPostsPage, setCurrentPostsPage] = useState(0);
+  const { posts, loadingPosts, reloadPosts } = usePostPages(
     PostListingType.PUBLIC_POSTS,
-    0,
+    currentPostsPage,
     () => dismissScrollPreserver(setShowScrollPreserver)
   );
 
@@ -114,8 +115,13 @@ export function HomeScreen() {
             // Allow easy restoring of scroll position
             ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
             keyExtractor={(post) => post.id}
-            renderItem={({ item: post }) => {
-              return <PostCard post={post} isPreview />;
+            renderItem={({ item: post, index }) => {
+              const isLast = index == posts.length - 1;
+              return <PostCard post={post} isPreview
+              onOnScreen={isLast ? () => {
+                console.log("Loading next page...");
+                setCurrentPostsPage(currentPostsPage + 1);
+              }: undefined} />;
             }} />}
       </YStack>
       <StickyCreateButton />

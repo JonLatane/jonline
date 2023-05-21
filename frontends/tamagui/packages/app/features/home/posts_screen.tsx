@@ -1,6 +1,6 @@
 import { Post, PostListingType } from '@jonline/api';
 import { dismissScrollPreserver, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
-import { getPostsPage, loadPostsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { getPostPages, getPostsPage, loadPostsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
@@ -16,16 +16,18 @@ export function PostsScreen() {
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
 
   const dimensions = useWindowDimensions();
+  const [currentPage, setCurrentPage] = useState(0);
 
   useEffect(() => {
     document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   });
 
-  const { posts, loadingPosts, reloadPosts } = usePostsPage(
+  const { posts, loadingPosts, reloadPosts } = usePostPages(
     PostListingType.PUBLIC_POSTS,
-    0,
+    currentPage,
     () => dismissScrollPreserver(setShowScrollPreserver)
   );
+  console.log(`Current page: ${currentPage}, Total Posts: ${posts.length}`);
 
   return (
     <TabsNavigation appSection={AppSection.POSTS}>
@@ -50,8 +52,13 @@ export function PostsScreen() {
             // Allow easy restoring of scroll position
             ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
             keyExtractor={(post) => post.id}
-            renderItem={({ item: post }) => {
-              return <PostCard post={post} isPreview />;
+            renderItem={({ item: post, index }) => {
+              const isLast = index == posts.length - 1;
+              return <PostCard post={post} isPreview
+                onOnScreen={isLast ? () => {
+                  console.log("Loading next page...");
+                  setCurrentPage(currentPage + 1);
+                }: undefined} />;
             }} />}
       </YStack>
       <StickyCreateButton />
@@ -59,12 +66,12 @@ export function PostsScreen() {
   )
 }
 
-export function usePostsPage(listingType: PostListingType, page: number, onLoaded?: () => void) {
+export function usePostPages(listingType: PostListingType, throughPage: number, onLoaded?: () => void) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const [loadingPosts, setLoadingPosts] = useState(false);
 
-  const posts: Post[] = useTypedSelector((state: RootState) => getPostsPage(state.posts, PostListingType.PUBLIC_POSTS, 0));
+  const posts: Post[] = useTypedSelector((state: RootState) => getPostPages(state.posts, PostListingType.PUBLIC_POSTS, throughPage));
 
   useEffect(() => {
     if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
@@ -80,8 +87,8 @@ export function usePostsPage(listingType: PostListingType, page: number, onLoade
   });
 
   function reloadPosts() {
-    dispatch(loadPostsPage({ ...accountOrServer, listingType, page }))
+    dispatch(loadPostsPage({ ...accountOrServer, listingType, page: throughPage }))
   }
 
-  return {posts, loadingPosts, reloadPosts};
+  return { posts, loadingPosts, reloadPosts };
 }

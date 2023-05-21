@@ -287,6 +287,34 @@ class _SettingsPageState extends JonlineState<SettingsPage>
                                 }),
                           ],
                         ),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Text("Sidebar Top Padding",
+                                    style: textTheme.labelLarge)),
+                            if (MediaQuery.of(context).size.width > 450)
+                              Slider(
+                                  min: 0,
+                                  max: 100,
+                                  divisions: 100,
+                                  value: Settings.sidebarTopPadding.toDouble(),
+                                  onChanged: (v) {
+                                    setState(() =>
+                                        Settings.sidebarTopPadding = v.toInt());
+                                  }),
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 4.0, horizontal: 16.0),
+                                child: Text(
+                                  Settings.sidebarTopPadding.toString(),
+                                  style: textTheme.labelLarge,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 5)
+                          ],
+                        ),
                       ],
                     ),
                   )),
