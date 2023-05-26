@@ -215,7 +215,7 @@ export function PostDetailsScreen() {
               <XStack f={1} />
               <Tooltip placement="bottom">
                 <Tooltip.Trigger>
-                  <Button backgroundColor={chatUI ? undefined : navColor} transparent={chatUI} onPress={() => dispatch(setDiscussionChatUI(false))}>
+                  <Button backgroundColor={chatUI ? undefined : navColor} transparent={chatUI} onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
                     <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
                   </Button>
                 </Tooltip.Trigger>
@@ -260,7 +260,7 @@ export function PostDetailsScreen() {
             </XStack>
             <XStack w='100%'>
               <>
-                <YStack>
+                <YStack w='100%'>
                   {flattenedReplies.map(({ reply: post, postIdPath, parentPost, lastReplyTo }) => {
                     let stripeColor = navColor;
                     const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
@@ -269,6 +269,7 @@ export function PostDetailsScreen() {
                       && parentPost?.id != logicallyReplyingTo?.replyToPostId;
                     const hideTopMargin = chatUI && parentPost?.id != subjectPost?.id && (parentPost?.id == logicallyReplyingTo?.id || parentPost?.id == logicallyReplyingTo?.replyToPostId);
                     const result = <XStack key={`reply-${post.id}`} id={`reply-${post.id}`}
+                      // w='100%' f={1}
                       mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == subjectPost?.id) ? '$3' : 0}
                       animation="bouncy"
                       opacity={1}
@@ -307,7 +308,7 @@ export function PostDetailsScreen() {
                       return <YStack w={7} bg={stripeColor} />
                     })
                     : undefined} */}
-                        <PostCard post={post} replyPostIdPath={postIdPath}
+                        <PostCard key={`comment-post-${post.id}`} post={post} replyPostIdPath={postIdPath}
                           selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
                           collapseReplies={collapsedReplies.has(post.id)}
                           previewParent={showParentPreview ? parentPost : undefined}

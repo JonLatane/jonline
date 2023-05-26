@@ -75,8 +75,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
         scale={1}
         opacity={1}
         y={0}
-        // enterStyle={{ y: -50, opacity: 0, }}
-        // exitStyle={{ opacity: 0, }}
+      // enterStyle={{ y: -50, opacity: 0, }}
+      // exitStyle={{ opacity: 0, }}
       // width={400}
       // hoverStyle={isPreview ? { scale: 0.97 } : {}}
       // pressStyle={isPreview ? { scale: 0.95 } : {}}
@@ -86,7 +86,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
           <XStack>
             <Anchor f={1} {...(isPreview ? userLink : {})}>
               <YStack f={1}>
-                <Heading size="$1" style={{ marginRight: 'auto' }}>{server?.host}/</Heading>
+                <Heading size="$1" mr='auto'>{server?.host}/</Heading>
 
                 {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
                 <Heading size="$7" marginRight='auto'>{user.username}</Heading>
@@ -121,7 +121,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
             {/* {isPreview ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined} */}
           </XStack>
         </Card.Header>
-        <Card.Footer>
+        <Card.Footer p='$3'>
           <YStack mt='$2' mr='$3' w='100%'>
             {(!isPreview && avatarUrl && avatarUrl != '') ?
               <FadeInView>
@@ -139,7 +139,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                   height={fullAvatarHeight}
                   resizeMode="contain"
                   als="center"
-                  source={{uri: avatarUrl}}
+                  source={{ uri: avatarUrl }}
                   // src={avatarUrl}
                   borderRadius={10}
                 // borderBottomRightRadius={5}
@@ -147,14 +147,14 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
               </FadeInView> : undefined}
             {(isCurrentUser || isAdmin) && setAvatarMediaId
               ? <YStack mb='$2'>
-                <MediaChooser 
-                selectedMedia={avatarMediaId ? [avatarMediaId] : []}
-                onMediaSelected={media => { setAvatarMediaId?.(media.length == 0 ? undefined : media[0]) }} >
-                <XStack>
-                  <Camera color={navTextColor}/>
-                  <Heading color={navTextColor} ml='$3' my='auto' size='$1'>Choose Avatar</Heading>
-                </XStack>
-              </MediaChooser>
+                <MediaChooser
+                  selectedMedia={avatarMediaId ? [avatarMediaId] : []}
+                  onMediaSelected={media => { setAvatarMediaId?.(media.length == 0 ? undefined : media[0]) }} >
+                  <XStack>
+                    <Camera color={navTextColor} />
+                    <Heading color={navTextColor} ml='$3' my='auto' size='$1'>Choose Avatar</Heading>
+                  </XStack>
+                </MediaChooser>
               </YStack>
               : undefined}
             {followsCurrentUser ? <Heading size='$1' ta='center'>{following ? 'Friends' : 'Follows You'}</Heading> : undefined}
@@ -216,7 +216,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                 opacity={0.25}
                 resizeMode="contain"
                 als="flex-start"
-                source={{uri: avatarUrl}}
+                source={{ uri: avatarUrl }}
                 // src={avatarUrl}
                 blurRadius={1.5}
                 // borderRadius={5}

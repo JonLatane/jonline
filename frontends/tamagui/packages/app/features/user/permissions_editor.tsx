@@ -68,7 +68,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
                 <Adapt.Contents />
               </Sheet.ScrollView>
             </Sheet.Frame>
-            <Sheet.Overlay />
+            <Sheet.Overlay backgroundColor='$colorTranslucent' />
           </Sheet>
         </Adapt>
 

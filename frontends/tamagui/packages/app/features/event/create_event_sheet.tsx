@@ -121,7 +121,7 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
         onPositionChange={setPosition}
       // dismissOnSnapToBottom
       >
-        <Sheet.Overlay />
+        <Sheet.Overlay backgroundColor='$colorTranslucent' />
         <Sheet.Frame>
           <Sheet.Handle />
           <Button

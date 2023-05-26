@@ -47,7 +47,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
     <NextThemeProvider
       onChangeTheme={(next) => {
         startTransition(() => {
-          setTheme(next)
+          setTheme(next as any)
         })
       }}
     >

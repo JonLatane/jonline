@@ -72,11 +72,11 @@ export function GroupDetailsScreen() {
         {(groupPosts || []).length > 0 ?
           <>
             <YStack>
-            {groupPosts?.map((groupPost, index) => {
+              {groupPosts?.map((groupPost, index) => {
                 return <GroupPostCard key={`${groupPost.groupId}=${groupPost.postId}`}
                   group={group!} groupPost={groupPost} />;
-            })}
-            {showScrollPreserver ? <YStack h={100000} /> : undefined}
+              })}
+              {showScrollPreserver ? <YStack h={100000} /> : undefined}
             </YStack>
             {/* <FlatList data={groupPosts} style={{ width: '100%' }}
               // onRefresh={reloadPosts}
@@ -122,7 +122,7 @@ function GroupPostCard({ group, groupPost }: GroupPostCardProps) {
       mb='$3'
       mt='$3'
       // marginTop={replyPostIdPath ? '$0' : '$3'}
-      padding='$0'
+      padding='$3'
       f={1}
       // f={isPreview ? undefined : 1}
       animation="bouncy"

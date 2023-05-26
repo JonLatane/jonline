@@ -133,7 +133,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
         onPositionChange={setPosition}
       // dismissOnSnapToBottom
       >
-        <Sheet.Overlay />
+        <Sheet.Overlay backgroundColor='$colorTranslucent' />
         <Sheet.Frame>
           <Sheet.Handle />
           <Button

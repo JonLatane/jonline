@@ -30,7 +30,6 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
         key={`media-card-${media.id}`}
         margin='$0'
         my='$3'
-        p='$0'
         animation="bouncy"
         width='100%'
         scale={1}
@@ -49,7 +48,7 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
             </XStack>
           </YStack>
         </Card.Header>
-        <Card.Footer>
+        <Card.Footer p='$3'>
 
           <YStack zi={1000} width='100%' mih={mediaQuery.gtXs ? '400px' : '260px'}>
             <YStack f={1}>

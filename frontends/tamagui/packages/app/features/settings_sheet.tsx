@@ -45,7 +45,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay />
+        <Sheet.Overlay backgroundColor='$colorTranslucent' />
         <Sheet.Frame>
           <Sheet.Handle />
           <Button
@@ -148,7 +148,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                           {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
 
                           <Dialog.Close asChild>
-                            <Button theme="active" onClick={doResetAllData}>Reset all data</Button>
+                            <Button theme="active" onPress={doResetAllData}>Reset all data</Button>
                           </Dialog.Close>
                           {/* </Dialog.Action> */}
                         </XStack>

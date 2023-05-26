@@ -185,8 +185,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 // marginBottom={replyPostIdPath ? '$0' : '$3'}
                 // marginTop={replyPostIdPath ? '$0' : '$3'}
                 // padding='$2'
-                paddingHorizontal='$2'
-                paddingVertical='$1'
+                px='$2'
+                py='$1'
                 mb='$1'
                 // f={isPreview ? undefined : 1}
                 animation="bouncy"
@@ -205,7 +205,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     </XStack>
 
                     <XStack ml='$2'>
-                      <AuthorInfo post={previewParent!} linkToAuthor={false} />
+                      <AuthorInfo post={previewParent!} disableLink={false} />
                     </XStack>
                   </YStack>
                 </Card.Footer>
@@ -218,7 +218,6 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             margin='$0'
             marginBottom={replyPostIdPath ? '$0' : '$3'}
             marginTop={replyPostIdPath ? '$0' : '$3'}
-            padding='$0'
             f={isPreview ? undefined : 1}
             animation="bouncy"
             pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
@@ -230,26 +229,26 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
           // exitStyle={{ opacity: 0, }}
           // {...postLinkProps}
           >
-            {post.link != '' || post.title != ''
+            {!post.replyToPostId && (post.link != '' || post.title != '')
               ? <Card.Header>
                 <Anchor textDecorationLine='none' {...{ ...postLink, ...(isPreview ? detailsLink : {}) }}>
-                  <XStack w='100%'>
-                    <View style={{ flex: 1 }}>
+                  <YStack w='100%'>
+                    {/* <View style={{ flex: 1 }}> */}
                       {//post.link
                         // ? isPreview
                         // ? 
-                        <Heading size="$7" marginRight='auto' color={navColor}>{post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}</Heading>
+                        <Heading size="$7" marginRight='auto' color={post.link && post.link.startsWith('http') ? navColor : undefined}>{post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}</Heading>
                         //   : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
                         //     color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
                         // :
                         // <Heading size="$7" marginRight='auto'>{post.title}</Heading>
                       }
-                    </View>
-                  </XStack>
+                    {/* </View> */}
+                  </YStack>
                 </Anchor>
               </Card.Header>
               : undefined}
-            <Card.Footer paddingRight={media.gtXs ? '$3' : '$1'} >
+            <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
 
               {/* {...postLinkProps}> */}
               <YStack zi={1000} width='100%' {...footerProps}>
@@ -290,6 +289,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$3'>
                       <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                      borderColor={isPreview || cannotToggleReplies? 'transparent' : undefined}
                         disabled={cannotToggleReplies || loadingReplies}
                         marginVertical='auto'
                         mr={media.gtXs || isPreview ? 0 : -10}

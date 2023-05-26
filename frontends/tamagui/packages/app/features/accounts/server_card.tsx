@@ -45,29 +45,29 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
         width={isPreview ? 260 : '100%'}
         hoverStyle={{ scale: 0.925 }}
         pressStyle={{ scale: 0.875 }}
-        onClick={doSelectServer}>
+        onPress={doSelectServer}>
         <Card.Header>
           <XStack>
-            <YStack style={{ flex: 1 }}>
+            <YStack f={1}>
               <Heading marginRight='auto' whiteSpace="nowrap" opacity={server.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>{server.serverConfiguration?.serverInfo?.name || 'Unnamed'}</Heading>
               <Heading size="$5" marginRight='auto'>{server.host}</Heading>
             </YStack>
             {isPreview ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined}
           </XStack>
         </Card.Header>
-        <Card.Footer>
+        <Card.Footer p='$3'>
           <XStack width='100%'>
             <YStack mt='$2' mr='$3'>
               {server.secure ? <Lock /> : <Unlock />}
             </YStack>
-            <YStack style={{ flex: 10 }}>
-              <Heading size="$1" style={{ marginRight: 'auto' }}>{accounts.length > 0 ? accounts.length : "No "} account{accounts.length == 1 ? '' : 's'}</Heading>
-              {server.serviceVersion ? <Heading size="$1" style={{ marginRight: 'auto' }}>{server.serviceVersion?.version}</Heading> : undefined}
+            <YStack f={10}>
+              <Heading size="$1" mr='auto'>{accounts.length > 0 ? accounts.length : "No "} account{accounts.length == 1 ? '' : 's'}</Heading>
+              {server.serviceVersion ? <Heading size="$1" mr='auto'>{server.serviceVersion?.version}</Heading> : undefined}
             </YStack>
             {isPreview
               ? <Dialog>
                 <Dialog.Trigger asChild>
-                  <Button onClick={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular />
+                  <Button onPress={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular />
                 </Dialog.Trigger>
                 <Dialog.Portal>
                   <Dialog.Overlay
@@ -109,7 +109,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
                           <Button>Cancel</Button>
                         </Dialog.Close>
                         {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
-                        <Button theme="active" onClick={doRemoveServer}>Remove</Button>
+                        <Button theme="active" onPress={doRemoveServer}>Remove</Button>
                         {/* </Dialog.Action> */}
                       </XStack>
                     </YStack>

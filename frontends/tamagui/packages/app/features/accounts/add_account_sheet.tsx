@@ -126,7 +126,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
         onPositionChange={setPosition}
       // dismissOnSnapToBottom
       >
-        <Sheet.Overlay />
+        <Sheet.Overlay backgroundColor='$colorTranslucent' />
         <Sheet.Frame>
           <Sheet.Handle />
           <Button
@@ -200,11 +200,11 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
 
                   {loginMethod
                     ? <XStack>
-                      <Button marginRight='$1' onClick={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                      <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
                         disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
                         Back
                       </Button>
-                      <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onClick={() => {
+                      <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => {
                         if (loginMethod == LoginMethod.Login) {
                           loginToServer();
                         } else {
@@ -215,11 +215,11 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                       </Button>
                     </XStack>
                     : <XStack>
-                      <Button flex={2} marginRight='$1' onClick={() => setLoginMethod(LoginMethod.CreateAccount)}
+                      <Button flex={2} marginRight='$1' onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
                         disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                         Create Account
                       </Button>
-                      <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onClick={() => setLoginMethod(LoginMethod.Login)}
+                      <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => setLoginMethod(LoginMethod.Login)}
                         disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                         Login
                       </Button>

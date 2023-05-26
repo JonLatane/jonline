@@ -45,7 +45,7 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia }) => {
   // If all else fails, render it as an HTML object and rely on the tag's standard fallback.
   return <object style={{ backgroundColor: isSafari ? 'white' : undefined }} data={mediaUrl} type={media.contentType} width="100%" height={mediaQuery.gtXs ? '500px' : '350px'}>
     <YStack p='$3'>
-      <Paragraph size='$2' style={{ color: isSafari ? 'black' : undefined }}>
+      <Paragraph size='$2' color={isSafari ? 'black' : undefined}>
         Media rendering is not supported in your browser for type <Text fontFamily='monospace'>{media.contentType}</Text>. <Anchor href={mediaUrl} color={navAnchorColor}>Download it instead.</Anchor>
       </Paragraph>
     </YStack>

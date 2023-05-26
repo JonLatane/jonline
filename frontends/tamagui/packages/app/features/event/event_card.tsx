@@ -172,7 +172,6 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
             margin='$0'
             marginBottom='$3'
             marginTop='$3'
-            padding='$0'
             f={isPreview ? undefined : 1}
             animation="bouncy"
             pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
@@ -204,7 +203,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
                 </YStack>
               </Card.Header>
               : undefined}
-            <Card.Footer paddingRight={media.gtXs ? '$3' : '$1'} >
+            <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
 
               {/* {...postLinkProps}> */}
               <YStack zi={1000} width='100%' {...footerProps}>
@@ -228,7 +227,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
                   }
                 </YStack>
                 <XStack pt={10} {...detailsProps}>
-                  <AuthorInfo {...{ post, linkToAuthor: isPreview, detailsMargins }} />
+                  <AuthorInfo {...{ post, detailsMargins }} />
                 </XStack>
               </YStack>
             </Card.Footer>

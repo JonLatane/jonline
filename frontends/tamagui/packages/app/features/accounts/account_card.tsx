@@ -31,44 +31,43 @@ const AccountCard: React.FC<Props> = ({ account }) => {
   function doLogout() {
     dispatch(selectAccount(undefined));
   }
-  const avatarUrl = useMediaUrl(account.user.avatarMediaId, {account, server: account.server});
+  const avatarUrl = useMediaUrl(account.user.avatarMediaId, { account, server: account.server });
   const mediaQuery = useMedia();
 
   return (
     <Theme inverse={selected}>
       <Card theme="dark" elevate size="$4" bordered
-
         animation="bouncy"
         // w={250}
         // h={50}
         scale={0.9}
         hoverStyle={{ scale: 0.925 }}
         pressStyle={{ scale: 0.875 }}
-        onClick={doSelectAccount}
+        onPress={doSelectAccount}
       >
         <Card.Header>
           <XStack>
-          {(avatarUrl && avatarUrl != '') ?
-        
-            <XStack w={mediaQuery.gtXs || true ? 50 : 26} h={mediaQuery.gtXs || true ? 50 : 26}
-              mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
-              <Image
-                pos="absolute"
-                width={mediaQuery.gtXs || true ? 50 : 26}
-                // opacity={0.25}
-                height={mediaQuery.gtXs || true ? 50 : 26}
-                borderRadius={mediaQuery.gtXs || true ? 25 : 13}
-                resizeMode="cover"
-                als="flex-start"
-                source={{ uri: avatarUrl }}
-              // blurRadius={1.5}
-              // borderRadius={5}
-              />
-            </XStack>
-      : undefined}
-            <YStack style={{ flex: 1 }}>
-              <Heading size="$1" style={{ marginRight: 'auto' }}>{account.server.host}/</Heading>
-              <Heading size="$7" style={{ marginRight: 'auto' }}>{account.user.username}</Heading>
+            {(avatarUrl && avatarUrl != '') ?
+
+              <XStack w={mediaQuery.gtXs || true ? 50 : 26} h={mediaQuery.gtXs || true ? 50 : 26}
+                mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
+                <Image
+                  pos="absolute"
+                  width={mediaQuery.gtXs || true ? 50 : 26}
+                  // opacity={0.25}
+                  height={mediaQuery.gtXs || true ? 50 : 26}
+                  borderRadius={mediaQuery.gtXs || true ? 25 : 13}
+                  resizeMode="cover"
+                  als="flex-start"
+                  source={{ uri: avatarUrl }}
+                // blurRadius={1.5}
+                // borderRadius={5}
+                />
+              </XStack>
+              : undefined}
+            <YStack f={1}>
+              <Heading size="$1" mr='auto'>{account.server.host}/</Heading>
+              <Heading size="$7" mr='auto'>{account.user.username}</Heading>
             </YStack>
             {/* {account.server.secure ? <Lock/> : <Unlock/>} */}
             {account.user.permissions.includes(Permission.ADMIN) ? <Shield /> : undefined}
@@ -76,19 +75,19 @@ const AccountCard: React.FC<Props> = ({ account }) => {
 
           </XStack>
         </Card.Header>
-        <Card.Footer>
+        <Card.Footer p='$3'>
           <XStack width='100%'>
             <YStack>
               <Heading size="$1" alignSelf="center">Account ID</Heading>
               <Paragraph size='$1' alignSelf="center">{account.user.id}</Paragraph>
             </YStack>
             <View style={{ flex: 1 }} />
-            {selected ? <Button onClick={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button> : undefined}
+            {selected ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button> : undefined}
 
             <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$1' />
             <Dialog>
               <Dialog.Trigger asChild>
-                <Button icon={<Trash />} circular onClick={(e) => { e.stopPropagation(); }} color="red" />
+                <Button icon={<Trash />} circular onPress={(e) => { e.stopPropagation(); }} color="red" />
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay
@@ -128,7 +127,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
                         <Button>Cancel</Button>
                       </Dialog.Close>
                       {/* <Dialog.Action asChild> */}
-                      <Button theme="active" onClick={() => dispatch(removeAccount(accountId(account)!))}>Remove</Button>
+                      <Button theme="active" onPress={() => dispatch(removeAccount(accountId(account)!))}>Remove</Button>
                       {/* </Dialog.Action> */}
                     </XStack>
                   </YStack>

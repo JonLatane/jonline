@@ -144,7 +144,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay />
+        <Sheet.Overlay backgroundColor='$colorTranslucent' />
         <Sheet.Frame>
           <Sheet.Handle />
 

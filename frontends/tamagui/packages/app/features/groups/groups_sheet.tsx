@@ -69,7 +69,7 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay />
+        <Sheet.Overlay backgroundColor='$colorTranslucent' />
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
@@ -138,7 +138,7 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
             onPositionChange={setPosition}
             dismissOnSnapToBottom
           >
-            <Sheet.Overlay />
+            <Sheet.Overlay backgroundColor='$colorTranslucent' />
             <Sheet.Frame>
               <Sheet.Handle />
               <XStack space='$4' paddingHorizontal='$3'>

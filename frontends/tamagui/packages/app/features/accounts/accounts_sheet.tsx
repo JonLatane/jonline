@@ -146,7 +146,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay />
+        <Sheet.Overlay backgroundColor='$colorTranslucent' />
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
@@ -235,7 +235,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
                   >
-                    <Sheet.Overlay />
+                    <Sheet.Overlay backgroundColor='$colorTranslucent' />
                     <Sheet.Frame padding="$5">
                       <Sheet.Handle />
                       <Button
@@ -248,7 +248,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                         }}
                       />
                       <YStack space="$2" maxWidth={600} width='100%' alignSelf='center'>
-                        <Heading size="$10" style={{ flex: 1 }}>Add Server</Heading>
+                        <Heading size="$10" f={1}>Add Server</Heading>
                         <YStack>
                           <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname" disabled={serversLoading}
                             value={newServerHost}
@@ -256,7 +256,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                         </YStack>
                         {(newServerHostNotBlank && newServerExists && !serversState.successMessage) ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading> : undefined}
                         <XStack>
-                          <YStack style={{ flex: 1, marginLeft: 'auto', marginRight: 'auto' }} opacity={disableSecureSelection ? 0.5 : 1}>
+                          <YStack f={1} mx='auto' opacity={disableSecureSelection ? 0.5 : 1}>
                             <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
                               defaultChecked
                               onCheckedChange={(checked) => setNewServerSecure(checked)}
@@ -268,7 +268,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                               <Heading size="$2">Secure</Heading>
                             </Label>
                           </YStack>
-                          <Button style={{ flex: 2 }} backgroundColor={primaryColor} color={primaryTextColor} onClick={addServer} disabled={serversLoading || !newServerValid}>
+                          <Button f={2} backgroundColor={primaryColor} color={primaryTextColor} onPress={addServer} disabled={serversLoading || !newServerValid}>
                             Add Server
                           </Button>
                         </XStack>
@@ -340,7 +340,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               {!browsingServers ? <YStack h="$2" /> : undefined}
               <YStack space="$2">
                 <XStack>
-                  <Heading style={{ flex: 1 }}>Accounts</Heading>
+                  <Heading f={1}>Accounts</Heading>
 
                   <Button
                     size="$3"
@@ -360,7 +360,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
                   >
-                    <Sheet.Overlay />
+                    <Sheet.Overlay backgroundColor='$colorTranslucent' />
                     <Sheet.Frame padding="$5">
                       <Sheet.Handle />
                       <Button
@@ -400,11 +400,11 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
                         {loginMethod
                           ? <XStack>
-                            <Button marginRight='$1' onClick={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                            <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
                               disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
                               Back
                             </Button>
-                            <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onClick={() => {
+                            <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => {
                               if (loginMethod == LoginMethod.Login) {
                                 loginToServer();
                               } else {
@@ -415,11 +415,11 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                             </Button>
                           </XStack>
                           : <XStack>
-                            <Button flex={2} marginRight='$1' onClick={() => setLoginMethod(LoginMethod.CreateAccount)}
+                            <Button flex={2} marginRight='$1' onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
                               disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                               Create Account
                             </Button>
-                            <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onClick={() => setLoginMethod(LoginMethod.Login)}
+                            <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => setLoginMethod(LoginMethod.Login)}
                               disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                               Login
                             </Button>
