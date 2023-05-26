@@ -22,18 +22,17 @@ this Next.js server is for dev only.
 You can update this monorepo to the latest Tamagui release just by running:
 
 yarn upgrade:tamagui
-
-We've set up a few things for you.
-
-See the "excludeReactNativeWebExports" setting in next.config.js, which omits these
-from the bundle: Switch, ProgressBar Picker, CheckBox, Touchable. To save more,
-you can add ones you don't need like: AnimatedFlatList, FlatList, SectionList,
-VirtualizedList, VirtualizedSectionList.
-
-Even better, enable "useReactNativeWebLite" and you can remove the
-excludeReactNativeWebExports setting altogether and get tree-shaking and
-concurrent mode support as well.
 `)
+// We've set up a few things for you.
+
+// See the "excludeReactNativeWebExports" setting in next.config.js, which omits these
+// from the bundle: Switch, ProgressBar Picker, CheckBox, Touchable. To save more,
+// you can add ones you don't need like: AnimatedFlatList, FlatList, SectionList,
+// VirtualizedList, VirtualizedSectionList.
+
+// Even better, enable "useReactNativeWebLite" and you can remove the
+// excludeReactNativeWebExports setting altogether and get tree-shaking and
+// concurrent mode support as well.
 
 const plugins = [
   withImages,
@@ -44,13 +43,13 @@ const plugins = [
     logTimings: true,
     disableExtraction,
     // experiment - reduced bundle size react-native-web
-    // useReactNativeWebLite: true,
+    useReactNativeWebLite: true,
     shouldExtract: (path) => {
       if (path.includes(join('packages', 'app'))) {
         return true
       }
     },
-    excludeReactNativeWebExports: ['Switch', 'ProgressBar', 'Picker', 'CheckBox', 'Touchable'],
+    // excludeReactNativeWebExports: ['Switch', 'ProgressBar', 'Picker', 'CheckBox', 'Touchable'],
   }),
 ]
 
@@ -71,7 +70,8 @@ module.exports = function () {
       'expo-modules-core',
     ],
     experimental: {
-      // optimizeCss: true,
+      // May cause issues
+      optimizeCss: true,
       scrollRestoration: true,
       legacyBrowsers: false,
     },

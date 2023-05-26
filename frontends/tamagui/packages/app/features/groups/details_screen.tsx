@@ -70,16 +70,25 @@ export function GroupDetailsScreen() {
           Go Home
         </Button> */}
         {(groupPosts || []).length > 0 ?
-          <FlatList data={groupPosts} style={{ width: '100%' }}
-            // onRefresh={reloadPosts}
-            // refreshing={postsState.status == 'loading'}
-            // Allow easy restoring of scroll position
-            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-            keyExtractor={(gp) => gp.postId}
-            renderItem={({ item: groupPost }) => {
-              return <GroupPostCard key={`${groupPost.groupId}=${groupPost.postId}`}
-                group={group!} groupPost={groupPost} />;
-            }} />
+          <>
+            <YStack>
+            {groupPosts?.map((groupPost, index) => {
+                return <GroupPostCard key={`${groupPost.groupId}=${groupPost.postId}`}
+                  group={group!} groupPost={groupPost} />;
+            })}
+            {showScrollPreserver ? <YStack h={100000} /> : undefined}
+            </YStack>
+            {/* <FlatList data={groupPosts} style={{ width: '100%' }}
+              // onRefresh={reloadPosts}
+              // refreshing={postsState.status == 'loading'}
+              // Allow easy restoring of scroll position
+              ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+              keyExtractor={(gp) => gp.postId}
+              renderItem={({ item: groupPost }) => {
+                return <GroupPostCard key={`${groupPost.groupId}=${groupPost.postId}`}
+                  group={group!} groupPost={groupPost} />;
+              }} /> */}
+          </>
           : loading ? undefined : <Heading size='$1' ta='center'>No posts yet</Heading>}
       </YStack>
     </TabsNavigation>

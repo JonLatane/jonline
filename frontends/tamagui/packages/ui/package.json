@@ -22,6 +22,7 @@
     "@tamagui/react-native-media-driver": "^1.15.0",
     "@tamagui/shorthands": "^1.15.0",
     "@tamagui/theme-base": "^1.15.0",
+    "@tamagui/themes": "^1.30.0",
     "rxjs": "^7.8.0",
     "tamagui": "^1.15.0"
   },

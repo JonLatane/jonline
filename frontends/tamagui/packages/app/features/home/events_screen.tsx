@@ -45,21 +45,34 @@ export function EventsScreen() {
               <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : undefined
-          : <FlatList data={events}
-            // onRefresh={reloadEvents}
-            // refreshing={eventsState.status == 'loading'}
-            // Allow easy restoring of scroll position
-            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-            keyExtractor={(event) => `${event.id}-${event.instances[0]?.id}`}
-            renderItem={({ item: event, index }) => {
-              const isLast = index == events.length - 1;
-              return <EventCard event={event} isPreview
-              onOnScreen={isLast ? () => {
-                console.log(`Loading page ${currentPage + 1}...`);
-                setCurrentPage(currentPage + 1);
-              }: undefined} />;
-              // return <PostCard post={event.post!} isPreview />;
-            }} />}
+          : <>
+            <YStack>
+              {events.map((event, index) => {
+                const isLast = index == events.length - 1;
+                return <EventCard event={event} isPreview
+                  onOnScreen={isLast ? () => {
+                    console.log(`Loading page ${currentPage + 1}...`);
+                    setCurrentPage(currentPage + 1);
+                  } : undefined} />;
+              })}
+              {showScrollPreserver ? <YStack h={100000} /> : undefined}
+            </YStack>
+            {/* <FlatList data={events}
+              // onRefresh={reloadEvents}
+              // refreshing={eventsState.status == 'loading'}
+              // Allow easy restoring of scroll position
+              ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+              keyExtractor={(event) => `${event.id}-${event.instances[0]?.id}`}
+              renderItem={({ item: event, index }) => {
+                const isLast = index == events.length - 1;
+                return <EventCard event={event} isPreview
+                  onOnScreen={isLast ? () => {
+                    console.log(`Loading page ${currentPage + 1}...`);
+                    setCurrentPage(currentPage + 1);
+                  } : undefined} />;
+                // return <PostCard post={event.post!} isPreview />;
+              }} /> */}
+          </>}
       </YStack>
       {/* <StickyCreateButton /> */}
     </TabsNavigation>

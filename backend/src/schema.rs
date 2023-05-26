@@ -1,4 +1,16 @@
 table! {
+    event_attendances (id) {
+        id -> Int8,
+        event_instance_id -> Int8,
+        user_id -> Int8,
+        status -> Varchar,
+        inviting_user_id -> Nullable<Int8>,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
     event_instances (id) {
         id -> Int8,
         event_id -> Int8,
@@ -217,6 +229,7 @@ table! {
     }
 }
 
+joinable!(event_attendances -> event_instances (event_instance_id));
 joinable!(event_instances -> events (event_id));
 joinable!(event_instances -> posts (post_id));
 joinable!(events -> posts (post_id));
@@ -236,6 +249,7 @@ joinable!(user_posts -> users (user_id));
 joinable!(user_refresh_tokens -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
+    event_attendances,
     event_instances,
     events,
     federated_accounts,

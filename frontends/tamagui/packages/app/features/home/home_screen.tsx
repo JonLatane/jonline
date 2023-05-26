@@ -41,7 +41,7 @@ export function HomeScreen() {
   const { events, loadingEvents, reloadEvents } = useEventPages(
     EventListingType.PUBLIC_EVENTS,
     0,
-    () => dismissScrollPreserver(setShowScrollPreserver)
+    () => {}//dismissScrollPreserver(setShowScrollPreserver)
   );
 
 
@@ -77,39 +77,52 @@ export function HomeScreen() {
           </Button> : undefined}
         </XStack> : undefined}
         {showEventsOnLatest ?
-          <AnimatePresence>
-            <YStack
-              key='latest-events'
-              w='100%'
-              animation="bouncy"
-              opacity={1}
-              scale={1}
-              y={0}
-              enterStyle={{ y: -50, opacity: 0, }}
-              exitStyle={{ y: -50, opacity: 0, }}>
-              {events.length == 0
-                ? eventsState.loadStatus != 'loading' && eventsState.loadStatus != 'unloaded'
-                  ? <YStack width='100%' maw={600} jc="center" ai="center">
-                    <Heading size='$5' mb='$3'>No events found.</Heading>
-                    <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                  </YStack>
-                  : undefined
-                : <ScrollView horizontal
-                  w='100%'>
-                    <XStack w={media.gtSm ? 400 : 260} space='$2'>
-                      {events.map((event) => <EventCard event={event} isPreview horizontal />)}
-                    </XStack>
-                </ScrollView>}
-            </YStack>
-          </AnimatePresence> : undefined}
+
+          <YStack
+            key='latest-events'
+            w='100%'
+            animation="bouncy"
+            opacity={1}
+            scale={1}
+            y={0}
+            enterStyle={{ y: -50, opacity: 0, }}
+            exitStyle={{ y: -50, opacity: 0, }}>
+            {events.length == 0
+              ? eventsState.loadStatus != 'loading' && eventsState.loadStatus != 'unloaded'
+                ? <YStack width='100%' maw={600} jc="center" ai="center">
+                  <Heading size='$5' mb='$3'>No events found.</Heading>
+                  <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                </YStack>
+                : undefined
+              : <ScrollView horizontal
+                w='100%'>
+                <XStack w={media.gtSm ? 400 : 260} space='$2'>
+                  {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`} event={event} isPreview horizontal />)}
+                </XStack>
+              </ScrollView>}
+          </YStack>
+          : undefined}
         {posts.length == 0
           ? postsState.baseStatus != 'loading' && postsState.baseStatus != 'unloaded'
-            ? <YStack width='100%' maw={600} jc="center" ai="center">
+            ? <YStack width='100%' maw={600} jc="center" ai="center" f={1}>
               <Heading size='$5' mb='$3'>No posts found.</Heading>
               <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : undefined
-          : <FlatList data={posts}
+          :
+          <>
+            <YStack>
+              {posts.map((post, index) => {
+                const isLast = index == posts.length - 1;
+                return <PostCard key={`post-preview-${post.id}`} post={post} isPreview
+                  onOnScreen={isLast ? () => {
+                    console.log(`Loading Post page ${currentPostsPage + 1}...`);
+                    setCurrentPostsPage(currentPostsPage + 1);
+                  } : undefined} />;
+              })}
+              {showScrollPreserver ? <YStack h={100000} /> : undefined}
+            </YStack>
+            {/* <FlatList data={posts}
             // onRefresh={reloadPosts}
             // refreshing={postsState.status == 'loading'}
             // Allow easy restoring of scroll position
@@ -122,7 +135,9 @@ export function HomeScreen() {
                 console.log(`Loading Post page ${currentPostsPage + 1}...`);
                 setCurrentPostsPage(currentPostsPage + 1);
               }: undefined} />;
-            }} />}
+            }} /> */}
+          </>
+        }
       </YStack>
       <StickyCreateButton />
     </TabsNavigation>

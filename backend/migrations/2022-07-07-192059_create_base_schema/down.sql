@@ -3,6 +3,7 @@
 DROP TABLE federated_accounts;
 DROP TABLE federated_servers;
 
+DROP TABLE event_attendances;
 DROP TABLE event_instances;
 DROP TABLE events;
 

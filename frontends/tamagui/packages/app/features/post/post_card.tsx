@@ -49,7 +49,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // ... than 300px of element is visible.
   const onScreen = useOnScreen(ref, "-1px");
   useEffect(() => {
-    if( onScreen) {
+    if (onScreen) {
       onOnScreen?.();
     }
   }, [onScreen]);
@@ -57,7 +57,10 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
 
-  const postLink = useLink({
+  const postLink = post.link && post.link.startsWith('http') ? useLink({
+    href: post.link,
+  }) : {};
+  const detailsLink = useLink({
     href: groupContext
       ? `/g/${groupContext.shortname}/p/${post.id}`
       : `/post/${post.id}`,
@@ -67,7 +70,6 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
       ? `/${authorName}`
       : `/user/${authorId}`
   });
-  const postLinkProps = isPreview ? postLink : { onPress: onPress };
   const authorLinkProps = post.author ? authorLink : undefined;
   const showDetailsShadow = isPreview && post.content && post.content.length > 700;
   const detailsMargins = showDetailsShadow ? 20 : 0;
@@ -203,7 +205,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     </XStack>
 
                     <XStack ml='$2'>
-                      <AuthorInfo post={previewParent!} isPreview={false} />
+                      <AuthorInfo post={previewParent!} linkToAuthor={false} />
                     </XStack>
                   </YStack>
                 </Card.Footer>
@@ -224,25 +226,27 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             scale={1}
             opacity={1}
             y={0}
-            // enterStyle={{ y: -50, opacity: 0, }}
-            // exitStyle={{ opacity: 0, }}
-            {...postLinkProps}
-
+          // enterStyle={{ y: -50, opacity: 0, }}
+          // exitStyle={{ opacity: 0, }}
+          // {...postLinkProps}
           >
-            {post.link || post.title
+            {post.link != '' || post.title != ''
               ? <Card.Header>
-                <XStack>
-                  <View style={{ flex: 1 }}>
-                    {post.link
-                      ? isPreview
-                        ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
-                        : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                          color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                      :
-                      <Heading size="$7" marginRight='auto'>{post.title}</Heading>
-                    }
-                  </View>
-                </XStack>
+                <Anchor textDecorationLine='none' {...{ ...postLink, ...(isPreview ? detailsLink : {}) }}>
+                  <XStack w='100%'>
+                    <View style={{ flex: 1 }}>
+                      {//post.link
+                        // ? isPreview
+                        // ? 
+                        <Heading size="$7" marginRight='auto' color={navColor}>{post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}</Heading>
+                        //   : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
+                        //     color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
+                        // :
+                        // <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+                      }
+                    </View>
+                  </XStack>
+                </Anchor>
               </Card.Header>
               : undefined}
             <Card.Footer paddingRight={media.gtXs ? '$3' : '$1'} >
@@ -259,61 +263,66 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                       </YStack>)}
                     </XStack>
                   </ScrollView></XStack> : undefined}
-                <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
-                  {(!isPreview && previewUrl && previewUrl != '' && hasPrimaryImage) ?
-                    <Image
-                      mb='$3'
-                      width={media.sm ? 300 : 400}
-                      height={media.sm ? 300 : 400}
-                      resizeMode="contain"
-                      als="center"
-                      source={{ uri: previewUrl }}
-                      borderRadius={10}
-                    /> : undefined}
-                  {
-                    post.content && post.content != '' ? Platform.select({
-                      default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
-                      // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
-                      // default: <Heading size='$1'>Native Markdown support pending!</Heading>
-                    }) : undefined
-                  }
-                </YStack>
+
+                <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                  <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
+                    {(!isPreview && previewUrl && previewUrl != '' && hasPrimaryImage) ?
+                      <Image
+                        mb='$3'
+                        width={media.sm ? 300 : 400}
+                        height={media.sm ? 300 : 400}
+                        resizeMode="contain"
+                        als="center"
+                        source={{ uri: previewUrl }}
+                        borderRadius={10}
+                      /> : undefined}
+                    {
+                      post.content && post.content != '' ? Platform.select({
+                        default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
+                        // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
+                        // default: <Heading size='$1'>Native Markdown support pending!</Heading>
+                      }) : undefined
+                    }
+                  </YStack>
+                </Anchor>
                 <XStack pt={10} {...detailsProps}>
-                  <AuthorInfo {...{ post, isPreview, detailsMargins }} />
-                  <YStack h='100%'>
-                    <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
-                      disabled={cannotToggleReplies || loadingReplies}
-                      marginVertical='auto'
-                      mr={media.gtXs || isPreview ? 0 : -10}
-                      onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
-                      <XStack opacity={0.9}>
-                        <YStack marginVertical='auto'>
-                          {!post.replyToPostId ? <Heading size="$1" ta='right'>
-                            {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
-                          </Heading> : undefined}
-                          {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
-                            {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                          </Heading> : undefined}
-                          {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
-                            {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
-                          </Heading>}
-                        </YStack>
-                        {!cannotToggleReplies ? <XStack marginVertical='auto'
-                          animation='quick'
-                          rotate={collapsed ? '0deg' : '90deg'}
-                        >
-                          <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
-                        </XStack> : undefined}
-                      </XStack>
-                    </Button>
-                    {/* {replyPostIdPath
+                  <AuthorInfo {...{ post, detailsMargins }} />
+                  <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                    <YStack h='100%' mr='$3'>
+                      <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                        disabled={cannotToggleReplies || loadingReplies}
+                        marginVertical='auto'
+                        mr={media.gtXs || isPreview ? 0 : -10}
+                        onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
+                        <XStack opacity={0.9}>
+                          <YStack marginVertical='auto'>
+                            {!post.replyToPostId ? <Heading size="$1" ta='right'>
+                              {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                            </Heading> : undefined}
+                            {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
+                              {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
+                            </Heading> : undefined}
+                            {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
+                              {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
+                            </Heading>}
+                          </YStack>
+                          {!cannotToggleReplies ? <XStack marginVertical='auto'
+                            animation='quick'
+                            rotate={collapsed ? '0deg' : '90deg'}
+                          >
+                            <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
+                          </XStack> : undefined}
+                        </XStack>
+                      </Button>
+                      {/* {replyPostIdPath
                     ? <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
                       {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
                     </Heading>
                     : <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
                       {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
                     </Heading>} */}
-                  </YStack>
+                    </YStack>
+                  </Anchor>
                 </XStack>
               </YStack>
             </Card.Footer>
@@ -337,7 +346,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
           </Card >
         </Theme>
       </YStack>
-      {
+      {/* {
         isPreview ?
           <Anchor {...authorLinkProps} onPress={(e) => e.stopPropagation()}>
             <XStack w={180} h={70}
@@ -366,7 +375,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               position='absolute' top={15} />
           </Anchor>
           : undefined
-      }
+      } */}
     </>
   );
 };

@@ -11,9 +11,9 @@ import { useMediaUrl } from "app/hooks/use_media_url";
 export type AuthorInfoProps = {
   post: Post;
   detailsMargins?: number;
-  isPreview?: boolean;
+  linkToAuthor?: boolean;
 }
-export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoProps) => {
+export const AuthorInfo = ({ post, linkToAuthor, detailsMargins = 0 }: AuthorInfoProps) => {
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -54,7 +54,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
     <YStack w={detailsMargins}/>
     {(avatarUrl && avatarUrl != '') ?
       <YStack marginVertical='auto'>
-        {isPreview
+        {linkToAuthor
           ? <FadeInView>
             <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}
               mr={media.gtXs ? '$3' : '$2'}>
@@ -101,7 +101,7 @@ export const AuthorInfo = ({ post, isPreview, detailsMargins = 0 }: AuthorInfoPr
         <Heading size="$1" ml='$1' mr='$2'
           marginVertical='auto'>
           {author
-            ? isPreview
+            ? linkToAuthor
               ? `${author?.username}`
               : <Anchor size='$1' {...authorLinkProps}>{author?.username}</Anchor>
             : 'anonymous'}

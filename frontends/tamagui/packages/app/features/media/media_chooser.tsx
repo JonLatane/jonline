@@ -11,7 +11,7 @@ import { TabsNavigation } from '../tabs/tabs_navigation';
 import { MediaCard } from './media_card';
 import { useAccount, useAccountOrServer } from '../../store/store';
 import { FileUploader } from "react-drag-drop-files";
-import { ChevronDown, Image as ImageIcon, Trash, Upload } from '@tamagui/lucide-icons';
+import { ChevronDown, Image as ImageIcon, Trash, Upload, Wand, Wand2 } from '@tamagui/lucide-icons';
 import { useMediaPage } from './media_screen';
 import { MediaRenderer } from './media_renderer';
 
@@ -247,12 +247,13 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                           onSelect={onMediaSelected ? () => selectMedia(item.id) : undefined}
                           chooser /> */}
                         <XStack>
-                          {item.generated ? 
-                            <Paragraph size='$1' my='auto' ml='$2' color={selected?navTextColor:'$textColor'} ta='center'>Generated</Paragraph> 
+                          {item.generated ?
+                            <YStack my='auto' ml='$2'><Wand2 size='$1' opacity={0.8} color={selected ? navTextColor : undefined} /></YStack>
+                            // <Paragraph size='$1' my='auto' ml='$2' color={selected?navTextColor:'$textColor'} ta='center'>Generated</Paragraph> 
                             : undefined}
                           <AlertDialog native>
                             <AlertDialog.Trigger asChild my='$2' mr='$2'>
-                              <Button size='$2' circular icon={Trash} ml='auto' />
+                              <Button size='$2' onPress={(e) => e.stopPropagation()} circular icon={Trash} ml='auto' />
                             </AlertDialog.Trigger>
 
                             <AlertDialog.Portal>
@@ -295,6 +296,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                                     <AlertDialog.Action asChild>
                                       <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
                                         console.log("calling deleteMedia!");
+                                        onMediaSelected?.(selectedMedia.filter((id) => id != item.id));
                                         dispatch(deleteMedia({ id: item.id, ...accountOrServer }));
                                       }}>Delete</Button>
                                     </AlertDialog.Action>

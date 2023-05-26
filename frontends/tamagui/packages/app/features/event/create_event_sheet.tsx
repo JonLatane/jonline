@@ -109,7 +109,7 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
       <Button backgroundColor={primaryColor} color={primaryTextColor} f={1}
         disabled={serversState.server === undefined}
         onPress={() => setOpen(!open)}>
-        <Heading size='$2'>Create Event</Heading>
+        <Heading size='$2' color={primaryTextColor}>Create Event</Heading>
       </Button>
       <Sheet
         modal

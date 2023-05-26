@@ -60,9 +60,9 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
 
             <XStack>
               <YStack my='auto'>
-                {media.generated ?
-                  <Heading size='$1' color={selected ? navTextColor : '$textColor'}>Generated</Heading>
-                  : undefined}
+                <Heading size='$1' color={selected ? navTextColor : '$textColor'}>
+                  {media.generated ? 'Generated' : 'Uploaded'}
+                </Heading>
                 <DateViewer date={media.createdAt} />
               </YStack>
               {canDelete

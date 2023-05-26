@@ -121,7 +121,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
       <Button backgroundColor={primaryColor} color={primaryTextColor} f={1}
         disabled={serversState.server === undefined}
         onPress={() => setOpen((x) => !x)}>
-        <Heading size='$2'>Create Post</Heading>
+        <Heading size='$2' color={primaryTextColor}>Create Post</Heading>
       </Button>
       <Sheet
         modal

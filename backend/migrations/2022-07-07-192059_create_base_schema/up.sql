@@ -219,6 +219,17 @@ CREATE TABLE event_instances (
 CREATE INDEX idx_event_instance_starts_at ON event_instances(starts_at);
 CREATE INDEX idx_event_instance_ends_at ON event_instances(ends_at);
 
+CREATE TABLE event_attendances (
+  id BIGSERIAL PRIMARY KEY,
+  event_instance_id BIGINT NOT NULL REFERENCES event_instances ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
+  -- INTERESTED, GOING, NOT_GOING, INVITED, WENT, DIDNT_GO
+  status VARCHAR NOT NULL DEFAULT 'INTERESTED',
+  inviting_user_id BIGINT NULL DEFAULT NULL REFERENCES users ON DELETE SET NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NULL DEFAULT NULL
+);
+
 -- FEDERATION MODELS
 CREATE TABLE federated_servers (
   id BIGSERIAL PRIMARY KEY,

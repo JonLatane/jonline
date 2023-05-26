@@ -27,12 +27,12 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   const media = useMedia();
   const post = event.post!;
 
-  const theme = useTheme();
-  const textColor: string = theme.color.val;
+  // const theme = useTheme();
+  // const textColor: string = theme.color.val;
   // const themeBgColor = theme.background.val;
   const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor } = useServerTheme();
-  const { luma: themeBgLuma } = colorMeta(themeBgColor);
-  const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
+  // const { luma: themeBgLuma } = colorMeta(themeBgColor);
+  // const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
   // const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
@@ -167,7 +167,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   return (
     <>
       <YStack w='100%'>
-        <Theme inverse={false}>
+        {/* <Theme inverse={false}> */}
           <Card theme="dark" elevate size="$4" bordered
             margin='$0'
             marginBottom='$3'
@@ -228,7 +228,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
                   }
                 </YStack>
                 <XStack pt={10} {...detailsProps}>
-                  <AuthorInfo {...{ post, isPreview, detailsMargins }} />
+                  <AuthorInfo {...{ post, linkToAuthor: isPreview, detailsMargins }} />
                 </XStack>
               </YStack>
             </Card.Footer>
@@ -250,7 +250,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
                 </FadeInView> : undefined}
             </Card.Background>
           </Card >
-        </Theme>
+        {/* </Theme> */}
       </YStack>
       {
         isPreview ?

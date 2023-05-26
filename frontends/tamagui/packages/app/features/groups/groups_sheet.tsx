@@ -106,11 +106,19 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
           <Sheet.ScrollView p="$4" space>
             <YStack maw={600} als='center' width='100%'>
               {matchedGroups.length > 0
-                ? <FlatList data={matchedGroups}
+                ? 
+                <>
+                <YStack>
+                  {matchedGroups.map((group, index) => {
+                    return <GroupButton key={`groupButton-${group.id}`} group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
+                  })}
+                </YStack>
+                {/* <FlatList data={matchedGroups}
                   renderItem={({ item: group }) => {
                     return <GroupButton key={`groupButton-${group.id}`} group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
                   }}
-                />
+                /> */}
+                </>
                 : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
             </YStack>
           </Sheet.ScrollView>

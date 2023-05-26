@@ -197,15 +197,23 @@ export function UsernameDetailsScreen() {
               {(userPosts || []).length > 0 ?
                 <>
                   <Heading size='$4' ta='center' mt='$2'>Latest Activity</Heading>
-                  <FlatList data={userPosts} style={{ width: '100%' }}
-                    // onRefresh={reloadPosts}
-                    // refreshing={postsState.status == 'loading'}
-                    // Allow easy restoring of scroll position
-                    ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-                    keyExtractor={(postId) => postId}
-                    renderItem={({ item: postId }) => {
-                      return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
-                    }} />
+                  <>
+                    <YStack>
+                      {userPosts?.map((postId) => {
+                        return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
+                      })}
+                      {showScrollPreserver ? <YStack h={100000} /> : undefined}
+                    </YStack>
+                    {/* <FlatList data={userPosts} style={{ width: '100%' }}
+                      // onRefresh={reloadPosts}
+                      // refreshing={postsState.status == 'loading'}
+                      // Allow easy restoring of scroll position
+                      ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
+                      keyExtractor={(postId) => postId}
+                      renderItem={({ item: postId }) => {
+                        return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
+                      }} /> */}
+                  </>
                 </>
                 : loading ? undefined : <Heading size='$1' ta='center'>No posts yet</Heading>}
 

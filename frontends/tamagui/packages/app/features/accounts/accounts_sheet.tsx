@@ -1,4 +1,4 @@
-import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, Input, Label, ScrollView, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, loadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
@@ -317,7 +317,15 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     // y: 50,
                     opacity: 0,
                   }}>
-                  <FlatList
+                    <>
+                    <ScrollView horizontal>
+                    <XStack>
+                      {servers.map((server, index) => {
+                      return <ServerCard server={server} key={`serverCard-${serverID(server)}`} isPreview />;
+                      })}
+                    </XStack>
+                    </ScrollView>
+                  {/* <FlatList
                     horizontal={true}
                     data={servers}
                     keyExtractor={(server) => server.host}
@@ -326,7 +334,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     }}
                   // style={Styles.trueBackground}
                   // contentContainerStyle={Styles.contentBackground}
-                  />
+                  /> */}
+                  </>
                 </XStack> : undefined}
               {!browsingServers ? <YStack h="$2" /> : undefined}
               <YStack space="$2">

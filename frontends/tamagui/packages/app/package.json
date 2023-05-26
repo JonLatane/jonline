@@ -20,6 +20,7 @@
     "@tamagui/lucide-icons": "^1.15.0",
     "@tamagui/shorthands": "^1.15.0",
     "@tamagui/theme-base": "^1.15.0",
+    "@tamagui/themes": "^1.30.0",
     "add": "^2.0.6",
     "expo-linking": "^3.2.3",
     "moment": "^2.29.4",
