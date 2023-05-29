@@ -81,7 +81,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Heading size="$1" alignSelf="center">Account ID</Heading>
               <Paragraph size='$1' alignSelf="center">{account.user.id}</Paragraph>
             </YStack>
-            <View style={{ flex: 1 }} />
+            <YStack f={1} />
             {selected ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button> : undefined}
 
             <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$1' />

@@ -3,6 +3,7 @@ module.exports = function (api) {
   return {
     presets: [['babel-preset-expo', { jsxRuntime: 'automatic' }]],
     plugins: [
+      require.resolve('expo-router/babel'),
       [
         require.resolve('babel-plugin-module-resolver'),
         {
@@ -10,7 +11,7 @@ module.exports = function (api) {
           alias: {
             // define aliases to shorten the import paths
             app: '../../packages/app',
-            '@jonline/ui': '../../packages/ui',
+            '@my/ui': '../../packages/ui',
           },
           extensions: ['.js', '.jsx', '.tsx', '.ios.js', '.android.js'],
         },
@@ -23,7 +24,7 @@ module.exports = function (api) {
             [
               '@tamagui/babel-plugin',
               {
-                components: ['@jonline/ui', 'tamagui'],
+                components: ['@my/ui', 'tamagui'],
                 config: './tamagui.config.ts',
               },
             ],

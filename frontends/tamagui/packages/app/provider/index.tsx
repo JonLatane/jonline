@@ -7,13 +7,15 @@ import { Provider as ReduxProvider } from "react-redux";
 
 
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
+  // When/if redux-persist is updated to support React 18, this shim can be removed.
+  const PersistGateShim = PersistGate as any;
   return (
     <ReduxProvider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
+      <PersistGateShim loading={null} persistor={persistor}>
         <TamaguiProvider config={config} disableInjectCSS {...rest}>
           <NavigationProvider>{children}</NavigationProvider>
         </TamaguiProvider>
-      </PersistGate>
+      </PersistGateShim>
     </ReduxProvider>
   )
 }

@@ -36,8 +36,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const media = useMedia();
 
   const theme = useTheme();
-  const textColor: string = theme.color.val;
-  const themeBgColor = theme.background.val;
+  const textColor: string = theme.color?.val ?? '#000000';
+  const themeBgColor = theme.background?.val ?? '#ffffff';
   const { luma: themeBgLuma } = colorMeta(themeBgColor);
   const { server, primaryColor, navAnchorColor: navColor } = useServerTheme();
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);

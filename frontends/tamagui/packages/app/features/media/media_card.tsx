@@ -42,9 +42,7 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
         <Card.Header>
           <YStack>
             <XStack>
-              <View style={{ flex: 1 }}>
-                <Heading size='$7' marginRight='auto'>{media.name}</Heading>
-              </View>
+              <Heading size='$7' f={1} marginRight='auto'>{media.name}</Heading>
             </XStack>
           </YStack>
         </Card.Header>

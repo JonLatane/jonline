@@ -72,7 +72,7 @@ export type FeaturesNavigationProps = {
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, groupPageForwarder }: FeaturesNavigationProps) {
   const account = useAccount();
   const app = useLocalApp();
-  const { navColor, navTextColor, textColor } = useServerTheme();
+  const { primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
 
   const latestLink = useLink({ href: '/' });
   const postsLink = useLink({ href: '/posts' });
@@ -106,8 +106,8 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     <XStack w={selectedGroup ? 11 : 3.5} />
     <Popover size="$5">
       <Popover.Trigger asChild>
-        <Button transparent>
-          <Heading size="$4">{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
+        <Button transparent borderColor='$backgroundTransparent'>
+          <Heading size="$4" color={primaryTextColor}>{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
         </Button>
       </Popover.Trigger>
       <Popover.Content

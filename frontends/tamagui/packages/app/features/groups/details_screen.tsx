@@ -122,7 +122,7 @@ function GroupPostCard({ group, groupPost }: GroupPostCardProps) {
       mb='$3'
       mt='$3'
       // marginTop={replyPostIdPath ? '$0' : '$3'}
-      padding='$3'
+      padding='$0'
       f={1}
       // f={isPreview ? undefined : 1}
       animation="bouncy"

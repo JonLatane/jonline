@@ -46,7 +46,18 @@ export function PostsScreen() {
               <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : undefined
-          : <FlatList data={posts}
+          : <>
+            <YStack>
+              {posts.map((post, index) => {
+                const isLast = index == posts.length - 1;
+                return <PostCard post={post} isPreview
+                  onOnScreen={isLast ? () => {
+                    console.log(`Loading page ${currentPage + 1}...`);
+                    setCurrentPage(currentPage + 1);
+                  } : undefined} />;
+              })}
+            </YStack>
+            {/* <FlatList data={posts}
             // onRefresh={reloadPosts}
             // refreshing={postsState.status == 'loading'}
             // Allow easy restoring of scroll position
@@ -59,7 +70,9 @@ export function PostsScreen() {
                   console.log(`Loading page ${currentPage + 1}...`);
                   setCurrentPage(currentPage + 1);
                 }: undefined} />;
-            }} />}
+            }} />} */}
+          </>
+        }
       </YStack>
       <StickyCreateButton />
     </TabsNavigation>

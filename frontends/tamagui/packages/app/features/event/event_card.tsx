@@ -154,12 +154,12 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
       </YStack>;
     } else {
       return <XStack>
-        <View style={{ flex: 1 }}>
+        <YStack f={1}>
           {startsAt ? dateView(startsAt) : undefined}
-        </View>
-        <View style={{ flex: 1 }}>
+        </YStack>
+        <YStack f={1}>
           {endsAt ? dateView(endsAt) : undefined}
-        </View>
+        </YStack>
       </XStack>;
     }
   }
@@ -188,7 +188,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
               ? <Card.Header>
                 <YStack>
                   <XStack>
-                    <View style={{ flex: 1 }}>
+                    <YStack f={1}>
                       {post.link
                         ? isPreview
                           ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
@@ -197,7 +197,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
                         :
                         <Heading size="$7" marginRight='auto'>{post.title}</Heading>
                       }
-                    </View>
+                    </YStack>
                   </XStack>
                   {startsAtHeader && endsAtHeader ? dateRangeView(startsAtHeader, endsAtHeader) : undefined}
                 </YStack>

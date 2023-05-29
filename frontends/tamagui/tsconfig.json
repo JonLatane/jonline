@@ -4,7 +4,8 @@
     "noUncheckedIndexedAccess": true,
     "paths": {
       "app/*": ["./packages/app/*"],
-      "@jonline/ui/*": ["./packages/ui/*"]
+      "@jonline/ui/*": ["./packages/ui/*"],
+      "@jonline/api/*": ["./packages/api/*"]
     }
   },
   "extends": "expo/tsconfig.base"

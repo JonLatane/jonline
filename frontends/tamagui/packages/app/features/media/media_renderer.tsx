@@ -15,6 +15,8 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia }) => {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   if (!server) return <></>;
+  
+  const ReactPlayerShim = ReactPlayer as any;
 
   const reduxMedia = useTypedSelector((state: RootState) => selectMediaById(state.media, sourceMedia.id));
   useEffect(() => {
@@ -36,8 +38,7 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia }) => {
         width='95%' />;
     case 'video':
       return <YStack w='100%' ac='center' jc='center' h='100%'>
-        <ReactPlayer width='100%' style={{maxHeight: mediaQuery.gtXs ? '500px' : '300px'}} height='100%'
-          url={mediaUrl} controls muted />
+        <ReactPlayerShim width='100%' style={{maxHeight: mediaQuery.gtXs ? '500px' : '300px'}} height='100%' url={mediaUrl} controls muted />
       </YStack>;
     default:
   }

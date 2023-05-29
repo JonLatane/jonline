@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const { withTamagui } = require('@tamagui/next-plugin')
-const withImages = require('next-images')
+// const withImages = require('next-images')
 const { join } = require('path')
 
 process.env.IGNORE_TS_CONFIG_PATHS = 'true'
@@ -16,7 +16,7 @@ const disableExtraction =
   boolVals[process.env.DISABLE_EXTRACTION] ?? process.env.NODE_ENV === 'development'
 
 console.log(`
-Launching Jonline Tamagui Frontend! Real distributions should be served by Rust/Rocket;
+Building the Jonline Tamagui/React Frontend! Real distributions should be served by Rust/Rocket;
 this Next.js server is for dev only.
 
 You can update this monorepo to the latest Tamagui release just by running:
@@ -35,11 +35,12 @@ yarn upgrade:tamagui
 // concurrent mode support as well.
 
 const plugins = [
-  withImages,
+  // withImages,
   withTamagui({
     config: './tamagui.config.ts',
     components: ['tamagui', '@jonline/ui'],
     importsWhitelist: ['constants.js', 'colors.js'],
+    outputCSS: process.env.NODE_ENV === 'production' ? './public/tamagui.css' : null,
     logTimings: true,
     disableExtraction,
     // experiment - reduced bundle size react-native-web
@@ -49,19 +50,26 @@ const plugins = [
         return true
       }
     },
-    // excludeReactNativeWebExports: ['Switch', 'ProgressBar', 'Picker', 'CheckBox', 'Touchable'],
+    // excludeReactNativeWebExports: ['Switch', 'ProgressBar', 'Picker', 'CheckBox', 'Touchable', 'FlatList', 'SectionList', 'VirtualizedList', 'VirtualizedSectionList'],
   }),
 ]
 
 module.exports = function () {
   /** @type {import('next').NextConfig} */
   let config = {
+    output: 'export',
     typescript: {
       ignoreBuildErrors: true,
     },
-    images: {
-      disableStaticImages: true,
+    modularizeImports: {
+      '@tamagui/lucide-icons': {
+        transform: `@tamagui/lucide-icons/dist/esm/icons/{{kebabCase member}}`,
+        skipDefaultConversion: true,
+      },
     },
+    // images: {
+    //   disableStaticImages: true,
+    // },
     transpilePackages: [
       'solito',
       'react-native-web',
@@ -70,8 +78,17 @@ module.exports = function () {
       'expo-modules-core',
     ],
     experimental: {
+      /*
+       A few notes before enabling app directory:
+
+       - App dir is not yet stable - Usage of this for production apps is discouraged.
+       - Tamagui doesn't support usage in React Server Components yet (usage with 'use client' is supported).
+       - Solito doesn't support app dir at the moment - You'll have to remove Solito.
+       - The `/app` in this starter has the same routes as the `/pages` directory. You should probably remove `/pages` after enabling this.
+      */
+      // appDir: false,
       // May cause issues
-      optimizeCss: true,
+      // optimizeCss: true,
       scrollRestoration: true,
       legacyBrowsers: false,
     },

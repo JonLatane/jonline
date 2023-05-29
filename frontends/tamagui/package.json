@@ -8,37 +8,40 @@
   "scripts": {
     "native": "cd apps/expo && yarn start",
     "watch": "yarn workspaces foreach -pi run watch",
-    "web": "yarn build && cd apps/next && yarn next",
+    "vercel:install": "yarn set version 3.5 && yarn install",
+    "web": "yarn build && cd apps/next && TAMAGUI_TARGET=web yarn next",
     "web:extract": "DISABLE_EXTRACTION=false yarn workspace next-app dev",
     "web:prod": "yarn workspace next-app build",
     "web:prod:serve": "yarn workspace next-app serve",
-    "web:prod:export": "yarn workspace next-app export",
-    "postinstall": "yarn build",
-    "build": "yarn workspaces foreach --exclude next-app -pi run build",
-    "upgrade:tamagui": "manypkg upgrade tamagui && manypkg upgrade @tamagui && manypkg upgrade tamagui-loader && manypkg upgrade react-native-web-lite",
+    "web:prod:export": "yarn workspace next-app build",
+    "fix": "manypkg fix",
+    "postinstall": "yarn check-deps && yarn build",
+    "build": "yarn workspaces foreach --exclude next-app run build",
+    "upgrade:tamagui": "yarn up '*tamagui*'@latest '@tamagui/*'@latest react-native-web-lite@latest",
+    "upgrade:tamagui:canary": "yarn up '*tamagui*'@canary '@tamagui/*'@canary react-native-web-lite@canary",
+    "check-deps": "check-dependency-version-consistency .",
     "protos": "protoc --plugin=\"./node_modules/.bin/protoc-gen-ts_proto\" -I ../../protos/ --ts_proto_opt=esModuleInterop=true --ts_proto_opt=useDate=string --ts_proto_opt=addGrpcMetadata=true --ts_proto_opt=outputClientImpl=grpc-web --ts_proto_opt=lowerCaseServiceMethods=true --ts_proto_out=\"./packages/api/generated\" ../../protos/jonline.proto"
   },
   "resolutions": {
-    "esbuild": "0.15.6",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "@types/react-native": "^0.71.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-refresh": "^0.14.0",
     "react-native-svg": "13.4.0",
-    "react-native-web": "0.18.9"
+    "react-native-web": "^0.18.12"
   },
   "dependencies": {
     "@babel/runtime": "^7.18.9",
-    "react-native-markdown-package": "^1.8.2"
-  },
-  "devDependencies": {
     "@manypkg/cli": "^0.19.1",
     "@types/raf": "^3.4.0",
+    "check-dependency-version-consistency": "^3.0.3",
     "eslint": "^8.21.0",
+    "node-gyp": "^9.3.1",
     "prettier": "^2.7.1",
     "ts-proto": "^1.138.0",
     "ts-protoc-gen": "^0.15.0",
-    "turbo": "^1.4.2",
+    "turbo": "^1.8.3",
     "typescript": "^4.7.4"
   },
-  "packageManager": "yarn@3.2.3"
+  "packageManager": "yarn@3.5.1"
 }

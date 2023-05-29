@@ -38,12 +38,12 @@ export const protobufPackage = "jonline";
 export interface Media {
   /** The ID of the media item. */
   id: string;
-  /** The MIME content type of the media item. */
-  contentType: string;
   /** The ID of the user who created the media item. */
   userId?:
     | string
     | undefined;
+  /** The MIME content type of the media item. */
+  contentType: string;
   /** An optional title for the media item. */
   name?:
     | string
@@ -94,8 +94,8 @@ export interface GetMediaResponse {
 function createBaseMedia(): Media {
   return {
     id: "",
-    contentType: "",
     userId: undefined,
+    contentType: "",
     name: undefined,
     description: undefined,
     visibility: 0,
@@ -112,11 +112,11 @@ export const Media = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.contentType !== "") {
-      writer.uint32(26).string(message.contentType);
-    }
     if (message.userId !== undefined) {
       writer.uint32(18).string(message.userId);
+    }
+    if (message.contentType !== "") {
+      writer.uint32(26).string(message.contentType);
     }
     if (message.name !== undefined) {
       writer.uint32(34).string(message.name);
@@ -155,11 +155,11 @@ export const Media = {
         case 1:
           message.id = reader.string();
           break;
-        case 3:
-          message.contentType = reader.string();
-          break;
         case 2:
           message.userId = reader.string();
+          break;
+        case 3:
+          message.contentType = reader.string();
           break;
         case 4:
           message.name = reader.string();
@@ -196,8 +196,8 @@ export const Media = {
   fromJSON(object: any): Media {
     return {
       id: isSet(object.id) ? String(object.id) : "",
-      contentType: isSet(object.contentType) ? String(object.contentType) : "",
       userId: isSet(object.userId) ? String(object.userId) : undefined,
+      contentType: isSet(object.contentType) ? String(object.contentType) : "",
       name: isSet(object.name) ? String(object.name) : undefined,
       description: isSet(object.description) ? String(object.description) : undefined,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
@@ -212,8 +212,8 @@ export const Media = {
   toJSON(message: Media): unknown {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
-    message.contentType !== undefined && (obj.contentType = message.contentType);
     message.userId !== undefined && (obj.userId = message.userId);
+    message.contentType !== undefined && (obj.contentType = message.contentType);
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
@@ -232,8 +232,8 @@ export const Media = {
   fromPartial<I extends Exact<DeepPartial<Media>, I>>(object: I): Media {
     const message = createBaseMedia();
     message.id = object.id ?? "";
-    message.contentType = object.contentType ?? "";
     message.userId = object.userId ?? undefined;
+    message.contentType = object.contentType ?? "";
     message.name = object.name ?? undefined;
     message.description = object.description ?? undefined;
     message.visibility = object.visibility ?? 0;
