@@ -111,10 +111,10 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
       case GroupListingType.MY_GROUPS:
         result = result.where((g) => g.member).toList();
         break;
-      case GroupListingType.REQUESTED:
+      case GroupListingType.REQUESTED_GROUPS:
         result = result.where((g) => g.requested).toList();
         break;
-      case GroupListingType.INVITED:
+      case GroupListingType.INVITED_GROUPS:
         result = result.where((g) => g.invited).toList();
         break;
     }
@@ -307,7 +307,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
     final visibleSections = [
       GroupListingType.ALL_GROUPS,
       GroupListingType.MY_GROUPS,
-      GroupListingType.REQUESTED
+      GroupListingType.REQUESTED_GROUPS
     ];
     final sectionCount = visibleSections.length;
     final minSectionTabWidth = 110.0 * mq.textScaleFactor;

@@ -252,7 +252,7 @@ export const upsertPost = postsAdapter.upsertOne;
 export const upsertPosts = postsAdapter.upsertMany;
 export default postsReducer;
 
-export function getPostsPage(state: PostsState, listingType: PostListingType, page: number): Post[] {
+function getPostsPage(state: PostsState, listingType: PostListingType, page: number): Post[] {
   const pagePostIds: string[] = (state.postPages[listingType] ?? {})[page] ?? [];
   const pagePosts = pagePostIds.map(id => selectPostById(state, id)).filter(p => p) as Post[];
   return pagePosts;
@@ -265,4 +265,11 @@ export function getPostPages(state: PostsState, listingType: PostListingType, th
     result.push(...pagePosts);
   }
   return result;
+}
+
+export function getHasPostsPage(state: PostsState, listingType: PostListingType, page: number): boolean {
+  return (state.postPages[listingType] ?? {})[page] != undefined;
+}
+export function getHasMorePostPages(state: PostsState, listingType: PostListingType, currentPage: number): boolean {
+  return ((state.postPages[listingType] ?? {})[currentPage]?.length ?? 0) > 0;
 }

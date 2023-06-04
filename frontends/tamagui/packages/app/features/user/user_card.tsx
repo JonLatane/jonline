@@ -84,7 +84,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
       >
         <Card.Header>
           <XStack>
-            <Anchor f={1} {...(isPreview ? userLink : {})}>
+            <Anchor f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
               <YStack f={1}>
                 <Heading size="$1" mr='auto'>{server?.host}/</Heading>
 
@@ -124,7 +124,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
         <Card.Footer p='$3'>
           <YStack mt='$2' mr='$3' w='100%'>
             {(!isPreview && avatarUrl && avatarUrl != '') ?
-              <FadeInView>
+              // <FadeInView>
                 <Image
                   // pos="absolute"
                   // width={400}
@@ -144,7 +144,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                   borderRadius={10}
                 // borderBottomRightRadius={5}
                 />
-              </FadeInView> : undefined}
+              // </FadeInView>
+               : undefined}
             {(isCurrentUser || isAdmin) && setAvatarMediaId
               ? <YStack mb='$2'>
                 <MediaChooser
@@ -208,7 +209,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
           {/* <XStack>
             <YStack h='100%' w={5} backgroundColor={primaryColor} /> */}
           {(isPreview && avatarUrl && avatarUrl != '') ?
-            <FadeInView>
+            // <FadeInView>
               <Image
                 pos="absolute"
                 width={media.gtSm ? 300 : 150}
@@ -222,7 +223,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                 // borderRadius={5}
                 borderBottomRightRadius={5}
               />
-            </FadeInView> : undefined}
+            // </FadeInView>
+             : undefined}
           {/* </XStack> */}
         </Card.Background>
       </Card>

@@ -24,6 +24,21 @@ const EventListingType$json = const {
 
 /// Descriptor for `EventListingType`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List eventListingTypeDescriptor = $convert.base64Decode('ChBFdmVudExpc3RpbmdUeXBlEhEKDVBVQkxJQ19FVkVOVFMQABIUChBGT0xMT1dJTkdfRVZFTlRTEAESFAoQTVlfR1JPVVBTX0VWRU5UUxACEhEKDURJUkVDVF9FVkVOVFMQAxIdChlFVkVOVFNfUEVORElOR19NT0RFUkFUSU9OEAQSEAoMR1JPVVBfRVZFTlRTEAoSIwofR1JPVVBfRVZFTlRTX1BFTkRJTkdfTU9ERVJBVElPThAL');
+@$core.Deprecated('Use attendanceStatusDescriptor instead')
+const AttendanceStatus$json = const {
+  '1': 'AttendanceStatus',
+  '2': const [
+    const {'1': 'INTERESTED', '2': 0},
+    const {'1': 'GOING', '2': 1},
+    const {'1': 'NOT_GOING', '2': 2},
+    const {'1': 'REQUESTED', '2': 3},
+    const {'1': 'WENT', '2': 10},
+    const {'1': 'DID_NOT_GO', '2': 11},
+  ],
+};
+
+/// Descriptor for `AttendanceStatus`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List attendanceStatusDescriptor = $convert.base64Decode('ChBBdHRlbmRhbmNlU3RhdHVzEg4KCklOVEVSRVNURUQQABIJCgVHT0lORxABEg0KCU5PVF9HT0lORxACEg0KCVJFUVVFU1RFRBADEggKBFdFTlQQChIOCgpESURfTk9UX0dPEAs=');
 @$core.Deprecated('Use getEventsRequestDescriptor instead')
 const GetEventsRequest$json = const {
   '1': 'GetEventsRequest',
@@ -120,3 +135,22 @@ const EventInstanceInfo$json = const {
 
 /// Descriptor for `EventInstanceInfo`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventInstanceInfoDescriptor = $convert.base64Decode('ChFFdmVudEluc3RhbmNlSW5mbw==');
+@$core.Deprecated('Use eventAttendanceDescriptor instead')
+const EventAttendance$json = const {
+  '1': 'EventAttendance',
+  '2': const [
+    const {'1': 'event_instance_id', '3': 1, '4': 1, '5': 9, '10': 'eventInstanceId'},
+    const {'1': 'user_id', '3': 2, '4': 1, '5': 9, '10': 'userId'},
+    const {'1': 'status', '3': 3, '4': 1, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'status'},
+    const {'1': 'inviting_user_id', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'invitingUserId', '17': true},
+    const {'1': 'created_at', '3': 10, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    const {'1': 'updated_at', '3': 11, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
+  ],
+  '8': const [
+    const {'1': '_inviting_user_id'},
+    const {'1': '_updated_at'},
+  ],
+};
+
+/// Descriptor for `EventAttendance`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List eventAttendanceDescriptor = $convert.base64Decode('Cg9FdmVudEF0dGVuZGFuY2USKgoRZXZlbnRfaW5zdGFuY2VfaWQYASABKAlSD2V2ZW50SW5zdGFuY2VJZBIXCgd1c2VyX2lkGAIgASgJUgZ1c2VySWQSMQoGc3RhdHVzGAMgASgOMhkuam9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUgZzdGF0dXMSLQoQaW52aXRpbmdfdXNlcl9pZBgEIAEoCUgAUg5pbnZpdGluZ1VzZXJJZIgBARI5CgpjcmVhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBAUITChFfaW52aXRpbmdfdXNlcl9pZEINCgtfdXBkYXRlZF9hdA==');

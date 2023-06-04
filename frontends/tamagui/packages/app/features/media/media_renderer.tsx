@@ -32,10 +32,11 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia }) => {
   const subType = media.contentType.split('/')[1];
   switch (type) {
     case 'image':
-      return <Image source={{ uri: mediaUrl }}
-        resizeMode='contain'
-        height='95%'
-        width='95%' />;
+      return <img style={{height: '95%', width:'95%', objectFit:'contain'}} src={mediaUrl}/>;
+      // return <Image source={{ uri: mediaUrl }}
+      //   resizeMode='contain'
+      //   height='95%'
+      //   width='95%' />;
     case 'video':
       return <YStack w='100%' ac='center' jc='center' h='100%'>
         <ReactPlayerShim width='100%' style={{maxHeight: mediaQuery.gtXs ? '500px' : '300px'}} height='100%' url={mediaUrl} controls muted />

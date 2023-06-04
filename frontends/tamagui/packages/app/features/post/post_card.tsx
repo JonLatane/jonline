@@ -26,11 +26,10 @@ interface Props {
   previewParent?: Post;
   onPress?: () => void;
   onPressParentPreview?: () => void;
-  onOnScreen?: () => void;
   selectedPostId?: string;
 }
 
-export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId, onOnScreen }) => {
+export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -47,12 +46,12 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
-  const onScreen = useOnScreen(ref, "-1px");
-  useEffect(() => {
-    if (onScreen) {
-      onOnScreen?.();
-    }
-  }, [onScreen]);
+  // const onScreen = useOnScreen(ref, "-1px");
+  // useEffect(() => {
+  //   if (onScreen) {
+  //     onOnScreen?.();
+  //   }
+  // }, [onScreen]);
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
@@ -234,15 +233,15 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 <Anchor textDecorationLine='none' {...{ ...postLink, ...(isPreview ? detailsLink : {}) }}>
                   <YStack w='100%'>
                     {/* <View style={{ flex: 1 }}> */}
-                      {//post.link
-                        // ? isPreview
-                        // ? 
-                        <Heading size="$7" marginRight='auto' color={post.link && post.link.startsWith('http') ? navColor : undefined}>{post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}</Heading>
-                        //   : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                        //     color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                        // :
-                        // <Heading size="$7" marginRight='auto'>{post.title}</Heading>
-                      }
+                    {//post.link
+                      // ? isPreview
+                      // ? 
+                      <Heading size="$7" marginRight='auto' color={post.link && post.link.startsWith('http') ? navColor : undefined}>{post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}</Heading>
+                      //   : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
+                      //     color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
+                      // :
+                      // <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+                    }
                     {/* </View> */}
                   </YStack>
                 </Anchor>
@@ -289,7 +288,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$3'>
                       <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
-                      borderColor={isPreview || cannotToggleReplies? 'transparent' : undefined}
+                        borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
                         disabled={cannotToggleReplies || loadingReplies}
                         marginVertical='auto'
                         mr={media.gtXs || isPreview ? 0 : -10}
@@ -328,20 +327,21 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             </Card.Footer>
             <Card.Background>
               {(isPreview && hasPrimaryImage) ?
-                <FadeInView>
-                  <Image
-                    pos="absolute"
-                    width={300}
-                    opacity={0.25}
-                    height={300}
-                    resizeMode="cover"
-                    als="flex-start"
-                    source={{ uri: previewUrl! }}
-                    blurRadius={1.5}
-                    // borderRadius={5}
-                    borderBottomRightRadius={5}
-                  />
-                </FadeInView> : undefined}
+                // <FadeInView>
+                <Image
+                  pos="absolute"
+                  width={300}
+                  opacity={0.25}
+                  height={300}
+                  resizeMode="cover"
+                  als="flex-start"
+                  source={{ uri: previewUrl! }}
+                  blurRadius={1.5}
+                  // borderRadius={5}
+                  borderBottomRightRadius={5}
+                />
+                // </FadeInView> 
+                : undefined}
             </Card.Background>
           </Card >
         </Theme>

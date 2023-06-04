@@ -14,13 +14,13 @@ const GroupListingType$json = const {
   '2': const [
     const {'1': 'ALL_GROUPS', '2': 0},
     const {'1': 'MY_GROUPS', '2': 1},
-    const {'1': 'REQUESTED', '2': 2},
-    const {'1': 'INVITED', '2': 3},
+    const {'1': 'REQUESTED_GROUPS', '2': 2},
+    const {'1': 'INVITED_GROUPS', '2': 3},
   ],
 };
 
 /// Descriptor for `GroupListingType`. Decode as a `google.protobuf.EnumDescriptorProto`.
-final $typed_data.Uint8List groupListingTypeDescriptor = $convert.base64Decode('ChBHcm91cExpc3RpbmdUeXBlEg4KCkFMTF9HUk9VUFMQABINCglNWV9HUk9VUFMQARINCglSRVFVRVNURUQQAhILCgdJTlZJVEVEEAM=');
+final $typed_data.Uint8List groupListingTypeDescriptor = $convert.base64Decode('ChBHcm91cExpc3RpbmdUeXBlEg4KCkFMTF9HUk9VUFMQABINCglNWV9HUk9VUFMQARIUChBSRVFVRVNURURfR1JPVVBTEAISEgoOSU5WSVRFRF9HUk9VUFMQAw==');
 @$core.Deprecated('Use groupDescriptor instead')
 const Group$json = const {
   '1': 'Group',

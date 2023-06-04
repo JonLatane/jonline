@@ -34,3 +34,26 @@ class EventListingType extends $pb.ProtobufEnum {
   const EventListingType._($core.int v, $core.String n) : super(v, n);
 }
 
+class AttendanceStatus extends $pb.ProtobufEnum {
+  static const AttendanceStatus INTERESTED = AttendanceStatus._(0, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'INTERESTED');
+  static const AttendanceStatus GOING = AttendanceStatus._(1, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'GOING');
+  static const AttendanceStatus NOT_GOING = AttendanceStatus._(2, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'NOT_GOING');
+  static const AttendanceStatus REQUESTED = AttendanceStatus._(3, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'REQUESTED');
+  static const AttendanceStatus WENT = AttendanceStatus._(10, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'WENT');
+  static const AttendanceStatus DID_NOT_GO = AttendanceStatus._(11, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'DID_NOT_GO');
+
+  static const $core.List<AttendanceStatus> values = <AttendanceStatus> [
+    INTERESTED,
+    GOING,
+    NOT_GOING,
+    REQUESTED,
+    WENT,
+    DID_NOT_GO,
+  ];
+
+  static final $core.Map<$core.int, AttendanceStatus> _byValue = $pb.ProtobufEnum.initByValue(values);
+  static AttendanceStatus? valueOf($core.int value) => _byValue[value];
+
+  const AttendanceStatus._($core.int v, $core.String n) : super(v, n);
+}
+

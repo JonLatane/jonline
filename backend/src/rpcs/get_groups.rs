@@ -23,7 +23,7 @@ pub fn get_groups(
         request.to_owned().group_name,
     ) {
         //TODO: Implement other listing types. For now this can be done in the UI.
-        (Some(Invited), _, _) => get_all_groups(request.to_owned(), user, conn),
+        (Some(InvitedGroups), _, _) => get_all_groups(request.to_owned(), user, conn),
         (_, Some(_), _) => get_by_id(request.to_owned(), user, conn),
         (_, _, Some(_)) => get_by_name(request.to_owned(), user, conn),
         _ => get_all_groups(request.to_owned(), user, conn),

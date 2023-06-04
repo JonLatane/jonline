@@ -1,6 +1,6 @@
 import { Post, PostListingType, Media } from '@jonline/api';
 import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet, useMedia, Paragraph, AlertDialog, Theme } from '@jonline/ui';
-import { getMediaPage, getPostsPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl, deleteMedia } from 'app/store';
+import { getMediaPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl, deleteMedia } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
@@ -25,7 +25,7 @@ interface MediaChooserProps {
 
 export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMedia, onMediaSelected, multiselect = false }) => {
   const mediaQuery = useMedia();
-  const [open, setOpen] = useState(false);
+  const [open, _setOpen] = useState(false);
   const [position, setPosition] = useState(0);
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const mediaState = useTypedSelector((state: RootState) => state.media);
@@ -44,6 +44,15 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
   const [uploadedMediaId, setUploadedMediaId] = useState<string | undefined>(undefined);
+  const [renderSheet, setRenderSheet] = useState(false);
+  function setOpen(v: boolean) {
+    if (v && !renderSheet) {
+      setRenderSheet(true);
+      setTimeout(() => _setOpen(true), 1);
+    } else {
+      _setOpen(v);
+    }
+  }
 
   const { media, loadingMedia, reloadMedia } = useMediaPage(
     accountOrServer.account?.user?.id,
@@ -128,7 +137,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   return (
     <>
       <Button backgroundColor={navColor} color={navTextColor}
-        onPress={() => setOpen((x) => !x)}>
+        onPress={() => setOpen(!open)}>
         {children ?? <XStack>
           <ImageIcon size={24} color={navTextColor} />
           <Paragraph ml='$2' color={navTextColor}>Choose Media</Paragraph>

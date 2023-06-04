@@ -106,7 +106,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     <XStack w={selectedGroup ? 11 : 3.5} />
     <Popover size="$5">
       <Popover.Trigger asChild>
-        <Button transparent borderColor='$backgroundTransparent'>
+        <Button transparent bordered={false}>
           <Heading size="$4" color={primaryTextColor}>{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
         </Button>
       </Popover.Trigger>

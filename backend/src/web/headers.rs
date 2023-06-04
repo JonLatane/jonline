@@ -60,3 +60,31 @@ impl<'r> FromRequest<'r> for FilenameHeader<'r> {
     }
 }
 
+pub struct MediaTitleHeader<'a>(pub &'a str);
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for MediaTitleHeader<'r> {
+    type Error = ();
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        match req.headers().get_one("Media-Title") {
+            Some(h) => Outcome::Success(MediaTitleHeader(h)),
+            None => Outcome::Forward(()),
+        }
+    }
+}
+
+
+pub struct MediaDescriptionHeader<'a>(pub &'a str);
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for MediaDescriptionHeader<'r> {
+    type Error = ();
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        match req.headers().get_one("Media-Description") {
+            Some(h) => Outcome::Success(MediaDescriptionHeader(h)),
+            None => Outcome::Forward(()),
+        }
+    }
+}

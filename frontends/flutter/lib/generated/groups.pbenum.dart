@@ -12,14 +12,14 @@ import 'package:protobuf/protobuf.dart' as $pb;
 class GroupListingType extends $pb.ProtobufEnum {
   static const GroupListingType ALL_GROUPS = GroupListingType._(0, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'ALL_GROUPS');
   static const GroupListingType MY_GROUPS = GroupListingType._(1, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MY_GROUPS');
-  static const GroupListingType REQUESTED = GroupListingType._(2, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'REQUESTED');
-  static const GroupListingType INVITED = GroupListingType._(3, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'INVITED');
+  static const GroupListingType REQUESTED_GROUPS = GroupListingType._(2, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'REQUESTED_GROUPS');
+  static const GroupListingType INVITED_GROUPS = GroupListingType._(3, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'INVITED_GROUPS');
 
   static const $core.List<GroupListingType> values = <GroupListingType> [
     ALL_GROUPS,
     MY_GROUPS,
-    REQUESTED,
-    INVITED,
+    REQUESTED_GROUPS,
+    INVITED_GROUPS,
   ];
 
   static final $core.Map<$core.int, GroupListingType> _byValue = $pb.ProtobufEnum.initByValue(values);

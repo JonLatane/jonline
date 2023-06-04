@@ -1,13 +1,14 @@
 import { Post, PostListingType } from '@jonline/api';
-import { dismissScrollPreserver, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
-import { getPostPages, getPostsPage, loadPostsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { RootState, getPostPages, loadPostsPage, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
-import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
-import { StickyCreateButton } from './sticky_create_button';
+import { getHasMorePostPages } from '../../store/modules/posts';
 import PostCard from '../post/post_card';
-import { TabsNavigation } from '../tabs/tabs_navigation';
 import { AppSection } from '../tabs/features_navigation';
+import { TabsNavigation } from '../tabs/tabs_navigation';
+import { PaginationIndicator } from './pagination_indicator';
+import { StickyCreateButton } from './sticky_create_button';
 
 export function PostsScreen() {
   const postsState = useTypedSelector((state: RootState) => state.posts);
@@ -27,6 +28,7 @@ export function PostsScreen() {
     currentPage,
     () => dismissScrollPreserver(setShowScrollPreserver)
   );
+  const hasMorePostPages = getHasMorePostPages(postsState, PostListingType.PUBLIC_POSTS, currentPage);
   console.log(`Current page: ${currentPage}, Total Posts: ${posts.length}`);
 
   return (
@@ -46,32 +48,15 @@ export function PostsScreen() {
               <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : undefined
-          : <>
-            <YStack>
-              {posts.map((post, index) => {
-                const isLast = index == posts.length - 1;
-                return <PostCard post={post} isPreview
-                  onOnScreen={isLast ? () => {
-                    console.log(`Loading page ${currentPage + 1}...`);
-                    setCurrentPage(currentPage + 1);
-                  } : undefined} />;
-              })}
-            </YStack>
-            {/* <FlatList data={posts}
-            // onRefresh={reloadPosts}
-            // refreshing={postsState.status == 'loading'}
-            // Allow easy restoring of scroll position
-            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-            keyExtractor={(post) => post.id}
-            renderItem={({ item: post, index }) => {
-              const isLast = index == posts.length - 1;
-              return <PostCard post={post} isPreview
-                onOnScreen={isLast ? () => {
-                  console.log(`Loading page ${currentPage + 1}...`);
-                  setCurrentPage(currentPage + 1);
-                }: undefined} />;
-            }} />} */}
-          </>
+          : <YStack>
+            {posts.map((post) => {
+              return <PostCard post={post} isPreview />;
+            })}
+            <PaginationIndicator page={currentPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
+              hasNextPage={hasMorePostPages}
+              loadNextPage={() => setCurrentPage(currentPage + 1)}
+            />
+          </YStack>
         }
       </YStack>
       <StickyCreateButton />

@@ -1,14 +1,13 @@
 import { Event, EventListingType } from '@jonline/api';
-import { dismissScrollPreserver, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
-import { getEventPages, getEventsPage, loadEventsPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { RootState, getEventPages, getHasMoreEventPages, loadEventsPage, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
-import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../evepont/create_event_sheet';
 import EventCard from '../event/event_card';
-import PostCard from '../post/post_card';
-import { TabsNavigation } from '../tabs/tabs_navigation';
 import { AppSection } from '../tabs/features_navigation';
+import { TabsNavigation } from '../tabs/tabs_navigation';
+import { PaginationIndicator } from './pagination_indicator';
 
 export function EventsScreen() {
   const eventsState = useTypedSelector((state: RootState) => state.events);
@@ -27,6 +26,8 @@ export function EventsScreen() {
     currentPage,
     () => dismissScrollPreserver(setShowScrollPreserver)
   );
+  const hasMoreEventPages = getHasMoreEventPages(eventsState, EventListingType.PUBLIC_EVENTS, currentPage);
+
 
   return (
     <TabsNavigation appSection={AppSection.EVENTS}>
@@ -47,31 +48,14 @@ export function EventsScreen() {
             : undefined
           : <>
             <YStack>
-              {events.map((event, index) => {
-                const isLast = index == events.length - 1;
-                return <EventCard event={event} isPreview
-                  onOnScreen={isLast ? () => {
-                    console.log(`Loading page ${currentPage + 1}...`);
-                    setCurrentPage(currentPage + 1);
-                  } : undefined} />;
+              {events.map((event) => {
+                return <EventCard event={event} isPreview />;
               })}
+              <PaginationIndicator page={currentPage} loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
+                hasNextPage={hasMoreEventPages}
+                loadNextPage={() => setCurrentPage(currentPage + 1)} />
               {showScrollPreserver ? <YStack h={100000} /> : undefined}
             </YStack>
-            {/* <FlatList data={events}
-              // onRefresh={reloadEvents}
-              // refreshing={eventsState.status == 'loading'}
-              // Allow easy restoring of scroll position
-              ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-              keyExtractor={(event) => `${event.id}-${event.instances[0]?.id}`}
-              renderItem={({ item: event, index }) => {
-                const isLast = index == events.length - 1;
-                return <EventCard event={event} isPreview
-                  onOnScreen={isLast ? () => {
-                    console.log(`Loading page ${currentPage + 1}...`);
-                    setCurrentPage(currentPage + 1);
-                  } : undefined} />;
-                // return <PostCard post={event.post!} isPreview />;
-              }} /> */}
           </>}
       </YStack>
       {/* <StickyCreateButton /> */}

@@ -5,8 +5,8 @@ use crate::protos::*;
 pub const ALL_GROUP_LISTING_TYPES: [GroupListingType; 4] = [
     GroupListingType::AllGroups,
     GroupListingType::MyGroups,
-    GroupListingType::Requested,
-    GroupListingType::Invited,
+    GroupListingType::RequestedGroups,
+    GroupListingType::InvitedGroups,
 ];
 
 pub const ALL_USER_LISTING_TYPES: [UserListingType; 5] = [

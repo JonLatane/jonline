@@ -16,10 +16,9 @@ const disableExtraction =
   boolVals[process.env.DISABLE_EXTRACTION] ?? process.env.NODE_ENV === 'development'
 
 console.log(`
-Building the Jonline Tamagui/React Frontend! Real distributions should be served by Rust/Rocket;
-this Next.js server is for dev only.
+Building the Jonline Tamagui/React Frontend! Real distributions should be served by Rust/Rocket; this Next.js server is for dev only.
 
-You can update this monorepo to the latest Tamagui release just by running:
+You can update this monorepo to the latest Tamagui release by running:
 
 yarn upgrade:tamagui
 `)

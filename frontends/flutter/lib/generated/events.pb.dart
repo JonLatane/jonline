@@ -543,3 +543,124 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   static EventInstanceInfo? _defaultInstance;
 }
 
+class EventAttendance extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'EventAttendance', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'eventInstanceId')
+    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userId')
+    ..e<AttendanceStatus>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'status', $pb.PbFieldType.OE, defaultOrMaker: AttendanceStatus.INTERESTED, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values)
+    ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'invitingUserId')
+    ..aOM<$9.Timestamp>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$9.Timestamp>(11, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
+    ..hasRequiredFields = false
+  ;
+
+  EventAttendance._() : super();
+  factory EventAttendance({
+    $core.String? eventInstanceId,
+    $core.String? userId,
+    AttendanceStatus? status,
+    $core.String? invitingUserId,
+    $9.Timestamp? createdAt,
+    $9.Timestamp? updatedAt,
+  }) {
+    final _result = create();
+    if (eventInstanceId != null) {
+      _result.eventInstanceId = eventInstanceId;
+    }
+    if (userId != null) {
+      _result.userId = userId;
+    }
+    if (status != null) {
+      _result.status = status;
+    }
+    if (invitingUserId != null) {
+      _result.invitingUserId = invitingUserId;
+    }
+    if (createdAt != null) {
+      _result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      _result.updatedAt = updatedAt;
+    }
+    return _result;
+  }
+  factory EventAttendance.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventAttendance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventAttendance clone() => EventAttendance()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventAttendance copyWith(void Function(EventAttendance) updates) => super.copyWith((message) => updates(message as EventAttendance)) as EventAttendance; // ignore: deprecated_member_use
+  $pb.BuilderInfo get info_ => _i;
+  @$core.pragma('dart2js:noInline')
+  static EventAttendance create() => EventAttendance._();
+  EventAttendance createEmptyInstance() => create();
+  static $pb.PbList<EventAttendance> createRepeated() => $pb.PbList<EventAttendance>();
+  @$core.pragma('dart2js:noInline')
+  static EventAttendance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventAttendance>(create);
+  static EventAttendance? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get eventInstanceId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set eventInstanceId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasEventInstanceId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearEventInstanceId() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get userId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set userId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasUserId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearUserId() => clearField(2);
+
+  @$pb.TagNumber(3)
+  AttendanceStatus get status => $_getN(2);
+  @$pb.TagNumber(3)
+  set status(AttendanceStatus v) { setField(3, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasStatus() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearStatus() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get invitingUserId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set invitingUserId($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasInvitingUserId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearInvitingUserId() => clearField(4);
+
+  @$pb.TagNumber(10)
+  $9.Timestamp get createdAt => $_getN(4);
+  @$pb.TagNumber(10)
+  set createdAt($9.Timestamp v) { setField(10, v); }
+  @$pb.TagNumber(10)
+  $core.bool hasCreatedAt() => $_has(4);
+  @$pb.TagNumber(10)
+  void clearCreatedAt() => clearField(10);
+  @$pb.TagNumber(10)
+  $9.Timestamp ensureCreatedAt() => $_ensure(4);
+
+  @$pb.TagNumber(11)
+  $9.Timestamp get updatedAt => $_getN(5);
+  @$pb.TagNumber(11)
+  set updatedAt($9.Timestamp v) { setField(11, v); }
+  @$pb.TagNumber(11)
+  $core.bool hasUpdatedAt() => $_has(5);
+  @$pb.TagNumber(11)
+  void clearUpdatedAt() => clearField(11);
+  @$pb.TagNumber(11)
+  $9.Timestamp ensureUpdatedAt() => $_ensure(5);
+}
+

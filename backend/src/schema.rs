@@ -4,7 +4,8 @@ table! {
         event_instance_id -> Int8,
         user_id -> Int8,
         status -> Varchar,
-        inviting_user_id -> Nullable<Int8>,
+        requesting_user_id -> Nullable<Int8>,
+        moderation -> Varchar,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
     }

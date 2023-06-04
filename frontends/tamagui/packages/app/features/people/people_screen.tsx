@@ -1,6 +1,6 @@
 import { Post, PostListingType, User, UserListingType } from '@jonline/api';
 import { dismissScrollPreserver, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
-import { getPostsPage, getUsersPage, loadPostsPage, loadUsersPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { getUsersPage, loadPostsPage, loadUsersPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";

@@ -18,10 +18,9 @@ interface Props {
   isPreview?: boolean;
   groupContext?: Group;
   horizontal?: boolean;
-  onOnScreen?: () => void;
 }
 
-export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, horizontal, onOnScreen }) => {
+export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, horizontal }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -39,12 +38,12 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
-  const onScreen = useOnScreen(ref, "-1px");
-  useEffect(() => {
-    if( onScreen) {
-      onOnScreen?.();
-    }
-  }, [onScreen]);
+  // const onScreen = useOnScreen(ref, "-1px");
+  // useEffect(() => {
+  //   if( onScreen) {
+  //     onOnScreen?.();
+  //   }
+  // }, [onScreen]);
   // useEffect(() => {
   //   if (!preview && !loadingPreview && onScreen && post.previewImageExists != false) {
   //     post.content
@@ -168,87 +167,88 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
     <>
       <YStack w='100%'>
         {/* <Theme inverse={false}> */}
-          <Card theme="dark" elevate size="$4" bordered
-            margin='$0'
-            marginBottom='$3'
-            marginTop='$3'
-            f={isPreview ? undefined : 1}
-            animation="bouncy"
-            pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
-            ref={ref!}
-            scale={1}
-            opacity={1}
-            y={0}
-            // enterStyle={{ y: -50, opacity: 0, }}
-            // exitStyle={{ opacity: 0, }}
-            {...eventLinkProps}
+        <Card theme="dark" elevate size="$4" bordered
+          margin='$0'
+          marginBottom='$3'
+          marginTop='$3'
+          f={isPreview ? undefined : 1}
+          animation="bouncy"
+          pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
+          ref={ref!}
+          scale={1}
+          opacity={1}
+          y={0}
+          // enterStyle={{ y: -50, opacity: 0, }}
+          // exitStyle={{ opacity: 0, }}
+          {...eventLinkProps}
 
-          >
-            {post.link || post.title
-              ? <Card.Header>
-                <YStack>
-                  <XStack>
-                    <YStack f={1}>
-                      {post.link
-                        ? isPreview
-                          ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
-                          : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                            color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                        :
-                        <Heading size="$7" marginRight='auto'>{post.title}</Heading>
-                      }
-                    </YStack>
-                  </XStack>
-                  {startsAtHeader && endsAtHeader ? dateRangeView(startsAtHeader, endsAtHeader) : undefined}
-                </YStack>
-              </Card.Header>
-              : undefined}
-            <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
-
-              {/* {...postLinkProps}> */}
-              <YStack zi={1000} width='100%' {...footerProps}>
-                <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
-                  {(!isPreview && previewUrl && previewUrl != '') ?
-                    <Image
-                      mb='$3'
-                      width={media.sm ? 300 : 400}
-                      height={media.sm ? 300 : 400}
-                      resizeMode="contain"
-                      als="center"
-                      source={{uri: previewUrl}}
-                      borderRadius={10}
-                    /> : undefined}
-                  {
-                    post.content && post.content != '' ? Platform.select({
-                      default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
-                      // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
-                      // default: <Heading size='$1'>Native Markdown support pending!</Heading>
-                    }) : undefined
-                  }
-                </YStack>
-                <XStack pt={10} {...detailsProps}>
-                  <AuthorInfo {...{ post, detailsMargins }} />
+        >
+          {post.link || post.title
+            ? <Card.Header>
+              <YStack>
+                <XStack>
+                  <YStack f={1}>
+                    {post.link
+                      ? isPreview
+                        ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
+                        : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
+                          color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
+                      :
+                      <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+                    }
+                  </YStack>
                 </XStack>
+                {startsAtHeader && endsAtHeader ? dateRangeView(startsAtHeader, endsAtHeader) : undefined}
               </YStack>
-            </Card.Footer>
-            <Card.Background>
-              {(isPreview && previewUrl && previewUrl != '') ?
-                <FadeInView>
+            </Card.Header>
+            : undefined}
+          <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
+
+            {/* {...postLinkProps}> */}
+            <YStack zi={1000} width='100%' {...footerProps}>
+              <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
+                {(!isPreview && previewUrl && previewUrl != '') ?
                   <Image
-                    pos="absolute"
-                    width={300}
-                    opacity={0.25}
-                    height={300}
+                    mb='$3'
+                    width={media.sm ? 300 : 400}
+                    height={media.sm ? 300 : 400}
                     resizeMode="contain"
-                    als="flex-start"
-                    source={{uri: previewUrl}}
-                    blurRadius={1.5}
-                    // borderRadius={5}
-                    borderBottomRightRadius={5}
-                  />
-                </FadeInView> : undefined}
-            </Card.Background>
-          </Card >
+                    als="center"
+                    source={{ uri: previewUrl }}
+                    borderRadius={10}
+                  /> : undefined}
+                {
+                  post.content && post.content != '' ? Platform.select({
+                    default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
+                    // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
+                    // default: <Heading size='$1'>Native Markdown support pending!</Heading>
+                  }) : undefined
+                }
+              </YStack>
+              <XStack pt={10} {...detailsProps}>
+                <AuthorInfo {...{ post, detailsMargins }} />
+              </XStack>
+            </YStack>
+          </Card.Footer>
+          <Card.Background>
+            {(isPreview && previewUrl && previewUrl != '') ?
+              // <FadeInView>
+              <Image
+                pos="absolute"
+                width={300}
+                opacity={0.25}
+                height={300}
+                resizeMode="contain"
+                als="flex-start"
+                source={{ uri: previewUrl }}
+                blurRadius={1.5}
+                // borderRadius={5}
+                borderBottomRightRadius={5}
+              />
+              // </FadeInView>
+              : undefined}
+          </Card.Background>
+        </Card >
         {/* </Theme> */}
       </YStack>
       {

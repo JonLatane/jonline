@@ -40,8 +40,8 @@ message GetGroupsRequest {
 enum GroupListingType {
   ALL_GROUPS = 0;
   MY_GROUPS = 1;
-  REQUESTED = 2;
-  INVITED = 3;
+  REQUESTED_GROUPS = 2;
+  INVITED_GROUPS = 3;
 }
 
 message GetGroupsResponse {

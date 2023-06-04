@@ -1,8 +1,8 @@
 use diesel::*;
 use tonic::{Code, Request, Response, Status};
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::schema::{posts, users};
@@ -16,7 +16,8 @@ pub fn create_post(
 ) -> Result<Response<Post>, Status> {
     log::info!(
         "CreatePost called for user {}, user_id={}",
-        &user.username, user.id
+        &user.username,
+        user.id
     );
     validate_permission(&user, Permission::CreatePosts)?;
     let req = request.into_inner();
@@ -66,7 +67,7 @@ pub fn create_post(
 
     let visibility = match req.visibility() {
         Visibility::Unknown => Visibility::GlobalPublic,
-        v => v
+        v => v,
     };
     match visibility {
         Visibility::GlobalPublic => validate_permission(&user, Permission::PublishPostsGlobally)?,
@@ -87,10 +88,20 @@ pub fn create_post(
                 title: post_title,
                 link: req.link.to_link(),
                 content: req.content.to_owned(),
-                context: PostContext::Post.as_str_name().to_string(),
+                context: if (parent_post_db_id.is_none()) {
+                    PostContext::Post
+                } else {
+                    PostContext::Reply
+                }
+                .as_str_name()
+                .to_string(),
                 visibility: visibility.to_string_visibility(),
                 embed_link: req.embed_link.to_owned(),
-                media: req.media.iter().map(|m: &String| m.to_db_id().unwrap()).collect(),
+                media: req
+                    .media
+                    .iter()
+                    .map(|m: &String| m.to_db_id().unwrap())
+                    .collect(),
             })
             .get_result::<models::Post>(conn)?;
         match parent_post_db_id.to_owned() {
@@ -101,7 +112,10 @@ pub fn create_post(
                     .execute(conn)?;
                 update(posts::table)
                     .filter(posts::id.eq_any(ancestor_post_ids))
-                    .set((posts::response_count.eq(posts::response_count + 1), posts::last_activity_at.eq(inserted_post.created_at)))
+                    .set((
+                        posts::response_count.eq(posts::response_count + 1),
+                        posts::last_activity_at.eq(inserted_post.created_at),
+                    ))
                     .execute(conn)?;
                 update(users::table)
                     .filter(users::id.eq(user.id))

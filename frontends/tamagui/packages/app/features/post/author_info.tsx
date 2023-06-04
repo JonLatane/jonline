@@ -55,7 +55,8 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
     {(avatarUrl && avatarUrl != '') ?
       <YStack marginVertical='auto'>
         {disableLink
-          ? <FadeInView>
+          ? 
+          // <FadeInView>
             <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}
               mr={media.gtXs ? '$3' : '$2'}>
               <Image
@@ -71,9 +72,9 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
               // borderRadius={5}
               />
             </XStack>
-          </FadeInView>
+          // </FadeInView>
           :
-          <FadeInView>
+          // <FadeInView>
             <Anchor {...authorLinkProps}
               mr={media.gtXs ? '$3' : '$2'}>
               <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
@@ -91,7 +92,8 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
                 />
               </XStack>
             </Anchor>
-          </FadeInView>}
+          // </FadeInView>
+          }
       </YStack>
       : undefined}
     <YStack>

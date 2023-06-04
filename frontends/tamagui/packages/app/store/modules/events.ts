@@ -13,6 +13,7 @@ import moment from "moment";
 import { LoadEvent, createEvent, defaultEventListingType, loadEvent, loadEventsPage } from './event_actions';
 import { loadUserEvents } from "./users";
 // import { loadEventsPage } from "./event_actions";
+import { ListEnd } from '@tamagui/lucide-icons';
 export * from './event_actions';
 
 export interface EventsState {
@@ -210,7 +211,7 @@ export const upsertEvent = eventsAdapter.upsertOne;
 export const upsertEvents = eventsAdapter.upsertMany;
 export default eventsReducer;
 
-export function getEventsPage(state: EventsState, listingType: EventListingType, page: number): Event[] {
+function getEventsPage(state: EventsState, listingType: EventListingType, page: number): Event[] {
   const pageInstaceIds: string[] = (state.eventPages[listingType] ?? {})[page] ?? [];
   const pageInstances = pageInstaceIds.map(id => state.instances[id]).filter(p => p) as EventInstance[];
   const pageEvents = pageInstances.map(instance => {
@@ -227,4 +228,12 @@ export function getEventPages(state: EventsState, listingType: EventListingType,
     result.push(...pageEvents);
   }
   return result;
+}
+
+export function getHasEventsPage(state: EventsState, listingType: EventListingType, page: number): boolean {
+  return (state.eventPages[listingType] ?? {})[page] != undefined;
+}
+
+export function getHasMoreEventPages(state: EventsState, listingType: EventListingType, currentPage: number): boolean {
+  return ((state.eventPages[listingType] ?? {})[currentPage]?.length ?? 0) > 0;
 }

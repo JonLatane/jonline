@@ -17,6 +17,7 @@
     "watch": "tamagui-build --watch"
   },
   "dependencies": {
+    "@tamagui/animations-css": "latest",
     "@tamagui/animations-react-native": "latest",
     "@tamagui/font-inter": "latest",
     "@tamagui/react-native-media-driver": "latest",

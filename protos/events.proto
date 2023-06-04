@@ -82,3 +82,21 @@ message EventInstance {
 message EventInstanceInfo {
 
 }
+
+enum AttendanceStatus {
+  INTERESTED = 0;
+  GOING = 1;
+  NOT_GOING = 2;
+  REQUESTED = 3;
+  WENT = 10;
+  DID_NOT_GO = 11;
+}
+
+message EventAttendance {
+  string event_instance_id = 1;
+  string user_id = 2;
+  AttendanceStatus status = 3;
+  optional string inviting_user_id = 4;
+  google.protobuf.Timestamp created_at = 10;
+  optional google.protobuf.Timestamp updated_at = 11;
+}
