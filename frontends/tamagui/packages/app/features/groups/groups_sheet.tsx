@@ -15,12 +15,12 @@ export type GroupsSheetProps = {
   groupPageForwarder?: (group: Group) => string;
 }
 
-export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [position, setPosition] = useState(0);
   const [searchText, setSearchText] = useState('');
-  let { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useCredentialDispatch();
 
   // const app = useTypedSelector((state: RootState) => state.app);
   // const serversState = useTypedSelector((state: RootState) => state.servers);
@@ -106,14 +106,19 @@ export function GroupsSheet({ selectedGroup }: GroupsSheetProps) {
           <Sheet.ScrollView p="$4" space>
             <YStack maw={600} als='center' width='100%'>
               {matchedGroups.length > 0
-                ? 
+                ?
                 <>
-                <YStack>
-                  {matchedGroups.map((group, index) => {
-                    return <GroupButton key={`groupButton-${group.id}`} group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
-                  })}
-                </YStack>
-                {/* <FlatList data={matchedGroups}
+                  <YStack>
+                    {matchedGroups.map((group, index) => {
+                      return <GroupButton
+                        key={`groupButton-${group.id}`}
+                        group={group}
+                        groupPageForwarder={groupPageForwarder}
+                        selected={group.id == selectedGroup?.id}
+                        setOpen={setOpen} />
+                    })}
+                  </YStack>
+                  {/* <FlatList data={matchedGroups}
                   renderItem={({ item: group }) => {
                     return <GroupButton key={`groupButton-${group.id}`} group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
                   }}

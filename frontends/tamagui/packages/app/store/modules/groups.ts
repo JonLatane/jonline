@@ -1,4 +1,4 @@
-import { GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, PostListingType } from "@jonline/api";
+import { EventListingType, GetEventsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, Post, PostListingType } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 
 import {
@@ -15,6 +15,9 @@ import {
 import moment from "moment";
 import { AccountOrServer } from "../types";
 import { getCredentialClient } from "./accounts";
+import { GroupedPostPages, PostsState, selectPostById } from "./posts";
+import { GroupedEventInstancePages } from "./events";
+import { RootState } from "../store";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -25,15 +28,30 @@ export interface GroupsState {
   ids: EntityId[];
   entities: Dictionary<Group>;
   shortnameIds: Dictionary<string>;
-  idGroupPosts: Dictionary<GroupPost[]>;
+  groupPostPages: GroupedPostPages;
+  groupEventPages: GroupedEventInstancePages;
+  postIdGroupPosts: Dictionary<GroupPost[]>;
   failedShortnames: string[];
   recentGroups: EntityId[];
 }
+
 
 const groupsAdapter: EntityAdapter<Group> = createEntityAdapter<Group>({
   selectId: (group) => group.id,
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
+
+const initialState: GroupsState = {
+  status: "unloaded",
+  draftGroup: Group.create(),
+  shortnameIds: {},
+  recentGroups: [],
+  failedShortnames: [],
+  groupPostPages: {},
+  groupEventPages: {},
+  postIdGroupPosts: {},
+  ...groupsAdapter.getInitialState()
+};
 
 export type CreateGroup = AccountOrServer & Group;
 export const createGroup: AsyncThunk<Group, CreateGroup, any> = createAsyncThunk<Group, CreateGroup>(
@@ -53,9 +71,9 @@ export const updateGroups: AsyncThunk<GetGroupsResponse, UpdateGroups, any> = cr
   }
 );
 
-export type LoadGroupPosts = AccountOrServer & { groupId: string };
-export const loadGroupPosts: AsyncThunk<GetPostsResponse, LoadGroupPosts, any> = createAsyncThunk<GetPostsResponse, LoadGroupPosts>(
-  "groups/laodPosts",
+export type LoadGroupPostsPage = AccountOrServer & { groupId: string, page?: number };
+export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage, any> = createAsyncThunk<GetPostsResponse, LoadGroupPostsPage>(
+  "groups/loadPostsPage",
   async (request) => {
     let client = await getCredentialClient(request);
     const result = await client.getPosts({ groupId: request.groupId, listingType: PostListingType.GROUP_POSTS }, client.credential);
@@ -63,6 +81,15 @@ export const loadGroupPosts: AsyncThunk<GetPostsResponse, LoadGroupPosts, any> =
   }
 );
 
+export type LoadGroupEventsPage = AccountOrServer & { groupId: string, page?: number };
+export const loadGroupEventsPage: AsyncThunk<GetEventsResponse, LoadGroupEventsPage, any> = createAsyncThunk<GetEventsResponse, LoadGroupEventsPage>(
+  "groups/loadEventsPage",
+  async (request) => {
+    let client = await getCredentialClient(request);
+    const result = await client.getEvents({ groupId: request.groupId, listingType: EventListingType.GROUP_EVENTS }, client.credential);
+    return result;
+  }
+);
 
 export type LoadGroup = { id: string } & AccountOrServer;
 export const loadGroup: AsyncThunk<Group, LoadGroup, any> = createAsyncThunk<Group, LoadGroup>(
@@ -74,16 +101,6 @@ export const loadGroup: AsyncThunk<Group, LoadGroup, any> = createAsyncThunk<Gro
     return group;
   }
 );
-
-const initialState: GroupsState = {
-  status: "unloaded",
-  draftGroup: Group.create(),
-  shortnameIds: {},
-  idGroupPosts: {},
-  recentGroups: [],
-  failedShortnames: [],
-  ...groupsAdapter.getInitialState(),
-};
 
 export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice({
   name: "groups",
@@ -135,25 +152,82 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
 
 
-    builder.addCase(loadGroupPosts.pending, (state) => {
+    builder.addCase(loadGroupPostsPage.pending, (state) => {
       state.status = "loading";
       state.error = undefined;
     });
-    builder.addCase(loadGroupPosts.fulfilled, (state, action) => {
+    builder.addCase(loadGroupPostsPage.fulfilled, (state, action) => {
       state.status = "loaded";
       const { posts } = action.payload;
-      const newPostIds = new Set(posts.map(p => p.id));
-      const newGroupPosts = posts.map((p) => p.currentGroupPost!);//.filter((p) => p);
-      const updatedGroupPosts = state.idGroupPosts[action.meta.arg.groupId]
-        ?.filter((gp) => !newPostIds.has(gp.postId))
-        || [];
-      updatedGroupPosts.push(...newGroupPosts);
-      updatedGroupPosts.sort((a, b) => a.createdAt! == b.createdAt! ? 0
-        : a.createdAt! < b.createdAt! ? 1 : -1);
-      state.idGroupPosts[action.meta.arg.groupId] = updatedGroupPosts;
+      const postIds = posts.map(p => p.id);
+
+      // TODO: add GroupPosts to PostsState
+
+      const groupId = action.meta.arg.groupId;
+      const page = action.meta.arg.page;
+      if (!state.groupPostPages[groupId] || page === 0) state.groupPostPages[groupId] = {};
+      const postPages: Dictionary<string[]> = state.groupPostPages[groupId]!;
+      // Sensible approach:
+      // postPages[page] = postIds;
+
+      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
+      let initialPage: number = 0;
+      while (postPages[initialPage]) {
+        initialPage++;
+      }
+      const chunkSize = 10;
+      for (let i = 0; i < postIds.length; i += chunkSize) {
+        const chunk = postIds.slice(i, i + chunkSize);
+        state.groupPostPages[groupId]![initialPage + (i/chunkSize)] = chunk;
+      }
+      if (state.groupPostPages[groupId]![0] == undefined) {
+        state.groupPostPages[groupId]![0] = [];
+      }
+
       state.successMessage = `Group Posts for ${action.meta.arg.groupId} loaded.`;
     });
-    builder.addCase(loadGroupPosts.rejected, (state, action) => {
+    builder.addCase(loadGroupPostsPage.rejected, (state, action) => {
+      state.status = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
+    });
+
+    builder.addCase(loadGroupEventsPage.pending, (state) => {
+      state.status = "loading";
+      state.error = undefined;
+    });
+    builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
+      state.status = "loaded";
+      const { events } = action.payload;
+      const eventInstanceIds = events.map(e => e.instances[0]!.id);
+
+      // TODO: add GroupPosts to PostsState
+
+      const groupId = action.meta.arg.groupId;
+      const page = action.meta.arg.page;
+      if (!state.groupEventPages[groupId] || page === 0) state.groupEventPages[groupId] = {};
+      const postPages: Dictionary<string[]> = state.groupEventPages[groupId]!;
+      // Sensible approach:
+      // postPages[page] = postIds;
+
+      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
+      let initialPage: number = 0;
+      while (postPages[initialPage]) {
+        initialPage++;
+      }
+      const chunkSize = 10;
+      for (let i = 0; i < eventInstanceIds.length; i += chunkSize) {
+        const chunk = eventInstanceIds.slice(i, i + chunkSize);
+        state.groupEventPages[groupId]![initialPage + (i/chunkSize)] = chunk;
+      }
+      if (state.groupEventPages[groupId]![0] == undefined) {
+        state.groupEventPages[groupId]![0] = [];
+      }
+
+      state.successMessage = `Group Events for ${action.meta.arg.groupId} loaded.`;
+    });
+    builder.addCase(loadGroupEventsPage.rejected, (state, action) => {
       state.status = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);

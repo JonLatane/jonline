@@ -236,6 +236,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                       const onSelect = onMediaSelected ? () => selectMedia(item.id) : undefined;
 
                       return <YStack w={mediaQuery.gtXs ? '260px' : '105px'}
+                        key={`media-chooser-item-${item.id}-${selected}`}
                         mih='160px'
                         mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
                         borderColor={selected ? primaryColor : navColor} borderWidth={selected ? 2 : 1} borderRadius={5}

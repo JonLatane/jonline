@@ -26,6 +26,16 @@ pub fn get_events(
         request.to_owned().event_instance_id,
         request.to_owned().author_user_id,
     ) {
+        // TODO: implement the other listing types
+        (EventListingType::GroupEvents, _, _, _) => match request.group_id {
+            Some(group_id) => get_group_events(
+                group_id.to_db_id_or_err("group_id")?,
+                &user,
+                conn,
+                request.time_filter,
+            )?,
+            _ => return Err(Status::new(Code::InvalidArgument, "group_id_invalid")),
+        },
         (_, Some(event_id), _, _) => vec![get_event_by_id(&user, &event_id, conn)?],
         _ => get_applicable_events(&user, conn, request.time_filter),
     };
@@ -217,6 +227,110 @@ fn get_event_by_id(
     })
 }
 
+fn get_group_events(
+    group_id: i64,
+    user: &Option<models::User>,
+    conn: &mut PgPooledConnection,
+    _filter: Option<TimeFilter>,
+) -> Result<Vec<Event>, Status> {
+    let group = models::get_group(group_id, conn)
+        .map_err(|_| Status::new(Code::NotFound, "group_not_found"))?;
+
+    let public_visibilities = match user {
+        Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
+        None => vec![Visibility::GlobalPublic],
+    }
+    .to_string_visibilities();
+    let event_posts = alias!(posts as event_posts);
+    let _instance_posts = alias!(posts as instance_posts);
+    let event_users = alias!(users as event_users);
+    let _instance_users = alias!(users as instance_users);
+
+    let public = event_posts
+        .field(posts::visibility)
+        .eq_any(public_visibilities);
+    let limited_to_followers = event_posts
+        .field(posts::visibility)
+        .eq(Visibility::Limited.to_string_visibility())
+        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
+
+    let result: Vec<Event> = match (group.visibility.to_proto_visibility().unwrap(), user) {
+        (Visibility::GlobalPublic, _) | (_, Some(_)) => event_instances::table
+            .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
+            .inner_join(event_posts.on(event_posts.field(posts::id).eq(events::post_id)))
+            .inner_join(
+                group_posts::table.on(group_posts::post_id.eq(event_posts.field(posts::id))),
+            )
+            .left_join(
+                event_users.on(event_posts
+                    .field(posts::user_id)
+                    .eq(event_users.field(users::id).nullable())),
+            )
+            .left_join(
+                follows::table.on(event_posts
+                    .field(posts::user_id)
+                    .eq(follows::target_user_id.nullable())
+                    .and(
+                        follows::user_id
+                            .nullable()
+                            .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+                    )),
+            )
+            // .left_join(
+            //     instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
+            //     // instance_posts.on(instance_posts
+            //     //     .field(posts::id).nullable()
+            //     //     .eq(event_instances::post_id)),
+            // )
+            // .left_join(instance_users.on(instance_posts.field(posts::user_id).eq(instance_users.field(users::id).nullable())))
+            .select((
+                event_instances::all_columns,
+                events::all_columns,
+                event_posts.fields(posts::all_columns),
+                event_users.fields(users::all_columns).nullable(),
+                // instance_posts.fields(posts::all_columns).nullable(),
+                // instance_users.fields(users::all_columns).nullable(),
+                // instance_posts.field(posts::preview).is_not_null(),
+            ))
+            .filter(public.or(limited_to_followers))
+            .filter(group_posts::group_id.eq(group_id))
+            .filter(event_instances::ends_at.gt(SystemTime::now()))
+            .order(event_instances::ends_at)
+            .limit(20)
+            .load::<(
+                models::EventInstance,
+                models::Event,
+                models::Post,
+                Option<models::User>,
+                // Option<models::Post>,
+                // Option<models::User>,
+                // bool,
+            )>(conn)
+            .unwrap()
+            .iter()
+            .map(
+                |(
+                    instance,
+                    event,
+                    event_post,
+                    event_user,
+                    // instance_post,
+                    // instance_user,
+                    // has_instance_preview,
+                )| {
+                    info!("instance: {:?}", instance);
+                    event.to_proto(
+                        &event_post,
+                        event_user.as_ref(),
+                        &vec![(instance, None, None)],
+                    )
+                },
+            )
+            .collect(),
+        (_, None) => vec![],
+    };
+    Ok(result)
+}
 //TODO Update below copypasta
 
 fn _get_top_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
@@ -236,10 +350,7 @@ fn _get_top_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) ->
                 .eq(follows::target_user_id.nullable())
                 .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)))),
         )
-        .select((
-            posts::all_columns,
-            users::username.nullable(),
-        ))
+        .select((posts::all_columns, users::username.nullable()))
         // .filter(posts::visibility.eq_any(visibilities))
         .filter(public.or(limited_to_followers))
         .filter(posts::parent_post_id.is_null())
@@ -264,10 +375,7 @@ fn _get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
             .inner_join(group_posts::table.on(group_posts::group_id.eq(groups::id)))
             .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-            .select((
-                posts::all_columns,
-                users::username.nullable(),
-            ))
+            .select((posts::all_columns, users::username.nullable()))
             .filter(memberships::user_id.eq(user.id))
             .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
             .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
@@ -288,10 +396,7 @@ fn _get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
         .inner_join(group_posts::table.on(group_posts::group_id.eq(groups::id)))
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((
-            posts::all_columns,
-            users::username.nullable(),
-        ))
+        .select((posts::all_columns, users::username.nullable()))
         .filter(memberships::user_id.eq(user.id))
         .filter(
             memberships::permissions.has_any_key(
@@ -398,10 +503,7 @@ fn _load_group_posts(
     group_posts::table
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((
-            posts::all_columns,
-            users::username.nullable(),
-        ))
+        .select((posts::all_columns, users::username.nullable()))
         .filter(group_posts::group_id.eq(group_id))
         .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
         .filter(posts::visibility.ne(Visibility::Private.as_str_name()))
@@ -427,10 +529,7 @@ fn _get_user_posts(
     .to_string_visibilities();
     posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((
-            posts::all_columns,
-            users::username.nullable(),
-        ))
+        .select((posts::all_columns, users::username.nullable()))
         .filter(posts::visibility.eq_any(visibilities))
         // .filter(posts::parent_post_id.is_null())
         .filter(posts::user_id.eq(user_id))
@@ -448,10 +547,7 @@ fn _get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> V
     follows::table
         .inner_join(posts::table.on(follows::target_user_id.nullable().eq(posts::user_id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((
-            posts::all_columns,
-            users::username.nullable(),
-        ))
+        .select((posts::all_columns, users::username.nullable()))
         .filter(follows::user_id.eq(user.id))
         .filter(follows::target_user_moderation.eq_any(PASSING_MODERATIONS))
         .filter(posts::visibility.eq_any(
@@ -483,10 +579,7 @@ fn _get_replies_to_post_id(
     };
     let result: Vec<Post> = posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((
-            posts::all_columns,
-            users::username.nullable(),
-        ))
+        .select((posts::all_columns, users::username.nullable()))
         .filter(posts::visibility.eq(Visibility::GlobalPublic.as_str_name()))
         .filter(posts::parent_post_id.eq(post_db_id))
         .order(posts::created_at.desc())

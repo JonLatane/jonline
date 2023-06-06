@@ -88,7 +88,7 @@ pub fn create_post(
                 title: post_title,
                 link: req.link.to_link(),
                 content: req.content.to_owned(),
-                context: if (parent_post_db_id.is_none()) {
+                context: if parent_post_db_id.is_none() {
                     PostContext::Post
                 } else {
                     PostContext::Reply

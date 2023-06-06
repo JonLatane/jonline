@@ -28,13 +28,15 @@ export interface EventsState {
   // Links instance IDs to Event IDs.
   instanceEvents: Dictionary<string>;
   instances: Dictionary<EventInstance>;
-  // Stores pages of listed event *instances* for listing types used in the UI.
-  // i.e.: eventPages[EventListingType.PUBLIC_EVENTS][0] -> ["eventId1", "eventId2"].
-  // Events should be loaded from the adapter/slice's entities.
-  // Maps EventListingType -> page (as a number) -> eventInstanceIds
-  eventPages: Dictionary<Dictionary<string[]>>;
+  eventInstancePages: GroupedEventInstancePages;
   failedEventIds: string[];
 }
+
+// Stores pages of listed event *instances* for listing types used in the UI.
+// i.e.: eventPages[EventListingType.PUBLIC_EVENTS][0] -> ["eventInstanceId1", "eventInstanceId2"].
+// Events should be loaded from the adapter/slice's entities.
+// Maps EventListingType -> page (as a number) -> eventInstanceIds
+export type GroupedEventInstancePages = Dictionary<Dictionary<string[]>>
 
 
 const eventsAdapter: EntityAdapter<Event> = createEntityAdapter<Event>({
@@ -47,7 +49,7 @@ const initialState: EventsState = {
   createStatus: undefined,
   updateStatus: undefined,
   failedEventIds: [],
-  eventPages: {},
+  eventInstancePages: {},
   instances: {},
   instanceEvents: {},
   ...eventsAdapter.getInitialState(),
@@ -77,9 +79,9 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       state.createStatus = "created";
       eventsAdapter.upsertOne(state, action.payload);
       if (publicVisibility(action.payload.post?.visibility)) {
-        state.eventPages[defaultEventListingType] = state.eventPages[defaultEventListingType] || {};
-        const firstPage = state.eventPages[defaultEventListingType][0] || [];
-        state.eventPages[defaultEventListingType][0] = [action.payload.id, ...firstPage];
+        state.eventInstancePages[defaultEventListingType] = state.eventInstancePages[defaultEventListingType] || {};
+        const firstPage = state.eventInstancePages[defaultEventListingType][0] || [];
+        state.eventInstancePages[defaultEventListingType][0] = [action.payload.id, ...firstPage];
       }
       state.successMessage = `Event created.`;
     });
@@ -148,8 +150,8 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
 
-      if (!state.eventPages[listingType] || page ===0) state.eventPages[listingType] = {};
-      const eventPages: Dictionary<string[]> = state.eventPages[listingType]!;
+      if (!state.eventInstancePages[listingType] || page ===0) state.eventInstancePages[listingType] = {};
+      const eventPages: Dictionary<string[]> = state.eventInstancePages[listingType]!;
       // Sensible approach:
       // eventPages[page] = postIds;
 
@@ -161,7 +163,10 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       const chunkSize = 10;
       for (let i = 0; i < instanceIds.length; i += chunkSize) {
         const chunk = instanceIds.slice(i, i + chunkSize);
-        state.eventPages[listingType]![initialPage + (i/chunkSize)] = chunk;
+        state.eventInstancePages[listingType]![initialPage + (i/chunkSize)] = chunk;
+      }
+      if (state.eventInstancePages[listingType]![0] == undefined) {
+        state.eventInstancePages[listingType]![0] = [];
       }
 
       state.successMessage = `Events loaded.`;
@@ -210,30 +215,3 @@ export const eventsReducer = eventsSlice.reducer;
 export const upsertEvent = eventsAdapter.upsertOne;
 export const upsertEvents = eventsAdapter.upsertMany;
 export default eventsReducer;
-
-function getEventsPage(state: EventsState, listingType: EventListingType, page: number): Event[] {
-  const pageInstaceIds: string[] = (state.eventPages[listingType] ?? {})[page] ?? [];
-  const pageInstances = pageInstaceIds.map(id => state.instances[id]).filter(p => p) as EventInstance[];
-  const pageEvents = pageInstances.map(instance => {
-    const event = selectEventById(state, instance.eventId);
-    return event ? { ...event, instances: [instance] } : undefined;
-  }).filter(p => p) as Event[];
-  return pageEvents;
-}
-
-export function getEventPages(state: EventsState, listingType: EventListingType, throughPage: number): Event[] {
-  const result: Event[] = [];
-  for (let page = 0; page <= throughPage; page++) {
-    const pageEvents = getEventsPage(state, listingType, page);
-    result.push(...pageEvents);
-  }
-  return result;
-}
-
-export function getHasEventsPage(state: EventsState, listingType: EventListingType, page: number): boolean {
-  return (state.eventPages[listingType] ?? {})[page] != undefined;
-}
-
-export function getHasMoreEventPages(state: EventsState, listingType: EventListingType, currentPage: number): boolean {
-  return ((state.eventPages[listingType] ?? {})[currentPage]?.length ?? 0) > 0;
-}

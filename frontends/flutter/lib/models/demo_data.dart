@@ -719,8 +719,9 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
               "Jonline is released under the AGPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech.")),
   DemoPost([DemoGroup.everyoneWelcome, DemoGroup.tech],
       Post(title: "What is Jonline?", content: '''Corporate social media sucks. 
-Jonline is a new approach to social media that keeps user data hyper-local - 
-within peoples' physical communities - all wrapped up as a 
+Jonline is a new approach to social media that hopes to keep user data hyper-local - 
+owned by ourselves or others in our physical communities, rather than any single 
+corporation or data source. At its core is a 
 [well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md). 
 A Jonline *instance* or community (like the one you're reading this post on - probably 
 [jonline.io](https://jonline.io) or [getj.online](https://getj.online)) 

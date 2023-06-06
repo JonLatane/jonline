@@ -1,20 +1,26 @@
-import { EventListingType, PostListingType } from '@jonline/api';
+import { EventListingType, Group, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
+import { useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks/pagination_hooks';
 import { RootState, getHasEventsPage, getHasMorePostPages, getHasPostsPage, setShowEventsOnLatest, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
-import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
-import { StickyCreateButton } from './sticky_create_button';
 import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
-import { useEventPages } from './events_screen';
-import { usePostPages } from './posts_screen';
 import { PaginationIndicator } from './pagination_indicator';
+import { StickyCreateButton } from './sticky_create_button';
 
 export function HomeScreen() {
+  return <BaseHomeScreen />;
+}
+
+export type HomeScreenProps = {
+  selectedGroup?: Group
+};
+
+export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
   const dispatch = useTypedDispatch();
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const eventsState = useTypedSelector((state: RootState) => state.events);
@@ -33,10 +39,15 @@ export function HomeScreen() {
   });
 
   const [currentPostsPage, setCurrentPostsPage] = useState(0);
-  const { posts, loadingPosts, reloadPosts } = usePostPages(PostListingType.PUBLIC_POSTS, currentPostsPage, () => { });
-  const hasMorePostPages = getHasMorePostPages(postsState, PostListingType.PUBLIC_POSTS, currentPostsPage);
 
-  const { events, loadingEvents, reloadEvents } = useEventPages(EventListingType.PUBLIC_EVENTS, 0, () => { });
+  const { posts, loadingPosts, reloadPosts, hasMorePages: hasMorePostPages, firstPageLoaded: postsLoaded } = selectedGroup
+    ? useGroupPostPages(selectedGroup.id, currentPostsPage)
+    : usePostPages(PostListingType.PUBLIC_POSTS, currentPostsPage);
+
+  const { events, loadingEvents, reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
+    ? useGroupEventPages(selectedGroup.id, 0)
+    : useEventPages(EventListingType.PUBLIC_EVENTS, 0, () => { });
+
 
   function onHomePressed() {
     if (isClient && window.scrollY > 0) {
@@ -46,16 +57,20 @@ export function HomeScreen() {
       reloadEvents();
     }
   }
-  const eventsLoaded = getHasEventsPage(eventsState, EventListingType.PUBLIC_EVENTS, 0);
-  const postsLoaded = getHasPostsPage(postsState, PostListingType.PUBLIC_POSTS, 0);
+
   useEffect(() => {
     if (eventsLoaded && postsLoaded) {
       dismissScrollPreserver(setShowScrollPreserver);
     }
   }, [eventsLoaded, postsLoaded]);
 
+  console.log("BaseHomescreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
+
   return (
-    <TabsNavigation customHomeAction={onHomePressed}>
+    <TabsNavigation
+      customHomeAction={selectedGroup ? undefined : onHomePressed}
+      selectedGroup={selectedGroup}
+    >
       {postsState.baseStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
@@ -68,26 +83,26 @@ export function HomeScreen() {
           ? <XStack w='100%'>
             <Button onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
               <Heading size='$6'>Upcoming Events</Heading>
-              <XStack animation='bouncy' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
+              <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
                 <ChevronRight />
               </XStack>
             </Button>
           </XStack>
           : undefined}
-        {showEventsOnLatest && eventsLoaded && postsLoaded?
+        {showEventsOnLatest && eventsLoaded && postsLoaded ?
           // <AnimatePresence>
           <YStack
             key='latest-events'
             w='100%'
-            // animation="bouncy"
-            // opacity={1}
-            // scale={1}
-            // y={0}
-            // enterStyle={{ y: -50, opacity: 0, }}
-            // exitStyle={{ y: -50, opacity: 0, }}
+          // animation="bouncy"
+          // opacity={1}
+          // scale={1}
+          // y={0}
+          // enterStyle={{ y: -50, opacity: 0, }}
+          // exitStyle={{ y: -50, opacity: 0, }}
           >
             {events.length == 0
-              ? eventsState.loadStatus != 'loading' && eventsState.loadStatus != 'unloaded'
+              ? eventsLoaded
                 ? <YStack width='100%' maw={600} jc="center" ai="center">
                   <Heading size='$5' mb='$3'>No events found.</Heading>
                   <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>

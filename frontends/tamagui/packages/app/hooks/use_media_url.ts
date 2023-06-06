@@ -8,7 +8,7 @@ export function useMediaUrl(mediaId?: string, override?: AccountOrServer): strin
   const server = overrideServer ?? currentServer;
   if (!mediaId || mediaId == '') return undefined;
 
-  if (account) {
+  if (account && !override) {
     return `${serverUrl(server!)}/media/${mediaId}?authorizaton=${account.accessToken.token}`;
   }
   return `${serverUrl(server!)}/media/${mediaId}`;

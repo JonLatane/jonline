@@ -1,3 +1,3 @@
-import { GroupDetailsScreen } from 'app/features/groups/details_screen'
+import { GroupHomeScreen } from 'app/features/groups/group_home_screen'
 
-export default GroupDetailsScreen
+export default GroupHomeScreen

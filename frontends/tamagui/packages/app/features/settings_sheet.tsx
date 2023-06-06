@@ -90,7 +90,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch />
               <Heading size='$3' mt='$3'>Development</Heading>
               <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
-              <ToggleRow name='Show (WIP) Extended Navigation' value={app.showBetaNavigation} setter={setShowBetaNavigation} autoDispatch />
+              {/* <ToggleRow name='Show (WIP) Extended Navigation' value={app.showBetaNavigation} setter={setShowBetaNavigation} autoDispatch /> */}
 
               {/* <XStack>
                 <Button f={1} icon={XIcon} onPress={resetCredentialedData}>

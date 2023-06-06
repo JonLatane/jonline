@@ -1,16 +1,22 @@
-import { Post, PostListingType } from '@jonline/api';
+import { Group, PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { RootState, getPostPages, loadPostsPage, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { usePostPages } from 'app/hooks/pagination_hooks';
+import { RootState, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
-import { getHasMorePostPages } from '../../store/modules/posts';
+import { getHasMorePostPages } from '../../store';
 import PostCard from '../post/post_card';
 import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
+import { HomeScreenProps } from './home_screen';
 
 export function PostsScreen() {
+  return <BasePostsScreen />;
+}
+
+export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
   const postsState = useTypedSelector((state: RootState) => state.posts);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
@@ -23,16 +29,19 @@ export function PostsScreen() {
   });
 
   const [currentPage, setCurrentPage] = useState(0);
-  const { posts, loadingPosts, reloadPosts } = usePostPages(
+  const { posts, loadingPosts, reloadPosts, hasMorePages: hasMorePostPages } = usePostPages(
     PostListingType.PUBLIC_POSTS,
     currentPage,
     () => dismissScrollPreserver(setShowScrollPreserver)
   );
-  const hasMorePostPages = getHasMorePostPages(postsState, PostListingType.PUBLIC_POSTS, currentPage);
   console.log(`Current page: ${currentPage}, Total Posts: ${posts.length}`);
 
   return (
-    <TabsNavigation appSection={AppSection.POSTS}>
+    <TabsNavigation
+      appSection={AppSection.POSTS}
+      selectedGroup={selectedGroup}
+      groupPageForwarder={(group) => `/g/${group.shortname}/posts`}
+    >
       {postsState.baseStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
@@ -50,7 +59,7 @@ export function PostsScreen() {
             : undefined
           : <YStack>
             {posts.map((post) => {
-              return <PostCard post={post} isPreview />;
+              return <PostCard key={`post-${post.id}`} post={post} isPreview />;
             })}
             <PaginationIndicator page={currentPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
               hasNextPage={hasMorePostPages}
@@ -62,31 +71,4 @@ export function PostsScreen() {
       <StickyCreateButton />
     </TabsNavigation>
   )
-}
-
-export function usePostPages(listingType: PostListingType, throughPage: number, onLoaded?: () => void) {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
-  const postsState = useTypedSelector((state: RootState) => state.posts);
-  const [loadingPosts, setLoadingPosts] = useState(false);
-
-  const posts: Post[] = useTypedSelector((state: RootState) => getPostPages(state.posts, PostListingType.PUBLIC_POSTS, throughPage));
-
-  useEffect(() => {
-    if (postsState.baseStatus == 'unloaded' && !loadingPosts) {
-      if (!accountOrServer.server) return;
-
-      console.log("Loading posts...");
-      setLoadingPosts(true);
-      reloadPosts();
-    } else if (postsState.baseStatus == 'loaded' && loadingPosts) {
-      setLoadingPosts(false);
-      onLoaded?.();
-    }
-  });
-
-  function reloadPosts() {
-    dispatch(loadPostsPage({ ...accountOrServer, listingType }))
-  }
-
-  return { posts, loadingPosts, reloadPosts };
 }

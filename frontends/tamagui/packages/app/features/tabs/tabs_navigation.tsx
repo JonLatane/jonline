@@ -22,15 +22,15 @@ export type TabsNavigationProps = {
   groupPageForwarder?: (group: Group) => string;
 };
 
-export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, appSubsection, selectedGroup, customHomeAction }: TabsNavigationProps) {
+export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, appSubsection, selectedGroup, customHomeAction, groupPageForwarder }: TabsNavigationProps) {
   const media = useMedia()
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;
   const webUI = server?.serverConfiguration?.serverInfo?.webUserInterface;
   const homeProps = customHomeAction ? { onPress: customHomeAction } : useLink({
-    href: webUI == WebUserInterface.REACT_TAMAGUI || webUI == WebUserInterface.HANDLEBARS_TEMPLATES
-      ? '/'
-      : '/tamagui'
+    href: webUI == WebUserInterface.FLUTTER_WEB
+      ? '/tamagui'
+      : '/'
   });
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || 'Jonline';
   const app = useTypedSelector((state: RootState) => state.app);
@@ -50,7 +50,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
-  const shrinkHomeButton = selectedGroup || appSubsection == AppSubsection.FOLLOW_REQUESTS;
+  const shrinkHomeButton = selectedGroup != undefined || appSubsection == AppSubsection.FOLLOW_REQUESTS;
   // console.log(`app.darkModeAuto=${app.darkModeAuto}, systemDark=${systemDark}, app.darkMode=${app.darkMode}, invert=${invert}, dark=${dark}, bgColor=${bgColor}`);
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     {Platform.select({
@@ -64,9 +64,11 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                 ? <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
                   iconAfter={serverNameEmoji ? undefined : HomeIcon}
                   {...homeProps}>
-                  <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                    <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
-                  </XStack>
+                  {!shrinkHomeButton || serverNameEmoji
+                    ? <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                      <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+                    </XStack>
+                    : undefined}
                 </Button>
                 : <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
                   iconAfter={serverNameEmoji ? undefined : HomeIcon}
@@ -77,8 +79,8 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                 </Button>}
               <ScrollView horizontal>
                 <XStack w={1} />
-                <GroupsSheet selectedGroup={selectedGroup} />
-                <FeaturesNavigation {...{appSection, appSubsection, selectedGroup}} />
+                <GroupsSheet selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
               </ScrollView>
               <XStack f={1} />
               <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />

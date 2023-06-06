@@ -17,7 +17,9 @@ lazy_static! {
         tamagui_people,
         tamagui_follow_requests,
         tamagui_server,
-        tamagui_group_shortname,
+        tamagui_group_home,
+        tamagui_group_posts,
+        tamagui_group_events,
         tamagui_group_post,
         tamagui_file_or_username
     ];
@@ -99,8 +101,18 @@ async fn tamagui_group_post(
 }
 
 #[rocket::get("/g/<_shortname>")]
-async fn tamagui_group_shortname(_shortname: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+async fn tamagui_group_home(_shortname: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("g/[shortname].html").await
+}
+
+#[rocket::get("/g/<_shortname>/posts")]
+async fn tamagui_group_posts(_shortname: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("g/[shortname]/posts.html").await
+}
+
+#[rocket::get("/g/<_shortname>/events")]
+async fn tamagui_group_events(_shortname: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("g/[shortname]/events.html").await
 }
 
 #[rocket::get("/server/<_id_etc..>")]

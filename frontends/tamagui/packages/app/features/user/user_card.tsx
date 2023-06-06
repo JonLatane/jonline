@@ -33,7 +33,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
   const app = useLocalApp();
-  const avatarMediaId = setAvatarMediaId ? avatarMediaIdProp : user.avatarMediaId;
+  const avatarMediaId = avatarMediaIdProp ?? user.avatarMediaId;
 
   const isAdmin = accountOrServer?.account?.user?.permissions?.includes(Permission.ADMIN);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
@@ -61,7 +61,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
   };
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const onScreen = useOnScreen(ref, "-1px");
-  const avatarUrl = useMediaUrl(avatarMediaId ?? user?.avatarMediaId);
+  // const displayedAvatarMediaId = avatarMediaId ?? user?.avatarMediaId;
+  const avatarUrl = useMediaUrl(avatarMediaId);
   // debugger;
 
   return (
@@ -85,18 +86,31 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
         <Card.Header>
           <XStack>
             <Anchor f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
-              <YStack f={1}>
-                <Heading size="$1" mr='auto'>{server?.host}/</Heading>
+              <XStack>
+                <Image
+                  // pos="absolute"
+                  width={50}
+                  // opacity={0.25}
+                  height={50}
+                  mr='$2'
+                  borderRadius={25}
+                  resizeMode="cover"
+                  als="flex-start"
+                  source={{ uri: avatarUrl }}
+                // blurRadius={1.5}
+                // borderRadius={5}
+                />
+                <YStack f={1}>
+                  <Heading size="$1" mr='auto'>{server?.host}/</Heading>
 
-                {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
-                <Heading size="$7" marginRight='auto'>{user.username}</Heading>
-              </YStack>
+                  {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
+                  <Heading size="$7" marginRight='auto'>{user.username}</Heading>
+                </YStack>
+                {app.showUserIds ? <XStack o={0.6}>
+                  <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
+                </XStack> : undefined}
+              </XStack>
             </Anchor>
-
-            {app.showUserIds ? <XStack o={0.6}>
-              <Heading size='$1'>{user.id}</Heading>
-              {/* <XStack f={1} /> */}
-            </XStack> : undefined}
 
             {user.permissions.includes(Permission.ADMIN)
               ? <Tooltip placement="bottom-end">
@@ -125,27 +139,27 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
           <YStack mt='$2' mr='$3' w='100%'>
             {(!isPreview && avatarUrl && avatarUrl != '') ?
               // <FadeInView>
-                <Image
-                  // pos="absolute"
-                  // width={400}
-                  // opacity={0.25}
-                  // height={400}
-                  // minWidth={300}
-                  // minHeight={300}
-                  // width='100%'
-                  // height='100%'
-                  mb='$3'
-                  width={fullAvatarHeight}
-                  height={fullAvatarHeight}
-                  resizeMode="contain"
-                  als="center"
-                  source={{ uri: avatarUrl }}
-                  // src={avatarUrl}
-                  borderRadius={10}
-                // borderBottomRightRadius={5}
-                />
+              <Image
+                // pos="absolute"
+                // width={400}
+                // opacity={0.25}
+                // height={400}
+                // minWidth={300}
+                // minHeight={300}
+                // width='100%'
+                // height='100%'
+                mb='$3'
+                width={fullAvatarHeight}
+                height={fullAvatarHeight}
+                resizeMode="contain"
+                als="center"
+                source={{ uri: avatarUrl }}
+                // src={avatarUrl}
+                borderRadius={10}
+              // borderBottomRightRadius={5}
+              />
               // </FadeInView>
-               : undefined}
+              : undefined}
             {(isCurrentUser || isAdmin) && setAvatarMediaId
               ? <YStack mb='$2'>
                 <MediaChooser
@@ -210,21 +224,24 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
             <YStack h='100%' w={5} backgroundColor={primaryColor} /> */}
           {(isPreview && avatarUrl && avatarUrl != '') ?
             // <FadeInView>
-              <Image
-                pos="absolute"
-                width={media.gtSm ? 300 : 150}
-                height={media.gtSm ? 300 : 150}
-                opacity={0.25}
-                resizeMode="contain"
-                als="flex-start"
-                source={{ uri: avatarUrl }}
-                // src={avatarUrl}
-                blurRadius={1.5}
-                // borderRadius={5}
-                borderBottomRightRadius={5}
-              />
+            <Image
+              // pos="absolute"
+              // right={0}
+              mr={0}
+              o={0.25}
+              width={media.gtSm ? 300 : 150}
+              height={media.gtSm ? 300 : 150}
+              opacity={0.25}
+              resizeMode="cover"
+              als="flex-start"
+              source={{ uri: avatarUrl }}
+              // src={avatarUrl}
+              blurRadius={1.5}
+              // borderRadius={5}
+              borderBottomRightRadius={5}
+            />
             // </FadeInView>
-             : undefined}
+            : undefined}
           {/* </XStack> */}
         </Card.Background>
       </Card>

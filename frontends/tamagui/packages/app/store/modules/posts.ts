@@ -1,4 +1,4 @@
-import { Post, PostListingType } from "@jonline/api";
+import { GroupPost, Post, PostListingType } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   createEntityAdapter,
@@ -9,7 +9,7 @@ import {
   EntityId, Slice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import { loadGroupPosts } from "./groups";
+import { loadGroupPostsPage } from "./groups";
 import { createPost, defaultPostListingType, LoadPost, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
 import { loadUserPosts } from "./users";
 import { Visibility } from '../../../api/generated/visibility_moderation';
@@ -27,13 +27,18 @@ export interface PostsState {
   draftPost: DraftPost;
   ids: EntityId[];
   entities: Dictionary<Post>;
-  // Stores pages of listed posts for listing types used in the UI.
-  // i.e.: postPages[PostListingType.PUBLIC_POSTS][0] -> ["postId1", "postId2"].
-  // Posts should be loaded from the adapter/slice's entities.
-  // Maps PostListingType -> page -> postIds
-  postPages: Dictionary<Dictionary<string[]>>;
+  postPages: GroupedPostPages;
   failedPostIds: string[];
 }
+
+// Stores pages of listed posts used in the UI. May be keyed by PostListingType or groupId.
+// Posts should be loaded from the adapter/slice's entities. An empty page indicates there is no more data to load.
+// Maps either: 
+//  * PostListingType -> page -> postIds
+//  * groupId -> page -> postIds
+// i.e.: postPages[PostListingType.PUBLIC_POSTS][0] -> ["postId1", "postId2"].
+//       groupPostPages['groupId1'][0] -> ["postId1", "postId2"].
+export type GroupedPostPages = Dictionary<Dictionary<string[]>>;
 
 export interface DraftPost {
   newPost: Post;
@@ -167,6 +172,9 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         const chunk = postIds.slice(i, i + chunkSize);
         state.postPages[listingType]![initialPage + (i/chunkSize)] = chunk;
       }
+      if (state.postPages[listingType]![0] == undefined) {
+        state.postPages[listingType]![0] = [];
+      }
 
       state.successMessage = `Posts loaded.`;
     });
@@ -238,7 +246,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const { posts } = action.payload;
       upsertPosts(state, posts);
     });
-    builder.addCase(loadGroupPosts.fulfilled, (state, action) => {
+    builder.addCase(loadGroupPostsPage.fulfilled, (state, action) => {
       const { posts } = action.payload;
       upsertPosts(state, posts);
     });
@@ -251,25 +259,3 @@ export const postsReducer = postsSlice.reducer;
 export const upsertPost = postsAdapter.upsertOne;
 export const upsertPosts = postsAdapter.upsertMany;
 export default postsReducer;
-
-function getPostsPage(state: PostsState, listingType: PostListingType, page: number): Post[] {
-  const pagePostIds: string[] = (state.postPages[listingType] ?? {})[page] ?? [];
-  const pagePosts = pagePostIds.map(id => selectPostById(state, id)).filter(p => p) as Post[];
-  return pagePosts;
-}
-
-export function getPostPages(state: PostsState, listingType: PostListingType, throughPage: number): Post[] {
-  const result: Post[] = [];
-  for (let page = 0; page <= throughPage; page++) {
-    const pagePosts = getPostsPage(state, listingType, page);
-    result.push(...pagePosts);
-  }
-  return result;
-}
-
-export function getHasPostsPage(state: PostsState, listingType: PostListingType, page: number): boolean {
-  return (state.postPages[listingType] ?? {})[page] != undefined;
-}
-export function getHasMorePostPages(state: PostsState, listingType: PostListingType, currentPage: number): boolean {
-  return ((state.postPages[listingType] ?? {})[currentPage]?.length ?? 0) > 0;
-}

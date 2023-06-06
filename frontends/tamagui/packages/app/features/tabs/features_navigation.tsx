@@ -71,12 +71,20 @@ export type FeaturesNavigationProps = {
 
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, groupPageForwarder }: FeaturesNavigationProps) {
   const account = useAccount();
-  const app = useLocalApp();
   const { primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
 
-  const latestLink = useLink({ href: '/' });
-  const postsLink = useLink({ href: '/posts' });
-  const eventsLink = useLink({ href: '/events' });
+  const latestLink = useLink({
+    href:
+      selectedGroup == undefined ? '/' : `/g/${selectedGroup.shortname}`
+  });
+  const postsLink = useLink({
+    href:
+      selectedGroup == undefined ? '/posts' : `/g/${selectedGroup.shortname}/posts`
+  });
+  const eventsLink = useLink({
+    href:
+      selectedGroup == undefined ? '/events' : `/g/${selectedGroup.shortname}/events`
+  });
   const peopleLink = useLink({ href: '/people' });
   const followRequestsLink = useLink({ href: '/people/follow_requests' });
   const myMediaLink = useLink({ href: '/media' });
@@ -133,12 +141,8 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         <YStack space="$3">
           <XStack ac='center' jc='center' space='$2'>
             {navButton(isLatest, latestLink, sectionTitle(AppSection.HOME))}
-            {app.showBetaNavigation || isPosts || isEvents ? <>
-              {/* {!app.showBetaNavigation ? <YStack marginVertical='auto' mr='$2'><AlertTriangle size='$1' /></YStack> : undefined} */}
-              {navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS))}
-              <YStack mr='$2' />
-              {navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS))}
-            </> : undefined}
+            {navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS))}
+            {navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS))}
           </XStack>
           <XStack ac='center' jc='center' space='$2'>
             {navButton(isPeople, peopleLink, 'People')}
