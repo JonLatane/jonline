@@ -1,13 +1,10 @@
 # Jonline
-![Rust Build](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)
-
-![Flutter Build](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml/badge.svg)
-
 
 - [Jonline](#jonline)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
     - [Why *not* Jonline?](#why-not-jonline)
+  - [CI Status](#ci-status)
   - [Protocol documentation](#protocol-documentation)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deploying to other namespaces](#deploying-to-other-namespaces)
@@ -67,10 +64,15 @@ The goal of all this is to make it as easy as possible for local businesses to:
 
 ### Why *not* Jonline?
 * It's not done.
-* There's 0% test coverage.
-* There's no CI/CD. I just randomly make releases as I'm doing stuff for now.
+* There's near-0% test coverage.
 * It's just my own (Jon) thing I'm doing in my spare time. 
 * There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
+
+## CI Status
+
+| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [ Rust Build Status ]( https://github.com/jonlatane/jonline/actions/workflows/backend.yml ) |
+|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ![Flutter Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml/badge.svg) | [Flutter Build Status](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml)  |
 
 ## Protocol documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is pretty readable](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
