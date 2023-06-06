@@ -70,9 +70,10 @@ The goal of all this is to make it as easy as possible for local businesses to:
 
 ## CI Status
 
-| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [ Rust Build Status ]( https://github.com/jonlatane/jonline/actions/workflows/backend.yml ) |
+| Status                                                                                               | Information                                                                                 |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| ![Flutter Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml/badge.svg) | [Flutter Build Status](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml)  |
+| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
+| ![Flutter Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml/badge.svg) | [Flutter Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml) |
 
 ## Protocol documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is pretty readable](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
