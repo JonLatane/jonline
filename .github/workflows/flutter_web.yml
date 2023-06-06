@@ -1,0 +1,33 @@
+name: Flutter Frontend (Web)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+    - working-directory: ./frontends/flutter
+      run: flutter pub get
+    - working-directory: ./frontends/flutter
+      run: flutter test
+  build_web:
+    name: Flutter Web Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+    - working-directory: ./frontends/flutter
+      run: flutter pub get
+    - working-directory: ./frontends/flutter
+      run: flutter build web
