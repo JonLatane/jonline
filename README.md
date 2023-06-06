@@ -1,4 +1,8 @@
 # Jonline
+![Rust Build](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)
+
+![Flutter Build](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml/badge.svg)
+
 
 - [Jonline](#jonline)
   - [What is Jonline?](#what-is-jonline)
