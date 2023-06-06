@@ -8,7 +8,7 @@ import EventCard from '../event/event_card';
 import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PaginationIndicator } from './pagination_indicator';
-import { useEventPages } from 'app/hooks/pagination_hooks';
+import { useEventPages, useGroupEventPages } from 'app/hooks/pagination_hooks';
 import { HomeScreenProps } from './home_screen';
 
 export function EventsScreen() {
@@ -27,11 +27,14 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   });
 
   const [currentPage, setCurrentPage] = useState(0);
-  const { events, loadingEvents, reloadEvents, hasMorePages: hasMoreEventPages } = useEventPages(
-    EventListingType.PUBLIC_EVENTS,
-    currentPage,
-    () => dismissScrollPreserver(setShowScrollPreserver)
-  );
+  const { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
+    ? useGroupEventPages(selectedGroup.id, 0)
+    : useEventPages(EventListingType.PUBLIC_EVENTS, 0);
+  useEffect(() => {
+    if (firstPageLoaded) {
+      dismissScrollPreserver(setShowScrollPreserver);
+    }
+  }, [firstPageLoaded]);
 
   return (
     <TabsNavigation
@@ -60,7 +63,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 return <EventCard event={event} isPreview />;
               })}
               <PaginationIndicator page={currentPage} loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
-                hasNextPage={hasMoreEventPages}
+                hasNextPage={hasMorePages}
                 loadNextPage={() => setCurrentPage(currentPage + 1)} />
               {showScrollPreserver ? <YStack h={100000} /> : undefined}
             </YStack>

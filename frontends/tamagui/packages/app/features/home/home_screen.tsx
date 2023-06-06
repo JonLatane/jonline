@@ -40,14 +40,14 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
 
   const [currentPostsPage, setCurrentPostsPage] = useState(0);
 
-  const { posts, loadingPosts, reloadPosts, hasMorePages: hasMorePostPages, firstPageLoaded: postsLoaded } = selectedGroup
+  const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } = selectedGroup
     ? useGroupPostPages(selectedGroup.id, currentPostsPage)
     : usePostPages(PostListingType.PUBLIC_POSTS, currentPostsPage);
 
+  // Only load the first page of events on this screen.
   const { events, loadingEvents, reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
     ? useGroupEventPages(selectedGroup.id, 0)
-    : useEventPages(EventListingType.PUBLIC_EVENTS, 0, () => { });
-
+    : useEventPages(EventListingType.PUBLIC_EVENTS, 0);
 
   function onHomePressed() {
     if (isClient && window.scrollY > 0) {
@@ -135,7 +135,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                 return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
               })}
               <PaginationIndicator page={currentPostsPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
-                hasNextPage={hasMorePostPages}
+                hasNextPage={hasMorePages}
                 loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
               />
               {showScrollPreserver ? <YStack h={100000} /> : undefined}

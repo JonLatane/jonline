@@ -1,6 +1,6 @@
 import { Group, PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { usePostPages } from 'app/hooks/pagination_hooks';
+import { useGroupPostPages, usePostPages } from 'app/hooks/pagination_hooks';
 import { RootState, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -29,11 +29,16 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   });
 
   const [currentPage, setCurrentPage] = useState(0);
-  const { posts, loadingPosts, reloadPosts, hasMorePages: hasMorePostPages } = usePostPages(
-    PostListingType.PUBLIC_POSTS,
-    currentPage,
-    () => dismissScrollPreserver(setShowScrollPreserver)
-  );
+  const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded } = selectedGroup
+    ? useGroupPostPages(selectedGroup.id, currentPage)
+    : usePostPages(PostListingType.PUBLIC_POSTS, currentPage);
+
+  useEffect(() => {
+    if (firstPageLoaded) {
+      dismissScrollPreserver(setShowScrollPreserver);
+    }
+  }, [firstPageLoaded]);
+
   console.log(`Current page: ${currentPage}, Total Posts: ${posts.length}`);
 
   return (
@@ -62,7 +67,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               return <PostCard key={`post-${post.id}`} post={post} isPreview />;
             })}
             <PaginationIndicator page={currentPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
-              hasNextPage={hasMorePostPages}
+              hasNextPage={hasMorePages}
               loadNextPage={() => setCurrentPage(currentPage + 1)}
             />
           </YStack>
