@@ -1,4 +1,4 @@
-name: Flutter Frontend
+name: Flutter Frontend (iOS)
 
 on:
   push:
@@ -7,46 +7,6 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: subosito/flutter-action@v2
-      with:
-        channel: 'stable'
-    - working-directory: ./frontends/flutter
-      run: flutter pub get
-    - working-directory: ./frontends/flutter
-      run: flutter test
-  build_web:
-    name: Flutter Web Build
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: subosito/flutter-action@v2
-      with:
-        channel: 'stable'
-    - working-directory: ./frontends/flutter
-      run: flutter pub get
-    - working-directory: ./frontends/flutter
-      run: flutter build web
-  build_android:
-    name: Flutter Android Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: '11'
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.7.7'
-      - run: flutter pub get
-      - run: flutter test
-      - run: flutter build apk
-      - run: flutter build appbundle
   build_ios:
     name: Flutter iOS Build
     runs-on: macos-latest
