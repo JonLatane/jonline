@@ -4,7 +4,6 @@
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
     - [Why *not* Jonline?](#why-not-jonline)
-  - [CI Status](#ci-status)
   - [Protocol documentation](#protocol-documentation)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deploying to other namespaces](#deploying-to-other-namespaces)
@@ -23,6 +22,11 @@
   - [Future features](#future-features)
   - [Multi-server usage](#multi-server-usage)
   - [Technical stuff](#technical-stuff)
+
+| CI Status                                                                                               | Information                                                                                 |
+|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
+| ![Flutter Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml/badge.svg) | [Flutter Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml) |
 
 ## What is Jonline?
 Jonline is an open-source, community-scale social network capable of "federating" with other Jonline instances/communities. Two demo instances are up at [jonline.io](https://jonline.io) and [getj.online](https://getj.online). (Try adding one instance to your interface on the other via the "Add Account/Server" screen!) Jonline is a network of, and a protocol for, social networks. Use cases include:
@@ -67,13 +71,6 @@ The goal of all this is to make it as easy as possible for local businesses to:
 * There's near-0% test coverage.
 * It's just my own (Jon) thing I'm doing in my spare time. 
 * There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
-
-## CI Status
-
-| Status                                                                                               | Information                                                                                 |
-|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
-| ![Flutter Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml/badge.svg) | [Flutter Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter.yml) |
 
 ## Protocol documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is pretty readable](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
