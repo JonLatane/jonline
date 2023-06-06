@@ -13,9 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
-      - uses: arduino/setup-protoc@v2
         with:
           toolchain: stable
+      - uses: arduino/setup-protoc@v2
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
       - working-directory: ./backend
         run: cargo test --all-features
@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: arduino/setup-protoc@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - uses: arduino/setup-protoc@v2
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
       - working-directory: ./backend
         run: cargo build --all-features
