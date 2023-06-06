@@ -24,7 +24,7 @@
   - [Technical stuff](#technical-stuff)
 
 ## What is Jonline?
-Jonline is an open-source, local community-scale social network capable of "federating" with other Jonline instances/communities. Two demo instances are up at [jonline.io](https://jonline.io) and [getj.online](https://getj.online). (Try adding one instance to your interface on the other via the "Add Account/Server" screen!) Jonline is a network of, and a protocol for, social networks. Use cases include:
+Jonline is an open-source, community-scale social network capable of "federating" with other Jonline instances/communities. Two demo instances are up at [jonline.io](https://jonline.io) and [getj.online](https://getj.online). (Try adding one instance to your interface on the other via the "Add Account/Server" screen!) Jonline is a network of, and a protocol for, social networks. Use cases include:
 
 * Neighborhoods, communities, or cities
 * (Ex-)Coworkers wanting a private channel to chat
