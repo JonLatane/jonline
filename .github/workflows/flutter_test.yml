@@ -1,4 +1,4 @@
-name: Flutter Web
+name: Flutter Test
 
 on:
   push:
@@ -17,4 +17,5 @@ jobs:
     - working-directory: ./frontends/flutter
       run: flutter pub get
     - working-directory: ./frontends/flutter
-      run: flutter build web
+      run: flutter test
+
