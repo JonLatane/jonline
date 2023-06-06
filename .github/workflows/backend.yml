@@ -15,7 +15,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - run: apt install libprotobuf-dev protobuf-compiler
+      - run: sudo apt install libprotobuf-dev protobuf-compiler
       - working-directory: ./backend
         run: cargo test --all-features
   build:
@@ -26,6 +26,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - run: apt install libprotobuf-dev protobuf-compiler
+      - run: sudo apt install libprotobuf-dev protobuf-compiler
       - working-directory: ./backend
         run: cargo build --all-features
