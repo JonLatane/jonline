@@ -47,11 +47,8 @@ fn get_applicable_events(
     conn: &mut PgPooledConnection,
     _filter: Option<TimeFilter>,
 ) -> Vec<Event> {
-    let public_visibilities = match user {
-        Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
-        None => vec![Visibility::GlobalPublic],
-    }
-    .to_string_visibilities();
+    let public_visibilities = public_string_visibilities(user);
+
     let event_posts = alias!(posts as event_posts);
     let _instance_posts = alias!(posts as instance_posts);
     let event_users = alias!(users as event_users);
@@ -143,11 +140,7 @@ fn get_event_by_id(
         Ok(db_id) => db_id,
         Err(_) => return Err(Status::new(Code::InvalidArgument, "post_id_invalid")),
     };
-    let public_visibilities = match user {
-        Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
-        None => vec![Visibility::GlobalPublic],
-    }
-    .to_string_visibilities();
+    let public_visibilities = public_string_visibilities(user);
     let public = posts::visibility.eq_any(public_visibilities);
     let limited_to_followers = posts::visibility
         .eq(Visibility::Limited.to_string_visibility())
@@ -236,11 +229,7 @@ fn get_group_events(
     let group = models::get_group(group_id, conn)
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))?;
 
-    let public_visibilities = match user {
-        Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
-        None => vec![Visibility::GlobalPublic],
-    }
-    .to_string_visibilities();
+    let public_visibilities = public_string_visibilities(user);
     let event_posts = alias!(posts as event_posts);
     let _instance_posts = alias!(posts as instance_posts);
     let event_users = alias!(users as event_users);
@@ -249,10 +238,10 @@ fn get_group_events(
     let public = event_posts
         .field(posts::visibility)
         .eq_any(public_visibilities);
-    let limited_to_followers = event_posts
-        .field(posts::visibility)
-        .eq(Visibility::Limited.to_string_visibility())
-        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
+    // let limited_to_followers = event_posts
+    //     .field(posts::visibility)
+    //     .eq(Visibility::Limited.to_string_visibility())
+    //     .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
 
     let result: Vec<Event> = match (group.visibility.to_proto_visibility().unwrap(), user) {
         (Visibility::GlobalPublic, _) | (_, Some(_)) => event_instances::table
@@ -266,16 +255,16 @@ fn get_group_events(
                     .field(posts::user_id)
                     .eq(event_users.field(users::id).nullable())),
             )
-            .left_join(
-                follows::table.on(event_posts
-                    .field(posts::user_id)
-                    .eq(follows::target_user_id.nullable())
-                    .and(
-                        follows::user_id
-                            .nullable()
-                            .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
-                    )),
-            )
+            // .left_join(
+            //     follows::table.on(event_posts
+            //         .field(posts::user_id)
+            //         .eq(follows::target_user_id.nullable())
+            //         .and(
+            //             follows::user_id
+            //                 .nullable()
+            //                 .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+            //         )),
+            // )
             // .left_join(
             //     instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
             //     // instance_posts.on(instance_posts
@@ -292,7 +281,7 @@ fn get_group_events(
                 // instance_users.fields(users::all_columns).nullable(),
                 // instance_posts.field(posts::preview).is_not_null(),
             ))
-            .filter(public.or(limited_to_followers))
+            .filter(public) //.or(limited_to_followers))
             .filter(group_posts::group_id.eq(group_id))
             .filter(event_instances::ends_at.gt(SystemTime::now()))
             .order(event_instances::ends_at)
@@ -334,11 +323,7 @@ fn get_group_events(
 //TODO Update below copypasta
 
 fn _get_top_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
-    let public_visibilities = match user {
-        Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
-        None => vec![Visibility::GlobalPublic],
-    }
-    .to_string_visibilities();
+    let public_visibilities = public_string_visibilities(user);
     let public = posts::visibility.eq_any(public_visibilities);
     let limited_to_followers = posts::visibility
         .eq(Visibility::Limited.to_string_visibility())

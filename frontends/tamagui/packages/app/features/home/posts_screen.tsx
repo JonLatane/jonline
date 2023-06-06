@@ -1,16 +1,15 @@
-import { Group, PostListingType } from '@jonline/api';
+import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { useGroupPostPages, usePostPages } from 'app/hooks/pagination_hooks';
 import { RootState, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
-import { getHasMorePostPages } from '../../store';
 import PostCard from '../post/post_card';
 import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
+import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
-import { HomeScreenProps } from './home_screen';
 
 export function PostsScreen() {
   return <BasePostsScreen />;

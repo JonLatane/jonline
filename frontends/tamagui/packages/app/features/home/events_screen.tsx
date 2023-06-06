@@ -1,15 +1,15 @@
-import { Event, EventListingType, Group } from '@jonline/api';
+import { EventListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { RootState, getEventPages, getHasMoreEventPages, loadEventsPage, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../evepont/create_event_sheet';
+import { useEventPages, useGroupEventPages } from 'app/hooks/pagination_hooks';
 import EventCard from '../event/event_card';
 import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
-import { PaginationIndicator } from './pagination_indicator';
-import { useEventPages, useGroupEventPages } from 'app/hooks/pagination_hooks';
 import { HomeScreenProps } from './home_screen';
+import { PaginationIndicator } from './pagination_indicator';
 
 export function EventsScreen() {
   return <BaseEventsScreen />;
