@@ -1,4 +1,29 @@
 # Jonline
+
+- [Jonline](#jonline)
+  - [What is Jonline?](#what-is-jonline)
+    - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
+    - [Why *not* Jonline?](#why-not-jonline)
+  - [Protocol documentation](#protocol-documentation)
+  - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
+    - [Deploying to other namespaces](#deploying-to-other-namespaces)
+    - [Validating your deployment](#validating-your-deployment)
+      - [Kubernetes service statuses](#kubernetes-service-statuses)
+      - [External IP Management](#external-ip-management)
+      - [Pointing a domain at your deployment](#pointing-a-domain-at-your-deployment)
+    - [Securing your deployment](#securing-your-deployment)
+    - [Deleting your deployment](#deleting-your-deployment)
+  - [Motivations](#motivations)
+    - [Scaling Social Software via Federation](#scaling-social-software-via-federation)
+  - [Features Overview](#features-overview)
+    - [Media](#media)
+    - [Posts](#posts)
+    - [Events](#events)
+  - [Future features](#future-features)
+  - [Multi-server usage](#multi-server-usage)
+  - [Technical stuff](#technical-stuff)
+
+## What is Jonline?
 Jonline is an open-source, small-scale (<1M users) social network capable of "federating" with other Jonline instances/communities. Two demo instances are up at [jonline.io](https://jonline.io) and [getj.online](https://getj.online). (Try adding one instance to your interface on the other via the "Add Account/Server" screen!) Jonline is a network of, and a protocol for, social networks. Use cases include:
 
 * Neighborhoods, communities, or cities
@@ -21,7 +46,7 @@ A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to depl
 
 Why this goal for this project? The tl;dr is that it keeps our social media data decentralized and in the hands of people we at least kinda trust. See [Scaling Social Software via Federation](#scaling-social-software-via-federation) for more rants tho.
 
-## Why Jonline vs. Mastodon/OpenSocial?
+### Why Jonline vs. Mastodon/OpenSocial?
 * Jonline's UI is hopefully designed to let users key into the federated features of the app much more easily.
 * Jonline deploy scripts are designed to be so easy to deploy to Kubernetess you can be braindead and get it up and running for your website. Further, it's all just `Makefile`s and `kubectl` commands (though maybe that's a con for the reader 😁).
 * Jonline's server images are structured so you only need one LoadBalancer (the things you typically pay for) per deploy/website, and really only one web-facing container (though it defaults to 2) per deploy.
@@ -46,7 +71,7 @@ The goal of all this is to make it as easy as possible for local businesses to:
 ## Protocol documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is pretty readable](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
 
-### Quick deploy to your own cluster
+## Quick deploy to your own cluster
 If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) First make sure `kubectl` is setup correctly and your instance has the `jonline` namespace available with `kubectl get services` and `kubectl get namespace jonline`:
 
 ```bash
@@ -72,9 +97,11 @@ make deploy_data_create deploy_be_create
 
 That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `make deploy_data_delete deploy_data_create deploy_be_restart` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
 
-(Note: to deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make deploy_data_create deploy_be_create` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.)
+### Deploying to other namespaces
+To deploy anything to a namespace other than `jonline`, simply add the environment variable `NAMESPACE=my_namespace`. So, for the initial deploy, `NAMESPACE=my_namespace make deploy_data_create deploy_be_create` to deploy to `my_namespace`. This should work for any of the `make deploy_*` targets in Jonline.
 
-#### Validating your deployment
+### Validating your deployment
+#### Kubernetes service statuses
 To see *everything* you just deployed (minio, postgres, Jonline server and background cron jobs), run `make deploy_get_all`. It should look something like this (with fewer jobs after a fresh install, probably):
 
 ```bash
@@ -147,6 +174,7 @@ job.batch/jonline-expired-token-cleanup-27742800   1/1           5s         6m53
 job.batch/jonline-expired-token-cleanup-27742805   1/1           4s         113s
 ```
 
+#### External IP Management
 Use `make deploy_be_get_external_ip` to see what your service's external IP is (until set, it will return `<pending>`).
 
 ```bash
@@ -185,14 +213,14 @@ Before you can secure with LetsEncrypt, you need to point a domain at your Jonli
 
 Continue to the next section for more info about setting up encryption and its relation to your DNS provider.
 
-#### Securing your deployment
+### Securing your deployment
 Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network. If you're using DigitalOcean DNS you can be setup in a few minutes.
 
 See [`generated_certs/README.md`](https://github.com/JonLatane/jonline/tree/main/generated_certs) for quick TLS setup instructions, either [using Cert-Manager (recommended)](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-cert-manager-recommended), [some other CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-certs-from-another-ca) or [your own custom CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-your-own-custom-ca).
 
 See [`backend/README.md`](https://github.com/JonLatane/jonline/blob/main/backend/README.md) for more detailed descriptions of how the deployment and TLS system works.
 
-#### Deleting your deployment
+### Deleting your deployment
 You can delete your Jonline deployment piece by piece with `make deploy_be_delete deploy_db_delete` or simply `kubectl delete namespace jonline` assuming you deployed to the default namespace `jonline`. Otherwise, assuming you deployed to `my_namespace`, run `NAMESPACE=my_namespace make deploy_be_delete deploy_db_delete` or simply `kubectl delete namespace my_namespace`.
 
 ## Motivations
@@ -204,29 +232,37 @@ There isn't an open federated protocol like email for a complete posts+events+me
 
 So, Jonline is a shot at implementing federated, open social media, in a way that is easy for developers to modify and, perhaps most importantly, for *users to understand*.
 
-### Features/Single-server usage
+### Scaling Social Software via Federation
+At the same time as the closed source/private server model has grown due to its profitability, software complexity has grown immensely to handle scaling these "modern" applications. We have ETLs, data lakes, statistics, and near-infinite ways of easily creating "trillions of points"-size data sets that require hundreds of thousands of dollars' worth of computing power and leveraging them for any number of rarely-publicly-disclosed purposes.
+
+But is scaling social media applications in this way *necessary for what people use these applications for*? Or is it *the best way to keep data available for marketing and other private use*? Or more simply: are we optimizing for profit, or for actual computer performance? There are many legitimate applications for, say, MapReduce across a huge privately-owned cluster, like making the entire Internet searchable. But for communicating with a network of friends you know in real life, I don't really think it's necessary.
+
+Jonline is a federated social network. The general idea is that it should provide a functional network with a single server, but that you should be able to communicate with users on other servers from a single account. This is handled via sharing of OAuth2 auth tokens between servers.
+
+
+## Features Overview
 The intended use case for Jonline is thus:
 
 I (Jon 😊👋) will run the Jonline server at https://jonline.io. It's fully open to the web and I'm paying for the DB behind it and the k8s cluster on it. Friends who want to connect with me can register for an account and communicate with me and with each other.
 
-#### Posts
+### Media
+Jonline Media is essentially a content-type+bytes-based blob storage service. It's the reason Jonline requires S3/MinIO (though, if desired, Jonline could realistically support making MinIO optional). Unlike Posts and Events (and any other future "high level types"), Media is generally not shared directly. It is instead associated with Posts and Events (for media listings) as well as Users and Groups (for their avatars).
+
+Media is perhaps core-most part of Jonline's features, and the *only* part of the APIS offered through HTTP as well as gRPC/gRPC-over-HTTP. (Hopefully the reasons for this are obvious: easy browser streaming and cache utilization for things like images.) Details on the HTTP APIs are in the "Media" section of the [protocol documentation](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
+
+### Posts
 To keep things straightforward, all Posts in Jonline have global visibility. Twitter is easily the closest comparison.
 
 They may be enabled/disabled at the server level (which should hide the UI tab/web links in the future).
 
-#### Events
+### Events
 Events may be public, private, or private with friend invitations.
 
-They may be enabled/disabled at the server level (which should hide the UI tab/web links in the future).
+In the future, Events should.
 
-##### Future features
-Hopeful future features include:
+## Future features
+Potential future features include:
 
-* Media
-    * User-uploaded Photos, Music/Audio, and/or Video for Posts. Built on MinIO (aka the S3 protocol).
-    * When Media is enabled, supported within regular Posts.
-    * May be enabled/disabled at the server level. Unlike other Jonline features, though, Media does not have a tab.
-    * Media feature should have granular server-side controls for Photos, Music/Audio (with customizable name), Videos, and Reels tabs.
 * Payments
     * Jonline should support user-to-user payments via Apple Pay, Venmo, etc.
 * Products
@@ -238,7 +274,7 @@ Hopeful future features include:
     * Built atop OpenStreetMap, Google Maps, or possibly let the user/server choose implmementation.
     * OSS, social-baed competitor to Uber/Lyft.
 
-### Multi-server usage
+## Multi-server usage
 Suppose you have two accounts with friends, say, on `jonline.io` and `bobline.com`. To federate your accounts, you may simply pass an `refresh_token` from your `bobline.com` account that you use to talk to Bob (who I don't know) into `jonline.io`. The general idea is that users can choose to keep their primary account with the person they trust the most. Maybe it's not me 😭 But that's fine; I won't even know!
 
 ## Technical stuff
@@ -247,10 +283,3 @@ You can create a Jonline account right now! I will probably delete it eventually
 ```sh
 grpc_cli call be.jonline.io:27707 CreateAccount 'username: "hi-you", password: "very-secure"'
 ```
-### Scaling Social Software via Federation
-At the same time as the closed source/private server model has grown due to its profitability, software complexity has grown immensely to handle scaling these "modern" applications. But is scaling social media applications in this way *necessary for what people use these applications for*? Or is it *the best way to keep data available for marketing and other private use*? Or more simply: are we optimizing for profit, or for actual computer performance? There are many legitimate applications for, say, MapReduce across a huge privately-owned cluster, like making the entire Internet searchable. But for communicating with a network of friends you know in real life, I don't really think it's necessary.
-
-Jonline is a federated social network. The general idea is that it should provide a functional network with a single server, but that you should be able to communicate with users on other servers from a single account. This is handled via sharing of OAuth2 auth tokens between servers.
-
-#### Technical underpinnings
-The core of Jonline is a very generic, boring gRPC definition of OAuth2 [authentication](https://github.com/JonLatane/jonline/blob/main/protos/authentication.proto) with a small [federation](https://github.com/JonLatane/jonline/blob/main/protos/federation.proto) protocol atop it. Hopefully, most developers who have used OAuth2 should understand how Jonline works just by reading those two files (even those familiar with Protobuf/gRPC). If not (and really, especially if so) please make some PRs!
