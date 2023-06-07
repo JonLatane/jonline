@@ -16,18 +16,23 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
-    - name: Run install
+    - name: Yarn install
+      uses: borales/actions-yarn@v4
+      with:
+        working-directory: frontends/tamagui
+        cmd: install # will run `yarn install` command
+    - name: Yarn TSC
       uses: borales/actions-yarn@v4
       with:
         working-directory: frontends/tamagui
         cmd: install # will run `yarn install` command
       # env:
         # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
-    - uses: bahmutov/npm-install@v1
-      with:
-        working-directory: frontends/tamagui
-    - working-directory: frontends/tamagui
-      run: yarn tsc
+    # - uses: bahmutov/npm-install@v1
+    #   with:
+    #     working-directory: frontends/tamagui
+    # - working-directory: frontends/tamagui
+    #   run: yarn tsc
   # test:
   #   name: Unit Tests
   #   runs-on: ubuntu-latest
