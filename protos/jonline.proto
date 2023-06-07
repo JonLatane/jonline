@@ -61,7 +61,7 @@ service Jonline {
   // Unfollow (or unrequest) a user. *Authenticated.*
   rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
 
-  // (TODO) Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.*
+  // Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.*
   rpc GetMedia(GetMediaRequest) returns (GetMediaResponse) {}
 
   // Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO.
