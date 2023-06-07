@@ -138,7 +138,7 @@ service Jonline {
   // Requires `ADMIN` permissions.
   rpc ConfigureServer(ServerConfiguration) returns (ServerConfiguration) {}
 
-  // DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.*
+  // Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.*
   // Requires `ADMIN` permissions.
   // Note: Server Configuration is not deleted.
   rpc ResetData(google.protobuf.Empty) returns (google.protobuf.Empty) {}

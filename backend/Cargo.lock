@@ -1156,7 +1156,7 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
 name = "jonline"
-version = "0.1.501"
+version = "0.1.505"
 dependencies = [
  "anyhow",
  "aws-creds",
@@ -1173,6 +1173,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "log",
+ "percent-encoding",
  "prost",
  "prost-build",
  "prost-types",
@@ -1552,9 +1553,9 @@ dependencies = [
 
 [[package]]
 name = "percent-encoding"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
+checksum = "9b2a4787296e9989611394c33f193f676704af1686e70b8f8033ab5ba9a35a94"
 
 [[package]]
 name = "petgraph"

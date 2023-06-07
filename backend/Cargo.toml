@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.1.501"
+version = "0.1.505"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -52,6 +52,7 @@ aws-creds = "0.34.1"
 aws-region = "0.25.1"
 bytes = "1.4.0"
 tempfile = "3.5.0"
+percent-encoding = "2.3.0"
 
 [build-dependencies]
 tonic-build = "0.9.1"

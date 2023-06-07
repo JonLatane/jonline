@@ -121,7 +121,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
         open={open}
         onOpenChange={setOpen}
         // snapPoints={[80]}
-        snapPoints={[82]} dismissOnSnapToBottom
+        snapPoints={[82, 66, 33]} dismissOnSnapToBottom
         position={position}
         onPositionChange={setPosition}
       // dismissOnSnapToBottom

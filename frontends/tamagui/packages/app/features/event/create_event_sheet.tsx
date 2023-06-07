@@ -134,7 +134,7 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
           open={open}
           onOpenChange={setOpen}
           // snapPoints={[80]}
-          snapPoints={[90]} dismissOnSnapToBottom
+          snapPoints={[95, 75, 50, 30]} dismissOnSnapToBottom
           position={position}
           onPositionChange={setPosition}
         // dismissOnSnapToBottom
@@ -144,7 +144,7 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
             <Sheet.Handle />
             <Button
               alignSelf='center'
-              size="$6"
+              size="$3"
               circular
               icon={ChevronDown}
               onPress={() => {

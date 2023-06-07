@@ -28,9 +28,12 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const primaryServer = onlyShowServer || server;
   const webUI = server?.serverConfiguration?.serverInfo?.webUserInterface;
   const homeProps = customHomeAction ? { onPress: customHomeAction } : useLink({
-    href: webUI == WebUserInterface.FLUTTER_WEB
-      ? '/tamagui'
-      : '/'
+    href:
+      selectedGroup && appSection == AppSection.POSTS ? `/posts` :
+        selectedGroup && appSection == AppSection.EVENTS ? `/events` :
+          webUI == WebUserInterface.FLUTTER_WEB
+            ? '/tamagui'
+            : '/'
   });
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || 'Jonline';
   const app = useTypedSelector((state: RootState) => state.app);

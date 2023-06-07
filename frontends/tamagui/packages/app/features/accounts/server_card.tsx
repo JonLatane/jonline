@@ -69,7 +69,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
                 <Dialog.Trigger asChild>
                   <Button onPress={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular />
                 </Dialog.Trigger>
-                <Dialog.Portal>
+                <Dialog.Portal zi={1000011}>
                   <Dialog.Overlay
                     key="overlay"
                     animation="quick"
@@ -109,7 +109,9 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
                           <Button>Cancel</Button>
                         </Dialog.Close>
                         {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
-                        <Button theme="active" onPress={doRemoveServer}>Remove</Button>
+                        <Theme inverse>
+                          <Button onPress={doRemoveServer}>Remove</Button>
+                        </Theme>
                         {/* </Dialog.Action> */}
                       </XStack>
                     </YStack>
@@ -121,7 +123,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
           </XStack>
         </Card.Footer>
         <Card.Background>
-          <YStack h='100%' w={5} backgroundColor={primaryColor}/>
+          <YStack h='100%' w={5} backgroundColor={primaryColor} />
         </Card.Background>
       </Card>
     </Theme>

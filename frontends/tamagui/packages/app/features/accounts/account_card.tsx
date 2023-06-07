@@ -89,7 +89,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Dialog.Trigger asChild>
                 <Button icon={<Trash />} circular onPress={(e) => { e.stopPropagation(); }} color="red" />
               </Dialog.Trigger>
-              <Dialog.Portal>
+              <Dialog.Portal zi={1000011}>
                 <Dialog.Overlay
                   key="overlay"
                   animation="quick"
@@ -127,7 +127,9 @@ const AccountCard: React.FC<Props> = ({ account }) => {
                         <Button>Cancel</Button>
                       </Dialog.Close>
                       {/* <Dialog.Action asChild> */}
-                      <Button theme="active" onPress={() => dispatch(removeAccount(accountId(account)!))}>Remove</Button>
+                      <Theme inverse>
+                        <Button onPress={() => dispatch(removeAccount(accountId(account)!))}>Remove</Button>
+                      </Theme>
                       {/* </Dialog.Action> */}
                     </XStack>
                   </YStack>

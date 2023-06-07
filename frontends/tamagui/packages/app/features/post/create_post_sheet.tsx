@@ -151,7 +151,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
           open={open}
           onOpenChange={setOpen}
           // snapPoints={[80]}
-          snapPoints={[90]} dismissOnSnapToBottom
+          snapPoints={[95, 75, 50, 30]} dismissOnSnapToBottom
           position={position}
           onPositionChange={setPosition}
         // dismissOnSnapToBottom

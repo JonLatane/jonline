@@ -33,3 +33,6 @@ pub use robots_sitemap::*;
 
 pub mod media;
 pub use media::*;
+
+pub mod server_information;
+pub use server_information::*;

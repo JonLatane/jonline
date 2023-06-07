@@ -1,10 +1,18 @@
 # Jonline
+Jonline is an open-source, community-scale social network designed to be capable of "federating" with other Jonline instances/communities, making sharing between local-size instances easy. Two demo instances are up at [Jonline.io](https://jonline.io) and [GetJ.online](https://getj.online).
 
-**DockerHub**
+## Statuses
+### Deployments
+
+[![Jonline.io](https://jonline.io/info_shield)](https://jonline.io/about)
+[![GetJ.online](https://getj.online/info_shield)](https://getj.online/about)
+
+### DockerHub
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=Jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline)
 [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=Preview%20Generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator)
 
+### CI
 | CI Status | Information |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
@@ -14,6 +22,10 @@
 | ![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg) | [Flutter Android Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml) |
 
 - [Jonline](#jonline)
+  - [Statuses](#statuses)
+    - [Deployments](#deployments)
+    - [DockerHub](#dockerhub)
+    - [CI](#ci)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
     - [Why *not* Jonline?](#why-not-jonline)
@@ -35,7 +47,7 @@
   - [Future features](#future-features)
 
 ## What is Jonline?
-Jonline is an open-source, community-scale social network capable of "federating" with other Jonline instances/communities. Two demo instances are up at [jonline.io](https://jonline.io) and [getj.online](https://getj.online). (Try adding one instance to your interface on the other via the "Add Account/Server" screen!) Jonline is a network of, and a protocol for, social networks. Use cases include:
+Jonline is a network of, and a protocol for, social networks. Use cases include:
 
 * Neighborhoods, communities, or cities
 * (Ex-)Coworkers wanting a private channel to chat
@@ -226,7 +238,7 @@ Continue to the next section for more info about setting up encryption and its r
 ### Securing your deployment
 Jonline uses 🐕💩EZ, boring normal TLS certificate management to negotiate trust around its decentralized social network. If you're using DigitalOcean DNS you can be setup in a few minutes.
 
-See [`generated_certs/README.md`](https://github.com/JonLatane/jonline/tree/main/generated_certs) for quick TLS setup instructions, either [using Cert-Manager (recommended)](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-cert-manager-recommended), [some other CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-certs-from-another-ca) or [your own custom CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-your-own-custom-ca).
+See [`deploys/generated_certs/README.md`](https://github.com/JonLatane/jonline/tree/main/deploys/generated_certs) for quick TLS setup instructions, either [using Cert-Manager (recommended)](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/README.md#use-cert-manager-recommended), [some other CA](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/README.md#use-certs-from-another-ca) or [your own custom CA](https://github.com/JonLatane/jonline/blob/main/generated_certs/README.md#use-your-own-custom-ca) (i.e. to distribute a secure, network-specific Flutter app and only let users in through that - custom CAs would break/disable the web app entirely).
 
 See [`backend/README.md`](https://github.com/JonLatane/jonline/blob/main/backend/README.md) for more detailed descriptions of how the deployment and TLS system works.
 

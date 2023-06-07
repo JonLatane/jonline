@@ -18,6 +18,7 @@ export type GroupsSheetProps = {
 export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
   const [position, setPosition] = useState(0);
   const [searchText, setSearchText] = useState('');
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -51,6 +52,15 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
+
+  useEffect(() => {
+    if (!infoOpen && infoGroup) {
+      setInfoGroup(undefined);
+    }
+  }, [infoOpen]);
+
+  const infoRenderingGroup = infoGroup ?? selectedGroup;
+
   return (
 
     <>
@@ -76,7 +86,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
             <XStack f={1} />
             <Button
               alignSelf='center'
-              size="$4"
+              size="$3"
               mb='$3'
               circular
               icon={ChevronDown}
@@ -115,6 +125,10 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
                         group={group}
                         groupPageForwarder={groupPageForwarder}
                         selected={group.id == selectedGroup?.id}
+                        onShowInfo={() => {
+                          setInfoGroup(group);
+                          setInfoOpen(true);
+                        }}
                         setOpen={setOpen} />
                     })}
                   </YStack>
@@ -129,63 +143,60 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
           </Sheet.ScrollView>
         </Sheet.Frame>
       </Sheet>
-      {
-        selectedGroup ? <>
-          <Theme inverse>
-            <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto' ml={infoMarginLeft} onPress={() => setInfoOpen((x) => !x)} />
-          </Theme>
-          <Sheet
-            modal
-            open={infoOpen}
-            onOpenChange={setInfoOpen}
-            snapPoints={[87]}
-            position={position}
-            onPositionChange={setPosition}
-            dismissOnSnapToBottom
-          >
-            <Sheet.Overlay backgroundColor='$colorTranslucent' />
-            <Sheet.Frame>
-              <Sheet.Handle />
-              <XStack space='$4' paddingHorizontal='$3'>
-                <XStack f={1} />
-                <Button
-                  alignSelf='center'
-                  size="$4"
-                  mb='$3'
-                  circular
-                  icon={ChevronDown}
-                  onPress={() => setInfoOpen(false)} />
-                <XStack f={1} />
-              </XStack>
+      {selectedGroup
+        ? <Theme inverse>
+          <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto' ml={infoMarginLeft} onPress={() => setInfoOpen((x) => !x)} />
+        </Theme>
+        : undefined}
+      <Sheet
+        modal
+        open={infoOpen}
+        onOpenChange={setInfoOpen}
+        snapPoints={[82, 66, 33]}
+        position={position}
+        onPositionChange={setPosition}
+        dismissOnSnapToBottom
+      >
+        <Sheet.Overlay backgroundColor='$colorTranslucent' />
+        <Sheet.Frame>
+          <Sheet.Handle />
+          <XStack space='$4' paddingHorizontal='$3'>
+            <XStack f={1} />
+            <Button
+              alignSelf='center'
+              size="$4"
+              mb='$3'
+              circular
+              icon={ChevronDown}
+              onPress={() => setInfoOpen(false)} />
+            <XStack f={1} />
+          </XStack>
 
-              <YStack space="$3" mb='$2' p='$4' maw={800} als='center' width='100%'>
-                <Heading>{selectedGroup?.name}</Heading>
-                <XStack>
-                  <Heading size='$2'>{server?.host}/g/{selectedGroup?.shortname}</Heading>
-                  <XStack f={1} />
-                  <Heading size='$1' marginVertical='auto'>
-                    {selectedGroup?.memberCount} member{selectedGroup?.memberCount == 1 ? '' : 's'}
-                  </Heading>
-                </XStack>
-              </YStack>
+          <YStack space="$3" mb='$2' p='$4' maw={800} als='center' width='100%'>
+            <Heading>{infoRenderingGroup?.name}</Heading>
+            <XStack>
+              <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
+              <XStack f={1} />
+              <Heading size='$1' marginVertical='auto'>
+                {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
+              </Heading>
+            </XStack>
+          </YStack>
 
-              <Sheet.ScrollView p="$4" space>
-                <YStack maw={600} als='center' width='100%'>
-                  {/* <ReactMarkdown children={selectedGroup?.description ?? ''}
+          <Sheet.ScrollView p="$4" space>
+            <YStack maw={600} als='center' width='100%'>
+              {/* <ReactMarkdown children={infoRenderingGroup?.description ?? ''}
                     components={{
                       // li: ({ node, ordered, ...props }) => <li }} {...props} />,
                       p: ({ node, ...props }) => <Paragraph children={props.children} size='$1' />,
                       a: ({ node, ...props }) => <Anchor color={navColor} target='_blank' href={props.href} children={props.children} />,
                     }} /> */}
-                  <TamaguiMarkdown text={selectedGroup?.description ?? ''} />
-                </YStack>
-              </Sheet.ScrollView>
-            </Sheet.Frame>
-          </Sheet>
-        </> : undefined
-      }
+              <TamaguiMarkdown text={infoRenderingGroup?.description ?? ''} />
+            </YStack>
+          </Sheet.ScrollView>
+        </Sheet.Frame>
+      </Sheet>
     </>
-
   )
 }
 
@@ -194,12 +205,13 @@ type GroupButtonProps = {
   group: Group;
   selected: boolean;
   setOpen: (open: boolean) => void;
+  onShowInfo: () => void;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
   groupPageForwarder?: (group: Group) => string;
 }
 
-function GroupButton({ group, selected, setOpen, groupPageForwarder }: GroupButtonProps) {
+function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo }: GroupButtonProps) {
   const link = useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
   const media = useMedia();
   const onPress = link.onPress;
@@ -208,26 +220,36 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder }: GroupButt
     onPress?.(e);
   }
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-  return <Button
-    // bordered={false}
-    // href={`/g/${group.shortname}`}
-    transparent={!selected}
-    backgroundColor={selected ? navColor : undefined}
-    // size="$8"
-    // disabled={appSection == AppSection.HOME}
-    {...link}
-  >
-    <XStack w='100%'>
-      <XStack w={media.gtXs ? 70 : 0} />
-      <Paragraph size="$5" color={selected ? navTextColor : undefined} whiteSpace='nowrap' overflow='hidden' marginVertical='auto' f={1} ta='center'>
-        {group.name}
-      </Paragraph>
-      <XStack w={70}>
-        <YStack marginVertical='auto' mr='$2'><Users size="$1" color={selected ? navTextColor : undefined} /></YStack>
-        <Heading size="$3" color={selected ? navTextColor : undefined} marginVertical='auto' f={1} ta='right'>
-          {group.memberCount}
-        </Heading>
+  return <XStack>
+    <Button
+      size='$2'
+      my='auto'
+      mr='$2'
+      circular
+      icon={Info} onPress={() => onShowInfo()} />
+    <Button
+      f={1}
+      // bordered={false}
+      // href={`/g/${group.shortname}`}
+      transparent={!selected}
+      backgroundColor={selected ? navColor : undefined}
+      // size="$8"
+      // disabled={appSection == AppSection.HOME}
+      {...link}
+    >
+      <XStack w='100%'>
+        {/* <XStack w={media.gtXs ? 70 : 0} /> */}
+        <Paragraph f={1} 
+          size="$5" color={selected ? navTextColor : undefined} whiteSpace='nowrap' overflow='hidden' marginVertical='auto' ta='center'>
+          {group.name}
+        </Paragraph>
+        <XStack w={70} >
+          <YStack marginVertical='auto' mr='$1'><Users size="$1" color={selected ? navTextColor : undefined} /></YStack>
+          <Heading size="$3" color={selected ? navTextColor : undefined} marginVertical='auto' f={1} ta='right'>
+            {group.memberCount}
+          </Heading>
+        </XStack>
       </XStack>
-    </XStack>
-  </Button>;
+    </Button>
+  </XStack>;
 }

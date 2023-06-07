@@ -141,7 +141,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         open={open}
         onOpenChange={setOpen}
         // snapPoints={[80]}
-        snapPoints={[87]}
+        snapPoints={[87, 75, 50, 30]}
         position={position}
         onPositionChange={setPosition}
         dismissOnSnapToBottom
@@ -157,7 +157,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
             <XStack f={1} />
             <Button
               alignSelf='center'
-              size="$6"
+              size="$5"
               circular
               icon={ChevronDown}
               onPress={() => setOpen(false)} />

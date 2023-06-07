@@ -23,13 +23,17 @@ export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNex
 
   const [fgColor, bgColor] = hasNextPage ? [navTextColor, navColor] : [primaryTextColor, primaryColor];
 
+  const renderedPageCount = page + (hasNextPage ? 1 : 0);
   return <XStack backgroundColor={bgColor} h={80} borderRadius={5} ref={ref} p='$5' w='100%'>
     <Paragraph color={fgColor} size='$2' f={1} my='auto'>
       {loadingPage
         ? `Loading page ${page + 2}...`
-        : `${page + (hasNextPage ? 1 : 0)} page${page === 0 ? '' : 's'} loaded.`}
+        : `${renderedPageCount} page${renderedPageCount === 1 ? '' : 's'} loaded.`}
       {hasNextPage ? '' : ' No more pages.'}
     </Paragraph>
-    {loadingPage ? <Spinner color={fgColor} my='auto' size='small' /> : undefined}
+    <XStack my='auto' animation='lazy' o={loadingPage ? 1 : hasNextPage ? 0.5 : 0}>
+      <Spinner color={fgColor} size='small' />
+    </XStack>
+    {/* {loadingPage ? <Spinner color={fgColor} my='auto' size='small' /> : undefined} */}
   </XStack>
 };

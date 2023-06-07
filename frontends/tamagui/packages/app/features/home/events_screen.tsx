@@ -40,7 +40,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     <TabsNavigation
       appSection={AppSection.EVENTS}
       selectedGroup={selectedGroup}
-      groupPageForwarder={(group) => `/g/${group.shortname}/posts`}
+      groupPageForwarder={(group) => `/g/${group.shortname}/events`}
     >
       {eventsState.loadStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>

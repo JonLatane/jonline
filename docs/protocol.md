@@ -61,6 +61,7 @@
   
 - [events.proto](#events-proto)
     - [Event](#jonline-Event)
+    - [EventAttendance](#jonline-EventAttendance)
     - [EventInfo](#jonline-EventInfo)
     - [EventInstance](#jonline-EventInstance)
     - [EventInstanceInfo](#jonline-EventInstanceInfo)
@@ -68,6 +69,7 @@
     - [GetEventsResponse](#jonline-GetEventsResponse)
     - [TimeFilter](#jonline-TimeFilter)
   
+    - [AttendanceStatus](#jonline-AttendanceStatus)
     - [EventListingType](#jonline-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
@@ -124,7 +126,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
-| GetMedia | [GetMediaRequest](#jonline-GetMediaRequest) | [GetMediaResponse](#jonline-GetMediaResponse) | (TODO) Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* |
+| GetMedia | [GetMediaRequest](#jonline-GetMediaRequest) | [GetMediaResponse](#jonline-GetMediaResponse) | Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* |
 | DeleteMedia | [Media](#jonline-Media) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users&#39; media requires `ADMIN` permissions. |
 | GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility. |
 | CreateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Creates a group with the current user as its admin. *Authenticated.* Requires the `CREATE_GROUPS` permission. |
@@ -146,7 +148,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 | CreateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates an Event. *Authenticated.* |
 | GetEvents | [GetEventsRequest](#jonline-GetEventsRequest) | [GetEventsResponse](#jonline-GetEventsResponse) | Gets Events. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility. |
 | ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. |
-| ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
+| ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
 
  
 
@@ -609,8 +611,8 @@ On success, the endpoint will return the media ID in plaintext.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The ID of the media item. |
-| content_type | [string](#string) |  | The MIME content type of the media item. |
 | user_id | [string](#string) | optional | The ID of the user who created the media item. |
+| content_type | [string](#string) |  | The MIME content type of the media item. |
 | name | [string](#string) | optional | An optional title for the media item. |
 | description | [string](#string) | optional | An optional description for the media item. |
 | visibility | [Visibility](#jonline-Visibility) |  | Visibility of the media item. |
@@ -767,8 +769,8 @@ See also: UserListingType.MEMBERSHIP_REQUESTS.
 | ---- | ------ | ----------- |
 | ALL_GROUPS | 0 |  |
 | MY_GROUPS | 1 |  |
-| REQUESTED | 2 |  |
-| INVITED | 3 |  |
+| REQUESTED_GROUPS | 2 |  |
+| INVITED_GROUPS | 3 |  |
 
 
  
@@ -1031,6 +1033,26 @@ A high-level enumeration of general ways of requesting posts.
 
 
 
+<a name="jonline-EventAttendance"></a>
+
+### EventAttendance
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| event_instance_id | [string](#string) |  |  |
+| user_id | [string](#string) |  |  |
+| status | [AttendanceStatus](#jonline-AttendanceStatus) |  |  |
+| inviting_user_id | [string](#string) | optional |  |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+
+
+
+
+
+
 <a name="jonline-EventInfo"></a>
 
 ### EventInfo
@@ -1132,6 +1154,22 @@ Time filter that simply works on the starts_at and ends_at fields.
 
 
  
+
+
+<a name="jonline-AttendanceStatus"></a>
+
+### AttendanceStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| INTERESTED | 0 |  |
+| GOING | 1 |  |
+| NOT_GOING | 2 |  |
+| REQUESTED | 3 |  |
+| WENT | 10 |  |
+| DID_NOT_GO | 11 |  |
+
 
 
 <a name="jonline-EventListingType"></a>

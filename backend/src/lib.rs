@@ -23,6 +23,7 @@ extern crate bytes;
 extern crate awscreds;
 extern crate awsregion;
 extern crate tempfile;
+extern crate percent_encoding;
 
 pub mod auth;
 pub mod db_connection;

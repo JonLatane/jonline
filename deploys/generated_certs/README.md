@@ -54,7 +54,9 @@ Perhaps you have a `server.pem` and `server.key` from your own CA. Make sure to 
     * You can `make certs_delete_from_k8s deploy_be_restart` to switch back to non-TLS mode.
 
 ## Use your own custom CA
-To deploy with your own custom CA (i.e. generate your own `ca.key` and overwrite the existing `ca.pem` with your own here):
+You probably don't want to do this. It's a *very* specific use case. The only time you'd want to use a custom CA is to deploy a custom version of the Flutter app that contains a community-specific encryption key. 
+
+That said, to deploy with your own custom CA (i.e. generate your own `ca.key` and overwrite the existing `ca.pem` with your own here):
 
 1. Update `server.csr.conf` and `server.extfile.conf` to point to your domain. (If you ask me for a cert, I do this temporarily.)
 2. From the root of the repo, `make certs_generate`.
