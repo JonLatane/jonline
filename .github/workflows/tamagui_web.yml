@@ -25,7 +25,7 @@ jobs:
       uses: borales/actions-yarn@v4
       with:
         working-directory: frontends/tamagui
-        cmd: install # will run `yarn install` command
+        cmd: tsc # will run `yarn install` command
       # env:
         # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
     # - uses: bahmutov/npm-install@v1
