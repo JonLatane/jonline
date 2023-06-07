@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Cargo Test
+    name: Build+Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,15 +19,5 @@ jobs:
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
       - working-directory: ./backend
         run: cargo test --all-features
-  build:
-    name: Cargo Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: arduino/setup-protoc@v2
-      # - run: sudo apt install libprotobuf-dev protobuf-compiler
       - working-directory: ./backend
         run: cargo build --all-features
