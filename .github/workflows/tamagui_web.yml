@@ -31,23 +31,23 @@ jobs:
       with:
         dir: frontends/tamagui
         cmd: build
-  export:
-    name: Export (May Fail Silently)
-    continue-on-error: true
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set Node.js 16.x
-      uses: actions/setup-node@v3
-      with:
-        node-version: 16.x
-    - name: Install NPM Dependencies
-      uses: borales/actions-yarn@v4
-      with:
-        dir: frontends/tamagui
-        cmd: install # will run `yarn install` command
-    - name: Compile Web App
-      uses: borales/actions-yarn@v4
-      with:
-        dir: frontends/tamagui
-        cmd: web:prod:export
+  # export:
+  #   name: Export (May Fail Silently)
+  #   continue-on-error: true
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Set Node.js 16.x
+  #     uses: actions/setup-node@v3
+  #     with:
+  #       node-version: 16.x
+  #   - name: Install NPM Dependencies
+  #     uses: borales/actions-yarn@v4
+  #     with:
+  #       dir: frontends/tamagui
+  #       cmd: install # will run `yarn install` command
+  #   - name: Compile Web App
+  #     uses: borales/actions-yarn@v4
+  #     with:
+  #       dir: frontends/tamagui
+  #       cmd: web:prod:export
