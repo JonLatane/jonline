@@ -1,5 +1,9 @@
 # Jonline Backend
 
+| CI Status | Information |
+|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
+
 The backend of Jonline is built in Rust, with [Tonic](https://github.com/hyperium/tonic), [Rocket](http://rocket.rs), and [Diesel](https://diesel.rs), atop PostreSQL. A Tonic thread serves up the Jonline gRPC backend on port 27707, while Rocket threads serve up the Flutter Web frontend on ports 80, 8000, and 443 if TLS is configured.
 
 ## Build and release management

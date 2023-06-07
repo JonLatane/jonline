@@ -1,4 +1,10 @@
-# jonline
+# Jonline Flutter FE
+
+| CI Status | Information |
+|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ![Flutter Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml/badge.svg) | [Flutter Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml) |
+| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg) | [Flutter iOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml) |
+| ![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg) | [Flutter Android Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml) |
 
 The Flutter client for Jonline. Built mostly with `provider` and `auto_router`.
 

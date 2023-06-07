@@ -1,5 +1,9 @@
 # Jonline Tamagui FE
 
+| CI Status | Information |
+|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg) | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml) |
+
 The Tamagui FE was chosen for Jonline's web UI because it is performant and supports
 both React Native and React Web ergonomically. It should become an alternative FE to the
 existing Flutter one, to provide multiple options for the best user experience against any
