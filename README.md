@@ -1,7 +1,6 @@
 # Jonline
 
-**DockerHub Links**
-
+**DockerHub:** 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=Jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline)
 [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=Preview%20Generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator)
 
