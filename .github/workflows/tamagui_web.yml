@@ -12,30 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set Node.js 19.x
+    - name: Setup Node.js 18.x
       uses: actions/setup-node@v3
       with:
-        node-version: 19.x
-    - name: Install NPM Dependencies
-      uses: borales/actions-yarn@v4
-      with:
-        dir: frontends/tamagui
-        cmd: install
-    - name: Install Vercel Dependencies
-      uses: borales/actions-yarn@v4
-      with:
-        dir: frontends/tamagui
-        cmd: vercel:install
-    - name: Check TypeScript Types
-      uses: borales/actions-yarn@v4
-      with:
-        dir: frontends/tamagui
-        cmd: tsc
-    - name: Yarn Build
-      uses: borales/actions-yarn@v4
-      with:
-        dir: frontends/tamagui
-        cmd: build
+        node-version: 18.x
+    - run: npm install --global yarn
+    - working-directory: frontends/tamagui
+      run: yarn install
+    - working-directory: frontends/tamagui
+      run: yarn vercel:install
+    - working-directory: frontends/tamagui
+      run: yarn tsc
+    - working-directory: frontends/tamagui
+      run: yarn build
   # export:
   #   name: Export (May Fail Silently)
   #   continue-on-error: true
