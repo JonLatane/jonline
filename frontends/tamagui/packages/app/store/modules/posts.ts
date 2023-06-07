@@ -164,7 +164,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
 
       // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
       let initialPage: number = 0;
-      while (postPages[initialPage]) {
+      while (action.meta.arg.page && postPages[initialPage]) {
         initialPage++;
       }
       const chunkSize = 10;

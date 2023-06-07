@@ -64,7 +64,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
     }
   }, [eventsLoaded, postsLoaded]);
 
-  console.log("BaseHomescreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
+  // console.log("BaseHomeScreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
 
   return (
     <TabsNavigation

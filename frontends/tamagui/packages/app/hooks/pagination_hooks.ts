@@ -16,20 +16,28 @@ export function usePostPages(listingType: PostListingType, throughPage: number, 
       console.log("Loading posts...");
       setLoadingPosts(true);
       reloadPosts();
-    } else if (postsState.baseStatus == 'loaded' && loadingPosts) {
-      setLoadingPosts(false);
-      onLoaded?.();
     }
+    // else if (postsState.baseStatus == 'loaded' && loadingPosts) {
+    //   setLoadingPosts(false);
+    //   onLoaded?.();
+    // }
   });
 
   const firstPageLoaded = getHasPostsPage(postsState, listingType, 0);
   const hasMorePages = getHasMorePostPages(postsState, listingType, throughPage);
 
   function reloadPosts() {
-    dispatch(loadPostsPage({ ...accountOrServer, listingType }))
+    dispatch(loadPostsPage({ ...accountOrServer, listingType })).then(finish(setLoadingPosts, onLoaded));
   }
 
   return { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded };
+}
+
+function finish(setLoading: (v: boolean) => void, onLoaded?: () => void) {
+  return () => {
+    setLoading(false);
+    onLoaded?.();
+  };
 }
 
 export function useEventPages(listingType: EventListingType, throughPage: number, onLoaded?: () => void) {
@@ -46,16 +54,13 @@ export function useEventPages(listingType: EventListingType, throughPage: number
       console.log("Loading events...");
       setLoadingEvents(true);
       reloadEvents();
-    } else if (eventsState.loadStatus == 'loaded' && loadingEvents) {
-      setLoadingEvents(false);
-      onLoaded?.();
     }
   });
   const firstPageLoaded = getHasEventsPage(eventsState, listingType, 0)
   const hasMorePages = getHasMoreEventPages(eventsState, listingType, throughPage);
 
   function reloadEvents() {
-    dispatch(loadEventsPage({ ...accountOrServer, listingType }))
+    dispatch(loadEventsPage({ ...accountOrServer, listingType })).then(finish(setLoadingEvents, onLoaded));
   }
 
   return { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded };
@@ -77,19 +82,16 @@ export function useGroupPostPages(groupId: string, throughPage: number, onLoaded
       console.log("Loading group posts...");
       setLoadingPosts(true);
       reloadPosts();
-    } else if (state.posts.baseStatus == 'loaded' && loadingPosts) {
-      setLoadingPosts(false);
-      onLoaded?.();
     }
   });
 
   const hasMorePages = getHasMoreGroupPostPages(state.groups, groupId, throughPage);
 
   function reloadPosts() {
-    dispatch(loadGroupPostsPage({ ...accountOrServer, groupId }))
+    dispatch(loadGroupPostsPage({ ...accountOrServer, groupId })).then(finish(setLoadingPosts, onLoaded));
   }
 
-  return { posts: postList, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded };
+  return { posts: postList, loadingPosts: loadingPosts || state.groups.postPageStatus == 'loading', reloadPosts, hasMorePages, firstPageLoaded };
 }
 
 export function useGroupEventPages(groupId: string, throughPage: number, onLoaded?: () => void) {
@@ -107,17 +109,14 @@ export function useGroupEventPages(groupId: string, throughPage: number, onLoade
       console.log("Loading events...");
       setLoadingEvents(true);
       reloadEvents();
-    } else if (state.events.loadStatus == 'loaded' && loadingEvents) {
-      setLoadingEvents(false);
-      onLoaded?.();
     }
   });
 
   const hasMorePages = getHasMoreGroupEventPages(state.groups, groupId, throughPage);
 
   function reloadEvents() {
-    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId }))
+    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId })).then(finish(setLoadingEvents, onLoaded));
   }
 
-  return { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded };
+  return { events, loadingEvents: loadingEvents || state.groups.eventPageStatus == 'loading', reloadEvents, hasMorePages, firstPageLoaded };
 }

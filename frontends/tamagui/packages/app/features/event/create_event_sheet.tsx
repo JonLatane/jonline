@@ -56,7 +56,6 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
   // const [instances, setInstances] = useState<EventInstance[]>([]);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  console.log('rendering event sheet');
 
   const previewPost = Post.create({ title, link, content, author: { userId: account?.user.id, username: account?.user.username } })
   const previewEvent = Event.create({

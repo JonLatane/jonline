@@ -157,7 +157,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
 
       // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
       let initialPage: number = 0;
-      while (eventPages[initialPage]) {
+      while (action.meta.arg.page && eventPages[initialPage]) {
         initialPage++;
       }
       const chunkSize = 10;

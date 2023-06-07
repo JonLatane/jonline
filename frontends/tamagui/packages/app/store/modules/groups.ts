@@ -21,6 +21,8 @@ import { RootState } from "../store";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
+  postPageStatus: "unloaded" | "loading" | "loaded" | "errored";
+  eventPageStatus: "unloaded" | "loading" | "loaded" | "errored";
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -43,6 +45,8 @@ const groupsAdapter: EntityAdapter<Group> = createEntityAdapter<Group>({
 
 const initialState: GroupsState = {
   status: "unloaded",
+  postPageStatus: "unloaded",
+  eventPageStatus: "unloaded",
   draftGroup: Group.create(),
   shortnameIds: {},
   recentGroups: [],
@@ -50,7 +54,7 @@ const initialState: GroupsState = {
   groupPostPages: {},
   groupEventPages: {},
   postIdGroupPosts: {},
-  ...groupsAdapter.getInitialState()
+  ...groupsAdapter.getInitialState(),
 };
 
 export type CreateGroup = AccountOrServer & Group;
@@ -153,11 +157,11 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
 
     builder.addCase(loadGroupPostsPage.pending, (state) => {
-      state.status = "loading";
+      state.postPageStatus = "loading";
       state.error = undefined;
     });
     builder.addCase(loadGroupPostsPage.fulfilled, (state, action) => {
-      state.status = "loaded";
+      state.postPageStatus = "loaded";
       const { posts } = action.payload;
       const postIds = posts.map(p => p.id);
 
@@ -172,7 +176,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
       // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
       let initialPage: number = 0;
-      while (postPages[initialPage]) {
+      while (action.meta.arg.page && postPages[initialPage]) {
         initialPage++;
       }
       const chunkSize = 10;
@@ -187,18 +191,18 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.successMessage = `Group Posts for ${action.meta.arg.groupId} loaded.`;
     });
     builder.addCase(loadGroupPostsPage.rejected, (state, action) => {
-      state.status = "errored";
+      state.postPageStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
 
     builder.addCase(loadGroupEventsPage.pending, (state) => {
-      state.status = "loading";
+      state.eventPageStatus = "loading";
       state.error = undefined;
     });
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
-      state.status = "loaded";
+      state.eventPageStatus = "loaded";
       const { events } = action.payload;
       const eventInstanceIds = events.map(e => e.instances[0]!.id);
 
@@ -207,13 +211,13 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       const groupId = action.meta.arg.groupId;
       const page = action.meta.arg.page;
       if (!state.groupEventPages[groupId] || page === 0) state.groupEventPages[groupId] = {};
-      const postPages: Dictionary<string[]> = state.groupEventPages[groupId]!;
+      const eventPages: Dictionary<string[]> = state.groupEventPages[groupId]!;
       // Sensible approach:
       // postPages[page] = postIds;
 
       // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
       let initialPage: number = 0;
-      while (postPages[initialPage]) {
+      while (action.meta.arg.page && eventPages[initialPage]) {
         initialPage++;
       }
       const chunkSize = 10;
@@ -228,7 +232,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.successMessage = `Group Events for ${action.meta.arg.groupId} loaded.`;
     });
     builder.addCase(loadGroupEventsPage.rejected, (state, action) => {
-      state.status = "errored";
+      state.eventPageStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;

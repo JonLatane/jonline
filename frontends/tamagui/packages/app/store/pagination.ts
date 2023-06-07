@@ -61,8 +61,9 @@ function getGroupPostsPage(state: RootState, groupId: string, page: number): Pos
 
 export function getGroupPostPages(state: RootState, groupId: string, throughPage: number): Post[] {
   const result: Post[] = [];
+  console.log('getGroupPostPages', groupId, throughPage);
   for (let page = 0; page <= throughPage; page++) {
-    const pagePosts = getGroupPostsPage(state, groupId, throughPage);
+    const pagePosts = getGroupPostsPage(state, groupId, page);
     result.push(...pagePosts);
   }
   return result;
