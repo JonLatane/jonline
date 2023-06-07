@@ -17,7 +17,7 @@ jobs:
           toolchain: stable
       - uses: arduino/setup-protoc@v2
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
-      - working-directory: ./backend
+      - working-directory: backend
         run: cargo test --all-features
-      - working-directory: ./backend
+      - working-directory: backend
         run: cargo build --all-features
