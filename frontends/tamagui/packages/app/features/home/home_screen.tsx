@@ -1,5 +1,5 @@
 import { EventListingType, Group, PostListingType } from '@jonline/api';
-import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks/pagination_hooks';
 import { RootState, setShowEventsOnLatest, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
@@ -89,59 +89,75 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
             </Button>
           </XStack>
           : undefined}
-        {showEventsOnLatest && eventsLoaded && postsLoaded ?
-          // <AnimatePresence>
-          <YStack
-            key='latest-events'
-            w='100%'
-            animation='quick'
-            opacity={1}
-            scale={1}
-            y={0}
-            enterStyle={{ y: -50, opacity: 0, }}
-            exitStyle={{ y: -50, opacity: 0, }}
-          >
-            {events.length == 0
-              ? eventsLoaded
-                ? <YStack width='100%' maw={600} jc="center" ai="center">
-                  <Heading size='$5' mb='$3'>No events found.</Heading>
-                  <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                </YStack>
-                : undefined
-              : <ScrollView horizontal
-                w='100%'>
-                <XStack w={media.gtSm ? 400 : 260} space='$2'>
-                  {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`} event={event} isPreview horizontal />)}
-                  <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
-                    <YStack ai='center' py='$3' jc='center'>
-                      <Heading size='$4'>More</Heading>
-                      <Heading size='$5'>Events</Heading>
-                      <ChevronRight />
-                    </YStack>
-                  </Button>
-                </XStack>
-              </ScrollView>}
-          </YStack>
-          // </AnimatePresence>
-          : undefined}
-        {eventsLoaded && postsLoaded
-          ? posts.length === 0
-            ? <YStack width='100%' maw={600} jc="center" ai="center" f={1}>
-              <Heading size='$5' mb='$3'>No posts found.</Heading>
-              <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+        <AnimatePresence>
+          {showEventsOnLatest && eventsLoaded && postsLoaded ?
+            <YStack
+              key='latest-events'
+              w='100%'
+              h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
+              overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
+              animation='lazy'
+              opacity={1}
+              scale={1}
+              y={0}
+              enterStyle={{ y: -50, opacity: 0, }}
+              exitStyle={{ y: -50, opacity: 0, }}
+            >
+              {events.length == 0
+                ? eventsLoaded
+                  ? <YStack width='100%' maw={600} jc="center" ai="center">
+                    <Heading size='$5' mb='$3'>No events found.</Heading>
+                    <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                  </YStack>
+                  : undefined
+                : <ScrollView horizontal
+                  w='100%'>
+                  <XStack w={media.gtSm ? 400 : 260} space='$2'>
+                    {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`} event={event} isPreview horizontal />)}
+                    <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
+                      <YStack ai='center' py='$3' jc='center'>
+                        <Heading size='$4'>More</Heading>
+                        <Heading size='$5'>Events</Heading>
+                        <ChevronRight />
+                      </YStack>
+                    </Button>
+                  </XStack>
+                </ScrollView>}
             </YStack>
-            : <YStack f={1}>
-              {posts.map((post) => {
-                return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
-              })}
-              <PaginationIndicator page={currentPostsPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
-                hasNextPage={hasMorePages}
-                loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
-              />
-              {showScrollPreserver ? <YStack h={100000} /> : undefined}
-            </YStack>
-          : undefined
-        }
+            : undefined}
+          {eventsLoaded && postsLoaded
+            ? posts.length === 0
+              ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}
+                animation='quick'
+                opacity={1}
+                scale={1}
+                y={0}
+                enterStyle={{ y: -50, opacity: 0, }}
+                exitStyle={{ y: -50, opacity: 0, }}
+                >
+                <Heading size='$5' mb='$3'>No posts found.</Heading>
+                <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+              </YStack>
+              : <YStack f={1} key={`post-list`}
+                animation='quick'
+                opacity={1}
+                scale={1}
+                y={0}
+                enterStyle={{ y: -50, opacity: 0, }}
+                exitStyle={{ y: -50, opacity: 0, }}
+              >
+                {posts.map((post) => {
+                  return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
+                })}
+                <PaginationIndicator page={currentPostsPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
+                  hasNextPage={hasMorePages}
+                  loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
+                />
+                {showScrollPreserver ? <YStack h={100000} /> : undefined}
+              </YStack>
+            : undefined
+          }
+        </AnimatePresence>
       </YStack>
       <StickyCreateButton />
     </TabsNavigation>

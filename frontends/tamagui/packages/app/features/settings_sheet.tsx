@@ -40,7 +40,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
         open={open}
         onOpenChange={setOpen}
         // snapPoints={[80]}
-        snapPoints={[85]}
+        snapPoints={[81]}
         position={position}
         onPositionChange={setPosition}
         dismissOnSnapToBottom

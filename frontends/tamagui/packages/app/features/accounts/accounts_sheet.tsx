@@ -141,7 +141,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         open={open}
         onOpenChange={setOpen}
         // snapPoints={[80]}
-        snapPoints={[87, 75, 50, 30]}
+        snapPoints={[87]}
         position={position}
         onPositionChange={setPosition}
         dismissOnSnapToBottom
@@ -230,7 +230,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     open={addingServer}
                     onOpenChange={setAddingServer}
                     // snapPoints={[80]}
-                    snapPoints={[82]} dismissOnSnapToBottom
+                    snapPoints={[81]} dismissOnSnapToBottom
                     position={position}
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
@@ -355,7 +355,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     open={addingAccount}
                     onOpenChange={setAddingAccount}
                     // snapPoints={[80]}
-                    snapPoints={[82]} dismissOnSnapToBottom
+                    snapPoints={[81]} dismissOnSnapToBottom
                     position={position}
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
