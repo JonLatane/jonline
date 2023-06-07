@@ -8,7 +8,7 @@ on:
 
 jobs:
   tsc:
-    name: Type Checks
+    name: Type Check and Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -16,44 +16,18 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
-    - name: Yarn install
+    - name: Install NPM Dependencies
       uses: borales/actions-yarn@v4
       with:
         working-directory: frontends/tamagui
         cmd: install # will run `yarn install` command
-    - name: Yarn TSC
+    - name: Check TypeScript Types
       uses: borales/actions-yarn@v4
       with:
         working-directory: frontends/tamagui
-        cmd: tsc # will run `yarn install` command
-      # env:
-        # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
-    # - uses: bahmutov/npm-install@v1
-    #   with:
-    #     working-directory: frontends/tamagui
-    # - working-directory: frontends/tamagui
-    #   run: yarn tsc
-  # test:
-  #   name: Unit Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - uses: bahmutov/npm-install@v1
-  #     with:
-  #       working-directory: frontends/tamagui
-  #   - working-directory: frontends/tamagui
-  #     run: yarn test
-  #   # - working-directory: ./frontends/flutter
-  #   #   run: flutter test
-  # build_web:
-  #   name: Build Prod App
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - uses: bahmutov/npm-install@v1
-  #     with:
-  #       working-directory: frontends/tamagui
-  #   - working-directory: frontends/tamagui
-  #     run: yarn web:prod:export
-  #   # - working-directory: ./frontends/flutter
-  #   #   run: flutter test
+        cmd: tsc
+    - name: Compile Web App
+      uses: borales/actions-yarn@v4
+      with:
+        working-directory: frontends/tamagui
+        cmd: web:prod:export
