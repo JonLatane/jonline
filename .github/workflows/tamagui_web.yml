@@ -12,6 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Set Node.js 16.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+    - name: Run install
+      uses: borales/actions-yarn@v4
+      with:
+        working-directory: frontends/tamagui
+        cmd: install # will run `yarn install` command
+      # env:
+        # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # if needed
     - uses: bahmutov/npm-install@v1
       with:
         working-directory: frontends/tamagui
