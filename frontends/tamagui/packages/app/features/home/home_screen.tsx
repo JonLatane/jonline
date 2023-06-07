@@ -94,12 +94,12 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
           <YStack
             key='latest-events'
             w='100%'
-          // animation="bouncy"
-          // opacity={1}
-          // scale={1}
-          // y={0}
-          // enterStyle={{ y: -50, opacity: 0, }}
-          // exitStyle={{ y: -50, opacity: 0, }}
+            animation='quick'
+            opacity={1}
+            scale={1}
+            y={0}
+            enterStyle={{ y: -50, opacity: 0, }}
+            exitStyle={{ y: -50, opacity: 0, }}
           >
             {events.length == 0
               ? eventsLoaded

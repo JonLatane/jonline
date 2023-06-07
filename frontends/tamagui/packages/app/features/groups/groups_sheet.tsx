@@ -74,7 +74,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
         modal
         open={open}
         onOpenChange={setOpen}
-        snapPoints={[87]}
+        snapPoints={[87, 75, 50, 30]}
         position={position}
         onPositionChange={setPosition}
         dismissOnSnapToBottom
