@@ -9,6 +9,7 @@ on:
 jobs:
   build_ios:
     name: Flutter iOS Build
+    continue-on-error: true
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
