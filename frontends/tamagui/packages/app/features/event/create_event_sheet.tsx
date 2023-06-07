@@ -134,7 +134,7 @@ export function CreateEventSheet({ }: CreateEventSheetProps) {
           open={open}
           onOpenChange={setOpen}
           // snapPoints={[80]}
-          snapPoints={[95, 75, 50, 30]} dismissOnSnapToBottom
+          snapPoints={[95]} dismissOnSnapToBottom
           position={position}
           onPositionChange={setPosition}
         // dismissOnSnapToBottom
