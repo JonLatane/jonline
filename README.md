@@ -1,7 +1,7 @@
 # Jonline
 
-[![DockerHub Server Images](https://img.shields.io/docker/cloud/tag/jonlatane/jonline?label=Docker&style=flat)](https://hub.docker.com/r/jonlatane/jonline/tags)
-[![DockerHub Preview Generator Images](https://img.shields.io/docker/cloud/tag/jonlatane/jonline_preview_generator?label=Docker&style=flat)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
+[![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
 | CI Status | Information |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
