@@ -1,4 +1,4 @@
-name: Backend (Rust)
+name: Rust Backend
 
 on:
   push:
