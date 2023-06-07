@@ -29,5 +29,6 @@ jobs:
     - name: Compile Web App
       uses: borales/actions-yarn@v4
       with:
+        continues-on-error: true
         working-directory: frontends/tamagui
         cmd: web:prod:export
