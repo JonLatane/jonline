@@ -60,8 +60,8 @@ const OFFSET: i64 = 7;
 
 #[cfg(test)]
 mod tests {
-    // use crate::marshaling::ToDbId;
-    // use crate::marshaling::ToProtoId;
+    use crate::marshaling::ToDbId;
+    use crate::marshaling::ToProtoId;
 
     #[test]
     fn id_conversions_work() {

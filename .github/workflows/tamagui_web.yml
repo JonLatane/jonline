@@ -1,0 +1,37 @@
+name: Tamagui Frontend (Web)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  tsc:
+    name: Type Checks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: mskelton/setup-yarn@v1
+    - working-directory: ./frontends/tamagui
+      run: yarn tsc
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: mskelton/setup-yarn@v1
+    - working-directory: ./frontends/tamagui
+      run: yarn test
+    # - working-directory: ./frontends/flutter
+    #   run: flutter test
+  build_web:
+    name: Build Prod App
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: mskelton/setup-yarn@v1
+    - working-directory: ./frontends/tamagui
+      run: yarn web:prod:export
+    # - working-directory: ./frontends/flutter
+    #   run: flutter test
