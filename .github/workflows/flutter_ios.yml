@@ -1,4 +1,4 @@
-name: Flutter Frontend (iOS)
+name: Flutter (iOS)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_ios:
-    name: Flutter iOS Build
+    name: Build
     continue-on-error: true
     runs-on: macos-latest
     steps:

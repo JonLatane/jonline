@@ -1,4 +1,4 @@
-name: Flutter Frontend (Android)
+name: Flutter (Android)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_android:
-    name: Flutter Android Build
+    name: Build
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:

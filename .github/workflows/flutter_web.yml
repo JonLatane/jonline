@@ -1,4 +1,4 @@
-name: Flutter Frontend (Web)
+name: Flutter (Web)
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
     - working-directory: ./frontends/flutter
       run: flutter test
   build_web:
-    name: Flutter Web Build
+    name: Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
