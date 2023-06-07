@@ -33,8 +33,6 @@
     - [Posts](#posts)
     - [Events](#events)
   - [Future features](#future-features)
-  - [Multi-server usage](#multi-server-usage)
-  - [Technical stuff](#technical-stuff)
 
 ## What is Jonline?
 Jonline is an open-source, community-scale social network capable of "federating" with other Jonline instances/communities. Two demo instances are up at [jonline.io](https://jonline.io) and [getj.online](https://getj.online). (Try adding one instance to your interface on the other via the "Add Account/Server" screen!) Jonline is a network of, and a protocol for, social networks. Use cases include:
@@ -285,13 +283,3 @@ Potential future features include:
     * Fulfillment side of Jonline Products.
     * Built atop OpenStreetMap, Google Maps, or possibly let the user/server choose implmementation.
     * OSS, social-baed competitor to Uber/Lyft.
-
-## Multi-server usage
-Suppose you have two accounts with friends, say, on `jonline.io` and `bobline.com`. To federate your accounts, you may simply pass an `refresh_token` from your `bobline.com` account that you use to talk to Bob (who I don't know) into `jonline.io`. The general idea is that users can choose to keep their primary account with the person they trust the most. Maybe it's not me 😭 But that's fine; I won't even know!
-
-## Technical stuff
-You can create a Jonline account right now! I will probably delete it eventually though
-
-```sh
-grpc_cli call be.jonline.io:27707 CreateAccount 'username: "hi-you", password: "very-secure"'
-```
