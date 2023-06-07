@@ -13,10 +13,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: bahmutov/npm-install@v1
-      # with:
-      #   working-directory: frontends/tamagui
-    - working-directory: frontends/tamagui
-      run: yarn tsc
+      with:
+        working-directory: frontends/tamagui
     - working-directory: frontends/tamagui
       run: yarn tsc
   # test:
