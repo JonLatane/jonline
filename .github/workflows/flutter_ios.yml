@@ -1,4 +1,4 @@
-name: Flutter (iOS)
+name: Flutter iOS
 
 on:
   push:

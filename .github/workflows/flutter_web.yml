@@ -1,4 +1,4 @@
-name: Flutter (Web)
+name: Flutter Web
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Unit Tests
+    name: Build+Test
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -19,15 +19,5 @@ jobs:
       run: flutter pub get
     - working-directory: frontends/flutter
       run: flutter test
-  build_web:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: subosito/flutter-action@v2
-      with:
-        channel: 'stable'
-    - working-directory: frontends/flutter
-      run: flutter pub get
     - working-directory: frontends/flutter
       run: flutter build web
