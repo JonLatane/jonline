@@ -32,7 +32,7 @@ jobs:
         dir: frontends/tamagui
         cmd: build
   export:
-    name: Export (May Fail)
+    name: Export (May Fail Silently)
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:

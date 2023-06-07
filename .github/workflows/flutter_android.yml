@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_android:
-    name: Build (Fails)
+    name: Build (Fails Silently)
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
