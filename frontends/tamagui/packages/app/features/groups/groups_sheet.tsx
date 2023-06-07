@@ -48,7 +48,9 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
       dispatch(updateGroups({ ...accountOrServer, ...GetGroupsRequest.create() })), 1);
   }
 
-  const matchedGroups = groups.filter(g => g.name.toLowerCase().includes(searchText.toLowerCase()));
+  const matchedGroups = groups.filter(g => 
+    g.name.toLowerCase().includes(searchText.toLowerCase()) || 
+    g.description.toLowerCase().includes(searchText.toLowerCase()));
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
@@ -221,14 +223,17 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo 
   }
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   return <XStack>
-    <Button
+    {/* <Button
       size='$2'
       my='auto'
       mr='$2'
       circular
-      icon={Info} onPress={() => onShowInfo()} />
+      o={0}
+      pointerEvents='none'
+      icon={Info} onPress={() => { }} /> */}
     <Button
       f={1}
+      h={75}
       // bordered={false}
       // href={`/g/${group.shortname}`}
       transparent={!selected}
@@ -237,19 +242,35 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo 
       // disabled={appSection == AppSection.HOME}
       {...link}
     >
-      <XStack w='100%'>
-        {/* <XStack w={media.gtXs ? 70 : 0} /> */}
-        <Paragraph f={1} 
-          size="$5" color={selected ? navTextColor : undefined} whiteSpace='nowrap' overflow='hidden' marginVertical='auto' ta='center'>
+        <YStack w='100%' marginVertical='auto'>
+        <Paragraph
+          size="$5"
+          color={selected ? navTextColor : undefined}
+          whiteSpace='nowrap'
+          overflow='hidden'
+          numberOfLines={1}
+          ta='left'
+          >
           {group.name}
         </Paragraph>
-        <XStack w={70} >
-          <YStack marginVertical='auto' mr='$1'><Users size="$1" color={selected ? navTextColor : undefined} /></YStack>
-          <Heading size="$3" color={selected ? navTextColor : undefined} marginVertical='auto' f={1} ta='right'>
-            {group.memberCount}
-          </Heading>
-        </XStack>
-      </XStack>
+        <Paragraph
+          size="$2"
+          color={selected ? navTextColor : undefined}
+          whiteSpace='nowrap'
+          overflow='hidden'
+          numberOfLines={1}
+          ta='left'
+          o={0.8}
+          >
+          {group.description}
+        </Paragraph>
+        </YStack>
     </Button>
+    <Button
+      size='$2'
+      my='auto'
+      ml='$2'
+      circular
+      icon={Info} onPress={() => onShowInfo()} />
   </XStack>;
 }
