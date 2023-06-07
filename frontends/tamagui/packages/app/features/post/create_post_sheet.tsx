@@ -236,19 +236,19 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                 </Button>
               </XStack>
               {/* <Sheet.ScrollView> */}
-              <XStack f={1} mb='$2' space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
+              <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
                 {showEditor
                   ? <YStack space="$2" w='100%'>
                     {/* <Heading size="$6">{server?.host}/</Heading> */}
-                    <Input textContentType="name" placeholder="Post Title"
-                      disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
+                    <Input textContentType="name" placeholder="Post Title (required)"
+                      disabled={disableInputs} opacity={disableInputs || title == ''? 0.5 : 1}
                       onFocus={() => setShowSettings(false)}
                       autoCapitalize='words'
                       value={title}
                       onChange={(data) => { setTitle(data.nativeEvent.text) }} />
                     <XStack space='$2'>
-                      <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Optional Link"
-                        disabled={disableInputs} opacity={disableInputs ? 0.5 : 1}
+                      <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
+                        disabled={disableInputs} opacity={disableInputs || link == '' ? 0.5 : 1}
                         onFocus={() => setShowSettings(false)}
                         // autoCapitalize='words'
                         value={link}
@@ -323,17 +323,17 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
 
                     <TextArea f={1} pt='$2' value={content} ref={textAreaRef}
                       onFocus={() => setShowSettings(false)}
-                      disabled={posting} opacity={posting ? 0.5 : 1}
+                      disabled={posting} opacity={posting || content == '' ? 0.5 : 1}
                       onChangeText={t => setContent(t)}
                       // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
                       // onBlur={() => _replyTextFocused = false}
-                      placeholder={`Optional Content. Markdown is supported.`} />
+                      placeholder={`Text content (optional). Markdown is supported.`} />
                     {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
                     {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
                   </YStack>
                   : undefined}
                 {showFullPreview
-                  ? <PostCard post={previewPost} />
+                  ? <YStack w='100%' my='auto'><PostCard post={previewPost} /></YStack>
                   : undefined}
                 {showShortPreview
                   ? <PostCard post={previewPost} isPreview />

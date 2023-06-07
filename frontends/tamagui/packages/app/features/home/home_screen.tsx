@@ -89,14 +89,14 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
             </Button>
           </XStack>
           : undefined}
-        <AnimatePresence>
+        {/* <AnimatePresence> */}
           {showEventsOnLatest && eventsLoaded && postsLoaded ?
             <YStack
               key='latest-events'
               w='100%'
               h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
               overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
-              animation='lazy'
+              animation='quick'
               opacity={1}
               scale={1}
               y={0}
@@ -157,7 +157,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
               </YStack>
             : undefined
           }
-        </AnimatePresence>
+        {/* </AnimatePresence> */}
       </YStack>
       <StickyCreateButton />
     </TabsNavigation>
