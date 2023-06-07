@@ -20,6 +20,11 @@ jobs:
       uses: borales/actions-yarn@v4
       with:
         dir: frontends/tamagui
+        cmd: install
+    - name: Install Vercel Dependencies
+      uses: borales/actions-yarn@v4
+      with:
+        dir: frontends/tamagui
         cmd: vercel:install
     - name: Check TypeScript Types
       uses: borales/actions-yarn@v4
