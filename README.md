@@ -35,7 +35,7 @@ Jonline is an open-source, community-scale social network designed to be capable
     - [Validating your deployment](#validating-your-deployment)
       - [Kubernetes service statuses](#kubernetes-service-statuses)
       - [External IP Management](#external-ip-management)
-      - [Pointing a domain at your deployment](#pointing-a-domain-at-your-deployment)
+    - [Pointing a domain at your deployment](#pointing-a-domain-at-your-deployment)
     - [Securing your deployment](#securing-your-deployment)
     - [Deleting your deployment](#deleting-your-deployment)
   - [Motivations](#motivations)
@@ -230,7 +230,7 @@ jonline.Jonline.AccessToken
 
 That's it! You're up and running, although again, *it's an unsecured instance* where ***passwords and auth tokens will be sent in plain text***. Get that thing secured before you go telling people to use it!
 
-#### Pointing a domain at your deployment
+### Pointing a domain at your deployment
 Before you can secure with LetsEncrypt, you need to point a domain at your Jonline instance's IP. Again, you can get the IP with `make deploy_be_get_external_ip`, and create your DNS records with your DNS provider. If you're choosing a DNS provider, it's worth noting that [I recommend DigitalOcean DNS (sponsored link)](https://m.do.co/c/1eaa3f9e536c) and Jonline has scripts for it. However, any [Cert-Manager](http://cert-manager.io) supported DNS provider (for the LetsEncrypt dns01 challenge) should be pretty easy to set up.
 
 Continue to the next section for more info about setting up encryption and its relation to your DNS provider.
