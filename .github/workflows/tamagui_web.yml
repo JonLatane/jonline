@@ -12,16 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: mskelton/setup-yarn@v1
-    - working-directory: ./frontends/tamagui
+    - uses: bahmutov/npm-install@v1
+      with:
+        working-directory: frontends/tamagui
+    - working-directory: frontends/tamagui
       run: yarn tsc
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: mskelton/setup-yarn@v1
-    - working-directory: ./frontends/tamagui
+    - uses: bahmutov/npm-install@v1
+      with:
+        working-directory: frontends/tamagui
+    - working-directory: frontends/tamagui
       run: yarn test
     # - working-directory: ./frontends/flutter
     #   run: flutter test
@@ -30,8 +34,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: mskelton/setup-yarn@v1
-    - working-directory: ./frontends/tamagui
+    - uses: bahmutov/npm-install@v1
+      with:
+        working-directory: frontends/tamagui
+    - working-directory: frontends/tamagui
       run: yarn web:prod:export
     # - working-directory: ./frontends/flutter
     #   run: flutter test
