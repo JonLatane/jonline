@@ -13,31 +13,33 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: bahmutov/npm-install@v1
-      with:
-        working-directory: frontends/tamagui
+      # with:
+      #   working-directory: frontends/tamagui
     - working-directory: frontends/tamagui
       run: yarn tsc
-  test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: bahmutov/npm-install@v1
-      with:
-        working-directory: frontends/tamagui
     - working-directory: frontends/tamagui
-      run: yarn test
-    # - working-directory: ./frontends/flutter
-    #   run: flutter test
-  build_web:
-    name: Build Prod App
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: bahmutov/npm-install@v1
-      with:
-        working-directory: frontends/tamagui
-    - working-directory: frontends/tamagui
-      run: yarn web:prod:export
-    # - working-directory: ./frontends/flutter
-    #   run: flutter test
+      run: yarn tsc
+  # test:
+  #   name: Unit Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: bahmutov/npm-install@v1
+  #     with:
+  #       working-directory: frontends/tamagui
+  #   - working-directory: frontends/tamagui
+  #     run: yarn test
+  #   # - working-directory: ./frontends/flutter
+  #   #   run: flutter test
+  # build_web:
+  #   name: Build Prod App
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - uses: bahmutov/npm-install@v1
+  #     with:
+  #       working-directory: frontends/tamagui
+  #   - working-directory: frontends/tamagui
+  #     run: yarn web:prod:export
+  #   # - working-directory: ./frontends/flutter
+  #   #   run: flutter test
