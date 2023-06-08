@@ -9,7 +9,7 @@ on:
 jobs:
   build_ios:
     name: Build (Fails Silently)
-    continue-on-error: true
+    # continue-on-error: true
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
