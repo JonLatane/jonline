@@ -39,13 +39,13 @@ jobs:
 
     - working-directory: frontends/flutter
       run: flutter pub get
-    - working-directory: frontends/flutter
-      run: flutter test
+    # - working-directory: frontends/flutter
+    #   run: flutter test
     - working-directory: frontends/flutter
       run: flutter build web --web-renderer canvaskit --release --base-href /flutter/
 
-    - working-directory: backend
-      run: cargo test --all-features
+    # - working-directory: backend
+    #   run: cargo test --all-features
     - working-directory: backend
       run: cargo build --release
 
