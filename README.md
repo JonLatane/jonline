@@ -15,8 +15,8 @@ Jonline is an open-source, community-scale social network designed to be capable
 ### Continuous Delivery
 | Workflow Status | Information |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml/badge.svg) | [Server CD Results](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml) |
-| ![Preview Generator CD Badge](https://github.com/jonlatane/jonline/actions/workflows/preview_generator_cd.yml/badge.svg) | [Preview Generator CD Results](https://github.com/jonlatane/jonline/actions/workflows/preview_generator_cd.yml) |
+| ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml/badge.svg) | [Server Build Results](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml) |
+| ![Preview Generator CD Badge](https://github.com/jonlatane/jonline/actions/workflows/preview_generator_cd.yml/badge.svg) | [Preview Generator Build Results](https://github.com/jonlatane/jonline/actions/workflows/preview_generator_cd.yml) |
 
 ### Continuous Integration
 | Workflow Status | Information |
