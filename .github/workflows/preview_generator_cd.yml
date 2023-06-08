@@ -1,0 +1,65 @@
+name: Preview Generator CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_call:
+    secrets:
+      DOCKERHUB_USERNAME:
+        description: 'DockerHub username for CD'
+        required: true
+      DOCKERHUB_TOKEN:
+        description: 'DockerHub access token for CD'
+        required: true
+
+jobs:
+  build_and_deploy_image:
+    name: Build, Test and Deliver to DockerHub
+    runs-on: ubuntu-latest
+    env:
+      BE_VERSION:
+      SHA_TO_DEPLOY: ${{ github.event.inputs.sha || github.sha }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: docker/setup-buildx-action@v1
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: arduino/setup-protoc@v2
+
+    - uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract BE Version
+      id: step_one
+      run: |
+        echo "BE_VERSION=$(make get_be_version)" >> "$GITHUB_ENV"
+    - name: Echo BE Version
+      run: echo ${{ env.BE_VERSION }}
+
+    # - working-directory: backend
+    #   run: cargo test --all-features
+    - working-directory: backend
+      run: cargo build --release
+
+    - name: Rename Rust binaries for Dockerfiles
+      run: >-
+           mv backend/target/release/jonline backend/target/release/jonline__server_release &&
+           mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
+           mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
+           mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release &&
+           mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release &&
+           mv backend/target/release/set_permission backend/target/release/set_permission__server_release
+
+    - name: Build and push jonline_preview_generator image
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ env.SHA_TO_DEPLOY }}
+        context: .
+        file: ./deploys/docker/preview_generator/Dockerfile
+        platforms: linux/amd64,linux/arm64
