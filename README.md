@@ -4,8 +4,8 @@ Jonline is an open-source, community-scale social network designed to be capable
 ## Statuses
 ### Deployments
 
-[![Jonline.io](https://jonline.io/info_shield?)](https://jonline.io/about)
-[![GetJ.online](https://getj.online/info_shield?)](https://getj.online/about)
+[![Jonline.io](https://jonline.io/info_shield)](https://jonline.io/about)
+[![GetJ.online](https://getj.online/info_shield)](https://getj.online/about)
 
 ### DockerHub
 
