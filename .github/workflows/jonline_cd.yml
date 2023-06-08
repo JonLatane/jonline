@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_and_deploy_image:
-    name: Build, Test and (TODO:) Deliver Images to DockerHub
+    name: Build, Test and Deliver to DockerHub
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -49,13 +49,27 @@ jobs:
     - working-directory: backend
       run: cargo build --release
 
-    - run: echo 'TODO Build and push image to DockerHub tagged with this git commit hash'
+    - run: mv backend/target/release/jonline backend/target/release/jonline__server_release
+    - run: mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release
+    - run: mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release
+    - run: mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release
+    - run: mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release
+    - run: mv backend/target/release/set_permission backend/target/release/set_permission__server_release
 
-    # - name: Build and push
-    #   uses: docker/build-push-action@v2
-    #   with:
-    #     push: true
-    #     tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline-ci:latest
-    #     context: .
-    #     file: ./Dockerfile
-    #     platforms: linux/amd64,linux/arm64
+    - name: Build and push jonline image
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ GITHUB_SHA }}
+        context: .
+        file: ./deploys/docker/server/Dockerfile
+        platforms: linux/amd64,linux/arm64
+
+    - name: Build and push jonline_preview_generator image
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ GITHUB_SHA }}
+        context: .
+        file: ./deploys/docker/preview_generator/Dockerfile
+        platforms: linux/amd64,linux/arm64
