@@ -30,7 +30,7 @@ jobs:
     - name: Check Versioning Data
       run: echo ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
-    - uses: docker/setup-buildx-action@v1
+    - uses: docker/setup-buildx-action@v2
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
@@ -77,7 +77,7 @@ jobs:
            mv backend/target/release/set_permission backend/target/release/set_permission__server_release
 
     - name: Build and push jonline image
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v4
       with:
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
