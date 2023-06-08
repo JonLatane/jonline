@@ -17,6 +17,8 @@ deploy_be_restart:
 	cd deploys && $(MAKE) deploy_be_restart
 deploy_be_delete:
 	cd deploys && $(MAKE) deploy_be_delete
+get_be_version:
+	@cd deploys/releases && $(MAKE) get_be_version
 
 # Targets for managing an existing deployment on your K8s cluster, so you can quickly setup DNS and setup an admin.
 deploy_be_shell:

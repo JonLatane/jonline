@@ -12,10 +12,16 @@ Jonline is an open-source, community-scale social network designed to be capable
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline)
 [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator)
 
-### CI/CD
+### Continuous Delivery
 | Workflow Status | Information |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| ![Continuous Delivery Badge](https://github.com/jonlatane/jonline/actions/workflows/jonline_cd.yml/badge.svg) | [Continuous Delivery Results](https://github.com/jonlatane/jonline/actions/workflows/jonline_cd.yml) (incomplete; in the future, this will submit images to DockerHub tagged with GitHub SHAs) |
+| ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml/badge.svg) | [Server CD Results](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml) (incomplete; in the future, this will submit images to DockerHub tagged with GitHub SHAs) |
+| ![Preview Generator CD Badge](https://github.com/jonlatane/jonline/actions/workflows/preview_generator_cd.yml/badge.svg) | [Preview Generator CD Results](https://github.com/jonlatane/jonline/actions/workflows/preview_generator_cd.yml) (incomplete; in the future, this will submit images to DockerHub tagged with GitHub SHAs) |
+
+### Continuous Integration
+| Workflow Status | Information |
+|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| ![Continuous Delivery Badge](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml/badge.svg) | [Continuous Delivery Results](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml) (incomplete; in the future, this will submit images to DockerHub tagged with GitHub SHAs) |
 | ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
 | ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg) | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml) |
 | ![Flutter Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml/badge.svg) | [Flutter Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml) |
@@ -26,7 +32,8 @@ Jonline is an open-source, community-scale social network designed to be capable
   - [Statuses](#statuses)
     - [Deployments](#deployments)
     - [DockerHub](#dockerhub)
-    - [CI/CD](#cicd)
+    - [Continuous Delivery](#continuous-delivery)
+    - [Continuous Integration](#continuous-integration)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
     - [Why *not* Jonline?](#why-not-jonline)

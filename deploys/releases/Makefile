@@ -13,6 +13,9 @@ LOCAL_REGISTRY := kubernetes.docker.internal:5000
 BE_VERSION := $(shell cat ../../backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')
 FE_VERSION := $(shell cat ../../frontends/flutter/pubspec.yaml | grep 'version:' | sed -n 1p | awk '{print $$2;}' | sed 's/"//g')
 
+get_be_version:
+	@echo $(BE_VERSION)
+
 release_ios:
 	cd ../../frontends/flutter && ./build-release ios
 
