@@ -50,24 +50,24 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
-        {events.length == 0
-          ? eventsState.loadStatus != 'loading' && eventsState.loadStatus != 'unloaded'
+        {firstPageLoaded
+          ? events.length == 0
             ? <YStack width='100%' maw={600} jc="center" ai="center">
               <Heading size='$5' mb='$3'>No events found.</Heading>
               <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
-            : undefined
-          : <>
-            <YStack>
-              {events.map((event) => {
-                return <EventCard event={event} isPreview />;
-              })}
-              <PaginationIndicator page={currentPage} loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
-                hasNextPage={hasMorePages}
-                loadNextPage={() => setCurrentPage(currentPage + 1)} />
-              {showScrollPreserver ? <YStack h={100000} /> : undefined}
-            </YStack>
-          </>}
+            : <>
+              <YStack>
+                {events.map((event) => {
+                  return <EventCard event={event} isPreview />;
+                })}
+                <PaginationIndicator page={currentPage} loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
+                  hasNextPage={hasMorePages}
+                  loadNextPage={() => setCurrentPage(currentPage + 1)} />
+                {showScrollPreserver ? <YStack h={100000} /> : undefined}
+              </YStack>
+            </>
+          : undefined}
       </YStack>
       {/* <StickyCreateButton /> */}
     </TabsNavigation>

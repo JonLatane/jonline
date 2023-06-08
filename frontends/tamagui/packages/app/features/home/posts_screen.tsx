@@ -54,22 +54,22 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
-        {posts.length == 0
-          ? postsState.baseStatus != 'loading' && postsState.baseStatus != 'unloaded'
+        {firstPageLoaded
+          ? posts.length == 0
             ? <YStack width='100%' maw={600} jc="center" ai="center">
               <Heading size='$5' mb='$3'>No posts found.</Heading>
               <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
-            : undefined
-          : <YStack>
-            {posts.map((post) => {
-              return <PostCard key={`post-${post.id}`} post={post} isPreview />;
-            })}
-            <PaginationIndicator page={currentPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
-              hasNextPage={hasMorePages}
-              loadNextPage={() => setCurrentPage(currentPage + 1)}
-            />
-          </YStack>
+            : <YStack>
+              {posts.map((post) => {
+                return <PostCard key={`post-${post.id}`} post={post} isPreview />;
+              })}
+              <PaginationIndicator page={currentPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
+                hasNextPage={hasMorePages}
+                loadNextPage={() => setCurrentPage(currentPage + 1)}
+              />
+            </YStack>
+          : undefined
         }
       </YStack>
       <StickyCreateButton />
