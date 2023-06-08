@@ -7,57 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  backend_build:
-    name: Backend Build+Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: arduino/setup-protoc@v2
-      - working-directory: backend
-        run: cargo test --all-features
-      - working-directory: backend
-        run: cargo build --all-features
-
-  tamagui_web_build:
-    name: Tamagui Web Build+TSC
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup Node.js 18.x
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
-    - run: npm install --global yarn
-    - working-directory: frontends/tamagui
-      run: yarn install
-    - working-directory: frontends/tamagui
-      run: yarn vercel:install
-    - working-directory: frontends/tamagui
-      run: yarn build
-    - working-directory: frontends/tamagui
-      run: yarn tsc
-
-  flutter_web_build:
-    name: Flutter Web Build+Test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: subosito/flutter-action@v2
-      with:
-        channel: 'stable'
-    - working-directory: frontends/flutter
-      run: flutter pub get
-    - working-directory: frontends/flutter
-      run: flutter test
-    - working-directory: frontends/flutter
-      run: flutter build web
-
   build_and_deploy_image:
-    name: Build and Deploy Image (Incomplete)
-    needs: [backend_build, tamagui_web_build, flutter_web_build]
+    name: Build, Test and (TODO:) Deliver Images to DockerHub
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -80,12 +31,16 @@ jobs:
     #     password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - working-directory: backend
+      run: cargo test --all-features
+    - working-directory: backend
       run: cargo build --release
 
     - working-directory: frontends/tamagui
       run: yarn install
     - working-directory: frontends/tamagui
       run: yarn vercel:install
+    - working-directory: frontends/tamagui
+      run: yarn tsc
     - working-directory: frontends/tamagui
       run: yarn web:prod_export
 
