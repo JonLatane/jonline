@@ -1,0 +1,93 @@
+name: Jonline CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  backend_build:
+    name: Backend Build+Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: arduino/setup-protoc@v2
+      # - run: sudo apt install libprotobuf-dev protobuf-compiler
+      - working-directory: backend
+        run: cargo test --all-features
+      - working-directory: backend
+        run: cargo build --all-features
+
+  tamagui_web_build:
+    name: Tamagui Web Build+TSC
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+    - run: npm install --global yarn
+    - working-directory: frontends/tamagui
+      run: yarn install
+    - working-directory: frontends/tamagui
+      run: yarn vercel:install
+    - working-directory: frontends/tamagui
+      run: yarn build
+    - working-directory: frontends/tamagui
+      run: yarn tsc
+
+  flutter_web_build:
+    name: Flutter Web Build+Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+    - working-directory: frontends/flutter
+      run: flutter pub get
+    - working-directory: frontends/flutter
+      run: flutter test
+    - working-directory: frontends/flutter
+      run: flutter build web
+
+
+  flutter_ios_build:
+    name: Flutter iOS Build (Fails Silently)
+    continue-on-error: true
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        architecture: x64
+    - working-directory: frontends/flutter
+      run: flutter pub get
+    - working-directory: frontends/flutter
+      run: flutter build ios --release --no-codesign
+
+  flutter_android_build:
+    name: Flutter Android Build (Fails Silently)
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.7.7'
+      - working-directory: frontends/flutter
+        run: flutter pub get
+      - working-directory: frontends/flutter
+        run: flutter build apk
+      - working-directory: frontends/flutter
+        run: flutter build appbundle
