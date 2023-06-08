@@ -5,6 +5,14 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_call:
+    secrets:
+      DOCKERHUB_USERNAME:
+        description: 'DockerHub username for CD'
+        required: true
+      DOCKERHUB_TOKEN:
+        description: 'DockerHub access token for CD'
+        required: true
 
 jobs:
   build_and_deploy_image:
