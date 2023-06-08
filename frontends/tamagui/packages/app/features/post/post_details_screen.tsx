@@ -110,6 +110,9 @@ export function PostDetailsScreen() {
 
   useEffect(() => {
     if (postId) {
+      if (replyPostIdPath.length == 0) {
+        setReplyPostIdPath([postId]);
+      }
       if ((!subjectPost || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
         setLoadingPost(true);
         // useEffect(() => {
