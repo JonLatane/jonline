@@ -9,8 +9,8 @@ Jonline is an open-source, community-scale social network designed to be capable
 
 ### DockerHub
 
-[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=Jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline)
-[![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=Preview%20Generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator)
+[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline)
+[![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator)
 
 ### CI
 | CI Status | Information |
