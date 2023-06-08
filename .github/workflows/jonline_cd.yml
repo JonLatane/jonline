@@ -60,7 +60,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ GITHUB_SHA }}
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ env.GITHUB_SHA }}
         context: .
         file: ./deploys/docker/server/Dockerfile
         platforms: linux/amd64,linux/arm64
@@ -69,7 +69,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ GITHUB_SHA }}
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ env.GITHUB_SHA }}
         context: .
         file: ./deploys/docker/preview_generator/Dockerfile
         platforms: linux/amd64,linux/arm64
