@@ -21,7 +21,7 @@ async fn info_shield(state: &State<RocketState>) -> CacheResponse<Redirect> {
         .unwrap_or("Jonline".to_string());
     let encoded_server_name = utf8_percent_encode(&server_name, NON_ALPHANUMERIC);
 
-    CacheResponse::NoCache(Redirect::temporary(format!(
+    CacheResponse::NoStore(Redirect::temporary(format!(
         "https://img.shields.io/badge/{}-{}-informational?style=for-the-badge",
         encoded_server_name, service_version
     )))
