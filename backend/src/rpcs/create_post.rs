@@ -22,8 +22,7 @@ pub fn create_post(
     validate_permission(&user, Permission::CreatePosts)?;
     let req = request.into_inner();
     match req.title.to_owned() {
-        None => {}
-        Some(t) => match req.reply_to_post_id {
+        Some(t) if t.len() > 0 => match req.reply_to_post_id {
             Some(_) => {
                 return Err(Status::new(
                     Code::InvalidArgument,
@@ -32,6 +31,7 @@ pub fn create_post(
             }
             None => validate_length(&t, "title", 1, 255)?,
         },
+        _ => {}
     }
     validate_max_length(req.link.to_owned(), "link", 10000)?;
     validate_max_length(req.content.to_owned(), "content", 10000)?;

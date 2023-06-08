@@ -501,6 +501,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
       setPreviewReply(false);
     }
   });
+  const canSend = replyText.length > 0;
   const canComment = (accountOrServer.account?.user?.permissions?.includes(Permission.REPLY_TO_POSTS)
     || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
   return isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
@@ -512,7 +513,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
         <XStack>
           <ZStack f={1}>
             <TextArea f={1} value={replyText} ref={textAreaRef}
-              disabled={isSendingReply} opacity={isSendingReply ? 0.5 : 1}
+              disabled={isSendingReply} opacity={isSendingReply || !canSend ? 0.5 : 1}
               onChangeText={t => setReplyText(t)}
               onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
               onBlur={() => _replyTextFocused = false}
@@ -531,7 +532,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
               <Tooltip.Trigger>
                 <Button circular mb='$2' icon={previewReply ? Edit : Eye}
                   backgroundColor={navColor} color={navTextColor}
-                  disabled={replyText == ''} opacity={replyText == '' ? 0.5 : 1}
+                  disabled={!canSend} opacity={!canSend ? 0.5 : 1}
                   onPress={() => {
                     setPreviewReply(!previewReply);
                     if (previewReply) {
@@ -546,7 +547,8 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
             {/* <YStack f={1}/> */}
             <Button circular icon={SendIcon}
               backgroundColor={primaryColor} color={primaryTextColor}
-              disabled={isSendingReply} opacity={isSendingReply ? 0.5 : 1}
+              disabled={isSendingReply || !canSend}
+              opacity={isSendingReply || !canSend ? 0.5 : 1}
               onPress={sendReply} />
           </YStack>
         </XStack>

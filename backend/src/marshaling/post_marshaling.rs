@@ -117,7 +117,7 @@ impl ToProtoGroupPost for models::GroupPost {
     }
 }
 
-pub const ALL_POST_CONTEXTS: [PostContext; 2] = [PostContext::Post, PostContext::Event];
+pub const ALL_POST_CONTEXTS: [PostContext; 4] = [PostContext::Post, PostContext::Reply, PostContext::Event, PostContext::EventInstance];
 
 pub trait ToProtoPostContext {
     fn to_proto_post_context(&self) -> Option<PostContext>;
