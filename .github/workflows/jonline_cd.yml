@@ -18,8 +18,7 @@ jobs:
         toolchain: stable
     - uses: arduino/setup-protoc@v2
     - uses: subosito/flutter-action@v2
-    - name: Setup Node.js 18.x
-      uses: actions/setup-node@v3
+    - uses: actions/setup-node@v3
       with:
         node-version: 18.x
     - run: npm install --global yarn
@@ -29,9 +28,6 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - working-directory: backend
-      run: cargo test --all-features
 
     - working-directory: frontends/tamagui
       run: yarn install
@@ -49,6 +45,8 @@ jobs:
     - working-directory: frontends/flutter
       run: flutter build web --web-renderer canvaskit --release --base-href /flutter/
 
+    - working-directory: backend
+      run: cargo test --all-features
     - working-directory: backend
       run: cargo build --release
 
