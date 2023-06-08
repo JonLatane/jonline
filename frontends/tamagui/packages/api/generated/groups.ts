@@ -17,8 +17,8 @@ export const protobufPackage = "jonline";
 export enum GroupListingType {
   ALL_GROUPS = 0,
   MY_GROUPS = 1,
-  REQUESTED = 2,
-  INVITED = 3,
+  REQUESTED_GROUPS = 2,
+  INVITED_GROUPS = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -31,11 +31,11 @@ export function groupListingTypeFromJSON(object: any): GroupListingType {
     case "MY_GROUPS":
       return GroupListingType.MY_GROUPS;
     case 2:
-    case "REQUESTED":
-      return GroupListingType.REQUESTED;
+    case "REQUESTED_GROUPS":
+      return GroupListingType.REQUESTED_GROUPS;
     case 3:
-    case "INVITED":
-      return GroupListingType.INVITED;
+    case "INVITED_GROUPS":
+      return GroupListingType.INVITED_GROUPS;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -49,10 +49,10 @@ export function groupListingTypeToJSON(object: GroupListingType): string {
       return "ALL_GROUPS";
     case GroupListingType.MY_GROUPS:
       return "MY_GROUPS";
-    case GroupListingType.REQUESTED:
-      return "REQUESTED";
-    case GroupListingType.INVITED:
-      return "INVITED";
+    case GroupListingType.REQUESTED_GROUPS:
+      return "REQUESTED_GROUPS";
+    case GroupListingType.INVITED_GROUPS:
+      return "INVITED_GROUPS";
     case GroupListingType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

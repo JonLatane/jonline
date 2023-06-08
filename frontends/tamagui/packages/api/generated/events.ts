@@ -76,6 +76,63 @@ export function eventListingTypeToJSON(object: EventListingType): string {
   }
 }
 
+export enum AttendanceStatus {
+  INTERESTED = 0,
+  GOING = 1,
+  NOT_GOING = 2,
+  REQUESTED = 3,
+  WENT = 10,
+  DID_NOT_GO = 11,
+  UNRECOGNIZED = -1,
+}
+
+export function attendanceStatusFromJSON(object: any): AttendanceStatus {
+  switch (object) {
+    case 0:
+    case "INTERESTED":
+      return AttendanceStatus.INTERESTED;
+    case 1:
+    case "GOING":
+      return AttendanceStatus.GOING;
+    case 2:
+    case "NOT_GOING":
+      return AttendanceStatus.NOT_GOING;
+    case 3:
+    case "REQUESTED":
+      return AttendanceStatus.REQUESTED;
+    case 10:
+    case "WENT":
+      return AttendanceStatus.WENT;
+    case 11:
+    case "DID_NOT_GO":
+      return AttendanceStatus.DID_NOT_GO;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AttendanceStatus.UNRECOGNIZED;
+  }
+}
+
+export function attendanceStatusToJSON(object: AttendanceStatus): string {
+  switch (object) {
+    case AttendanceStatus.INTERESTED:
+      return "INTERESTED";
+    case AttendanceStatus.GOING:
+      return "GOING";
+    case AttendanceStatus.NOT_GOING:
+      return "NOT_GOING";
+    case AttendanceStatus.REQUESTED:
+      return "REQUESTED";
+    case AttendanceStatus.WENT:
+      return "WENT";
+    case AttendanceStatus.DID_NOT_GO:
+      return "DID_NOT_GO";
+    case AttendanceStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /**
  * Valid GetEventsRequest formats:
  * - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
@@ -138,6 +195,15 @@ export interface EventInstance {
 
 /** To be used for ticketing, RSVPs, etc. */
 export interface EventInstanceInfo {
+}
+
+export interface EventAttendance {
+  eventInstanceId: string;
+  userId: string;
+  status: AttendanceStatus;
+  invitingUserId?: string | undefined;
+  createdAt: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 function createBaseGetEventsRequest(): GetEventsRequest {
@@ -649,6 +715,111 @@ export const EventInstanceInfo = {
 
   fromPartial<I extends Exact<DeepPartial<EventInstanceInfo>, I>>(_: I): EventInstanceInfo {
     const message = createBaseEventInstanceInfo();
+    return message;
+  },
+};
+
+function createBaseEventAttendance(): EventAttendance {
+  return {
+    eventInstanceId: "",
+    userId: "",
+    status: 0,
+    invitingUserId: undefined,
+    createdAt: undefined,
+    updatedAt: undefined,
+  };
+}
+
+export const EventAttendance = {
+  encode(message: EventAttendance, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.eventInstanceId !== "") {
+      writer.uint32(10).string(message.eventInstanceId);
+    }
+    if (message.userId !== "") {
+      writer.uint32(18).string(message.userId);
+    }
+    if (message.status !== 0) {
+      writer.uint32(24).int32(message.status);
+    }
+    if (message.invitingUserId !== undefined) {
+      writer.uint32(34).string(message.invitingUserId);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(82).fork()).ldelim();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(90).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): EventAttendance {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventAttendance();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.eventInstanceId = reader.string();
+          break;
+        case 2:
+          message.userId = reader.string();
+          break;
+        case 3:
+          message.status = reader.int32() as any;
+          break;
+        case 4:
+          message.invitingUserId = reader.string();
+          break;
+        case 10:
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 11:
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventAttendance {
+    return {
+      eventInstanceId: isSet(object.eventInstanceId) ? String(object.eventInstanceId) : "",
+      userId: isSet(object.userId) ? String(object.userId) : "",
+      status: isSet(object.status) ? attendanceStatusFromJSON(object.status) : 0,
+      invitingUserId: isSet(object.invitingUserId) ? String(object.invitingUserId) : undefined,
+      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+    };
+  },
+
+  toJSON(message: EventAttendance): unknown {
+    const obj: any = {};
+    message.eventInstanceId !== undefined && (obj.eventInstanceId = message.eventInstanceId);
+    message.userId !== undefined && (obj.userId = message.userId);
+    message.status !== undefined && (obj.status = attendanceStatusToJSON(message.status));
+    message.invitingUserId !== undefined && (obj.invitingUserId = message.invitingUserId);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventAttendance>, I>>(base?: I): EventAttendance {
+    return EventAttendance.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<EventAttendance>, I>>(object: I): EventAttendance {
+    const message = createBaseEventAttendance();
+    message.eventInstanceId = object.eventInstanceId ?? "";
+    message.userId = object.userId ?? "";
+    message.status = object.status ?? 0;
+    message.invitingUserId = object.invitingUserId ?? undefined;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
     return message;
   },
 };

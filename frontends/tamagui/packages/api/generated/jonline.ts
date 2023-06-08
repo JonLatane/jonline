@@ -72,7 +72,7 @@ export interface Jonline {
   updateFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow>;
   /** Unfollow (or unrequest) a user. *Authenticated.* */
   deleteFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Empty>;
-  /** (TODO) Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* */
+  /** Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* */
   getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse>;
   /**
    * Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO.
@@ -148,7 +148,7 @@ export interface Jonline {
    */
   configureServer(request: DeepPartial<ServerConfiguration>, metadata?: grpc.Metadata): Promise<ServerConfiguration>;
   /**
-   * DELETE ALL Posts, Groups and Users except the one who performed the RPC. *Authenticated.*
+   * Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.*
    * Requires `ADMIN` permissions.
    * Note: Server Configuration is not deleted.
    */
