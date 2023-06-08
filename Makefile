@@ -52,8 +52,9 @@ release_be_fe_only_cloud:
 	cd deploys/releases && $(MAKE) release_be_fe_only_cloud
 
 # Full-Stack dev targets
+# Excludes generated Dart and TypeScript Protobuf files we save in the repo.
 lines_of_code:
-	git ls-files | xargs cloc
+	git ls-files | grep -v generated | xargs cloc
 
 docs: documentation
 documentation:

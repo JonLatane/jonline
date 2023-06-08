@@ -48,7 +48,7 @@ export function AboutJonlineScreen() {
               <AboutListItem>
                 <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
                   Jonline on GitHub (give it a ⭐️!)
-                </Anchor> (released under the GPLv3)
+                </Anchor> (released under the AGPLv3)
               </AboutListItem>
               <AboutListItem mb='$3'>
                 <Anchor color={navColor} href="https://hub.docker.com/r/jonlatane/jonline" target="_blank">
