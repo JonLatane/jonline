@@ -14,15 +14,30 @@ async fn info_shield(state: &State<RocketState>) -> CacheResponse<Redirect> {
 
     let mut conn = state.pool.get().unwrap();
     let server_configuration = get_server_configuration(&mut conn).unwrap();
-    let server_name = server_configuration
-        .server_info
-        .map(|x| x.name)
-        .flatten()
-        .unwrap_or("Jonline".to_string());
+    let server_info = server_configuration.server_info.as_ref().unwrap();
+    let server_name = server_info.name.as_ref().unwrap();
+    let colors = server_info.colors.as_ref().unwrap();
+    let primary_color_int = colors.primary.unwrap();
+    let nav_color_int = colors.navigation.unwrap();
+    let mut primary_color = format!("{:x}", primary_color_int);
+    while primary_color.len() < 6 {
+        primary_color = format!("0{}", primary_color);
+    }
+    while primary_color.len() > 6 {
+        primary_color = format!("{}", &primary_color[1..]);
+    }
+    let mut nav_color = format!("{:x}", nav_color_int);
+    while nav_color.len() < 6 {
+        nav_color = format!("0{}", nav_color);
+    }
+    while nav_color.len() > 6 {
+        nav_color = format!("{}", &nav_color[1..]);
+    }
+
     let encoded_server_name = utf8_percent_encode(&server_name, NON_ALPHANUMERIC);
 
     CacheResponse::NoStore(Redirect::temporary(format!(
-        "https://img.shields.io/badge/{}-{}-informational?style=for-the-badge",
-        encoded_server_name, service_version
+        "https://img.shields.io/badge/{}-jonline%20v{}-information?style=for-the-badge&labelColor={}&color={}",
+        encoded_server_name, service_version, primary_color, nav_color
     )))
 }
