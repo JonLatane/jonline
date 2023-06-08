@@ -12,8 +12,8 @@ Jonline is an open-source, community-scale social network designed to be capable
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline)
 [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator)
 
-### CI
-| CI Status | Information |
+### CI/CD
+| Workflow Status | Information |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | ![Continuous Delivery Badge](https://github.com/jonlatane/jonline/actions/workflows/jonline_cd.yml/badge.svg) | [Continuous Delivery Results](https://github.com/jonlatane/jonline/actions/workflows/jonline_cd.yml) (incomplete; in the future, this will submit images to DockerHub tagged with GitHub SHAs) |
 | ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
@@ -26,7 +26,7 @@ Jonline is an open-source, community-scale social network designed to be capable
   - [Statuses](#statuses)
     - [Deployments](#deployments)
     - [DockerHub](#dockerhub)
-    - [CI](#ci)
+    - [CI/CD](#cicd)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
     - [Why *not* Jonline?](#why-not-jonline)
