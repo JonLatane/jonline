@@ -1,4 +1,4 @@
-name: Jonline CI
+name: Jonline CD
 
 on:
   push:
