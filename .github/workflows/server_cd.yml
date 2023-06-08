@@ -39,8 +39,7 @@ jobs:
     - name: Extract BE Version
       id: vars
       run: |-
-        be_version=$(make get_be_version | tr '\n' ' ')
-        echo "be_version=$be_version" >> $GITHUB_OUTPUT
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $$3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
     - name: Check BE Version and SHA
       run: echo ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
