@@ -15,6 +15,7 @@ export type JonlineAccount = {
   accessToken: ExpirableToken;
   server: JonlineServer;
   lastSynced?: number;
+  needsReauthentication?: boolean;
 }
 
 // Note that this is inclusive-or

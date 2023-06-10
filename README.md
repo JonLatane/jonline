@@ -3,29 +3,31 @@ Jonline is an open-source, community-scale social network designed to be capable
 
 ## Statuses
 ### Deployments
-
+These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches badges.
 [![Jonline.io](https://jonline.io/info_shield?nostore)](https://jonline.io/about)
 [![GetJ.online](https://getj.online/info_shield?nostore)](https://getj.online/about)
 
 ### DockerHub
-
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
 [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
 ### Continuous Delivery
-| Workflow Status | Information |
-|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml/badge.svg) | [Server Build Results](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml) |
+| Workflow Status                                                                                                          | Information                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml/badge.svg)                       | [Server Build Results](https://github.com/jonlatane/jonline/actions/workflows/server_cd.yml)                       |
 | ![Preview Generator CD Badge](https://github.com/jonlatane/jonline/actions/workflows/preview_generator_cd.yml/badge.svg) | [Preview Generator Build Results](https://github.com/jonlatane/jonline/actions/workflows/preview_generator_cd.yml) |
 
 ### Continuous Integration
-| Workflow Status | Information |
-|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
-| ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg) | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml) |
-| ![Flutter Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml/badge.svg) | [Flutter Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml) |
-| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg) | [Flutter iOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)|
-| ![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg) | [Flutter Android Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)  (these do not really work - [please, contribute your Android CI expertise to get them working](https://github.com/JonLatane/jonline/blob/main/.github/workflows/flutter_android.yml)!)|
+| Workflow Status                                                                                                      | Information                                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)                    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)                    |
+| ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg)         | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml)         |
+| ![Flutter Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml/badge.svg)         | [Flutter Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml)         |
+| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)         | [Flutter iOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)         |
+| ![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg) | [Flutter Android Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml) |
+| ![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)     | [Flutter macOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)     |
+| ![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg) | [Flutter Windows Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml) |
+| ![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)     | [Flutter Linux Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)     |
 
 - [Jonline](#jonline)
   - [Statuses](#statuses)
