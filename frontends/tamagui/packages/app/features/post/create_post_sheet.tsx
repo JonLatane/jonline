@@ -56,7 +56,7 @@ export function CreatePostSheet({ selectedGroup }: CreatePostSheetProps) {
 
   // Form fields
   const [group, setGroup] = useState<Group | undefined>(selectedGroup);
-  const [visibility, setVisibility] = useState(selectedGroup ? Visibility.LIMITED : Visibility.SERVER_PUBLIC);
+  const [visibility, _setVisibility] = useState(selectedGroup ? Visibility.LIMITED : Visibility.SERVER_PUBLIC);
   const [shareable, setShareable] = useState(!selectedGroup);
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
@@ -64,6 +64,19 @@ export function CreatePostSheet({ selectedGroup }: CreatePostSheetProps) {
   const [embedLink, setEmbedLink] = useState(false);
   const [media, setMedia] = useState<string[]>([]);
 
+  function setVisibility(v: Visibility) {
+    const currentlyPublic = publicVisibility(visibility);
+    const willBePublic = publicVisibility(v);
+    const willBePrivate = v == Visibility.PRIVATE;
+    if (shareable) {
+      if (willBePrivate || (currentlyPublic && !willBePublic)) {
+        setShareable(false);
+      }
+    } else if (!currentlyPublic && willBePublic) {
+      setShareable(true);
+    }
+    _setVisibility(v);
+  }
 
   const previewPost = Post.create({
     title, link, content, shareable, embedLink, media, visibility,
@@ -251,11 +264,13 @@ export function CreatePostSheet({ selectedGroup }: CreatePostSheetProps) {
                             return 'Unknown';
                         }
                       }} />
-                    <ToggleRow name={
-                      publicVisibility(visibility) || visibility == Visibility.LIMITED ?
-                        `Allow sharing to ${group ? 'other ' : ''} Groups`
-                        : 'Allow sharing to other users'
-                    }
+                    <ToggleRow
+                      // key={`'create-post-shareable-${shareable}`} 
+                      name={
+                        publicVisibility(visibility) || visibility == Visibility.LIMITED ?
+                          `Allow sharing to ${group ? 'other ' : ''} Groups`
+                          : 'Allow sharing to other users'
+                      }
                       value={shareable}
                       setter={(v) => setShareable(v)}
                       disabled={disableInputs || visibility == Visibility.PRIVATE} />

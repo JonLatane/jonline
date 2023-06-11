@@ -1,4 +1,4 @@
-FROM debian:11.5
+FROM debian:stable-slim
 
 RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 

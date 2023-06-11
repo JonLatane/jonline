@@ -178,7 +178,9 @@ export function ToggleRow({ name, value, setter, disabled = false, autoDispatch 
     <Label marginVertical='auto' f={1}>{name}</Label>
     <Switch size="$5" margin='auto'
       defaultChecked={value}
-      {...{ disabled }}
+      checked={value}
+      value={value.toString()}
+      disabled={disabled}
       onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
       <Switch.Thumb animation="quick" backgroundColor='black' />
     </Switch>
