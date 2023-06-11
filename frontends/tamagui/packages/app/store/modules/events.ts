@@ -1,4 +1,4 @@
-import { Event, EventInstance, EventListingType } from "@jonline/api";
+import { Event, EventInstance } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   Dictionary,
@@ -11,9 +11,7 @@ import {
 import { publicVisibility } from "app/utils/visibility";
 import moment from "moment";
 import { LoadEvent, createEvent, defaultEventListingType, loadEvent, loadEventsPage } from './event_actions';
-import { loadUserEvents } from "./users";
-// import { loadEventsPage } from "./event_actions";
-import { ListEnd } from '@tamagui/lucide-icons';
+import { loadUserEvents } from "./user_actions";
 export * from './event_actions';
 
 export interface EventsState {
@@ -143,14 +141,14 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
         if (oldEvent) {
           instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
         }
-        eventsAdapter.upsertOne(state, {...event, instances});
+        eventsAdapter.upsertOne(state, { ...event, instances });
       });
 
       const instanceIds = action.payload.events.map(event => event.instances[0]!.id);
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
 
-      if (!state.eventInstancePages[listingType] || page ===0) state.eventInstancePages[listingType] = {};
+      if (!state.eventInstancePages[listingType] || page === 0) state.eventInstancePages[listingType] = {};
       const eventPages: Dictionary<string[]> = state.eventInstancePages[listingType]!;
       // Sensible approach:
       // eventPages[page] = postIds;
@@ -163,7 +161,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       const chunkSize = 10;
       for (let i = 0; i < instanceIds.length; i += chunkSize) {
         const chunk = instanceIds.slice(i, i + chunkSize);
-        state.eventInstancePages[listingType]![initialPage + (i/chunkSize)] = chunk;
+        state.eventInstancePages[listingType]![initialPage + (i / chunkSize)] = chunk;
       }
       if (state.eventInstancePages[listingType]![0] == undefined) {
         state.eventInstancePages[listingType]![0] = [];

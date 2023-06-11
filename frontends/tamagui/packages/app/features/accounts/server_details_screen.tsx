@@ -1,18 +1,18 @@
 import { Permission, ServerConfiguration } from '@jonline/api'
-import { Button, formatError, Heading, Input, isWeb, Paragraph, ScrollView, TextArea, useWindowDimensions, XStack, YStack } from '@jonline/ui'
+import { Button, Heading, Input, Paragraph, ScrollView, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
 import { Info } from '@tamagui/lucide-icons'
-import { getCredentialClient, JonlineServer, RootState, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
+import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useState } from 'react'
 import { HexColorPicker } from "react-colorful"
 import StickyBox from "react-sticky-box"
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
-import { colorMeta } from '../../store/store'
+import { colorMeta } from '../../store'
 import { TamaguiMarkdown } from '../post/tamagui_markdown'
-import { TabsNavigation } from '../tabs/tabs_navigation'
-import ServerCard from './server_card'
-import { PermissionsEditor, PermissionsEditorProps } from '../user/permissions_editor'
 import { AppSection } from '../tabs/features_navigation'
+import { TabsNavigation } from '../tabs/tabs_navigation'
+import { PermissionsEditor, PermissionsEditorProps } from '../user/permissions_editor'
+import ServerCard from './server_card'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -88,7 +88,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     setDefaultPermissions(defaultPermissions.filter(p => p != permission));
   }
   const configurableUserPermissions = [
-    Permission.VIEW_USERS, 
+    Permission.VIEW_USERS,
     Permission.PUBLISH_USERS_LOCALLY,
     Permission.PUBLISH_USERS_GLOBALLY,
     Permission.VIEW_GROUPS,

@@ -1,76 +1,17 @@
-import { grpc } from "@improbable-eng/grpc-web";
-import { CreateAccountRequest, ExpirableToken, LoginRequest, User } from "@jonline/api";
+import { User } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
-  createAsyncThunk,
-  createEntityAdapter,
-  createSlice,
   Dictionary,
   EntityId,
-  PayloadAction
+  PayloadAction,
+  createEntityAdapter,
+  createSlice
 } from "@reduxjs/toolkit";
-import moment from "moment";
 import 'react-native-get-random-values';
-import { v4 as uuidv4 } from 'uuid';
-import { getServerClient, resetCredentialedData, store } from "../store";
-import { AccountOrServer, JonlineAccount, JonlineCredentialClient, JonlineServer } from "../types";
+import { resetAccessTokens, resetCredentialedData } from "..";
+import { JonlineAccount, JonlineServer } from "../types";
+import { createAccount, login } from "./account_actions";
 import { serverID } from "./servers";
-import { getCookie, setCookie } from 'typescript-cookie'
-
-let _accessFetchLock = false;
-let _newAccessToken: ExpirableToken | undefined = undefined;
-let _newRefreshToken: ExpirableToken | undefined = undefined;
-export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
-  const { account: currentAccount, server } = accountOrServer;
-  if (!currentAccount) {
-    return getServerClient(server!);
-  } else {
-    let account: JonlineAccount = currentAccount;
-    const client = await getServerClient(account.server);
-    const metadata = new grpc.Metadata();
-    const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
-    const now = moment.utc();
-    const expired = accessExpiresAt.subtract(1, 'minutes').isBefore(now);
-    if (expired) {
-      console.log(`Access token expired, refreshing..., now=${now}, expiresAt=${accessExpiresAt}`)
-      let newAccessToken: ExpirableToken | undefined = undefined;
-      let newRefreshToken: ExpirableToken | undefined = undefined;
-      while (_accessFetchLock) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        newAccessToken = _newAccessToken;
-        newRefreshToken = _newRefreshToken;
-      }
-      const newTokenExpired = !newAccessToken ||
-        moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
-      if (newTokenExpired) {
-        _accessFetchLock = true;
-        let { accessToken: fetchedAccessToken, refreshToken: fetchedRefreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
-        newAccessToken = fetchedAccessToken!;
-        _newAccessToken = newAccessToken;
-        newRefreshToken = fetchedRefreshToken!;
-        _newRefreshToken = newRefreshToken;
-        _accessFetchLock = false;
-        account = { ...account, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken! };
-        store.dispatch(accountsSlice.actions.upsertAccount(account));
-        metadata.append('authorization', account.accessToken.token);
-
-        // Update the current user asynchronously.
-        client.getCurrentUser({}, metadata).then(user => {
-          account = { ...account, user };
-          store.dispatch(accountsSlice.actions.upsertAccount(account));
-        });
-      } else {
-        metadata.append('authorization', account.accessToken.token);
-      }
-      // account = { ...account, accessToken: newAccessToken! };
-      // store.dispatch(accountsSlice.actions.upsertAccount(account));
-    } else {
-      metadata.append('authorization', account.accessToken.token);
-    }
-    // setCookie('jonline_access_token', account.accessToken.token);
-    return { ...client, credential: metadata };
-  }
-}
 
 export interface AccountsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -90,44 +31,6 @@ export function accountId(account: JonlineAccount | undefined): string | undefin
 const accountsAdapter = createEntityAdapter<JonlineAccount>({
   selectId: (account) => accountId(account)!,
 });
-
-export type CreateAccount = JonlineServer & CreateAccountRequest;
-export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
-  "accounts/create",
-  async (createAccountRequest) => {
-    let client = await getServerClient(createAccountRequest);
-    let { refreshToken, accessToken, user } = await client.createAccount(createAccountRequest);
-    let metadata = new grpc.Metadata();
-    metadata.append('authorization', accessToken!.token)
-    user = user || await client.getCurrentUser({}, metadata);
-    return {
-      id: uuidv4(),
-      user: user!,
-      refreshToken: refreshToken!,
-      accessToken: accessToken!,
-      server: { ...createAccountRequest }
-    };
-  }
-);
-
-export type Login = JonlineServer & LoginRequest;
-export const login = createAsyncThunk<JonlineAccount, Login>(
-  "accounts/login",
-  async (loginRequest) => {
-    let client = await getServerClient(loginRequest);
-    let { refreshToken, accessToken, user } = await client.login(loginRequest);
-    let metadata = new grpc.Metadata();
-    metadata.append('authorization', accessToken!.token)
-    user = user || await client.getCurrentUser({}, metadata);
-    return {
-      id: uuidv4(),
-      user: user!,
-      refreshToken: refreshToken!,
-      accessToken: accessToken!,
-      server: { ...loginRequest }
-    };
-  }
-);
 
 const initialState: AccountsState = {
   status: "unloaded",
@@ -156,7 +59,7 @@ export const accountsSlice = createSlice({
       if (accountId(state.account) != accountId(action.payload)) {
         resetCredentialedData();
       }
-      _newAccessToken = undefined;
+      resetAccessTokens();
       state.account = action.payload;
     },
     clearAccountAlerts: (state) => {

@@ -1,19 +1,18 @@
-import { GroupPost, Post, PostListingType } from "@jonline/api";
+import { Post } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
-  createEntityAdapter,
-  createSlice,
   Dictionary,
   Draft,
   EntityAdapter,
-  EntityId, Slice
+  EntityId, Slice,
+  createEntityAdapter,
+  createSlice
 } from "@reduxjs/toolkit";
-import moment from "moment";
-import { loadGroupPostsPage } from "./groups";
-import { createPost, defaultPostListingType, LoadPost, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
-import { loadUserPosts } from "./users";
-import { Visibility } from '../../../api/generated/visibility_moderation';
 import { publicVisibility } from "app/utils/visibility";
+import moment from "moment";
+import { loadGroupPostsPage } from "./group_actions";
+import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
+import { loadUserPosts } from "./user_actions";
 export * from './post_actions';
 
 export interface PostsState {
@@ -170,7 +169,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const chunkSize = 10;
       for (let i = 0; i < postIds.length; i += chunkSize) {
         const chunk = postIds.slice(i, i + chunkSize);
-        state.postPages[listingType]![initialPage + (i/chunkSize)] = chunk;
+        state.postPages[listingType]![initialPage + (i / chunkSize)] = chunk;
       }
       if (state.postPages[listingType]![0] == undefined) {
         state.postPages[listingType]![0] = [];

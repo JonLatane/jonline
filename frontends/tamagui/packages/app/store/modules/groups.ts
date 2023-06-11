@@ -1,9 +1,7 @@
-import { EventListingType, GetEventsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, Post, PostListingType } from "@jonline/api";
+import { Group, GroupPost } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 
 import {
-  AsyncThunk,
-  createAsyncThunk,
   createEntityAdapter,
   createSlice,
   Dictionary,
@@ -13,16 +11,15 @@ import {
   Slice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import { AccountOrServer } from "../types";
-import { getCredentialClient } from "./accounts";
-import { GroupedPostPages, PostsState, selectPostById } from "./posts";
 import { GroupedEventInstancePages } from "./events";
-import { RootState } from "../store";
+import { createGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, updateGroups } from "./group_actions";
+import { GroupedPostPages } from "./posts";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
   postPageStatus: "unloaded" | "loading" | "loaded" | "errored";
   eventPageStatus: "unloaded" | "loading" | "loaded" | "errored";
+  groupPostsStatus: undefined | "loading" | "loaded" | "errored";
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -47,6 +44,7 @@ const initialState: GroupsState = {
   status: "unloaded",
   postPageStatus: "unloaded",
   eventPageStatus: "unloaded",
+  groupPostsStatus: undefined,
   draftGroup: Group.create(),
   shortnameIds: {},
   recentGroups: [],
@@ -56,55 +54,6 @@ const initialState: GroupsState = {
   postIdGroupPosts: {},
   ...groupsAdapter.getInitialState(),
 };
-
-export type CreateGroup = AccountOrServer & Group;
-export const createGroup: AsyncThunk<Group, CreateGroup, any> = createAsyncThunk<Group, CreateGroup>(
-  "groups/create",
-  async (createGroupRequest) => {
-    let client = await getCredentialClient(createGroupRequest);
-    return client.createGroup(createGroupRequest, client.credential);
-  }
-);
-
-export type UpdateGroups = AccountOrServer & GetGroupsRequest;
-export const updateGroups: AsyncThunk<GetGroupsResponse, UpdateGroups, any> = createAsyncThunk<GetGroupsResponse, UpdateGroups>(
-  "groups/update",
-  async (getGroupsRequest) => {
-    let client = await getCredentialClient(getGroupsRequest);
-    return await client.getGroups(getGroupsRequest, client.credential);
-  }
-);
-
-export type LoadGroupPostsPage = AccountOrServer & { groupId: string, page?: number };
-export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage, any> = createAsyncThunk<GetPostsResponse, LoadGroupPostsPage>(
-  "groups/loadPostsPage",
-  async (request) => {
-    let client = await getCredentialClient(request);
-    const result = await client.getPosts({ groupId: request.groupId, listingType: PostListingType.GROUP_POSTS }, client.credential);
-    return result;
-  }
-);
-
-export type LoadGroupEventsPage = AccountOrServer & { groupId: string, page?: number };
-export const loadGroupEventsPage: AsyncThunk<GetEventsResponse, LoadGroupEventsPage, any> = createAsyncThunk<GetEventsResponse, LoadGroupEventsPage>(
-  "groups/loadEventsPage",
-  async (request) => {
-    let client = await getCredentialClient(request);
-    const result = await client.getEvents({ groupId: request.groupId, listingType: EventListingType.GROUP_EVENTS }, client.credential);
-    return result;
-  }
-);
-
-export type LoadGroup = { id: string } & AccountOrServer;
-export const loadGroup: AsyncThunk<Group, LoadGroup, any> = createAsyncThunk<Group, LoadGroup>(
-  "groups/loadOne",
-  async (request) => {
-    let client = await getCredentialClient(request);
-    let response = await client.getGroups(GetGroupsRequest.create({ groupId: request.id }), client.credential);
-    let group = response.groups[0]!;
-    return group;
-  }
-);
 
 export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice({
   name: "groups",
@@ -182,7 +131,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       const chunkSize = 10;
       for (let i = 0; i < postIds.length; i += chunkSize) {
         const chunk = postIds.slice(i, i + chunkSize);
-        state.groupPostPages[groupId]![initialPage + (i/chunkSize)] = chunk;
+        state.groupPostPages[groupId]![initialPage + (i / chunkSize)] = chunk;
       }
       if (state.groupPostPages[groupId]![0] == undefined) {
         state.groupPostPages[groupId]![0] = [];
@@ -223,7 +172,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       const chunkSize = 10;
       for (let i = 0; i < eventInstanceIds.length; i += chunkSize) {
         const chunk = eventInstanceIds.slice(i, i + chunkSize);
-        state.groupEventPages[groupId]![initialPage + (i/chunkSize)] = chunk;
+        state.groupEventPages[groupId]![initialPage + (i / chunkSize)] = chunk;
       }
       if (state.groupEventPages[groupId]![0] == undefined) {
         state.groupEventPages[groupId]![0] = [];

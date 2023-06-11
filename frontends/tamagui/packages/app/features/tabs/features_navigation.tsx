@@ -1,7 +1,7 @@
 import { Group } from "@jonline/api";
 import { JonlineServer } from "app/store";
 import { Button, Heading, Popover, ScrollView, XStack, YStack } from '@jonline/ui';
-import { useAccount, useLocalApp, useServerTheme } from '../../store/store';
+import { useAccount, useLocalApp, useServerTheme } from 'app/store';
 import { useLink } from "solito/link";
 import { AlertTriangle } from "@tamagui/lucide-icons";
 

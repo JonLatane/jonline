@@ -1,14 +1,12 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
 import { Button, Heading, ScrollView, Text, TextArea, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye } from '@tamagui/lucide-icons';
-import { RootState, clearUserAlerts, loadUserPosts, loadUsername, selectUserById, updateUser, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
+import { RootState, clearUserAlerts, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation';
 import React, { useEffect, useState } from 'react';
-import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
-import { useAccount } from '../../store/store';
 import { AsyncPostCard } from '../post/async_post_card';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import { VisibilityPicker } from '../post/visibility_picker';
@@ -17,7 +15,6 @@ import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PermissionsEditor, PermissionsEditorProps } from './permissions_editor';
 import { UserCard, useFullAvatarHeight } from './user_card';
-
 
 const { useParam } = createParam<{ username: string }>()
 
@@ -153,9 +150,9 @@ export function UsernameDetailsScreen() {
         {user ? <>
           <ScrollView w='100%'>
             <YStack maw={800} w='100%' als='center' p='$2' marginHorizontal='auto'>
-              <UserCard user={user} 
-                setUsername={editMode ? setName : undefined} 
-                avatarMediaId={avatarMediaId} 
+              <UserCard user={user}
+                setUsername={editMode ? setName : undefined}
+                avatarMediaId={avatarMediaId}
                 setAvatarMediaId={editMode ? setAvatarMediaId : undefined} />
               <YStack als='center' w='100%' paddingHorizontal='$2' paddingVertical='$3' space>
                 {editMode ?

@@ -1,19 +1,12 @@
-import { Post, PostListingType, Media } from '@jonline/api';
-import { dismissScrollPreserver, Text, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack, Button, isTouchable, XStack, isWebTouchable, ZStack, Progress, Sheet, useMedia, Paragraph, AlertDialog, Theme } from '@jonline/ui';
-import { getMediaPage, loadPostsPage, loadMediaPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector, getCredentialClient, serverID, serverUrl, deleteMedia } from 'app/store';
+import { AlertDialog, Button, Heading, Paragraph, Progress, Sheet, Spinner, Text, XStack, YStack, dismissScrollPreserver, isTouchable, isWebTouchable, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
+import { RootState, deleteMedia, getCredentialClient, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
-import { FlatList } from 'react-native';
-import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../post/create_post_sheet';
-import PostCard from '../post/post_card';
-import { AppSection, AppSubsection } from '../tabs/features_navigation';
-import { TabsNavigation } from '../tabs/tabs_navigation';
-import { MediaCard } from './media_card';
-import { useAccount, useAccountOrServer } from '../../store/store';
+import { Image as ImageIcon, Trash, Upload, Wand2 } from '@tamagui/lucide-icons';
+import { useAccount } from 'app/store';
 import { FileUploader } from "react-drag-drop-files";
-import { ChevronDown, Image as ImageIcon, Trash, Upload, Wand, Wand2 } from '@tamagui/lucide-icons';
-import { useMediaPage } from './media_screen';
 import { MediaRenderer } from './media_renderer';
+import { useMediaPage } from './media_screen';
 
 
 interface MediaChooserProps {

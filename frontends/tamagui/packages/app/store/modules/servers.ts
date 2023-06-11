@@ -6,7 +6,7 @@ import {
   EntityId,
   PayloadAction
 } from "@reduxjs/toolkit";
-import { getServerClient, resetCredentialedData } from "../store";
+import { getServerClient, resetCredentialedData } from "..";
 import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 

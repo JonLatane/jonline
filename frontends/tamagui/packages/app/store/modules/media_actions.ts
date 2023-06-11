@@ -3,8 +3,7 @@ import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer } from "../types";
-import { getCredentialClient } from "./accounts";
+import { AccountOrServer, getCredentialClient } from "..";
 
 // export type CreateMedia = AccountOrServer & Media;
 // export const createMedia: AsyncThunk<Media, CreateMedia, any> = createAsyncThunk<Media, CreateMedia>(

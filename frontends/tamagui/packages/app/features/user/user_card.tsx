@@ -2,18 +2,15 @@ import { Permission, User } from "@jonline/api";
 import { Anchor, Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
 
-import { useOnScreen } from 'app/hooks/use_on_screen';
-import { loadUser, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
-import { passes, pending } from "app/utils/moderation";
-import React, { useEffect } from "react";
-import { GestureResponderEvent, View } from 'react-native';
-import { followUnfollowUser, isUserLocked, respondToFollowRequest } from '../../store/modules/users';
-import { useLocalApp } from '../../store/store';
-import { FadeInView } from "../post/fade_in_view";
-import { } from "../post/post_card";
-import { useLink } from 'solito/link';
 import { useMediaUrl } from "app/hooks/use_media_url";
+import { useOnScreen } from 'app/hooks/use_on_screen';
+import { followUnfollowUser, isUserLocked, respondToFollowRequest, RootState, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from "app/store";
+import { passes, pending } from "app/utils/moderation";
+import React from "react";
+import { GestureResponderEvent, View } from 'react-native';
+import { useLink } from 'solito/link';
 import { MediaChooser } from "../media/media_chooser";
+import { } from "../post/post_card";
 
 interface Props {
   user: User;

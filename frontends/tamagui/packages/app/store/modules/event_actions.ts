@@ -1,10 +1,9 @@
-import { GetEventsRequest, GetEventsResponse, Event, EventListingType } from "@jonline/api";
+import { Event, EventListingType, GetEventsRequest, GetEventsResponse } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer } from "../types";
-import { getCredentialClient } from "./accounts";
+import { AccountOrServer, getCredentialClient } from "..";
 
 export type CreateEvent = AccountOrServer & Event;
 export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, CreateEvent>(
@@ -25,7 +24,7 @@ export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, an
   async (request) => {
     let client = await getCredentialClient(request);
     let result = await client.getEvents({ listingType: defaultEventListingType, ...request }, client.credential);
-    return { 
+    return {
       ...result,
       events: result.events.map(e => { return { ...e, post: { ...e.post!, previewImage: undefined } } })
     };

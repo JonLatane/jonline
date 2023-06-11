@@ -9,7 +9,7 @@ import PostCard from '../post/post_card';
 import { AppSection, AppSubsection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { MediaCard } from './media_card';
-import { useAccount, useAccountOrServer } from '../../store/store';
+import { useAccount, useAccountOrServer } from 'app/store';
 import { FileUploader } from "react-drag-drop-files";
 import { Upload } from '@tamagui/lucide-icons';
 

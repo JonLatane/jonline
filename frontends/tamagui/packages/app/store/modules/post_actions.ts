@@ -1,10 +1,11 @@
-import { Post, GetPostsRequest, GetPostsResponse, PostListingType } from "@jonline/api";
+import { GetPostsRequest, GetPostsResponse, Post, PostListingType } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer } from "../types";
-import { getCredentialClient } from "./accounts";
+import { AccountOrServer, getCredentialClient } from "..";
+
+export const defaultPostListingType = PostListingType.PUBLIC_POSTS;
 
 export type CreatePost = AccountOrServer & Post;
 export const createPost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, CreatePost>(
@@ -34,7 +35,7 @@ export type LoadPostsRequest = AccountOrServer & {
   listingType?: PostListingType,
   page?: number
 };
-export const defaultPostListingType = PostListingType.PUBLIC_POSTS;
+
 export const loadPostsPage: AsyncThunk<GetPostsResponse, LoadPostsRequest, any> = createAsyncThunk<GetPostsResponse, LoadPostsRequest>(
   "posts/loadPage",
   async (request) => {
