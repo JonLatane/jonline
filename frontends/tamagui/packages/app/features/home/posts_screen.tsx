@@ -72,7 +72,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
           : undefined
         }
       </YStack>
-      <StickyCreateButton />
+      <StickyCreateButton selectedGroup={selectedGroup} showPosts />
     </TabsNavigation>
   )
 }

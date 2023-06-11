@@ -1,17 +1,14 @@
-import { colorMeta, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
-import { GestureResponderEvent, Platform, View } from "react-native";
+import { Platform, View } from "react-native";
 
-import { Group, Event } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, Paragraph, Theme, useMedia, useTheme, XStack, YStack } from "@jonline/ui";
-import { ChevronRight } from "@tamagui/lucide-icons";
-import { useOnScreen } from "app/hooks/use_on_screen";
+import { Event, Group } from "@jonline/api";
+import { Anchor, Card, Heading, Image, Paragraph, useMedia, XStack, YStack } from "@jonline/ui";
+import { useMediaUrl } from "app/hooks/use_media_url";
+import moment from "moment";
 import { useLink } from "solito/link";
 import { AuthorInfo } from "../post/author_info";
-import { FadeInView } from "../post/fade_in_view";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
-import moment from "moment";
-import { useMediaUrl } from "app/hooks/use_media_url";
 
 interface Props {
   event: Event;

@@ -11,6 +11,7 @@ import {
 import { publicVisibility } from "app/utils/visibility";
 import moment from "moment";
 import { LoadEvent, createEvent, defaultEventListingType, loadEvent, loadEventsPage } from './event_actions';
+import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 export * from './event_actions';
 
@@ -200,10 +201,10 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
 
       upsertEvents(state, events);
     });
-    // builder.addCase(loadGroupEvents.fulfilled, (state, action) => {
-    //   const { events } = action.payload;
-    //   upsertEvents(state, posts);
-    // });
+    builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
+      const { events } = action.payload;
+      upsertEvents(state, events);
+    });
   },
 });
 

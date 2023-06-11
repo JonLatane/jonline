@@ -13,9 +13,12 @@ export type GroupsSheetProps = {
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
   groupPageForwarder?: (group: Group) => string;
+
+  noGroupSelectedText?: string;
+  onGroupSelected?: (group: Group) => void;
 }
 
-export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
@@ -29,7 +32,6 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   const searchInputRef = React.createRef() as React.MutableRefObject<HTMLElement | View>;
 
-  const groups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
   const groupsState = useTypedSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
   useEffect(() => {
@@ -48,9 +50,15 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
       dispatch(updateGroups({ ...accountOrServer, ...GetGroupsRequest.create() })), 1);
   }
 
-  const matchedGroups = groups.filter(g => 
-    g.name.toLowerCase().includes(searchText.toLowerCase()) || 
+  const allGroups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
+  const matchedGroups: Group[] = allGroups.filter(g =>
+    g.name.toLowerCase().includes(searchText.toLowerCase()) ||
     g.description.toLowerCase().includes(searchText.toLowerCase()));
+  const sortedGroups: Group[] = [
+    ...(selectedGroup != undefined ? [selectedGroup] : []),
+    ...matchedGroups.filter(g => g.id !== selectedGroup?.id)
+  ];
+  const groups = sortedGroups;
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
@@ -66,11 +74,16 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
   return (
 
     <>
-      <Button icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup}
+      <Button icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup && !noGroupSelectedText}
         paddingRight={selectedGroup ? infoPaddingRight : undefined}
         paddingLeft={selectedGroup ? '$2' : undefined}
-        onPress={() => setOpen((x) => !x)}>
-        {selectedGroup ? <Paragraph size="$1">{selectedGroup.name}</Paragraph> : undefined}
+        onPress={() => setOpen((x) => !x)}
+        w={noGroupSelectedText ? '100%' : undefined}>
+        {selectedGroup || noGroupSelectedText
+          ? <Paragraph size="$1">
+            {selectedGroup ? selectedGroup.name : noGroupSelectedText}
+          </Paragraph>
+          : undefined}
       </Button>
       <Sheet
         modal
@@ -117,15 +130,16 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
 
           <Sheet.ScrollView p="$4" space>
             <YStack maw={600} als='center' width='100%'>
-              {matchedGroups.length > 0
+              {groups.length > 0
                 ?
                 <>
                   <YStack>
-                    {matchedGroups.map((group, index) => {
+                    {groups.map((group, index) => {
                       return <GroupButton
                         key={`groupButton-${group.id}`}
                         group={group}
                         groupPageForwarder={groupPageForwarder}
+                        onGroupSelected={onGroupSelected}
                         selected={group.id == selectedGroup?.id}
                         onShowInfo={() => {
                           setInfoGroup(group);
@@ -134,11 +148,6 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder }: GroupsSheetPr
                         setOpen={setOpen} />
                     })}
                   </YStack>
-                  {/* <FlatList data={matchedGroups}
-                  renderItem={({ item: group }) => {
-                    return <GroupButton key={`groupButton-${group.id}`} group={group} selected={group.id == selectedGroup?.id} setOpen={setOpen} />
-                  }}
-                /> */}
                 </>
                 : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
             </YStack>
@@ -211,10 +220,12 @@ type GroupButtonProps = {
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
   groupPageForwarder?: (group: Group) => string;
+  onGroupSelected?: (group: Group) => void;
 }
 
-function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo }: GroupButtonProps) {
-  const link = useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
+function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected }: GroupButtonProps) {
+  const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
+    useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
   const media = useMedia();
   const onPress = link.onPress;
   link.onPress = (e) => {
@@ -242,7 +253,7 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo 
       // disabled={appSection == AppSection.HOME}
       {...link}
     >
-        <YStack w='100%' marginVertical='auto'>
+      <YStack w='100%' marginVertical='auto'>
         <Paragraph
           size="$5"
           color={selected ? navTextColor : undefined}
@@ -250,7 +261,7 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo 
           overflow='hidden'
           numberOfLines={1}
           ta='left'
-          >
+        >
           {group.name}
         </Paragraph>
         <Paragraph
@@ -261,10 +272,10 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo 
           numberOfLines={1}
           ta='left'
           o={0.8}
-          >
+        >
           {group.description}
         </Paragraph>
-        </YStack>
+      </YStack>
     </Button>
     <Button
       size='$2'

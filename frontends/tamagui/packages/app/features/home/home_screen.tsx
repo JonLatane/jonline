@@ -159,7 +159,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
           }
         {/* </AnimatePresence> */}
       </YStack>
-      <StickyCreateButton />
+      <StickyCreateButton  selectedGroup={selectedGroup} showPosts showEvents />
     </TabsNavigation>
   )
 }

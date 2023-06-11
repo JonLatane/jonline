@@ -1,22 +1,19 @@
-import { Post, Permission, Visibility, Media } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Input, isClient, isWeb, Paragraph, ScrollView, Sheet, TextArea, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
-import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Send as SendIcon, Settings, Unlock } from '@tamagui/lucide-icons';
-import { clearPostAlerts, createPost, RootState, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { Group, Media, Post, Visibility } from '@jonline/api';
+import { AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Sheet, TextArea, XStack, YStack, ZStack, useMedia } from '@jonline/ui';
+import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
+import { RootState, clearPostAlerts, createGroupPost, createPost, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { publicVisibility } from 'app/utils/visibility';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
-import StickyBox from 'react-sticky-box';
-import { AddAccountSheet } from '../accounts/add_account_sheet';
-// import AccountCard from './account_card';
-// import ServerCard from './server_card';
-import PostCard from './post_card';
-import { VisibilityPicker } from './visibility_picker';
-import { ToggleRow } from '../settings_sheet';
+import { GroupsSheet } from '../groups/groups_sheet';
 import { MediaChooser } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
+import { ToggleRow } from '../settings_sheet';
+import PostCard from './post_card';
+import { VisibilityPicker } from './visibility_picker';
 
 export type CreatePostSheetProps = {
-  // primaryServer?: JonlineServer;
-  // operation: string;
+  selectedGroup?: Group;
 }
 
 enum RenderType { Edit, FullPreview, ShortPreview }
@@ -24,11 +21,7 @@ const edit = (r: RenderType) => r == RenderType.Edit;
 const fullPreview = (r: RenderType) => r == RenderType.FullPreview;
 const shortPreview = (r: RenderType) => r == RenderType.ShortPreview;
 
-// export enum LoginMethod {
-//   Login = 'login',
-//   CreateAccount = 'create_account',
-// }
-export function CreatePostSheet({ }: CreatePostSheetProps) {
+export function CreatePostSheet({ selectedGroup }: CreatePostSheetProps) {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const account = accountOrServer.account!;
@@ -36,8 +29,8 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   const [position, setPosition] = useState(0);
 
   const [renderType, setRenderType] = useState(RenderType.Edit);
-  const [showSettings, _setShowSettings] = useState(false);
-  const [showMedia, _setShowMedia] = useState(true);
+  const [showSettings, _setShowSettings] = useState(true);
+  const [showMedia, _setShowMedia] = useState(false);
   const [renderSheet, setRenderSheet] = useState(true);
   function setOpen(v: boolean) {
     if (v && !renderSheet) {
@@ -62,19 +55,15 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   }
 
   // Form fields
-  const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
-  const [shareable, setShareable] = useState(true);
+  const [group, setGroup] = useState<Group | undefined>(selectedGroup);
+  const [visibility, setVisibility] = useState(selectedGroup ? Visibility.LIMITED : Visibility.SERVER_PUBLIC);
+  const [shareable, setShareable] = useState(!selectedGroup);
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
   const [content, setContent] = useState('');
   const [embedLink, setEmbedLink] = useState(false);
   const [media, setMedia] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (!open) {
-      setTimeout(() => setShowMedia(true), 1000);
-    }
-  }, [open]);
 
   const previewPost = Post.create({
     title, link, content, shareable, embedLink, media, visibility,
@@ -107,27 +96,44 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   useEffect(() => {
     if (open) {
       setRenderSheet(true);
-    } else if (!open && renderSheet) {
+    } else {
+      setTimeout(() => setShowSettings(true), 1000);
+      // if (renderSheet) {
       // setTimeout(() => {
       //   if (!open && renderSheet) {
       //     setRenderSheet(false);
       //   }
       // },1500)
+      // }
     }
   }, [open]);
 
   function doCreate() {
     const newPost: Post = Post.create({ title, link, content, shareable, embedLink, media, visibility });
 
+    function doReset() {
+      setOpen(false);
+      setTitle('');
+      setContent('');
+      setLink('');
+      setRenderType(RenderType.Edit);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      dispatch(clearPostAlerts!());
+      setPosting(false);
+      // setShowSettings(true);
+    }
+
     dispatch(createPost({ ...newPost, ...accountOrServer })).then((action) => {
       if (action.type == createPost.fulfilled.type) {
-        setOpen(false);
-        setTitle('');
-        setContent('');
-        setLink('');
-        setRenderType(RenderType.Edit);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        dispatch(clearPostAlerts!());
+        const post = action.payload as Post;
+        if (group) {
+          dispatch(createGroupPost({ groupId: group.id, postId: (post).id, ...accountOrServer }))
+            .then(doReset);
+        } else {
+          doReset();
+        }
+      } else {
+        setPosting(false);
       }
     });
   }
@@ -135,9 +141,11 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
   const canEmbedLink = ['instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'twitter', 'pinterest']
     .map(x => link.includes(x)).reduce((a, b) => a || b, false);
 
-  const disableInputs = ['posting', 'posted'].includes(postsState.createPostStatus!);
+  const isPosting = posting || ['posting', 'posted'].includes(postsState.createPostStatus!);
+  const disableInputs = isPosting;
   const disablePreview = disableInputs || !valid;
   const disableCreate = disableInputs || !valid;
+
   return (
     <>
       <Button backgroundColor={primaryColor} color={primaryTextColor} f={1}
@@ -181,35 +189,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
               </XStack>
               {postsState.createPostStatus == "errored" && postsState.errorMessage ?
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined}
-              {showSettings
-                ? <YStack ac='center' jc='center' mx='auto' animation="bouncy"
-                  p='$3'
-                  opacity={1}
-                  scale={1}
-                  y={0}
-                  enterStyle={{ y: -50, opacity: 0, }}
-                  exitStyle={{ opacity: 0, }}>
-                  {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
-                  <VisibilityPicker label='Post Visibility' visibility={visibility} onChange={setVisibility}
-                    visibilityDescription={(v) => {
-                      switch (v) {
-                        case Visibility.PRIVATE:
-                          return 'Only you can see this post.';
-                        case Visibility.LIMITED:
-                          return 'Only your followers and groups you choose can see this post.';
-                        case Visibility.SERVER_PUBLIC:
-                          return 'Anyone on this server can see this post.';
-                        case Visibility.GLOBAL_PUBLIC:
-                          return 'Anyone on the internet can see this post.';
-                        default:
-                          return 'Unknown';
-                      }
-                    }} />
-                  <ToggleRow name='Allow others to share this Post'
-                    value={shareable}
-                    setter={(v) => setShareable(v)}
-                    disabled={disableInputs} />
-                </YStack> : undefined}
+
               <XStack marginHorizontal='auto' marginVertical='$3'>
                 <Button backgroundColor={showEditor ? navColor : undefined}
                   transparent={!showEditor}
@@ -235,13 +215,59 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                   <Heading size='$4' color={showShortPreview ? navTextColor : textColor}>Feed Preview</Heading>
                 </Button>
               </XStack>
+
+              <AnimatePresence>
+                {showSettings
+                  ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' animation="bouncy"
+                    p='$3'
+                    opacity={1}
+                    scale={1}
+                    y={0}
+                    enterStyle={{ y: -50, opacity: 0, }}
+                    exitStyle={{ y: -50, opacity: 0, }}>
+                    <XStack w='100%' mb='$2'>
+                      <GroupsSheet
+                        noGroupSelectedText={publicVisibility(visibility)
+                          ? 'Share Everywhere' : 'Share To A Group'}
+                        selectedGroup={group}
+                        onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+                      />
+                    </XStack>
+                    {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
+                    <VisibilityPicker label='Post Visibility' visibility={visibility} onChange={setVisibility}
+                      visibilityDescription={(v) => {
+                        switch (v) {
+                          case Visibility.PRIVATE:
+                            return 'Only you can see this post.';
+                          case Visibility.LIMITED:
+                            return group
+                              ? `Only your followers and members of ${group.name} can see this post.`
+                              : 'Only your followers and groups you choose can see this post.';
+                          case Visibility.SERVER_PUBLIC:
+                            return 'Anyone on this server can see this post.';
+                          case Visibility.GLOBAL_PUBLIC:
+                            return 'Anyone on the internet can see this post.';
+                          default:
+                            return 'Unknown';
+                        }
+                      }} />
+                    <ToggleRow name={
+                      publicVisibility(visibility) || visibility == Visibility.LIMITED ?
+                        `Allow sharing to ${group ? 'other ' : ''} Groups`
+                        : 'Allow sharing to other users'
+                    }
+                      value={shareable}
+                      setter={(v) => setShareable(v)}
+                      disabled={disableInputs || visibility == Visibility.PRIVATE} />
+                  </YStack> : undefined}
+              </AnimatePresence>
               {/* <Sheet.ScrollView> */}
               <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
                 {showEditor
                   ? <YStack space="$2" w='100%'>
                     {/* <Heading size="$6">{server?.host}/</Heading> */}
                     <Input textContentType="name" placeholder="Post Title (required)"
-                      disabled={disableInputs} opacity={disableInputs || title == ''? 0.5 : 1}
+                      disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
                       onFocus={() => setShowSettings(false)}
                       autoCapitalize='words'
                       value={title}
@@ -336,7 +362,7 @@ export function CreatePostSheet({ }: CreatePostSheetProps) {
                   ? <YStack w='100%' my='auto'><PostCard post={previewPost} /></YStack>
                   : undefined}
                 {showShortPreview
-                  ? <PostCard post={previewPost} isPreview />
+                  ? <YStack w='100%' my='auto'><PostCard post={previewPost} isPreview /></YStack>
                   : undefined}
               </XStack>
             </YStack>

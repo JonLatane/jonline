@@ -1,4 +1,4 @@
-import { Event, EventListingType, Post, Visibility } from '@jonline/api';
+import { Event, EventListingType, Group, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Text, TextArea, XStack, YStack, useMedia } from '@jonline/ui';
 import { ChevronDown, Settings } from '@tamagui/lucide-icons';
 import { RootState, clearPostAlerts, createEvent, loadEventsPage, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
@@ -11,6 +11,7 @@ import { VisibilityPicker } from '../post/visibility_picker';
 import EventCard from './event_card';
 
 export type CreateEventSheetProps = {
+  selectedGroup?: Group;
   // primaryServer?: JonlineServer;
   // operation: string;
 }

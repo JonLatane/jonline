@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { MutableRefObject, useEffect, useState } from "react";
+import { View } from "react-native";
 
-// Hook
+// Hook for detecting if an element is visible in the viewport
 export function useOnScreen(ref, rootMargin = "0px") {
   // State and setter for storing whether element is visible
   const [isIntersecting, setIntersecting] = useState(false);

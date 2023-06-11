@@ -10,6 +10,7 @@ import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
+import { StickyCreateButton } from './sticky_create_button';
 
 export function EventsScreen() {
   return <BaseEventsScreen />;
@@ -69,6 +70,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             </>
           : undefined}
       </YStack>
+      <StickyCreateButton selectedGroup={selectedGroup} showEvents />
       {/* <StickyCreateButton /> */}
     </TabsNavigation>
   )

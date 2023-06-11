@@ -56,8 +56,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
     e.stopPropagation();
     dispatch(respondToFollowRequest({ userId: user.id, accept, ...accountOrServer }))
   };
-  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  const onScreen = useOnScreen(ref, "-1px");
+  // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  // const onScreen = useOnScreen(ref, "-1px");
   // const displayedAvatarMediaId = avatarMediaId ?? user?.avatarMediaId;
   const avatarUrl = useMediaUrl(avatarMediaId);
   // debugger;
@@ -66,7 +66,6 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
     <Theme inverse={isCurrentUser}>
       <Card theme="dark" elevate size="$4" bordered
         animation="bouncy"
-        ref={ref}
         // scale={0.9}
         margin='$0'
         width={'100%'}

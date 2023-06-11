@@ -12,8 +12,9 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { GroupedEventInstancePages } from "./events";
-import { createGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, updateGroups } from "./group_actions";
+import { createGroup, createGroupPost, loadGroup, loadGroupEventsPage, loadGroupPostsPage, updateGroups } from "./group_actions";
 import { GroupedPostPages } from "./posts";
+import { store } from "../store";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -114,7 +115,8 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       const { posts } = action.payload;
       const postIds = posts.map(p => p.id);
 
-      // TODO: add GroupPosts to PostsState
+      // NOTE: PostsState adds the post data from this same response
+      // on loadGroupPostsPage.fulfilled.
 
       const groupId = action.meta.arg.groupId;
       const page = action.meta.arg.page;
@@ -155,7 +157,8 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       const { events } = action.payload;
       const eventInstanceIds = events.map(e => e.instances[0]!.id);
 
-      // TODO: add GroupPosts to PostsState
+      // NOTE: EventsState adds the post data from this same response
+      // on loadGroupPostsPage.fulfilled.
 
       const groupId = action.meta.arg.groupId;
       const page = action.meta.arg.page;
@@ -203,6 +206,11 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
+    });
+    builder.addCase(createGroupPost.fulfilled, (state, action) => {
+      setTimeout(() => {
+        store.dispatch(loadGroupPostsPage({ groupId: action.payload.groupId, page: 0 }));
+      }, 1);
     });
   },
 });
