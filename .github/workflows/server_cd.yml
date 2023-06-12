@@ -1,4 +1,4 @@
-name: Server CD
+name: CD::Server
 
 on:
   push:
