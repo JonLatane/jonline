@@ -3,7 +3,8 @@ Jonline is an open-source, community-scale social network designed to be capable
 
 ## Statuses
 ### Deployments
-These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches badges.
+These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
+
 [![Jonline.io](https://jonline.io/info_shield?nostore)](https://jonline.io/about)
 [![GetJ.online](https://getj.online/info_shield?nostore)](https://getj.online/about)
 
