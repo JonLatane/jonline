@@ -34,10 +34,10 @@ async fn info_shield(state: &State<RocketState>) -> CacheResponse<Redirect> {
         nav_color = format!("{}", &nav_color[1..]);
     }
 
-    let encoded_server_name = utf8_percent_encode(&server_name, NON_ALPHANUMERIC);
+    let encoded_server_name = utf8_percent_encode(&server_name, NON_ALPHANUMERIC).to_string();
 
     CacheResponse::NoStore(Redirect::temporary(format!(
         "https://img.shields.io/badge/{}-v{}-information?style=for-the-badge&labelColor={}&color={}",
-        encoded_server_name, service_version, primary_color, nav_color
+        encoded_server_name.replace("-", "--"), service_version.replace("-", "--"), primary_color, nav_color
     )))
 }

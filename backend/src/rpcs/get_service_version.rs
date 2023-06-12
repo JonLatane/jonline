@@ -7,7 +7,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 lazy_static! {
     static ref SHA_HASH: Option<String> = match read_to_string("opt/continuous_delivery_hash") {
-        Ok(hash) if hash.len() > 0 => Some(hash.trim().to_string()),
+        Ok(hash) if hash.trim().len() > 0 => Some(hash.trim().to_string()),
         _ => None
     };
 }
