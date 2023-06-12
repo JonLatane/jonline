@@ -1,10 +1,14 @@
-import { createAnimations } from '@tamagui/animations-react-native'
-// import { createAnimations } from '@tamagui/animations-css'
+import { createAnimations } from '@tamagui/animations-react-native';
+// import { createAnimations } from '@tamagui/animations-css';
+
+
+// export const animations = createAnimations({
+//   bouncy: 'ease-in 300ms',
+//   lazy: 'ease-in 500ms',
+//   quick: 'ease-in 100ms',
+// });
 
 export const animations = createAnimations({
-  // fast: 'ease-in 150ms',
-  // medium: 'ease-in 300ms',
-  // slow: 'ease-in 450ms',
   bouncy: {
     type: 'spring',
     damping: 10,
@@ -22,4 +26,4 @@ export const animations = createAnimations({
     mass: 1.2,
     stiffness: 250,
   }
-})
+});

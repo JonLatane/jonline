@@ -20,6 +20,9 @@ COPY backend/target/release/set_permission__server_release /opt/set_permission
 # port 9222. See the Dockerfile in backend/docker/preview_generator for setup steps for Brave.
 COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 
+# This hash is used by the GetServiceVersion RPC.
+COPY deploys/docker/continuous_delivery_hash /opt/continuous_delivery_hash
+
 # Flutter web app release (served from the filesystem by Rocket within Jonline)
 COPY frontends/flutter/build/web/ /opt/flutter_web
 

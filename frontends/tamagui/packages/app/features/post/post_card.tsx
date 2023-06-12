@@ -6,11 +6,9 @@ import { Group, Media, Post } from "@jonline/api";
 import { Anchor, Button, Card, Heading, Image, ScrollView, Theme, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
 import { ChevronRight } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { useOnScreen } from "app/hooks/use_on_screen";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 import { AuthorInfo } from "./author_info";
-import { FadeInView } from "./fade_in_view";
 import { TamaguiMarkdown } from "./tamagui_markdown";
 
 import { MediaRenderer } from "../media/media_renderer";
@@ -230,26 +228,14 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
           >
             {!post.replyToPostId && (post.link != '' || post.title != '')
               ? <Card.Header>
-                <Anchor textDecorationLine='none' {...{ ...postLink, ...(isPreview ? detailsLink : {}) }}>
+                <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}), ...postLink, }}>
                   <YStack w='100%'>
-                    {/* <View style={{ flex: 1 }}> */}
-                    {//post.link
-                      // ? isPreview
-                      // ? 
-                      <Heading size="$7" marginRight='auto' color={post.link && post.link.startsWith('http') ? navColor : undefined}>{post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}</Heading>
-                      //   : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                      //     color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                      // :
-                      // <Heading size="$7" marginRight='auto'>{post.title}</Heading>
-                    }
-                    {/* </View> */}
+                    <Heading size="$7" marginRight='auto' color={post.link && post.link.startsWith('http') ? navColor : undefined}>{post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}</Heading>
                   </YStack>
                 </Anchor>
               </Card.Header>
               : undefined}
             <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
-
-              {/* {...postLinkProps}> */}
               <YStack zi={1000} width='100%' {...footerProps}>
                 {embedComponent}
                 {hasMediaToPreview ? <XStack w='100%' maw={800}>
@@ -313,13 +299,6 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                           </XStack> : undefined}
                         </XStack>
                       </Button>
-                      {/* {replyPostIdPath
-                    ? <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
-                      {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                    </Heading>
-                    : <Heading size="$1" marginRight='$3' marginTop='auto' marginBottom='auto'>
-                      {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                    </Heading>} */}
                     </YStack>
                   </Anchor>
                 </XStack>
@@ -346,36 +325,6 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
           </Card >
         </Theme>
       </YStack>
-      {/* {
-        isPreview ?
-          <Anchor {...authorLinkProps} onPress={(e) => e.stopPropagation()}>
-            <XStack w={180} h={70}
-              // backgroundColor='#42424277' 
-              position='absolute' bottom={15} />
-          </Anchor >
-          : undefined}
-      {
-        isPreview && post.link ?
-          <Anchor href={post.link} target='_blank'>
-            <XStack w='100%' h={
-              Math.max(1, (post.title?.length ?? 0) / Math.round(
-                (media.xxxxxxs ? 15
-                  : media.xxxxxs ? 20
-                    : media.xxxxs ? 25
-                      : media.xxxs ? 30
-                        : media.xxs ? 35
-                          : media.xs ? 40
-                            : media.sm ? 45
-                              : media.md ? 50
-                                : media.lg ? 55
-                                  : 70
-                )
-              )) * 36}
-              // backgroundColor='#42424277' 
-              position='absolute' top={15} />
-          </Anchor>
-          : undefined
-      } */}
     </>
   );
 };
