@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: generate-preview-images
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: generate-preview-images
+            image: docker.io/jonlatane/jonline_preview_generator:0.1.517
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: DATABASE_URL
+                value: postgres://admin:secure_password1@jonline-postgres/jonline
+              - name: MINIO_ENDPOINT
+                value: http://jonline-minio:9000
+              - name: MINIO_REGION
+                value: ''
+              - name: MINIO_BUCKET
+                value: jonline
+              - name: MINIO_ACCESS_KEY
+                value: minio
+              - name: MINIO_SECRET_KEY
+                value: minio123
+              - name: RUST_BACKTRACE
+                value: full
+              - name: RUST_LOG
+                value: headless_chrome=trace
+            command:
+            - /opt/generate_preview_images
+          restartPolicy: Never

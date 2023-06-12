@@ -1,8 +1,10 @@
 .NOTPARALLEL:
 .DEFAULT_GOAL := release_be_local
 
-# Configure these when building your own Jonline images. Note that you must update backend/k8s/jonline.yaml to
-# point to your cloud registry rather than docker.io/jonlatane.
+# Configure these when building your own Jonline images. Note that you must update the following to
+# point to your cloud registry rather than docker.io/jonlatane:
+# - deploys/k8s/server.yaml
+# - deploys/k8s/preview_generator.yaml
 CLOUD_REGISTRY := docker.io/jonlatane
 LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry
 

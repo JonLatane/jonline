@@ -8,13 +8,16 @@ TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
 
 # K8s server deployment targets
 deploy_be_create: deploy_ensure_namespace
-	kubectl create -f k8s/jonline.yaml --save-config -n $(NAMESPACE)
+	kubectl create -f k8s/server.yaml --save-config -n $(NAMESPACE)
+	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)
 
 deploy_be_update:
-	kubectl apply -f k8s/jonline.yaml -n $(NAMESPACE)
+	kubectl apply -f k8s/server.yaml -n $(NAMESPACE)
+	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)
 
 deploy_be_delete:
-	kubectl delete -f k8s/jonline.yaml -n $(NAMESPACE)
+	kubectl delete -f k8s/server.yaml -n $(NAMESPACE)
+	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)
 
 deploy_be_restart:
 	kubectl rollout restart deployment jonline -n $(NAMESPACE)

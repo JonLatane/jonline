@@ -77,7 +77,7 @@ kubernetes         ClusterIP      10.245.0.1       <none>            443/TCP    
 You should be able to `grpcurl 178.128.143.154:27707` list and see both Jonline and the gRPC reflection service (that lets you list services)! You can test against my instance with `grpcurl be.jonline.io:27707`. list
 
 ## Building and Deploying Your Own Image
-If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the [`image` in `k8s/jonline.yaml`](https://github.com/JonLatane/jonline/blob/main/backend/k8s/jonline.yaml#L32) and the [`CLOUD_REGISTRY` in `Makefile`](https://github.com/JonLatane/jonline/blob/main/Makefile#L5) to point at your registry.
+If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the [`image` in `k8s/server.yaml`](https://github.com/JonLatane/jonline/blob/main/backend/k8s/server.yaml#L32) and the [`CLOUD_REGISTRY` in `Makefile`](https://github.com/JonLatane/jonline/blob/main/Makefile#L5) to point at your registry.
 
 A Dockerfile for a build server (to build `jonline` Linux x86 server images on whatever desktop you use) lives in `docker/build`. We will use it throughout the following build steps.
 
@@ -98,4 +98,4 @@ A Dockerfile for a build server (to build `jonline` Linux x86 server images on w
     * You can also `make release_be_push_local` and test running the image from your local repo before pushing it to your cloud repo.
 
 #### Deploying your image
-Make sure to update `k8s/jonline.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make deploy_be_create` to launch your forked Jonline.
+Make sure to update `k8s/server.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make deploy_be_create` to launch your forked Jonline.
