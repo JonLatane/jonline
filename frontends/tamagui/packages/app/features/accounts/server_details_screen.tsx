@@ -41,6 +41,9 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const aboutJonlineLink = useLink({ href: '/about_jonline' })
 
   const { serviceVersion, serverConfiguration } = server || {};
+  const serviceVersionInfo = serviceVersion?.version?.split('-') ?? [];
+  const githubVersion = serviceVersionInfo.length == 2 ? serviceVersionInfo[1] : undefined;
+  const githubLink = useLink({ href: `https://github.com/JonLatane/jonline/commit/${githubVersion}`});
 
   const serverName = serverConfiguration?.serverInfo?.name;
   const [name, setName] = useState(serverName || undefined);
@@ -177,6 +180,11 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <Heading size='$3' f={1}>Service Version</Heading>
                   <Paragraph>{serviceVersion?.version}</Paragraph>
                 </XStack>
+                {githubVersion
+                  ? <Button {...githubLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
+                    <Heading size='$2' color={navTextColor}>View GitHub Commit {githubVersion}</Heading>
+                  </Button>
+                  : undefined}
                 <Heading size='$3'>Name</Heading>
                 {isAdmin
                   ? <Input value={name ?? ''} placeholder='The name of your community.' onChangeText={t => setName(t)} />
