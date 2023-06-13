@@ -5,6 +5,7 @@ use crate::{report_error, web};
 
 use ::log::{info, warn};
 use rocket::*;
+use rocket_async_compression::CachedCompression;
 use tokio::task::JoinHandle;
 
 pub fn start_rocket_secure(
@@ -96,16 +97,34 @@ fn create_rocket<T: rocket::figment::Provider>(
         })
         .mount("/", routes)
         .register("/", catchers![web::catchers::not_found]);
-    if cfg!(debug_assertions) {
+    if false && cfg!(debug_assertions) {
         server
     } else {
-        server.attach(rocket_async_compression::CachedCompression::fairing(vec![
-            "main.dart.js",
-            ".otf",
-            "manifest.json",
-            "flutter.js",
-            "app",
+        // Cache all compressed responses, with some exclusions
+        server.attach(CachedCompression::exclusion_fairing(vec![
+            "/media",
+            "media",
+            "/info_shield",
+            "info_shield",
         ]))
+        // server.attach(CachedCompression {
+        //     cached_paths: vec!["", "/", "/about", "/people", "/posts", "/events", "/groups"],
+        //     cached_path_prefixes: vec!["/user", "/g", "/p"],
+        //     cached_path_suffixes: vec![
+        //         "main.dart.js",
+        //         ".otf",
+        //         "manifest.json",
+        //         "flutter.js",
+        //         "app",
+        //     ],
+        // })
+        // server.attach(rocket_async_compression::CachedCompression::fairing(vec![
+        //     "main.dart.js",
+        //     ".otf",
+        //     "manifest.json",
+        //     "flutter.js",
+        //     "app",
+        // ]))
     }
 }
 

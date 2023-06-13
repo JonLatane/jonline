@@ -1,7 +1,7 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { Button, Heading, ScrollView, Text, TextArea, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye } from '@tamagui/lucide-icons';
-import { RootState, clearUserAlerts, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
+import { Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
+import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -193,7 +193,60 @@ export function UsernameDetailsScreen() {
               </Button>
               <UserVisibilityPermissions expanded={showPermissionsAndVisibility}
                 {...{ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, permissionsEditorProps, editMode }} />
+              <Dialog>
+              <Dialog.Trigger asChild>
+                <Button icon={<Trash />} color="red" >
+                  Delete Account
+                </Button>
+              </Dialog.Trigger>
+              <Dialog.Portal zi={1000011}>
+                <Dialog.Overlay
+                  key="overlay"
+                  animation="quick"
+                  o={0.5}
+                  enterStyle={{ o: 0 }}
+                  exitStyle={{ o: 0 }}
+                />
+                <Dialog.Content
+                  bordered
+                  elevate
+                  key="content"
+                  animation={[
+                    'quick',
+                    {
+                      opacity: {
+                        overshootClamping: true,
+                      },
+                    },
+                  ]}
+                  m='$3'
+                  enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                  exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                  x={0}
+                  scale={1}
+                  opacity={1}
+                  y={0}
+                >
+                  <YStack space>
+                    <Dialog.Title>Delete Account</Dialog.Title>
+                    <Dialog.Description>
+                      Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
+                    </Dialog.Description>
 
+                    <XStack space="$3" jc="flex-end">
+                      <Dialog.Close asChild>
+                        <Button>Cancel</Button>
+                      </Dialog.Close>
+                      {/* <Dialog.Action asChild> */}
+                      <Theme inverse>
+                        <Button onPress={() => dispatch(deleteUser({...user, ...accountOrServer}))}>Delete</Button>
+                      </Theme>
+                      {/* </Dialog.Action> */}
+                    </XStack>
+                  </YStack>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog>
               {(userPosts || []).length > 0 ?
                 <>
                   <Heading size='$4' ta='center' mt='$2'>Latest Activity</Heading>

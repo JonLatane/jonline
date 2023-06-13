@@ -89,6 +89,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
                         },
                       },
                     ]}
+                    m='$3'
                     enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
                     exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
                     x={0}

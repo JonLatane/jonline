@@ -88,7 +88,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
     shadowOffset: { width: -5, height: -5 },
     shadowRadius: 10
   } : {
-    mr: -20,
+    mr: -10,
   } : {
     // mr: -2 * detailsMargins,
   };

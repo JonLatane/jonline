@@ -1,6 +1,6 @@
 import { Permission, User } from "@jonline/api";
 import { Anchor, Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
-import { Bot, Camera, Shield } from "@tamagui/lucide-icons";
+import { Bot, Camera, Shield, Trash } from "@tamagui/lucide-icons";
 
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { useOnScreen } from 'app/hooks/use_on_screen';
@@ -26,11 +26,10 @@ export function useFullAvatarHeight(): number {
   return media.gtXs ? 400 : 300;
 }
 
-export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername, avatarMediaId: avatarMediaIdProp, setAvatarMediaId }) => {
+export const UserCard: React.FC<Props> = ({ user, isPreview = false, username, setUsername, avatarMediaId, setAvatarMediaId }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
   const app = useLocalApp();
-  const avatarMediaId = avatarMediaIdProp ?? user.avatarMediaId;
 
   const isAdmin = accountOrServer?.account?.user?.permissions?.includes(Permission.ADMIN);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
@@ -157,7 +156,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
               // </FadeInView>
               : undefined}
             {(isCurrentUser || isAdmin) && setAvatarMediaId
-              ? <YStack mb='$2'>
+              ? <YStack space='$2' mb='$2'>
                 <MediaChooser
                   selectedMedia={avatarMediaId ? [avatarMediaId] : []}
                   onMediaSelected={media => { setAvatarMediaId?.(media.length == 0 ? undefined : media[0]) }} >
@@ -166,6 +165,12 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, setUsername
                     <Heading color={navTextColor} ml='$3' my='auto' size='$1'>Choose Avatar</Heading>
                   </XStack>
                 </MediaChooser>
+                <Button onPress={() => setAvatarMediaId(undefined)}>
+                  <XStack>
+                    <Trash />
+                    <Heading ml='$3' my='auto' size='$1'>Remove Avatar</Heading>
+                  </XStack>
+                </Button>
               </YStack>
               : undefined}
             {followsCurrentUser ? <Heading size='$1' ta='center'>{following ? 'Friends' : 'Follows You'}</Heading> : undefined}

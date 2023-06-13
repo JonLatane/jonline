@@ -121,3 +121,14 @@ export const respondToFollowRequest: AsyncThunk<Follow | Empty, RespondToFollowR
     const result: Follow | Empty = request.accept ? await client.updateFollow(follow, client.credential) : await client.deleteFollow(follow, client.credential);
     return result;
   });
+
+
+export type DeleteUser = User & AccountOrServer;
+export const deleteUser: AsyncThunk<void, DeleteUser, any> = createAsyncThunk<void, DeleteUser>(
+  "users/delete",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const updatedUser = { ...request };
+    await client.deleteUser(updatedUser, client.credential);
+  }
+);

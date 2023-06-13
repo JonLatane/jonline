@@ -1,4 +1,8 @@
+include .env
+export
+
 .NOTPARALLEL:
+
 # Local BE dev targets
 run:
 	cargo run
@@ -18,6 +22,8 @@ local_db_create:
 local_db_drop:
 	dropdb jonline_dev
 local_db_reset: local_instances_stop local_db_drop local_db_create
+local_db_connect:
+	psql $(DATABASE_URL)
 
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MAKEFILE_DIR := $(dir $(MAKEFILE_PATH))

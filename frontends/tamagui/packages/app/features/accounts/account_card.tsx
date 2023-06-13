@@ -8,6 +8,7 @@ import React from "react";
 import { View } from "react-native";
 import { useLink } from "solito/link";
 import { FadeInView } from "../post/fade_in_view";
+import { login } from '../../store/modules/account_actions';
 
 interface Props {
   account: JonlineAccount;
@@ -109,6 +110,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
                       },
                     },
                   ]}
+                  m='$3'
                   enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
                   exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
                   x={0}
@@ -120,6 +122,8 @@ const AccountCard: React.FC<Props> = ({ account }) => {
                     <Dialog.Title>Remove Account</Dialog.Title>
                     <Dialog.Description>
                       Really remove account {account.user.username} on {account.server.host}?
+                      The account will remain on {account.server.host}, but you will have to login
+                      in this browser again.
                     </Dialog.Description>
 
                     <XStack space="$3" jc="flex-end">
