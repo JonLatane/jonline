@@ -101,30 +101,12 @@ fn create_rocket<T: rocket::figment::Provider>(
         server
     } else {
         // Cache all compressed responses, with some exclusions
-        server.attach(CachedCompression::exclusion_fairing(vec![
+        server.attach(CachedCompression::excluded_path_prefix_fairing(CachedCompression::static_paths(vec![
             "/media",
             "media",
             "/info_shield",
             "info_shield",
-        ]))
-        // server.attach(CachedCompression {
-        //     cached_paths: vec!["", "/", "/about", "/people", "/posts", "/events", "/groups"],
-        //     cached_path_prefixes: vec!["/user", "/g", "/p"],
-        //     cached_path_suffixes: vec![
-        //         "main.dart.js",
-        //         ".otf",
-        //         "manifest.json",
-        //         "flutter.js",
-        //         "app",
-        //     ],
-        // })
-        // server.attach(rocket_async_compression::CachedCompression::fairing(vec![
-        //     "main.dart.js",
-        //     ".otf",
-        //     "manifest.json",
-        //     "flutter.js",
-        //     "app",
-        // ]))
+        ])))
     }
 }
 

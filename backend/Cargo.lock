@@ -1984,7 +1984,7 @@ dependencies = [
 [[package]]
 name = "rocket_async_compression"
 version = "0.3.0"
-source = "git+https://github.com/JonLatane/rocket_async_compression.git#31bee69a8193101e30e088d45b946872e03de950"
+source = "git+https://github.com/JonLatane/rocket_async_compression.git#8ee4f383417400fec71e71e5cd40794e34e97e74"
 dependencies = [
  "async-compression",
  "futures",
