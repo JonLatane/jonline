@@ -35,7 +35,11 @@ export interface LoginRequest {
     | string
     | undefined;
   /** (Not yet implemented.) */
-  deviceName?: string | undefined;
+  deviceName?:
+    | string
+    | undefined;
+  /** (TODO) If provided, username is ignored and login is initiated via user_id instead. */
+  userId?: string | undefined;
 }
 
 /** Returned when creating an account or logging in. */
@@ -191,7 +195,7 @@ export const CreateAccountRequest = {
 };
 
 function createBaseLoginRequest(): LoginRequest {
-  return { username: "", password: "", expiresAt: undefined, deviceName: undefined };
+  return { username: "", password: "", expiresAt: undefined, deviceName: undefined, userId: undefined };
 }
 
 export const LoginRequest = {
@@ -207,6 +211,9 @@ export const LoginRequest = {
     }
     if (message.deviceName !== undefined) {
       writer.uint32(34).string(message.deviceName);
+    }
+    if (message.userId !== undefined) {
+      writer.uint32(42).string(message.userId);
     }
     return writer;
   },
@@ -230,6 +237,9 @@ export const LoginRequest = {
         case 4:
           message.deviceName = reader.string();
           break;
+        case 5:
+          message.userId = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -244,6 +254,7 @@ export const LoginRequest = {
       password: isSet(object.password) ? String(object.password) : "",
       expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
       deviceName: isSet(object.deviceName) ? String(object.deviceName) : undefined,
+      userId: isSet(object.userId) ? String(object.userId) : undefined,
     };
   },
 
@@ -253,6 +264,7 @@ export const LoginRequest = {
     message.password !== undefined && (obj.password = message.password);
     message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
     message.deviceName !== undefined && (obj.deviceName = message.deviceName);
+    message.userId !== undefined && (obj.userId = message.userId);
     return obj;
   },
 
@@ -266,6 +278,7 @@ export const LoginRequest = {
     message.password = object.password ?? "";
     message.expiresAt = object.expiresAt ?? undefined;
     message.deviceName = object.deviceName ?? undefined;
+    message.userId = object.userId ?? undefined;
     return message;
   },
 };

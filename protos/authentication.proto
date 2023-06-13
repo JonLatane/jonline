@@ -30,6 +30,8 @@ message LoginRequest {
   optional google.protobuf.Timestamp expires_at = 3;
   // (Not yet implemented.)
   optional string device_name = 4;
+  // (TODO) If provided, username is ignored and login is initiated via user_id instead.
+  optional string user_id = 5;
 }
 
 // Returned when creating an account or logging in.

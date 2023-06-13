@@ -141,6 +141,7 @@ class LoginRequest extends $pb.GeneratedMessage {
     ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'password')
     ..aOM<$9.Timestamp>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
     ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'deviceName')
+    ..aOS(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userId')
     ..hasRequiredFields = false
   ;
 
@@ -150,6 +151,7 @@ class LoginRequest extends $pb.GeneratedMessage {
     $core.String? password,
     $9.Timestamp? expiresAt,
     $core.String? deviceName,
+    $core.String? userId,
   }) {
     final _result = create();
     if (username != null) {
@@ -163,6 +165,9 @@ class LoginRequest extends $pb.GeneratedMessage {
     }
     if (deviceName != null) {
       _result.deviceName = deviceName;
+    }
+    if (userId != null) {
+      _result.userId = userId;
     }
     return _result;
   }
@@ -224,6 +229,15 @@ class LoginRequest extends $pb.GeneratedMessage {
   $core.bool hasDeviceName() => $_has(3);
   @$pb.TagNumber(4)
   void clearDeviceName() => clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get userId => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set userId($core.String v) { $_setString(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasUserId() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearUserId() => clearField(5);
 }
 
 class RefreshTokenResponse extends $pb.GeneratedMessage {

@@ -116,12 +116,13 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const serversDiffer = onlyShowServer && serversState.server && serverID(onlyShowServer) != serverID(serversState.server);
   const serverId = serversState.server ? serverID(serversState.server) : undefined;
   // debugger;
-  const currentServerInfoLink = serversState.server && useLink({ 
-    href: serverId === physicallyHostingServerId() ? '/about' : `/server/${serverId!}` 
+  const currentServerInfoLink = serversState.server && useLink({
+    href: serverId === physicallyHostingServerId() ? '/about' : `/server/${serverId!}`
   });
   // bc react native may render multiple accounts sheets at a time
   const secureLabelUuid = uuidv4();
-  const disableSecureSelection = serversLoading || (Platform.OS == 'web' && window.location.protocol == 'https');
+  const secureRequired = Platform.OS == 'web' && window.location.protocol == 'https';
+  const disableSecureSelection = serversLoading || secureRequired;
   return (
     <>
       <Button
@@ -250,7 +251,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       <YStack space="$2" maxWidth={600} width='100%' alignSelf='center'>
                         <Heading size="$10" f={1}>Add Server</Heading>
                         <YStack>
-                          <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname" disabled={serversLoading}
+                          <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname" 
+                          disabled={serversLoading}
+                          opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
                             value={newServerHost}
                             onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
                         </YStack>
@@ -261,14 +264,15 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                               defaultChecked
                               onCheckedChange={(checked) => setNewServerSecure(checked)}
                               disabled={disableSecureSelection} >
-                              <Switch.Thumb animation="quick" />
+                              <Switch.Thumb animation="quick" disabled={disableSecureSelection} />
                             </Switch>
 
                             <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
                               <Heading size="$2">Secure</Heading>
                             </Label>
                           </YStack>
-                          <Button f={2} backgroundColor={primaryColor} color={primaryTextColor} onPress={addServer} disabled={serversLoading || !newServerValid}>
+                          <Button f={2} backgroundColor={primaryColor} color={primaryTextColor} 
+                          onPress={addServer} disabled={serversLoading || !newServerValid}opacity={serversLoading || !newServerValid ? 0.5 : 1}>
                             Add Server
                           </Button>
                         </XStack>
@@ -317,15 +321,15 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     // y: 50,
                     opacity: 0,
                   }}>
-                    <>
+                  <>
                     <ScrollView horizontal>
-                    <XStack>
-                      {servers.map((server, index) => {
-                      return <ServerCard server={server} key={`serverCard-${serverID(server)}`} isPreview />;
-                      })}
-                    </XStack>
+                      <XStack>
+                        {servers.map((server, index) => {
+                          return <ServerCard server={server} key={`serverCard-${serverID(server)}`} isPreview />;
+                        })}
+                      </XStack>
                     </ScrollView>
-                  {/* <FlatList
+                    {/* <FlatList
                     horizontal={true}
                     data={servers}
                     keyExtractor={(server) => server.host}
@@ -374,8 +378,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       />
                       <YStack space="$2" maw={600} w='100%' als='center'>
                         <Heading size="$10">Add Account</Heading>
-                        <Heading size="$6">{primaryServer?.host}/</Heading><Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
-                          disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
+                        <Heading size="$6">{primaryServer?.host}/</Heading>
+                        <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
+                          disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
                           autoCapitalize='none'
                           value={newAccountUser}
                           onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
@@ -392,7 +397,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           }}><Input secureTextEntry w='100%'
                             textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
                             placeholder="Password"
-                            disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}
+                            disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
 
                             value={newAccountPass}
                             onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>

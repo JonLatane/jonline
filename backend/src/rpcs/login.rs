@@ -3,8 +3,8 @@ use diesel::*;
 use tonic::{Code, Request, Response, Status};
 
 use crate::auth;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validations::*;
@@ -18,10 +18,21 @@ pub fn login(
     validate_username(&req.username)?;
     validate_password(&req.password)?;
 
-    let permission_denied = Status::new(Code::PermissionDenied, "invalid_username_or_password");
-    let user_result = users
-        .filter(username.eq(&req.username))
-        .first::<models::User>(conn);
+    let permission_denied = Status::new(
+        Code::PermissionDenied,
+        match &req.user_id {
+            Some(user_id) if user_id.len() > 0 => "invalid_password",
+            _ => "invalid_username_or_password",
+        },
+    );
+    let user_result = match &req.user_id {
+        Some(user_id) if user_id.len() > 0 => users
+            .filter(id.eq(user_id.to_db_id_or_err("user_id")?))
+            .first::<models::User>(conn),
+        _ => users
+            .filter(username.eq(&req.username))
+            .first::<models::User>(conn),
+    };
     let user: models::User = match user_result {
         Err(_) => return Err(permission_denied),
         Ok(user) => user,

@@ -89,6 +89,7 @@ export const accountsSlice = createSlice({
       state.account = action.payload;
       accountsAdapter.upsertOne(state, action.payload);
       state.successMessage = `Created account ${action.payload.user.username}`;
+      resetCredentialedData();
     });
     builder.addCase(createAccount.rejected, (state, action) => {
       state.status = "errored";
@@ -105,6 +106,7 @@ export const accountsSlice = createSlice({
       state.account = action.payload;
       accountsAdapter.upsertOne(state, action.payload);
       state.successMessage = `Logged in as ${action.payload.user.username}`;
+      resetCredentialedData();
     });
     builder.addCase(login.rejected, (state, action) => {
       state.status = "errored";
