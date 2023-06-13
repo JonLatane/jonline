@@ -41,8 +41,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const aboutJonlineLink = useLink({ href: '/about_jonline' })
 
   const { serviceVersion, serverConfiguration } = server || {};
-  const serviceVersionInfo = serviceVersion?.version?.split('-') ?? [];
-  const githubVersion = serviceVersionInfo.length == 2 ? serviceVersionInfo[1] : undefined;
+  const [_, githubVersion] = serviceVersion?.version?.split('-') ?? [];
   const githubLink = useLink({ href: `https://github.com/JonLatane/jonline/commit/${githubVersion}`});
 
   const serverName = serverConfiguration?.serverInfo?.name;
@@ -182,7 +181,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 </XStack>
                 {githubVersion
                   ? <Button {...githubLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
-                    <Heading size='$2' color={navTextColor}>View GitHub Commit {githubVersion}</Heading>
+                    <Heading size='$2' color={navTextColor}>View {githubVersion} on GitHub</Heading>
                   </Button>
                   : undefined}
                 <Heading size='$3'>Name</Heading>
