@@ -6,10 +6,10 @@ Jonline is an open-source, community-scale social network designed to be capable
 These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
 
 #### Continously Deployed ("Preview Release" Communities)
-[![GetJ.online](https://getj.online/info_shield?nostore)](https://getj.online/about)
+[![GetJ.online](https://getj.online/info_shield?nostore1)](https://getj.online/about)
 
 #### Manually Deployed
-[![Jonline.io](https://jonline.io/info_shield?nostore)](https://jonline.io/about)
+[![Jonline.io](https://jonline.io/info_shield?nostore1)](https://jonline.io/about)
 
 ### DockerHub
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
