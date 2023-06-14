@@ -14,6 +14,7 @@ extern crate regex;
 extern crate ring;
 extern crate rocket;
 extern crate rocket_async_compression;
+extern crate async_compression;
 extern crate rocket_cache_response;
 extern crate serde;
 extern crate serde_json;
