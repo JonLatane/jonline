@@ -11,7 +11,7 @@ spec:
         spec:
           containers:
           - name: generate-preview-images
-            image: docker.io/jonlatane/jonline_preview_generator:0.1.517
+            image: docker.io/jonlatane/jonline_preview_generator:0.1.518
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL
