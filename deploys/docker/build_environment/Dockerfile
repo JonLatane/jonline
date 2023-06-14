@@ -1,4 +1,4 @@
-FROM rust:1.70.0
+FROM --platform=linux/amd64 rust:1.70.0
 
 # Install depends for grpcio.
 RUN cargo install protobuf-codegen
