@@ -101,18 +101,14 @@ fn create_rocket<T: rocket::figment::Provider>(
         server
     } else {
         // Cache all compressed responses, with some exclusions
-        // server.attach(CachedCompression::excluded_path_prefix_fairing(CachedCompression::static_paths(vec![
-        //     "/media",
-        //     "media",
-        //     "/info_shield",
-        //     "info_shield",
-        // ])))
         server.attach(CachedCompression {
             cached_path_prefixes: vec!["".to_string()],
-            excluded_path_prefixes: CachedCompression::static_paths(vec!["/media",
-            "media",
-            "/info_shield",
-            "info_shield",]),
+            excluded_path_prefixes: CachedCompression::static_paths(vec![
+                "/media",
+                "media",
+                "/info_shield",
+                "info_shield",
+            ]),
             level: Some(async_compression::Level::Fastest),
             ..Default::default()
         })
