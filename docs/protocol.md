@@ -241,6 +241,7 @@ Request to login to an existing account.
 | password | [string](#string) |  | Password for the account to be logged into. |
 | expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Request an expiration time for the Auth Token returned. By default it will not expire. |
 | device_name | [string](#string) | optional | (Not yet implemented.) |
+| user_id | [string](#string) | optional | (TODO) If provided, username is ignored and login is initiated via user_id instead. |
 
 
 

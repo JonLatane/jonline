@@ -37,6 +37,12 @@ deploy_data_update:
 ############################################################################
 # FULLSTACK DEV/RELEASE-RELATED TARGETS: More in deploys/releases/Makefile
 ############################################################################
+.PHONY: protos docs
+
+# Update frontend protos and docs
+protos: docs
+	cd frontends/flutter && $(MAKE) protos
+	cd frontends/tamagui && yarn protos
 
 # Core release targets (for general use, CI/CD, etc.)
 release_ios:
