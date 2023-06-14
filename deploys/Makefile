@@ -14,10 +14,14 @@ deploy_be_create: deploy_ensure_namespace
 deploy_be_update:
 	kubectl apply -f k8s/server.yaml -n $(NAMESPACE)
 	kubectl apply -f k8s/preview_generator.yaml -n $(NAMESPACE)
+	$(MAKE) deploy_be_monitor_rollout
 
 deploy_be_delete:
 	kubectl delete -f k8s/server.yaml -n $(NAMESPACE)
 	kubectl delete -f k8s/preview_generator.yaml -n $(NAMESPACE)
+
+deploy_be_monitor_rollout:
+	kubectl rollout status deployment/jonline -n $(NAMESPACE)
 
 deploy_be_restart:
 	kubectl rollout restart deployment jonline -n $(NAMESPACE)

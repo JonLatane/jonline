@@ -25,6 +25,8 @@ deploy_be_shell:
 	cd deploys && $(MAKE) deploy_be_shell
 deploy_be_get_external_ip:
 	cd deploys && $(MAKE) deploy_be_get_external_ip
+deploy_be_monitor_rollout:
+	cd deploys && $(MAKE) deploy_be_monitor_rollout
 
 # General targets for creating/deleting Postgres/MinIO for Jonline. For more granuar control, use deploys/Makefile directly.
 deploy_data_create:
@@ -49,6 +51,8 @@ release_ios:
 	cd deploys/releases && $(MAKE) release_ios
 release_be_cloud:
 	cd deploys/releases && $(MAKE) release_be_cloud
+_push_be_cloud_release:
+	cd deploys/releases && $(MAKE) _push_be_cloud_release
 # This target rebuilds the Flutter+React apps, but does not rebuild the Rust BE
 # before pushing the new image. The server Docker image is structured so that this will
 # result in a very small push of only it first layer. Useful for iteration (~55s to deploy

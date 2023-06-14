@@ -1,6 +1,10 @@
-FROM debian:stable
+FROM debian:stable-slim
 
 RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
+
+# Old Ubuntu OpenSSL thing
+RUN curl http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb > libssl1.1.deb
+RUN dpkg -i libssl1.1.deb
 
 # grpcurl is useful to have on a jonline instance!
 RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt
