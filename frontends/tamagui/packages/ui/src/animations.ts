@@ -27,3 +27,12 @@ export const animations = createAnimations({
     stiffness: 250,
   }
 });
+
+
+export const standardAnimation = {
+  o: 1,
+  scale: 1,
+  y: 0,
+  enterStyle: { y: -50, o: 0, },
+  exitStyle: { y: -50, o: 0, },
+}
