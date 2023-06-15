@@ -19,6 +19,8 @@ interface Props {
   setUsername?: (username: string) => void;
   avatarMediaId?: string;
   setAvatarMediaId?: (mediaId?: string) => void;
+  editable?: boolean;
+  editingDisabled?: boolean;
 }
 
 export function useFullAvatarHeight(): number {
@@ -26,10 +28,13 @@ export function useFullAvatarHeight(): number {
   return media.gtXs ? 400 : 300;
 }
 
-export const UserCard: React.FC<Props> = ({ user, isPreview = false, username, setUsername, avatarMediaId, setAvatarMediaId }) => {
+export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: inputUsername, setUsername, avatarMediaId: inputAvatarMediaId, setAvatarMediaId, editable, editingDisabled }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
   const app = useLocalApp();
+
+  const [username, avatarMediaId] = editable ? [inputUsername, inputAvatarMediaId]
+    : [user.username, user.avatarMediaId];
 
   const isAdmin = accountOrServer?.account?.user?.permissions?.includes(Permission.ADMIN);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
@@ -61,6 +66,33 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username, s
   const avatarUrl = useMediaUrl(avatarMediaId);
   // debugger;
 
+  const avatar = <XStack f={1}>
+    <Image
+      // pos="absolute"
+      width={50}
+      // opacity={0.25}
+      height={50}
+      mr='$2'
+      borderRadius={25}
+      resizeMode="cover"
+      als="flex-start"
+      // src={avatarUrl}
+      source={{ uri: avatarUrl }}
+    // blurRadius={1.5}
+    // borderRadius={5}
+    />
+    <YStack f={1}>
+      <Heading size="$1" mr='auto'>{server?.host}/</Heading>
+
+      {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
+      <Heading size="$7" marginRight='auto'>{username}</Heading>
+    </YStack>
+    {app.showUserIds ? <XStack o={0.6}>
+      <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
+    </XStack> : undefined}
+  </XStack>;
+
+  const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatarMediaId && !editingDisabled;
   return (
     <Theme inverse={isCurrentUser}>
       <Card theme="dark" elevate size="$4" bordered
@@ -80,32 +112,11 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username, s
       >
         <Card.Header>
           <XStack>
-            <Anchor f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
-              <XStack>
-                <Image
-                  // pos="absolute"
-                  width={50}
-                  // opacity={0.25}
-                  height={50}
-                  mr='$2'
-                  borderRadius={25}
-                  resizeMode="cover"
-                  als="flex-start"
-                  source={{ uri: avatarUrl }}
-                // blurRadius={1.5}
-                // borderRadius={5}
-                />
-                <YStack f={1}>
-                  <Heading size="$1" mr='auto'>{server?.host}/</Heading>
-
-                  {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
-                  <Heading size="$7" marginRight='auto'>{user.username}</Heading>
-                </YStack>
-                {app.showUserIds ? <XStack o={0.6}>
-                  <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
-                </XStack> : undefined}
-              </XStack>
-            </Anchor>
+            {isPreview
+              ? <Anchor f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
+                {avatar}
+              </Anchor>
+              : avatar}
 
             {user.permissions.includes(Permission.ADMIN)
               ? <Tooltip placement="bottom-end">
@@ -155,7 +166,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username, s
               />
               // </FadeInView>
               : undefined}
-            {(isCurrentUser || isAdmin) && setAvatarMediaId
+            {canEditAvatar
               ? <YStack space='$2' mb='$2'>
                 <MediaChooser
                   selectedMedia={avatarMediaId ? [avatarMediaId] : []}

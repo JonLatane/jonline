@@ -1,7 +1,7 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
-import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
+import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServer, useServerTheme, useTypedSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -29,7 +29,7 @@ export function UsernameDetailsScreen() {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const usersState = useTypedSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
-  const [showPermissionsAndVisibility, setShowPermissionsAndVisibility] = useState(false);
+  const [showUserSettings, setShowUserSettings] = useState(false);
   const userLoadFailed = usersState.failedUsernames.includes(username!);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user?.id;
   const isAdmin = accountOrServer.account?.user?.permissions?.includes(Permission.ADMIN);
@@ -151,9 +151,11 @@ export function UsernameDetailsScreen() {
           <ScrollView w='100%'>
             <YStack maw={800} w='100%' als='center' p='$2' marginHorizontal='auto'>
               <UserCard user={user}
-                setUsername={editMode ? setName : undefined}
+                editable editingDisabled={!editMode}
+                username={name}
+                setUsername={setName}
                 avatarMediaId={avatarMediaId}
-                setAvatarMediaId={editMode ? setAvatarMediaId : undefined} />
+                setAvatarMediaId={setAvatarMediaId} />
               <YStack als='center' w='100%' paddingHorizontal='$2' paddingVertical='$3' space>
                 {editMode ?
                   <TextArea value={bio} onChangeText={t => setBio(t)}
@@ -166,87 +168,18 @@ export function UsernameDetailsScreen() {
                     enterStyle={{ y: -50, o: 0, }}
                     exitStyle={{ o: 0, }} />
                   : <TamaguiMarkdown text={bio!} />}
-                {/* {canEdit ?
-                <TextArea value={bio} onChangeText={t => setBio(t)}
-                  placeholder='Your user bio' />
-                : <TamaguiMarkdown text={bio!} />}
-              {canEdit ?
-                <TextArea value={bio} onChangeText={t => setBio(t)}
-                  placeholder='Your user bio' />
-                : <TamaguiMarkdown text={bio!} />}
-              {canEdit ?
-                <TextArea value={bio} onChangeText={t => setBio(t)}
-                  placeholder='Your user bio' />
-                : <TamaguiMarkdown text={bio!} />}
-              {canEdit ?
-                <TextArea value={bio} onChangeText={t => setBio(t)}
-                  placeholder='Your user bio' />
-                : <TamaguiMarkdown text={bio!} />} */}
               </YStack>
-              <Button mt={-15} onPress={() => setShowPermissionsAndVisibility(!showPermissionsAndVisibility)} transparent>
+              <Button mt={-15} onPress={() => setShowUserSettings(!showUserSettings)} transparent>
                 <XStack ac='center' jc='center'>
-                  <Heading size='$4' ta='center'>Visibility & Permissions</Heading>
-                  <XStack animation='bouncy' rotate={showPermissionsAndVisibility ? '90deg' : '0deg'}>
+                  <Heading size='$4' ta='center'>User Settings</Heading>
+                  <XStack animation='bouncy' rotate={showUserSettings ? '90deg' : '0deg'}>
                     <ChevronRight />
                   </XStack>
                 </XStack>
               </Button>
-              <UserVisibilityPermissions expanded={showPermissionsAndVisibility}
+              <UserVisibilityPermissions expanded={showUserSettings}
                 {...{ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, permissionsEditorProps, editMode }} />
-              <Dialog>
-              <Dialog.Trigger asChild>
-                <Button icon={<Trash />} color="red" >
-                  Delete Account
-                </Button>
-              </Dialog.Trigger>
-              <Dialog.Portal zi={1000011}>
-                <Dialog.Overlay
-                  key="overlay"
-                  animation="quick"
-                  o={0.5}
-                  enterStyle={{ o: 0 }}
-                  exitStyle={{ o: 0 }}
-                />
-                <Dialog.Content
-                  bordered
-                  elevate
-                  key="content"
-                  animation={[
-                    'quick',
-                    {
-                      opacity: {
-                        overshootClamping: true,
-                      },
-                    },
-                  ]}
-                  m='$3'
-                  enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                  exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                  x={0}
-                  scale={1}
-                  opacity={1}
-                  y={0}
-                >
-                  <YStack space>
-                    <Dialog.Title>Delete Account</Dialog.Title>
-                    <Dialog.Description>
-                      Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
-                    </Dialog.Description>
 
-                    <XStack space="$3" jc="flex-end">
-                      <Dialog.Close asChild>
-                        <Button>Cancel</Button>
-                      </Dialog.Close>
-                      {/* <Dialog.Action asChild> */}
-                      <Theme inverse>
-                        <Button onPress={() => dispatch(deleteUser({...user, ...accountOrServer}))}>Delete</Button>
-                      </Theme>
-                      {/* </Dialog.Action> */}
-                    </XStack>
-                  </YStack>
-                </Dialog.Content>
-              </Dialog.Portal>
-            </Dialog>
               {(userPosts || []).length > 0 ?
                 <>
                   <Heading size='$4' ta='center' mt='$2'>Latest Activity</Heading>
@@ -362,53 +295,111 @@ interface UserVisibilityPermissionsProps {
 }
 
 const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, editMode, expanded = true, permissionsEditorProps }) => {
+  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { server } = accountOrServer;
   const media = useMedia();
   const account = useAccount();
   const isCurrentUser = account && account?.user?.id == user.id;
   const isAdmin = account?.user?.permissions?.includes(Permission.ADMIN);
   const canEdit = isCurrentUser || isAdmin;
   const disableInputs = !editMode || !canEdit;
-  return expanded ? <YStack animation="bouncy"
-    p='$3'
-    ac='center'
-    jc='center'
-    opacity={1}
-    scale={1}
-    y={0}
-    enterStyle={{
-      y: -50,
-      opacity: 0,
-    }}
-    exitStyle={{
-      opacity: 0,
-    }}>
-    <XStack ac='center' jc='center' mb='$2'>
-      {media.gtSm ? <Heading size='$3' marginVertical='auto' f={1} o={disableInputs ? 0.5 : 1}>
-        Visibility
-      </Heading> : undefined}
-      <VisibilityPicker label={`${isCurrentUser ? 'Profile' : 'User'} Visibility`}
-        visibility={visibility} onChange={setVisibility}
-        disabled={disableInputs}
-        visibilityDescription={(v) => {
-          switch (v) {
-            case Visibility.PRIVATE:
-              return `Only ${isCurrentUser ? 'you' : 'they'} can see ${isCurrentUser ? 'your' : 'their'} profile.`;
-            case Visibility.LIMITED:
-              return `Only followers can see ${isCurrentUser ? 'your' : 'their'} profile.`;
-            case Visibility.SERVER_PUBLIC:
-              return `Anyone on this server can see ${isCurrentUser ? 'your' : 'their'} profile.`;
-            case Visibility.GLOBAL_PUBLIC:
-              return `Anyone on the internet can see ${isCurrentUser ? 'your' : 'their'} profile.`;
-            default:
-              return 'Unknown';
-          }
-        }} />
-    </XStack>
-    <ToggleRow name={`Require${editMode && isCurrentUser ? '' : 's'} Permission to Follow`}
-      value={pending(defaultFollowModeration)}
-      setter={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-      disabled={disableInputs} />
-    <XStack h='$1' />
-    <PermissionsEditor {...permissionsEditorProps} />
-  </YStack> : <></>;
+  return <AnimatePresence>
+    {expanded ? <YStack animation="bouncy" key='user-visibility-permissions'
+      p='$3'
+      ac='center'
+      jc='center'
+      opacity={1}
+      scale={1}
+      y={0}
+      enterStyle={{
+        y: -50,
+        opacity: 0,
+      }}
+      exitStyle={{
+        opacity: 0,
+      }}>
+      <XStack ac='center' jc='center' mb='$2'>
+        {media.gtSm ? <Heading size='$3' marginVertical='auto' f={1} o={disableInputs ? 0.5 : 1}>
+          Visibility
+        </Heading> : undefined}
+        <VisibilityPicker label={`${isCurrentUser ? 'Profile' : 'User'} Visibility`}
+          visibility={visibility} onChange={setVisibility}
+          disabled={disableInputs}
+          visibilityDescription={(v) => {
+            switch (v) {
+              case Visibility.PRIVATE:
+                return `Only ${isCurrentUser ? 'you' : 'they'} can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+              case Visibility.LIMITED:
+                return `Only followers can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+              case Visibility.SERVER_PUBLIC:
+                return `Anyone on this server can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+              case Visibility.GLOBAL_PUBLIC:
+                return `Anyone on the internet can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+              default:
+                return 'Unknown';
+            }
+          }} />
+      </XStack>
+      <ToggleRow name={`Require${editMode && isCurrentUser ? '' : 's'} Permission to Follow`}
+        value={pending(defaultFollowModeration)}
+        setter={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+        disabled={disableInputs} />
+      <XStack h='$1' />
+      <PermissionsEditor {...permissionsEditorProps} />
+      <Dialog>
+        <Dialog.Trigger asChild>
+          <Button icon={<Trash />} color="red" mb='$3'>
+            Delete Account
+          </Button>
+        </Dialog.Trigger>
+        <Dialog.Portal zi={1000011}>
+          <Dialog.Overlay
+            key="overlay"
+            animation="quick"
+            o={0.5}
+            enterStyle={{ o: 0 }}
+            exitStyle={{ o: 0 }}
+          />
+          <Dialog.Content
+            bordered
+            elevate
+            key="content"
+            animation={[
+              'quick',
+              {
+                opacity: {
+                  overshootClamping: true,
+                },
+              },
+            ]}
+            m='$3'
+            enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+            exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+            x={0}
+            scale={1}
+            opacity={1}
+            y={0}
+          >
+            <YStack space>
+              <Dialog.Title>Delete Account</Dialog.Title>
+              <Dialog.Description>
+                Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
+              </Dialog.Description>
+
+              <XStack space="$3" jc="flex-end">
+                <Dialog.Close asChild>
+                  <Button>Cancel</Button>
+                </Dialog.Close>
+                {/* <Dialog.Action asChild> */}
+                <Theme inverse>
+                  <Button onPress={() => dispatch(deleteUser({ ...user, ...accountOrServer }))}>Delete</Button>
+                </Theme>
+                {/* </Dialog.Action> */}
+              </XStack>
+            </YStack>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog>
+    </YStack> : undefined}
+  </AnimatePresence>;
 }

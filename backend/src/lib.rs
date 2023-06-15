@@ -38,6 +38,8 @@ pub mod schema;
 pub mod servers;
 pub mod web;
 
+pub use marshaling::*;
+
 #[cfg(test)]
 mod tests {
     use crate::marshaling::ToDbId;

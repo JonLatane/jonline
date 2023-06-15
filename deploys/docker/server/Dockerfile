@@ -19,6 +19,8 @@ COPY backend/target/release/delete_unowned_media__server_release /opt/delete_uno
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
 COPY backend/target/release/set_permission__server_release /opt/set_permission
+COPY backend/target/release/to_db_id__server_release /opt/to_db_id
+COPY backend/target/release/to_proto_id__server_release /opt/to_proto_id
 
 # Browser preview generator job binary. NOTE: USELESS (crashes) without a Chrome instance running against
 # port 9222. See the Dockerfile in backend/docker/preview_generator for setup steps for Brave.
