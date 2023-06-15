@@ -1158,7 +1158,7 @@ checksum = "453ad9f582a441959e5f0d088b02ce04cfe8d51a8eaf077f12ac6d3e94164ca6"
 
 [[package]]
 name = "jonline"
-version = "0.1.523"
+version = "0.1.524"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -1984,8 +1984,9 @@ dependencies = [
 
 [[package]]
 name = "rocket_async_compression"
-version = "0.3.0"
-source = "git+https://github.com/JonLatane/rocket_async_compression.git?branch=with-speed-tweakability#a781a3252494289f8208ed75d6d38fbfe293a41b"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e466042dd383589412a48fde2bdb2444f0d196081764219c12a13c8865d2fe6f"
 dependencies = [
  "async-compression",
  "futures",

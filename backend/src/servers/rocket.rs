@@ -109,7 +109,7 @@ fn create_rocket<T: rocket::figment::Provider>(
                 "/info_shield",
                 "info_shield",
             ]),
-            level: Some(async_compression::Level::Fastest),
+            level: Some(async_compression::Level::Default),
             ..Default::default()
         })
     }
