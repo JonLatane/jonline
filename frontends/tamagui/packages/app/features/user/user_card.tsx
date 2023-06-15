@@ -3,11 +3,10 @@ import { Anchor, Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMed
 import { Bot, Camera, Shield, Trash } from "@tamagui/lucide-icons";
 
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { useOnScreen } from 'app/hooks/use_on_screen';
 import { followUnfollowUser, isUserLocked, respondToFollowRequest, RootState, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation";
 import React from "react";
-import { GestureResponderEvent, View } from 'react-native';
+import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
 import { MediaChooser } from "../media/media_chooser";
 import { } from "../post/post_card";
@@ -39,7 +38,6 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const isAdmin = accountOrServer?.account?.user?.permissions?.includes(Permission.ADMIN);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
   const { server, primaryColor, navColor, primaryTextColor, navTextColor, textColor } = useServerTheme();
-  const [loadingAvatar, setLoadingAvatar] = React.useState(false);
 
   const following = passes(user.currentUserFollow?.targetUserModeration);
   const followRequested = user.currentUserFollow && !following;
@@ -60,11 +58,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     e.stopPropagation();
     dispatch(respondToFollowRequest({ userId: user.id, accept, ...accountOrServer }))
   };
-  // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  // const onScreen = useOnScreen(ref, "-1px");
-  // const displayedAvatarMediaId = avatarMediaId ?? user?.avatarMediaId;
   const avatarUrl = useMediaUrl(avatarMediaId);
-  // debugger;
+  const hasAvatarUrl = avatarUrl && avatarUrl != '';
+  const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatarMediaId && !editingDisabled;
 
   const avatar = <XStack f={1}>
     <Image
@@ -92,7 +88,6 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     </XStack> : undefined}
   </XStack>;
 
-  const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatarMediaId && !editingDisabled;
   return (
     <Theme inverse={isCurrentUser}>
       <Card theme="dark" elevate size="$4" bordered
@@ -137,34 +132,20 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
                   <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading>
                 </Tooltip.Content>
               </Tooltip> : undefined}
-
-            {/* {isPreview ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined} */}
           </XStack>
         </Card.Header>
         <Card.Footer p='$3'>
           <YStack mt='$2' mr='$3' w='100%'>
-            {(!isPreview && avatarUrl && avatarUrl != '') ?
-              // <FadeInView>
+            {(!isPreview && hasAvatarUrl) ?
               <Image
-                // pos="absolute"
-                // width={400}
-                // opacity={0.25}
-                // height={400}
-                // minWidth={300}
-                // minHeight={300}
-                // width='100%'
-                // height='100%'
                 mb='$3'
                 width={fullAvatarHeight}
                 height={fullAvatarHeight}
                 resizeMode="contain"
                 als="center"
                 source={{ uri: avatarUrl }}
-                // src={avatarUrl}
                 borderRadius={10}
-              // borderBottomRightRadius={5}
               />
-              // </FadeInView>
               : undefined}
             {canEditAvatar
               ? <YStack space='$2' mb='$2'>
@@ -232,13 +213,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           </YStack>
         </Card.Footer>
         <Card.Background>
-          {/* <XStack>
-            <YStack h='100%' w={5} backgroundColor={primaryColor} /> */}
-          {(isPreview && avatarUrl && avatarUrl != '') ?
-            // <FadeInView>
+          {(isPreview && hasAvatarUrl) ?
             <Image
-              // pos="absolute"
-              // right={0}
               mr={0}
               o={0.25}
               width={media.gtSm ? 300 : 150}
@@ -247,14 +223,10 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               resizeMode="cover"
               als="flex-start"
               source={{ uri: avatarUrl }}
-              // src={avatarUrl}
               blurRadius={1.5}
-              // borderRadius={5}
               borderBottomRightRadius={5}
             />
-            // </FadeInView>
             : undefined}
-          {/* </XStack> */}
         </Card.Background>
       </Card>
     </Theme>
