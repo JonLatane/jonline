@@ -63,7 +63,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatarMediaId && !editingDisabled;
 
   const avatar = <XStack f={1}>
-    <Image
+    {hasAvatarUrl ? <Image
       // pos="absolute"
       width={50}
       // opacity={0.25}
@@ -76,7 +76,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       source={{ uri: avatarUrl }}
     // blurRadius={1.5}
     // borderRadius={5}
-    />
+    /> : <XStack></XStack>}
     <YStack f={1}>
       <Heading size="$1" mr='auto'>{server?.host}/</Heading>
 
