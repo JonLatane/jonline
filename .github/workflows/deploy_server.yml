@@ -74,8 +74,8 @@ jobs:
            mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
            mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release &&
            mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release &&
-           mv backend/target/release/set_permission backend/target/release/set_permission__server_release
-           mv backend/target/release/to_db_id backend/target/release/to_db_id__server_release
+           mv backend/target/release/set_permission backend/target/release/set_permission__server_release &&
+           mv backend/target/release/to_db_id backend/target/release/to_db_id__server_release &&
            mv backend/target/release/to_proto_id backend/target/release/to_proto_id__server_release
 
     - name: Build and push jonline image
