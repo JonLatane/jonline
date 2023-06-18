@@ -80,8 +80,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   } : {};
   const detailsProps = isPreview ? showDetailsShadow ? {
     ml: -detailsMargins,
-    mr: -2 * detailsMargins,
-    pr: 1 * detailsMargins,
+    mr: -0.5 * detailsMargins,
+    pr: 0,//1 * detailsMargins - 5,
     mb: -detailsMargins,
     pb: detailsMargins,
     shadowOpacity: 0.3,
