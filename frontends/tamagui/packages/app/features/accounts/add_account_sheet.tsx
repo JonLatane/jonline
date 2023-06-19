@@ -1,4 +1,4 @@
-import { Button, Heading, Input, Label, Sheet, SizeTokens, Switch, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, Input, Label, Sheet, SizeTokens, standardAnimation, Switch, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, useLoadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
@@ -126,7 +126,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
         onPositionChange={setPosition}
       // dismissOnSnapToBottom
       >
-        <Sheet.Overlay backgroundColor='$colorTranslucent' />
+        <Sheet.Overlay  />
         <Sheet.Frame>
           <Sheet.Handle />
           <Button
@@ -180,22 +180,15 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                     autoCapitalize='none'
                     value={newAccountUser}
                     onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
-                  {loginMethod ? <XStack w='100%' animation="bouncy"
-                    scale={1}
-                    y={0}
-                    enterStyle={{
-                      y: -20,
-                      opacity: 0,
-                    }}
-                    exitStyle={{
-                      opacity: 0,
-                    }}><Input secureTextEntry w='100%'
-                      textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
-                      placeholder="Password"
-                      disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
+                  {loginMethod
+                    ? <XStack w='100%' animation="quick"  {...standardAnimation}>
+                      <Input secureTextEntry w='100%'
+                        textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
+                        placeholder="Password"
+                        disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
 
-                      value={newAccountPass}
-                      onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
+                        value={newAccountPass}
+                        onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
                     : undefined}
 
                   {loginMethod

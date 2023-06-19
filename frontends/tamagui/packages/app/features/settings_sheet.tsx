@@ -45,7 +45,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay backgroundColor='$colorTranslucent' />
+        <Sheet.Overlay  />
         <Sheet.Frame>
           <Sheet.Handle />
           <Button

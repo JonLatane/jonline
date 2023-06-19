@@ -28,11 +28,47 @@ export const animations = createAnimations({
   }
 });
 
-
 export const standardAnimation = {
   o: 1,
-  scale: 1,
   y: 0,
-  enterStyle: { y: -50, o: 0, },
-  exitStyle: { y: -50, o: 0, },
+  enterStyle: { y: -29, o: 0, },
+  exitStyle: { y: -29, o: 0, },
+}
+
+export const reverseStandardAnimation = {
+  o: 1,
+  y: 0,
+  enterStyle: { y: 29, o: 0, },
+  exitStyle: { y: 29, o: 0, },
+}
+
+export const standardHorizontalAnimation = {
+  o: 1,
+  x: 0,
+  enterStyle: { x: -29, o: 0, },
+  exitStyle: { x: 29, o: 0, },
+}
+
+export const reverseHorizontalAnimation = {
+  o: 1,
+  x: 0,
+  enterStyle: { x: 29, o: 0, },
+  exitStyle: { x: -29, o: 0, },
+}
+
+export const standardFadeAnimation = {
+  o: 1,
+  enterStyle: { o: 0, },
+  exitStyle: { o: 0, },
+}
+
+export const overlayAnimation = {
+  ...standardFadeAnimation,
+  o: 0.5,
+}
+
+export function sheetOverlayAnimation(open: boolean) {
+  return {
+    o: open ? 0.7 : 0,
+  }
 }

@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 
 import { Media, Permission } from "@jonline/api";
-import { AlertDialog, Button, Card, Heading, Paragraph, Theme, XStack, YStack, useMedia } from "@jonline/ui";
+import { AlertDialog, Button, Card, Heading, Paragraph, Theme, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { MediaRenderer } from "./media_renderer";
 import { DateViewer } from "@jonline/ui";
@@ -31,12 +31,9 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
         margin='$0'
         my='$3'
         animation="bouncy"
+        {...standardAnimation}
         width='100%'
         scale={1}
-        opacity={1}
-        y={0}
-        enterStyle={{ y: -50, opacity: 0, }}
-        exitStyle={{ opacity: 0, }}
         pressStyle={onSelect ? { scale: 0.990 } : {}}
         onPress={onSelect} >
         <Card.Header>

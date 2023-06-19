@@ -94,7 +94,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay backgroundColor='$colorTranslucent' />
+        <Sheet.Overlay  />
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
@@ -168,7 +168,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay backgroundColor='$colorTranslucent' />
+        <Sheet.Overlay  />
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>

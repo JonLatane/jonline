@@ -9,6 +9,7 @@ import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, sectionTitle } from "./features_navigation";
+import { GroupContextProvider } from "../groups/group_context";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -56,55 +57,57 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const shrinkHomeButton = selectedGroup != undefined || appSubsection == AppSubsection.FOLLOW_REQUESTS;
   // console.log(`app.darkModeAuto=${app.darkModeAuto}, systemDark=${systemDark}, app.darkMode=${app.darkMode}, invert=${invert}, dark=${dark}, bgColor=${bgColor}`);
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
-    {Platform.select({
-      web: <>
-        <StickyBox style={{ zIndex: 10 }} className="blur">
-          <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
-            {/* <XStack h={5}></XStack> */}
-            <XStack space="$1" marginVertical={5}>
-              <XStack w={5} />
-              {shrinkHomeButton
-                ? <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
-                  iconAfter={serverNameEmoji ? undefined : HomeIcon}
-                  {...homeProps}>
-                  {!shrinkHomeButton || serverNameEmoji
-                    ? <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                      <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+    <GroupContextProvider value={selectedGroup}>
+      {Platform.select({
+        web: <>
+          <StickyBox style={{ zIndex: 10 }} className="blur">
+            <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
+              {/* <XStack h={5}></XStack> */}
+              <XStack space="$1" marginVertical={5}>
+                <XStack w={5} />
+                {shrinkHomeButton
+                  ? <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
+                    iconAfter={serverNameEmoji ? undefined : HomeIcon}
+                    {...homeProps}>
+                    {!shrinkHomeButton || serverNameEmoji
+                      ? <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                        <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+                      </XStack>
+                      : undefined}
+                  </Button>
+                  : <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
+                    iconAfter={serverNameEmoji ? undefined : HomeIcon}
+                    {...homeProps}>
+                    <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                      <Heading whiteSpace="nowrap">{serverName}</Heading>
                     </XStack>
-                    : undefined}
-                </Button>
-                : <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
-                  iconAfter={serverNameEmoji ? undefined : HomeIcon}
-                  {...homeProps}>
-                  <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                    <Heading whiteSpace="nowrap">{serverName}</Heading>
-                  </XStack>
-                </Button>}
-              <ScrollView horizontal>
-                <XStack w={1} />
-                <GroupsSheet selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
-                <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
-              </ScrollView>
-              <XStack f={1} />
-              <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />
-              <XStack w={5} />
-            </XStack>
-            {/* <XStack h={5}></XStack> */}
-          </YStack>
-        </StickyBox>
-        <YStack f={1} jc="center" ai="center" backgroundColor={bgColor}>
-          {children}
-        </YStack>
-      </>,
-      default:
-        <YStack f={1} jc="center" ai="center">
-          <ScrollView f={1}>
-            <YStack f={1} jc="center" ai="center">
-              {children}
+                  </Button>}
+                <ScrollView horizontal>
+                  <XStack w={1} />
+                  <GroupsSheet selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                  <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
+                </ScrollView>
+                <XStack f={1} />
+                <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />
+                <XStack w={5} />
+              </XStack>
+              {/* <XStack h={5}></XStack> */}
             </YStack>
-          </ScrollView>
-        </YStack>
-    })}
+          </StickyBox>
+          <YStack f={1} jc="center" ai="center" backgroundColor={bgColor}>
+            {children}
+          </YStack>
+        </>,
+        default:
+          <YStack f={1} jc="center" ai="center">
+            <ScrollView f={1}>
+              <YStack f={1} jc="center" ai="center">
+                {children}
+              </YStack>
+            </ScrollView>
+          </YStack>
+      })}
+    </GroupContextProvider>
   </Theme>;
 }
 function hexToRgb(hex) {

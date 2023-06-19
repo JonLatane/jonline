@@ -36,8 +36,6 @@ local_minio_create:
 
 _do_local_minio_create:
 	docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"
-# TODO: create the bucket jonline_dev here
-#	docker exec -it jonline-dev-minio
 
 local_minio_delete:
 	docker stop jonline-dev-minio

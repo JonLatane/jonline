@@ -2,22 +2,24 @@ import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTh
 import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 
-import { Event, Group } from "@jonline/api";
+import { Event, EventInstance, Group } from "@jonline/api";
 import { Anchor, Card, Heading, Image, Paragraph, useMedia, XStack, YStack } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
 import { useLink } from "solito/link";
 import { AuthorInfo } from "../post/author_info";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
+import { InstanceTime } from "./instance_time";
 
 interface Props {
   event: Event;
+  selectedInstance?: EventInstance;
   isPreview?: boolean;
   groupContext?: Group;
   horizontal?: boolean;
 }
 
-export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, horizontal }) => {
+export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview, groupContext, horizontal }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -52,16 +54,26 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
   const instances = event.instances;
-  const instance = instances[0];
-  const startsAtHeader = instances.length == 1 ? instance?.startsAt : undefined;
-  const endsAtHeader = instances.length == 1 ? instance?.endsAt : undefined;
+  // const instance = instances[0];
+  const instance = selectedInstance
+    ? selectedInstance
+    : instances.length === 1 ? instances[0] : undefined;
+  // const [instance, setInstance] = useState<EventInstance | undefined>(undefined);
+  // useEffect(() => {
+  //   if (selectedInstance?.id != instance?.id)
+  //   setInstance(selectedInstance ?? instances.length === 1 ? instances[0] : undefined);
+  // }, [selectedInstance, instances]);
+  console.log('EventCard.instance=', instance?.id, 'selectedInstance=', selectedInstance?.id, 'instances=', instances.length);
 
-  const eventLink = {};
-  // useLink({
-  //   href: groupContext
-  //     ? `/g/${groupContext.shortname}/p/${post.id}`
-  //     : `/post/${post.id}`,
-  // });
+  const eventLink = useLink({
+    href: instance
+      ? groupContext
+        ? `/g/${groupContext.shortname}/e/${event.id}/${instance!.id}`
+        : `/event/${event.id}/${instance!.id}`
+      : groupContext
+        ? `/g/${groupContext.shortname}/e/${event.id}`
+        : `/event/${event.id}`,
+  });
   const authorLink = useLink({
     href: authorName
       ? `/${authorName}`
@@ -69,7 +81,7 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
   });
 
   const maxContentHeight = isPreview ? horizontal ? 100 : 300 : undefined;
-  const eventLinkProps = isPreview ? eventLink : undefined;
+  const detailsLink = isPreview ? eventLink : undefined;
   const authorLinkProps = post.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;
   const showDetailsShadow = isPreview && post.content && post.content.length > contentLengthShadowThreshold;
@@ -114,52 +126,6 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
     }
   });
 
-  function dateView(date: string) {
-    return <YStack>
-      <Heading size="$2" color={primaryColor} mr='$2'>
-        {moment.utc(date).local().format('ddd, MMM Do YYYY')}
-      </Heading>
-      <Heading size="$4" color={primaryColor}>
-        {moment.utc(date).local().format('h:mm a')}
-      </Heading>
-    </YStack>;
-  }
-
-  function dateRangeView(startsAt: string, endsAt: string) {
-    const startsAtDate = moment.utc(startsAt).local().format('ddd, MMM Do YYYY');
-    const endsAtDate = moment.utc(endsAt).local().format('ddd, MMM Do YYYY');
-    if (startsAtDate == endsAtDate) {
-      return <YStack
-        backgroundColor={themeBgColor} opacity={0.8} pl='$2' borderRadius='$3'>
-        <XStack>
-          <Paragraph size="$3" fontWeight='bold' color={primaryColor} mr='$2'>
-            {startsAtDate}
-          </Paragraph>
-        </XStack>
-        <XStack space>
-          <Heading size="$3" color={primaryColor}>
-            {moment.utc(startsAt).local().format('h:mm a')}
-          </Heading>
-          <Heading size="$3" color={primaryColor}>
-            -
-          </Heading>
-          <Heading size="$3" color={primaryColor}>
-            {moment.utc(endsAt).local().format('h:mm a')}
-          </Heading>
-        </XStack>
-      </YStack>;
-    } else {
-      return <XStack>
-        <YStack f={1}>
-          {startsAt ? dateView(startsAt) : undefined}
-        </YStack>
-        <YStack f={1}>
-          {endsAt ? dateView(endsAt) : undefined}
-        </YStack>
-      </XStack>;
-    }
-  }
-
   return (
     <>
       <YStack w='100%'>
@@ -175,28 +141,29 @@ export const EventCard: React.FC<Props> = ({ event, isPreview, groupContext, hor
           scale={1}
           opacity={1}
           y={0}
-          // enterStyle={{ y: -50, opacity: 0, }}
-          // exitStyle={{ opacity: 0, }}
-          {...eventLinkProps}
-
+        // enterStyle={{ y: -50, opacity: 0, }}
+        // exitStyle={{ opacity: 0, }}
         >
           {post.link || post.title
             ? <Card.Header>
-              <YStack>
-                <XStack>
-                  <YStack f={1}>
-                    {post.link
-                      ? isPreview
-                        ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
-                        : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                          color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                      :
-                      <Heading size="$7" marginRight='auto'>{post.title}</Heading>
-                    }
-                  </YStack>
-                </XStack>
-                {startsAtHeader && endsAtHeader ? dateRangeView(startsAtHeader, endsAtHeader) : undefined}
-              </YStack>
+              <Anchor textDecorationLine='none' {...detailsLink}>
+                <YStack>
+                  <XStack>
+                    <YStack f={1}>
+                      <Heading color={navColor} size="$7" marginRight='auto'>{post.title}</Heading>
+                      {/* {post.link
+                        ? isPreview
+                          ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
+                          : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
+                            color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
+                        :
+                        <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+                      } */}
+                    </YStack>
+                  </XStack>
+                  {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+                </YStack>
+              </Anchor>
             </Card.Header>
             : undefined}
           <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >

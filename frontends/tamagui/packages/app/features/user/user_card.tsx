@@ -2,6 +2,7 @@ import { Permission, User } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { Bot, Camera, Shield, Trash } from "@tamagui/lucide-icons";
 
+import { standardAnimation } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { followUnfollowUser, isUserLocked, respondToFollowRequest, RootState, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation";
@@ -10,7 +11,6 @@ import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
 import { MediaChooser } from "../media/media_chooser";
 import { } from "../post/post_card";
-import { standardAnimation } from "@jonline/ui/src/animations";
 
 interface Props {
   user: User;

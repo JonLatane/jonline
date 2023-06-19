@@ -13,6 +13,7 @@ import moment from "moment";
 import { loadGroupPostsPage } from "./group_actions";
 import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
 import { loadUserPosts } from "./user_actions";
+import { loadEvent, loadEventsPage } from "./event_actions";
 export * from './post_actions';
 
 export interface PostsState {
@@ -247,6 +248,13 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(loadGroupPostsPage.fulfilled, (state, action) => {
       const { posts } = action.payload;
+      upsertPosts(state, posts);
+    });
+    builder.addCase(loadEvent.fulfilled, (state, action) => {
+      postsAdapter.upsertOne(state, action.payload.post!);
+    });
+    builder.addCase(loadEventsPage.fulfilled, (state, action) => {
+      const posts = action.payload.events.map(event => event.post!);
       upsertPosts(state, posts);
     });
   },

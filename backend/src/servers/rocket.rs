@@ -97,6 +97,7 @@ fn create_rocket<T: rocket::figment::Provider>(
         })
         .mount("/", routes)
         .register("/", catchers![web::catchers::not_found]);
+    // Delete the "false &&" to disable compression in debug mode. Useful for debugging.
     if false && cfg!(debug_assertions) {
         server
     } else {

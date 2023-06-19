@@ -5,7 +5,7 @@ pub trait ToProtoId {
 }
 impl ToProtoId for i64 {
     fn to_proto_id(&self) -> String {
-        let id_bytes = (self + OFFSET).to_ne_bytes();
+        let id_bytes = (self + OFFSET).to_le_bytes();
         bs58::encode(id_bytes).into_string()
     }
 }
@@ -17,7 +17,7 @@ pub trait ToDbId {
 impl ToDbId for String {
     fn to_db_id(&self) -> Result<i64, bs58::decode::Error> {
         let id_bytes = bs58::decode(self).into_vec()?;
-        let id = i64::from_ne_bytes(id_bytes.as_slice().try_into().unwrap_or([0; 8]));
+        let id = i64::from_le_bytes(id_bytes.as_slice().try_into().unwrap_or([0; 8]));
         if id == 0 {
             return Err(bs58::decode::Error::InvalidCharacter {
                 character: '0',

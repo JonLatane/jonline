@@ -1,5 +1,5 @@
 import { Group, Media, Post, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Sheet, TextArea, XStack, YStack, ZStack, useMedia } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
 import { RootState, clearPostAlerts, createGroupPost, createPost, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import { publicVisibility } from 'app/utils/visibility';
@@ -179,7 +179,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
           onPositionChange={setPosition}
         // dismissOnSnapToBottom
         >
-          <Sheet.Overlay backgroundColor='$colorTranslucent' />
+          <Sheet.Overlay  />
           <Sheet.Frame>
             <YStack h='100%'>
               <Sheet.Handle />
@@ -234,13 +234,9 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
 
               <AnimatePresence>
                 {showSettings
-                  ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' animation="bouncy"
-                    p='$3'
-                    opacity={1}
-                    scale={1}
-                    y={0}
-                    enterStyle={{ y: -50, opacity: 0, }}
-                    exitStyle={{ y: -50, opacity: 0, }}>
+                  ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' p='$3'
+                    animation="bouncy" {...standardAnimation}
+                  >
                     <XStack w='100%' mb='$2'>
                       <GroupsSheet
                         noGroupSelectedText={publicVisibility(visibility)
@@ -319,11 +315,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                           marginHorizontal='$5'
                           p='$3'
                           animation='quick'
-                          opacity={1}
-                          scale={1}
-                          y={0}
-                          enterStyle={{ y: -50, opacity: 0, }}
-                          exitStyle={{ y: -50, opacity: 0, }}
+                          {...standardAnimation}
                         // enterStyle={{ y: -50, opacity: 0, }}
                         // exitStyle={{ opacity: 0, }}
                         >

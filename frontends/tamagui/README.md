@@ -14,14 +14,8 @@ Suppose we want to add the page `events/fancy_thing/[:id]`.
 
 * Implement the screen for the page.
 * Add new file to `apps/next/pages/events/fancy_thing.tsx` referencing the screen.
-* Add config to `packages/app/navigation/native/index.tsx`.
 * Add config to `packages/app/provider/navigation/index.tsx`.
-
-### Based on: Tamagui + Solito + Next + Expo Monorepo
-
-```sh
-npm create tamagui
-```
+* Please contribute: get the Expo (iOS/Android React Native) app working as well!
 
 ## 🔦 About
 

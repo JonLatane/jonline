@@ -1,5 +1,5 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
 import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation';
@@ -157,17 +157,16 @@ export function UsernameDetailsScreen() {
                 avatarMediaId={avatarMediaId}
                 setAvatarMediaId={setAvatarMediaId} />
               <YStack als='center' w='100%' paddingHorizontal='$2' paddingVertical='$3' space>
-                {editMode ?
-                  <TextArea value={bio} onChangeText={t => setBio(t)}
-                    // size='$5'
-                    h='$14'
-                    placeholder={`Edit ${isCurrentUser ? 'your' : `${name}'s`} user bio. Markdown is supported.`}
-                    o={1}
-                    scale={1}
-                    y={0}
-                    enterStyle={{ y: -50, o: 0, }}
-                    exitStyle={{ o: 0, }} />
-                  : <TamaguiMarkdown text={bio!} />}
+                  {editMode ?
+                    <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
+                      value={bio} onChangeText={t => setBio(t)}
+                      // size='$5'
+                      h='$14'
+                      placeholder={`Edit ${isCurrentUser ? 'your' : `${name}'s`} user bio. Markdown is supported.`}
+                    />
+                    : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
+                      <TamaguiMarkdown text={bio!} />
+                    </YStack>}
               </YStack>
               <Button mt={-15} onPress={() => setShowUserSettings(!showUserSettings)} transparent>
                 <XStack ac='center' jc='center'>
@@ -236,35 +235,15 @@ export function UsernameDetailsScreen() {
                       <Heading size='$2'>Edit {isCurrentUser ? 'your' : 'this'} profile</Heading>
                     </Tooltip.Content>
                   </Tooltip>
-                  {dirtyData ? <YStack animation="bouncy"
-                    p='$3'
-                    opacity={1}
-                    scale={1}
-                    y={0}
-                    enterStyle={{ y: -50, opacity: 0, }}
-                    exitStyle={{ opacity: 0, }}>
+                  <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
                     <AlertTriangle color='yellow' />
-                  </YStack> : <YStack animation="bouncy"
-                    p='$3'
-                    opacity={0}>
-                    <AlertTriangle color='yellow' />
-                  </YStack>}
+                  </YStack>
                   <Button backgroundColor={primaryColor} disabled={!dirtyData} opacity={dirtyData ? 1 : 0.5} als='center' onPress={saveUser}>
                     <Heading size='$2' color={primaryTextColor}>Save</Heading>
                   </Button>
-                  {successSaving ? <YStack animation="bouncy"
-                    p='$3'
-                    opacity={1}
-                    scale={1}
-                    y={0}
-                    enterStyle={{ y: -50, opacity: 0, }}
-                    exitStyle={{ opacity: 0, }}>
+                  <YStack animation='quick' o={successSaving ? 1 : 0} p='$3'>
                     <CheckCircle color='green' />
-                  </YStack> : <YStack animation="bouncy"
-                    p='$3'
-                    opacity={0}>
-                    <CheckCircle color='green' />
-                  </YStack>}
+                  </YStack>
                   <XStack f={1} />
                 </XStack>
               </YStack>

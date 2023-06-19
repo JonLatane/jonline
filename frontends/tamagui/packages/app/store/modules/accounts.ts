@@ -11,7 +11,7 @@ import 'react-native-get-random-values';
 import { resetAccessTokens, resetCredentialedData } from "..";
 import { JonlineAccount, JonlineServer } from "../types";
 import { createAccount, login } from "./account_actions";
-import { serverID } from "./servers";
+import { serverID, upsertServer } from "./servers";
 
 export interface AccountsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -115,6 +115,14 @@ export const accountsSlice = createSlice({
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
+    });
+    builder.addCase(upsertServer.fulfilled, (state, action) => {
+      for (const accountId in state.entities) {
+        const account = state.entities[accountId]!;
+        if (serverID(account.server) === serverID(action.payload)) {
+          account.server = action.payload;
+        }
+      }
     });
   },
 });

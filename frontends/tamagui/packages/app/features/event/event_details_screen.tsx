@@ -1,7 +1,7 @@
-import { Permission, Post } from '@jonline/api'
-import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Spinner, TextArea, Tooltip, useWindowDimensions, XStack, YStack, ZStack } from '@jonline/ui'
-import { Edit, Eye, ListEnd, Send as SendIcon } from '@tamagui/lucide-icons'
-import { confirmReplySent, loadPost, loadPostReplies, replyToPost, RootState, selectGroupById, selectPostById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
+import { Permission, Event, Post, EventInstance } from '@jonline/api'
+import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Spinner, TextArea, Theme, Tooltip, useWindowDimensions, XStack, YStack, ZStack } from '@jonline/ui'
+import { Clock, Edit, Eye, History, ListEnd, Send as SendIcon } from '@tamagui/lucide-icons'
+import { confirmReplySent, loadEvent, loadPostReplies, replyToPost, RootState, selectGroupById, selectEventById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
 import moment, { Moment } from 'moment'
 import React, { useEffect, useReducer, useState } from 'react'
 import { FlatList, View } from 'react-native'
@@ -9,11 +9,14 @@ import StickyBox from 'react-sticky-box'
 import { createParam } from 'solito'
 import { AddAccountSheet } from '../accounts/add_account_sheet'
 import { TabsNavigation } from '../tabs/tabs_navigation'
-import PostCard from '../post/post_card'
+import EventCard from '../event/event_card'
 import { TamaguiMarkdown } from '../post/tamagui_markdown'
 import { AppSection } from '../tabs/features_navigation'
+import PostCard from '../post/post_card'
+import { ReplyArea } from '../post/post_details_screen'
+import { InstanceTime } from './instance_time'
 
-const { useParam } = createParam<{ postId: string, eventId: string, instanceId: string, shortname: string | undefined }>()
+const { useParam } = createParam<{ eventId: string, instanceId: string, shortname: string | undefined }>()
 
 let _nextChatReplyRefresh: Moment | undefined = undefined;
 let _replyTextFocused = false;
@@ -28,7 +31,6 @@ if (isClient) {
 }
 
 export function EventDetailsScreen() {
-  const [postId] = useParam('postId');
   const [eventId] = useParam('eventId');
   const [instanceId] = useParam('instanceId');
   const [shortname] = useParam('shortname');
@@ -40,9 +42,21 @@ export function EventDetailsScreen() {
   const group = useTypedSelector((state: RootState) =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
   const { dispatch, accountOrServer } = useCredentialDispatch();
+  const eventsState = useTypedSelector((state: RootState) => state.events);
   const postsState = useTypedSelector((state: RootState) => state.posts);
-  const subjectPost = useTypedSelector((state: RootState) => selectPostById(state.posts, postId!));
-  const [loadingPost, setLoadingPost] = useState(false);
+  const subjectEvent = useTypedSelector((state: RootState) => selectEventById(state.events, eventId!));
+  const subjectPost = subjectEvent?.post;
+  const subjectInstances = subjectEvent?.instances;
+  const [subjectInstance, setSubjectInstance] = useState<EventInstance | undefined>(undefined);
+  // = subjectInstances?.find(i => i.id == instanceId);
+  useEffect(() => {
+    if (subjectInstances && subjectInstance?.id != instanceId) {
+      setSubjectInstance(subjectInstances?.find(i => i.id == instanceId));
+    }
+  }, [subjectInstances, instanceId]);
+  console.log("EventDetalsScreen.subjectInstance=", subjectInstance?.id, 'instanceId=', instanceId);
+  // const postId = subjectPost?.id;
+  const [loadingEvent, setLoadingEvent] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());
   const [expandAnimation, setExpandAnimation] = useState(true);
@@ -50,7 +64,7 @@ export function EventDetailsScreen() {
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const chatUI = app?.discussionChatUI;
   // const [chatUI, setChatUI] = useState(false);
-  const showReplyArea = subjectPost != undefined;
+  const showReplyArea = subjectEvent != undefined;
   const [_, forceUpdate] = useReducer((x) => x + 1, 0);
   const { width, height: windowHeight } = useWindowDimensions();
   function scrollToBottom() {
@@ -76,8 +90,8 @@ export function EventDetailsScreen() {
       const scrollYAtBottom = window.scrollY;
       // console.log('wasAtBottom', wasAtBottom, document.body.scrollHeight, _viewportHeight, window.scrollY)
       setTimeout(() => {
-        if (postId) {
-          dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [postId!] })).then(() => {
+        if (eventId) {
+          dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [subjectPost!.id] })).then(() => {
             if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
               scrollToBottom();
             }
@@ -105,25 +119,30 @@ export function EventDetailsScreen() {
       // }, intervalSeconds * 1000);
     }
   }
-  const [replyPostIdPath, setReplyPostIdPath] = useState<string[]>(postId ? [postId] : []);
+  const [replyPostIdPath, setReplyPostIdPath] = useState<string[]>(eventId ? [eventId] : []);
 
-  const failedToLoadPost = postId != undefined &&
-    postsState.failedPostIds.includes(postId!);
+  const failedToLoadEvent = eventId != undefined &&
+    eventsState.failedEventIds.includes(eventId!);
+
 
   useEffect(() => {
-    if (postId) {
-      if ((!subjectPost || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
-        setLoadingPost(true);
+    if (eventId) {
+      if ((!subjectEvent || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingEvent) {
+        setLoadingEvent(true);
         // useEffect(() => {
-        console.log('loadPost', postId!)
+        console.log('loadEvent', eventId!)
         setTimeout(() =>
-          dispatch(loadPost({ ...accountOrServer, id: postId! })));
+          dispatch(loadEvent({ ...accountOrServer, id: eventId! })));
         // });
-      } else if (subjectPost && loadingPost) {
-        setLoadingPost(false);
+      } else if (subjectPost && loadingEvent) {
+        setLoadingEvent(false);
       }
       if (subjectPost && postsState.status != 'loading' && subjectPost.replyCount > 0 &&
         subjectPost.replies.length == 0 && !loadingReplies) {
+        const postId = subjectPost.id;
+        if (replyPostIdPath.length == 0) {
+          setReplyPostIdPath([postId]);
+        }
         setLoadingReplies(true);
         console.log('loadReplies', subjectPost.id, subjectPost.replyCount, subjectPost.replies.length, loadingReplies);
         setTimeout(() =>
@@ -141,25 +160,25 @@ export function EventDetailsScreen() {
       if (subjectPost.title && subjectPost.title.length > 0) {
         title = subjectPost.title;
       } else {
-        title = `Post Details (#${subjectPost.id})`;
+        title = `Event Details (#${subjectEvent.id})`;
       }
-    } else if (failedToLoadPost) {
-      title = 'Post Not Found';
+    } else if (failedToLoadEvent) {
+      title = 'Event Not Found';
     } else {
-      title = 'Loading Post...';
+      title = 'Loading Event...';
     }
     title += ` - ${serverName}`;
     if (shortname && shortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
     }
     document.title = title;
-  });
+  }, [eventId, subjectPost, postsState, loadingEvent, loadingReplies, replyPostIdPath, showScrollPreserver]);
 
-  function toggleCollapseReplies(postId: string) {
-    if (collapsedReplies.has(postId)) {
-      collapsedReplies.delete(postId);
+  function toggleCollapseReplies(eventId: string) {
+    if (collapsedReplies.has(eventId)) {
+      collapsedReplies.delete(eventId);
     } else {
-      collapsedReplies.add(postId);
+      collapsedReplies.add(eventId);
     }
     setCollapsedReplies(new Set(collapsedReplies));
   }
@@ -190,28 +209,57 @@ export function EventDetailsScreen() {
       flattenReplies(child, postIdPath.concat(child.id), true, reply, childIsLastReplyTo, isChildLastReply);
     }
   }
-  if (subjectPost) {
-    flattenReplies(subjectPost, [subjectPost.id]);
-  }
-  if (chatUI) {
-    flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
-  }
-  const dimensions = useWindowDimensions();
+  useEffect(() => {
+    if (subjectPost) {
+      flattenReplies(subjectPost, [subjectEvent.id]);
+    }
+  }, [subjectPost]);
+
+  useEffect(() => {
+    if (chatUI) {
+      flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
+    }
+  }, [chatUI]);
+
+  const [showPastInstances, setShowPastInstances] = useState(false);
+  const displayedInstances = subjectInstances
+    ? showPastInstances
+      ? subjectInstances
+      : subjectInstances.filter(i => moment(i.endsAt).isAfter(moment()))
+    : undefined;
 
   let logicallyReplyingTo: Post | undefined = undefined;
   return (
-    <TabsNavigation appSection={AppSection.POST} selectedGroup={group}>
-      {!subjectPost
-        ? failedToLoadPost
+    <TabsNavigation appSection={AppSection.EVENT} selectedGroup={group}>
+      {!subjectEvent
+        ? failedToLoadEvent
           ? <>
-            <Heading size='$5'>Post not found.</Heading>
+            <Heading size='$5'>Event not found.</Heading>
             <Heading size='$3' ta='center'>It may either not exist, not be visible to you, or be hidden by moderators.</Heading>
           </>
           : <Spinner size='large' color={navColor} scale={2} />
         : <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
+
           <ScrollView w='100%'>
             <XStack w='100%' paddingHorizontal='$3'>
-              {subjectPost ? <PostCard post={subjectPost!} /> : undefined}
+              {subjectEvent ? <EventCard event={subjectEvent} selectedInstance={subjectInstance} /> : undefined}
+            </XStack>
+            <XStack w='100%' ml='$4' space>
+              <Theme inverse={showPastInstances}>
+                <Button mt='$2' mr={-7} size='$3' circular icon={History}
+                  // backgroundColor={showPastInstances ? undefined : navColor} 
+                  onPress={() => setShowPastInstances(!showPastInstances)} />
+              </Theme>
+              <ScrollView f={1} horizontal pb='$3'>
+                <XStack mt='$1'>
+                  {displayedInstances?.map((instance) =>
+                    <InstanceTime key={instance.id} linkToInstance
+                      event={subjectEvent} instance={instance} 
+                      highlight={instance.id == subjectInstance?.id}
+                      />)}
+                </XStack>
+
+              </ScrollView>
             </XStack>
             <XStack>
               <XStack f={1} />
@@ -261,38 +309,37 @@ export function EventDetailsScreen() {
               <XStack f={1} />
             </XStack>
             <XStack w='100%'>
-              <>
-                <YStack w='100%'>
-                  {flattenedReplies.map(({ reply: post, postIdPath, parentPost, lastReplyTo }) => {
-                    let stripeColor = navColor;
-                    const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
-                    const showParentPreview = chatUI && parentPost?.id != subjectPost?.id
-                      && parentPost?.id != logicallyReplyingTo?.id
-                      && parentPost?.id != logicallyReplyingTo?.replyToPostId;
-                    const hideTopMargin = chatUI && parentPost?.id != subjectPost?.id && (parentPost?.id == logicallyReplyingTo?.id || parentPost?.id == logicallyReplyingTo?.replyToPostId);
-                    const result = <XStack key={`reply-${post.id}`} id={`reply-${post.id}`}
-                      // w='100%' f={1}
-                      mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == subjectPost?.id) ? '$3' : 0}
-                      animation="bouncy"
-                      opacity={1}
-                      scale={1}
-                      y={0}
-                      enterStyle={{
-                        // scale: 1.5,
-                        y: expandAnimation ? -50 : 50,
-                        opacity: 0,
-                      }}
-                      exitStyle={{
-                        // scale: 1.5,
-                        // y: 50,
-                        opacity: 0,
-                      }}
-                    >
-                      {postIdPath.slice(1).map(() => {
-                        stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                        return <YStack w={7} bg={stripeColor} />
-                      })}
-                      {/* {lastReplyToIndex == undefined && lastReplyToIndex != 0 ?
+              <YStack w='100%'>
+                {flattenedReplies.map(({ reply, postIdPath, parentPost: parentEvent, lastReplyTo }) => {
+                  let stripeColor = navColor;
+                  const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
+                  const showParentPreview = chatUI && parentEvent?.id != subjectEvent?.id
+                    && parentEvent?.id != logicallyReplyingTo?.id
+                    && parentEvent?.id != logicallyReplyingTo?.replyToPostId;
+                  const hideTopMargin = chatUI && parentEvent?.id != subjectEvent?.id && (parentEvent?.id == logicallyReplyingTo?.id || parentEvent?.id == logicallyReplyingTo?.replyToPostId);
+                  const result = <XStack key={`reply-${reply.id}`} id={`reply-${reply.id}`}
+                    // w='100%' f={1}
+                    mt={(chatUI && !hideTopMargin) || (!chatUI && parentEvent?.id == subjectEvent?.id) ? '$3' : 0}
+                    animation="bouncy"
+                    opacity={1}
+                    scale={1}
+                    y={0}
+                    enterStyle={{
+                      // scale: 1.5,
+                      y: expandAnimation ? -50 : 50,
+                      opacity: 0,
+                    }}
+                    exitStyle={{
+                      // scale: 1.5,
+                      // y: 50,
+                      opacity: 0,
+                    }}
+                  >
+                    {postIdPath.slice(1).map(() => {
+                      stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
+                      return <YStack w={7} bg={stripeColor} />
+                    })}
+                    {/* {lastReplyToIndex == undefined && lastReplyToIndex != 0 ?
                   postIdPath.slice(1).map(() => {
                     stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
                     return <YStack w={7} bg={stripeColor} />
@@ -301,148 +348,49 @@ export function EventDetailsScreen() {
                     stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
                     return <YStack w={7} bg={stripeColor} />
                   })} */}
-                      <XStack f={1}
-                      // mb={lastReplyToIndex != undefined ? '$3' : 0}
-                      >
-                        {/* {lastReplyToIndex != undefined
+                    <XStack f={1}
+                    // mb={lastReplyToIndex != undefined ? '$3' : 0}
+                    >
+                      {/* {lastReplyToIndex != undefined
                     ? postIdPath.slice(Math.max(1,lastReplyToIndex)).map(() => {
                       stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
                       return <YStack w={7} bg={stripeColor} />
                     })
                     : undefined} */}
-                        <PostCard key={`comment-post-${post.id}`} post={post} replyPostIdPath={postIdPath}
-                          selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
-                          collapseReplies={collapsedReplies.has(post.id)}
-                          previewParent={showParentPreview ? parentPost : undefined}
-                          onLoadReplies={() => setExpandAnimation(true)}
-                          toggleCollapseReplies={() => {
-                            setExpandAnimation(collapsedReplies.has(post.id));
-                            toggleCollapseReplies(post.id);
-                          }}
-                          onPress={() => {
-                            if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
-                              setReplyPostIdPath([postId!]);
-                            } else {
-                              setReplyPostIdPath(postIdPath);
-                            }
-                          }}
-                          onPressParentPreview={() => {
-                            const parentPostIdPath = postIdPath.slice(0, -1);
-                            if (replyPostIdPath[replyPostIdPath.length - 1] == parentPostIdPath[parentPostIdPath.length - 1]) {
-                              setReplyPostIdPath([postId!]);
-                            } else {
-                              setReplyPostIdPath(parentPostIdPath);
-                            }
-                          }}
-                        // onPressParentPreview={() => setReplyPostIdPath(postIdPath.slice(0, -1))}
-                        />
-                      </XStack>
-                    </XStack>;
-                    logicallyReplyingTo = post;
-                    return result;
-                  })}
-                  <YStack h={showScrollPreserver ? 100000 : chatUI ? 0 : 150} ></YStack>
-                </YStack>
-                {/* <FlatList data={flattenedReplies}
-                  renderItem={({ item: { reply: post, postIdPath, parentPost, lastReplyTo } }) => {
-                    let stripeColor = navColor;
-                    const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
-                    const showParentPreview = chatUI && parentPost?.id != subjectPost?.id
-                      && parentPost?.id != logicallyReplyingTo?.id
-                      && parentPost?.id != logicallyReplyingTo?.replyToPostId;
-                    const hideTopMargin = chatUI && parentPost?.id != subjectPost?.id && (parentPost?.id == logicallyReplyingTo?.id || parentPost?.id == logicallyReplyingTo?.replyToPostId);
-                    const result = <XStack key={`reply-${post.id}`} id={`reply-${post.id}`}
-                      mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == subjectPost?.id) ? '$3' : 0}
-                      animation="bouncy"
-                      opacity={1}
-                      scale={1}
-                      y={0}
-                      enterStyle={{
-                        // scale: 1.5,
-                        y: expandAnimation ? -50 : 50,
-                        opacity: 0,
-                      }}
-                      exitStyle={{
-                        // scale: 1.5,
-                        // y: 50,
-                        opacity: 0,
-                      }}
-                    >
-                      {postIdPath.slice(1).map(() => {
-                        stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                        return <YStack w={7} bg={stripeColor} />
-                      })}
-                      {/* {lastReplyToIndex == undefined && lastReplyToIndex != 0 ?
-                  postIdPath.slice(1).map(() => {
-                    stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                    return <YStack w={7} bg={stripeColor} />
-                  })
-                  : postIdPath.slice(1, lastReplyToIndex).map(() => {
-                    stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                    return <YStack w={7} bg={stripeColor} />
-                  })} *\/}
-                      <XStack f={1}
-                      // mb={lastReplyToIndex != undefined ? '$3' : 0}
-                      >
-                        {/* {lastReplyToIndex != undefined
-                    ? postIdPath.slice(Math.max(1,lastReplyToIndex)).map(() => {
-                      stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                      return <YStack w={7} bg={stripeColor} />
-                    })
-                    : undefined} *\/}
-                        <PostCard post={post} replyPostIdPath={postIdPath}
-                          selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
-                          collapseReplies={collapsedReplies.has(post.id)}
-                          previewParent={showParentPreview ? parentPost : undefined}
-                          onLoadReplies={() => setExpandAnimation(true)}
-                          toggleCollapseReplies={() => {
-                            setExpandAnimation(collapsedReplies.has(post.id));
-                            toggleCollapseReplies(post.id);
-                          }}
-                          onPress={() => {
-                            if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
-                              setReplyPostIdPath([postId!]);
-                            } else {
-                              setReplyPostIdPath(postIdPath);
-                            }
-                          }}
-                          onPressParentPreview={() => {
-                            const parentPostIdPath = postIdPath.slice(0, -1);
-                            if (replyPostIdPath[replyPostIdPath.length - 1] == parentPostIdPath[parentPostIdPath.length - 1]) {
-                              setReplyPostIdPath([postId!]);
-                            } else {
-                              setReplyPostIdPath(parentPostIdPath);
-                            }
-                          }}
-                        // onPressParentPreview={() => setReplyPostIdPath(postIdPath.slice(0, -1))}
-                        />
-                      </XStack>
-                    </XStack>;
-                    logicallyReplyingTo = post;
-                    return result;
-                  }}
-                  ListFooterComponent={
-                    <YStack h={showScrollPreserver ? 100000 : chatUI ? 0 : 150} >
+                      <PostCard key={`comment-event-${reply.id}`} post={reply} replyPostIdPath={postIdPath}
+                        selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
+                        collapseReplies={collapsedReplies.has(reply.id)}
+                        previewParent={showParentPreview ? parentEvent : undefined}
+                        onLoadReplies={() => setExpandAnimation(true)}
+                        toggleCollapseReplies={() => {
+                          setExpandAnimation(collapsedReplies.has(reply.id));
+                          toggleCollapseReplies(reply.id);
+                        }}
+                        onPress={() => {
+                          if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
+                            setReplyPostIdPath([eventId!]);
+                          } else {
+                            setReplyPostIdPath(postIdPath);
+                          }
+                        }}
+                        onPressParentPreview={() => {
+                          const parentEventIdPath = postIdPath.slice(0, -1);
+                          if (replyPostIdPath[replyPostIdPath.length - 1] == parentEventIdPath[parentEventIdPath.length - 1]) {
+                            setReplyPostIdPath([eventId!]);
+                          } else {
+                            setReplyPostIdPath(parentEventIdPath);
+                          }
+                        }}
+                      // onPressParentPreview={() => setReplyEventIdPath(postIdPath.slice(0, -1))}
+                      />
+                    </XStack>
+                  </XStack>;
+                  logicallyReplyingTo = reply;
+                  return result;
+                })}
+                <YStack h={showScrollPreserver ? 100000 : chatUI ? 0 : 150} ></YStack>
+              </YStack>
 
-                      {/* <XStack w='100%' mt='$2'>
-                    <XStack f={1} />
-                    <Tooltip placement="top">
-                      <Tooltip.Trigger>
-                        <Button circular icon={ListStart}
-                          // borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                          // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
-                          onPress={scrollToTop} />
-                      </Tooltip.Trigger>
-                      <Tooltip.Content>
-                        <Heading size='$2'>Go to top.</Heading>
-                      </Tooltip.Content>
-                    </Tooltip>
-                    <XStack f={1} />
-                  </XStack> *\/}
-                    </YStack>
-                  }
-                /> */}
-              </>
             </XStack>
           </ScrollView>
           {showReplyArea ?
@@ -454,127 +402,3 @@ export function EventDetailsScreen() {
     </TabsNavigation >
   )
 }
-
-interface ReplyAreaProps {
-  replyingToPath: string[];
-}
-
-export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath }) => {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const [replyText, setReplyText] = useState('');
-  const [previewReply, setPreviewReply] = useState(false);
-  const maxPreviewHeight = useWindowDimensions().height * 0.5;
-  // const [isReplying, setIsReplying] = useState(false);
-  const [isSendingReply, setIsSendingReply] = useState(false);
-  const textAreaRef = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  const chatUI = useTypedSelector((state: RootState) => state.app.discussionChatUI);
-  function sendReply() {
-    setIsSendingReply(true);
-    dispatch(replyToPost({
-      ...accountOrServer,
-      postIdPath: replyingToPath,
-      content: replyText
-    }));
-  }
-  // const replyingToPost = 
-  let pathIndex = 0;
-  const rootPost = useTypedSelector((state: RootState) => selectPostById(state.posts, replyingToPath[pathIndex++]!));
-  const targetPostId = replyingToPath[replyingToPath.length - 1];
-  let targetPost = rootPost;
-  while (targetPost != null && targetPost?.id != targetPostId) {
-    const replyId = replyingToPath[pathIndex++];
-    // debugger;
-    targetPost = targetPost?.replies?.find(reply => reply.id == replyId);
-    // debugger;
-  }
-  const replyingToPost = targetPost;
-  const sendReplyStatus = useTypedSelector((state: RootState) => state.posts.sendReplyStatus);
-  useEffect(() => {
-    if (isSendingReply && sendReplyStatus == 'sent') {
-      setIsSendingReply(false);
-      setReplyText('');
-      dispatch(confirmReplySent!());
-      if (chatUI && isClient) {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-      }
-    }
-    if (!isSendingReply && previewReply && replyText == '') {
-      setPreviewReply(false);
-    }
-  });
-  const canComment = (accountOrServer.account?.user?.permissions?.includes(Permission.REPLY_TO_POSTS)
-    || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
-  return isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
-    {canComment
-      ? <YStack w='100%' pl='$2' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-        {replyingToPath.length > 1
-          ? <Heading size='$1'>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
-          : undefined}
-        <XStack>
-          <ZStack f={1}>
-            <TextArea f={1} value={replyText} ref={textAreaRef}
-              disabled={isSendingReply} opacity={isSendingReply ? 0.5 : 1}
-              onChangeText={t => setReplyText(t)}
-              onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
-              onBlur={() => _replyTextFocused = false}
-              placeholder={`Reply to this post. Markdown is supported.`} />
-            {previewReply
-              ? <YStack p='$3' f={1} backgroundColor='$background'>
-                <ScrollView maxHeight={maxPreviewHeight} height={maxPreviewHeight}>
-                  <TamaguiMarkdown text={replyText} />
-                </ScrollView>
-              </YStack>
-              : undefined}
-          </ZStack>
-          <YStack mr='$2' ml='$2' mt='auto' ac='flex-end' >
-            <YStack f={1} />
-            <Tooltip placement="top-end" key={`preview-button-${previewReply}`}>
-              <Tooltip.Trigger>
-                <Button circular mb='$2' icon={previewReply ? Edit : Eye}
-                  backgroundColor={navColor} color={navTextColor}
-                  disabled={replyText == ''} opacity={replyText == '' ? 0.5 : 1}
-                  onPress={() => {
-                    setPreviewReply(!previewReply);
-                    if (previewReply) {
-                      setTimeout(() => textAreaRef.current.focus(), 100);
-                    }
-                  }} />
-              </Tooltip.Trigger>
-              <Tooltip.Content>
-                <Heading size='$2'>{previewReply ? 'Edit reply' : 'Preview reply'}</Heading>
-              </Tooltip.Content>
-            </Tooltip>
-            {/* <YStack f={1}/> */}
-            <Button circular icon={SendIcon}
-              backgroundColor={primaryColor} color={primaryTextColor}
-              disabled={isSendingReply} opacity={isSendingReply ? 0.5 : 1}
-              onPress={sendReply} />
-          </YStack>
-        </XStack>
-      </YStack>
-      : accountOrServer.account ? <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-        <Heading size='$1'>You do not have permission to {chatUI ? 'chat' : 'comment'}.</Heading>
-      </YStack>
-        : <YStack w='100%' opacity={.92} p='$3' backgroundColor='$background' alignContent='center'>
-          {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
-            Login or Create Account to Comment
-          </Button> */}
-          <AddAccountSheet operation={chatUI ? 'Chat' : 'Comment'} />
-        </YStack>}
-  </StickyBox>
-    : <Button mt='$3' circular icon={SendIcon} backgroundColor={primaryColor} onPress={() => { }} />
-
-}
-// var lastScrollTop = 0;
-
-// // element should be replaced with the actual target element on which you have applied scroll, use window in case of no target element.
-// isClient && window.addEventListener("scroll", function(){ // or window.addEventListener("scroll"....
-//    var st = window.pageYOffset || document.documentElement.scrollTop; // Credits: "https://github.com/qeremy/so/blob/master/so.dom.js#L426"
-//    if (st > lastScrollTop) {
-//       // downscroll code
-//    } else if (st < lastScrollTop) {
-//       // upscroll code
-//    } // else was horizontal scroll
-//    lastScrollTop = st <= 0 ? 0 : st; // For Mobile or negative scrolling
-// }, false);

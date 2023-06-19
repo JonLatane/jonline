@@ -1,4 +1,4 @@
-import { Button, Heading, Input, Label, ScrollView, Sheet, SizeTokens, Switch, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, Input, Label, overlayAnimation, reverseStandardAnimation, ScrollView, Sheet, SizeTokens, standardAnimation, Switch, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, useLoadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState, useEffect } from 'react';
@@ -147,7 +147,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay backgroundColor='$colorTranslucent' />
+        <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
@@ -177,20 +177,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   <XStack f={1} />
 
                   {!browsingServers ?
-                    <XStack animation="bouncy"
-                      opacity={1}
-                      scale={1}
-                      y={0}
-                      enterStyle={{
-                        // scale: 1.5,
-                        y: 50,
-                        opacity: 0,
-                      }}
-                      exitStyle={{
-                        // scale: 1.5,
-                        // y: 50,
-                        opacity: 0,
-                      }}>
+                    <XStack animation="quick" {...reverseStandardAnimation}>
                       {currentServerInfoLink && !onlyShowServer
                         ? <Button size='$3' mr='$2' disabled icon={<Info />} circular opacity={0} />
                         : undefined}
@@ -236,7 +223,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
                   >
-                    <Sheet.Overlay backgroundColor='$colorTranslucent' />
+                    <Sheet.Overlay  />
                     <Sheet.Frame padding="$5">
                       <Sheet.Handle />
                       <Button
@@ -251,9 +238,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       <YStack space="$2" maxWidth={600} width='100%' alignSelf='center'>
                         <Heading size="$10" f={1}>Add Server</Heading>
                         <YStack>
-                          <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname" 
-                          disabled={serversLoading}
-                          opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
+                          <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
+                            disabled={serversLoading}
+                            opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
                             value={newServerHost}
                             onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
                         </YStack>
@@ -271,8 +258,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                               <Heading size="$2">Secure</Heading>
                             </Label>
                           </YStack>
-                          <Button f={2} backgroundColor={primaryColor} color={primaryTextColor} 
-                          onPress={addServer} disabled={serversLoading || !newServerValid}opacity={serversLoading || !newServerValid ? 0.5 : 1}>
+                          <Button f={2} backgroundColor={primaryColor} color={primaryTextColor}
+                            onPress={addServer} disabled={serversLoading || !newServerValid} opacity={serversLoading || !newServerValid ? 0.5 : 1}>
                             Add Server
                           </Button>
                         </XStack>
@@ -307,20 +294,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
 
               {browsingServers
-                ? <XStack animation="bouncy"
-                  opacity={1}
-                  scale={1}
-                  y={0}
-                  enterStyle={{
-                    // scale: 1.5,
-                    y: -50,
-                    opacity: 0,
-                  }}
-                  exitStyle={{
-                    // scale: 1.5,
-                    // y: 50,
-                    opacity: 0,
-                  }}>
+                ? <XStack animation="quick" {...standardAnimation}>
                   <>
                     <ScrollView horizontal>
                       <XStack>
@@ -364,7 +338,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
                   >
-                    <Sheet.Overlay backgroundColor='$colorTranslucent' />
+                    <Sheet.Overlay  />
                     <Sheet.Frame padding="$5">
                       <Sheet.Handle />
                       <Button
@@ -385,22 +359,16 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           value={newAccountUser}
                           onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
 
-                        {loginMethod ? <XStack w='100%' animation="bouncy"
-                          scale={1}
-                          y={0}
-                          enterStyle={{
-                            y: -20,
-                            opacity: 0,
-                          }}
-                          exitStyle={{
-                            opacity: 0,
-                          }}><Input secureTextEntry w='100%'
-                            textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
-                            placeholder="Password"
-                            disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
+                        {loginMethod
+                          ? <XStack w='100%' animation="quick" {...standardAnimation}>
+                            <Input secureTextEntry w='100%'
+                              textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
+                              placeholder="Password"
+                              disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
 
-                            value={newAccountPass}
-                            onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
+                              value={newAccountPass}
+                              onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
+                          </XStack>
                           : undefined}
 
                         {loginMethod

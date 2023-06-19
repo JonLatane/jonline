@@ -31,7 +31,7 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
             <Adapt.Contents />
           </Sheet.ScrollView>
         </Sheet.Frame>
-        <Sheet.Overlay backgroundColor='$colorTranslucent' />
+        <Sheet.Overlay  />
       </Sheet>
     </Adapt>
 

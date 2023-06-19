@@ -37,6 +37,23 @@ deploy_data_update:
 	cd deploys && $(MAKE) deploy_data_update
 
 ############################################################################
+# BE/LOCAL TESTING/DEVOPS RESEARCH TARGETS
+############################################################################
+local_db_create:
+	cd backend && $(MAKE) local_db_create
+local_db_drop:
+	cd backend && $(MAKE) local_db_drop
+local_db_reset:
+	cd backend && $(MAKE) local_db_reset
+local_db_connect:
+	cd backend && $(MAKE) local_db_connect
+
+local_minio_create:
+	cd backend && $(MAKE) local_minio_create
+local_minio_delete:
+	cd backend && $(MAKE) local_minio_delete
+
+############################################################################
 # FULLSTACK DEV/RELEASE-RELATED TARGETS: More in deploys/releases/Makefile
 ############################################################################
 .PHONY: protos docs

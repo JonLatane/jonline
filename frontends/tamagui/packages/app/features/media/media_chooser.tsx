@@ -2,6 +2,7 @@ import { AlertDialog, Button, Heading, Paragraph, Progress, Sheet, Spinner, Text
 import { RootState, deleteMedia, getCredentialClient, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { StickyCreateButton } from '../post/create_post_sheet';
+import { overlayAnimation } from '@jonline/ui';
 import { Image as ImageIcon, Trash, Upload, Wand2 } from '@tamagui/lucide-icons';
 import { useAccount } from 'app/store';
 import { FileUploader } from "react-drag-drop-files";
@@ -146,7 +147,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay backgroundColor='$colorTranslucent' />
+        <Sheet.Overlay  />
         <Sheet.Frame>
           <Sheet.Handle />
 
@@ -263,9 +264,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                               <AlertDialog.Overlay
                                 key="overlay"
                                 animation="quick"
-                                opacity={0.5}
-                                enterStyle={{ opacity: 0 }}
-                                exitStyle={{ opacity: 0 }}
+                                {...overlayAnimation}
                               />
                               <AlertDialog.Content
                                 bordered
