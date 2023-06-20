@@ -145,8 +145,8 @@ jobs:
     - name: Save DigitalOcean kubeconfig with short-lived credentials
       run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    - name: Deploy to GetJ.online via DigitalOcean Kubernetes
+    - name: Deploy to Jonline.io via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/server.yaml -n jonline
 
-    - name: Verify GetJ.online deployment
+    - name: Verify Jonline.io deployment
       run: kubectl rollout status deployment/jonline -n jonline
