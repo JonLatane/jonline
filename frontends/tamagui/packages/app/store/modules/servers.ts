@@ -43,6 +43,7 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
     return server;
   }
 );
+
 setTimeout(() => {
   (window.fetch(
     `${window.location.protocol}//${window.location.hostname}/default_client_domain`
@@ -77,9 +78,6 @@ setTimeout(() => {
             store.dispatch(selectServer(server));
           }
         });
-        // store.dispatch(upsertServer(initialServer))
-        // .then(() => store.dispatch(selectServer(initialServer)))
-        // .then(async () => await getServerClient(initialServer));
       }
     }
   );
