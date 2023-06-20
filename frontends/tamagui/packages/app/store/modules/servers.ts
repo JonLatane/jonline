@@ -70,12 +70,20 @@ setTimeout(() => {
             secure: true,
           };
         }
-        store.dispatch(upsertServer(initialServer));
-        store.dispatch(selectServer(initialServer))
+        getServerClient(initialServer).then(() => {
+          const serversState = store.getState().servers;
+          if (serversState.server = undefined) {
+            const server = serversState.entities[serverID(initialServer)];
+            store.dispatch(selectServer(server));
+          }
+        });
+        // store.dispatch(upsertServer(initialServer))
+        // .then(() => store.dispatch(selectServer(initialServer)))
+        // .then(async () => await getServerClient(initialServer));
       }
     }
   );
-}, 1);
+}, 10);
 
 // const initialServer: JonlineServer | undefined = Platform.OS == 'web' && globalThis.window?.location ? {
 //   host: window.location.hostname,

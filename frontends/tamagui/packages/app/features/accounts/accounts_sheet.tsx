@@ -116,7 +116,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const serversDiffer = onlyShowServer && serversState.server && serverID(onlyShowServer) != serverID(serversState.server);
   const serverId = serversState.server ? serverID(serversState.server) : undefined;
   // debugger;
-  const currentServerInfoLink = serversState.server && useLink({
+  const currentServerInfoLink = useLink({
     href: serverId === physicallyHostingServerId() ? '/about' : `/server/${serverId!}`
   });
   // bc react native may render multiple accounts sheets at a time
