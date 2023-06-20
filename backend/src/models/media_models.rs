@@ -32,6 +32,8 @@ pub struct Media {
     pub user_id: Option<i64>,
     pub minio_path: String,
     pub content_type: String,
+    pub thumbnail_minio_path: Option<String>,
+    pub thumbnail_content_type: Option<String>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub generated: bool,

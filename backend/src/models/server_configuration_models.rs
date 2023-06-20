@@ -21,6 +21,8 @@ pub struct ServerConfiguration {
     pub post_settings: serde_json::Value,
     pub event_settings: serde_json::Value,
 
+    pub default_client_domain: Option<String>,
+
     pub private_user_strategy: String,
     pub authentication_features: serde_json::Value,
 
@@ -38,6 +40,7 @@ pub struct NewServerConfiguration {
     pub group_settings: serde_json::Value,
     pub post_settings: serde_json::Value,
     pub event_settings: serde_json::Value,
+    pub default_client_domain: Option<String>,
     pub private_user_strategy: String,
     pub authentication_features: serde_json::Value,
 }
@@ -131,6 +134,7 @@ If this is an instance you're running, feel free to replace this text with your 
             custom_title: None,
         })
         .unwrap(),
+        default_client_domain: None,
         private_user_strategy: PrivateUserStrategy::AccountIsFrozen
             .as_str_name()
             .to_string(),

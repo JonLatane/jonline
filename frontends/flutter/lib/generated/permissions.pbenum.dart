@@ -1,47 +1,51 @@
-///
+//
 //  Generated code. Do not modify.
 //  source: permissions.proto
 //
 // @dart = 2.12
-// ignore_for_file: annotate_overrides,camel_case_types,constant_identifier_names,directives_ordering,library_prefixes,non_constant_identifier_names,prefer_final_fields,return_of_invalid_type,unnecessary_const,unnecessary_import,unnecessary_this,unused_import,unused_shown_name
 
-// ignore_for_file: UNDEFINED_SHOWN_NAME
+// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+
 import 'dart:core' as $core;
+
 import 'package:protobuf/protobuf.dart' as $pb;
 
 class Permission extends $pb.ProtobufEnum {
-  static const Permission PERMISSION_UNKNOWN = Permission._(0, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PERMISSION_UNKNOWN');
-  static const Permission VIEW_USERS = Permission._(1, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_USERS');
-  static const Permission PUBLISH_USERS_LOCALLY = Permission._(2, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_USERS_LOCALLY');
-  static const Permission PUBLISH_USERS_GLOBALLY = Permission._(3, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_USERS_GLOBALLY');
-  static const Permission MODERATE_USERS = Permission._(4, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MODERATE_USERS');
-  static const Permission FOLLOW_USERS = Permission._(5, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'FOLLOW_USERS');
-  static const Permission GRANT_BASIC_PERMISSIONS = Permission._(6, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'GRANT_BASIC_PERMISSIONS');
-  static const Permission VIEW_GROUPS = Permission._(10, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_GROUPS');
-  static const Permission CREATE_GROUPS = Permission._(11, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'CREATE_GROUPS');
-  static const Permission PUBLISH_GROUPS_LOCALLY = Permission._(12, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_GROUPS_LOCALLY');
-  static const Permission PUBLISH_GROUPS_GLOBALLY = Permission._(13, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_GROUPS_GLOBALLY');
-  static const Permission MODERATE_GROUPS = Permission._(14, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MODERATE_GROUPS');
-  static const Permission JOIN_GROUPS = Permission._(15, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'JOIN_GROUPS');
-  static const Permission VIEW_POSTS = Permission._(20, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_POSTS');
-  static const Permission CREATE_POSTS = Permission._(21, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'CREATE_POSTS');
-  static const Permission PUBLISH_POSTS_LOCALLY = Permission._(22, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_POSTS_LOCALLY');
-  static const Permission PUBLISH_POSTS_GLOBALLY = Permission._(23, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_POSTS_GLOBALLY');
-  static const Permission MODERATE_POSTS = Permission._(24, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MODERATE_POSTS');
-  static const Permission REPLY_TO_POSTS = Permission._(25, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'REPLY_TO_POSTS');
-  static const Permission VIEW_EVENTS = Permission._(30, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_EVENTS');
-  static const Permission CREATE_EVENTS = Permission._(31, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'CREATE_EVENTS');
-  static const Permission PUBLISH_EVENTS_LOCALLY = Permission._(32, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_EVENTS_LOCALLY');
-  static const Permission PUBLISH_EVENTS_GLOBALLY = Permission._(33, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_EVENTS_GLOBALLY');
-  static const Permission MODERATE_EVENTS = Permission._(34, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MODERATE_EVENTS');
-  static const Permission VIEW_MEDIA = Permission._(40, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_MEDIA');
-  static const Permission CREATE_MEDIA = Permission._(41, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'CREATE_MEDIA');
-  static const Permission PUBLISH_MEDIA_LOCALLY = Permission._(42, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_MEDIA_LOCALLY');
-  static const Permission PUBLISH_MEDIA_GLOBALLY = Permission._(43, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'PUBLISH_MEDIA_GLOBALLY');
-  static const Permission MODERATE_MEDIA = Permission._(44, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'MODERATE_MEDIA');
-  static const Permission RUN_BOTS = Permission._(9999, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'RUN_BOTS');
-  static const Permission ADMIN = Permission._(10000, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'ADMIN');
-  static const Permission VIEW_PRIVATE_CONTACT_METHODS = Permission._(10001, const $core.bool.fromEnvironment('protobuf.omit_enum_names') ? '' : 'VIEW_PRIVATE_CONTACT_METHODS');
+  static const Permission PERMISSION_UNKNOWN = Permission._(0, _omitEnumNames ? '' : 'PERMISSION_UNKNOWN');
+  static const Permission VIEW_USERS = Permission._(1, _omitEnumNames ? '' : 'VIEW_USERS');
+  static const Permission PUBLISH_USERS_LOCALLY = Permission._(2, _omitEnumNames ? '' : 'PUBLISH_USERS_LOCALLY');
+  static const Permission PUBLISH_USERS_GLOBALLY = Permission._(3, _omitEnumNames ? '' : 'PUBLISH_USERS_GLOBALLY');
+  static const Permission MODERATE_USERS = Permission._(4, _omitEnumNames ? '' : 'MODERATE_USERS');
+  static const Permission FOLLOW_USERS = Permission._(5, _omitEnumNames ? '' : 'FOLLOW_USERS');
+  static const Permission GRANT_BASIC_PERMISSIONS = Permission._(6, _omitEnumNames ? '' : 'GRANT_BASIC_PERMISSIONS');
+  static const Permission VIEW_GROUPS = Permission._(10, _omitEnumNames ? '' : 'VIEW_GROUPS');
+  static const Permission CREATE_GROUPS = Permission._(11, _omitEnumNames ? '' : 'CREATE_GROUPS');
+  static const Permission PUBLISH_GROUPS_LOCALLY = Permission._(12, _omitEnumNames ? '' : 'PUBLISH_GROUPS_LOCALLY');
+  static const Permission PUBLISH_GROUPS_GLOBALLY = Permission._(13, _omitEnumNames ? '' : 'PUBLISH_GROUPS_GLOBALLY');
+  static const Permission MODERATE_GROUPS = Permission._(14, _omitEnumNames ? '' : 'MODERATE_GROUPS');
+  static const Permission JOIN_GROUPS = Permission._(15, _omitEnumNames ? '' : 'JOIN_GROUPS');
+  static const Permission VIEW_POSTS = Permission._(20, _omitEnumNames ? '' : 'VIEW_POSTS');
+  static const Permission CREATE_POSTS = Permission._(21, _omitEnumNames ? '' : 'CREATE_POSTS');
+  static const Permission PUBLISH_POSTS_LOCALLY = Permission._(22, _omitEnumNames ? '' : 'PUBLISH_POSTS_LOCALLY');
+  static const Permission PUBLISH_POSTS_GLOBALLY = Permission._(23, _omitEnumNames ? '' : 'PUBLISH_POSTS_GLOBALLY');
+  static const Permission MODERATE_POSTS = Permission._(24, _omitEnumNames ? '' : 'MODERATE_POSTS');
+  static const Permission REPLY_TO_POSTS = Permission._(25, _omitEnumNames ? '' : 'REPLY_TO_POSTS');
+  static const Permission VIEW_EVENTS = Permission._(30, _omitEnumNames ? '' : 'VIEW_EVENTS');
+  static const Permission CREATE_EVENTS = Permission._(31, _omitEnumNames ? '' : 'CREATE_EVENTS');
+  static const Permission PUBLISH_EVENTS_LOCALLY = Permission._(32, _omitEnumNames ? '' : 'PUBLISH_EVENTS_LOCALLY');
+  static const Permission PUBLISH_EVENTS_GLOBALLY = Permission._(33, _omitEnumNames ? '' : 'PUBLISH_EVENTS_GLOBALLY');
+  static const Permission MODERATE_EVENTS = Permission._(34, _omitEnumNames ? '' : 'MODERATE_EVENTS');
+  static const Permission VIEW_MEDIA = Permission._(40, _omitEnumNames ? '' : 'VIEW_MEDIA');
+  static const Permission CREATE_MEDIA = Permission._(41, _omitEnumNames ? '' : 'CREATE_MEDIA');
+  static const Permission PUBLISH_MEDIA_LOCALLY = Permission._(42, _omitEnumNames ? '' : 'PUBLISH_MEDIA_LOCALLY');
+  static const Permission PUBLISH_MEDIA_GLOBALLY = Permission._(43, _omitEnumNames ? '' : 'PUBLISH_MEDIA_GLOBALLY');
+  static const Permission MODERATE_MEDIA = Permission._(44, _omitEnumNames ? '' : 'MODERATE_MEDIA');
+  static const Permission RUN_BOTS = Permission._(9999, _omitEnumNames ? '' : 'RUN_BOTS');
+  static const Permission ADMIN = Permission._(10000, _omitEnumNames ? '' : 'ADMIN');
+  static const Permission VIEW_PRIVATE_CONTACT_METHODS = Permission._(10001, _omitEnumNames ? '' : 'VIEW_PRIVATE_CONTACT_METHODS');
 
   static const $core.List<Permission> values = <Permission> [
     PERMISSION_UNKNOWN,
@@ -84,3 +88,5 @@ class Permission extends $pb.ProtobufEnum {
   const Permission._($core.int v, $core.String n) : super(v, n);
 }
 
+
+const _omitEnumNames = $core.bool.fromEnvironment('protobuf.omit_enum_names');

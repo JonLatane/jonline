@@ -43,7 +43,7 @@ pub mod schema;
 pub mod servers;
 pub mod web;
 
-use ::jonline::{env_var, init_service_logging, report_error};
+use ::jonline::{env_var, init_service_logging, report_error, rpcs::get_server_configuration};
 use futures::future::join_all;
 use servers::{start_rocket_secure, start_rocket_unsecured, start_tonic_server};
 use std::sync::Arc;
@@ -65,6 +65,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         e
     })?);
 
+    // Ideally, we should be able to restart servers and switch between HTTPS redirects.
+    let mut conn = pool.get()
+        .expect("Failed to get connection trying to load server configuration");
+    let server_configuration = get_server_configuration(&mut conn).expect("Failed to load server configuration");
+    let default_client_domain = server_configuration.default_client_domain;
+
     let tls_configuration_successful = start_tonic_server(pool.clone(), bucket.clone())?;
 
     let rocket_unsecure_8000 = start_rocket_unsecured(
@@ -72,14 +78,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         pool.clone(),
         bucket.clone(),
         tempdir.clone(),
-        tls_configuration_successful,
+        tls_configuration_successful && default_client_domain.is_none(),
     );
     let rocket_unsecure_80 = start_rocket_unsecured(
         80,
         pool.clone(),
         bucket.clone(),
         tempdir.clone(),
-        tls_configuration_successful,
+        tls_configuration_successful && default_client_domain.is_none(),
     );
     let rocket_secure = start_rocket_secure(pool.clone(), bucket.clone(), tempdir.clone());
 

@@ -1,140 +1,56 @@
-///
+//
 //  Generated code. Do not modify.
 //  source: users.proto
 //
 // @dart = 2.12
-// ignore_for_file: annotate_overrides,camel_case_types,constant_identifier_names,directives_ordering,library_prefixes,non_constant_identifier_names,prefer_final_fields,return_of_invalid_type,unnecessary_const,unnecessary_import,unnecessary_this,unused_import,unused_shown_name
+
+// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
-
 import 'permissions.pbenum.dart' as $10;
-import 'visibility_moderation.pbenum.dart' as $11;
 import 'users.pbenum.dart';
+import 'visibility_moderation.pbenum.dart' as $11;
 
 export 'users.pbenum.dart';
 
 class User extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'User', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'id')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'username')
-    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'realName')
-    ..aOM<ContactMethod>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'email', subBuilder: ContactMethod.create)
-    ..aOM<ContactMethod>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'phone', subBuilder: ContactMethod.create)
-    ..pc<$10.Permission>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
-    ..aOS(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'avatarMediaId')
-    ..aOS(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'bio')
-    ..e<$11.Visibility>(20, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
-    ..e<$11.Moderation>(21, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(30, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..a<$core.int>(31, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'followerCount', $pb.PbFieldType.O3)
-    ..a<$core.int>(32, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'followingCount', $pb.PbFieldType.O3)
-    ..a<$core.int>(33, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupCount', $pb.PbFieldType.O3)
-    ..a<$core.int>(34, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postCount', $pb.PbFieldType.O3)
-    ..a<$core.int>(35, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'responseCount', $pb.PbFieldType.O3)
-    ..aOM<Follow>(50, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'currentUserFollow', subBuilder: Follow.create)
-    ..aOM<Follow>(51, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'targetCurrentUserFollow', subBuilder: Follow.create)
-    ..aOM<Membership>(52, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'currentGroupMembership', subBuilder: Membership.create)
-    ..aOM<$9.Timestamp>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(101, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
+  factory User() => create();
+  User._() : super();
+  factory User.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory User.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'User', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'username')
+    ..aOS(3, _omitFieldNames ? '' : 'realName')
+    ..aOM<ContactMethod>(4, _omitFieldNames ? '' : 'email', subBuilder: ContactMethod.create)
+    ..aOM<ContactMethod>(5, _omitFieldNames ? '' : 'phone', subBuilder: ContactMethod.create)
+    ..pc<$10.Permission>(6, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
+    ..aOS(7, _omitFieldNames ? '' : 'avatarMediaId')
+    ..aOS(8, _omitFieldNames ? '' : 'bio')
+    ..e<$11.Visibility>(20, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$11.Moderation>(21, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$11.Moderation>(30, _omitFieldNames ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..a<$core.int>(31, _omitFieldNames ? '' : 'followerCount', $pb.PbFieldType.O3)
+    ..a<$core.int>(32, _omitFieldNames ? '' : 'followingCount', $pb.PbFieldType.O3)
+    ..a<$core.int>(33, _omitFieldNames ? '' : 'groupCount', $pb.PbFieldType.O3)
+    ..a<$core.int>(34, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.O3)
+    ..a<$core.int>(35, _omitFieldNames ? '' : 'responseCount', $pb.PbFieldType.O3)
+    ..aOM<Follow>(50, _omitFieldNames ? '' : 'currentUserFollow', subBuilder: Follow.create)
+    ..aOM<Follow>(51, _omitFieldNames ? '' : 'targetCurrentUserFollow', subBuilder: Follow.create)
+    ..aOM<Membership>(52, _omitFieldNames ? '' : 'currentGroupMembership', subBuilder: Membership.create)
+    ..aOM<$9.Timestamp>(100, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$9.Timestamp>(101, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
-  User._() : super();
-  factory User({
-    $core.String? id,
-    $core.String? username,
-    $core.String? realName,
-    ContactMethod? email,
-    ContactMethod? phone,
-    $core.Iterable<$10.Permission>? permissions,
-    $core.String? avatarMediaId,
-    $core.String? bio,
-    $11.Visibility? visibility,
-    $11.Moderation? moderation,
-    $11.Moderation? defaultFollowModeration,
-    $core.int? followerCount,
-    $core.int? followingCount,
-    $core.int? groupCount,
-    $core.int? postCount,
-    $core.int? responseCount,
-    Follow? currentUserFollow,
-    Follow? targetCurrentUserFollow,
-    Membership? currentGroupMembership,
-    $9.Timestamp? createdAt,
-    $9.Timestamp? updatedAt,
-  }) {
-    final _result = create();
-    if (id != null) {
-      _result.id = id;
-    }
-    if (username != null) {
-      _result.username = username;
-    }
-    if (realName != null) {
-      _result.realName = realName;
-    }
-    if (email != null) {
-      _result.email = email;
-    }
-    if (phone != null) {
-      _result.phone = phone;
-    }
-    if (permissions != null) {
-      _result.permissions.addAll(permissions);
-    }
-    if (avatarMediaId != null) {
-      _result.avatarMediaId = avatarMediaId;
-    }
-    if (bio != null) {
-      _result.bio = bio;
-    }
-    if (visibility != null) {
-      _result.visibility = visibility;
-    }
-    if (moderation != null) {
-      _result.moderation = moderation;
-    }
-    if (defaultFollowModeration != null) {
-      _result.defaultFollowModeration = defaultFollowModeration;
-    }
-    if (followerCount != null) {
-      _result.followerCount = followerCount;
-    }
-    if (followingCount != null) {
-      _result.followingCount = followingCount;
-    }
-    if (groupCount != null) {
-      _result.groupCount = groupCount;
-    }
-    if (postCount != null) {
-      _result.postCount = postCount;
-    }
-    if (responseCount != null) {
-      _result.responseCount = responseCount;
-    }
-    if (currentUserFollow != null) {
-      _result.currentUserFollow = currentUserFollow;
-    }
-    if (targetCurrentUserFollow != null) {
-      _result.targetCurrentUserFollow = targetCurrentUserFollow;
-    }
-    if (currentGroupMembership != null) {
-      _result.currentGroupMembership = currentGroupMembership;
-    }
-    if (createdAt != null) {
-      _result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      _result.updatedAt = updatedAt;
-    }
-    return _result;
-  }
-  factory User.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory User.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -144,8 +60,10 @@ class User extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  User copyWith(void Function(User) updates) => super.copyWith((message) => updates(message as User)) as User; // ignore: deprecated_member_use
+  User copyWith(void Function(User) updates) => super.copyWith((message) => updates(message as User)) as User;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static User create() => User._();
   User createEmptyInstance() => create();
@@ -353,43 +271,20 @@ class User extends $pb.GeneratedMessage {
 }
 
 class Follow extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Follow', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userId')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'targetUserId')
-    ..e<$11.Moderation>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..aOM<$9.Timestamp>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
+  factory Follow() => create();
+  Follow._() : super();
+  factory Follow.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Follow.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Follow', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..aOS(2, _omitFieldNames ? '' : 'targetUserId')
+    ..e<$11.Moderation>(3, _omitFieldNames ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..aOM<$9.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
-  Follow._() : super();
-  factory Follow({
-    $core.String? userId,
-    $core.String? targetUserId,
-    $11.Moderation? targetUserModeration,
-    $9.Timestamp? createdAt,
-    $9.Timestamp? updatedAt,
-  }) {
-    final _result = create();
-    if (userId != null) {
-      _result.userId = userId;
-    }
-    if (targetUserId != null) {
-      _result.targetUserId = targetUserId;
-    }
-    if (targetUserModeration != null) {
-      _result.targetUserModeration = targetUserModeration;
-    }
-    if (createdAt != null) {
-      _result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      _result.updatedAt = updatedAt;
-    }
-    return _result;
-  }
-  factory Follow.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Follow.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -399,8 +294,10 @@ class Follow extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  Follow copyWith(void Function(Follow) updates) => super.copyWith((message) => updates(message as Follow)) as Follow; // ignore: deprecated_member_use
+  Follow copyWith(void Function(Follow) updates) => super.copyWith((message) => updates(message as Follow)) as Follow;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static Follow create() => Follow._();
   Follow createEmptyInstance() => create();
@@ -460,53 +357,22 @@ class Follow extends $pb.GeneratedMessage {
 }
 
 class Membership extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Membership', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userId')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
-    ..pc<$10.Permission>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
-    ..e<$11.Moderation>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..aOM<$9.Timestamp>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
+  factory Membership() => create();
+  Membership._() : super();
+  factory Membership.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Membership.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Membership', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..aOS(2, _omitFieldNames ? '' : 'groupId')
+    ..pc<$10.Permission>(3, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
+    ..e<$11.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$11.Moderation>(5, _omitFieldNames ? '' : 'userModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..aOM<$9.Timestamp>(6, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$9.Timestamp>(7, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
-  Membership._() : super();
-  factory Membership({
-    $core.String? userId,
-    $core.String? groupId,
-    $core.Iterable<$10.Permission>? permissions,
-    $11.Moderation? groupModeration,
-    $11.Moderation? userModeration,
-    $9.Timestamp? createdAt,
-    $9.Timestamp? updatedAt,
-  }) {
-    final _result = create();
-    if (userId != null) {
-      _result.userId = userId;
-    }
-    if (groupId != null) {
-      _result.groupId = groupId;
-    }
-    if (permissions != null) {
-      _result.permissions.addAll(permissions);
-    }
-    if (groupModeration != null) {
-      _result.groupModeration = groupModeration;
-    }
-    if (userModeration != null) {
-      _result.userModeration = userModeration;
-    }
-    if (createdAt != null) {
-      _result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      _result.updatedAt = updatedAt;
-    }
-    return _result;
-  }
-  factory Membership.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Membership.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -516,8 +382,10 @@ class Membership extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  Membership copyWith(void Function(Membership) updates) => super.copyWith((message) => updates(message as Membership)) as Membership; // ignore: deprecated_member_use
+  Membership copyWith(void Function(Membership) updates) => super.copyWith((message) => updates(message as Membership)) as Membership;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static Membership create() => Membership._();
   Membership createEmptyInstance() => create();
@@ -589,28 +457,17 @@ class Membership extends $pb.GeneratedMessage {
 }
 
 class ContactMethod extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ContactMethod', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'value')
-    ..e<$11.Visibility>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+  factory ContactMethod() => create();
+  ContactMethod._() : super();
+  factory ContactMethod.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ContactMethod.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethod', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'value')
+    ..e<$11.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
     ..hasRequiredFields = false
   ;
 
-  ContactMethod._() : super();
-  factory ContactMethod({
-    $core.String? value,
-    $11.Visibility? visibility,
-  }) {
-    final _result = create();
-    if (value != null) {
-      _result.value = value;
-    }
-    if (visibility != null) {
-      _result.visibility = visibility;
-    }
-    return _result;
-  }
-  factory ContactMethod.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ContactMethod.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -620,8 +477,10 @@ class ContactMethod extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  ContactMethod copyWith(void Function(ContactMethod) updates) => super.copyWith((message) => updates(message as ContactMethod)) as ContactMethod; // ignore: deprecated_member_use
+  ContactMethod copyWith(void Function(ContactMethod) updates) => super.copyWith((message) => updates(message as ContactMethod)) as ContactMethod;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static ContactMethod create() => ContactMethod._();
   ContactMethod createEmptyInstance() => create();
@@ -650,38 +509,19 @@ class ContactMethod extends $pb.GeneratedMessage {
 }
 
 class GetUsersRequest extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetUsersRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'username')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userId')
-    ..a<$core.int>(99, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'page', $pb.PbFieldType.O3)
-    ..e<UserListingType>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: UserListingType.EVERYONE, valueOf: UserListingType.valueOf, enumValues: UserListingType.values)
+  factory GetUsersRequest() => create();
+  GetUsersRequest._() : super();
+  factory GetUsersRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetUsersRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetUsersRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'username')
+    ..aOS(2, _omitFieldNames ? '' : 'userId')
+    ..a<$core.int>(99, _omitFieldNames ? '' : 'page', $pb.PbFieldType.O3)
+    ..e<UserListingType>(100, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: UserListingType.EVERYONE, valueOf: UserListingType.valueOf, enumValues: UserListingType.values)
     ..hasRequiredFields = false
   ;
 
-  GetUsersRequest._() : super();
-  factory GetUsersRequest({
-    $core.String? username,
-    $core.String? userId,
-    $core.int? page,
-    UserListingType? listingType,
-  }) {
-    final _result = create();
-    if (username != null) {
-      _result.username = username;
-    }
-    if (userId != null) {
-      _result.userId = userId;
-    }
-    if (page != null) {
-      _result.page = page;
-    }
-    if (listingType != null) {
-      _result.listingType = listingType;
-    }
-    return _result;
-  }
-  factory GetUsersRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetUsersRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -691,8 +531,10 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetUsersRequest copyWith(void Function(GetUsersRequest) updates) => super.copyWith((message) => updates(message as GetUsersRequest)) as GetUsersRequest; // ignore: deprecated_member_use
+  GetUsersRequest copyWith(void Function(GetUsersRequest) updates) => super.copyWith((message) => updates(message as GetUsersRequest)) as GetUsersRequest;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetUsersRequest create() => GetUsersRequest._();
   GetUsersRequest createEmptyInstance() => create();
@@ -739,28 +581,17 @@ class GetUsersRequest extends $pb.GeneratedMessage {
 }
 
 class GetUsersResponse extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetUsersResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<User>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'users', $pb.PbFieldType.PM, subBuilder: User.create)
-    ..aOB(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'hasNextPage')
+  factory GetUsersResponse() => create();
+  GetUsersResponse._() : super();
+  factory GetUsersResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetUsersResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetUsersResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<User>(1, _omitFieldNames ? '' : 'users', $pb.PbFieldType.PM, subBuilder: User.create)
+    ..aOB(2, _omitFieldNames ? '' : 'hasNextPage')
     ..hasRequiredFields = false
   ;
 
-  GetUsersResponse._() : super();
-  factory GetUsersResponse({
-    $core.Iterable<User>? users,
-    $core.bool? hasNextPage,
-  }) {
-    final _result = create();
-    if (users != null) {
-      _result.users.addAll(users);
-    }
-    if (hasNextPage != null) {
-      _result.hasNextPage = hasNextPage;
-    }
-    return _result;
-  }
-  factory GetUsersResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetUsersResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -770,8 +601,10 @@ class GetUsersResponse extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetUsersResponse copyWith(void Function(GetUsersResponse) updates) => super.copyWith((message) => updates(message as GetUsersResponse)) as GetUsersResponse; // ignore: deprecated_member_use
+  GetUsersResponse copyWith(void Function(GetUsersResponse) updates) => super.copyWith((message) => updates(message as GetUsersResponse)) as GetUsersResponse;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetUsersResponse create() => GetUsersResponse._();
   GetUsersResponse createEmptyInstance() => create();
@@ -793,3 +626,6 @@ class GetUsersResponse extends $pb.GeneratedMessage {
   void clearHasNextPage() => clearField(2);
 }
 
+
+const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

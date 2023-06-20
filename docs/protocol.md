@@ -1277,6 +1277,7 @@ Configuration for a Jonline server instance.
 | post_settings | [PostSettings](#jonline-PostSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |
 | event_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
 | media_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
+| default_client_domain | [string](#string) | optional | (NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN. By default, the web client uses `window.location.hostname` to determine the backend server. If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now. |
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 

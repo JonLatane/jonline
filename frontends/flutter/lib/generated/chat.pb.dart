@@ -1,9 +1,13 @@
-///
+//
 //  Generated code. Do not modify.
 //  source: chat.proto
 //
 // @dart = 2.12
-// ignore_for_file: annotate_overrides,camel_case_types,constant_identifier_names,directives_ordering,library_prefixes,non_constant_identifier_names,prefer_final_fields,return_of_invalid_type,unnecessary_const,unnecessary_import,unnecessary_this,unused_import,unused_shown_name
+
+// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:core' as $core;
 
@@ -12,33 +16,18 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import 'posts.pb.dart' as $7;
 
 class Conversation extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Conversation', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'id')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'name')
-    ..pPS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'userIds')
+  factory Conversation() => create();
+  Conversation._() : super();
+  factory Conversation.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Conversation.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Conversation', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'name')
+    ..pPS(3, _omitFieldNames ? '' : 'userIds')
     ..hasRequiredFields = false
   ;
 
-  Conversation._() : super();
-  factory Conversation({
-    $core.String? id,
-    $core.String? name,
-    $core.Iterable<$core.String>? userIds,
-  }) {
-    final _result = create();
-    if (id != null) {
-      _result.id = id;
-    }
-    if (name != null) {
-      _result.name = name;
-    }
-    if (userIds != null) {
-      _result.userIds.addAll(userIds);
-    }
-    return _result;
-  }
-  factory Conversation.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Conversation.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -48,8 +37,10 @@ class Conversation extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  Conversation copyWith(void Function(Conversation) updates) => super.copyWith((message) => updates(message as Conversation)) as Conversation; // ignore: deprecated_member_use
+  Conversation copyWith(void Function(Conversation) updates) => super.copyWith((message) => updates(message as Conversation)) as Conversation;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static Conversation create() => Conversation._();
   Conversation createEmptyInstance() => create();
@@ -81,28 +72,17 @@ class Conversation extends $pb.GeneratedMessage {
 }
 
 class ConversationPost extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ConversationPost', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'conversationId')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postId')
+  factory ConversationPost() => create();
+  ConversationPost._() : super();
+  factory ConversationPost.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ConversationPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ConversationPost', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'conversationId')
+    ..aOS(2, _omitFieldNames ? '' : 'postId')
     ..hasRequiredFields = false
   ;
 
-  ConversationPost._() : super();
-  factory ConversationPost({
-    $core.String? conversationId,
-    $core.String? postId,
-  }) {
-    final _result = create();
-    if (conversationId != null) {
-      _result.conversationId = conversationId;
-    }
-    if (postId != null) {
-      _result.postId = postId;
-    }
-    return _result;
-  }
-  factory ConversationPost.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ConversationPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -112,8 +92,10 @@ class ConversationPost extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  ConversationPost copyWith(void Function(ConversationPost) updates) => super.copyWith((message) => updates(message as ConversationPost)) as ConversationPost; // ignore: deprecated_member_use
+  ConversationPost copyWith(void Function(ConversationPost) updates) => super.copyWith((message) => updates(message as ConversationPost)) as ConversationPost;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static ConversationPost create() => ConversationPost._();
   ConversationPost createEmptyInstance() => create();
@@ -142,23 +124,16 @@ class ConversationPost extends $pb.GeneratedMessage {
 }
 
 class GroupConversation extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GroupConversation', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
+  factory GroupConversation() => create();
+  GroupConversation._() : super();
+  factory GroupConversation.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GroupConversation.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GroupConversation', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..hasRequiredFields = false
   ;
 
-  GroupConversation._() : super();
-  factory GroupConversation({
-    $core.String? groupId,
-  }) {
-    final _result = create();
-    if (groupId != null) {
-      _result.groupId = groupId;
-    }
-    return _result;
-  }
-  factory GroupConversation.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GroupConversation.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -168,8 +143,10 @@ class GroupConversation extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GroupConversation copyWith(void Function(GroupConversation) updates) => super.copyWith((message) => updates(message as GroupConversation)) as GroupConversation; // ignore: deprecated_member_use
+  GroupConversation copyWith(void Function(GroupConversation) updates) => super.copyWith((message) => updates(message as GroupConversation)) as GroupConversation;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GroupConversation create() => GroupConversation._();
   GroupConversation createEmptyInstance() => create();
@@ -189,28 +166,17 @@ class GroupConversation extends $pb.GeneratedMessage {
 }
 
 class GroupConversationPost extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GroupConversationPost', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'postId')
+  factory GroupConversationPost() => create();
+  GroupConversationPost._() : super();
+  factory GroupConversationPost.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GroupConversationPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GroupConversationPost', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'groupId')
+    ..aOS(2, _omitFieldNames ? '' : 'postId')
     ..hasRequiredFields = false
   ;
 
-  GroupConversationPost._() : super();
-  factory GroupConversationPost({
-    $core.String? groupId,
-    $core.String? postId,
-  }) {
-    final _result = create();
-    if (groupId != null) {
-      _result.groupId = groupId;
-    }
-    if (postId != null) {
-      _result.postId = postId;
-    }
-    return _result;
-  }
-  factory GroupConversationPost.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GroupConversationPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -220,8 +186,10 @@ class GroupConversationPost extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GroupConversationPost copyWith(void Function(GroupConversationPost) updates) => super.copyWith((message) => updates(message as GroupConversationPost)) as GroupConversationPost; // ignore: deprecated_member_use
+  GroupConversationPost copyWith(void Function(GroupConversationPost) updates) => super.copyWith((message) => updates(message as GroupConversationPost)) as GroupConversationPost;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GroupConversationPost create() => GroupConversationPost._();
   GroupConversationPost createEmptyInstance() => create();
@@ -250,28 +218,17 @@ class GroupConversationPost extends $pb.GeneratedMessage {
 }
 
 class CreateConversationPostRequest extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'CreateConversationPostRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'conversationId')
-    ..aOM<$7.Post>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'post', subBuilder: $7.Post.create)
+  factory CreateConversationPostRequest() => create();
+  CreateConversationPostRequest._() : super();
+  factory CreateConversationPostRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory CreateConversationPostRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateConversationPostRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'conversationId')
+    ..aOM<$7.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $7.Post.create)
     ..hasRequiredFields = false
   ;
 
-  CreateConversationPostRequest._() : super();
-  factory CreateConversationPostRequest({
-    $core.String? conversationId,
-    $7.Post? post,
-  }) {
-    final _result = create();
-    if (conversationId != null) {
-      _result.conversationId = conversationId;
-    }
-    if (post != null) {
-      _result.post = post;
-    }
-    return _result;
-  }
-  factory CreateConversationPostRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateConversationPostRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -281,8 +238,10 @@ class CreateConversationPostRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  CreateConversationPostRequest copyWith(void Function(CreateConversationPostRequest) updates) => super.copyWith((message) => updates(message as CreateConversationPostRequest)) as CreateConversationPostRequest; // ignore: deprecated_member_use
+  CreateConversationPostRequest copyWith(void Function(CreateConversationPostRequest) updates) => super.copyWith((message) => updates(message as CreateConversationPostRequest)) as CreateConversationPostRequest;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static CreateConversationPostRequest create() => CreateConversationPostRequest._();
   CreateConversationPostRequest createEmptyInstance() => create();
@@ -313,28 +272,17 @@ class CreateConversationPostRequest extends $pb.GeneratedMessage {
 }
 
 class CreateGroupConversationPostRequest extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'CreateGroupConversationPostRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
-    ..aOM<$7.Post>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'post', subBuilder: $7.Post.create)
+  factory CreateGroupConversationPostRequest() => create();
+  CreateGroupConversationPostRequest._() : super();
+  factory CreateGroupConversationPostRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory CreateGroupConversationPostRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateGroupConversationPostRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'groupId')
+    ..aOM<$7.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $7.Post.create)
     ..hasRequiredFields = false
   ;
 
-  CreateGroupConversationPostRequest._() : super();
-  factory CreateGroupConversationPostRequest({
-    $core.String? groupId,
-    $7.Post? post,
-  }) {
-    final _result = create();
-    if (groupId != null) {
-      _result.groupId = groupId;
-    }
-    if (post != null) {
-      _result.post = post;
-    }
-    return _result;
-  }
-  factory CreateGroupConversationPostRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateGroupConversationPostRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -344,8 +292,10 @@ class CreateGroupConversationPostRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  CreateGroupConversationPostRequest copyWith(void Function(CreateGroupConversationPostRequest) updates) => super.copyWith((message) => updates(message as CreateGroupConversationPostRequest)) as CreateGroupConversationPostRequest; // ignore: deprecated_member_use
+  CreateGroupConversationPostRequest copyWith(void Function(CreateGroupConversationPostRequest) updates) => super.copyWith((message) => updates(message as CreateGroupConversationPostRequest)) as CreateGroupConversationPostRequest;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static CreateGroupConversationPostRequest create() => CreateGroupConversationPostRequest._();
   CreateGroupConversationPostRequest createEmptyInstance() => create();
@@ -376,23 +326,16 @@ class CreateGroupConversationPostRequest extends $pb.GeneratedMessage {
 }
 
 class GetConversationsRequest extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetConversationsRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..a<$core.int>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'page', $pb.PbFieldType.OU3)
+  factory GetConversationsRequest() => create();
+  GetConversationsRequest._() : super();
+  factory GetConversationsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetConversationsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetConversationsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..a<$core.int>(10, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
     ..hasRequiredFields = false
   ;
 
-  GetConversationsRequest._() : super();
-  factory GetConversationsRequest({
-    $core.int? page,
-  }) {
-    final _result = create();
-    if (page != null) {
-      _result.page = page;
-    }
-    return _result;
-  }
-  factory GetConversationsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetConversationsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -402,8 +345,10 @@ class GetConversationsRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetConversationsRequest copyWith(void Function(GetConversationsRequest) updates) => super.copyWith((message) => updates(message as GetConversationsRequest)) as GetConversationsRequest; // ignore: deprecated_member_use
+  GetConversationsRequest copyWith(void Function(GetConversationsRequest) updates) => super.copyWith((message) => updates(message as GetConversationsRequest)) as GetConversationsRequest;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetConversationsRequest create() => GetConversationsRequest._();
   GetConversationsRequest createEmptyInstance() => create();
@@ -423,23 +368,16 @@ class GetConversationsRequest extends $pb.GeneratedMessage {
 }
 
 class GetConversationsResponse extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetConversationsResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<Conversation>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'conversations', $pb.PbFieldType.PM, subBuilder: Conversation.create)
+  factory GetConversationsResponse() => create();
+  GetConversationsResponse._() : super();
+  factory GetConversationsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetConversationsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetConversationsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<Conversation>(1, _omitFieldNames ? '' : 'conversations', $pb.PbFieldType.PM, subBuilder: Conversation.create)
     ..hasRequiredFields = false
   ;
 
-  GetConversationsResponse._() : super();
-  factory GetConversationsResponse({
-    $core.Iterable<Conversation>? conversations,
-  }) {
-    final _result = create();
-    if (conversations != null) {
-      _result.conversations.addAll(conversations);
-    }
-    return _result;
-  }
-  factory GetConversationsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetConversationsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -449,8 +387,10 @@ class GetConversationsResponse extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetConversationsResponse copyWith(void Function(GetConversationsResponse) updates) => super.copyWith((message) => updates(message as GetConversationsResponse)) as GetConversationsResponse; // ignore: deprecated_member_use
+  GetConversationsResponse copyWith(void Function(GetConversationsResponse) updates) => super.copyWith((message) => updates(message as GetConversationsResponse)) as GetConversationsResponse;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetConversationsResponse create() => GetConversationsResponse._();
   GetConversationsResponse createEmptyInstance() => create();
@@ -470,39 +410,24 @@ enum GetConversationRequest_RequestedId {
 }
 
 class GetConversationRequest extends $pb.GeneratedMessage {
+  factory GetConversationRequest() => create();
+  GetConversationRequest._() : super();
+  factory GetConversationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetConversationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
   static const $core.Map<$core.int, GetConversationRequest_RequestedId> _GetConversationRequest_RequestedIdByTag = {
     1 : GetConversationRequest_RequestedId.conversationId,
     2 : GetConversationRequest_RequestedId.groupId,
     0 : GetConversationRequest_RequestedId.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetConversationRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetConversationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..oo(0, [1, 2])
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'conversationId')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'groupId')
-    ..a<$core.int>(10, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'page', $pb.PbFieldType.OU3)
+    ..aOS(1, _omitFieldNames ? '' : 'conversationId')
+    ..aOS(2, _omitFieldNames ? '' : 'groupId')
+    ..a<$core.int>(10, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
     ..hasRequiredFields = false
   ;
 
-  GetConversationRequest._() : super();
-  factory GetConversationRequest({
-    $core.String? conversationId,
-    $core.String? groupId,
-    $core.int? page,
-  }) {
-    final _result = create();
-    if (conversationId != null) {
-      _result.conversationId = conversationId;
-    }
-    if (groupId != null) {
-      _result.groupId = groupId;
-    }
-    if (page != null) {
-      _result.page = page;
-    }
-    return _result;
-  }
-  factory GetConversationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetConversationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -512,8 +437,10 @@ class GetConversationRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetConversationRequest copyWith(void Function(GetConversationRequest) updates) => super.copyWith((message) => updates(message as GetConversationRequest)) as GetConversationRequest; // ignore: deprecated_member_use
+  GetConversationRequest copyWith(void Function(GetConversationRequest) updates) => super.copyWith((message) => updates(message as GetConversationRequest)) as GetConversationRequest;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetConversationRequest create() => GetConversationRequest._();
   GetConversationRequest createEmptyInstance() => create();
@@ -554,23 +481,16 @@ class GetConversationRequest extends $pb.GeneratedMessage {
 }
 
 class GetConversationResponse extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetConversationResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<$7.Post>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'conversation', $pb.PbFieldType.PM, subBuilder: $7.Post.create)
+  factory GetConversationResponse() => create();
+  GetConversationResponse._() : super();
+  factory GetConversationResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetConversationResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetConversationResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<$7.Post>(1, _omitFieldNames ? '' : 'conversation', $pb.PbFieldType.PM, subBuilder: $7.Post.create)
     ..hasRequiredFields = false
   ;
 
-  GetConversationResponse._() : super();
-  factory GetConversationResponse({
-    $core.Iterable<$7.Post>? conversation,
-  }) {
-    final _result = create();
-    if (conversation != null) {
-      _result.conversation.addAll(conversation);
-    }
-    return _result;
-  }
-  factory GetConversationResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetConversationResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -580,8 +500,10 @@ class GetConversationResponse extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetConversationResponse copyWith(void Function(GetConversationResponse) updates) => super.copyWith((message) => updates(message as GetConversationResponse)) as GetConversationResponse; // ignore: deprecated_member_use
+  GetConversationResponse copyWith(void Function(GetConversationResponse) updates) => super.copyWith((message) => updates(message as GetConversationResponse)) as GetConversationResponse;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetConversationResponse create() => GetConversationResponse._();
   GetConversationResponse createEmptyInstance() => create();
@@ -594,3 +516,6 @@ class GetConversationResponse extends $pb.GeneratedMessage {
   $core.List<$7.Post> get conversation => $_getList(0);
 }
 
+
+const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

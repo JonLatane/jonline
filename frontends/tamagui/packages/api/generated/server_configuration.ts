@@ -215,6 +215,14 @@ export interface ServerConfiguration {
   mediaSettings:
     | FeatureSettings
     | undefined;
+  /**
+   * (NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN.
+   * By default, the web client uses `window.location.hostname` to determine the backend server.
+   * If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
+   */
+  defaultClientDomain?:
+    | string
+    | undefined;
   /** Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. */
   privateUserStrategy: PrivateUserStrategy;
   /**
@@ -317,6 +325,7 @@ function createBaseServerConfiguration(): ServerConfiguration {
     postSettings: undefined,
     eventSettings: undefined,
     mediaSettings: undefined,
+    defaultClientDomain: undefined,
     privateUserStrategy: 0,
     authenticationFeatures: [],
   };
@@ -356,6 +365,9 @@ export const ServerConfiguration = {
     }
     if (message.mediaSettings !== undefined) {
       FeatureSettings.encode(message.mediaSettings, writer.uint32(194).fork()).ldelim();
+    }
+    if (message.defaultClientDomain !== undefined) {
+      writer.uint32(202).string(message.defaultClientDomain);
     }
     if (message.privateUserStrategy !== 0) {
       writer.uint32(800).int32(message.privateUserStrategy);
@@ -423,6 +435,9 @@ export const ServerConfiguration = {
         case 24:
           message.mediaSettings = FeatureSettings.decode(reader, reader.uint32());
           break;
+        case 25:
+          message.defaultClientDomain = reader.string();
+          break;
         case 100:
           message.privateUserStrategy = reader.int32() as any;
           break;
@@ -461,6 +476,7 @@ export const ServerConfiguration = {
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
       eventSettings: isSet(object.eventSettings) ? FeatureSettings.fromJSON(object.eventSettings) : undefined,
       mediaSettings: isSet(object.mediaSettings) ? FeatureSettings.fromJSON(object.mediaSettings) : undefined,
+      defaultClientDomain: isSet(object.defaultClientDomain) ? String(object.defaultClientDomain) : undefined,
       privateUserStrategy: isSet(object.privateUserStrategy)
         ? privateUserStrategyFromJSON(object.privateUserStrategy)
         : 0,
@@ -499,6 +515,7 @@ export const ServerConfiguration = {
       (obj.eventSettings = message.eventSettings ? FeatureSettings.toJSON(message.eventSettings) : undefined);
     message.mediaSettings !== undefined &&
       (obj.mediaSettings = message.mediaSettings ? FeatureSettings.toJSON(message.mediaSettings) : undefined);
+    message.defaultClientDomain !== undefined && (obj.defaultClientDomain = message.defaultClientDomain);
     message.privateUserStrategy !== undefined &&
       (obj.privateUserStrategy = privateUserStrategyToJSON(message.privateUserStrategy));
     if (message.authenticationFeatures) {
@@ -536,6 +553,7 @@ export const ServerConfiguration = {
     message.mediaSettings = (object.mediaSettings !== undefined && object.mediaSettings !== null)
       ? FeatureSettings.fromPartial(object.mediaSettings)
       : undefined;
+    message.defaultClientDomain = object.defaultClientDomain ?? undefined;
     message.privateUserStrategy = object.privateUserStrategy ?? 0;
     message.authenticationFeatures = object.authenticationFeatures?.map((e) => e) || [];
     return message;

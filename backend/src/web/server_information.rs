@@ -1,11 +1,21 @@
-use super::RocketState;
+use super::{headers::HostHeader, RocketState};
 use crate::rpcs::{get_server_configuration, get_service_version};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use rocket::{response::Redirect, routes, Route, State};
 use rocket_cache_response::CacheResponse;
+use super::configured_backend_domain;
 
 lazy_static! {
-    pub static ref INFORMATIONAL_PAGES: Vec<Route> = routes![info_shield];
+    pub static ref INFORMATIONAL_PAGES: Vec<Route> = routes![info_shield, default_client_domain];
+}
+
+#[rocket::get("/default_client_domain")]
+async fn default_client_domain(
+    state: &State<RocketState>,
+    host: HostHeader<'_>,
+) -> CacheResponse<String> {
+    let configured_backend_domain = configured_backend_domain(state, host);
+    CacheResponse::NoStore(configured_backend_domain)
 }
 
 #[rocket::get("/info_shield")]

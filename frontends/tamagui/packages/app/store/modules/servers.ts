@@ -44,9 +44,19 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
   }
 );
 
+// const defaultClientServerResponse = await window.fetch(
+//   `${window.location.protocol}//${window.location.hostname}/default_client_domain`
+// ).then(async (r) => {
+//   const text = await r.text();
+//   return text;
+// }).catch((e) => {
+//   console.error(e);
+//   return undefined;
+// });
+
 const initialServer: JonlineServer | undefined = Platform.OS == 'web' && globalThis.window?.location ? {
   host: window.location.hostname,
-  secure: window.location.protocol == 'https:',
+  secure: window.location.protocol === 'https:',
 } : {
   host: 'jonline.io',
   secure: true,

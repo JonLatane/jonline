@@ -44,6 +44,11 @@ message ServerConfiguration {
   // contain `PUBLISH_EVENTS_GLOBALLY`.
   FeatureSettings media_settings = 24;
 
+  // (NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN.
+  // By default, the web client uses `window.location.hostname` to determine the backend server.
+  // If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
+  optional string default_client_domain = 25;
+
   // Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   PrivateUserStrategy private_user_strategy = 100;
 

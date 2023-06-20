@@ -1,9 +1,13 @@
-///
+//
 //  Generated code. Do not modify.
 //  source: federation.proto
 //
 // @dart = 2.12
-// ignore_for_file: annotate_overrides,camel_case_types,constant_identifier_names,directives_ordering,library_prefixes,non_constant_identifier_names,prefer_final_fields,return_of_invalid_type,unnecessary_const,unnecessary_import,unnecessary_this,unused_import,unused_shown_name
+
+// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
 
 import 'dart:core' as $core;
 
@@ -14,23 +18,16 @@ import 'federation.pbenum.dart';
 export 'federation.pbenum.dart';
 
 class GetServiceVersionResponse extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetServiceVersionResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'version')
+  factory GetServiceVersionResponse() => create();
+  GetServiceVersionResponse._() : super();
+  factory GetServiceVersionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetServiceVersionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceVersionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'version')
     ..hasRequiredFields = false
   ;
 
-  GetServiceVersionResponse._() : super();
-  factory GetServiceVersionResponse({
-    $core.String? version,
-  }) {
-    final _result = create();
-    if (version != null) {
-      _result.version = version;
-    }
-    return _result;
-  }
-  factory GetServiceVersionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetServiceVersionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -40,8 +37,10 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetServiceVersionResponse copyWith(void Function(GetServiceVersionResponse) updates) => super.copyWith((message) => updates(message as GetServiceVersionResponse)) as GetServiceVersionResponse; // ignore: deprecated_member_use
+  GetServiceVersionResponse copyWith(void Function(GetServiceVersionResponse) updates) => super.copyWith((message) => updates(message as GetServiceVersionResponse)) as GetServiceVersionResponse;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetServiceVersionResponse create() => GetServiceVersionResponse._();
   GetServiceVersionResponse createEmptyInstance() => create();
@@ -61,53 +60,22 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
 }
 
 class FederateRequest extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'FederateRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'server')
-    ..aOB(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'preexistingAccount')
-    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'username')
-    ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'password')
-    ..aOS(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'refreshToken')
-    ..e<FederationCredentials>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'storedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
-    ..e<FederationCredentials>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'returnedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
+  factory FederateRequest() => create();
+  FederateRequest._() : super();
+  factory FederateRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FederateRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederateRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'server')
+    ..aOB(2, _omitFieldNames ? '' : 'preexistingAccount')
+    ..aOS(3, _omitFieldNames ? '' : 'username')
+    ..aOS(4, _omitFieldNames ? '' : 'password')
+    ..aOS(5, _omitFieldNames ? '' : 'refreshToken')
+    ..e<FederationCredentials>(6, _omitFieldNames ? '' : 'storedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
+    ..e<FederationCredentials>(7, _omitFieldNames ? '' : 'returnedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
     ..hasRequiredFields = false
   ;
 
-  FederateRequest._() : super();
-  factory FederateRequest({
-    $core.String? server,
-    $core.bool? preexistingAccount,
-    $core.String? username,
-    $core.String? password,
-    $core.String? refreshToken,
-    FederationCredentials? storedCredentials,
-    FederationCredentials? returnedCredentials,
-  }) {
-    final _result = create();
-    if (server != null) {
-      _result.server = server;
-    }
-    if (preexistingAccount != null) {
-      _result.preexistingAccount = preexistingAccount;
-    }
-    if (username != null) {
-      _result.username = username;
-    }
-    if (password != null) {
-      _result.password = password;
-    }
-    if (refreshToken != null) {
-      _result.refreshToken = refreshToken;
-    }
-    if (storedCredentials != null) {
-      _result.storedCredentials = storedCredentials;
-    }
-    if (returnedCredentials != null) {
-      _result.returnedCredentials = returnedCredentials;
-    }
-    return _result;
-  }
-  factory FederateRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederateRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -117,8 +85,10 @@ class FederateRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  FederateRequest copyWith(void Function(FederateRequest) updates) => super.copyWith((message) => updates(message as FederateRequest)) as FederateRequest; // ignore: deprecated_member_use
+  FederateRequest copyWith(void Function(FederateRequest) updates) => super.copyWith((message) => updates(message as FederateRequest)) as FederateRequest;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static FederateRequest create() => FederateRequest._();
   FederateRequest createEmptyInstance() => create();
@@ -192,28 +162,17 @@ class FederateRequest extends $pb.GeneratedMessage {
 }
 
 class FederateResponse extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'FederateResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'refreshToken')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'password')
+  factory FederateResponse() => create();
+  FederateResponse._() : super();
+  factory FederateResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FederateResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederateResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'refreshToken')
+    ..aOS(2, _omitFieldNames ? '' : 'password')
     ..hasRequiredFields = false
   ;
 
-  FederateResponse._() : super();
-  factory FederateResponse({
-    $core.String? refreshToken,
-    $core.String? password,
-  }) {
-    final _result = create();
-    if (refreshToken != null) {
-      _result.refreshToken = refreshToken;
-    }
-    if (password != null) {
-      _result.password = password;
-    }
-    return _result;
-  }
-  factory FederateResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederateResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -223,8 +182,10 @@ class FederateResponse extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  FederateResponse copyWith(void Function(FederateResponse) updates) => super.copyWith((message) => updates(message as FederateResponse)) as FederateResponse; // ignore: deprecated_member_use
+  FederateResponse copyWith(void Function(FederateResponse) updates) => super.copyWith((message) => updates(message as FederateResponse)) as FederateResponse;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static FederateResponse create() => FederateResponse._();
   FederateResponse createEmptyInstance() => create();
@@ -253,23 +214,16 @@ class FederateResponse extends $pb.GeneratedMessage {
 }
 
 class GetFederatedAccountsRequest extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetFederatedAccountsRequest', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..e<FederationCredentials>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'returnedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
+  factory GetFederatedAccountsRequest() => create();
+  GetFederatedAccountsRequest._() : super();
+  factory GetFederatedAccountsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetFederatedAccountsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetFederatedAccountsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..e<FederationCredentials>(1, _omitFieldNames ? '' : 'returnedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
     ..hasRequiredFields = false
   ;
 
-  GetFederatedAccountsRequest._() : super();
-  factory GetFederatedAccountsRequest({
-    FederationCredentials? returnedCredentials,
-  }) {
-    final _result = create();
-    if (returnedCredentials != null) {
-      _result.returnedCredentials = returnedCredentials;
-    }
-    return _result;
-  }
-  factory GetFederatedAccountsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetFederatedAccountsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -279,8 +233,10 @@ class GetFederatedAccountsRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetFederatedAccountsRequest copyWith(void Function(GetFederatedAccountsRequest) updates) => super.copyWith((message) => updates(message as GetFederatedAccountsRequest)) as GetFederatedAccountsRequest; // ignore: deprecated_member_use
+  GetFederatedAccountsRequest copyWith(void Function(GetFederatedAccountsRequest) updates) => super.copyWith((message) => updates(message as GetFederatedAccountsRequest)) as GetFederatedAccountsRequest;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetFederatedAccountsRequest create() => GetFederatedAccountsRequest._();
   GetFederatedAccountsRequest createEmptyInstance() => create();
@@ -300,23 +256,16 @@ class GetFederatedAccountsRequest extends $pb.GeneratedMessage {
 }
 
 class GetFederatedAccountsResponse extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'GetFederatedAccountsResponse', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<FederatedAccount>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'federatedAccounts', $pb.PbFieldType.PM, subBuilder: FederatedAccount.create)
+  factory GetFederatedAccountsResponse() => create();
+  GetFederatedAccountsResponse._() : super();
+  factory GetFederatedAccountsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory GetFederatedAccountsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetFederatedAccountsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<FederatedAccount>(1, _omitFieldNames ? '' : 'federatedAccounts', $pb.PbFieldType.PM, subBuilder: FederatedAccount.create)
     ..hasRequiredFields = false
   ;
 
-  GetFederatedAccountsResponse._() : super();
-  factory GetFederatedAccountsResponse({
-    $core.Iterable<FederatedAccount>? federatedAccounts,
-  }) {
-    final _result = create();
-    if (federatedAccounts != null) {
-      _result.federatedAccounts.addAll(federatedAccounts);
-    }
-    return _result;
-  }
-  factory GetFederatedAccountsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetFederatedAccountsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -326,8 +275,10 @@ class GetFederatedAccountsResponse extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  GetFederatedAccountsResponse copyWith(void Function(GetFederatedAccountsResponse) updates) => super.copyWith((message) => updates(message as GetFederatedAccountsResponse)) as GetFederatedAccountsResponse; // ignore: deprecated_member_use
+  GetFederatedAccountsResponse copyWith(void Function(GetFederatedAccountsResponse) updates) => super.copyWith((message) => updates(message as GetFederatedAccountsResponse)) as GetFederatedAccountsResponse;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static GetFederatedAccountsResponse create() => GetFederatedAccountsResponse._();
   GetFederatedAccountsResponse createEmptyInstance() => create();
@@ -341,43 +292,20 @@ class GetFederatedAccountsResponse extends $pb.GeneratedMessage {
 }
 
 class FederatedAccount extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'FederatedAccount', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'id')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'server')
-    ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'username')
-    ..aOS(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'password')
-    ..aOS(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'refreshToken')
+  factory FederatedAccount() => create();
+  FederatedAccount._() : super();
+  factory FederatedAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FederatedAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'server')
+    ..aOS(3, _omitFieldNames ? '' : 'username')
+    ..aOS(4, _omitFieldNames ? '' : 'password')
+    ..aOS(5, _omitFieldNames ? '' : 'refreshToken')
     ..hasRequiredFields = false
   ;
 
-  FederatedAccount._() : super();
-  factory FederatedAccount({
-    $core.String? id,
-    $core.String? server,
-    $core.String? username,
-    $core.String? password,
-    $core.String? refreshToken,
-  }) {
-    final _result = create();
-    if (id != null) {
-      _result.id = id;
-    }
-    if (server != null) {
-      _result.server = server;
-    }
-    if (username != null) {
-      _result.username = username;
-    }
-    if (password != null) {
-      _result.password = password;
-    }
-    if (refreshToken != null) {
-      _result.refreshToken = refreshToken;
-    }
-    return _result;
-  }
-  factory FederatedAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederatedAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
@@ -387,8 +315,10 @@ class FederatedAccount extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  FederatedAccount copyWith(void Function(FederatedAccount) updates) => super.copyWith((message) => updates(message as FederatedAccount)) as FederatedAccount; // ignore: deprecated_member_use
+  FederatedAccount copyWith(void Function(FederatedAccount) updates) => super.copyWith((message) => updates(message as FederatedAccount)) as FederatedAccount;
+
   $pb.BuilderInfo get info_ => _i;
+
   @$core.pragma('dart2js:noInline')
   static FederatedAccount create() => FederatedAccount._();
   FederatedAccount createEmptyInstance() => create();
@@ -443,3 +373,6 @@ class FederatedAccount extends $pb.GeneratedMessage {
   void clearRefreshToken() => clearField(5);
 }
 
+
+const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

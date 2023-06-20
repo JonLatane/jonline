@@ -1,8 +1,8 @@
 import { Permission, ServerConfiguration } from '@jonline/api'
-import { Button, Heading, Input, Paragraph, ScrollView, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
+import { Button, Heading, Input, Paragraph, ScrollView, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions, Text, Switch } from '@jonline/ui'
 import { Info } from '@tamagui/lucide-icons'
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { HexColorPicker } from "react-colorful"
 import StickyBox from "react-sticky-box"
 import { createParam } from 'solito'
@@ -13,6 +13,7 @@ import { AppSection } from '../tabs/features_navigation'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import { PermissionsEditor, PermissionsEditorProps } from '../user/permissions_editor'
 import ServerCard from './server_card'
+import { Animated } from 'react-native';
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -42,42 +43,60 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
   const { serviceVersion, serverConfiguration } = server || {};
   const [_, githubVersion] = serviceVersion?.version?.split('-') ?? [];
-  const githubLink = useLink({ href: `https://github.com/JonLatane/jonline/commit/${githubVersion}`});
+  const githubLink = useLink({ href: `https://github.com/JonLatane/jonline/commit/${githubVersion}` });
 
   const serverName = serverConfiguration?.serverInfo?.name;
   const [name, setName] = useState(serverName || undefined);
-  if (serverName && name != serverName && name == undefined) {
-    setName(serverName);
-  }
+  // if (serverName && name != serverName && name == undefined) {
+  //   setName(serverName);
+  // }
 
   const serverDescription = serverConfiguration?.serverInfo?.description;
   const [description, setDescription] = useState(serverDescription || undefined);
-  if (serverDescription && description != serverDescription && description == undefined) {
-    setDescription(serverDescription);
-  }
+  // if (serverDescription && description != serverDescription && description == undefined) {
+  //   setDescription(serverDescription);
+  // }
+  const serverDefaultClientDomain = serverConfiguration?.defaultClientDomain;
+  const [defaultClientDomain, setDefaultClientDomain] = useState(serverDefaultClientDomain || undefined);
+  // if (defaultClientDomain && name != serverName && name == undefined) {
+  //   setName(serverName);
+  // }
+
 
   const primaryColorInt = serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const primaryColor = `#${primaryColorInt.toString(16).slice(-6)}`;
   const [primaryColorHex, setPrimaryColorHex] = useState(primaryColor);
-  if (primaryColorHex != primaryColor && primaryColorHex == '#424242') {
-    setPrimaryColorHex(primaryColor);
-  }
+  // if (primaryColorHex != primaryColor && primaryColorHex == '#424242') {
+  //   setPrimaryColorHex(primaryColor);
+  // }
 
   const navColorInt = serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;
   const navColor = `#${navColorInt.toString(16).slice(-6)}`;
   const [navColorHex, setNavColorHex] = useState(navColor);
-  if (navColorHex != navColor && navColorHex == '#FFFFFF') {
-    setNavColorHex(navColor);
-  }
+  // if (navColorHex != navColor && navColorHex == '#FFFFFF') {
+  //   setNavColorHex(navColor);
+  // }
   const { textColor: primaryTextColor } = colorMeta(primaryColor);
   const { textColor: navTextColor } = colorMeta(navColor);
   const { warningAnchorColor } = useServerTheme();
 
   const serverDefaultPermissions = serverConfiguration?.defaultUserPermissions;
   const [_defaultPermissions, setDefaultPermissions] = useState(serverDefaultPermissions);
-  if (serverDefaultPermissions && _defaultPermissions == undefined) {
+  // if (serverDefaultPermissions && _defaultPermissions == undefined) {
+  //   setDefaultPermissions(serverDefaultPermissions);
+  // }
+
+
+  useEffect(() => {
+    setName(serverName);
+    setDescription(serverDescription);
+    setDefaultClientDomain(serverDefaultClientDomain);
     setDefaultPermissions(serverDefaultPermissions);
-  }
+    setPrimaryColorHex(primaryColor);
+    setNavColorHex(navColor);
+
+  }, [serverConfiguration]);
+
   const defaultPermissions = _defaultPermissions || [];
   function selectDefaultPermission(permission: Permission) {
     if (defaultPermissions.includes(permission)) {
@@ -137,7 +156,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           ...serverConfiguration!.serverInfo!.colors,
           primary: newPrimaryColorInt, navigation: newNavColorInt
         }
-      }
+      },
+      defaultClientDomain
     };
 
     let client = await getCredentialClient({ account });
@@ -173,7 +193,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
                   </Button>
                 </>}
-                <Heading size='$10' als='center' mt='$3'>{specificServer ? 'Community' : 'Server'} Information</Heading>
+                <Heading size='$10' als='center' mt='$3'>About {specificServer ? 'Community' : 'Server'}</Heading>
                 <ServerCard server={server!} />
                 <XStack mt='$4'>
                   <Heading size='$3' f={1}>Service Version</Heading>
@@ -186,17 +206,19 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   : undefined}
                 <Heading size='$3'>Name</Heading>
                 {isAdmin
-                  ? <Input value={name ?? ''} placeholder='The name of your community.' onChangeText={t => setName(t)} />
+                  ? <Input value={name ?? ''} opacity={name && name != '' ? 1 : 0.5}
+                    placeholder='The name of your community.' onChangeText={t => setName(t)} />
                   : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
                 <Heading size='$3'>Description</Heading>
                 {isAdmin ?
-                  <TextArea value={description ?? ''} onChangeText={t => setDescription(t)} h='$14'
+                  <TextArea value={description ?? ''} opacity={description && description != '' ? 1 : 0.5}
+                    onChangeText={t => setDescription(t)} h='$14'
                     placeholder='A description of the purpose of your community, any general guidelines, etc.' />
                   : description && description != ''
                     ? <TamaguiMarkdown text={description} />
                     : <Paragraph opacity={0.5}>No description set.</Paragraph>}
 
-                <XStack>
+                <XStack mt='$2'>
                   <Heading size='$3' f={1}>Primary Color</Heading>
                   <XStack w={50} h={30} backgroundColor={primaryColorHex} />
                 </XStack>
@@ -204,16 +226,64 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <HexColorPicker color={primaryColorHex} onChange={setPrimaryColorHex} />
                 </XStack> : undefined}
 
-                <XStack>
+                <XStack mt='$2'>
                   <Heading size='$3' f={1}>Navigation Color</Heading>
                   <XStack w={50} h={30} backgroundColor={navColorHex} />
                 </XStack>
                 {isAdmin ? <XStack als='center'>
                   <HexColorPicker color={navColorHex} onChange={setNavColorHex} />
                 </XStack> : undefined}
+                <XStack mt='$3' />
                 {<PermissionsEditor label='Default Permissions'
                   {...defaultPermissionsEditorProps} />}
 
+                <XStack mt='$3'>
+                  <Heading size='$3' my='auto' f={1}>External CDN Support</Heading>
+                  <Switch size="$5" margin='auto'
+                    defaultChecked={defaultClientDomain != undefined}
+                    checked={defaultClientDomain != undefined}
+                    value={(defaultClientDomain != undefined).toString()}
+                    disabled={!isAdmin}
+                    opacity={isAdmin ? 1 : 0.5}
+                    onCheckedChange={(checked) => setDefaultClientDomain(checked ? '' : undefined)}>
+                    <Switch.Thumb animation="quick" backgroundColor='black' />
+                  </Switch>
+                </XStack>
+                {isAdmin ? <>
+                  <Paragraph size='$1'>
+                    To improve performance, as an administrator, you may want to put
+                    Jonline's HTML behind Cloudflare or another CDN using CNAME records.
+                    If so, you must specify the
+                  </Paragraph>
+                  <Paragraph size='$1'>
+                    For instance, to use Cloudflare to point jonline.io to a backend
+                    at notj.online, you would:
+                  </Paragraph>
+                  {[
+                    'Setup and secure your instance on notj.online, whose DNS is probably managed by your Kubernetes provider (I use DigitalOcean) so you can secure it with Cert-Manager.',
+                    'Turn on External CDN Support, set the Backend Domain below to notj.online, and press Update Server.',
+                    'Restart your deployment in Kubernetes. (Maybe we can remove this step one day!)',
+                    'For jonline.io, whose DNS is managed by Cloudflare, create a CNAME record in Cloudflare for jonline.io pointing to notj.online.'
+                  ].map((text, index) => <XStack ml='$3' mb='$2'>
+                    <Text fontFamily='$body' fontSize='$1' mr='$2'>{`${index + 1}.`}</Text>
+                    <Text fontFamily='$body' fontSize='$1' >{text}</Text>
+                  </XStack>)}
+                </> : undefined}
+                {isAdmin || defaultClientDomain
+                  ? <YStack>
+                    <Heading size='$2' f={1}>Backend Domain</Heading>
+                    <Paragraph size='$1'></Paragraph>
+                    {isAdmin
+                      ? <Input disabled={defaultClientDomain === undefined}
+                        opacity={[undefined, ''].includes(defaultClientDomain) ? 0.5 : 1}
+                        value={defaultClientDomain ?? ''}
+                        placeholder='e.g.: jonline.io'
+                        onChangeText={t => setDefaultClientDomain(t)} />
+                      : <Paragraph opacity={defaultClientDomain && defaultClientDomain != '' ? 1 : 0.5}>
+                        {defaultClientDomain || ''}
+                      </Paragraph>}
+                  </YStack>
+                  : undefined}
 
                 <Button {...aboutJonlineLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
                   <Heading size='$2' color={navTextColor}>About Jonline...</Heading>

@@ -15,6 +15,7 @@ import { AppSection } from '../tabs/features_navigation'
 import PostCard from '../post/post_card'
 import { ReplyArea } from '../post/post_details_screen'
 import { InstanceTime } from './instance_time'
+import { instanceTimeSort, isNotPastInstance } from 'app/utils/time'
 
 const { useParam } = createParam<{ eventId: string, instanceId: string, shortname: string | undefined }>()
 
@@ -223,9 +224,11 @@ export function EventDetailsScreen() {
 
   const [showPastInstances, setShowPastInstances] = useState(false);
   const displayedInstances = subjectInstances
-    ? showPastInstances
+    ? (showPastInstances
       ? subjectInstances
-      : subjectInstances.filter(i => moment(i.endsAt).isAfter(moment()))
+      : subjectInstances
+        .filter(isNotPastInstance)
+    ).sort(instanceTimeSort)
     : undefined;
 
   let logicallyReplyingTo: Post | undefined = undefined;
@@ -254,9 +257,9 @@ export function EventDetailsScreen() {
                 <XStack mt='$1'>
                   {displayedInstances?.map((instance) =>
                     <InstanceTime key={instance.id} linkToInstance
-                      event={subjectEvent} instance={instance} 
+                      event={subjectEvent} instance={instance}
                       highlight={instance.id == subjectInstance?.id}
-                      />)}
+                    />)}
                 </XStack>
 
               </ScrollView>
