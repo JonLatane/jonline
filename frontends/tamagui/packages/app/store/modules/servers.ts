@@ -6,7 +6,7 @@ import {
   EntityId,
   PayloadAction
 } from "@reduxjs/toolkit";
-import { getServerClient, resetCredentialedData } from "..";
+import { getServerClient, resetCredentialedData, store } from "..";
 import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 
@@ -43,33 +43,56 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
     return server;
   }
 );
+setTimeout(() => {
+  (window.fetch(
+    `${window.location.protocol}//${window.location.hostname}/default_client_domain`
+  ).then(async (r) => {
+    const domain = await r.text();
+    return domain;
+  }).catch((e) => {
+    console.error(e);
+    return undefined;
+  })).then(
+    (defaultClientDomain) => {
+      if (!store.getState().servers.server) {
+        let initialServer: JonlineServer;
+        if (Platform.OS == 'web' && globalThis.window?.location) {
+          const domain = defaultClientDomain && defaultClientDomain != ''
+            ? defaultClientDomain
+            : window.location.hostname;
+          initialServer = {
+            host: domain,
+            secure: window.location.protocol === 'https:',
+          }
+        } else {
+          initialServer = {
+            host: 'jonline.io',
+            secure: true,
+          };
+        }
+        store.dispatch(upsertServer(initialServer));
+        store.dispatch(selectServer(initialServer))
+      }
+    }
+  );
+}, 1);
 
-// const defaultClientServerResponse = await window.fetch(
-//   `${window.location.protocol}//${window.location.hostname}/default_client_domain`
-// ).then(async (r) => {
-//   const text = await r.text();
-//   return text;
-// }).catch((e) => {
-//   console.error(e);
-//   return undefined;
-// });
-
-const initialServer: JonlineServer | undefined = Platform.OS == 'web' && globalThis.window?.location ? {
-  host: window.location.hostname,
-  secure: window.location.protocol === 'https:',
-} : {
-  host: 'jonline.io',
-  secure: true,
-}
+// const initialServer: JonlineServer | undefined = Platform.OS == 'web' && globalThis.window?.location ? {
+//   host: window.location.hostname,
+//   secure: window.location.protocol === 'https:',
+// } : {
+//   host: 'jonline.io',
+//   secure: true,
+// }
 
 const initialState: ServersState = {
   status: "unloaded",
   error: undefined,
-  server: initialServer,
-  ...serversAdapter.getInitialState({
+  server: undefined,
+  ...serversAdapter.getInitialState(/*{
     ids: initialServer ? [serverID(initialServer)] : [],
     entities: initialServer ? { [serverID(initialServer)]: initialServer } : {},
-  }),
+  }*/),
 };
 
 export const serversSlice = createSlice({
