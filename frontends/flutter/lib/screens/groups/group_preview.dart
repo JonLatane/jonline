@@ -436,10 +436,9 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
       final membership =
           await (await JonlineAccount.selectedAccount!.getClient())!
               .createMembership(
-                  Membership(
-                    userId: JonlineAccount.selectedAccount!.userId,
-                    groupId: group.id,
-                  ),
+                  Membership()
+                    ..userId = JonlineAccount.selectedAccount!.userId
+                    ..groupId = group.id,
                   options:
                       JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
@@ -460,10 +459,9 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
     try {
       await (await JonlineAccount.selectedAccount!.getClient())!
           .deleteMembership(
-              Membership(
-                userId: JonlineAccount.selectedAccount!.userId,
-                groupId: group.id,
-              ),
+              Membership()
+                ..userId = JonlineAccount.selectedAccount!.userId
+                ..groupId = group.id,
               options:
                   JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {

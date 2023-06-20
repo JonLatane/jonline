@@ -109,10 +109,10 @@ class CreatePostPageState extends JonlineState<CreatePostPage> {
     final Post post;
     try {
       post = await client!.createPost(
-          Post(
-              title: title.isNotEmpty ? title : null,
-              link: link.isNotEmpty ? link : null,
-              content: content.isNotEmpty ? content : null),
+          Post()
+            ..title = title
+            ..link = link
+            ..content = content,
           options: account.authenticatedCallOptions);
     } catch (e) {
       await communicationDelay;
@@ -135,8 +135,8 @@ class CreatePostPageState extends JonlineState<CreatePostPage> {
     // context.navigateBack();
     context.replaceRoute(PostDetailsRoute(
         postId: post.id, server: JonlineServer.selectedServer.server));
-    appState.posts.value =
-        GetPostsResponse(posts: [post] + appState.posts.value.posts);
+    appState.posts.value = GetPostsResponse()
+      ..posts.addAll([post] + appState.posts.value.posts);
     Future.delayed(const Duration(seconds: 3),
         () => appState.posts.update(showMessage: showSnackBar));
 

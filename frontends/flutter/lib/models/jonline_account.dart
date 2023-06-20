@@ -41,8 +41,9 @@ class JonlineAccount {
       String password, Function(String) showMessage,
       {bool allowInsecure = false, bool selectAccount = true}) async {
     return _authAccount(
-        (client) =>
-            client.login(LoginRequest(username: username, password: password)),
+        (client) => client.login(LoginRequest()
+          ..username = username
+          ..password = password),
         ['Logging in', 'login', 'Logged in'],
         server,
         username,
@@ -87,8 +88,9 @@ class JonlineAccount {
       String password, Function(String) showMessage,
       {bool allowInsecure = false, bool selectAccount = true}) async {
     return _authAccount(
-        (client) => client.createAccount(
-            CreateAccountRequest(username: username, password: password)),
+        (client) => client.createAccount(CreateAccountRequest()
+          ..username = username
+          ..password = password),
         ['Creating account', 'create account', 'Created account'],
         server,
         username,

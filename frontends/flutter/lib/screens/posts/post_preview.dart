@@ -130,7 +130,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
     try {
       log.fine("Loading group posts for ${post.id}");
       final groupPosts = await JonlineOperations.getGroupPosts(
-          GetGroupPostsRequest(postId: post.id),
+          GetGroupPostsRequest()..postId = post.id,
           showMessage: (e) => log.info(e));
       if (!mounted) return;
       setState(() {
@@ -753,10 +753,9 @@ class _PostPreviewGroupChooserState
                               final client = await JonlineClients
                                   .getSelectedOrDefaultClient();
                               await client!.createGroupPost(
-                                  GroupPost(
-                                    groupId: appState.selectedGroup.value!.id,
-                                    postId: widget.post.id,
-                                  ),
+                                  GroupPost()
+                                    ..groupId = appState.selectedGroup.value!.id
+                                    ..postId = widget.post.id,
                                   options: JonlineAccount.selectedAccount!
                                       .authenticatedCallOptions);
                             } catch (e) {

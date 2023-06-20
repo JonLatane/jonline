@@ -56,7 +56,7 @@ class PostDetailsPageState extends JonlineState<PostDetailsPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
           final post = await JonlineOperations.getPosts(
-              request: GetPostsRequest(postId: widget.postId),
+              request: GetPostsRequest()..postId = widget.postId,
               showMessage: showSnackBar);
           setState(() {
             subjectPost = post!.posts.first;
@@ -105,7 +105,7 @@ class PostDetailsPageState extends JonlineState<PostDetailsPage> {
   updatePost() async {
     try {
       final post = await JonlineOperations.getPosts(
-          request: GetPostsRequest(postId: widget.postId),
+          request: GetPostsRequest()..postId = widget.postId,
           showMessage: showSnackBar);
       setState(() {
         subjectPost = post!.posts.first;
@@ -219,17 +219,15 @@ class HeaderSliver extends SliverPersistentHeaderDelegate {
                 child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Expanded(flex: 1, child: SizedBox()),
-                          Icon(Icons.refresh),
-                          Text(
-                            "Update",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ]),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      // Expanded(flex: 1, child: SizedBox()),
+                      Icon(Icons.refresh),
+                      Text(
+                        "Update",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ]),
                   ],
                 ),
               )),
@@ -245,12 +243,10 @@ class HeaderSliver extends SliverPersistentHeaderDelegate {
                 child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.reply),
-                          Text("Reply"),
-                        ]),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.reply),
+                      Text("Reply"),
+                    ]),
                   ],
                 ),
               )),

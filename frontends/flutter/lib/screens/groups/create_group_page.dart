@@ -100,14 +100,13 @@ class CreateGroupPageState extends JonlineState<CreateGroupPage> {
     final Group group;
     try {
       group = await client!.createGroup(
-          Group(
-            name: name,
-            description: description.isNotEmpty ? description : null,
-            visibility: visibility,
-            defaultMembershipModeration: defaultMembershipModeration,
-            defaultPostModeration: Moderation.UNMODERATED,
-            defaultEventModeration: Moderation.UNMODERATED,
-          ),
+          Group()
+            ..name = name
+            ..description = description
+            ..visibility = visibility
+            ..defaultMembershipModeration = defaultMembershipModeration
+            ..defaultPostModeration = Moderation.UNMODERATED
+            ..defaultEventModeration = Moderation.UNMODERATED,
           options: account.authenticatedCallOptions);
     } catch (e) {
       await communicationDelay;

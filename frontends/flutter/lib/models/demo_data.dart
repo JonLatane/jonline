@@ -94,10 +94,9 @@ Future<void> generateConversations(
     final target = targets[_random.nextInt(targets.length)];
     try {
       final replyPost = await client.createPost(
-          Post(
-            replyToPostId: target.id,
-            content: reply,
-          ),
+          Post()
+            ..replyToPostId = target.id
+            ..content = reply,
           options: targetAccount.authenticatedCallOptions);
       targets.add(replyPost);
       replyCount += 1;
@@ -144,7 +143,9 @@ Future<List<Post>> generateTopicPosts(
       for (final demoGroup in groups) {
         final group = demoGroups[demoGroup]!;
         await client.createGroupPost(
-            GroupPost(groupId: group.id, postId: post.id),
+            GroupPost()
+              ..groupId = group.id
+              ..postId = post.id,
             options: account.authenticatedCallOptions);
       }
     } catch (e) {
@@ -188,7 +189,9 @@ Future<List<Event>> generateEvents(
       for (final demoGroup in groups) {
         final group = demoGroups[demoGroup]!;
         await client.createGroupPost(
-            GroupPost(groupId: group.id, postId: event.post.id),
+            GroupPost()
+              ..groupId = group.id
+              ..postId = event.post.id,
             options: account.authenticatedCallOptions);
       }
     } catch (e) {
@@ -363,10 +366,9 @@ Future<int> generateFollowRelationships(
             followableAccounts[_random.nextInt(followableAccounts.length)];
         followedAccounts.add(targetAccount);
         await client.createFollow(
-            Follow(
-              userId: sideAccount.userId,
-              targetUserId: targetAccount.userId,
-            ),
+            Follow()
+              ..userId = sideAccount.userId
+              ..targetUserId = targetAccount.userId,
             options: sideAccount.authenticatedCallOptions);
         relationshipsCreated += 1;
 
@@ -401,10 +403,9 @@ Future<int> generateGroupMemberships(
       for (int i = 0; i < totalJoins; i++) {
         final group = targetGroups[_random.nextInt(targetGroups.length)];
         await client.createMembership(
-            Membership(
-              userId: sideAccount.userId,
-              groupId: group.id,
-            ),
+            Membership()
+              ..userId = sideAccount.userId
+              ..groupId = group.id,
             options: sideAccount.authenticatedCallOptions);
         targetGroups.remove(group);
         membershipsCreated += 1;
@@ -446,56 +447,63 @@ shouldNotify(DateTime lastMessageTime) =>
     DateTime.now().difference(lastMessageTime) > const Duration(seconds: 5);
 
 final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
-  DemoGroup.coolKidsClub: Group(
-      name: "Cool Kids Club",
-      description: "Only the coolest ppl get in. Approval required to join.",
-      defaultMembershipModeration: Moderation.PENDING,
-      visibility: Visibility.SERVER_PUBLIC),
-  DemoGroup.everyoneWelcome:
-      Group(name: "Everyone Welcome", description: "Feel free to join!"),
-  DemoGroup.music: Group(
-      name: "Funktastic",
-      description:
-          "🎵 Post your Spotify playlists or eventually videos n stuff"),
-  DemoGroup.sports: Group(
-      name: "Yoked",
-      description:
-          "Climbing, biking, running, spikeball, other things involving balls\n\nAlso barbells.\n\nAnd fuck it dance too!"),
-  DemoGroup.makers: Group(
-      name: "Makers",
-      description:
-          "Creators of art, music, furniture, knitting, software... just make stuff!"),
-  DemoGroup.yoga:
-      Group(name: "Yoga", description: "🤸‍♀️🧘‍♀️🧘‍♂️🤸‍♂️🧘‍♀️🧘‍♂️🤸‍♀️"),
-  DemoGroup.engineering: Group(
-      name: "Real Engineering",
-      description: "Like with real things not just logic 😂😭"),
-  DemoGroup.math: Group(
-      name: "Math",
-      description:
-          "Shit that is literally not real but also the basis of reality"),
-  DemoGroup.science:
-      Group(name: "Science", description: "Straight from the lab bench"),
-  DemoGroup.tech: Group(
-      name: "Tech",
-      description:
-          "General tech 🤓🤖💚\n\nNo billionaire-worship bullshit allowed."),
-  DemoGroup.gamers: Group(
-      name: "Gamers",
-      description:
-          "Bro honestly I'm just tryna play Doom Eternal and soon Sonic Frontiers on easy mode here"),
-  DemoGroup.homeImprovement: Group(
-      name: "Home Improvement", description: "An endless and delightful hole"),
-  DemoGroup.toolSharing:
-      Group(name: "Tool Sharing", description: "Making Marx proud"),
-  DemoGroup.cooking:
-      Group(name: "Cooking", description: "😋 on the cheap and local"),
-  DemoGroup.restaurants:
-      Group(name: "Restaurants", description: "Tasty food and good vibes"),
-  DemoGroup.programming: Group(
-      name: "Programming",
-      description:
-          "Math for people who want to make money, plus dealing with other people who want to make money without doing math"),
+  DemoGroup.coolKidsClub: Group()
+    ..name = "Cool Kids Club"
+    ..description = "Only the coolest ppl get in. Approval required to join."
+    ..defaultMembershipModeration = Moderation.PENDING
+    ..visibility = Visibility.SERVER_PUBLIC,
+  DemoGroup.everyoneWelcome: Group()
+    ..name = "Everyone Welcome"
+    ..description = "Feel free to join!",
+  DemoGroup.music: Group()
+    ..name = "Funktastic"
+    ..description =
+        "🎵 Post your Spotify playlists or eventually videos n stuff",
+  DemoGroup.sports: Group()
+    ..name = "Yoked"
+    ..description =
+        "Climbing, biking, running, spikeball, other things involving balls\n\nAlso barbells.\n\nAnd fuck it dance too!",
+  DemoGroup.makers: Group()
+    ..name = "Makers"
+    ..description =
+        "Creators of art, music, furniture, knitting, software... just make stuff!",
+  DemoGroup.yoga: Group()
+    ..name = "Yoga"
+    ..description = "🤸‍♀️🧘‍♀️🧘‍♂️🤸‍♂️🧘‍♀️🧘‍♂️🤸‍♀️",
+  DemoGroup.engineering: Group()
+    ..name = "Real Engineering"
+    ..description = "Like with real things not just logic 😂😭",
+  DemoGroup.math: Group()
+    ..name = "Math"
+    ..description =
+        "Shit that is literally not real but also the basis of reality",
+  DemoGroup.science: Group()
+    ..name = "Science"
+    ..description = "Straight from the lab bench",
+  DemoGroup.tech: Group()
+    ..name = "Tech"
+    ..description =
+        "General tech 🤓🤖💚\n\nNo billionaire-worship bullshit allowed.",
+  DemoGroup.gamers: Group()
+    ..name = "Gamers"
+    ..description =
+        "Bro honestly I'm just tryna play Doom Eternal and soon Sonic Frontiers on easy mode here",
+  DemoGroup.homeImprovement: Group()
+    ..name = "Home Improvement"
+    ..description = "An endless and delightful hole",
+  DemoGroup.toolSharing: Group()
+    ..name = "Tool Sharing"
+    ..description = "Making Marx proud",
+  DemoGroup.cooking: Group()
+    ..name = "Cooking"
+    ..description = "😋 on the cheap and local",
+  DemoGroup.restaurants: Group()
+    ..name = "Restaurants"
+    ..description = "Tasty food and good vibes",
+  DemoGroup.programming: Group()
+    ..name = "Programming"
+    ..description =
+        "Math for people who want to make money, plus dealing with other people who want to make money without doing math",
 }.map((key, value) => MapEntry(key, value.jonRebuild((e) {
       if (e.defaultMembershipModeration == Moderation.MODERATION_UNKNOWN) {
         e.defaultMembershipModeration = Moderation.UNMODERATED;
@@ -561,51 +569,48 @@ class DemoPost {
 final List<DemoPost> _demoPosts = [
   DemoPost(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
-      Post(
-        title: "Magical fountain of kinesthetic knowledge",
-        link: "https://www.triangleintegratedyoga.com",
-      )),
+      Post()
+        ..title = "Magical fountain of kinesthetic knowledge"
+        ..link = "https://www.triangleintegratedyoga.com"),
   DemoPost(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
-      Post(
-        title: "Homegirl know how to make you work n have fun",
-        link: "https://www.laurenaliviayoga.com",
-      )),
+      Post()
+        ..title = "Homegirl know how to make you work n have fun"
+        ..link = "https://www.laurenaliviayoga.com"),
   DemoPost(
       [DemoGroup.gamers],
-      Post(
-        title: "Gonna play this with my lil second cousin",
-        link: "https://frontiers.sonicthehedgehog.com",
-      )),
+      Post()
+        ..title = "Gonna play this with my lil second cousin"
+        ..link = "https://frontiers.sonicthehedgehog.com"),
   DemoPost(
       [DemoGroup.sports],
-      Post(
-          title: "Not having fear is aid",
-          link: "https://www.youtube.com/watch?v=7XhsuT0xctI",
-          content: "Nah but fr Alexa Handhold is one of the GOAT")),
+      Post()
+        ..title = "Not having fear is aid"
+        ..link = "https://www.youtube.com/watch?v=7XhsuT0xctI"
+        ..content = "Nah but fr Alexa Handhold is one of the GOAT"),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
-      Post(
-          title: "ChordCalc, my first indie app, on the Play Store",
-          link:
-              "https://play.google.com/store/apps/details?id=com.jonlatane.composer&hl=en_US&gl=US",
-          content:
-              "Not maintained, but still available on the Play Store. For the time (around 2011) I wrote a pretty novel algorithm for naming chords that I've reused in BeatScratch.")),
+      Post()
+        ..title = "ChordCalc, my first indie app, on the Play Store"
+        ..link =
+            "https://play.google.com/store/apps/details?id=com.jonlatane.composer&hl=en_US&gl=US"
+        ..content =
+            "Not maintained, but still available on the Play Store. For the time (around 2011) I wrote a pretty novel algorithm for naming chords that I've reused in BeatScratch."),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
-      Post(
-          title: "ChordCalc on GitHub",
-          link: "https://github.com/falrm/ChordCalcComposer",
-          content: "Use or improve my algorithms 💚")),
+      Post()
+        ..title = "ChordCalc on GitHub"
+        ..link = "https://github.com/falrm/ChordCalcComposer"
+        ..content = "Use or improve my algorithms 💚"),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.tech, DemoGroup.programming],
-      Post(
-          title:
-              "Topologica was my second app; here's an article about how it works!",
-          link:
-              "https://medium.com/fully-automated-luxury-robot-music/topologica-jazz-orbifolds-and-your-event-sourced-flux-driven-dream-code-f8e24443a941",
-          content:
-              '''Several years ago I published my first mobile app, Topologica for Android.
+      Post()
+        ..title =
+            "Topologica was my second app; here's an article about how it works!"
+        ..link =
+            "https://medium.com/fully-automated-luxury-robot-music/topologica-jazz-orbifolds-and-your-event-sourced-flux-driven-dream-code-f8e24443a941"
+        ..content =
+            '''Several years ago I published my first mobile app, Topologica for Android.
 
 ### Features
 * A MIDI sequencer that works basically like a TR-8 (built for 4/4 in 16th notes).
@@ -624,21 +629,21 @@ Topologica was renamed, open-sourced, and lives on as "BeatScratch Legacy" on th
 Large parts of Topologica/BeatScratch Legacy live on in my current app, BeatScratch, available
 for iOS, macOS, Android and web.
 
-I plan to re-implement the Orbifold in BeatScratch, at which point this app will be deprecated.''')),
+I plan to re-implement the Orbifold in BeatScratch, at which point this app will be deprecated.'''),
   DemoPost(
       [DemoGroup.music, DemoGroup.math],
-      Post(
-          title: "BeatScratch Legacy (formerly Topologica) on the Play Store",
-          link:
-              "https://play.google.com/store/apps/details?id=com.jonlatane.beatpad.free&hl=en_US&gl=US",
-          content: "Not maintained, but still available on the Play Store.")),
+      Post()
+        ..title = "BeatScratch Legacy (formerly Topologica) on the Play Store"
+        ..link =
+            "https://play.google.com/store/apps/details?id=com.jonlatane.beatpad.free&hl=en_US&gl=US"
+        ..content = "Not maintained, but still available on the Play Store."),
   DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
-      Post(
-          title: "BeatScratch Legacy (formerly Topologica) on GitHub",
-          link: "https://github.com/falrm/BeatPad",
-          content:
-              "Again, not maintained, but still available on the Play Store. Anko (which the UI's built with) is also not maintained 🥲")),
+      Post()
+        ..title = "BeatScratch Legacy (formerly Topologica) on GitHub"
+        ..link = "https://github.com/falrm/BeatPad"
+        ..content =
+            "Again, not maintained, but still available on the Play Store. Anko (which the UI's built with) is also not maintained 🥲"),
   DemoPost(
       [
         DemoGroup.everyoneWelcome,
@@ -646,40 +651,40 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
         DemoGroup.toolSharing,
         DemoGroup.coolKidsClub
       ],
-      Post(
-          title: "Yay socialism!",
-          link: "https://www.dsanc.org",
-          content: "I should go to more meetings but eh I pay my dues.")),
+      Post()
+        ..title = "Yay socialism!"
+        ..link = "https://www.dsanc.org"
+        ..content = "I should go to more meetings but eh I pay my dues."),
   DemoPost(
       [DemoGroup.restaurants, DemoGroup.coolKidsClub],
-      Post(
-          title: "These burgers look soooo good 😋",
-          link: "https://www.eatqueenburger.com")),
+      Post()
+        ..title = "These burgers look soooo good 😋"
+        ..link = "https://www.eatqueenburger.com"),
   DemoPost(
       [DemoGroup.music],
-      Post(
-          title: "BeatScratch on the App Store",
-          link: "https://apps.apple.com/us/app/beatscratch/id1509788448",
-          content: "The freshest, slickest way to scratch your beat!")),
+      Post()
+        ..title = "BeatScratch on the App Store"
+        ..link = "https://apps.apple.com/us/app/beatscratch/id1509788448"
+        ..content = "The freshest, slickest way to scratch your beat!"),
   DemoPost(
       [DemoGroup.music],
-      Post(
-          title: "BeatScratch on the Play Store",
-          link:
-              "https://play.google.com/store/apps/details?id=io.beatscratch.beatscratch_flutter_redux&hl=en_US&gl=US",
-          content:
-              "Android version of BeatScratch! FluidSynth doesn't quite keep up with AudioKit but still among the best you can get on Android.")),
+      Post()
+        ..title = "BeatScratch on the Play Store"
+        ..link =
+            "https://play.google.com/store/apps/details?id=io.beatscratch.beatscratch_flutter_redux&hl=en_US&gl=US"
+        ..content =
+            "Android version of BeatScratch! FluidSynth doesn't quite keep up with AudioKit but still among the best you can get on Android."),
   DemoPost(
       [DemoGroup.everyoneWelcome],
-      Post(
-          title: "My reddit account, or at least the one I'd post here 🙃",
-          link: "https://www.reddit.com/user/pseudocomposer",
-          embedLink: true)),
+      Post()
+        ..title = "My reddit account, or at least the one I'd post here 🙃"
+        ..link = "https://www.reddit.com/user/pseudocomposer"
+        ..embedLink = true),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
-      Post(
-          title: "These are cool! I want one",
-          link: "https://www.fuell.us/products/fuell-fllow-e-motorcycle")),
+      Post()
+        ..title = "These are cool! I want one"
+        ..link = "https://www.fuell.us/products/fuell-fllow-e-motorcycle"),
   DemoPost(
       [
         DemoGroup.everyoneWelcome,
@@ -687,38 +692,41 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
         DemoGroup.music,
         DemoGroup.coolKidsClub
       ],
-      Post(
-          title:
-              "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness.",
-          link: "https://instagram.com/jons_meaningless_life")),
+      Post()
+        ..title =
+            "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness."
+        ..link = "https://instagram.com/jons_meaningless_life"),
   DemoPost(
       [DemoGroup.everyoneWelcome],
-      Post(
-          title:
-              "My LinkedIn, if you wanna see things people have paid me to do",
-          link: "https://www.linkedin.com/in/jonlatane/")),
+      Post()
+        ..title =
+            "My LinkedIn, if you wanna see things people have paid me to do"
+        ..link = "https://www.linkedin.com/in/jonlatane/"),
   DemoPost(
       [DemoGroup.music],
-      Post(
-          title: "Jack Stratton rockin a Harpejji",
-          link: "https://www.instagram.com/reel/CsY_NinvWDW/",
-          embedLink: true)),
+      Post()
+        ..title = "Jack Stratton rockin a Harpejji"
+        ..link = "https://www.instagram.com/reel/CsY_NinvWDW/"
+        ..embedLink = true),
   DemoPost(
-      [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
-      Post(
-        title:
-            "Jonline images are on DockerHub so you can try/deploy it easily without touching anything Rust/React/Flutter",
-        link: "https://hub.docker.com/r/jonlatane/jonline",
-      )),
+    [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
+    Post()
+      ..title =
+          "Jonline images are on DockerHub so you can try/deploy it easily without touching anything Rust/React/Flutter"
+      ..link = "https://hub.docker.com/r/jonlatane/jonline",
+  ),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.programming],
-      Post(
-          title: "Jonline on GitHub",
-          link: "https://github.com/jonlatane/jonline",
-          content:
-              "Jonline is released under the AGPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech.")),
-  DemoPost([DemoGroup.everyoneWelcome, DemoGroup.tech],
-      Post(title: "What is Jonline?", content: '''Corporate social media sucks. 
+      Post()
+        ..title = "Jonline on GitHub"
+        ..link = "https://github.com/jonlatane/jonline"
+        ..content =
+            "Jonline is released under the AGPLv3. Please contribute! The intent is to create a safe, trustworthy, provably open social media reference platform, using mostly boring but established tech."),
+  DemoPost(
+      [DemoGroup.everyoneWelcome, DemoGroup.tech],
+      Post()
+        ..title = "What is Jonline?"
+        ..content = '''Corporate social media sucks. 
 Jonline is a new approach to social media that hopes to keep user data hyper-local - 
 owned by ourselves or others in our physical communities, rather than any single 
 corporation or data source. At its core is a 
@@ -785,7 +793,7 @@ plus \$8/mo per static IP/website).
 
 If you feel *really* brave, and wanna contribute to any part of a cutting-edge Rust/React/Flutter full-stack 
 app, info on that is *also* at https://github.com/jonlatane/jonline.
-''')),
+'''),
 ];
 
 class DemoEvent {
@@ -798,56 +806,56 @@ class DemoEvent {
 final List<DemoEvent> _demoEvents = [
   DemoEvent(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
-      Event(
-          post: Post(
-              title: "Bull City Run Club",
-              link: "https://bullcityrunning.com/events/runclub/",
-              content:
-                  "A weekly run club for all levels of runners. Meets at Bull City Running's downtown location, with running starting at 6pm. 3, 4 and 6 mile routes are available. Registration isn't required, but costs only \$1 (cash) and lets you earn free beers, pint glasses, and T-shirts!"),
-          instances: _generateWeeklyInstances(
-              '2023-04-12 18:00:00-04:00', '2023-04-12 19:00:00-04:00', 20))),
+      Event()
+        ..post = (Post()
+          ..title = "Bull City Run Club"
+          ..link = "https://bullcityrunning.com/events/runclub/"
+          ..content =
+              "A weekly run club for all levels of runners. Meets at Bull City Running's downtown location, with running starting at 6pm. 3, 4 and 6 mile routes are available. Registration isn't required, but costs only \$1 (cash) and lets you earn free beers, pint glasses, and T-shirts!")
+        ..instances.addAll(_generateWeeklyInstances(
+            '2023-04-12 18:00:00-04:00', '2023-04-12 19:00:00-04:00', 20))),
   DemoEvent(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
-      Event(
-          post: Post(
-              title: "RAD Ride",
-              link: "https://www.instagram.com/ride_around_durham/",
-              content:
-                  "Ride Around Durham is a weekly bike ride for all levels. Meets at Duke Chapel at 6pm, with the ride starting at 6:30. Bring a beer and grab another after the ride at the bar we land at! New routes every week."),
-          instances: _generateWeeklyInstances(
-              '2023-04-13 18:00:00-04:00', '2023-04-13 21:00:00-04:00', 20))),
+      Event()
+        ..post = (Post()
+          ..title = "RAD Ride"
+          ..link = "https://www.instagram.com/ride_around_durham/"
+          ..content =
+              "Ride Around Durham is a weekly bike ride for all levels. Meets at Duke Chapel at 6pm, with the ride starting at 6:30. Bring a beer and grab another after the ride at the bar we land at! New routes every week.")
+        ..instances.addAll(_generateWeeklyInstances(
+            '2023-04-13 18:00:00-04:00', '2023-04-13 21:00:00-04:00', 20))),
   DemoEvent(
       [DemoGroup.yoga, DemoGroup.sports, DemoGroup.coolKidsClub],
-      Event(
-          post: Post(
-              title: "Pony Ride",
-              link: "https://www.ponysaurusbrewing.com/events",
-              content:
-                  "Monthly bike ride for all levels. Meets at Major the Bull in downtown Durham at 6:30pm, with the ride starting at 7. Beers and raffles for bar tabs and more at Pony after! New routes every month."),
-          instances: [
-            _generateInstance(
-                '2023-06-13 18:30:00-04:00', '2023-06-13 20:00:00-04:00'),
-            _generateInstance(
-                '2023-07-11 18:30:00-04:00', '2023-07-11 20:00:00-04:00'),
-            _generateInstance(
-                '2023-08-08 18:30:00-04:00', '2023-08-08 20:00:00-04:00'),
-            _generateInstance(
-                '2023-09-12 18:30:00-04:00', '2023-09-12 20:00:00-04:00'),
-            _generateInstance(
-                '2023-10-17 18:30:00-04:00', '2023-10-17 20:00:00-04:00'),
-          ])),
+      Event()
+        ..post = (Post()
+          ..title = "Pony Ride"
+          ..link = "https://www.ponysaurusbrewing.com/events"
+          ..content =
+              "Monthly bike ride for all levels. Meets at Major the Bull in downtown Durham at 6:30pm, with the ride starting at 7. Beers and raffles for bar tabs and more at Pony after! New routes every month.")
+        ..instances.addAll([
+          _generateInstance(
+              '2023-06-13 18:30:00-04:00', '2023-06-13 20:00:00-04:00'),
+          _generateInstance(
+              '2023-07-11 18:30:00-04:00', '2023-07-11 20:00:00-04:00'),
+          _generateInstance(
+              '2023-08-08 18:30:00-04:00', '2023-08-08 20:00:00-04:00'),
+          _generateInstance(
+              '2023-09-12 18:30:00-04:00', '2023-09-12 20:00:00-04:00'),
+          _generateInstance(
+              '2023-10-17 18:30:00-04:00', '2023-10-17 20:00:00-04:00'),
+        ])),
   DemoEvent(
       [DemoGroup.music, DemoGroup.coolKidsClub],
-      Event(
-          post: Post(
-              title: "GRiZmas in July",
-              link: "https://www.mynameisgriz.com/news/2023/gij",
-              content:
-                  "Annual Wilmington music event that this year could always be the last of. Send the man off with love and appreciation regardless!"),
-          instances: [
-            _generateInstance(
-                '2023-07-28 13:00:00-04:00', '2023-07-30 17:00:00-04:00'),
-          ])),
+      Event()
+        ..post = (Post()
+          ..title = "GRiZmas in July"
+          ..link = "https://www.mynameisgriz.com/news/2023/gij"
+          ..content =
+              "Annual Wilmington music event that this year could always be the last of. Send the man off with love and appreciation regardless!")
+        ..instances.addAll([
+          _generateInstance(
+              '2023-07-28 13:00:00-04:00', '2023-07-30 17:00:00-04:00'),
+        ])),
 ];
 
 List<EventInstance> _generateWeeklyInstances(
@@ -867,15 +875,13 @@ List<EventInstance> _generateWeeklyInstances(
 EventInstance _generateInstance(String startsAtStr, String endsAtStr) {
   DateTime startsAt = DateTime.parse(startsAtStr);
   DateTime endsAt = DateTime.parse(endsAtStr);
-  return EventInstance(
-      startsAt: Timestamp(
-        seconds:
-            Int64.fromInts(0, (startsAt.millisecondsSinceEpoch / 1000).floor()),
-      ),
-      endsAt: Timestamp(
-        seconds:
-            Int64.fromInts(0, (endsAt.millisecondsSinceEpoch / 1000).floor()),
-      ));
+  return EventInstance()
+    ..startsAt = (Timestamp()
+      ..seconds =
+          Int64.fromInts(0, (startsAt.millisecondsSinceEpoch / 1000).floor()))
+    ..endsAt = (Timestamp()
+      ..seconds =
+          Int64.fromInts(0, (endsAt.millisecondsSinceEpoch / 1000).floor()));
 }
 
 final _random = Random();

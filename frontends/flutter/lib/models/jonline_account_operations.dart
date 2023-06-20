@@ -46,8 +46,8 @@ extension JonlineAccountOperations on JonlineAccount {
     ExpirableToken? newAccessToken;
     try {
       final client = await getClient(showMessage: showMessage);
-      final response = await client
-          ?.accessToken(AccessTokenRequest(refreshToken: authorizationToken));
+      final response = await client?.accessToken(
+          AccessTokenRequest()..refreshToken = authorizationToken);
       newAccessToken = response?.accessToken;
     } catch (e) {
       showMessage?.call(formatServerError(e));

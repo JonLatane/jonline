@@ -87,7 +87,7 @@ class CreateReplyPageState extends JonlineState<CreateReplyPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
           final post = await JonlineOperations.getPosts(
-              request: GetPostsRequest(postId: widget.postId),
+              request: GetPostsRequest()..postId = widget.postId,
               showMessage: showSnackBar);
           setState(() {
             subjectPost = post!.posts.first;
@@ -107,7 +107,7 @@ class CreateReplyPageState extends JonlineState<CreateReplyPage> {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           try {
             final post = await JonlineOperations.getPosts(
-                request: GetPostsRequest(postId: widget.postId),
+                request: GetPostsRequest()..postId = widget.postId,
                 showMessage: showSnackBar);
             setState(() {
               discussionPost = post!.posts.first;
@@ -163,7 +163,9 @@ class CreateReplyPageState extends JonlineState<CreateReplyPage> {
     final startTime = DateTime.now();
     try {
       await client!.createPost(
-          Post(replyToPostId: subjectPost!.id, content: content),
+          Post()
+            ..replyToPostId = subjectPost!.id
+            ..content = content,
           options: account.authenticatedCallOptions);
     } catch (e) {
       await communicationDelay;

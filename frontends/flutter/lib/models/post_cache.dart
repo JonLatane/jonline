@@ -41,13 +41,13 @@ class PostCache
       case PostListingType.FOLLOWING_POSTS:
       case PostListingType.MY_GROUPS_POSTS:
       case PostListingType.POSTS_PENDING_MODERATION:
-        request = GetPostsRequest(listingType: listingType);
-        return await JonlineOperations.getPosts(
-            request: GetPostsRequest(listingType: listingType));
+        request = GetPostsRequest()..listingType = listingType;
+        break;
       case PostListingType.GROUP_POSTS:
       case PostListingType.GROUP_POSTS_PENDING_MODERATION:
-        request =
-            GetPostsRequest(listingType: listingType, groupId: key.groupId);
+        request = GetPostsRequest()
+          ..listingType = listingType
+          ..groupId = key.groupId!;
     }
     if (request == null) {
       return null;

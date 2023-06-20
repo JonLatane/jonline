@@ -121,7 +121,7 @@ class _UserProfilePageState extends JonlineState<UserProfilePage> {
       userData = account.user;
     } else {
       final users = (await JonlineOperations.getUsers(
-                  request: GetUsersRequest(userId: widget.userId)))
+                  request: GetUsersRequest()..userId = widget.userId!))
               ?.users ??
           [];
       userData = users.singleOrNull;

@@ -215,13 +215,14 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
               child: PostPreview(
                   allowScrollingContent: true,
                   server: JonlineServer.selectedServer.server,
-                  post: Post(
-                      title: title,
-                      content: content,
-                      link: link,
-                      author: Author(
-                          username: JonlineAccount.selectedAccount?.username ??
-                              "jonline.io/jon"))),
+                  maxContentHeight: mq.size.height - 200,
+                  post: Post()
+                    ..title = title!
+                    ..content = content!
+                    ..link = link!
+                    ..author = (Author()
+                      ..username = JonlineAccount.selectedAccount?.username ??
+                          "jonline.io/jon")),
             ),
           ),
         ],
@@ -235,13 +236,13 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
             allowScrollingContent: true,
             server: JonlineServer.selectedServer.server,
             maxContentHeight: mq.size.height - 200,
-            post: Post(
-                title: title,
-                content: content,
-                link: link,
-                author: Author(
-                    username: JonlineAccount.selectedAccount?.username ??
-                        "jonline.io/jon"))),
+            post: Post()
+              ..title = title!
+              ..content = content!
+              ..link = link!
+              ..author = (Author()
+                ..username = JonlineAccount.selectedAccount?.username ??
+                    "jonline.io/jon")),
         const Expanded(
           child: SizedBox(),
         ),

@@ -42,7 +42,9 @@ class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
   updateReplies() async {
     widget.updatingReplies.value = true;
     final GetPostsResponse? posts = await JonlineOperations.getPosts(
-        request: GetPostsRequest(postId: widget.post.id, replyDepth: 1),
+        request: GetPostsRequest()
+          ..postId = widget.post.id
+          ..replyDepth = 1,
         showMessage: showSnackBar);
     if (posts == null) return;
 
@@ -94,7 +96,9 @@ class ThreadedRepliesState extends JonlineState<ThreadedReplies> {
       });
     }
     final GetPostsResponse? posts = await JonlineOperations.getPosts(
-        request: GetPostsRequest(postId: reply.post.id, replyDepth: 1),
+        request: GetPostsRequest()
+          ..postId = reply.post.id
+          ..replyDepth = 1,
         showMessage: showSnackBar);
     if (posts == null) {
       if (!alreadyLoaded) {

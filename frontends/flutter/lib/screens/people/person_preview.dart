@@ -545,10 +545,9 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
     try {
       final follow = await (await JonlineAccount.selectedAccount!.getClient())!
           .createFollow(
-              Follow(
-                userId: JonlineAccount.selectedAccount!.userId,
-                targetUserId: user.id,
-              ),
+              Follow()
+                ..userId = JonlineAccount.selectedAccount!.userId
+                ..targetUserId = user.id,
               options:
                   JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
@@ -579,10 +578,9 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
     final follow = user.currentUserFollow;
     try {
       await (await JonlineAccount.selectedAccount!.getClient())!.deleteFollow(
-          Follow(
-            userId: JonlineAccount.selectedAccount!.userId,
-            targetUserId: user.id,
-          ),
+          Follow()
+            ..userId = JonlineAccount.selectedAccount!.userId
+            ..targetUserId = user.id,
           options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.currentUserFollow = Follow();
@@ -611,10 +609,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
     try {
       final follow = await (await JonlineAccount.selectedAccount!.getClient())!
           .updateFollow(
-              Follow(
-                  userId: user.id,
-                  targetUserId: JonlineAccount.selectedAccount!.userId,
-                  targetUserModeration: Moderation.APPROVED),
+              Follow()
+                ..userId = user.id
+                ..targetUserId = JonlineAccount.selectedAccount!.userId
+                ..targetUserModeration = Moderation.APPROVED,
               options:
                   JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
@@ -643,9 +641,9 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   rejectFollowRequest() async {
     try {
       await (await JonlineAccount.selectedAccount!.getClient())!.deleteFollow(
-          Follow(
-              userId: user.id,
-              targetUserId: JonlineAccount.selectedAccount!.userId),
+          Follow()
+            ..userId = user.id
+            ..targetUserId = JonlineAccount.selectedAccount!.userId,
           options: JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
         user.targetCurrentUserFollow = Follow();
@@ -662,10 +660,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
       final membership =
           await (await JonlineAccount.selectedAccount!.getClient())!
               .updateMembership(
-                  Membership(
-                      userId: user.id,
-                      groupId: this.membership!.groupId,
-                      groupModeration: Moderation.APPROVED),
+                  Membership()
+                    ..userId = user.id
+                    ..groupId = this.membership!.groupId
+                    ..groupModeration = Moderation.APPROVED,
                   options:
                       JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {
@@ -691,7 +689,9 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
     try {
       await (await JonlineAccount.selectedAccount!.getClient())!
           .deleteMembership(
-              Membership(userId: user.id, groupId: membership!.groupId),
+              Membership()
+                ..userId = user.id
+                ..groupId = membership!.groupId,
               options:
                   JonlineAccount.selectedAccount!.authenticatedCallOptions);
       setState(() {

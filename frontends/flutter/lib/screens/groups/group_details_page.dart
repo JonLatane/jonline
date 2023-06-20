@@ -91,7 +91,7 @@ class _GroupDetailsPageState extends JonlineState<GroupDetailsPage> {
     Group? group;
 
     final groups = (await JonlineOperations.getGroups(
-                request: GetGroupsRequest(groupId: widget.groupId)))
+                request: GetGroupsRequest()..groupId = widget.groupId))
             ?.groups ??
         [];
     group = groups.singleOrNull;
