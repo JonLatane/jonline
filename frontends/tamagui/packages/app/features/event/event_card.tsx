@@ -63,13 +63,13 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   //   if (selectedInstance?.id != instance?.id)
   //   setInstance(selectedInstance ?? instances.length === 1 ? instances[0] : undefined);
   // }, [selectedInstance, instances]);
-  console.log('EventCard.instance=', instance?.id, 'selectedInstance=', selectedInstance?.id, 'instances=', instances.length);
+  // console.log('EventCard.instance=', instance?.id, 'selectedInstance=', selectedInstance?.id, 'instances=', instances.length);
 
   const eventLink = useLink({
     href: instance
       ? groupContext
-        ? `/g/${groupContext.shortname}/e/${event.id}/${instance!.id}`
-        : `/event/${event.id}/${instance!.id}`
+        ? `/g/${groupContext.shortname}/e/${event.id}/i/${instance!.id}`
+        : `/event/${event.id}/i/${instance!.id}`
       : groupContext
         ? `/g/${groupContext.shortname}/e/${event.id}`
         : `/event/${event.id}`,

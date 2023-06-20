@@ -54,7 +54,7 @@ export function EventDetailsScreen() {
       setSubjectInstance(subjectInstances?.find(i => i.id == instanceId));
     }
   }, [subjectInstances, instanceId]);
-  console.log("EventDetalsScreen.subjectInstance=", subjectInstance?.id, 'instanceId=', instanceId);
+  // console.log("EventDetailsScreen.subjectInstance=", subjectInstance?.id, 'instanceId=', instanceId);
   // const postId = subjectPost?.id;
   const [loadingEvent, setLoadingEvent] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(false);

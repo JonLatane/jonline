@@ -14,7 +14,7 @@ lazy_static! {
         tamagui_about_jonline,
         tamagui_post,
         tamagui_event,
-        // tamagui_event_instance,
+        tamagui_event_instance,
         tamagui_user,
         tamagui_people,
         tamagui_follow_requests,
@@ -24,7 +24,7 @@ lazy_static! {
         tamagui_group_events,
         tamagui_group_post,
         tamagui_group_event,
-        // tamagui_group_event_instance,
+        tamagui_group_event_instance,
         tamagui_file_or_username
     ];
 }
@@ -83,18 +83,15 @@ async fn tamagui_post() -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("post/[postId].html").await
 }
 
-#[rocket::get("/event/<_..>")]
+#[rocket::get("/event/<_>")]
 async fn tamagui_event() -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("event/[eventId].html").await
 }
 
-// #[rocket::get("/event/<_eid>/<_iid_etc..>")]
-// async fn tamagui_event_instance(
-//     _eid: PathBuf,
-//     _iid_etc: PathBuf,
-// ) -> CacheResponse<Result<NamedFile, Status>> {
-//     tamagui_path("event/[eventId]/[instanceId].html").await
-// }
+#[rocket::get("/event/<_>/i/<_..>")]
+async fn tamagui_event_instance() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("event/[eventId]/i/[instanceId].html").await
+}
 
 #[rocket::get("/user/<_>")]
 async fn tamagui_user() -> CacheResponse<Result<NamedFile, Status>> {
@@ -129,15 +126,15 @@ async fn tamagui_group_post() -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("g/[shortname]/p/[postId].html").await
 }
 
-#[rocket::get("/g/<_>/e/<_..>")]
+#[rocket::get("/g/<_>/e/<_>")]
 async fn tamagui_group_event() -> CacheResponse<Result<NamedFile, Status>> {
     tamagui_path("g/[shortname]/e/[eventId].html").await
 }
 
-// #[rocket::get("/g/<_>/e/<_>/<_..>")]
-// async fn tamagui_group_event_instance() -> CacheResponse<Result<NamedFile, Status>> {
-//     tamagui_path("g/[shortname]/e/[eventId]/[instanceId].html").await
-// }
+#[rocket::get("/g/<_>/e/<_>/i/<_..>")]
+async fn tamagui_group_event_instance() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("g/[shortname]/e/[eventId]/i/[instanceId].html").await
+}
 
 #[rocket::get("/server/<_..>")]
 async fn tamagui_server() -> CacheResponse<Result<NamedFile, Status>> {

@@ -20,8 +20,8 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
   const group = useGroupContext();
   const instanceLink = useLink({
     href: group
-      ? `/g/${group.shortname}/e/${event.id}/${instance!.id}`
-      : `/event/${event.id}/${instance!.id}`
+      ? `/g/${group.shortname}/e/${event.id}/i/${instance!.id}`
+      : `/event/${event.id}/i/${instance!.id}`
   });
 
   function dateView(date: string) {
