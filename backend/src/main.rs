@@ -80,14 +80,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         pool.clone(),
         bucket.clone(),
         tempdir.clone(),
-        tls_configuration_successful && (default_client_domain.is_none() || false),
+        tls_configuration_successful && default_client_domain.is_none(),
     );
     let rocket_unsecure_80 = start_rocket_unsecured(
         80,
         pool.clone(),
         bucket.clone(),
         tempdir.clone(),
-        tls_configuration_successful && (default_client_domain.is_none() || false),
+        tls_configuration_successful && default_client_domain.is_none(),
     );
     let rocket_secure = start_rocket_secure(pool.clone(), bucket.clone(), tempdir.clone());
 
