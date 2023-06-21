@@ -117,11 +117,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
   const textAreaRef = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
   const [posting, setPosting] = useState(false);
-
-  const app = useTypedSelector((state: RootState) => state.app);
   const serversState = useTypedSelector((state: RootState) => state.servers);
-  const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
   const accountsState = useTypedSelector((state: RootState) => state.accounts);

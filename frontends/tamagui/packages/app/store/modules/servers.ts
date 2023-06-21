@@ -44,6 +44,10 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
   }
 );
 
+// Initialize the app with a server asynchronously, after the store has already
+// been initialized. This lets us detect CDN changes.
+let _defaultClientDomain: string | undefined = undefined;
+export const getDefaultClientDomain = () => _defaultClientDomain;
 setTimeout(async () => {
   if (Platform.OS != 'web') {
     const initialServer = {
@@ -67,6 +71,7 @@ setTimeout(async () => {
     return undefined;
   })).then(
     (defaultClientDomain) => {
+      _defaultClientDomain = defaultClientDomain;
       if (!store.getState().servers.server) {
         let initialServer: JonlineServer;
         if (Platform.OS == 'web' && globalThis.window?.location) {
@@ -99,22 +104,11 @@ function initializeWithServer(initialServer: JonlineServer) {
   });
 }
 
-// const initialServer: JonlineServer | undefined = Platform.OS == 'web' && globalThis.window?.location ? {
-//   host: window.location.hostname,
-//   secure: window.location.protocol === 'https:',
-// } : {
-//   host: 'jonline.io',
-//   secure: true,
-// }
-
 const initialState: ServersState = {
   status: "unloaded",
   error: undefined,
   server: undefined,
-  ...serversAdapter.getInitialState(/*{
-    ids: initialServer ? [serverID(initialServer)] : [],
-    entities: initialServer ? { [serverID(initialServer)]: initialServer } : {},
-  }*/),
+  ...serversAdapter.getInitialState(),
 };
 
 export const serversSlice = createSlice({

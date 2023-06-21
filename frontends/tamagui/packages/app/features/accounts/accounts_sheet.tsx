@@ -1,6 +1,6 @@
 import { Button, Heading, Input, Label, overlayAnimation, reverseStandardAnimation, ScrollView, Sheet, SizeTokens, standardAnimation, Switch, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, useLoadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, useLoadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector, getDefaultClientDomain } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -40,10 +40,13 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const newServerExists = servers.some(s => s.host == newServerHost);
   const newServerValid = newServerHostNotBlank && !newServerExists;
   const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
-  const browsingOnDiffers = browsingOn && (
-    serversState.server && serversState.server.host != browsingOn ||
-    onlyShowServer && onlyShowServer.host != browsingOn
+  const browsingOnDiffers = Platform.OS == 'web' && (
+    (onlyShowServer ?? serversState.server)?.host != getDefaultClientDomain() &&
+    (onlyShowServer ?? serversState.server)?.host != browsingOn
   );
+  //   serversState.server && serversState.server.host != browsingOn ||
+  //   onlyShowServer && onlyShowServer.host != browsingOn
+  // );
   function addServer() {
     console.log(`Connecting to server ${newServerHost}`)
     dispatch(clearServerAlerts());
@@ -223,7 +226,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
                   >
-                    <Sheet.Overlay  />
+                    <Sheet.Overlay />
                     <Sheet.Frame padding="$5">
                       <Sheet.Handle />
                       <Button
@@ -338,7 +341,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     onPositionChange={setPosition}
                   // dismissOnSnapToBottom
                   >
-                    <Sheet.Overlay  />
+                    <Sheet.Overlay />
                     <Sheet.Frame padding="$5">
                       <Sheet.Handle />
                       <Button

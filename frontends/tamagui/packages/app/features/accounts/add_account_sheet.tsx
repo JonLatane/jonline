@@ -33,23 +33,6 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
   const dispatch = useTypedDispatch();
   const app = useTypedSelector((state: RootState) => state.app);
   const serversState = useTypedSelector((state: RootState) => state.servers);
-  const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
-  // const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
-  // const primaryServer = onlyShowServer || serversState.server;
-
-  // const browsingOnDiffers = browsingOn && (
-  //   serversState.server && serversState.server.host != browsingOn ||
-  //   onlyShowServer && onlyShowServer.host != browsingOn
-  // );
-  // function addServer() {
-  //   console.log(`Connecting to server ${newServerHost}`)
-  //   dispatch(clearServerAlerts());
-  //   dispatch(upsertServer({
-  //     host: newServerHost,
-  //     secure: newServerSecure,
-  //   }));
-  // }
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
