@@ -44,7 +44,19 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
   }
 );
 
-setTimeout(() => {
+setTimeout(async () => {
+  if (Platform.OS != 'web') {
+    const initialServer = {
+      host: 'jonline.io',
+      secure: true,
+    };
+    initializeWithServer(initialServer);
+    return;
+  }
+
+  while (!globalThis.window) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
   (window.fetch(
     `${window.location.protocol}//${window.location.hostname}/default_client_domain`
   ).then(async (r) => {
@@ -71,17 +83,21 @@ setTimeout(() => {
             secure: true,
           };
         }
-        getServerClient(initialServer).then(() => {
-          const serversState = store.getState().servers;
-          if (serversState.server = undefined) {
-            const server = serversState.entities[serverID(initialServer)];
-            store.dispatch(selectServer(server));
-          }
-        });
+        initializeWithServer(initialServer);
       }
     }
   );
-}, 10);
+}, 1);
+
+function initializeWithServer(initialServer: JonlineServer) {
+  getServerClient(initialServer).then(() => {
+    const serversState = store.getState().servers;
+    if (serversState.server = undefined) {
+      const server = serversState.entities[serverID(initialServer)];
+      store.dispatch(selectServer(server));
+    }
+  });
+}
 
 // const initialServer: JonlineServer | undefined = Platform.OS == 'web' && globalThis.window?.location ? {
 //   host: window.location.hostname,

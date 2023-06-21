@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate diesel;
+extern crate async_compression;
 extern crate bcrypt;
 extern crate bs58;
 extern crate diesel_migrations;
@@ -14,7 +15,6 @@ extern crate regex;
 extern crate ring;
 extern crate rocket;
 extern crate rocket_async_compression;
-extern crate async_compression;
 extern crate rocket_cache_response;
 extern crate serde;
 extern crate serde_json;
@@ -25,10 +25,10 @@ extern crate lazy_static;
 extern crate awscreds;
 extern crate awsregion;
 extern crate bytes;
+extern crate percent_encoding;
 extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
-extern crate percent_encoding;
 
 pub mod auth;
 pub mod db_connection;
@@ -66,9 +66,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     })?);
 
     // Ideally, we should be able to restart servers and switch between HTTPS redirects.
-    let mut conn = pool.get()
+    let mut conn = pool
+        .get()
         .expect("Failed to get connection trying to load server configuration");
-    let server_configuration = get_server_configuration(&mut conn).expect("Failed to load server configuration");
+    let server_configuration =
+        get_server_configuration(&mut conn).expect("Failed to load server configuration");
     let default_client_domain = server_configuration.default_client_domain;
 
     let tls_configuration_successful = start_tonic_server(pool.clone(), bucket.clone())?;
