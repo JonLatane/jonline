@@ -79,9 +79,9 @@ setTimeout(async () => {
     return;
   }
 
-  // while (!globalThis.window) {
-  //   await new Promise((resolve) => setTimeout(resolve, 100));
-  // }
+  while (!globalThis.window) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
   // (window.fetch(
   //   `${window.location.protocol}//${window.location.hostname}/backend_host`
   // ).then(async (r) => {
