@@ -73,6 +73,7 @@
     - [EventListingType](#jonline-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
+    - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
     - [PostSettings](#jonline-PostSettings)
     - [ServerColors](#jonline-ServerColors)
@@ -1204,6 +1205,24 @@ Time filter that simply works on the starts_at and ends_at fields.
 
 
 
+<a name="jonline-ExternalCDNConfig"></a>
+
+### ExternalCDNConfig
+(NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN.
+By default, the web client uses `window.location.hostname` to determine the backend server.
+If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| frontend_host | [string](#string) |  | The domain where the frontend is hosted. For example, jonline.io. Typically your CDN (like Cloudflare) should own the DNS for this domain. |
+| backend_host | [string](#string) |  | The domain where the backend is hosted. For example, jonline.io.itsj.online. Typically your Kubernetes provider should own DNS for this domain. |
+
+
+
+
+
+
 <a name="jonline-FeatureSettings"></a>
 
 ### FeatureSettings
@@ -1277,7 +1296,7 @@ Configuration for a Jonline server instance.
 | post_settings | [PostSettings](#jonline-PostSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |
 | event_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
 | media_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
-| default_client_domain | [string](#string) | optional | (NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN. By default, the web client uses `window.location.hostname` to determine the backend server. If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now. |
+| external_cdn_config | [ExternalCDNConfig](#jonline-ExternalCDNConfig) | optional |  |
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 

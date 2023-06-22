@@ -162,7 +162,7 @@ table! {
         group_settings -> Jsonb,
         post_settings -> Jsonb,
         event_settings -> Jsonb,
-        default_client_domain -> Nullable<Varchar>,
+        external_cdn_config -> Nullable<Jsonb>,
         private_user_strategy -> Varchar,
         authentication_features -> Jsonb,
         created_at -> Timestamp,

@@ -75,13 +75,13 @@ const ServerConfiguration$json = {
     {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'postSettings'},
     {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'eventSettings'},
     {'1': 'media_settings', '3': 24, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'mediaSettings'},
-    {'1': 'default_client_domain', '3': 25, '4': 1, '5': 9, '9': 1, '10': 'defaultClientDomain', '17': true},
+    {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 1, '10': 'externalCdnConfig', '17': true},
     {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.jonline.PrivateUserStrategy', '10': 'privateUserStrategy'},
     {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.jonline.AuthenticationFeature', '10': 'authenticationFeatures'},
   ],
   '8': [
     {'1': '_server_info'},
-    {'1': '_default_client_domain'},
+    {'1': '_external_cdn_config'},
   ],
 };
 
@@ -98,12 +98,26 @@ final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decod
     'dGluZ3MSOgoNcG9zdF9zZXR0aW5ncxgWIAEoCzIVLmpvbmxpbmUuUG9zdFNldHRpbmdzUgxwb3'
     'N0U2V0dGluZ3MSPwoOZXZlbnRfc2V0dGluZ3MYFyABKAsyGC5qb25saW5lLkZlYXR1cmVTZXR0'
     'aW5nc1INZXZlbnRTZXR0aW5ncxI/Cg5tZWRpYV9zZXR0aW5ncxgYIAEoCzIYLmpvbmxpbmUuRm'
-    'VhdHVyZVNldHRpbmdzUg1tZWRpYVNldHRpbmdzEjcKFWRlZmF1bHRfY2xpZW50X2RvbWFpbhgZ'
-    'IAEoCUgBUhNkZWZhdWx0Q2xpZW50RG9tYWluiAEBElAKFXByaXZhdGVfdXNlcl9zdHJhdGVneR'
-    'hkIAEoDjIcLmpvbmxpbmUuUHJpdmF0ZVVzZXJTdHJhdGVneVITcHJpdmF0ZVVzZXJTdHJhdGVn'
-    'eRJXChdhdXRoZW50aWNhdGlvbl9mZWF0dXJlcxhlIAMoDjIeLmpvbmxpbmUuQXV0aGVudGljYX'
-    'Rpb25GZWF0dXJlUhZhdXRoZW50aWNhdGlvbkZlYXR1cmVzQg4KDF9zZXJ2ZXJfaW5mb0IYChZf'
-    'ZGVmYXVsdF9jbGllbnRfZG9tYWlu');
+    'VhdHVyZVNldHRpbmdzUg1tZWRpYVNldHRpbmdzEk8KE2V4dGVybmFsX2Nkbl9jb25maWcYWiAB'
+    'KAsyGi5qb25saW5lLkV4dGVybmFsQ0ROQ29uZmlnSAFSEWV4dGVybmFsQ2RuQ29uZmlniAEBEl'
+    'AKFXByaXZhdGVfdXNlcl9zdHJhdGVneRhkIAEoDjIcLmpvbmxpbmUuUHJpdmF0ZVVzZXJTdHJh'
+    'dGVneVITcHJpdmF0ZVVzZXJTdHJhdGVneRJXChdhdXRoZW50aWNhdGlvbl9mZWF0dXJlcxhlIA'
+    'MoDjIeLmpvbmxpbmUuQXV0aGVudGljYXRpb25GZWF0dXJlUhZhdXRoZW50aWNhdGlvbkZlYXR1'
+    'cmVzQg4KDF9zZXJ2ZXJfaW5mb0IWChRfZXh0ZXJuYWxfY2RuX2NvbmZpZw==');
+
+@$core.Deprecated('Use externalCDNConfigDescriptor instead')
+const ExternalCDNConfig$json = {
+  '1': 'ExternalCDNConfig',
+  '2': [
+    {'1': 'frontend_host', '3': 1, '4': 1, '5': 9, '10': 'frontendHost'},
+    {'1': 'backend_host', '3': 2, '4': 1, '5': 9, '10': 'backendHost'},
+  ],
+};
+
+/// Descriptor for `ExternalCDNConfig`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List externalCDNConfigDescriptor = $convert.base64Decode(
+    'ChFFeHRlcm5hbENETkNvbmZpZxIjCg1mcm9udGVuZF9ob3N0GAEgASgJUgxmcm9udGVuZEhvc3'
+    'QSIQoMYmFja2VuZF9ob3N0GAIgASgJUgtiYWNrZW5kSG9zdA==');
 
 @$core.Deprecated('Use featureSettingsDescriptor instead')
 const FeatureSettings$json = {

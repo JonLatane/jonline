@@ -7,7 +7,20 @@ import { JonlineServer } from "./types";
 
 const clients = new Map<string, JonlineClientImpl>();
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {
-  const host = `${serverID(server).replace(":", "://")}:27707`;
+  // Resolve the actual backend server from its backend_host endpoint
+  const backendHost = await window.fetch(
+    `${server.secure ? 'http' : 'https'}://${server.host}/backend_host`
+  ).then(async (r) => {
+    const domain = await r.text();
+    if (domain == '') return undefined;
+    return domain;
+  }).catch((e) => {
+    console.error(e);
+    return undefined;
+  }) ?? server.host;
+
+  // Get the gRPC client
+  const host = `${serverID({...server, host: backendHost}).replace(":", "://")}:27707`;
   if (!clients.has(host)) {
     const client = new JonlineClientImpl(
       new GrpcWebImpl(host, {

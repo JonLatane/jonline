@@ -2,8 +2,7 @@ use std::path::PathBuf;
 
 use rocket::{get, response::Redirect, State};
 
-use super::{headers::HostHeader, RocketState};
-use crate::rpcs::get_server_configuration;
+use super::{configured_backend_domain, headers::HostHeader, RocketState};
 
 #[get("/<path..>")]
 pub fn redirect_to_secure(state: &State<RocketState>, host: HostHeader<'_>, path: PathBuf) -> Redirect {
@@ -15,16 +14,4 @@ pub fn redirect_to_secure(state: &State<RocketState>, host: HostHeader<'_>, path
     );
     // format!("Hello from {}. Redirecting to {}", domain, redirect_url)
     Redirect::to(redirect_url)
-}
-
-pub fn configured_backend_domain(state: &State<RocketState>, host: HostHeader<'_>) -> String {
-    let mut conn = state.pool.get().unwrap();
-    let configured_backend_domain = match get_server_configuration(&mut conn)
-        .unwrap()
-        .default_client_domain
-    {
-        Some(domain) if domain != "" => domain,
-        _ => host.0.split(":").next().unwrap().to_string(),
-    };
-    configured_backend_domain
 }

@@ -88,6 +88,7 @@ fn create_rocket<T: rocket::figment::Provider>(
     routes.append(&mut (*web::FLUTTER_PAGES).clone());
     routes.append(&mut (*web::TAMAGUI_PAGES).clone());
     routes.append(&mut (*web::INFORMATIONAL_PAGES).clone());
+    routes.append(&mut (*web::EXTERNAL_CDN_PAGES).clone());
     let server = rocket::custom(figment)
         .attach(web::cors::CORS)
         .manage(web::RocketState {

@@ -1,4 +1,4 @@
-import { Permission, ServerConfiguration } from '@jonline/api'
+import { ExternalCDNConfig, Permission, ServerConfiguration } from '@jonline/api'
 import { Button, Heading, Input, Paragraph, ScrollView, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions, Text, Switch } from '@jonline/ui'
 import { Info } from '@tamagui/lucide-icons'
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
@@ -60,8 +60,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   // if (serverDescription && description != serverDescription && description == undefined) {
   //   setDescription(serverDescription);
   // }
-  const serverDefaultClientDomain = serverConfiguration?.defaultClientDomain;
-  const [defaultClientDomain, setDefaultClientDomain] = useState(serverDefaultClientDomain || undefined);
+  const serverExternalCdnConfig = serverConfiguration?.externalCdnConfig;
+  const [externalCdnConfig, setExternalCdnConfig] = useState(serverExternalCdnConfig || undefined);
   // if (defaultClientDomain && name != serverName && name == undefined) {
   //   setName(serverName);
   // }
@@ -94,7 +94,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   useEffect(() => {
     setName(serverName);
     setDescription(serverDescription);
-    setDefaultClientDomain(serverDefaultClientDomain);
+    setExternalCdnConfig(serverExternalCdnConfig);
     setDefaultPermissions(serverDefaultPermissions);
     setPrimaryColorHex(primaryColor);
     setNavColorHex(navColor);
@@ -161,7 +161,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           primary: newPrimaryColorInt, navigation: newNavColorInt
         }
       },
-      defaultClientDomain
+      externalCdnConfig: externalCdnConfig
     };
 
     let client = await getCredentialClient({ account });
@@ -244,47 +244,60 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 <XStack mt='$3'>
                   <Heading size='$3' my='auto' f={1}>External CDN Support</Heading>
                   <Switch size="$5" margin='auto'
-                    defaultChecked={defaultClientDomain != undefined}
-                    checked={defaultClientDomain != undefined}
-                    value={(defaultClientDomain != undefined).toString()}
+                    defaultChecked={externalCdnConfig != undefined}
+                    checked={externalCdnConfig != undefined}
+                    value={(externalCdnConfig != undefined).toString()}
                     disabled={!isAdmin}
                     opacity={isAdmin ? 1 : 0.5}
-                    onCheckedChange={(checked) => setDefaultClientDomain(checked ? '' : undefined)}>
+                    onCheckedChange={(checked) => setExternalCdnConfig(
+                      checked ? { backendHost: '', frontendHost: '' } : undefined
+                    )}>
                     <Switch.Thumb animation="quick" backgroundColor='black' />
                   </Switch>
                 </XStack>
-                {isAdmin ? <>
-                  <Paragraph size='$1'>
-                    To improve performance, as an administrator, you may want to put
-                    Jonline's HTML behind Cloudflare or another CDN using CNAME records.
-                    If so, you must specify the
-                  </Paragraph>
-                  <Paragraph size='$1'>
-                    For instance, to use Cloudflare to point jonline.io to a backend
-                    at notj.online, you would:
-                  </Paragraph>
-                  {[
-                    'Setup and secure your instance on notj.online, whose DNS is probably managed by your Kubernetes provider (I use DigitalOcean) so you can secure it with Cert-Manager.',
-                    'Turn on External CDN Support, set the Backend Domain below to notj.online, and press Update Server.',
-                    'Restart your deployment in Kubernetes. (Maybe we can remove this step one day!)',
-                    'For jonline.io, whose DNS is managed by Cloudflare, create a CNAME record in Cloudflare for jonline.io pointing to notj.online.'
-                  ].map((text, index) => <XStack ml='$3' mb='$2'>
-                    <Text fontFamily='$body' fontSize='$1' mr='$2'>{`${index + 1}.`}</Text>
-                    <Text fontFamily='$body' fontSize='$1' >{text}</Text>
-                  </XStack>)}
-                </> : undefined}
-                {isAdmin || defaultClientDomain
+                {/* {isAdmin ? <> */}
+                <Paragraph size='$1'>
+                  To improve performance, administrators can put their Jonline's HTML
+                  (and eventually all Media) behind Cloudflare, using a separate host as the gRPC backend.
+                </Paragraph>
+                <Paragraph size='$1'>
+                  For instance, to use Cloudflare to point jonline.io to a backend
+                  at jonline.io.itsj.online, you would:
+                </Paragraph>
+                {[
+                  'Setup and secure your instance on jonline.io.itsj.online, whose DNS is probably managed by your Kubernetes provider (I use DigitalOcean) so you can secure it with Cert-Manager.',
+                  'For extra security: apply a firewall with your Kubernetes provider on the jonline.io.itsj.online host that allows all traffic on port 27707, and only traffic from Cloudflare IPs otherwise.',
+                  'Turn on External CDN Support, set the Backend Domain below to jonline.io.itsj.online, Frontend Domain to jonline.io, and press Update Server.',
+                  'Restart your deployment in Kubernetes. (Maybe we can remove this step one day!)',
+                  'For jonline.io, whose DNS is managed by Cloudflare, create a CNAME record in Cloudflare for jonline.io pointing to notj.online.'
+                ].map((text, index) => <XStack ml='$3' mb='$2'>
+                  <Text fontFamily='$body' fontSize='$1' mr='$2'>{`${index + 1}.`}</Text>
+                  <Text fontFamily='$body' fontSize='$1' >{text}</Text>
+                </XStack>)}
+                {/* </> : undefined} */}
+                {isAdmin || externalCdnConfig
                   ? <YStack>
-                    <Heading size='$2' f={1}>Backend Domain</Heading>
+                    <Heading size='$2' f={1}>Frontend Host</Heading>
                     <Paragraph size='$1'></Paragraph>
                     {isAdmin
-                      ? <Input disabled={defaultClientDomain === undefined}
-                        opacity={[undefined, ''].includes(defaultClientDomain) ? 0.5 : 1}
-                        value={defaultClientDomain ?? ''}
-                        placeholder='e.g.: jonline.io'
-                        onChangeText={t => setDefaultClientDomain(t)} />
-                      : <Paragraph opacity={defaultClientDomain && defaultClientDomain != '' ? 1 : 0.5}>
-                        {defaultClientDomain || ''}
+                      ? <Input disabled={true}
+                        opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}
+                        value={externalCdnConfig?.frontendHost ?? ''}
+                        placeholder='e.g.: notj.online'
+                        onChangeText={t => setExternalCdnConfig({ ...(externalCdnConfig!), frontendHost: t })} />
+                      : <Paragraph opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}>
+                        {externalCdnConfig || ''}
+                      </Paragraph>}
+                    <Heading mt='$2' size='$2' f={1}>Backend Host</Heading>
+                    <Paragraph size='$1'></Paragraph>
+                    {isAdmin
+                      ? <Input disabled={externalCdnConfig == undefined}
+                        opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}
+                        value={externalCdnConfig?.backendHost ?? ''}
+                        placeholder='e.g.: notj.online'
+                        onChangeText={t => setExternalCdnConfig({ ...(externalCdnConfig!), backendHost: t })} />
+                      : <Paragraph opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}>
+                        {externalCdnConfig || ''}
                       </Paragraph>}
                   </YStack>
                   : undefined}

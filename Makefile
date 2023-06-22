@@ -59,9 +59,10 @@ local_minio_delete:
 .PHONY: protos docs
 
 # Update frontend protos and docs
-protos: docs
+protos:
 	cd frontends/flutter && $(MAKE) protos
 	cd frontends/tamagui && yarn protos
+	$(MAKE) docs
 
 # Core release targets (for general use, CI/CD, etc.)
 release_ios:

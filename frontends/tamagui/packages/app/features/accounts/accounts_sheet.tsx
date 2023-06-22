@@ -1,6 +1,6 @@
 import { Button, Heading, Input, Label, overlayAnimation, reverseStandardAnimation, ScrollView, Sheet, SizeTokens, standardAnimation, Switch, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, useLoadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector, getDefaultClientDomain } from 'app/store';
+import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, useLoadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector, getBackendHost, getFrontendHost } from 'app/store';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -40,10 +40,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const newServerExists = servers.some(s => s.host == newServerHost);
   const newServerValid = newServerHostNotBlank && !newServerExists;
   const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
-  const browsingOnDiffers = Platform.OS == 'web' && (
-    (onlyShowServer ?? serversState.server)?.host != getDefaultClientDomain() &&
-    (onlyShowServer ?? serversState.server)?.host != browsingOn
-  );
+  const effectiveServer = onlyShowServer ?? server;
+  const browsingOnDiffers = Platform.OS == 'web' &&
+    effectiveServer?.host != browsingOn;
   //   serversState.server && serversState.server.host != browsingOn ||
   //   onlyShowServer && onlyShowServer.host != browsingOn
   // );

@@ -36,3 +36,6 @@ pub use media::*;
 
 pub mod server_information;
 pub use server_information::*;
+
+pub mod external_cdn;
+pub use external_cdn::*;

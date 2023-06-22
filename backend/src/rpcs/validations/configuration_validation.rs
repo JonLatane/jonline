@@ -14,8 +14,13 @@ pub fn validate_configuration(config: &ServerConfiguration) -> Result<(), Status
         ))
     }
     
-    if config.default_client_domain.as_ref().map(|d| d.is_empty()).unwrap_or(false) {
-        return Err(Status::new(
+    let external_edn_config = config.external_cdn_config.to_owned();
+    let backend_host = external_edn_config.to_owned().map(|c| c.backend_host);
+    let frontend_host = external_edn_config.map(|c| c.frontend_host);
+    match (backend_host, frontend_host) {
+        (None, None) => (),
+        (Some(be), Some(fe)) if !be.is_empty() && !fe.is_empty() => (),
+        _ => return Err(Status::new(
             Code::InvalidArgument, "default_client_domain_cannot_be_empty",
         ))
     }

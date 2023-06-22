@@ -18,6 +18,26 @@ export function serverUrl(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}://${server.host}`;
 }
 
+export function frontendServerUrl(server: JonlineServer): string {
+  const host = server.serverConfiguration?.externalCdnConfig?.frontendHost ?? server.host;
+  return `http${server.secure ? "s" : ""}://${host}`;
+}
+
+export function backendServerUrl(server: JonlineServer): string {
+  const host = server.serverConfiguration?.externalCdnConfig?.backendHost ?? server.host;
+  return `http${server.secure ? "s" : ""}://${host}`;
+}
+
+// Used for External CDN support.
+//
+// Provides the implicit backend host for this app. Note that it may not be the server
+// the user is currently using. But, it's assumed to be the *default* backend server
+// for the frontend a user sees in the browser. 
+export const getBackendHost = () => _backendHost;
+// Provides the implicit frontend host for this app, i.e. the host that the backend
+// thinks the frontend is running on. Provides aliasing of servers
+export const getFrontendHost = () => _frontendHost;
+
 export interface ServersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
   error?: Error;
@@ -46,8 +66,9 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
 
 // Initialize the app with a server asynchronously, after the store has already
 // been initialized. This lets us detect CDN changes.
-let _defaultClientDomain: string | undefined = undefined;
-export const getDefaultClientDomain = () => _defaultClientDomain;
+let _backendHost: string | undefined = undefined;
+let _frontendHost: string | undefined = undefined;
+
 setTimeout(async () => {
   if (Platform.OS != 'web') {
     const initialServer = {
@@ -58,26 +79,43 @@ setTimeout(async () => {
     return;
   }
 
-  while (!globalThis.window) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  (window.fetch(
-    `${window.location.protocol}//${window.location.hostname}/default_client_domain`
-  ).then(async (r) => {
-    const domain = await r.text();
-    return domain;
-  }).catch((e) => {
-    console.error(e);
-    return undefined;
-  })).then(
-    (defaultClientDomain) => {
-      _defaultClientDomain = defaultClientDomain;
+  // while (!globalThis.window) {
+  //   await new Promise((resolve) => setTimeout(resolve, 100));
+  // }
+  // (window.fetch(
+  //   `${window.location.protocol}//${window.location.hostname}/backend_host`
+  // ).then(async (r) => {
+  //   const domain = await r.text();
+  //   return domain;
+  // }).catch((e) => {
+  //   console.error(e);
+  //   return undefined;
+  // })).then(
+  //   async (backendHost) => {
+  //     // Also fetch the FE host for use in the UI.
+  //     const frontendHost = await window.fetch(
+  //       `${window.location.protocol}//${window.location.hostname}/frontend_host`
+  //     ).then(async (r) => {
+  //       const domain = await r.text();
+  //       return domain;
+  //     }).catch((e) => {
+  //       console.error(e);
+  //       return undefined;
+  //     });
+  //     if(!frontendHost) {
+  //       console.warn('Got backend_host but failed to get frontend_host');
+  //       return;
+  //     }
+  //     _backendHost = backendHost;
+  //     _frontendHost = frontendHost;
+
       if (!store.getState().servers.server) {
         let initialServer: JonlineServer;
         if (Platform.OS == 'web' && globalThis.window?.location) {
-          const domain = defaultClientDomain && defaultClientDomain != ''
-            ? defaultClientDomain
-            : window.location.hostname;
+          const domain = //backendHost && backendHost != ''
+            //? backendHost
+            //: 
+            window.location.hostname;
           initialServer = {
             host: domain,
             secure: window.location.protocol === 'https:',
@@ -90,8 +128,8 @@ setTimeout(async () => {
         }
         initializeWithServer(initialServer);
       }
-    }
-  );
+  //   }
+  // );
 }, 1);
 
 function initializeWithServer(initialServer: JonlineServer) {

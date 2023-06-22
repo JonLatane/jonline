@@ -18,7 +18,10 @@ impl ToDbServerConfiguration for ServerConfiguration {
             group_settings: serde_json::to_value(self.group_settings.to_owned()).unwrap(),
             post_settings: serde_json::to_value(self.post_settings.to_owned()).unwrap(),
             event_settings: serde_json::to_value(self.event_settings.to_owned()).unwrap(),
-            default_client_domain: self.default_client_domain.to_owned(),
+            external_cdn_config: self
+                .external_cdn_config
+                .as_ref()
+                .map(|c| serde_json::to_value(c).unwrap()),
             private_user_strategy: self.private_user_strategy.to_string_private_user_strategy(),
             authentication_features: self
                 .authentication_features
@@ -41,6 +44,11 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             serde_json::from_value(self.post_settings.to_owned()).unwrap();
         let event_settings: FeatureSettings =
             serde_json::from_value(self.event_settings.to_owned()).unwrap();
+        let external_cdn_config: Option<ExternalCdnConfig> = self
+            .external_cdn_config
+            .to_owned()
+            .map(|c| serde_json::from_value(c).unwrap());
+
         ServerConfiguration {
             server_info: Some(server_info),
             anonymous_user_permissions: self.anonymous_user_permissions.to_i32_permissions(),
@@ -61,7 +69,8 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             authentication_features: self
                 .authentication_features
                 .to_i32_authentication_features(),
-            default_client_domain: self.default_client_domain.to_owned(), // ..Default::default()
+            external_cdn_config: external_cdn_config,
+            // ..Default::default()
         }
     }
 }

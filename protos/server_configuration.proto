@@ -44,10 +44,7 @@ message ServerConfiguration {
   // contain `PUBLISH_EVENTS_GLOBALLY`.
   FeatureSettings media_settings = 24;
 
-  // (NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN.
-  // By default, the web client uses `window.location.hostname` to determine the backend server.
-  // If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
-  optional string default_client_domain = 25;
+  optional ExternalCDNConfig external_cdn_config = 90;
 
   // Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   PrivateUserStrategy private_user_strategy = 100;
@@ -55,7 +52,18 @@ message ServerConfiguration {
   // Allows admins to enable/disable creating accounts and logging in.
   // Eventually, external auth too hopefully!
   repeated AuthenticationFeature authentication_features = 101;
+}
 
+// (NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN.
+// By default, the web client uses `window.location.hostname` to determine the backend server.
+// If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
+message ExternalCDNConfig {
+  // The domain where the frontend is hosted. For example, jonline.io. Typically
+  // your CDN (like Cloudflare) should own the DNS for this domain.
+  string frontend_host = 1;
+  // The domain where the backend is hosted. For example, jonline.io.itsj.online.
+  // Typically your Kubernetes provider should own DNS for this domain.
+  string backend_host = 2;
 }
 
 enum AuthenticationFeature {

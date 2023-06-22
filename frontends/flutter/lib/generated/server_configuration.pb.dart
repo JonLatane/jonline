@@ -35,7 +35,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ..aOM<PostSettings>(22, _omitFieldNames ? '' : 'postSettings', subBuilder: PostSettings.create)
     ..aOM<FeatureSettings>(23, _omitFieldNames ? '' : 'eventSettings', subBuilder: FeatureSettings.create)
     ..aOM<FeatureSettings>(24, _omitFieldNames ? '' : 'mediaSettings', subBuilder: FeatureSettings.create)
-    ..aOS(25, _omitFieldNames ? '' : 'defaultClientDomain')
+    ..aOM<ExternalCDNConfig>(90, _omitFieldNames ? '' : 'externalCdnConfig', subBuilder: ExternalCDNConfig.create)
     ..e<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
     ..pc<AuthenticationFeature>(101, _omitFieldNames ? '' : 'authenticationFeatures', $pb.PbFieldType.KE, valueOf: AuthenticationFeature.valueOf, enumValues: AuthenticationFeature.values, defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
     ..hasRequiredFields = false
@@ -137,14 +137,16 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(24)
   FeatureSettings ensureMediaSettings() => $_ensure(8);
 
-  @$pb.TagNumber(25)
-  $core.String get defaultClientDomain => $_getSZ(9);
-  @$pb.TagNumber(25)
-  set defaultClientDomain($core.String v) { $_setString(9, v); }
-  @$pb.TagNumber(25)
-  $core.bool hasDefaultClientDomain() => $_has(9);
-  @$pb.TagNumber(25)
-  void clearDefaultClientDomain() => clearField(25);
+  @$pb.TagNumber(90)
+  ExternalCDNConfig get externalCdnConfig => $_getN(9);
+  @$pb.TagNumber(90)
+  set externalCdnConfig(ExternalCDNConfig v) { setField(90, v); }
+  @$pb.TagNumber(90)
+  $core.bool hasExternalCdnConfig() => $_has(9);
+  @$pb.TagNumber(90)
+  void clearExternalCdnConfig() => clearField(90);
+  @$pb.TagNumber(90)
+  ExternalCDNConfig ensureExternalCdnConfig() => $_ensure(9);
 
   @$pb.TagNumber(100)
   PrivateUserStrategy get privateUserStrategy => $_getN(10);
@@ -157,6 +159,58 @@ class ServerConfiguration extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(101)
   $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(11);
+}
+
+class ExternalCDNConfig extends $pb.GeneratedMessage {
+  factory ExternalCDNConfig() => create();
+  ExternalCDNConfig._() : super();
+  factory ExternalCDNConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ExternalCDNConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExternalCDNConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'frontendHost')
+    ..aOS(2, _omitFieldNames ? '' : 'backendHost')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ExternalCDNConfig clone() => ExternalCDNConfig()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ExternalCDNConfig copyWith(void Function(ExternalCDNConfig) updates) => super.copyWith((message) => updates(message as ExternalCDNConfig)) as ExternalCDNConfig;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ExternalCDNConfig create() => ExternalCDNConfig._();
+  ExternalCDNConfig createEmptyInstance() => create();
+  static $pb.PbList<ExternalCDNConfig> createRepeated() => $pb.PbList<ExternalCDNConfig>();
+  @$core.pragma('dart2js:noInline')
+  static ExternalCDNConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExternalCDNConfig>(create);
+  static ExternalCDNConfig? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get frontendHost => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set frontendHost($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasFrontendHost() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFrontendHost() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get backendHost => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set backendHost($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasBackendHost() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBackendHost() => clearField(2);
 }
 
 class FeatureSettings extends $pb.GeneratedMessage {

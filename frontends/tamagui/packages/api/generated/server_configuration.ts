@@ -212,16 +212,9 @@ export interface ServerConfiguration {
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
    * contain `PUBLISH_EVENTS_GLOBALLY`.
    */
-  mediaSettings:
-    | FeatureSettings
-    | undefined;
-  /**
-   * (NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN.
-   * By default, the web client uses `window.location.hostname` to determine the backend server.
-   * If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
-   */
-  defaultClientDomain?:
-    | string
+  mediaSettings: FeatureSettings | undefined;
+  externalCdnConfig?:
+    | ExternalCDNConfig
     | undefined;
   /** Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. */
   privateUserStrategy: PrivateUserStrategy;
@@ -230,6 +223,24 @@ export interface ServerConfiguration {
    * Eventually, external auth too hopefully!
    */
   authenticationFeatures: AuthenticationFeature[];
+}
+
+/**
+ * (NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN.
+ * By default, the web client uses `window.location.hostname` to determine the backend server.
+ * If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
+ */
+export interface ExternalCDNConfig {
+  /**
+   * The domain where the frontend is hosted. For example, jonline.io. Typically
+   * your CDN (like Cloudflare) should own the DNS for this domain.
+   */
+  frontendHost: string;
+  /**
+   * The domain where the backend is hosted. For example, jonline.io.itsj.online.
+   * Typically your Kubernetes provider should own DNS for this domain.
+   */
+  backendHost: string;
 }
 
 export interface FeatureSettings {
@@ -325,7 +336,7 @@ function createBaseServerConfiguration(): ServerConfiguration {
     postSettings: undefined,
     eventSettings: undefined,
     mediaSettings: undefined,
-    defaultClientDomain: undefined,
+    externalCdnConfig: undefined,
     privateUserStrategy: 0,
     authenticationFeatures: [],
   };
@@ -366,8 +377,8 @@ export const ServerConfiguration = {
     if (message.mediaSettings !== undefined) {
       FeatureSettings.encode(message.mediaSettings, writer.uint32(194).fork()).ldelim();
     }
-    if (message.defaultClientDomain !== undefined) {
-      writer.uint32(202).string(message.defaultClientDomain);
+    if (message.externalCdnConfig !== undefined) {
+      ExternalCDNConfig.encode(message.externalCdnConfig, writer.uint32(722).fork()).ldelim();
     }
     if (message.privateUserStrategy !== 0) {
       writer.uint32(800).int32(message.privateUserStrategy);
@@ -435,8 +446,8 @@ export const ServerConfiguration = {
         case 24:
           message.mediaSettings = FeatureSettings.decode(reader, reader.uint32());
           break;
-        case 25:
-          message.defaultClientDomain = reader.string();
+        case 90:
+          message.externalCdnConfig = ExternalCDNConfig.decode(reader, reader.uint32());
           break;
         case 100:
           message.privateUserStrategy = reader.int32() as any;
@@ -476,7 +487,9 @@ export const ServerConfiguration = {
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
       eventSettings: isSet(object.eventSettings) ? FeatureSettings.fromJSON(object.eventSettings) : undefined,
       mediaSettings: isSet(object.mediaSettings) ? FeatureSettings.fromJSON(object.mediaSettings) : undefined,
-      defaultClientDomain: isSet(object.defaultClientDomain) ? String(object.defaultClientDomain) : undefined,
+      externalCdnConfig: isSet(object.externalCdnConfig)
+        ? ExternalCDNConfig.fromJSON(object.externalCdnConfig)
+        : undefined,
       privateUserStrategy: isSet(object.privateUserStrategy)
         ? privateUserStrategyFromJSON(object.privateUserStrategy)
         : 0,
@@ -515,7 +528,9 @@ export const ServerConfiguration = {
       (obj.eventSettings = message.eventSettings ? FeatureSettings.toJSON(message.eventSettings) : undefined);
     message.mediaSettings !== undefined &&
       (obj.mediaSettings = message.mediaSettings ? FeatureSettings.toJSON(message.mediaSettings) : undefined);
-    message.defaultClientDomain !== undefined && (obj.defaultClientDomain = message.defaultClientDomain);
+    message.externalCdnConfig !== undefined && (obj.externalCdnConfig = message.externalCdnConfig
+      ? ExternalCDNConfig.toJSON(message.externalCdnConfig)
+      : undefined);
     message.privateUserStrategy !== undefined &&
       (obj.privateUserStrategy = privateUserStrategyToJSON(message.privateUserStrategy));
     if (message.authenticationFeatures) {
@@ -553,9 +568,73 @@ export const ServerConfiguration = {
     message.mediaSettings = (object.mediaSettings !== undefined && object.mediaSettings !== null)
       ? FeatureSettings.fromPartial(object.mediaSettings)
       : undefined;
-    message.defaultClientDomain = object.defaultClientDomain ?? undefined;
+    message.externalCdnConfig = (object.externalCdnConfig !== undefined && object.externalCdnConfig !== null)
+      ? ExternalCDNConfig.fromPartial(object.externalCdnConfig)
+      : undefined;
     message.privateUserStrategy = object.privateUserStrategy ?? 0;
     message.authenticationFeatures = object.authenticationFeatures?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseExternalCDNConfig(): ExternalCDNConfig {
+  return { frontendHost: "", backendHost: "" };
+}
+
+export const ExternalCDNConfig = {
+  encode(message: ExternalCDNConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.frontendHost !== "") {
+      writer.uint32(10).string(message.frontendHost);
+    }
+    if (message.backendHost !== "") {
+      writer.uint32(18).string(message.backendHost);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExternalCDNConfig {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExternalCDNConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.frontendHost = reader.string();
+          break;
+        case 2:
+          message.backendHost = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExternalCDNConfig {
+    return {
+      frontendHost: isSet(object.frontendHost) ? String(object.frontendHost) : "",
+      backendHost: isSet(object.backendHost) ? String(object.backendHost) : "",
+    };
+  },
+
+  toJSON(message: ExternalCDNConfig): unknown {
+    const obj: any = {};
+    message.frontendHost !== undefined && (obj.frontendHost = message.frontendHost);
+    message.backendHost !== undefined && (obj.backendHost = message.backendHost);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExternalCDNConfig>, I>>(base?: I): ExternalCDNConfig {
+    return ExternalCDNConfig.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ExternalCDNConfig>, I>>(object: I): ExternalCDNConfig {
+    const message = createBaseExternalCDNConfig();
+    message.frontendHost = object.frontendHost ?? "";
+    message.backendHost = object.backendHost ?? "";
     return message;
   },
 };

@@ -14,7 +14,7 @@ CREATE TABLE server_configurations (
   post_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
   event_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
 
-  default_client_domain VARCHAR NULL DEFAULT NULL,
+  external_cdn_config JSONB NULL DEFAULT NULL,
 
   private_user_strategy VARCHAR NOT NULL DEFAULT 'ACCOUNT_IS_FROZEN',
   authentication_features JSONB NOT NULL DEFAULT '[]'::JSONB,
