@@ -19,8 +19,8 @@ jobs:
         architecture: x64
     - working-directory: frontends/flutter
       run: flutter pub get
-    - working-directory: frontends/flutter
-      run: flutter build ios --release --no-codesign
+    # - working-directory: frontends/flutter
+    #   run: flutter build ios --release --no-codesign
     - working-directory: frontends/flutter
       name: 🔐 Install Apple certificate and provisioning profile
       env:
@@ -50,6 +50,7 @@ jobs:
         # apply provisioning profile
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp $PROVISIONING_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+    - run: ls ~/Library/MobileDevice/Provisioning\ Profiles
     - working-directory: frontends/flutter
       name: 🍏📦 Create iOS Jonline appbundle release
       run: |
