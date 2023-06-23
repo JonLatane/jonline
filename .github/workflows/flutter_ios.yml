@@ -56,7 +56,7 @@ jobs:
         flutter build ipa \
           --release \
           --export-options-plist=ios/exportOptions.plist
-    - name: 🍏🚀 Deploy to App Store (Testflight)
+    - name: 🍏🚀 Deploy to TestFlight
       uses: apple-actions/upload-testflight-build@v1
       with:
         app-path: ${{ github.workspace }}/frontends/flutter/build/ios/ipa/jonline.ipa

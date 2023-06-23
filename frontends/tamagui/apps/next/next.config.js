@@ -76,6 +76,15 @@ module.exports = function () {
       'expo-constants',
       'expo-modules-core',
     ],
+    webpack(webpackConfig) {
+      return {
+        ...webpackConfig,
+        optimization: {
+          minimizer: [],
+          minimize: false
+        }
+      };
+    },
     experimental: {
       /*
        A few notes before enabling app directory:
