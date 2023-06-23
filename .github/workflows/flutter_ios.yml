@@ -26,16 +26,18 @@ jobs:
       env:
         P12_DISTRIBUTION_CERTIFICATE_BASE64: "${{ secrets.IOS_P12_DISTRIBUTION_CERTIFICATE_BASE64 }}"
         P12_DISTRIBUTION_CERTIFICATE_PASSWORD: "${{ secrets.IOS_P12_DISTRIBUTION_CERTIFICATE_PASSWORD }}"
+        DISTRIBUTION_PROVISIONING_PROFILE_BASE64: "${{ secrets.IOS_DISTRIBUTION_PROVISIONING_PROFILE_BASE64 }}"
         KEYCHAIN_PASSWORD: "${{ secrets.IOS_RUNNER_LOCAL_KEYCHAIN_PASSWORD }}"
+        EXPORT_OPTIONS_BASE64: "${{ secrets.IOS_EXPORT_OPTIONS_BASE64 }}"
       run: |
         # create variables
         CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
         PROVISIONING_PROFILE_PATH=$RUNNER_TEMP/build_pp.mobileprovision
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-        EXPORT_OPTIONS_PATH="${{ github.workspace }}/app/ios/Runner/ExportOptions.plist"
 
         # import certificate, provisioning profile and export options from secrets
         echo -n "$P12_DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+        echo -n "$DISTRIBUTION_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PROVISIONING_PROFILE_PATH
 
         # create temporary keychain
         security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
