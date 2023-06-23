@@ -284,7 +284,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}
                         value={externalCdnConfig?.frontendHost ?? ''}
                         placeholder='e.g.: notj.online'
-                        onChangeText={t => setExternalCdnConfig({ ...(externalCdnConfig!), frontendHost: t })} />
+                        onChangeText={t => externalCdnConfig && setExternalCdnConfig({ ...(externalCdnConfig!), frontendHost: t })} />
                       : <Paragraph opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}>
                         {externalCdnConfig || ''}
                       </Paragraph>}
@@ -295,7 +295,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}
                         value={externalCdnConfig?.backendHost ?? ''}
                         placeholder='e.g.: notj.online'
-                        onChangeText={t => setExternalCdnConfig({ ...(externalCdnConfig!), backendHost: t })} />
+                        onChangeText={t => externalCdnConfig && setExternalCdnConfig({ ...(externalCdnConfig!), backendHost: t })} />
                       : <Paragraph opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}>
                         {externalCdnConfig || ''}
                       </Paragraph>}
