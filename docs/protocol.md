@@ -113,6 +113,17 @@ First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
 `refresh_token` and `access_token`. Use the `access_token` until it expires,
 then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 
+# Client host negotiation (for external CDNs)
+When negotiating the gRPC connection to a host, say, jonline.io, the client
+is expected to first attempt to fetch jonline.io/backend_host over HTTP or HTTPS
+(depending upon whether the server is expected to have TLS). This is to allow
+support for external CDNs as frontends. See https://jonline.io/about for more
+information about external CDN setup.
+
+Both Jonline&#39;s [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts) 
+and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart) 
+clients already do this.
+
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetServiceVersion | [.google.protobuf.Empty](#google-protobuf-Empty) | [GetServiceVersionResponse](#jonline-GetServiceVersionResponse) | Get the version (from Cargo) of the Jonline service. *Publicly accessible.* |
