@@ -1,5 +1,6 @@
 import 'package:grpc/grpc.dart';
 import 'package:grpc/grpc_connection_interface.dart';
+import 'package:logging/logging.dart';
 
 import '../app_state.dart';
 import '../generated/google/protobuf/empty.pb.dart';
@@ -9,13 +10,33 @@ import 'jonline_channels_native.dart'
     if (dart.library.html) 'jonline_channels_web.dart';
 import 'jonline_server.dart';
 import 'server_errors.dart';
+import 'package:http/http.dart' as http;
 
 /// Tracks JonlineClient instances for each Jonline server, and provides
 /// extension methods for JonlineAccount to fetch the appropriate client.
 extension JonlineClients on JonlineAccount {
-  static JonlineClient createClient(
-      String server, ChannelCredentials credentials) {
-    final ClientChannelBase channel = createJonlineChannel(server, credentials);
+  static final log = Logger('JonlineClients');
+
+  static Future<JonlineClient> _createClient(String server, bool secure) async {
+    var host = server;
+    try {
+      host = (await http.get(
+              Uri.parse("${secure ? "https" : "http"}://$server/backend_host")))
+          .body
+          .trim();
+      final validDomain = RegExp(
+          r"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$");
+      if (!validDomain.hasMatch(host)) {
+        throw Exception("Invalid backend host format: $host");
+      }
+    } catch (e) {
+      log.warning("Failed to get backend host for $server", e);
+    }
+
+    final ChannelCredentials credentials = secure
+        ? const ChannelCredentials.secure()
+        : const ChannelCredentials.insecure();
+    final ClientChannelBase channel = createJonlineChannel(host, credentials);
     return JonlineClient(channel);
   }
 
@@ -24,7 +45,7 @@ extension JonlineClients on JonlineAccount {
     JonlineClient? client;
     String? serviceVersion;
     try {
-      client = createClient(server, const ChannelCredentials.secure());
+      client = await _createClient(server, true);
       serviceVersion = (await client.getServiceVersion(Empty())).version;
     } catch (e) {
       if (!allowInsecure) {
@@ -37,7 +58,7 @@ extension JonlineClients on JonlineAccount {
       await communicationDelay;
       try {
         // showMessage?.call("Trying to connect to \"$server\" insecurely...");
-        client = createClient(server, const ChannelCredentials.insecure());
+        client = await _createClient(server, true);
         serviceVersion = (await client.getServiceVersion(Empty())).version;
         showMessage?.call("Connected to \"$server\" insecurely 🤨");
       } catch (e) {

@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_ios:
-    name: Build and Push
+    name: Build to TestFlight
     # continue-on-error: true
     runs-on: macos-latest
     steps:
