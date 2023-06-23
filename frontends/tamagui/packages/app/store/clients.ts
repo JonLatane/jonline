@@ -9,7 +9,7 @@ const clients = new Map<string, JonlineClientImpl>();
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {
   // Resolve the actual backend server from its backend_host endpoint
   const backendHost = await window.fetch(
-    `${server.secure ? 'http' : 'https'}://${server.host}/backend_host`
+    `${server.secure ? 'https' : 'http'}://${server.host}/backend_host`
   ).then(async (r) => {
     const domain = await r.text();
     if (domain == '') return undefined;

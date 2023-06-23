@@ -732,7 +732,7 @@ owned by ourselves or others in our physical communities, rather than any single
 corporation or data source. At its core is a 
 [well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md). 
 A Jonline *instance* or community (like the one you're reading this post on - probably 
-[jonline.io](https://jonline.io) or [getj.online](https://getj.online)) 
+[jonline.io](https://jonline.io) or [itsj.online](https://itsj.online)) 
 is designed for use cases like:
 
 * Neighborhoods, communities, or cities

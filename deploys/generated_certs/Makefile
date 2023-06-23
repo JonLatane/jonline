@@ -40,8 +40,10 @@ k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml:
 	  sed 's/$${CERT_MANAGER_EMAIL}/$(CERT_MANAGER_EMAIL)/g' | \
 	  sed 's/$${CERT_MANAGER_DOMAIN}/$(CERT_MANAGER_DOMAIN)/g' \
 	  > k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml
-deploy_certmanager_credential_digitalocean_apply: deploy_ensure_namespace deploy_certmanager_digitalocean_prepare
+deploy_certmanager_credential_digitalocean_apply: deploy_ensure_namespace
 	kubectl apply -f k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml -n $(NAMESPACE)
+deploy_certmanager_credential_digitalocean_delete: deploy_ensure_namespace
+	kubectl delete -f k8s/cert-manager.digitalocean.$(CERT_MANAGER_DOMAIN).generated.yaml -n $(NAMESPACE)
 
 
 # Custom CA certificate generation targets
