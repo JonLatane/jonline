@@ -105,7 +105,8 @@
 
 ### Jonline
 The internet-facing service implementing the Jonline protocol,
-generally exposed on port 27707.
+generally exposed on port 27707 (except when using
+[HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)).
 A Jonline server is generally also expected to serve up web apps on ports 80/443, where
 select APIs are exposed with HTTP interfaces instead gRPC.
 (Specifically, these are [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) 
