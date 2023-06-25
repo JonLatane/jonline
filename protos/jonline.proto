@@ -18,7 +18,7 @@ import "server_configuration.proto";
 // [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)).
 // A Jonline server is generally also expected to serve up web apps on ports 80/443, where
 // select APIs are exposed with HTTP interfaces instead of gRPC.
-// (Specifically, these are [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) 
+// (Specifically, [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
 // and [Media](#jonline-Media).)
 //
 // ##### Authentication
