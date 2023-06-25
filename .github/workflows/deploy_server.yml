@@ -89,38 +89,6 @@ jobs:
 
   # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server.yaml
   # have the same version number.
-  deploy_to_getjonline:
-    name: Deploy to GetJ.online
-    needs: build_and_deliver
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-    - uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-    - name: Update deploys/k8s/server.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|' deploys/k8s/server.yaml
-
-    - name: Save DigitalOcean kubeconfig with short-lived credentials
-      run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
-
-    - name: Deploy to GetJ.online via DigitalOcean Kubernetes
-      run: kubectl apply -f deploys/k8s/server.yaml -n getjonline
-
-    - name: Verify GetJ.online deployment
-      run: kubectl rollout status deployment/jonline -n getjonline
-
-  # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server.yaml
-  # have the same version number.
   deploy_to_jonlineio:
     name: Deploy to Jonline.io
     needs: build_and_deliver

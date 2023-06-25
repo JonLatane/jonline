@@ -4,17 +4,17 @@ Jonline is an open-source, community-scale social network designed to be capable
 ## Statuses
 ### Deployments
 These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
-
-[![Jonline.io](https://jonline.io/info_shield?nostore1)](https://jonline.io/about)
-[![GetJ.online](https://getj.online/info_shield?nostore1)](https://getj.online/about)
+| Name                                                                                | Purpose                          | Links                                                                     |
+| ----------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------- |
+| [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io/about) | Flagship demo/informational site | [React UI](https://jonline.io), [Flutter UI](https://jonline.io/flutter/) |
 
 ### DockerHub
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
 [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
 ### Continuous Delivery
-| Workflow Status                                                                                                          | Information                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Workflow Status                                                                                                              | Information                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)                       | [Server Build Results](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml)                       |
 | ![Preview Generator CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_preview_generator.yml/badge.svg) | [Preview Generator Build Results](https://github.com/jonlatane/jonline/actions/workflows/deploy_preview_generator.yml) |
 
