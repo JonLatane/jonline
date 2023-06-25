@@ -21,11 +21,14 @@ import "server_configuration.proto";
 // and [Media](#jonline-Media).)
 //
 // ##### Authentication
+// Jonline uses a standard OAuth2 flow for authentication, with rotating `access_token`s
+// and `refresh_token`s.
 // Authenticated calls require an `access_token` in request metadata to be included
 // directly as the value of the `authorization` header (with no `Bearer ` prefix).
 // First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
-// `refresh_token` and `access_token`. Use the `access_token` until it expires,
-// then use the `refresh_token` to call the `AccessToken` RPC for a new one.
+// `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
+// then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `AccessToken` RPC
+// may also return a new `refresh_token`, which should replace the old one in client storage.)
 //
 // ##### HTTP-based client host negotiation (for external CDNs)
 // When negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
