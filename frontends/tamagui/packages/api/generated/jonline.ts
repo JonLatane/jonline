@@ -50,11 +50,9 @@ export const protobufPackage = "jonline";
  * is a valid domain, say, `jonline.io.itsj.online`, the client is expected to connect
  * to `jonline.io.itsj.online` on port 27707 instead. To users, the server should still *generally* appear to
  * be `jonline.io`. This is to allow support for external CDNs as frontends. See https://jonline.io/about for
- * more information about external CDN setup.
- *
- * Both Jonline's [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts)
+ * more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts)
  * and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart)
- * clients already do this.
+ * client implementations of this negotiation.
  */
 export interface Jonline {
   /** Get the version (from Cargo) of the Jonline service. *Publicly accessible.* */

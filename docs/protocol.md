@@ -125,11 +125,9 @@ is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80
 is a valid domain, say, `jonline.io.itsj.online`, the client is expected to connect
 to `jonline.io.itsj.online` on port 27707 instead. To users, the server should still *generally* appear to 
 be `jonline.io`. This is to allow support for external CDNs as frontends. See https://jonline.io/about for
-more information about external CDN setup.
-
-Both Jonline&#39;s [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts) 
+more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts) 
 and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart) 
-clients already do this.
+client implementations of this negotiation.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
