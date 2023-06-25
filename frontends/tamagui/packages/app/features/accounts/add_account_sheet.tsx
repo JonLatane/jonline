@@ -159,7 +159,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                 ? <YStack space="$2" w='100%'>
                   <Heading size="$6">{server?.host}/</Heading>
                   <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
-                    disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
+                    editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
                     autoCapitalize='none'
                     value={newAccountUser}
                     onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
@@ -168,7 +168,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                       <Input secureTextEntry w='100%'
                         textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
                         placeholder="Password"
-                        disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
+                        editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
 
                         value={newAccountPass}
                         onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>

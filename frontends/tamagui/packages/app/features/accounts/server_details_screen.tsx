@@ -280,7 +280,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     <Heading size='$2' f={1}>Frontend Host</Heading>
                     <Paragraph size='$1'></Paragraph>
                     {isAdmin
-                      ? <Input disabled={true}
+                      ? <Input editable={externalCdnConfig != undefined}
                         opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}
                         value={externalCdnConfig?.frontendHost ?? ''}
                         placeholder='e.g.: jonline.io'
@@ -291,7 +291,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     <Heading mt='$2' size='$2' f={1}>Backend Host</Heading>
                     <Paragraph size='$1'></Paragraph>
                     {isAdmin
-                      ? <Input disabled={externalCdnConfig == undefined}
+                      ? <Input editable={externalCdnConfig != undefined}
                         opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}
                         value={externalCdnConfig?.backendHost ?? ''}
                         placeholder='e.g.: jonline.io.itsj.online'

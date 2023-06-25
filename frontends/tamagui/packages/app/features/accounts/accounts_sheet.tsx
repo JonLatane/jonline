@@ -241,7 +241,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                         <Heading size="$10" f={1}>Add Server</Heading>
                         <YStack>
                           <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
-                            disabled={serversLoading}
+                            editable={!serversLoading}
                             opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
                             value={newServerHost}
                             onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
@@ -356,7 +356,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                         <Heading size="$10">Add Account</Heading>
                         <Heading size="$6">{primaryServer?.host}/</Heading>
                         <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
-                          disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
+                          editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
                           autoCapitalize='none'
                           value={newAccountUser}
                           onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
@@ -366,7 +366,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                             <Input secureTextEntry w='100%'
                               textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
                               placeholder="Password"
-                              disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
+                              editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
 
                               value={newAccountPass}
                               onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
