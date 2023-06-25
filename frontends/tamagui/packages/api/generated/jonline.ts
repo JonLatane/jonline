@@ -54,6 +54,8 @@ export const protobufPackage = "jonline";
  * more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts)
  * and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart)
  * client implementations of this negotiation.
+ *
+ * #### gRPC API
  */
 export interface Jonline {
   /** Get the version (from Cargo) of the Jonline service. *Publicly accessible.* */
