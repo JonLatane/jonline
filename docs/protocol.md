@@ -117,6 +117,7 @@ Jonline uses a standard OAuth2 flow for authentication, with rotating `access_to
 and `refresh_token`s.
 Authenticated calls require an `access_token` in request metadata to be included
 directly as the value of the `authorization` header (with no `Bearer ` prefix).
+
 First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
 `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
 then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `AccessToken` RPC
@@ -129,7 +130,9 @@ is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80
 (depending upon whether the gRPC server is expected to have TLS). If the `backend_host` string resource
 is a valid domain, say, `jonline.io.itsj.online`, the client is expected to connect
 to `jonline.io.itsj.online` on port 27707 instead. To users, the server should still *generally* appear to 
-be `jonline.io`. This is to allow support for external CDNs as frontends. See https://jonline.io/about for
+be `jonline.io`.
+
+This negotiation enables support for external CDNs as frontends. See https://jonline.io/about for
 more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts) 
 and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart) 
 client implementations of this negotiation.
