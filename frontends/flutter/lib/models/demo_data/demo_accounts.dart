@@ -16,6 +16,18 @@ import '../jonline_account_operations.dart';
 import '../jonline_clients.dart';
 import 'demo_groups.dart';
 
+createDemoAccounts(JonlineAccount account, Function(String) showSnackBar,
+    AppState appState) async {
+  final JonlineClient? client =
+      await (account.getClient(showMessage: showSnackBar));
+  if (client == null) {
+    showSnackBar("Account not ready.");
+    return;
+  }
+  await account.ensureAccessToken(showMessage: showSnackBar);
+  await generateSideAccounts(client, account, showSnackBar, appState, 30);
+}
+
 Future<List<JonlineAccount>> generateSideAccounts(
     JonlineClient client,
     JonlineAccount account,

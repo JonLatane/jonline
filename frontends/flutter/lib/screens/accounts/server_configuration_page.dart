@@ -20,6 +20,7 @@ import '../../generated/google/protobuf/empty.pb.dart';
 import '../../generated/jonline.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
+import '../../models/demo_data/demo_accounts.dart';
 import '../../models/demo_data/demo_data.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_clients.dart';
@@ -701,6 +702,38 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                     children: [
                       Icon(Icons.developer_mode),
                       Text('Create Demo Conversations'),
+                    ],
+                  ),
+                ),
+              ),
+
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Really create demo accounts?'),
+                      action: SnackBarAction(
+                        label: 'Create!', // or some operation you would like
+                        onPressed: () {
+                          if (account == null) {
+                            showSnackBar("Account not ready.");
+                          }
+                          createDemoAccounts(
+                            account!,
+                            showSnackBar,
+                            appState,
+                          );
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * mq.textScaleFactor,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.developer_mode),
+                      Text('Create Demo Accounts'),
                     ],
                   ),
                 ),
