@@ -4,6 +4,10 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jonline/jonline_state.dart';
+import 'package:jonline/models/demo_data/demo_conversations.dart';
+import 'package:jonline/models/demo_data/demo_events.dart';
+import 'package:jonline/models/demo_data/demo_groups.dart';
+import 'package:jonline/models/demo_data/demo_posts.dart';
 import 'package:jonline/models/jonline_account_operations.dart';
 import 'package:jonline/models/server_errors.dart';
 import 'package:jonline/utils/colors.dart';
@@ -16,7 +20,7 @@ import '../../generated/google/protobuf/empty.pb.dart';
 import '../../generated/jonline.pbgrpc.dart';
 import '../../generated/permissions.pbenum.dart';
 import '../../generated/visibility_moderation.pbenum.dart' as vm;
-import '../../models/demo_data.dart';
+import '../../models/demo_data/demo_data.dart';
 import '../../models/jonline_account.dart';
 import '../../models/jonline_clients.dart';
 import '../../models/jonline_server.dart';
@@ -567,14 +571,15 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('Really post demo data?'),
+                      content: const Text(
+                          'Really create demo groups, posts, events, side accounts, and conversations?'),
                       action: SnackBarAction(
                         label: 'Post it!', // or some operation you would like
                         onPressed: () {
                           if (account == null) {
                             showSnackBar("Account not ready.");
                           }
-                          postDemoData(account!, showSnackBar, appState);
+                          createDemoData(account!, showSnackBar, appState);
                         },
                       )));
                 },
@@ -584,7 +589,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.developer_mode),
-                      Text('Post Demo Data'),
+                      Text('Post Complete Demo Data'),
                     ],
                   ),
                 ),
@@ -594,15 +599,14 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('Really post randomized demo data?'),
+                      content: const Text('Really create demo groups?'),
                       action: SnackBarAction(
-                        label: 'Post it!', // or some operation you would like
+                        label: 'Create!', // or some operation you would like
                         onPressed: () {
                           if (account == null) {
                             showSnackBar("Account not ready.");
                           }
-                          postDemoData(account!, showSnackBar, appState,
-                              randomizePosts: true);
+                          createDemoGroups(account!, showSnackBar, appState);
                         },
                       )));
                 },
@@ -612,7 +616,147 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.developer_mode),
-                      Text('Post *Randomized* Demo Data'),
+                      Text('Create Demo Groups'),
+                    ],
+                  ),
+                ),
+              ),
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Really create demo topics?'),
+                      action: SnackBarAction(
+                        label: 'Create!', // or some operation you would like
+                        onPressed: () {
+                          if (account == null) {
+                            showSnackBar("Account not ready.");
+                          }
+                          createDemoPosts(account!, showSnackBar, appState);
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * mq.textScaleFactor,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.developer_mode),
+                      Text('Create Demo Topics'),
+                    ],
+                  ),
+                ),
+              ),
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text(
+                          'Really create demo topics in random order?'),
+                      action: SnackBarAction(
+                        label: 'Create!', // or some operation you would like
+                        onPressed: () {
+                          if (account == null) {
+                            showSnackBar("Account not ready.");
+                          }
+                          createDemoPosts(account!, showSnackBar, appState,
+                              randomOrder: true);
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * mq.textScaleFactor,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.developer_mode),
+                      Text('Create Demo Topics (Random Order)'),
+                    ],
+                  ),
+                ),
+              ),
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Really create demo conversations?'),
+                      action: SnackBarAction(
+                        label: 'Create!', // or some operation you would like
+                        onPressed: () {
+                          if (account == null) {
+                            showSnackBar("Account not ready.");
+                          }
+                          createDemoConversations(
+                              account!, showSnackBar, appState);
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * mq.textScaleFactor,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.developer_mode),
+                      Text('Create Demo Conversations'),
+                    ],
+                  ),
+                ),
+              ),
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Really create demo events?'),
+                      action: SnackBarAction(
+                        label: 'Create!', // or some operation you would like
+                        onPressed: () {
+                          if (account == null) {
+                            showSnackBar("Account not ready.");
+                          }
+                          createDemoEvents(account!, showSnackBar, appState);
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * mq.textScaleFactor,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.developer_mode),
+                      Text('Create Demo Events'),
+                    ],
+                  ),
+                ),
+              ),
+            if (isAdmin)
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text(
+                          'Really create bullcity.social demo events?'),
+                      action: SnackBarAction(
+                        label: 'Create!', // or some operation you would like
+                        onPressed: () {
+                          if (account == null) {
+                            showSnackBar("Account not ready.");
+                          }
+                          createDemoEvents(account!, showSnackBar, appState,
+                              eventSetOverride: durhamDemoEvents);
+                        },
+                      )));
+                },
+                child: SizedBox(
+                  height: 20 + 20 * mq.textScaleFactor,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.developer_mode),
+                      Text('Create BullCity.Social Demo Events'),
                     ],
                   ),
                 ),
