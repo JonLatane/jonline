@@ -26,9 +26,11 @@ import "server_configuration.proto";
 // When negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
 // to connect to `jonline.io` via gRPC on 27707, the client
 // is expected to first attempt to fetch `jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
-// (depending upon whether the gRPC server is expected to have TLS). This is to allow
-// support for external CDNs as frontends. See https://jonline.io/about for more
-// information about external CDN setup.
+// (depending upon whether the gRPC server is expected to have TLS). If the `backend_host` string resource
+// is a valid domain, say, `jonline.io.itsj.online`, the client is expected to connect
+// to `jonline.io.itsj.online` on port 27707 instead. To users, the server should still *generally* appear to 
+// be `jonline.io`. This is to allow support for external CDNs as frontends. See https://jonline.io/about for
+// more information about external CDN setup.
 //
 // Both Jonline's [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts) 
 // and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart) 
