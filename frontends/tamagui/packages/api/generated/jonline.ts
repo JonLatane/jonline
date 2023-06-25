@@ -30,7 +30,11 @@ export const protobufPackage = "jonline";
 
 /**
  * The internet-facing service implementing the Jonline protocol,
- * generally exposed on port 27707 (see "HTTP-based client host negotiation" below for clarifications).
+ * generally exposed on port 27707.
+ * A Jonline server is generally also expected to serve up web apps on ports 80/443, where
+ * select APIs are exposed with HTTP interfaces instead of the gRPC ones documented here.
+ * (Specifically, [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)
+ * and [Media](#jonline-Media).)
  *
  * Authenticated calls require an `access_token` in request metadata to be included
  * directly as the value of the `authorization` header (with no `Bearer ` prefix).
