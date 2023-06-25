@@ -1219,7 +1219,7 @@ Time filter that simply works on the starts_at and ends_at fields.
 <a name="jonline-ExternalCDNConfig"></a>
 
 ### ExternalCDNConfig
-(NEW/IN TESTING) Useful for setting your Jonline instance up to run underneath a CDN.
+Useful for setting your Jonline instance up to run underneath a CDN.
 By default, the web client uses `window.location.hostname` to determine the backend server.
 If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
 
