@@ -33,7 +33,7 @@ export const protobufPackage = "jonline";
  * generally exposed on port 27707 (unless using
  * [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)).
  * A Jonline server is generally also expected to serve up web apps on ports 80/443, where
- * select APIs are exposed with HTTP interfaces instead gRPC.
+ * select APIs are exposed with HTTP interfaces instead of gRPC.
  * (Specifically, these are [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)
  * and [Media](#jonline-Media).)
  *
