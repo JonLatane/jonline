@@ -36,6 +36,7 @@ export const protobufPackage = "jonline";
  * (Specifically, these are [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)
  * and [Media](#jonline-Media).)
  *
+ * ##### Authentication
  * Authenticated calls require an `access_token` in request metadata to be included
  * directly as the value of the `authorization` header (with no `Bearer ` prefix).
  * First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
