@@ -32,8 +32,8 @@ export const protobufPackage = "jonline";
  * The internet-facing service implementing the Jonline protocol,
  * generally exposed on port 27707.
  * A Jonline server is generally also expected to serve up web apps on ports 80/443, where
- * select APIs are exposed with HTTP interfaces instead of the gRPC ones documented here.
- * (Specifically, [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)
+ * select APIs are exposed with HTTP interfaces instead gRPC.
+ * (Specifically, these are [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)
  * and [Media](#jonline-Media).)
  *
  * Authenticated calls require an `access_token` in request metadata to be included
@@ -45,7 +45,7 @@ export const protobufPackage = "jonline";
  * ##### HTTP-based client host negotiation (for external CDNs)
  * When negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
  * to connect to `jonline.io` via gRPC on 27707, the client
- * is expected to first attempt to fetch `jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
+ * is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
  * (depending upon whether the gRPC server is expected to have TLS). If the `backend_host` string resource
  * is a valid domain, say, `jonline.io.itsj.online`, the client is expected to connect
  * to `jonline.io.itsj.online` on port 27707 instead. To users, the server should still *generally* appear to
