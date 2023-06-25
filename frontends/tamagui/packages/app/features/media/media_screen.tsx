@@ -12,6 +12,7 @@ import { MediaCard } from './media_card';
 import { useAccount, useAccountOrServer } from 'app/store';
 import { FileUploader } from "react-drag-drop-files";
 import { Upload } from '@tamagui/lucide-icons';
+import { resizeImage } from './resize_media';
 
 
 export function MediaScreen() {
@@ -57,20 +58,19 @@ export function MediaScreen() {
       const uploadUrl = `${serverUrl(currentServer)}/media`
 
       setUploading(true);
-      // fetch(uploadUrl,
-      //   {
-      //     method: 'POST',
-      //     body: file,
-      //     headers: {
-      //       'Authorization': accountOrServer.account?.accessToken?.token || '',
-      //       'Content-Type': file.type,
-      //       'Filename': file.name
-      //     }
-      //   }
-      // ).then(() => {
-      //   setUploading(false);
-      //   reloadMedia();
-      // });
+
+      let _data: Blob | null = null;
+      switch (file.type) {
+        case "image/jpeg":
+        case "image/jpg":
+        case "image/png":
+        case "image/wepb":
+          _data = await resizeImage(file, 1920, 1920);
+      }
+      if (_data == null) {
+        _data = file;
+      }
+      const fileData = _data;
 
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (event) => {
@@ -95,18 +95,9 @@ export function MediaScreen() {
       xhr.setRequestHeader("Authorization", accountOrServer.account?.accessToken?.token || '');
       xhr.setRequestHeader("Filename", file.name);
       xhr.setRequestHeader("Content-Type", file.type);
-      xhr.send(file);
-    }
-
-    if (arg instanceof File) {
-      uploadFile(arg);
-    } else {
-      for (const file of arg) {
-        uploadFile(file);
-      }
+      xhr.send(fileData);
     }
   }
-
   const showSpinnerForUploading = uploading && (uploadProgress == undefined || uploadProgress < 0.1 || uploadProgress > 0.9);
   return (
     <TabsNavigation appSection={AppSection.MEDIA}>

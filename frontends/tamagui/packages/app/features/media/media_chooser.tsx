@@ -8,6 +8,7 @@ import { useAccount } from 'app/store';
 import { FileUploader } from "react-drag-drop-files";
 import { MediaRenderer } from './media_renderer';
 import { useMediaPage } from './media_screen';
+import { resizeImage } from './resize_media';
 
 
 interface MediaChooserProps {
@@ -67,6 +68,20 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
       const uploadUrl = `${serverUrl(currentServer)}/media`
 
       setUploading(true);
+
+      let _data: Blob | null = null;
+      switch (file.type) {
+        case "image/jpeg":
+        case "image/jpg":
+        case "image/png":
+        case "image/wepb":
+          _data = await resizeImage(file, 1920, 1920);
+      }
+      if (_data == null) {
+        _data = file;
+      }
+      const fileData = _data;
+
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) {
@@ -96,7 +111,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
       xhr.setRequestHeader("Authorization", accountOrServer.account?.accessToken?.token || '');
       xhr.setRequestHeader("Filename", file.name);
       xhr.setRequestHeader("Content-Type", file.type);
-      xhr.send(file);
+      xhr.send(fileData);
     }
 
     if (arg instanceof File) {
