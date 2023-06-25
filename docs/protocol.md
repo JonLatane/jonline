@@ -104,7 +104,7 @@
 <a name="jonline-Jonline"></a>
 
 ### Jonline
-The internet-facing Jonline service implementing the Jonline protocol,
+The internet-facing service implementing the Jonline protocol,
 generally exposed on port 27707 (see &#34;HTTP-based client host negotiation&#34; below for clarifications).
 
 Authenticated calls require an `access_token` in request metadata to be included

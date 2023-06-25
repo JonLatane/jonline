@@ -29,7 +29,7 @@ import { Follow, GetUsersRequest, GetUsersResponse, Membership, User } from "./u
 export const protobufPackage = "jonline";
 
 /**
- * The internet-facing Jonline service implementing the Jonline protocol,
+ * The internet-facing service implementing the Jonline protocol,
  * generally exposed on port 27707 (see "HTTP-based client host negotiation" below for clarifications).
  *
  * Authenticated calls require an `access_token` in request metadata to be included
