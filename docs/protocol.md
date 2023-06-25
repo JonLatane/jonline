@@ -105,7 +105,7 @@
 
 ### Jonline
 The internet-facing Jonline service implementing the Jonline protocol,
-generally exposed on port 27707.
+generally exposed on port 27707 (see &#34;HTTP-based client host negotiation&#34; below for clarifications).
 
 Authenticated calls require an `access_token` in request metadata to be included
 directly as the value of the `authorization` header (with no `Bearer ` prefix).
@@ -113,10 +113,11 @@ First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
 `refresh_token` and `access_token`. Use the `access_token` until it expires,
 then use the `refresh_token` to call the `AccessToken` RPC for a new one.
 
-# Client host negotiation (for external CDNs)
-When negotiating the gRPC connection to a host, say, jonline.io, the client
-is expected to first attempt to fetch jonline.io/backend_host over HTTP or HTTPS
-(depending upon whether the server is expected to have TLS). This is to allow
+##### HTTP-based client host negotiation (for external CDNs)
+When negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
+to connect to `jonline.io` via gRPC on 27707, the client
+is expected to first attempt to fetch `jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
+(depending upon whether the gRPC server is expected to have TLS). This is to allow
 support for external CDNs as frontends. See https://jonline.io/about for more
 information about external CDN setup.
 
