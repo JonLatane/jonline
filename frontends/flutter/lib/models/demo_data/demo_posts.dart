@@ -281,7 +281,7 @@ accounts and shitpost to your heart's desire!
 Jonline is trustworthy, because you can literally look at the 
 [code where it stores](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/create_account.rs#L30) 
 and [validates your passwords](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/login.rs#L30),
-even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/demo_data.dart) 🤯🙃
+even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/demo_data/demo_posts.dart) 🤯🙃
 
 If you're familiar with OpenSocial and Mastodon, Jonline is something like them. Notably, Jonline does *not*
 support reactions to posts as they do (and is deliberately not architected in a "big data" way so as to support this).

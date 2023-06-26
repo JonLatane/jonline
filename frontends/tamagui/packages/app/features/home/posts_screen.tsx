@@ -24,8 +24,9 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   const dimensions = useWindowDimensions();
 
   useEffect(() => {
-    document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
-  });
+    const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
+    document.title = `Posts | ${title}`;  });
 
   const [currentPage, setCurrentPage] = useState(0);
   const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded } = selectedGroup

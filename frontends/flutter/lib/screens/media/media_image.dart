@@ -38,7 +38,8 @@ class MediaImageState extends JonlineBaseState<MediaImage> {
     if (widget.mediaId == null) {
       return const SizedBox();
     }
-    return Image.network("http://$server/media/${widget.mediaId}",
+    final protocol = server == 'localhost' ? 'http' : 'https';
+    return Image.network("$protocol://$server/media/${widget.mediaId}",
         fit: widget.fit ?? BoxFit.fitWidth,
         alignment: widget.alignment ?? Alignment.topLeft);
   }

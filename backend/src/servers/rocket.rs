@@ -8,6 +8,7 @@ use rocket::*;
 use rocket_async_compression::CachedCompression;
 use tokio::task::JoinHandle;
 
+/// Starts a secure Rocket instance on port 443 in a separate thread.
 pub fn start_rocket_secure(
     pool: Arc<PgPool>,
     bucket: Arc<s3::Bucket>,
@@ -53,12 +54,13 @@ pub fn start_rocket_unsecured(
     bucket: Arc<s3::Bucket>,
     tempdir: Arc<tempfile::TempDir>,
 
-    https_redirect: bool,
+    secure_server_available: bool,
+    uses_external_cdn: bool,
 ) -> JoinHandle<()> {
     let figment = rocket::Config::figment()
         .merge(("port", port))
         .merge(("address", "0.0.0.0"));
-    let server_build = if https_redirect {
+    let server_build = if secure_server_available && !uses_external_cdn {
         create_rocket_https_redirect(figment, pool, bucket, tempdir)
     } else {
         create_rocket(figment, pool, bucket, tempdir)

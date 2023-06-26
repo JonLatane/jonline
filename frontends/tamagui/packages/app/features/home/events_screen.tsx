@@ -24,8 +24,9 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const dimensions = useWindowDimensions();
 
   useEffect(() => {
-    document.title = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
-  });
+    const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
+    document.title = `Events | ${title}`;  });
 
   const [currentPage, setCurrentPage] = useState(0);
   const { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup

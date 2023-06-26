@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
 import '../models/jonline_account_operations.dart';
@@ -30,6 +31,8 @@ get animationDelay => Future.delayed(animationDuration);
 get communicationDelay => Future.delayed(communicationDuration);
 
 class AppState extends State<MyApp> {
+  static final log = Logger('AppState');
+
   Color primaryColor = const Color(0xFF2E86AB);
   Color navColor = const Color(0xFFA23B72);
   Color authorColor = const Color(0xFF2eab54);
@@ -248,6 +251,7 @@ class AppState extends State<MyApp> {
       // For web, ensure the actual URL hostname is used as the default server.
       if (MyPlatform.isWeb) {
         primaryServerHost = context.callMethod("getJonlineServerHost", []);
+        log.info("getJonlineServerHost", primaryServerHost);
         final JonlineServer server = JonlineServer(primaryServerHost);
         final List<JonlineServer> servers = await JonlineServer.servers;
         LoginPage.defaultServer = primaryServerHost;
@@ -293,7 +297,28 @@ class AppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final currentServer = JonlineServer.selectedServer;
     return MaterialApp.router(
+      onGenerateTitle: (context) {
+        final baseTitle =
+            currentServer.configuration?.serverInfo.name ?? "Jonline";
+        String? specificTitle;
+        Map.of({
+          "posts": "Posts",
+          "events": "Events",
+          "groups": "Groups",
+          "accounts": "Accounts",
+          "post": "Post Details",
+          "event": "Event Details"
+        }).forEach((k, v) {
+          if (specificTitle == null && _rootRouter.currentPath.contains(k)) {
+            specificTitle = "$baseTitle - $v";
+          }
+        });
+        return specificTitle != null
+            ? "$specificTitle | $baseTitle"
+            : baseTitle;
+      },
       theme: ThemeData.dark().copyWith(
         colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
         textTheme: ThemeData.dark().textTheme.apply(

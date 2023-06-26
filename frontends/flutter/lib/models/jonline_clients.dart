@@ -19,6 +19,7 @@ extension JonlineClients on JonlineAccount {
 
   static Future<JonlineClient> _createClient(String server, bool secure) async {
     var host = server;
+    log.warning("_createClient $server $secure", Exception("hi"));
     try {
       host = (await http.get(
               Uri.parse("${secure ? "https" : "http"}://$server/backend_host")))
@@ -33,6 +34,7 @@ extension JonlineClients on JonlineAccount {
       log.warning("Failed to get backend host for $server", e);
     }
 
+    log.info("Creating client against host $host");
     final ChannelCredentials credentials = secure
         ? const ChannelCredentials.secure()
         : const ChannelCredentials.insecure();
@@ -44,21 +46,27 @@ extension JonlineClients on JonlineAccount {
       {Function(String)? showMessage, bool allowInsecure = false}) async {
     JonlineClient? client;
     String? serviceVersion;
-    try {
-      client = await _createClient(server, true);
-      serviceVersion = (await client.getServiceVersion(Empty())).version;
-    } catch (e) {
-      if (!allowInsecure) {
-        showMessage?.call("Failed to connect to \"$server\" securely!");
+
+    // We can't actually gracefully handle browser SSL errors, so must
+    // use this "if" block instead.
+    log.warning("createAndTestClient", server);
+    if (server != "localhost") {
+      try {
+        client = await _createClient(server, true);
+        serviceVersion = (await client.getServiceVersion(Empty())).version;
+      } catch (e) {
+        if (!allowInsecure) {
+          showMessage?.call("Failed to connect to \"$server\" securely!");
+        }
+        client = null;
       }
-      client = null;
     }
 
     if (allowInsecure && serviceVersion == null) {
       await communicationDelay;
       try {
         // showMessage?.call("Trying to connect to \"$server\" insecurely...");
-        client = await _createClient(server, true);
+        client = await _createClient(server, false);
         serviceVersion = (await client.getServiceVersion(Empty())).version;
         showMessage?.call("Connected to \"$server\" insecurely 🤨");
       } catch (e) {
@@ -109,6 +117,7 @@ extension JonlineClients on JonlineAccount {
   static Future<JonlineClient?> getSelectedServerClient(
       {Function(String)? showMessage, bool allowInsecure = false}) async {
     // Workaround for anonymous browsing on localhost
+    log.info("getSelectedServerClient", JonlineServer.selectedServer.server);
     final reallyAllowInsecure = allowInsecure ||
         JonlineServer.selectedServer.server == "localhost" ||
         JonlineServer.selectedServer.server == "Armothy";

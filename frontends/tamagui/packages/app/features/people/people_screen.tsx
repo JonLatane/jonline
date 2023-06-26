@@ -49,7 +49,7 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
       dismissScrollPreserver(setShowScrollPreserver);
     }
     let title = listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';
-    title += ` - ${server?.serverConfiguration?.serverInfo?.name || 'Jonline'}`;
+    title += ` | ${server?.serverConfiguration?.serverInfo?.name || 'Jonline'}`;
     document.title = title;
   });
 

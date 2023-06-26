@@ -205,10 +205,10 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                               if (previewMediaId?.isNotEmpty == true) // &&
                                 // Settings.preferServerPreviews)
                                 buildServerPreview(context),
-                              if (link != null &&
-                                  // Settings.preferServerPreviews &&
-                                  !hasLoadedServerPreview)
-                                buildLoadingServerPreview(context),
+                              // if (link != null &&
+                              //     // Settings.preferServerPreviews &&
+                              //     !hasLoadedServerPreview)
+                              //   buildLoadingServerPreview(context),
                               if (content != null)
                                 Container(
                                   height: 8,

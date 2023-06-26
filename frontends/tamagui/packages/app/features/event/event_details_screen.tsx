@@ -225,7 +225,7 @@ export function EventDetailsScreen() {
   const [showPastInstances, setShowPastInstances] = useState(false);
   const displayedInstances = subjectInstances
     ? (showPastInstances
-      ? subjectInstances
+      ? [...subjectInstances]
       : subjectInstances
         .filter(isNotPastInstance)
     ).sort(instanceTimeSort)
