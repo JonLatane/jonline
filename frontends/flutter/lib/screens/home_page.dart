@@ -4,7 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jonline/models/jonline_server.dart';
-import 'package:native_device_orientation/native_device_orientation.dart';
+// import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:scrolls_to_top/scrolls_to_top.dart';
 
 import '../app_state.dart';
@@ -73,7 +73,7 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool get sideNavExpanded =>
       (draggingSideNav && !Settings.keepSideNavExpanded) || _sideNavExpanded;
   bool _sideNavExpanded = false;
-  NativeDeviceOrientation orientation = NativeDeviceOrientation.unknown;
+  // NativeDeviceOrientation orientation = NativeDeviceOrientation.unknown;
 
   get useSideNav => mq.size.width > 600;
   TextTheme get textTheme => Theme.of(context).textTheme;
@@ -126,15 +126,15 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
     titleServerNotifier.addListener(updateState);
     titleUsernameNotifier.addListener(updateState);
 
-    if (MyPlatform.isMobile) {
-      NativeDeviceOrientationCommunicator()
-          .onOrientationChanged()
-          .listen((NativeDeviceOrientation o) {
-        setState(() {
-          orientation = o;
-        });
-      });
-    }
+    // if (MyPlatform.isMobile) {
+    //   NativeDeviceOrientationCommunicator()
+    //       .onOrientationChanged()
+    //       .listen((NativeDeviceOrientation o) {
+    //     setState(() {
+    //       orientation = o;
+    //     });
+    //   });
+    // }
   }
 
   @override
@@ -297,24 +297,28 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget buildTopPadding() => AnimatedContainer(
         duration: animationDuration,
-        height: (MyPlatform.isIPad &&
+        height:
+            0 /*(MyPlatform.isIPad &&
                 orientation == NativeDeviceOrientation.landscapeLeft)
             ? 0
-            : 0,
+            : 0*/
+        ,
       );
 
   Widget buildLeftPadding() => AnimatedContainer(
-        duration: animationDuration,
-        width: (orientation == NativeDeviceOrientation.landscapeLeft)
-            ? mq.padding.left * (useSideNav && sideNavExpanded ? 0.7 : 0.7) +
-                (useSideNav ? 4 : 0)
-            : 0,
+      duration: animationDuration,
+      width: //(orientation == NativeDeviceOrientation.landscapeLeft)
+          // ?
+          mq.padding.left * (useSideNav && sideNavExpanded ? 0.7 : 0.7) +
+              (useSideNav ? 4 : 0)
+      // : 0,
       );
 
   Widget buildRightPadding() => SizedBox(
-        width: (orientation == NativeDeviceOrientation.landscapeRight)
-            ? mq.padding.right * 0.7
-            : 0,
+      width: //(orientation == NativeDeviceOrientation.landscapeRight)
+          //?
+          mq.padding.right * 0.7
+      // : 0,
       );
 
   static const sideNavBaseWidth = 48.0;
