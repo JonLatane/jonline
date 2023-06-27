@@ -1,13 +1,6 @@
+pub mod rocket_state;
+pub use rocket_state::*;
 
-use std::sync::Arc;
-
-use crate::db_connection::PgPool;
-
-pub struct RocketState {
-  pub pool: Arc<PgPool>,
-  pub bucket: Arc<s3::Bucket>,
-  pub tempdir: Arc<tempfile::TempDir>,
-}
 // This module contains Rocket routes and handlers for the web interface.
 
 pub mod headers;
