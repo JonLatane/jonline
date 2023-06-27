@@ -72,7 +72,7 @@ CREATE TABLE user_access_tokens (
   refresh_token_id BIGINT NOT NULL REFERENCES user_refresh_tokens ON DELETE CASCADE,
   token VARCHAR NOT NULL UNIQUE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  expires_at TIMESTAMP NOT NULL DEFAULT NOW() + INTERVAL '1 hour'
+  expires_at TIMESTAMP NOT NULL DEFAULT NOW() + INTERVAL '8 hour'
 );
 CREATE INDEX idx_access_tokens ON user_access_tokens(token);
 

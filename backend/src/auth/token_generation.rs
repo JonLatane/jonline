@@ -10,6 +10,7 @@ use crate::protos::*;
 use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use crate::schema::user_access_tokens::dsl as user_access_tokens;
 
+/// Generate a secure random token of the given length.
 macro_rules! generate_token {
     ($length_u8:expr) => {{
         let mut randoms: [u8; $length_u8] = [0; $length_u8];
@@ -23,6 +24,7 @@ macro_rules! generate_token {
     }};
 }
 
+/// Generate and store a refresh token and access token for the given user.
 pub fn generate_refresh_and_access_token(
     user_id: i64,
     conn: &mut PgPooledConnection,
@@ -58,6 +60,7 @@ pub fn generate_refresh_and_access_token(
     }
 }
 
+/// Generate and store an access token for the given refresh token.
 pub fn generate_access_token(refresh_token_id: i64, conn: &mut PgPooledConnection) -> ExpirableToken {
     let access_token = generate_token!(128);
     let expires_at: SystemTime = insert_into(user_access_tokens::user_access_tokens)

@@ -28,8 +28,8 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia }) => {
 
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const mediaUrl = useMediaUrl(media.id);
-  const type = media.contentType.split('/')[0];
-  const subType = media.contentType.split('/')[1];
+  const [type, subType] = media.contentType.split('/');
+
   switch (type) {
     case 'image':
       return <img style={{height: '95%', width:'95%', objectFit:'contain'}} src={mediaUrl}/>;

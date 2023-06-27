@@ -39,6 +39,10 @@ These badges link to the communities' "About" pages. The versions, names, and/or
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
     - [Why *not* Jonline?](#why-not-jonline)
+  - [Features Overview](#features-overview)
+    - [Media](#media)
+    - [Posts](#posts)
+    - [Events](#events)
   - [Protocol documentation](#protocol-documentation)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deploying to other namespaces](#deploying-to-other-namespaces)
@@ -50,10 +54,6 @@ These badges link to the communities' "About" pages. The versions, names, and/or
     - [Deleting your deployment](#deleting-your-deployment)
   - [Motivations](#motivations)
     - [Scaling Social Software via Federation](#scaling-social-software-via-federation)
-  - [Features Overview](#features-overview)
-    - [Media](#media)
-    - [Posts](#posts)
-    - [Events](#events)
   - [Future features](#future-features)
 
 ## What is Jonline?
@@ -99,6 +99,24 @@ The goal of all this is to make it as easy as possible for local businesses to:
 * There's near-0% test coverage.
 * It's just my own (Jon) thing I'm doing in my spare time. 
 * There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
+
+## Features Overview
+All of Jonline's features should be pretty familiar to most social media users. Notably, in both its web and Flutter UIs, Jonline is designed to present "My Media" as a top-level feature and let users delete and manage Media visibility independently of Posts, Events, Groups or anything else.
+
+### Media
+Jonline Media is straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike Posts and Events, Media is generally not shared directly. It is instead associated with Posts and Events (for media listings) as well as Users and Groups (for their avatars).
+
+Media is the *only* part of Jonline's APIs offered over HTTP as well as gRPC/gRPC-over-HTTP. (Hopefully the reasons for this are obvious: easy browser streaming and cache utilization for things like images.) Details on the HTTP Media APIs are in the "Media" section of the [protocol documentation](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
+
+All Media also carries `Visibility` and `Moderation` values that can be modified in the APIs, but are not currently enforced. Note that any Media visibility updates and/or deletions may take time to propagate fully, depending upon how a given Jonline instance's CDN setup works.
+
+### Posts
+Posts follow a Twitter- or Reddit- like model. They have a `PostContext` as well as all-optional `title`, `link`, and `description` string values. A top-level post is stored generally the same as a reply. Posts also carry a `Visibility` and `Moderation` value that is enforced by the APIs.
+
+Posts are also reused for Events, and will be similarly reused for future features. For developers: this is something like ActiveRecord Polymorphism, but using composition rather than inheritance at the ORM level. For users: Replies, Events, and other Jonline types track their title, description, visibility, moderation, etc. via a Post internally.
+
+### Events
+Events are a thin layer atop Posts. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data.
 
 ## Protocol documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is pretty readable](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
@@ -270,27 +288,6 @@ At the same time as the closed source/private server model has grown due to its 
 But is scaling social media applications in this way *necessary for what people use these applications for*? Or is it *the best way to keep data available for marketing and other private use*? Or more simply: are we optimizing for profit, or for actual computer performance? There are many legitimate applications for, say, MapReduce across a huge privately-owned cluster, like making the entire Internet searchable. But for communicating with a network of friends you know in real life, I don't really think it's necessary.
 
 Jonline is a federated social network. The general idea is that it should provide a functional network with a single server, but that you should be able to communicate with users on other servers from a single account. This is handled via sharing of OAuth2 auth tokens between servers.
-
-
-## Features Overview
-The intended use case for Jonline is thus:
-
-I (Jon 😊👋) will run the Jonline server at https://jonline.io. It's fully open to the web and I'm paying for the DB behind it and the k8s cluster on it. Friends who want to connect with me can register for an account and communicate with me and with each other.
-
-### Media
-Jonline Media is essentially a content-type+bytes-based blob storage service. It's the reason Jonline requires S3/MinIO (though, if desired, Jonline could realistically support making MinIO optional). Unlike Posts and Events (and any other future "high level types"), Media is generally not shared directly. It is instead associated with Posts and Events (for media listings) as well as Users and Groups (for their avatars).
-
-Media is perhaps core-most part of Jonline's features, and the *only* part of the APIS offered through HTTP as well as gRPC/gRPC-over-HTTP. (Hopefully the reasons for this are obvious: easy browser streaming and cache utilization for things like images.) Details on the HTTP APIs are in the "Media" section of the [protocol documentation](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
-
-### Posts
-To keep things straightforward, all Posts in Jonline have global visibility. Twitter is easily the closest comparison.
-
-They may be enabled/disabled at the server level (which should hide the UI tab/web links in the future).
-
-### Events
-Events may be public, private, or private with friend invitations.
-
-In the future, Events should.
 
 ## Future features
 Potential future features include:

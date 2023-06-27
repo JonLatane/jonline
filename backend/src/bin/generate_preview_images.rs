@@ -74,7 +74,7 @@ async fn update_post(
                         screenshot.len()
                     );
 
-                    let filename = format!("post-{}-generated-preview.png", post.id);
+                    let filename = format!("post_{}_generated_preview.png", post.id.to_proto_id());
                     let uuid = Uuid::new_v4();
                     let minio_path = format!(
                         "user/{}-{}/{}-{}",

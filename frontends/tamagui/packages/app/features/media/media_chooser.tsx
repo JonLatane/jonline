@@ -1,14 +1,13 @@
-import { AlertDialog, Button, Heading, Paragraph, Progress, Sheet, Spinner, Text, XStack, YStack, dismissScrollPreserver, isTouchable, isWebTouchable, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
-import { RootState, deleteMedia, getCredentialClient, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
+import { RootState, deleteMedia, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { StickyCreateButton } from '../post/create_post_sheet';
 import { overlayAnimation } from '@jonline/ui';
-import { Image as ImageIcon, Trash, Upload, Wand2 } from '@tamagui/lucide-icons';
+import { Image as ImageIcon, Trash, Wand2 } from '@tamagui/lucide-icons';
 import { useAccount } from 'app/store';
-import { FileUploader } from "react-drag-drop-files";
 import { MediaRenderer } from './media_renderer';
 import { useMediaPage } from './media_screen';
-import { resizeImage } from './resize_media';
+import { MediaUploader } from './media_uploader';
 
 
 interface MediaChooserProps {
@@ -35,7 +34,6 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();
-  const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
   const [uploadedMediaId, setUploadedMediaId] = useState<string | undefined>(undefined);
@@ -52,76 +50,9 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const { media, loadingMedia, reloadMedia } = useMediaPage(
     accountOrServer.account?.user?.id,
     0,
-    () => dismissScrollPreserver(setShowScrollPreserver)
+    () => { }
   );
 
-  function handleUpload(arg: File | Array<File>) {
-    if (!server) return;
-
-    const currentServer = server;
-    console.log("Uploading file...");
-
-    async function uploadFile(file: File) {
-      // Updates the access token in case it needs updating.
-      getCredentialClient(accountOrServer);
-
-      const uploadUrl = `${serverUrl(currentServer)}/media`
-
-      setUploading(true);
-
-      let _data: Blob | null = null;
-      switch (file.type) {
-        case "image/jpeg":
-        case "image/jpg":
-        case "image/png":
-        case "image/wepb":
-          _data = await resizeImage(file, 1920, 1920);
-      }
-      if (_data == null) {
-        _data = file;
-      }
-      const fileData = _data;
-
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener("progress", (event) => {
-        if (event.lengthComputable) {
-          console.log("upload progress:", event.loaded / event.total);
-          setUploadProgress(0.9 * (event.loaded / event.total));
-        }
-      });
-      // xhr.addEventListener("progress", (event) => {
-      //   if (event.lengthComputable) {
-      //     console.log("download progress:", event.loaded / event.total);
-      //     setUploadProgress(event.loaded / event.total;
-      //   }
-      // });
-      xhr.addEventListener("loadend", () => {
-        setUploading(false);
-        setUploadProgress(1);
-        setTimeout(() => setUploadProgress(undefined), 1000);
-        reloadMedia();
-      });
-      xhr.onreadystatechange = () => {
-        if (xhr.readyState === 4) {
-          const newMediaId = xhr.responseText;
-          setUploadedMediaId(newMediaId);
-        }
-      };
-      xhr.open("POST", uploadUrl, true);
-      xhr.setRequestHeader("Authorization", accountOrServer.account?.accessToken?.token || '');
-      xhr.setRequestHeader("Filename", file.name);
-      xhr.setRequestHeader("Content-Type", file.type);
-      xhr.send(fileData);
-    }
-
-    if (arg instanceof File) {
-      uploadFile(arg);
-    } else {
-      for (const file of arg) {
-        uploadFile(file);
-      }
-    }
-  }
 
   useEffect(() => {
     if (uploadedMediaId && (media ?? []).filter((m) => m.id == uploadedMediaId).length > 0) {
@@ -162,7 +93,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay  />
+        <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
 
@@ -173,52 +104,11 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
               />
             </YStack>
             : undefined}
-          {/* <XStack space='$4' als='center' paddingHorizontal='$5' w='100%' maw={600}> */}
-
-          {/* <Button size='$3' icon={RefreshCw} circular
-              // disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
-              onPress={resetCredentialedData} />
-            <XStack f={1} /> */}
-          {/* <Button
-              alignSelf='center'
-              size="$3"
-              circular
-              icon={ChevronDown}
-              onPress={() => setOpen(false)} /> */}
-
-          {/* <XStack f={1} />
-            <SettingsSheet size='$3' /> */}
 
           {
             accountOrServer.account
-              ? <YStack mb={-19} maw={600} p='$5' als='center' overflow='hidden'>
-                <Text fontFamily='$body' fontSize='$3' mx='auto' mb='$3'>
-                  <FileUploader handleChange={handleUpload} name="file"
-                    label='Add Media'
-                    width='250px'
-                    onDraggingStateChange={setDragging}
-                    types={["JPG", "JPEG", "PNG", "GIF", "PDF", "MOV", "AVI", "OGG", "MP3", "MP4", "MPG", "WEBM", "WEBP", "WMV"]}>
-                    <Button onPress={() => { }} backgroundColor={dragging ? primaryColor : navColor}>
-                      <XStack space='$2'>
-                        <XStack my='auto'>
-                          <Upload size={24} color={dragging ? primaryTextColor : navTextColor} />
-                        </XStack>
-                        <YStack jc="center" ai="center" f={1} my='auto' p='$3'>
-                          <Heading size='$3' ta='center' color={dragging ? primaryTextColor : navTextColor}>
-                            Upload Media
-                          </Heading>
-                          <Heading size='$1' ta='center' color={dragging ? primaryTextColor : navTextColor}>
-                            {isTouchable || isWebTouchable ? 'Tap' : 'Drag/drop or click'} to choose
-                          </Heading>
-                        </YStack>
-                      </XStack>
-                    </Button>
-                  </FileUploader>
-                </Text>
-                <Progress value={(uploadProgress ?? 0) * 100} >
-                  <Progress.Indicator animation="quick" />
-                </Progress>
-              </YStack>
+              ? <MediaUploader {...{ uploading, setUploading, uploadProgress, setUploadProgress }}
+                onMediaUploaded={setUploadedMediaId} />
               : <YStack width='100%' maw={600} jc="center" ai="center">
                 <Heading size='$5' mb='$3'>You must be logged in to view media.</Heading>
                 <Heading size='$3' ta='center'>You can log in by clicking the button in the top right corner.</Heading>

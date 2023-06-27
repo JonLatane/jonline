@@ -39,13 +39,17 @@ Future<List<JonlineAccount>> generateSideAccounts(
   final httpClient = http.Client();
 
   var lastMessageTime = DateTime.now();
-  while (avatars.length < range.length) {
-    http.Response response = await httpClient
-        .get(Uri.parse('https://100k-faces.glitch.me/random-image'), headers: {
-      if (!MyPlatform.isWeb) "User-Agent": "Jonline Flutter Client",
-      // if (!MyPlatform.isWeb) "Host": "thispersondoesnotexist.com"
-    });
-    avatars.add(response.bodyBytes);
+  // I can use 100k-faces if they merge/deploy
+  // https://github.com/ozgrozer/100k-faces/pull/2
+  if (!MyPlatform.isWeb) {
+    while (avatars.length < range.length) {
+      http.Response response = await httpClient.get(
+          Uri.parse('https://100k-faces.glitch.me/random-image'),
+          headers: {
+            if (!MyPlatform.isWeb) "User-Agent": "Jonline Flutter Client"
+          });
+      avatars.add(response.bodyBytes);
+    }
   }
 
   showSnackBar("Loaded ${avatars.length} avatars.");
