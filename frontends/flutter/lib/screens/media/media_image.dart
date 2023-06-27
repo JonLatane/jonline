@@ -9,7 +9,8 @@ ImageProvider mediaImageProvider(
 }) {
   final String server = serverOverride ?? JonlineServer.selectedServer.server;
 
-  return NetworkImage("http://$server/media/$mediaId");
+  final protocol = server == 'localhost' ? 'http' : 'https';
+  return NetworkImage("$protocol://$server/media/$mediaId");
 }
 
 class MediaImage extends StatefulWidget {
