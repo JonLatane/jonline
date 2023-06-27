@@ -123,28 +123,29 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                 </ScrollView>}
             </YStack>
             : undefined}
-            </AnimatePresence>
-          {eventsLoaded && postsLoaded
-            ? posts.length === 0
-              ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}
-              // animation='quick'
-              // {...standardAnimation}
-              >
-                <Heading size='$5' mb='$3'>No posts found.</Heading>
-                <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-              </YStack>
-              : <YStack f={1} key={`post-list`} animation='quick' {...standardAnimation}>
-                {posts.map((post) => {
-                  return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
-                })}
-                <PaginationIndicator page={currentPostsPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
-                  hasNextPage={hasMorePages}
-                  loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
-                />
-                {showScrollPreserver ? <YStack h={100000} /> : undefined}
-              </YStack>
-            : undefined
-          }
+        </AnimatePresence>
+        {eventsLoaded && postsLoaded
+          ? posts.length === 0
+            ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}
+            // animation='quick'
+            // {...standardAnimation}
+            >
+              <Heading size='$5' mb='$3'>No posts found.</Heading>
+              <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+            </YStack>
+            : <YStack f={1} key={`post-list`}// animation='quick' {...standardAnimation}
+            >
+              {posts.map((post) => {
+                return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
+              })}
+              <PaginationIndicator page={currentPostsPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
+                hasNextPage={hasMorePages}
+                loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
+              />
+              {showScrollPreserver ? <YStack h={100000} /> : undefined}
+            </YStack>
+          : undefined
+        }
       </YStack>
       <StickyCreateButton selectedGroup={selectedGroup} showPosts showEvents />
     </TabsNavigation>
