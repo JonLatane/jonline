@@ -3,13 +3,15 @@ import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 
 import { Event, EventInstance, Group } from "@jonline/api";
-import { Anchor, Card, Heading, Image, Paragraph, useMedia, XStack, YStack } from "@jonline/ui";
+import { Anchor, Button, Card, Heading, Image, Paragraph, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
 import { useLink } from "solito/link";
 import { AuthorInfo } from "../post/author_info";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { InstanceTime } from "./instance_time";
+import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
+import { History } from "@tamagui/lucide-icons";
 
 interface Props {
   event: Event;
@@ -126,6 +128,25 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     }
   });
 
+  const [showPastInstances, setShowPastInstances] = useState(false);
+  // const [displayedInstances, setDisplayedInstances] = useState<EventInstance[]>();
+  const displayedInstances = instances
+    ? (showPastInstances
+      ? [...instances]
+      : instances
+        .filter(isNotPastInstance)
+    ).sort(instanceTimeSort)
+    : undefined;
+  const hasPastInstances = instances.find(isPastInstance) != undefined;
+  // useEffect(() => {
+  //   setDisplayedInstances(instances
+  //     ? (showPastInstances
+  //       ? [...instances]
+  //       : instances
+  //         .filter(isNotPastInstance)
+  //     ).sort(instanceTimeSort)
+  //     : undefined);
+  // }, [showPastInstances, instances]);
   return (
     <>
       <YStack w='100%'>
@@ -162,6 +183,29 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                     </YStack>
                   </XStack>
                   {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+                  {!isPreview && instances.length > 1
+                    ? <XStack w='100%' mt='$2' ml='$4' space>
+                      {hasPastInstances
+                        ? <Theme inverse={showPastInstances}>
+                          <Button mt='$2' mr={-7} size='$3' circular icon={History}
+                            // backgroundColor={showPastInstances ? undefined : navColor} 
+                            onPress={() => setShowPastInstances(!showPastInstances)} />
+                        </Theme>
+                        : undefined}
+                      <ScrollView f={1} horizontal pb='$3'>
+                        <XStack mt='$1'>
+                          {displayedInstances?.map((i) =>
+                            <InstanceTime key={i.id} linkToInstance
+                              event={event} instance={i}
+                              highlight={i.id == instance?.id}
+                            />)}
+                        </XStack>
+
+                      </ScrollView>
+                    </XStack>
+                    : undefined
+
+                  }
                 </YStack>
               </Anchor>
             </Card.Header>

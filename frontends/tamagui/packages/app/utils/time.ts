@@ -4,6 +4,9 @@ import moment from "moment";
 export function isNotPastInstance(i: EventInstance) {
   return moment(i.endsAt!).isAfter(moment())
 }
+export function isPastInstance(i: EventInstance) {
+  return !isNotPastInstance(i);
+}
 
 export function instanceTimeSort(a: EventInstance, b: EventInstance) {
   const startSort = timeSort(a.startsAt!, b.startsAt!);

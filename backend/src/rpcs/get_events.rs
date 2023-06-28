@@ -202,6 +202,7 @@ fn get_event_by_id(
             posts::all_columns.nullable(),
             users::all_columns.nullable(),
         ))
+        .filter(event_instances::event_id.eq(event_db_id))
         .load::<(
             models::EventInstance,
             Option<models::Post>,

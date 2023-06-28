@@ -222,14 +222,14 @@ export function EventDetailsScreen() {
     }
   }, [chatUI]);
 
-  const [showPastInstances, setShowPastInstances] = useState(false);
-  const displayedInstances = subjectInstances
-    ? (showPastInstances
-      ? [...subjectInstances]
-      : subjectInstances
-        .filter(isNotPastInstance)
-    ).sort(instanceTimeSort)
-    : undefined;
+  // const [showPastInstances, setShowPastInstances] = useState(false);
+  // const displayedInstances = subjectInstances
+  //   ? (showPastInstances
+  //     ? [...subjectInstances]
+  //     : subjectInstances
+  //       .filter(isNotPastInstance)
+  //   ).sort(instanceTimeSort)
+  //   : undefined;
 
   let logicallyReplyingTo: Post | undefined = undefined;
   return (
@@ -244,10 +244,7 @@ export function EventDetailsScreen() {
         : <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
 
           <ScrollView w='100%'>
-            <XStack w='100%' paddingHorizontal='$3'>
-              {subjectEvent ? <EventCard event={subjectEvent} selectedInstance={subjectInstance} /> : undefined}
-            </XStack>
-            <XStack w='100%' ml='$4' space>
+            {/* <XStack w='100%' ml='$4' space>
               <Theme inverse={showPastInstances}>
                 <Button mt='$2' mr={-7} size='$3' circular icon={History}
                   // backgroundColor={showPastInstances ? undefined : navColor} 
@@ -263,6 +260,9 @@ export function EventDetailsScreen() {
                 </XStack>
 
               </ScrollView>
+            </XStack> */}
+            <XStack w='100%' paddingHorizontal='$3'>
+              {subjectEvent ? <EventCard event={subjectEvent} selectedInstance={subjectInstance} /> : undefined}
             </XStack>
             <XStack>
               <XStack f={1} />
