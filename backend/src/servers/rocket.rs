@@ -5,7 +5,7 @@ use crate::{report_error, web};
 
 use ::log::{info, warn};
 use rocket::*;
-use rocket_async_compression::CachedCompression;
+use rocket_async_compression::Compression;
 use tokio::task::JoinHandle;
 
 /// Starts a secure Rocket instance on port 443 in a separate thread.
@@ -105,17 +105,18 @@ fn create_rocket<T: rocket::figment::Provider>(
         server
     } else {
         // Cache all compressed responses, with some exclusions
-        server.attach(CachedCompression {
-            cached_path_prefixes: vec!["".to_string()],
-            excluded_path_prefixes: CachedCompression::static_paths(vec![
-                "/media",
-                "media",
-                "/info_shield",
-                "info_shield",
-            ]),
-            level: Some(async_compression::Level::Fastest),
-            ..Default::default()
-        })
+        // server.attach(CachedCompression {
+        //     cached_path_prefixes: vec!["".to_string()],
+        //     excluded_path_prefixes: CachedCompression::static_paths(vec![
+        //         "/media",
+        //         "media",
+        //         "/info_shield",
+        //         "info_shield",
+        //     ]),
+        //     level: Some(async_compression::Level::Fastest),
+        //     ..Default::default()
+        // })
+        server.attach(Compression(async_compression::Level::Fastest))
     }
 }
 
