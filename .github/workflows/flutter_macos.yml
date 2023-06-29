@@ -37,5 +37,5 @@ jobs:
           api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
       - working-directory: frontends/flutter
-        run: flutter build macos
+        run: flutter build macos --release
   
