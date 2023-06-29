@@ -60,7 +60,7 @@ jobs:
     - working-directory: frontends/flutter
       run: flutter build ios --release --no-codesign
     - working-directory: frontends/flutter
-      name: 🔐 Install Apple certificate and provisioning profile
+      name: 🔐 Install Apple certificates
       env:
         P12_DISTRIBUTION_CERTIFICATE_BASE64: "${{ secrets.IOS_P12_DISTRIBUTION_CERTIFICATE_BASE64 }}"
         P12_DISTRIBUTION_CERTIFICATE_PASSWORD: "${{ secrets.IOS_P12_DISTRIBUTION_CERTIFICATE_PASSWORD }}"
