@@ -267,10 +267,13 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                             color: Colors.grey),
                       ),
                       if (author?.avatarMediaId.isNotEmpty ?? false)
-                        CircleAvatar(
-                          backgroundImage:
-                              mediaImageProvider(author!.avatarMediaId),
-                          maxRadius: 10,
+                        Padding(
+                          padding: const EdgeInsets.only(right: 5.0),
+                          child: CircleAvatar(
+                            backgroundImage:
+                                mediaImageProvider(author!.avatarMediaId),
+                            maxRadius: 10,
+                          ),
                         ),
                       if (author?.permissions.contains(Permission.RUN_BOTS) ??
                           false)
