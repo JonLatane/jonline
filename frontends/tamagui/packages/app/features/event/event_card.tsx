@@ -27,45 +27,16 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const media = useMedia();
   const post = event.post!;
 
-  // const theme = useTheme();
-  // const textColor: string = theme.color.val;
-  // const themeBgColor = theme.background.val;
   const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor } = useServerTheme();
-  // const { luma: themeBgLuma } = colorMeta(themeBgColor);
-  // const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
-  // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
-  // const preview: string | undefined = useTypedSelector((state: RootState) => state.posts.previews[post.id]);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  // Call the hook passing in ref and root margin
-  // In this case it would only be considered onScreen if more ...
-  // ... than 300px of element is visible.
-  // const onScreen = useOnScreen(ref, "-1px");
-  // useEffect(() => {
-  //   if( onScreen) {
-  //     onOnScreen?.();
-  //   }
-  // }, [onScreen]);
-  // useEffect(() => {
-  //   if (!preview && !loadingPreview && onScreen && post.previewImageExists != false) {
-  //     post.content
-  //     setLoadingPreview(true);
-  //     setTimeout(() => dispatch(loadPostPreview({ ...post, ...accountOrServer })), 1);
-  //   }
-  // });
+
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
   const instances = event.instances;
-  // const instance = instances[0];
   const instance = selectedInstance
     ? selectedInstance
     : instances.length === 1 ? instances[0] : undefined;
-  // const [instance, setInstance] = useState<EventInstance | undefined>(undefined);
-  // useEffect(() => {
-  //   if (selectedInstance?.id != instance?.id)
-  //   setInstance(selectedInstance ?? instances.length === 1 ? instances[0] : undefined);
-  // }, [selectedInstance, instances]);
-  // console.log('EventCard.instance=', instance?.id, 'selectedInstance=', selectedInstance?.id, 'instances=', instances.length);
 
   const eventLink = useLink({
     href: instance
@@ -129,7 +100,6 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   });
 
   const [showPastInstances, setShowPastInstances] = useState(false);
-  // const [displayedInstances, setDisplayedInstances] = useState<EventInstance[]>();
   const displayedInstances = instances
     ? (showPastInstances
       ? [...instances]
@@ -138,15 +108,6 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     ).sort(instanceTimeSort)
     : undefined;
   const hasPastInstances = instances.find(isPastInstance) != undefined;
-  // useEffect(() => {
-  //   setDisplayedInstances(instances
-  //     ? (showPastInstances
-  //       ? [...instances]
-  //       : instances
-  //         .filter(isNotPastInstance)
-  //     ).sort(instanceTimeSort)
-  //     : undefined);
-  // }, [showPastInstances, instances]);
   return (
     <>
       <YStack w='100%'>

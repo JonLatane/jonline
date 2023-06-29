@@ -7,10 +7,18 @@ ImageProvider mediaImageProvider(
   String mediaId, {
   String? serverOverride,
 }) {
+  return NetworkImage(mediaImageUrl(mediaId, serverOverride: serverOverride));
+}
+
+String mediaImageUrl(
+  String mediaId, {
+  String? serverOverride,
+}) {
   final String server = serverOverride ?? JonlineServer.selectedServer.server;
 
+  // TODO: use auth token
   final protocol = server == 'localhost' ? 'http' : 'https';
-  return NetworkImage("$protocol://$server/media/$mediaId");
+  return "$protocol://$server/media/$mediaId";
 }
 
 class MediaImage extends StatefulWidget {

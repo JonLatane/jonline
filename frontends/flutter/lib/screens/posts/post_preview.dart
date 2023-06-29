@@ -266,6 +266,12 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                             fontWeight: FontWeight.w300,
                             color: Colors.grey),
                       ),
+                      if (author?.avatarMediaId.isNotEmpty ?? false)
+                        CircleAvatar(
+                          backgroundImage:
+                              mediaImageProvider(author!.avatarMediaId),
+                          maxRadius: 10,
+                        ),
                       if (author?.permissions.contains(Permission.RUN_BOTS) ??
                           false)
                         Tooltip(

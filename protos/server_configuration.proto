@@ -44,6 +44,13 @@ message ServerConfiguration {
   // contain `PUBLISH_EVENTS_GLOBALLY`.
   FeatureSettings media_settings = 24;
 
+  // If set, enables External CDN support for the server. This means that the
+  // non-secure HTTP server (on port 80) will *not* redirect to the secure server,
+  // and instead serve up Tamagui Web/Flutter clients directly. This allows you
+  // to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
+  // up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
+  //
+  // See ExternalCDNConfig for more details on securing this setup.
   optional ExternalCDNConfig external_cdn_config = 90;
 
   // Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
@@ -64,6 +71,19 @@ message ExternalCDNConfig {
   // The domain where the backend is hosted. For example, jonline.io.itsj.online.
   // Typically your Kubernetes provider should own DNS for this domain.
   string backend_host = 2;
+
+  // (TODO) When set, the HTTP `GET /media/<id>?<authorization>` endpoint will be disabled by default on the 
+  // HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in 
+  // `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed.
+  bool secure_media = 3;
+  // Whitespace- and/or comma- separated list of IPv4 addresses/ranges 
+  // to media file serving to. Only applicable if `secure_media` is `true`.
+  // For reference, Cloudflare's are at https://www.cloudflare.com/ips-v4.
+  optional string media_ipv4_allowlist = 4;
+  // Whitespace- and/or comma- separated list of IPv6 addresses/ranges 
+  // to media file serving to. Only applicable if `secure_media` is `true`.
+  // For reference, Cloudflare's are at https://www.cloudflare.com/ips-v6.
+  optional string media_ipv6_allowlist = 5;
 }
 
 enum AuthenticationFeature {

@@ -259,6 +259,11 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                           ),
                       ],
                     ),
+                    if (!widget.navigable && user.avatarMediaId.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Image.network(mediaImageUrl(user.avatarMediaId)),
+                      ),
                     if (member) const SizedBox(height: 4),
                     AnimatedContainer(
                         duration: animationDuration,

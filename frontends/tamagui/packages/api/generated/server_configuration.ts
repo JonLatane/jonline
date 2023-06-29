@@ -212,7 +212,18 @@ export interface ServerConfiguration {
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
    * contain `PUBLISH_EVENTS_GLOBALLY`.
    */
-  mediaSettings: FeatureSettings | undefined;
+  mediaSettings:
+    | FeatureSettings
+    | undefined;
+  /**
+   * If set, enables External CDN support for the server. This means that the
+   * non-secure HTTP server (on port 80) will *not* redirect to the secure server,
+   * and instead serve up Tamagui Web/Flutter clients directly. This allows you
+   * to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
+   * up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
+   *
+   * See ExternalCDNConfig for more details on securing this setup.
+   */
   externalCdnConfig?:
     | ExternalCDNConfig
     | undefined;
@@ -241,6 +252,26 @@ export interface ExternalCDNConfig {
    * Typically your Kubernetes provider should own DNS for this domain.
    */
   backendHost: string;
+  /**
+   * (TODO) When set, the HTTP `GET /media/<id>?<authorization>` endpoint will be disabled by default on the
+   * HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in
+   * `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed.
+   */
+  secureMedia: boolean;
+  /**
+   * Whitespace- and/or comma- separated list of IPv4 addresses/ranges
+   * to media file serving to. Only applicable if `secure_media` is `true`.
+   * For reference, Cloudflare's are at https://www.cloudflare.com/ips-v4.
+   */
+  mediaIpv4Allowlist?:
+    | string
+    | undefined;
+  /**
+   * Whitespace- and/or comma- separated list of IPv6 addresses/ranges
+   * to media file serving to. Only applicable if `secure_media` is `true`.
+   * For reference, Cloudflare's are at https://www.cloudflare.com/ips-v6.
+   */
+  mediaIpv6Allowlist?: string | undefined;
 }
 
 export interface FeatureSettings {
@@ -578,7 +609,13 @@ export const ServerConfiguration = {
 };
 
 function createBaseExternalCDNConfig(): ExternalCDNConfig {
-  return { frontendHost: "", backendHost: "" };
+  return {
+    frontendHost: "",
+    backendHost: "",
+    secureMedia: false,
+    mediaIpv4Allowlist: undefined,
+    mediaIpv6Allowlist: undefined,
+  };
 }
 
 export const ExternalCDNConfig = {
@@ -588,6 +625,15 @@ export const ExternalCDNConfig = {
     }
     if (message.backendHost !== "") {
       writer.uint32(18).string(message.backendHost);
+    }
+    if (message.secureMedia === true) {
+      writer.uint32(24).bool(message.secureMedia);
+    }
+    if (message.mediaIpv4Allowlist !== undefined) {
+      writer.uint32(34).string(message.mediaIpv4Allowlist);
+    }
+    if (message.mediaIpv6Allowlist !== undefined) {
+      writer.uint32(42).string(message.mediaIpv6Allowlist);
     }
     return writer;
   },
@@ -605,6 +651,15 @@ export const ExternalCDNConfig = {
         case 2:
           message.backendHost = reader.string();
           break;
+        case 3:
+          message.secureMedia = reader.bool();
+          break;
+        case 4:
+          message.mediaIpv4Allowlist = reader.string();
+          break;
+        case 5:
+          message.mediaIpv6Allowlist = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -617,6 +672,9 @@ export const ExternalCDNConfig = {
     return {
       frontendHost: isSet(object.frontendHost) ? String(object.frontendHost) : "",
       backendHost: isSet(object.backendHost) ? String(object.backendHost) : "",
+      secureMedia: isSet(object.secureMedia) ? Boolean(object.secureMedia) : false,
+      mediaIpv4Allowlist: isSet(object.mediaIpv4Allowlist) ? String(object.mediaIpv4Allowlist) : undefined,
+      mediaIpv6Allowlist: isSet(object.mediaIpv6Allowlist) ? String(object.mediaIpv6Allowlist) : undefined,
     };
   },
 
@@ -624,6 +682,9 @@ export const ExternalCDNConfig = {
     const obj: any = {};
     message.frontendHost !== undefined && (obj.frontendHost = message.frontendHost);
     message.backendHost !== undefined && (obj.backendHost = message.backendHost);
+    message.secureMedia !== undefined && (obj.secureMedia = message.secureMedia);
+    message.mediaIpv4Allowlist !== undefined && (obj.mediaIpv4Allowlist = message.mediaIpv4Allowlist);
+    message.mediaIpv6Allowlist !== undefined && (obj.mediaIpv6Allowlist = message.mediaIpv6Allowlist);
     return obj;
   },
 
@@ -635,6 +696,9 @@ export const ExternalCDNConfig = {
     const message = createBaseExternalCDNConfig();
     message.frontendHost = object.frontendHost ?? "";
     message.backendHost = object.backendHost ?? "";
+    message.secureMedia = object.secureMedia ?? false;
+    message.mediaIpv4Allowlist = object.mediaIpv4Allowlist ?? undefined;
+    message.mediaIpv6Allowlist = object.mediaIpv6Allowlist ?? undefined;
     return message;
   },
 };

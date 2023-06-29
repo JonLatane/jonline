@@ -170,6 +170,9 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExternalCDNConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'frontendHost')
     ..aOS(2, _omitFieldNames ? '' : 'backendHost')
+    ..aOB(3, _omitFieldNames ? '' : 'secureMedia')
+    ..aOS(4, _omitFieldNames ? '' : 'mediaIpv4Allowlist')
+    ..aOS(5, _omitFieldNames ? '' : 'mediaIpv6Allowlist')
     ..hasRequiredFields = false
   ;
 
@@ -211,6 +214,33 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   $core.bool hasBackendHost() => $_has(1);
   @$pb.TagNumber(2)
   void clearBackendHost() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.bool get secureMedia => $_getBF(2);
+  @$pb.TagNumber(3)
+  set secureMedia($core.bool v) { $_setBool(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasSecureMedia() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSecureMedia() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get mediaIpv4Allowlist => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set mediaIpv4Allowlist($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasMediaIpv4Allowlist() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearMediaIpv4Allowlist() => clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get mediaIpv6Allowlist => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set mediaIpv6Allowlist($core.String v) { $_setString(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasMediaIpv6Allowlist() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearMediaIpv6Allowlist() => clearField(5);
 }
 
 class FeatureSettings extends $pb.GeneratedMessage {

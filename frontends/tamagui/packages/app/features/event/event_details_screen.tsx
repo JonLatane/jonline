@@ -1,21 +1,15 @@
-import { Permission, Event, Post, EventInstance } from '@jonline/api'
-import { Button, dismissScrollPreserver, Heading, isClient, isWeb, needsScrollPreservers, ScrollView, Spinner, TextArea, Theme, Tooltip, useWindowDimensions, XStack, YStack, ZStack } from '@jonline/ui'
-import { Clock, Edit, Eye, History, ListEnd, Send as SendIcon } from '@tamagui/lucide-icons'
-import { confirmReplySent, loadEvent, loadPostReplies, replyToPost, RootState, selectGroupById, selectEventById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
+import { EventInstance, Post } from '@jonline/api'
+import { Button, Heading, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui'
+import { ListEnd } from '@tamagui/lucide-icons'
+import { RootState, loadEvent, loadPostReplies, selectEventById, selectGroupById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
 import moment, { Moment } from 'moment'
 import React, { useEffect, useReducer, useState } from 'react'
-import { FlatList, View } from 'react-native'
-import StickyBox from 'react-sticky-box'
 import { createParam } from 'solito'
-import { AddAccountSheet } from '../accounts/add_account_sheet'
-import { TabsNavigation } from '../tabs/tabs_navigation'
 import EventCard from '../event/event_card'
-import { TamaguiMarkdown } from '../post/tamagui_markdown'
-import { AppSection } from '../tabs/features_navigation'
 import PostCard from '../post/post_card'
 import { ReplyArea } from '../post/post_details_screen'
-import { InstanceTime } from './instance_time'
-import { instanceTimeSort, isNotPastInstance } from 'app/utils/time'
+import { AppSection } from '../tabs/features_navigation'
+import { TabsNavigation } from '../tabs/tabs_navigation'
 
 const { useParam } = createParam<{ eventId: string, instanceId: string, shortname: string | undefined }>()
 
@@ -220,16 +214,8 @@ export function EventDetailsScreen() {
     if (chatUI) {
       flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
     }
-  }, [chatUI]);
+  }, [chatUI])
 
-  // const [showPastInstances, setShowPastInstances] = useState(false);
-  // const displayedInstances = subjectInstances
-  //   ? (showPastInstances
-  //     ? [...subjectInstances]
-  //     : subjectInstances
-  //       .filter(isNotPastInstance)
-  //   ).sort(instanceTimeSort)
-  //   : undefined;
 
   let logicallyReplyingTo: Post | undefined = undefined;
   return (
@@ -244,23 +230,6 @@ export function EventDetailsScreen() {
         : <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
 
           <ScrollView w='100%'>
-            {/* <XStack w='100%' ml='$4' space>
-              <Theme inverse={showPastInstances}>
-                <Button mt='$2' mr={-7} size='$3' circular icon={History}
-                  // backgroundColor={showPastInstances ? undefined : navColor} 
-                  onPress={() => setShowPastInstances(!showPastInstances)} />
-              </Theme>
-              <ScrollView f={1} horizontal pb='$3'>
-                <XStack mt='$1'>
-                  {displayedInstances?.map((instance) =>
-                    <InstanceTime key={instance.id} linkToInstance
-                      event={subjectEvent} instance={instance}
-                      highlight={instance.id == subjectInstance?.id}
-                    />)}
-                </XStack>
-
-              </ScrollView>
-            </XStack> */}
             <XStack w='100%' paddingHorizontal='$3'>
               {subjectEvent ? <EventCard event={subjectEvent} selectedInstance={subjectInstance} /> : undefined}
             </XStack>
