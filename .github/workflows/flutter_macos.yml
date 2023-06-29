@@ -19,5 +19,23 @@ jobs:
           architecture: x64
       - working-directory: frontends/flutter
         run: flutter config --enable-macos-desktop
+      - name: Download Development Profile
+        uses: apple-actions/download-provisioning-profiles@v1
+        with: 
+          bundle-id: io.jonline.jonline
+          profile-type: MAC_APP_DEVELOPMENT
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
+      - name: Download Distribution Profile
+        id: provisioning
+        uses: apple-actions/download-provisioning-profiles@v1
+        with: 
+          bundle-id: io.jonline.jonline
+          profile-type: MAC_APP_STORE
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
       - working-directory: frontends/flutter
         run: flutter build macos
+  

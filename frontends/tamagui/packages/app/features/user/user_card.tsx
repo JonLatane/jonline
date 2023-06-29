@@ -11,6 +11,7 @@ import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
 import { MediaChooser } from "../media/media_chooser";
 import { } from "../post/post_card";
+import { SingleMediaChooser } from '../accounts/single_media_chooser';
 
 interface Props {
   user: User;
@@ -138,7 +139,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               : undefined}
             <AnimatePresence>
               {canEditAvatar
-                ? <YStack key='avatar-selection' animation='quick' {...standardAnimation}
+                ? 
+                <SingleMediaChooser mediaId={avatarMediaId} setMediaId={setAvatarMediaId} />
+                /*<YStack key='avatar-selection' animation='quick' {...standardAnimation}
                   space='$2' mb='$2'>
                   <MediaChooser
                     selectedMedia={avatarMediaId ? [avatarMediaId] : []}
@@ -155,7 +158,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
                       <Heading ml='$3' my='auto' size='$1'>Remove Avatar</Heading>
                     </XStack>
                   </Button>
-                </YStack>
+                </YStack>*/
                 : undefined}
               {followsCurrentUser
                 ? <Heading key='follow-request-heading' animation='quick' {...standardAnimation}

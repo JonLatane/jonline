@@ -407,11 +407,10 @@ class ServerInfo extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'name')
     ..aOS(2, _omitFieldNames ? '' : 'shortName')
     ..aOS(3, _omitFieldNames ? '' : 'description')
-    ..aOS(4, _omitFieldNames ? '' : 'privacyPolicyLink')
-    ..aOS(5, _omitFieldNames ? '' : 'aboutLink')
+    ..aOS(4, _omitFieldNames ? '' : 'privacyPolicy')
+    ..aOM<ServerLogo>(5, _omitFieldNames ? '' : 'logo', subBuilder: ServerLogo.create)
     ..e<WebUserInterface>(6, _omitFieldNames ? '' : 'webUserInterface', $pb.PbFieldType.OE, defaultOrMaker: WebUserInterface.FLUTTER_WEB, valueOf: WebUserInterface.valueOf, enumValues: WebUserInterface.values)
     ..aOM<ServerColors>(7, _omitFieldNames ? '' : 'colors', subBuilder: ServerColors.create)
-    ..a<$core.List<$core.int>>(8, _omitFieldNames ? '' : 'logo', $pb.PbFieldType.OY)
     ..hasRequiredFields = false
   ;
 
@@ -464,22 +463,24 @@ class ServerInfo extends $pb.GeneratedMessage {
   void clearDescription() => clearField(3);
 
   @$pb.TagNumber(4)
-  $core.String get privacyPolicyLink => $_getSZ(3);
+  $core.String get privacyPolicy => $_getSZ(3);
   @$pb.TagNumber(4)
-  set privacyPolicyLink($core.String v) { $_setString(3, v); }
+  set privacyPolicy($core.String v) { $_setString(3, v); }
   @$pb.TagNumber(4)
-  $core.bool hasPrivacyPolicyLink() => $_has(3);
+  $core.bool hasPrivacyPolicy() => $_has(3);
   @$pb.TagNumber(4)
-  void clearPrivacyPolicyLink() => clearField(4);
+  void clearPrivacyPolicy() => clearField(4);
 
   @$pb.TagNumber(5)
-  $core.String get aboutLink => $_getSZ(4);
+  ServerLogo get logo => $_getN(4);
   @$pb.TagNumber(5)
-  set aboutLink($core.String v) { $_setString(4, v); }
+  set logo(ServerLogo v) { setField(5, v); }
   @$pb.TagNumber(5)
-  $core.bool hasAboutLink() => $_has(4);
+  $core.bool hasLogo() => $_has(4);
   @$pb.TagNumber(5)
-  void clearAboutLink() => clearField(5);
+  void clearLogo() => clearField(5);
+  @$pb.TagNumber(5)
+  ServerLogo ensureLogo() => $_ensure(4);
 
   @$pb.TagNumber(6)
   WebUserInterface get webUserInterface => $_getN(5);
@@ -500,15 +501,78 @@ class ServerInfo extends $pb.GeneratedMessage {
   void clearColors() => clearField(7);
   @$pb.TagNumber(7)
   ServerColors ensureColors() => $_ensure(6);
+}
 
-  @$pb.TagNumber(8)
-  $core.List<$core.int> get logo => $_getN(7);
-  @$pb.TagNumber(8)
-  set logo($core.List<$core.int> v) { $_setBytes(7, v); }
-  @$pb.TagNumber(8)
-  $core.bool hasLogo() => $_has(7);
-  @$pb.TagNumber(8)
-  void clearLogo() => clearField(8);
+class ServerLogo extends $pb.GeneratedMessage {
+  factory ServerLogo() => create();
+  ServerLogo._() : super();
+  factory ServerLogo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ServerLogo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerLogo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'squareMediaId', protoName: 'squareMediaId')
+    ..aOS(2, _omitFieldNames ? '' : 'squareMediaIdDark', protoName: 'squareMediaIdDark')
+    ..aOS(3, _omitFieldNames ? '' : 'wideMediaId', protoName: 'wideMediaId')
+    ..aOS(4, _omitFieldNames ? '' : 'wideMediaIdDark', protoName: 'wideMediaIdDark')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ServerLogo clone() => ServerLogo()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ServerLogo copyWith(void Function(ServerLogo) updates) => super.copyWith((message) => updates(message as ServerLogo)) as ServerLogo;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ServerLogo create() => ServerLogo._();
+  ServerLogo createEmptyInstance() => create();
+  static $pb.PbList<ServerLogo> createRepeated() => $pb.PbList<ServerLogo>();
+  @$core.pragma('dart2js:noInline')
+  static ServerLogo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerLogo>(create);
+  static ServerLogo? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get squareMediaId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set squareMediaId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasSquareMediaId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSquareMediaId() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get squareMediaIdDark => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set squareMediaIdDark($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasSquareMediaIdDark() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSquareMediaIdDark() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get wideMediaId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set wideMediaId($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasWideMediaId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearWideMediaId() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get wideMediaIdDark => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set wideMediaIdDark($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasWideMediaIdDark() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearWideMediaIdDark() => clearField(4);
 }
 
 class ServerColors extends $pb.GeneratedMessage {

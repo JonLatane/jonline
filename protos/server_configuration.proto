@@ -143,15 +143,24 @@ enum PrivateUserStrategy {
   LET_ME_CREEP_ON_PPL = 2;
 }
 
+// User-facing information about the server displayed on the "about" page.
 message ServerInfo {
+  // Name of the server.
   optional string name = 1;
   optional string short_name = 2;
   optional string description = 3;
-  optional string privacy_policy_link = 4;
-  optional string about_link = 5;
+  optional string privacy_policy = 4;
+  optional ServerLogo logo = 5;
   optional WebUserInterface web_user_interface = 6;
   optional ServerColors colors = 7;
-  optional bytes logo = 8;
+}
+
+
+message ServerLogo {
+  optional string squareMediaId = 1;
+  optional string squareMediaIdDark = 2;
+  optional string wideMediaId = 3;
+  optional string wideMediaIdDark = 4;
 }
 
 // Offers a choice of web UIs. All

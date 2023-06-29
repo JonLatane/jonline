@@ -79,6 +79,7 @@
     - [ServerColors](#jonline-ServerColors)
     - [ServerConfiguration](#jonline-ServerConfiguration)
     - [ServerInfo](#jonline-ServerInfo)
+    - [ServerLogo](#jonline-ServerLogo)
   
     - [AuthenticationFeature](#jonline-AuthenticationFeature)
     - [PrivateUserStrategy](#jonline-PrivateUserStrategy)
@@ -1339,19 +1340,36 @@ See ExternalCDNConfig for more details on securing this setup. |
 <a name="jonline-ServerInfo"></a>
 
 ### ServerInfo
+User-facing information about the server displayed on the &#34;about&#34; page.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | optional | Name of the server. |
+| short_name | [string](#string) | optional |  |
+| description | [string](#string) | optional |  |
+| privacy_policy | [string](#string) | optional |  |
+| logo | [ServerLogo](#jonline-ServerLogo) | optional |  |
+| web_user_interface | [WebUserInterface](#jonline-WebUserInterface) | optional |  |
+| colors | [ServerColors](#jonline-ServerColors) | optional |  |
+
+
+
+
+
+
+<a name="jonline-ServerLogo"></a>
+
+### ServerLogo
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) | optional |  |
-| short_name | [string](#string) | optional |  |
-| description | [string](#string) | optional |  |
-| privacy_policy_link | [string](#string) | optional |  |
-| about_link | [string](#string) | optional |  |
-| web_user_interface | [WebUserInterface](#jonline-WebUserInterface) | optional |  |
-| colors | [ServerColors](#jonline-ServerColors) | optional |  |
-| logo | [bytes](#bytes) | optional |  |
+| squareMediaId | [string](#string) | optional |  |
+| squareMediaIdDark | [string](#string) | optional |  |
+| wideMediaId | [string](#string) | optional |  |
+| wideMediaIdDark | [string](#string) | optional |  |
 
 
 

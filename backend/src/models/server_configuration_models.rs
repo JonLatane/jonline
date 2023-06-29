@@ -86,15 +86,19 @@ that operates over gRPC (with configurable TLS) on port 27707. Multi-server inte
 If you're interested in me running an instance for you, get in touch with me at [jonlatane@gmail.com](mailto:jonlatane@gmail.com).
 If this is an instance you're running, feel free to replace this text with your own by logging in as an admin 🙃
             ".to_string()),
-            privacy_policy_link: None,
-            about_link: None,
+            privacy_policy: Some("
+This is a demo server. Please create an account and post! But your account will be deleted at some point.
+The point of Jonline is transparency, including transparency in how privacy is offered. As such...
+*do not consider anything you post or upload to jonline.io to be private*.
+I will, however, not sell your data to advertisers nor deliberately expose any vulnerabilities.
+            ".to_string()),
+            logo: None,
             web_user_interface: Some(WebUserInterface::ReactTamagui as i32),
             colors: Some(ServerColors {
                 primary: Some(0xFF2E86AB),
                 navigation: Some(0xFFA23B72),
                 ..Default::default()
             }),
-            logo: None,
         })
         .unwrap(),
         anonymous_user_permissions: vec![

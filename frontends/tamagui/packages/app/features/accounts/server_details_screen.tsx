@@ -1,5 +1,5 @@
-import { ExternalCDNConfig, Permission, ServerConfiguration } from '@jonline/api'
-import { Button, Heading, Input, Paragraph, ScrollView, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions, Text, Switch } from '@jonline/ui'
+import { Media, Permission, ServerConfiguration } from '@jonline/api'
+import { Button, Heading, Input, Paragraph, ScrollView, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
 import { Info } from '@tamagui/lucide-icons'
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
@@ -13,7 +13,8 @@ import { AppSection } from '../tabs/features_navigation'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 import { PermissionsEditor, PermissionsEditorProps } from '../user/permissions_editor'
 import ServerCard from './server_card'
-import { Animated } from 'react-native';
+import { SingleMediaChooser } from './single_media_chooser'
+import { MediaRenderer } from '../media/media_renderer'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -60,6 +61,11 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   // if (serverDescription && description != serverDescription && description == undefined) {
   //   setDescription(serverDescription);
   // }
+  const serverPrivacyPolicy = serverConfiguration?.serverInfo?.privacyPolicy;
+  const [privacyPolicy, setPrivacyPolicy] = useState(serverPrivacyPolicy || undefined);
+  const serverLogo = serverConfiguration?.serverInfo?.logo;
+  const [logo, setLogo] = useState(serverLogo || undefined);
+
   const serverExternalCdnConfig = serverConfiguration?.externalCdnConfig;
   const [externalCdnConfig, setExternalCdnConfig] = useState(serverExternalCdnConfig || undefined);
   // if (defaultClientDomain && name != serverName && name == undefined) {
@@ -94,6 +100,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   useEffect(() => {
     setName(serverName);
     setDescription(serverDescription);
+    setPrivacyPolicy(serverPrivacyPolicy);
+    setLogo(serverLogo);
     setExternalCdnConfig(serverExternalCdnConfig);
     setDefaultPermissions(serverDefaultPermissions);
     setPrimaryColorHex(primaryColor);
@@ -156,6 +164,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
         ...serverConfiguration!.serverInfo,
         name,
         description,
+        privacyPolicy,
+        logo,
         colors: {
           ...serverConfiguration!.serverInfo!.colors,
           primary: newPrimaryColorInt, navigation: newNavColorInt
@@ -213,6 +223,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   ? <Input value={name ?? ''} opacity={name && name != '' ? 1 : 0.5}
                     placeholder='The name of your community.' onChangeText={t => setName(t)} />
                   : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
+
                 <Heading size='$3'>Description</Heading>
                 {isAdmin ?
                   <TextArea value={description ?? ''} opacity={description && description != '' ? 1 : 0.5}
@@ -222,6 +233,45 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     ? <TamaguiMarkdown text={description} />
                     : <Paragraph opacity={0.5}>No description set.</Paragraph>}
 
+                <Heading size='$3'>Privacy Policy</Heading>
+                {isAdmin ?
+                  <TextArea value={privacyPolicy ?? ''} opacity={privacyPolicy && privacyPolicy != '' ? 1 : 0.5}
+                    onChangeText={t => setPrivacyPolicy(t)} h='$14'
+                    placeholder='A privacy policy stating how you plan to use user data.' />
+                  : privacyPolicy && privacyPolicy != ''
+                    ? <TamaguiMarkdown text={privacyPolicy} />
+                    : <Paragraph opacity={0.5}>No privacy policy set.</Paragraph>}
+
+                {/* <AnimatePresence> */}
+
+                {isAdmin || logo?.squareMediaId || logo?.wideMediaId
+                  ? <>
+                    <Heading size='$3' mt='$2'>Server Logo</Heading>
+                    {isAdmin || logo?.wideMediaId
+                      ? <Heading size='$2' mt='$2'>Wide</Heading>
+                      : undefined}
+                    {logo?.wideMediaId ?
+                      <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} />
+                      : undefined}
+                    {isAdmin
+                      ? <SingleMediaChooser mediaUseName='Wide Logo'
+                        mediaId={logo?.wideMediaId}
+                        setMediaId={v => setLogo({ ...(logo ?? {}), wideMediaId: v })} />
+                      : undefined}
+                    {isAdmin || logo?.wideMediaId
+                      ? <Heading size='$2' mt='$2'>Square</Heading>
+                      : undefined}
+                    {logo?.squareMediaId ?
+                      <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} />
+                      : undefined}
+                    {isAdmin
+                      ? <SingleMediaChooser mediaUseName='Square Logo'
+                        mediaId={logo?.squareMediaId}
+                        setMediaId={v => setLogo({ ...(logo ?? {}), squareMediaId: v })} />
+                      : undefined}
+                  </>
+                  : undefined}
+                {/* </AnimatePresence> */}
                 <XStack mt='$2'>
                   <Heading size='$3' f={1}>Primary Color</Heading>
                   <XStack w={50} h={30} backgroundColor={primaryColorHex} />

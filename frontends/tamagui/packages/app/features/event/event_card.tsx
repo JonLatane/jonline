@@ -55,6 +55,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
   const maxContentHeight = isPreview ? horizontal ? 100 : 300 : undefined;
   const detailsLink = isPreview ? eventLink : undefined;
+  const postLink = post.link ? useLink({ href: post.link }) : undefined;
   const authorLinkProps = post.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;
   const showDetailsShadow = isPreview && post.content && post.content.length > contentLengthShadowThreshold;
@@ -108,6 +109,50 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     ).sort(instanceTimeSort)
     : undefined;
   const hasPastInstances = instances.find(isPastInstance) != undefined;
+  const headerLinks = (post.link?.length ?? 0) > 0
+    ? <>
+      <YStack>
+        <Anchor textDecorationLine='none' {...postLink}>
+          <XStack>
+            <YStack f={1}>
+              <Heading size="$7" color={navColor} marginRight='auto'>{post.title}</Heading>
+            </YStack>
+          </XStack>
+        </Anchor>
+        {isPreview
+          ? <Anchor textDecorationLine='none' {...detailsLink}>
+            {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+          </Anchor>
+          : instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+      </YStack>
+    </>
+    : isPreview
+      ? <Anchor textDecorationLine='none' {...detailsLink}>
+        <YStack>
+          <XStack>
+            <YStack f={1}>
+              <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+            </YStack>
+          </XStack>
+          {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+        </YStack>
+      </Anchor>
+      : <YStack>
+        <XStack>
+          <YStack f={1}>
+            <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+          </YStack>
+        </XStack>
+        {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+      </YStack>;
+
+  const contentView = post.content && post.content != ''
+    ? isPreview
+      ? <Anchor textDecorationLine='none' {...detailsLink}>
+        <TamaguiMarkdown text={post.content} disableLinks={isPreview} />
+      </Anchor>
+      : <TamaguiMarkdown text={post.content} disableLinks={isPreview} />
+    : undefined;
   return (
     <>
       <YStack w='100%'>
@@ -117,8 +162,8 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
           marginBottom='$3'
           marginTop='$3'
           f={isPreview ? undefined : 1}
-          animation="bouncy"
-          pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
+          // animation="bouncy"
+          // pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
           ref={ref!}
           scale={1}
           opacity={1}
@@ -128,47 +173,43 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
         >
           {post.link || post.title
             ? <Card.Header>
-              <Anchor textDecorationLine='none' {...detailsLink}>
-                <YStack>
-                  <XStack>
-                    <YStack f={1}>
-                      <Heading color={navColor} size="$7" marginRight='auto'>{post.title}</Heading>
-                      {/* {post.link
-                        ? isPreview
-                          ? <Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading>
-                          : <Anchor href={post.link} onPress={(e) => e.stopPropagation()} target="_blank" rel='noopener noreferrer'
-                            color={navColor}><Heading size="$7" marginRight='auto' color={navColor}>{post.title}</Heading></Anchor>
-                        :
-                        <Heading size="$7" marginRight='auto'>{post.title}</Heading>
-                      } */}
-                    </YStack>
-                  </XStack>
-                  {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
-                  {!isPreview && instances.length > 1
-                    ? <XStack w='100%' mt='$2' ml='$4' space>
-                      {hasPastInstances
-                        ? <Theme inverse={showPastInstances}>
-                          <Button mt='$2' mr={-7} size='$3' circular icon={History}
-                            // backgroundColor={showPastInstances ? undefined : navColor} 
-                            onPress={() => setShowPastInstances(!showPastInstances)} />
-                        </Theme>
-                        : undefined}
-                      <ScrollView f={1} horizontal pb='$3'>
-                        <XStack mt='$1'>
-                          {displayedInstances?.map((i) =>
-                            <InstanceTime key={i.id} linkToInstance
-                              event={event} instance={i}
-                              highlight={i.id == instance?.id}
-                            />)}
-                        </XStack>
-
-                      </ScrollView>
+              <YStack>
+                {headerLinks}
+                {/* <Anchor textDecorationLine='none' {...detailsLink}>
+                  <YStack>
+                    <XStack>
+                      <YStack f={1}>
+                        <Heading color={navColor} size="$7" marginRight='auto'>{post.title}</Heading>
+                      </YStack>
                     </XStack>
-                    : undefined
+                    {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+                  </YStack>
+                </Anchor> */}
 
-                  }
-                </YStack>
-              </Anchor>
+                {!isPreview && instances.length > 1
+                  ? <XStack w='100%' mt='$2' ml='$4' space>
+                    {hasPastInstances
+                      ? <Theme inverse={showPastInstances}>
+                        <Button mt='$2' mr={-7} size='$3' circular icon={History}
+                          // backgroundColor={showPastInstances ? undefined : navColor} 
+                          onPress={() => setShowPastInstances(!showPastInstances)} />
+                      </Theme>
+                      : undefined}
+                    <ScrollView f={1} horizontal pb='$3'>
+                      <XStack mt='$1'>
+                        {displayedInstances?.map((i) =>
+                          <InstanceTime key={i.id} linkToInstance
+                            event={event} instance={i}
+                            highlight={i.id == instance?.id}
+                          />)}
+                      </XStack>
+
+                    </ScrollView>
+                  </XStack>
+                  : undefined
+
+                }
+              </YStack>
             </Card.Header>
             : undefined}
           <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
@@ -186,13 +227,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                     source={{ uri: previewUrl }}
                     borderRadius={10}
                   /> : undefined}
-                {
-                  post.content && post.content != '' ? Platform.select({
-                    default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
-                    // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
-                    // default: <Heading size='$1'>Native Markdown support pending!</Heading>
-                  }) : undefined
-                }
+                {contentView}
               </YStack>
               <XStack pt={10} {...detailsProps}>
                 <AuthorInfo {...{ post, detailsMargins }} />
@@ -220,7 +255,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
         </Card >
         {/* </Theme> */}
       </YStack>
-      {
+      {/* {
         isPreview ?
           <Anchor {...authorLinkProps} onPress={(e) => e.stopPropagation()}>
             <XStack w={180} h={70}
@@ -249,7 +284,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
               position='absolute' top={15} />
           </Anchor>
           : undefined
-      }
+      } */}
     </>
   );
 };

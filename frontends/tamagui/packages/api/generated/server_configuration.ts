@@ -325,15 +325,23 @@ export interface PostSettings {
   enableReplies: boolean;
 }
 
+/** User-facing information about the server displayed on the "about" page. */
 export interface ServerInfo {
+  /** Name of the server. */
   name?: string | undefined;
   shortName?: string | undefined;
   description?: string | undefined;
-  privacyPolicyLink?: string | undefined;
-  aboutLink?: string | undefined;
+  privacyPolicy?: string | undefined;
+  logo?: ServerLogo | undefined;
   webUserInterface?: WebUserInterface | undefined;
   colors?: ServerColors | undefined;
-  logo?: Uint8Array | undefined;
+}
+
+export interface ServerLogo {
+  squareMediaId?: string | undefined;
+  squareMediaIdDark?: string | undefined;
+  wideMediaId?: string | undefined;
+  wideMediaIdDark?: string | undefined;
 }
 
 /** Color in ARGB hex format (i.e `0xAARRGGBB`). */
@@ -879,11 +887,10 @@ function createBaseServerInfo(): ServerInfo {
     name: undefined,
     shortName: undefined,
     description: undefined,
-    privacyPolicyLink: undefined,
-    aboutLink: undefined,
+    privacyPolicy: undefined,
+    logo: undefined,
     webUserInterface: undefined,
     colors: undefined,
-    logo: undefined,
   };
 }
 
@@ -898,20 +905,17 @@ export const ServerInfo = {
     if (message.description !== undefined) {
       writer.uint32(26).string(message.description);
     }
-    if (message.privacyPolicyLink !== undefined) {
-      writer.uint32(34).string(message.privacyPolicyLink);
+    if (message.privacyPolicy !== undefined) {
+      writer.uint32(34).string(message.privacyPolicy);
     }
-    if (message.aboutLink !== undefined) {
-      writer.uint32(42).string(message.aboutLink);
+    if (message.logo !== undefined) {
+      ServerLogo.encode(message.logo, writer.uint32(42).fork()).ldelim();
     }
     if (message.webUserInterface !== undefined) {
       writer.uint32(48).int32(message.webUserInterface);
     }
     if (message.colors !== undefined) {
       ServerColors.encode(message.colors, writer.uint32(58).fork()).ldelim();
-    }
-    if (message.logo !== undefined) {
-      writer.uint32(66).bytes(message.logo);
     }
     return writer;
   },
@@ -933,19 +937,16 @@ export const ServerInfo = {
           message.description = reader.string();
           break;
         case 4:
-          message.privacyPolicyLink = reader.string();
+          message.privacyPolicy = reader.string();
           break;
         case 5:
-          message.aboutLink = reader.string();
+          message.logo = ServerLogo.decode(reader, reader.uint32());
           break;
         case 6:
           message.webUserInterface = reader.int32() as any;
           break;
         case 7:
           message.colors = ServerColors.decode(reader, reader.uint32());
-          break;
-        case 8:
-          message.logo = reader.bytes();
           break;
         default:
           reader.skipType(tag & 7);
@@ -960,11 +961,10 @@ export const ServerInfo = {
       name: isSet(object.name) ? String(object.name) : undefined,
       shortName: isSet(object.shortName) ? String(object.shortName) : undefined,
       description: isSet(object.description) ? String(object.description) : undefined,
-      privacyPolicyLink: isSet(object.privacyPolicyLink) ? String(object.privacyPolicyLink) : undefined,
-      aboutLink: isSet(object.aboutLink) ? String(object.aboutLink) : undefined,
+      privacyPolicy: isSet(object.privacyPolicy) ? String(object.privacyPolicy) : undefined,
+      logo: isSet(object.logo) ? ServerLogo.fromJSON(object.logo) : undefined,
       webUserInterface: isSet(object.webUserInterface) ? webUserInterfaceFromJSON(object.webUserInterface) : undefined,
       colors: isSet(object.colors) ? ServerColors.fromJSON(object.colors) : undefined,
-      logo: isSet(object.logo) ? bytesFromBase64(object.logo) : undefined,
     };
   },
 
@@ -973,13 +973,12 @@ export const ServerInfo = {
     message.name !== undefined && (obj.name = message.name);
     message.shortName !== undefined && (obj.shortName = message.shortName);
     message.description !== undefined && (obj.description = message.description);
-    message.privacyPolicyLink !== undefined && (obj.privacyPolicyLink = message.privacyPolicyLink);
-    message.aboutLink !== undefined && (obj.aboutLink = message.aboutLink);
+    message.privacyPolicy !== undefined && (obj.privacyPolicy = message.privacyPolicy);
+    message.logo !== undefined && (obj.logo = message.logo ? ServerLogo.toJSON(message.logo) : undefined);
     message.webUserInterface !== undefined && (obj.webUserInterface = message.webUserInterface !== undefined
       ? webUserInterfaceToJSON(message.webUserInterface)
       : undefined);
     message.colors !== undefined && (obj.colors = message.colors ? ServerColors.toJSON(message.colors) : undefined);
-    message.logo !== undefined && (obj.logo = message.logo !== undefined ? base64FromBytes(message.logo) : undefined);
     return obj;
   },
 
@@ -992,13 +991,94 @@ export const ServerInfo = {
     message.name = object.name ?? undefined;
     message.shortName = object.shortName ?? undefined;
     message.description = object.description ?? undefined;
-    message.privacyPolicyLink = object.privacyPolicyLink ?? undefined;
-    message.aboutLink = object.aboutLink ?? undefined;
+    message.privacyPolicy = object.privacyPolicy ?? undefined;
+    message.logo = (object.logo !== undefined && object.logo !== null)
+      ? ServerLogo.fromPartial(object.logo)
+      : undefined;
     message.webUserInterface = object.webUserInterface ?? undefined;
     message.colors = (object.colors !== undefined && object.colors !== null)
       ? ServerColors.fromPartial(object.colors)
       : undefined;
-    message.logo = object.logo ?? undefined;
+    return message;
+  },
+};
+
+function createBaseServerLogo(): ServerLogo {
+  return { squareMediaId: undefined, squareMediaIdDark: undefined, wideMediaId: undefined, wideMediaIdDark: undefined };
+}
+
+export const ServerLogo = {
+  encode(message: ServerLogo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.squareMediaId !== undefined) {
+      writer.uint32(10).string(message.squareMediaId);
+    }
+    if (message.squareMediaIdDark !== undefined) {
+      writer.uint32(18).string(message.squareMediaIdDark);
+    }
+    if (message.wideMediaId !== undefined) {
+      writer.uint32(26).string(message.wideMediaId);
+    }
+    if (message.wideMediaIdDark !== undefined) {
+      writer.uint32(34).string(message.wideMediaIdDark);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ServerLogo {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseServerLogo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.squareMediaId = reader.string();
+          break;
+        case 2:
+          message.squareMediaIdDark = reader.string();
+          break;
+        case 3:
+          message.wideMediaId = reader.string();
+          break;
+        case 4:
+          message.wideMediaIdDark = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ServerLogo {
+    return {
+      squareMediaId: isSet(object.squareMediaId) ? String(object.squareMediaId) : undefined,
+      squareMediaIdDark: isSet(object.squareMediaIdDark) ? String(object.squareMediaIdDark) : undefined,
+      wideMediaId: isSet(object.wideMediaId) ? String(object.wideMediaId) : undefined,
+      wideMediaIdDark: isSet(object.wideMediaIdDark) ? String(object.wideMediaIdDark) : undefined,
+    };
+  },
+
+  toJSON(message: ServerLogo): unknown {
+    const obj: any = {};
+    message.squareMediaId !== undefined && (obj.squareMediaId = message.squareMediaId);
+    message.squareMediaIdDark !== undefined && (obj.squareMediaIdDark = message.squareMediaIdDark);
+    message.wideMediaId !== undefined && (obj.wideMediaId = message.wideMediaId);
+    message.wideMediaIdDark !== undefined && (obj.wideMediaIdDark = message.wideMediaIdDark);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ServerLogo>, I>>(base?: I): ServerLogo {
+    return ServerLogo.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ServerLogo>, I>>(object: I): ServerLogo {
+    const message = createBaseServerLogo();
+    message.squareMediaId = object.squareMediaId ?? undefined;
+    message.squareMediaIdDark = object.squareMediaIdDark ?? undefined;
+    message.wideMediaId = object.wideMediaId ?? undefined;
+    message.wideMediaIdDark = object.wideMediaIdDark ?? undefined;
     return message;
   },
 };
@@ -1091,50 +1171,6 @@ export const ServerColors = {
     return message;
   },
 };
-
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if (tsProtoGlobalThis.Buffer) {
-    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = tsProtoGlobalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if (tsProtoGlobalThis.Buffer) {
-    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(String.fromCharCode(byte));
-    });
-    return tsProtoGlobalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

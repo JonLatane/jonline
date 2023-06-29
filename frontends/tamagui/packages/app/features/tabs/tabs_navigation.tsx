@@ -1,4 +1,4 @@
-import { Group, WebUserInterface } from "@jonline/api";
+import { Group, Media, WebUserInterface } from "@jonline/api";
 import { Button, Heading, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useTheme } from "@react-navigation/native";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
@@ -10,6 +10,7 @@ import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, sectionTitle } from "./features_navigation";
 import { GroupContextProvider } from "../groups/group_context";
+import { MediaRenderer } from "../media/media_renderer";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -46,6 +47,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const wrapTitle = serverName.length > 20;
   const maxWidth = media.gtXs ? 350 : 250;
+  const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
   // const app = useLocalApp();
   const theme = useTheme();
@@ -56,6 +58,10 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
   const shrinkHomeButton = selectedGroup != undefined || appSubsection == AppSubsection.FOLLOW_REQUESTS;
   // console.log(`app.darkModeAuto=${app.darkModeAuto}, systemDark=${systemDark}, app.darkMode=${app.darkMode}, invert=${invert}, dark=${dark}, bgColor=${bgColor}`);
+  const canUseLogo = (!shrinkHomeButton && logo?.wideMediaId != undefined) ||
+    (shrinkHomeButton && !logo?.squareMediaId != undefined);
+  const showHomeIcon = serverNameEmoji == undefined && !canUseLogo;
+  console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo)
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <GroupContextProvider value={selectedGroup}>
       {Platform.select({
@@ -65,23 +71,28 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
               {/* <XStack h={5}></XStack> */}
               <XStack space="$1" marginVertical={5}>
                 <XStack w={5} />
-                {shrinkHomeButton
-                  ? <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
-                    iconAfter={serverNameEmoji ? undefined : HomeIcon}
-                    {...homeProps}>
-                    {!shrinkHomeButton || serverNameEmoji
-                      ? <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                        <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
-                      </XStack>
-                      : undefined}
-                  </Button>
-                  : <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
-                    iconAfter={serverNameEmoji ? undefined : HomeIcon}
-                    {...homeProps}>
+                <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
+                  iconAfter={showHomeIcon ? HomeIcon : undefined}
+                  {...homeProps}>
+                  {shrinkHomeButton
+                    ?
                     <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                      <Heading whiteSpace="nowrap">{serverName}</Heading>
+                      {canUseLogo
+                        ? <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+                        : !shrinkHomeButton || serverNameEmoji
+                          ? <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+                          : undefined}
                     </XStack>
-                  </Button>}
+                    :
+                    <XStack h='100%' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                      {canUseLogo
+                        ? <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} failQuietly />
+                        : !shrinkHomeButton || serverNameEmoji
+                          ? <Heading whiteSpace="nowrap">{serverName}</Heading>
+                          : undefined}
+                    </XStack>
+                  }
+                </Button>
                 <ScrollView horizontal>
                   <XStack w={1} />
                   <GroupsSheet selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />

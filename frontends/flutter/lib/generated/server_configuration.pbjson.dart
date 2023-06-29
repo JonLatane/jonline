@@ -183,21 +183,19 @@ const ServerInfo$json = {
     {'1': 'name', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'name', '17': true},
     {'1': 'short_name', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'shortName', '17': true},
     {'1': 'description', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'description', '17': true},
-    {'1': 'privacy_policy_link', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'privacyPolicyLink', '17': true},
-    {'1': 'about_link', '3': 5, '4': 1, '5': 9, '9': 4, '10': 'aboutLink', '17': true},
+    {'1': 'privacy_policy', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'privacyPolicy', '17': true},
+    {'1': 'logo', '3': 5, '4': 1, '5': 11, '6': '.jonline.ServerLogo', '9': 4, '10': 'logo', '17': true},
     {'1': 'web_user_interface', '3': 6, '4': 1, '5': 14, '6': '.jonline.WebUserInterface', '9': 5, '10': 'webUserInterface', '17': true},
     {'1': 'colors', '3': 7, '4': 1, '5': 11, '6': '.jonline.ServerColors', '9': 6, '10': 'colors', '17': true},
-    {'1': 'logo', '3': 8, '4': 1, '5': 12, '9': 7, '10': 'logo', '17': true},
   ],
   '8': [
     {'1': '_name'},
     {'1': '_short_name'},
     {'1': '_description'},
-    {'1': '_privacy_policy_link'},
-    {'1': '_about_link'},
+    {'1': '_privacy_policy'},
+    {'1': '_logo'},
     {'1': '_web_user_interface'},
     {'1': '_colors'},
-    {'1': '_logo'},
   ],
 };
 
@@ -205,13 +203,37 @@ const ServerInfo$json = {
 final $typed_data.Uint8List serverInfoDescriptor = $convert.base64Decode(
     'CgpTZXJ2ZXJJbmZvEhcKBG5hbWUYASABKAlIAFIEbmFtZYgBARIiCgpzaG9ydF9uYW1lGAIgAS'
     'gJSAFSCXNob3J0TmFtZYgBARIlCgtkZXNjcmlwdGlvbhgDIAEoCUgCUgtkZXNjcmlwdGlvbogB'
-    'ARIzChNwcml2YWN5X3BvbGljeV9saW5rGAQgASgJSANSEXByaXZhY3lQb2xpY3lMaW5riAEBEi'
-    'IKCmFib3V0X2xpbmsYBSABKAlIBFIJYWJvdXRMaW5riAEBEkwKEndlYl91c2VyX2ludGVyZmFj'
-    'ZRgGIAEoDjIZLmpvbmxpbmUuV2ViVXNlckludGVyZmFjZUgFUhB3ZWJVc2VySW50ZXJmYWNliA'
-    'EBEjIKBmNvbG9ycxgHIAEoCzIVLmpvbmxpbmUuU2VydmVyQ29sb3JzSAZSBmNvbG9yc4gBARIX'
-    'CgRsb2dvGAggASgMSAdSBGxvZ2+IAQFCBwoFX25hbWVCDQoLX3Nob3J0X25hbWVCDgoMX2Rlc2'
-    'NyaXB0aW9uQhYKFF9wcml2YWN5X3BvbGljeV9saW5rQg0KC19hYm91dF9saW5rQhUKE193ZWJf'
-    'dXNlcl9pbnRlcmZhY2VCCQoHX2NvbG9yc0IHCgVfbG9nbw==');
+    'ARIqCg5wcml2YWN5X3BvbGljeRgEIAEoCUgDUg1wcml2YWN5UG9saWN5iAEBEiwKBGxvZ28YBS'
+    'ABKAsyEy5qb25saW5lLlNlcnZlckxvZ29IBFIEbG9nb4gBARJMChJ3ZWJfdXNlcl9pbnRlcmZh'
+    'Y2UYBiABKA4yGS5qb25saW5lLldlYlVzZXJJbnRlcmZhY2VIBVIQd2ViVXNlckludGVyZmFjZY'
+    'gBARIyCgZjb2xvcnMYByABKAsyFS5qb25saW5lLlNlcnZlckNvbG9yc0gGUgZjb2xvcnOIAQFC'
+    'BwoFX25hbWVCDQoLX3Nob3J0X25hbWVCDgoMX2Rlc2NyaXB0aW9uQhEKD19wcml2YWN5X3BvbG'
+    'ljeUIHCgVfbG9nb0IVChNfd2ViX3VzZXJfaW50ZXJmYWNlQgkKB19jb2xvcnM=');
+
+@$core.Deprecated('Use serverLogoDescriptor instead')
+const ServerLogo$json = {
+  '1': 'ServerLogo',
+  '2': [
+    {'1': 'squareMediaId', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'squareMediaId', '17': true},
+    {'1': 'squareMediaIdDark', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'squareMediaIdDark', '17': true},
+    {'1': 'wideMediaId', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'wideMediaId', '17': true},
+    {'1': 'wideMediaIdDark', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'wideMediaIdDark', '17': true},
+  ],
+  '8': [
+    {'1': '_squareMediaId'},
+    {'1': '_squareMediaIdDark'},
+    {'1': '_wideMediaId'},
+    {'1': '_wideMediaIdDark'},
+  ],
+};
+
+/// Descriptor for `ServerLogo`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List serverLogoDescriptor = $convert.base64Decode(
+    'CgpTZXJ2ZXJMb2dvEikKDXNxdWFyZU1lZGlhSWQYASABKAlIAFINc3F1YXJlTWVkaWFJZIgBAR'
+    'IxChFzcXVhcmVNZWRpYUlkRGFyaxgCIAEoCUgBUhFzcXVhcmVNZWRpYUlkRGFya4gBARIlCgt3'
+    'aWRlTWVkaWFJZBgDIAEoCUgCUgt3aWRlTWVkaWFJZIgBARItCg93aWRlTWVkaWFJZERhcmsYBC'
+    'ABKAlIA1IPd2lkZU1lZGlhSWREYXJriAEBQhAKDl9zcXVhcmVNZWRpYUlkQhQKEl9zcXVhcmVN'
+    'ZWRpYUlkRGFya0IOCgxfd2lkZU1lZGlhSWRCEgoQX3dpZGVNZWRpYUlkRGFyaw==');
 
 @$core.Deprecated('Use serverColorsDescriptor instead')
 const ServerColors$json = {
