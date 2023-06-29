@@ -38,4 +38,6 @@ jobs:
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
       - working-directory: frontends/flutter
         run: flutter build macos --release
+      - run: ls -R /Users/runner/work/jonline/jonline/frontends/flutter/build/macos
+
   
