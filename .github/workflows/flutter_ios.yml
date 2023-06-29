@@ -73,10 +73,9 @@ jobs:
     # - run: ls ~/Library/MobileDevice/Provisioning\ Profiles
     - working-directory: frontends/flutter
       name: 🍏📦 Create iOS Jonline appbundle release
+      # --export-options-plist=ios/exportOptions.plist
       run: |
-        flutter build ipa \
-          --release \
-          --export-options-plist=ios/exportOptions.plist
+        flutter build ipa --release
     - run: ls -R /Users/runner/work/jonline/jonline/frontends/flutter/build/ios
     - name: 🍏🚀 Deploy to TestFlight
       uses: apple-actions/upload-testflight-build@v1
