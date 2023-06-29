@@ -42,6 +42,8 @@ Future<List<JonlineAccount>> generateSideAccounts(
   while (avatars.length < range.length) {
     // I can use https://100k-faces.glitch.me/random-image if they merge/deploy
     // https://github.com/ozgrozer/100k-faces/pull/2...
+    // This is just a Dart copy-pasta of the JS "/random-image" endpoint here:
+    // https://github.com/ozgrozer/100k-faces/blob/master/glitch/server.js
     create100kFacesUrl() {
       strPad(String str) {
         return '000'.substring(str.toString().length) + str;
