@@ -8,6 +8,11 @@ These badges link to the communities' "About" pages. The versions, names, and/or
 | ----------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------- |
 | [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io/about) | Flagship demo/informational site | [React UI](https://jonline.io), [Flutter UI](https://jonline.io/flutter/) |
 
+### Native App Releases
+| Workflow Status                                                                                              | Stable Release | Beta Release | Notes                                                                                       |
+| ------------------------------------------------------------------------------------------------------------ | -------------- | ------------ | ------------------------------------------------------------------------------------------- |
+| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg) | N/A            | N/A          | Stable/Beta versions may not be current, subject to (Beta) App Review submission + approval |
+
 ### DockerHub
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
 [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
@@ -21,6 +26,7 @@ These badges link to the communities' "About" pages. The versions, names, and/or
 ### Continuous Integration
 | Workflow Status                                                                                                      | Information                                                                                                 |
 | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| ![Proto Consistency Check Badge](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)                    | [Proto Consistency Check Results](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)                    |
 | ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)                    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)                    |
 | ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg)         | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml)         |
 | ![Flutter Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml/badge.svg)         | [Flutter Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml)         |
@@ -33,6 +39,7 @@ These badges link to the communities' "About" pages. The versions, names, and/or
 - [Jonline](#jonline)
   - [Statuses](#statuses)
     - [Deployments](#deployments)
+    - [Native App Releases](#native-app-releases)
     - [DockerHub](#dockerhub)
     - [Continuous Delivery](#continuous-delivery)
     - [Continuous Integration](#continuous-integration)

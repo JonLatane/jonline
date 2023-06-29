@@ -1,4 +1,4 @@
-# To generate new keys:
+# To generate your own keys:
 #
 # 0) Use Keychain Access to generate a certSigningRequest/CSR (if one isn't saved).
 # 1) Create iOS Development Cert (ios_development.cer) using the CSR:
@@ -14,6 +14,11 @@
 #    Base64-encode (base64 -i) your Certificates.p12 from step (5) into the IOS_P12_DISTRIBUTION_CERTIFICATE_BASE64 secret,
 #    and your .mobileprovision files from steps (2) and (4) into IOS_DEVELOPMENT_PROVISIONING_PROFILE_BASE64
 #    and IOS_DISTRIBUTION_PROVISIONING_PROFILE_BASE64.
+# 7) You'll also need to setup Apple Developer account API keys for
+#    APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_API_KEY_ID,
+#    and APP_STORE_CONNECT_API_PRIVATE_KEY (all plaintext). This
+#    is available here: https://appstoreconnect.apple.com/access/api under
+#    "Keys" -> "App Store Connect API" currently (the Issuer ID is on the page itself).
 name: Flutter iOS
 
 on:
@@ -24,7 +29,7 @@ on:
 
 jobs:
   build_ios:
-    name: Deploy to TestFlight
+    name: Build (➡️TestFlight on Version Update)
     # continue-on-error: true
     runs-on: macos-latest
     steps:
@@ -76,8 +81,9 @@ jobs:
       # --export-options-plist=ios/exportOptions.plist
       run: |
         flutter build ipa --release --export-options-plist=ios/exportOptions.plist
-    - run: ls -R /Users/runner/work/jonline/jonline/frontends/flutter/build/ios
-    - name: 🍏🚀 Deploy to TestFlight
+    # - run: ls -R /Users/runner/work/jonline/jonline/frontends/flutter/build/ios
+    - name: 🍏🚀 Deploy to TestFlight (on pubspec.yaml version increment; fail otherwise)
+      continue-on-error: true
       uses: apple-actions/upload-testflight-build@v1
       with:
         app-path: ${{ github.workspace }}/frontends/flutter/build/ios/ipa/jonline.ipa
