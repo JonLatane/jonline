@@ -39,17 +39,27 @@ Future<List<JonlineAccount>> generateSideAccounts(
   final httpClient = http.Client();
 
   var lastMessageTime = DateTime.now();
-  // I can use 100k-faces if they merge/deploy
-  // https://github.com/ozgrozer/100k-faces/pull/2
-  if (!MyPlatform.isWeb) {
-    while (avatars.length < range.length) {
-      http.Response response = await httpClient.get(
-          Uri.parse('https://100k-faces.glitch.me/random-image'),
-          headers: {
-            if (!MyPlatform.isWeb) "User-Agent": "Jonline Flutter Client"
-          });
-      avatars.add(response.bodyBytes);
+  while (avatars.length < range.length) {
+    // I can use https://100k-faces.glitch.me/random-image if they merge/deploy
+    // https://github.com/ozgrozer/100k-faces/pull/2...
+    create100kFacesUrl() {
+      strPad(String str) {
+        return '000'.substring(str.toString().length) + str;
+      }
+
+      const baseUrl = 'https://ozgrozer.github.io/100k-faces/';
+      const firstFolder = '0';
+      final secondFolder = _random.nextInt(9);
+      final randomFile = strPad(_random.nextInt(999).toString());
+      final filename = "00$secondFolder$randomFile";
+      return "$baseUrl$firstFolder/$secondFolder/$filename.jpg";
     }
+
+    http.Response response = await httpClient
+        .get(Uri.parse(create100kFacesUrl()), headers: {
+      if (!MyPlatform.isWeb) "User-Agent": "Jonline Flutter Client"
+    });
+    avatars.add(response.bodyBytes);
   }
 
   showSnackBar("Loaded ${avatars.length} avatars.");
