@@ -57,42 +57,42 @@ jobs:
         issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
         api-private-key: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
-    # - working-directory: frontends/flutter
-    #   run: flutter build ios --release --no-codesign
-    # - working-directory: frontends/flutter
-    #   name: 🔐 Install Apple certificate and provisioning profile
-    #   env:
-    #     P12_DISTRIBUTION_CERTIFICATE_BASE64: "${{ secrets.IOS_P12_DISTRIBUTION_CERTIFICATE_BASE64 }}"
-    #     P12_DISTRIBUTION_CERTIFICATE_PASSWORD: "${{ secrets.IOS_P12_DISTRIBUTION_CERTIFICATE_PASSWORD }}"
-    #     DISTRIBUTION_PROVISIONING_PROFILE_BASE64: "${{ secrets.IOS_DISTRIBUTION_PROVISIONING_PROFILE_BASE64 }}"
-    #     DEVELOPMENT_PROVISIONING_PROFILE_BASE64: "${{ secrets.IOS_DEVELOPMENT_PROVISIONING_PROFILE_BASE64 }}"
-    #     KEYCHAIN_PASSWORD: "${{ secrets.IOS_RUNNER_LOCAL_KEYCHAIN_PASSWORD }}"
-    #   run: |
-    #     # create variables
-    #     CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-    #     DIST_PROVISIONING_PROFILE_PATH=$RUNNER_TEMP/build_pp_dist.mobileprovision
-    #     DEV_PROVISIONING_PROFILE_PATH=$RUNNER_TEMP/build_pp_dev.mobileprovision
-    #     KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+    - working-directory: frontends/flutter
+      run: flutter build ios --release --no-codesign
+    - working-directory: frontends/flutter
+      name: 🔐 Install Apple certificate and provisioning profile
+      env:
+        P12_DISTRIBUTION_CERTIFICATE_BASE64: "${{ secrets.IOS_P12_DISTRIBUTION_CERTIFICATE_BASE64 }}"
+        P12_DISTRIBUTION_CERTIFICATE_PASSWORD: "${{ secrets.IOS_P12_DISTRIBUTION_CERTIFICATE_PASSWORD }}"
+        # DISTRIBUTION_PROVISIONING_PROFILE_BASE64: "${{ secrets.IOS_DISTRIBUTION_PROVISIONING_PROFILE_BASE64 }}"
+        # DEVELOPMENT_PROVISIONING_PROFILE_BASE64: "${{ secrets.IOS_DEVELOPMENT_PROVISIONING_PROFILE_BASE64 }}"
+        KEYCHAIN_PASSWORD: "${{ secrets.IOS_RUNNER_LOCAL_KEYCHAIN_PASSWORD }}"
+      run: |
+        # create variables
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        # DIST_PROVISIONING_PROFILE_PATH=$RUNNER_TEMP/build_pp_dist.mobileprovision
+        # DEV_PROVISIONING_PROFILE_PATH=$RUNNER_TEMP/build_pp_dev.mobileprovision
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-    #     # import certificate, provisioning profile and export options from secrets
-    #     echo -n "$P12_DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-    #     echo -n "$DISTRIBUTION_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $DIST_PROVISIONING_PROFILE_PATH
-    #     echo -n "$DEVELOPMENT_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $DEV_PROVISIONING_PROFILE_PATH
+        # import certificate, provisioning profile and export options from secrets
+        echo -n "$P12_DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+        # echo -n "$DISTRIBUTION_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $DIST_PROVISIONING_PROFILE_PATH
+        # echo -n "$DEVELOPMENT_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $DEV_PROVISIONING_PROFILE_PATH
 
-    #     # create temporary keychain
-    #     security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-    #     security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-    #     security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        # create temporary keychain
+        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-    #     # import certificate to keychain
-    #     security import $CERTIFICATE_PATH -P "$P12_DISTRIBUTION_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-    #     security list-keychain -d user -s $KEYCHAIN_PATH
+        # import certificate to keychain
+        security import $CERTIFICATE_PATH -P "$P12_DISTRIBUTION_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
 
-    #     # apply provisioning profile
-    #     mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-    #     cp $DIST_PROVISIONING_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles
-    #     cp $DEV_PROVISIONING_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles
-    # - run: ls ~/Library/MobileDevice/Provisioning\ Profiles
+        # apply provisioning profile
+        # mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        # cp $DIST_PROVISIONING_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+        # cp $DEV_PROVISIONING_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+    - run: ls ~/Library/MobileDevice/Provisioning\ Profiles
     - working-directory: frontends/flutter
       name: 🍏📦 Create iOS Jonline appbundle release
       # --export-options-plist=ios/exportOptions.plist
