@@ -75,7 +75,7 @@ message ExternalCDNConfig {
   // (TODO) When set, the HTTP `GET /media/<id>?<authorization>` endpoint will be disabled by default on the 
   // HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in 
   // `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed.
-  bool secure_media = 3;
+  optional bool secure_media = 3;
   // Whitespace- and/or comma- separated list of IPv4 addresses/ranges 
   // to media file serving to. Only applicable if `secure_media` is `true`.
   // For reference, Cloudflare's are at https://www.cloudflare.com/ips-v4.

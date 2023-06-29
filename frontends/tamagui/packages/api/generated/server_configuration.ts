@@ -257,7 +257,9 @@ export interface ExternalCDNConfig {
    * HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in
    * `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed.
    */
-  secureMedia: boolean;
+  secureMedia?:
+    | boolean
+    | undefined;
   /**
    * Whitespace- and/or comma- separated list of IPv4 addresses/ranges
    * to media file serving to. Only applicable if `secure_media` is `true`.
@@ -612,7 +614,7 @@ function createBaseExternalCDNConfig(): ExternalCDNConfig {
   return {
     frontendHost: "",
     backendHost: "",
-    secureMedia: false,
+    secureMedia: undefined,
     mediaIpv4Allowlist: undefined,
     mediaIpv6Allowlist: undefined,
   };
@@ -626,7 +628,7 @@ export const ExternalCDNConfig = {
     if (message.backendHost !== "") {
       writer.uint32(18).string(message.backendHost);
     }
-    if (message.secureMedia === true) {
+    if (message.secureMedia !== undefined) {
       writer.uint32(24).bool(message.secureMedia);
     }
     if (message.mediaIpv4Allowlist !== undefined) {
@@ -672,7 +674,7 @@ export const ExternalCDNConfig = {
     return {
       frontendHost: isSet(object.frontendHost) ? String(object.frontendHost) : "",
       backendHost: isSet(object.backendHost) ? String(object.backendHost) : "",
-      secureMedia: isSet(object.secureMedia) ? Boolean(object.secureMedia) : false,
+      secureMedia: isSet(object.secureMedia) ? Boolean(object.secureMedia) : undefined,
       mediaIpv4Allowlist: isSet(object.mediaIpv4Allowlist) ? String(object.mediaIpv4Allowlist) : undefined,
       mediaIpv6Allowlist: isSet(object.mediaIpv6Allowlist) ? String(object.mediaIpv6Allowlist) : undefined,
     };
@@ -696,7 +698,7 @@ export const ExternalCDNConfig = {
     const message = createBaseExternalCDNConfig();
     message.frontendHost = object.frontendHost ?? "";
     message.backendHost = object.backendHost ?? "";
-    message.secureMedia = object.secureMedia ?? false;
+    message.secureMedia = object.secureMedia ?? undefined;
     message.mediaIpv4Allowlist = object.mediaIpv4Allowlist ?? undefined;
     message.mediaIpv6Allowlist = object.mediaIpv6Allowlist ?? undefined;
     return message;
