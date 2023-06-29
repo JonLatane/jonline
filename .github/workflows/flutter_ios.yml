@@ -1,3 +1,19 @@
+# To generate new keys:
+#
+# 0) Use Keychain Access to generate a certSigningRequest/CSR (if one isn't saved).
+# 1) Create iOS Development Cert (ios_development.cer) using the CSR:
+#    https://developer.apple.com/account/resources/certificates/list
+# 2) Create iOS Development Provisioning Profile using the cert from (1):
+#    https://developer.apple.com/account/resources/profiles/list
+# 3) Do (1) but for iOS Distribution/"App Store/Ad Hoc" (ios_distribution.cer)
+# 4) Do (2) but for iOS Distribution/"App Store/Ad Hoc" using the cert from (3).
+# 5) Install those new ios_development.cer and ios_distribution.cer in Keychain Access, in your "login" keychain.
+#    Find them in the confusing UI and select both, right-click, "Export 2 Items" to generate
+#    the Certificates.p12 with a password.
+# 6) Store the password from step (5) in the IOS_P12_DISTRIBUTION_CERTIFICATE_PASSWORD secret.
+#    Base64-encode (base64 -i) your Certificates.p12 from step (5) into the IOS_P12_DISTRIBUTION_CERTIFICATE_BASE64 secret,
+#    and your .mobileprovision files from steps (2) and (4) into IOS_DEVELOPMENT_PROVISIONING_PROFILE_BASE64
+#    and IOS_DISTRIBUTION_PROVISIONING_PROFILE_BASE64.
 name: Flutter iOS
 
 on:
