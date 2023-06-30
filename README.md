@@ -9,9 +9,9 @@ These badges link to the communities' "About" pages. The versions, names, and/or
 | [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io/about) | Flagship demo/informational site | [React UI](https://jonline.io), [Flutter UI](https://jonline.io/flutter/) |
 
 ### Native App Releases
-| Workflow Status                                                                                              | Stable Release | Beta Release | Notes                                                                                       |
-| ------------------------------------------------------------------------------------------------------------ | -------------- | ------------ | ------------------------------------------------------------------------------------------- |
-| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg) | N/A            | N/A          | Stable/Beta versions may not be current, subject to (Beta) App Review submission + approval |
+| Workflow Status                                                                                              | Stable Release | Beta Release                                             | Notes                                                                                       |
+| ------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
 
 ### DockerHub
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
@@ -24,17 +24,17 @@ These badges link to the communities' "About" pages. The versions, names, and/or
 | ![Preview Generator CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_preview_generator.yml/badge.svg) | [Preview Generator Build Results](https://github.com/jonlatane/jonline/actions/workflows/deploy_preview_generator.yml) |
 
 ### Continuous Integration
-| Workflow Status                                                                                                      | Information                                                                                                 |
-| -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| ![Proto Consistency Check Badge](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)                    | [Proto Consistency Check Results](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)                    |
-| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)                    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)                    |
-| ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg)         | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml)         |
-| ![Flutter Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml/badge.svg)         | [Flutter Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml)         |
-| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)         | [Flutter iOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)         |
-| ![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg) | [Flutter Android Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml) |
-| ![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)     | [Flutter macOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)     |
-| ![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg) | [Flutter Windows Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml) |
-| ![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)     | [Flutter Linux Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)     |
+| Workflow Status                                                                                                          | Information                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| ![Proto Consistency Check Badge](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg) | [Proto Consistency Check Results](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml) |
+| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)                        | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)                        |
+| ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg)             | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml)             |
+| ![Flutter Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml/badge.svg)             | [Flutter Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_web.yml)             |
+| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)             | [Flutter iOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)             |
+| ![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)     | [Flutter Android Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)     |
+| ![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)         | [Flutter macOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)         |
+| ![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)     | [Flutter Windows Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)     |
+| ![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)         | [Flutter Linux Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)         |
 
 - [Jonline](#jonline)
   - [Statuses](#statuses)
