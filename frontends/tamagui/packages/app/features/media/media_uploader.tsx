@@ -21,11 +21,11 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
   const [dragging, setDragging] = useState(false);
   const reloadMedia = useReloadMedia(accountOrServer.account?.user?.id, 0);
 
-  useEffect(() => {
-    let title = 'Media';
-    title += ` | ${server?.serverConfiguration?.serverInfo?.name || 'Jonline'}`;
-    document.title = title;
-  });
+  // useEffect(() => {
+  //   let title = 'Media';
+  //   title += ` | ${server?.serverConfiguration?.serverInfo?.name || 'Jonline'}`;
+  //   document.title = title;
+  // });
 
   function handleUpload(arg: File | Array<File>) {
     if (!server) return;

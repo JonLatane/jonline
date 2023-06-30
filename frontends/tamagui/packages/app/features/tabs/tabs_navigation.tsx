@@ -62,9 +62,9 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const canUseLogo = (!shrinkHomeButton && logo?.wideMediaId != undefined) ||
     (shrinkHomeButton && logo?.squareMediaId != undefined);
   const showHomeIcon = serverNameEmoji == undefined && !canUseLogo;
-  console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo, logo?.wideMediaId, logo?.squareMediaId, maxWidth)
+  const renderButtonChildren = !shrinkHomeButton || serverNameEmoji || canUseLogo;
+  console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo, logo?.wideMediaId, logo?.squareMediaId, maxWidth, renderButtonChildren);
   // debugger;
-  const renderButtonChildren = !shrinkHomeButton || serverNameEmoji;
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <GroupContextProvider value={selectedGroup}>
       {Platform.select({
@@ -84,19 +84,15 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   {...homeProps}>
                   {renderButtonChildren
                     ? shrinkHomeButton
-                      ? <XStack h={40} my='auto' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                      ? <XStack h={'100%'} maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
                         {canUseLogo
                           ? <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
-                          : !shrinkHomeButton || serverNameEmoji
-                            ? <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
-                            : undefined}
+                          : <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>}
                       </XStack>
-                      : <XStack h={40} my='auto' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                      : <XStack h={'100%'} maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
                         {canUseLogo
                           ? <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} failQuietly />
-                          : !shrinkHomeButton || serverNameEmoji
-                            ? <Heading whiteSpace="nowrap">{serverName}</Heading>
-                            : undefined}
+                          : <Heading my='auto' whiteSpace="nowrap">{serverName}</Heading>}
                       </XStack>
                     : undefined}
                 </Button>

@@ -76,6 +76,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const primaryColorInt = serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const primaryColor = `#${primaryColorInt.toString(16).slice(-6)}`;
   const [primaryColorHex, setPrimaryColorHex] = useState(primaryColor);
+  const primaryColorValid = /^#[0-9A-Fa-f]{6}$/i.test(primaryColorHex);
+
   // if (primaryColorHex != primaryColor && primaryColorHex == '#424242') {
   //   setPrimaryColorHex(primaryColor);
   // }
@@ -83,6 +85,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const navColorInt = serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;
   const navColor = `#${navColorInt.toString(16).slice(-6)}`;
   const [navColorHex, setNavColorHex] = useState(navColor);
+  const navColorValid = /^#[0-9A-Fa-f]{6}$/i.test(navColorHex);
   // if (navColorHex != navColor && navColorHex == '#FFFFFF') {
   //   setNavColorHex(navColor);
   // }
@@ -95,6 +98,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   // if (serverDefaultPermissions && _defaultPermissions == undefined) {
   //   setDefaultPermissions(serverDefaultPermissions);
   // }
+
+  const inputsValid = primaryColorValid && navColorValid;
 
 
   useEffect(() => {
@@ -273,21 +278,28 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   : undefined}
                 {/* </AnimatePresence> */}
                 <XStack mt='$2'>
-                  <Heading size='$3' f={1}>Primary Color</Heading>
-                  <XStack w={50} h={30} backgroundColor={primaryColorHex} />
+                  <Heading my='auto' size='$3' f={1}>Primary Color</Heading>
+                  {isAdmin
+                    ? <Input mr='$2' my='auto' w={100} value={primaryColorHex} color={primaryColorValid ? undefined : 'red'} onChange={(e) => setPrimaryColorHex(e.nativeEvent.text)} />
+                    : <Paragraph mr='$2' my='auto'>{primaryColorHex}</Paragraph>}
+                  <XStack my='auto' w={50} h={30} backgroundColor={primaryColorHex} />
                 </XStack>
                 {isAdmin ? <XStack als='center'>
                   <HexColorPicker color={primaryColorHex} onChange={setPrimaryColorHex} />
                 </XStack> : undefined}
 
                 <XStack mt='$2'>
-                  <Heading size='$3' f={1}>Navigation Color</Heading>
-                  <XStack w={50} h={30} backgroundColor={navColorHex} />
+                  <Heading my='auto' size='$3' f={1}>Navigation Color</Heading>
+                  {isAdmin
+                    ? <Input mr='$2' my='auto' w={100} value={navColorHex} color={navColorValid ? undefined : 'red'} onChange={(e) => setNavColorHex(e.nativeEvent.text)} />
+                    : <Paragraph mr='$2' my='auto' >{navColorHex}</Paragraph>}
+                  <XStack my='auto' w={50} h={30} backgroundColor={navColorHex} />
                 </XStack>
                 {isAdmin ? <XStack als='center'>
                   <HexColorPicker color={navColorHex} onChange={setNavColorHex} />
                 </XStack> : undefined}
                 <XStack mt='$3' />
+
                 {<PermissionsEditor label='Default Permissions'
                   {...defaultPermissionsEditorProps} />}
 
@@ -307,19 +319,19 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 </XStack>
                 {/* {isAdmin ? <> */}
                 <Paragraph size='$1'>
-                  To improve performance, administrators can put their Jonline's HTML
-                  (and eventually all Media) behind Cloudflare, using a separate host as the gRPC backend.
+                  To improve performance, administrators can put their Jonline server's HTML
+                  and Media behind Cloudflare, using a separate host as the gRPC backend.
                 </Paragraph>
                 <Paragraph size='$1'>
                   For instance, to use Cloudflare to point jonline.io to a backend
                   at jonline.io.itsj.online, you would:
                 </Paragraph>
                 {[
-                  'Setup and secure your instance on jonline.io.itsj.online, whose DNS is probably managed by your Kubernetes provider (I use DigitalOcean) so you can secure it with Cert-Manager.',
+                  'Setup and secure your instance on jonline.io.itsj.online, whose DNS is probably managed by your Kubernetes provider (I use DigitalOcean), so you can secure it with Cert-Manager.',
                   'For extra security: apply a firewall with your Kubernetes provider on the jonline.io.itsj.online host that allows all traffic on port 27707, and only traffic from Cloudflare IPs otherwise.',
                   'Turn on External CDN Support, set the Backend Domain below to jonline.io.itsj.online, Frontend Domain to jonline.io, and press Update Server.',
                   'Restart your deployment in Kubernetes. (Maybe we can remove this step one day!)',
-                  'For jonline.io, whose DNS is managed by Cloudflare, create a CNAME record in Cloudflare for jonline.io pointing to notj.online.'
+                  'For jonline.io, whose DNS is managed by Cloudflare, create a CNAME record in Cloudflare for jonline.io pointing to notj.online. Turn on Cloudflare\'s HTTPS "proxy" feature, and add a Page Rule for "Cache Level: Cache Everything" for jonline.io/*.'
                 ].map((text, index) => <XStack ml='$3' mb='$2'>
                   <Text fontFamily='$body' fontSize='$1' mr='$2'>{`${index + 1}.`}</Text>
                   <Text fontFamily='$body' fontSize='$1' >{text}</Text>
@@ -363,7 +375,11 @@ export function BaseServerDetailsScreen(specificServer?: string) {
             {isAdmin ?
               isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
                 <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-                  <Button maw={600} als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>
+                  <Button maw={600} als='center'
+                    disabled={updating || !inputsValid}
+                    opacity={updating || !inputsValid ? 0.5 : 1}
+                    backgroundColor={primaryColor}
+                    onPress={updateServer}  >
                     <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
                   </Button>
                 </YStack>
