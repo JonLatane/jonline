@@ -11,7 +11,7 @@ These badges link to the communities' "About" pages. The versions, names, and/or
 ### Native App Releases
 | Platform | Workflow Status                                                                                              | Stable Release | Beta Release                                             | Notes                                                                           |
 | -------- | ------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| iOS      | ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
+| iOS      | [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
 
 ### DockerHub
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
