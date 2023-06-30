@@ -56,12 +56,15 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
-  const shrinkHomeButton = selectedGroup != undefined || appSubsection == AppSubsection.FOLLOW_REQUESTS;
+  const shrinkHomeButton = selectedGroup != undefined ||
+    appSubsection == AppSubsection.FOLLOW_REQUESTS;
   // console.log(`app.darkModeAuto=${app.darkModeAuto}, systemDark=${systemDark}, app.darkMode=${app.darkMode}, invert=${invert}, dark=${dark}, bgColor=${bgColor}`);
   const canUseLogo = (!shrinkHomeButton && logo?.wideMediaId != undefined) ||
-    (shrinkHomeButton && !logo?.squareMediaId != undefined);
+    (shrinkHomeButton && logo?.squareMediaId != undefined);
   const showHomeIcon = serverNameEmoji == undefined && !canUseLogo;
-  console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo)
+  console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo, logo?.wideMediaId, logo?.squareMediaId, maxWidth)
+  // debugger;
+  const renderButtonChildren = !shrinkHomeButton || serverNameEmoji;
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <GroupContextProvider value={selectedGroup}>
       {Platform.select({
@@ -71,27 +74,31 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
               {/* <XStack h={5}></XStack> */}
               <XStack space="$1" marginVertical={5}>
                 <XStack w={5} />
-                <Button size="$4" maw={maxWidth} overflow='hidden' ac='flex-start'
-                  iconAfter={showHomeIcon ? HomeIcon : undefined}
+                <Button size="$4"
+                  py={0}
+                  px={shrinkHomeButton && canUseLogo ? 0 : undefined}
+                  maw={maxWidth}
+                  overflow='hidden' //ac='flex-start'
+                  iconAfter={showHomeIcon && !shrinkHomeButton ? HomeIcon : undefined}
+                  icon={showHomeIcon && shrinkHomeButton ? HomeIcon : undefined}
                   {...homeProps}>
-                  {shrinkHomeButton
-                    ?
-                    <XStack maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                      {canUseLogo
-                        ? <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
-                        : !shrinkHomeButton || serverNameEmoji
-                          ? <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
-                          : undefined}
-                    </XStack>
-                    :
-                    <XStack h='100%' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                      {canUseLogo
-                        ? <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} failQuietly />
-                        : !shrinkHomeButton || serverNameEmoji
-                          ? <Heading whiteSpace="nowrap">{serverName}</Heading>
-                          : undefined}
-                    </XStack>
-                  }
+                  {renderButtonChildren
+                    ? shrinkHomeButton
+                      ? <XStack h={40} my='auto' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                        {canUseLogo
+                          ? <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+                          : !shrinkHomeButton || serverNameEmoji
+                            ? <Heading whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+                            : undefined}
+                      </XStack>
+                      : <XStack h={40} my='auto' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                        {canUseLogo
+                          ? <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} failQuietly />
+                          : !shrinkHomeButton || serverNameEmoji
+                            ? <Heading whiteSpace="nowrap">{serverName}</Heading>
+                            : undefined}
+                      </XStack>
+                    : undefined}
                 </Button>
                 <ScrollView horizontal>
                   <XStack w={1} />

@@ -46,6 +46,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
         case "image/jpeg":
         case "image/jpg":
         case "image/png":
+        // case "image/svg":
         case "image/wepb":
           _data = await resizeImage(file, 1920, 1920);
       }
@@ -95,7 +96,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
           label='Add Media'
           width='250px'
           onDraggingStateChange={setDragging}
-          types={["JPG", "JPEG", "PNG", "GIF", "PDF", "MOV", "AVI", "OGG", "MP3", "MP4", "MPG", "WEBM", "WEBP", "WMV"]}>
+          types={["JPG", "JPEG", "PNG", "SVG", "WEBP", "GIF", "PDF", "MOV", "AVI", "OGG", "MP3", "MP4", "MPG", "WEBM", "WEBP", "WMV"]}>
           <Button onPress={() => { }} backgroundColor={dragging ? primaryColor : navColor}>
             <XStack space='$2'>
               <XStack my='auto'>

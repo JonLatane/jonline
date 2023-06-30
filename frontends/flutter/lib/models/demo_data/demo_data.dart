@@ -40,22 +40,6 @@ createDemoData(JonlineAccount account, Function(String) showSnackBar,
   await generateConversations(
       client, account, showSnackBar, appState, posts, sideAccounts);
 
-  final int relationshipsCreated = await generateFollowRelationships(
-    client,
-    account,
-    showSnackBar,
-    appState,
-    sideAccounts,
-  );
-  final int membershipsCreated = await generateGroupMemberships(
-    client,
-    account,
-    demoGroups,
-    showSnackBar,
-    appState,
-    sideAccounts,
-  );
-
-  showSnackBar(
-      "Created $relationshipsCreated follow relationships and joined $membershipsCreated groups.");
+  await createFollowsAndGroupMemberships(
+      account, showSnackBar, appState, sideAccounts);
 }

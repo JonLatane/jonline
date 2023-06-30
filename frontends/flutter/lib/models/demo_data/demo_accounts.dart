@@ -25,7 +25,46 @@ createDemoAccounts(JonlineAccount account, Function(String) showSnackBar,
     return;
   }
   await account.ensureAccessToken(showMessage: showSnackBar);
-  await generateSideAccounts(client, account, showSnackBar, appState, 30);
+  final sideAccounts =
+      await generateSideAccounts(client, account, showSnackBar, appState, 30);
+  await createFollowsAndGroupMemberships(
+      account, showSnackBar, appState, sideAccounts);
+}
+
+createFollowsAndGroupMemberships(
+    JonlineAccount account,
+    Function(String) showSnackBar,
+    AppState appState,
+    List<JonlineAccount> sideAccounts) async {
+  final JonlineClient? client =
+      await (account.getClient(showMessage: showSnackBar));
+  if (client == null) {
+    showSnackBar("Account not ready.");
+    return;
+  }
+  await account.ensureAccessToken(showMessage: showSnackBar);
+  await generateFollowRelationships(
+      client, account, (p0) => null, appState, sideAccounts);
+  final int relationshipsCreated = await generateFollowRelationships(
+    client,
+    account,
+    showSnackBar,
+    appState,
+    sideAccounts,
+  );
+  final demoGroups =
+      await getExistingDemoGroups(client, account, showSnackBar, appState);
+  final int membershipsCreated = await generateGroupMemberships(
+    client,
+    account,
+    demoGroups,
+    showSnackBar,
+    appState,
+    sideAccounts,
+  );
+
+  showSnackBar(
+      "Created $relationshipsCreated follow relationships and joined $membershipsCreated groups.");
 }
 
 Future<List<JonlineAccount>> generateSideAccounts(
