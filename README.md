@@ -9,9 +9,9 @@ These badges link to the communities' "About" pages. The versions, names, and/or
 | [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io/about) | Flagship demo/informational site | [React UI](https://jonline.io), [Flutter UI](https://jonline.io/flutter/) |
 
 ### Native App Releases
-| Workflow Status                                                                                              | Stable Release | Beta Release                                             | Notes                                                                                       |
-| ------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
+| Platform | Workflow Status                                                                                              | Stable Release | Beta Release                                             | Notes                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| iOS      | ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
 
 ### DockerHub
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
