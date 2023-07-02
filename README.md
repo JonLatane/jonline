@@ -1,5 +1,5 @@
 # Jonline
-Jonline is an open-source, community-scale social network designed to be capable of "federating" with other Jonline instances/communities, making sharing between local-size instances easy. Two demo instances are up at [Jonline.io](https://jonline.io) and [GetJ.online](https://getj.online).
+Jonline is an open-source, community-scale social network designed to be capable of "federating" with other Jonline instances/communities, making sharing between local-size instances easy. A demo instance is up at [Jonline.io](https://jonline.io) and [GetJ.online](https://getj.online).
 
 ## Statuses
 ### Deployments
