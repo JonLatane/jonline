@@ -44,7 +44,7 @@ createFollowsAndGroupMemberships(
   }
   await account.ensureAccessToken(showMessage: showSnackBar);
   await generateFollowRelationships(
-      client, account, (p0) => null, appState, sideAccounts);
+      client, account, showSnackBar, appState, sideAccounts);
   final int relationshipsCreated = await generateFollowRelationships(
     client,
     account,
@@ -210,7 +210,9 @@ Future<int> generateFollowRelationships(
     try {
       for (int i = 0; i < totalFollows; i++) {
         final followableAccounts = List.of(targetAccounts)
-          ..removeWhere((a) => followedAccounts.contains(a));
+          ..removeWhere((targetAccount) => followedAccounts.any(
+              (followedAccount) =>
+                  followedAccount.userId == targetAccount.userId));
         final targetAccount =
             followableAccounts[_random.nextInt(followableAccounts.length)];
         followedAccounts.add(targetAccount);
