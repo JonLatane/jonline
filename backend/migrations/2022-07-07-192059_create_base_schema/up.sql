@@ -84,6 +84,8 @@ CREATE TABLE follows (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+CREATE UNIQUE INDEX idx_follows ON follows(user_id, target_user_id);
+
 
 -- MEDIA MODELS. Actual media data lives in MinIO/S3.
 CREATE TABLE media (
