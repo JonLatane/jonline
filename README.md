@@ -45,6 +45,7 @@ These badges link to the communities' "About" pages. The versions, names, and/or
     - [Continuous Integration](#continuous-integration)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
+      - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Features Overview](#features-overview)
     - [Media](#media)
@@ -100,6 +101,17 @@ The goal of all this is to make it as easy as possible for local businesses to:
 * Engage with customers on a platform customers enjoy.
 * Use Jonline to share information about customers between each other, in a way customers can easily understand and consent to, without a central corporation being involved.
     * Example: make it easy for Kathy to share her band's show with the folks at her yoga studio, by cross-posting it to her yoga studio profile
+
+#### Jonline as a protocol vs. ActivityPub
+Jonline is also a protocol, much like ActivityPub. While ActivityPub is defined using HTTP(S) and JSON, Jonline is defined with gRPC (on port 27707, with optional TLS), using HTTP(S) for media and CDN-based host negotiation only (no JSON, anywhere). Broadly speaking, Jonline may be called "more opinionated" than ActivityPub as a social networking protocol, and covers more things than just social activity (including things like user-facing server configuration data, privacy policy, etc.).
+
+Whereas ActivityPub has a flexible Activity model capable of holding varied metadata, Jonline's API definitions deliberately avoid allowing for metadata, and focus on statically-typed, specific models for Posts and Events. The Jonline data model is designed using composition, with Events' titles, descriptions, moderation, etc. belonging to a Post owned by them, over inheritance (i.e. making Event "extend" Post in OOP). Jonline leverages this to implement visibility and moderation controls for Posts and Events across the system all in one place.
+
+In addition to Users, Posts, and Events, which could all be "described" by ActivityPub's specification, Jonline also has Media (designed to leverage external CDNs), Groups, Server Configuration, and moderation/visibility/permission management across everything as a first-class citizen.
+
+The hope is to build more useful business objects - yes, your boring SalesForce/NetSuite/SAP type stuff - into this social protocol. So Jonline Payments, Products, Subscriptions, and who knows what else could, eventually, be gradually implemented atop the Jonline protocol, with all the same clear, concise, documentation, cross-language portability, and other benefits it offers.
+
+All this is to say: it should be pretty straightforward to create, say, Ruby bindings for Jonline, and use them in Mastodon to make it work as a no-Events-support, no-Media-support Jonline instance. Or vice versa. This is back burner research, though. Get in contact if you're interested in contributing/learning to do this type of work!
 
 ### Why *not* Jonline?
 * It's not done.
