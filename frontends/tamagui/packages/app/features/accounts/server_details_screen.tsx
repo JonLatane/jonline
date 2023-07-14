@@ -15,6 +15,7 @@ import { PermissionsEditor, PermissionsEditorProps } from '../user/permissions_e
 import ServerCard from './server_card'
 import { SingleMediaChooser } from './single_media_chooser'
 import { MediaRenderer } from '../media/media_renderer'
+import { themedButtonBackground } from '../../utils/themed_button_background';
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -219,7 +220,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <Paragraph>{serviceVersion?.version}</Paragraph>
                 </XStack>
                 {githubVersion
-                  ? <Button {...githubLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
+                  ? <Button {...githubLink} mt='$3' {...themedButtonBackground(navColor, navTextColor)} size='$3' iconAfter={Info}>
                     <Heading size='$2' color={navTextColor}>View {githubVersion} on GitHub</Heading>
                   </Button>
                   : undefined}
@@ -377,8 +378,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
                   <Button maw={600} als='center'
                     disabled={updating || !inputsValid}
+                    {...themedButtonBackground(primaryColor)}
                     opacity={updating || !inputsValid ? 0.5 : 1}
-                    backgroundColor={primaryColor}
                     onPress={updateServer}  >
                     <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
                   </Button>
