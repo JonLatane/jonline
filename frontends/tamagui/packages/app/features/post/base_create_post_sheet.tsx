@@ -159,7 +159,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
 
   return (
     <>
-      <Button backgroundColor={primaryColor} color={primaryTextColor} f={1}
+      <Button backgroundColor={primaryColor} o={0.95} hoverStyle={{backgroundColor:primaryColor, opacity: 1}} color={primaryTextColor} f={1}
         disabled={serversState.server === undefined}
         onPress={() => setOpen(!open)}>
         <Heading size='$2' color={primaryTextColor}>Create {entityName}</Heading>

@@ -62,9 +62,9 @@ message Membership {
   string user_id = 1;
   string group_id = 2;
   // Valid Membership Permissions are:
-  // * VIEW_POSTS, CREATE_POSTS, MODERATE_POSTS
-  // * VIEW_EVENTS, CREATE_EVENTS, MODERATE_EVENTS
-  // * ADMIN and MODERATE_USERS
+  // * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`
+  // * `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`
+  // * `ADMIN` and `MODERATE_USERS`
   repeated Permission permissions = 3;
   // Tracks whether group moderators need to approve the membership.
   Moderation group_moderation = 4;
@@ -75,8 +75,15 @@ message Membership {
 }
 
 message ContactMethod {
+  // `mailto:` or `tel:` URL.
   optional string value = 1;
   Visibility visibility = 2;
+  // Server-side flag indicating whether the server can verify 
+  // (and otherwise interact via) the contact method.
+  bool supported_by_server = 3;
+  // Indicates the user has completed verification of the contact method.
+  // Verification requires `supported_by_server` to be `true`.
+  bool verified = 4;
 }
 
 message GetUsersRequest {

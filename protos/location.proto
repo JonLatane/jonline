@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package jonline;
+
+// Locations
+message Location {
+  string id = 1;
+  string creator_id = 2;
+  // This should probably come from OpenStreetMap APIs, with an option for Google Maps.
+  // Ideally both the Flutter and React apps, and any others, should prefer OpenStreetMap
+  // but give the user the option to use Google Maps.
+  string uniformly_formatted_address = 3;
+}
+
+message LocationAlias {
+  string id = 1;
+  string alias = 2;
+  string creator_id = 3;
+}

@@ -56,7 +56,7 @@ message ServerConfiguration {
   // Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   PrivateUserStrategy private_user_strategy = 100;
 
-  // Allows admins to enable/disable creating accounts and logging in.
+  // (TODO) Allows admins to enable/disable creating accounts and logging in.
   // Eventually, external auth too hopefully!
   repeated AuthenticationFeature authentication_features = 101;
 }
@@ -75,15 +75,23 @@ message ExternalCDNConfig {
   // (TODO) When set, the HTTP `GET /media/<id>?<authorization>` endpoint will be disabled by default on the 
   // HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in 
   // `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed.
-  optional bool secure_media = 3;
+  bool secure_media = 3;
   // Whitespace- and/or comma- separated list of IPv4 addresses/ranges 
-  // to media file serving to. Only applicable if `secure_media` is `true`.
+  // to whom media data may be served. Only applicable if `secure_media` is `true`.
   // For reference, Cloudflare's are at https://www.cloudflare.com/ips-v4.
   optional string media_ipv4_allowlist = 4;
   // Whitespace- and/or comma- separated list of IPv6 addresses/ranges 
-  // to media file serving to. Only applicable if `secure_media` is `true`.
+  // to whom media data may be served. Only applicable if `secure_media` is `true`.
   // For reference, Cloudflare's are at https://www.cloudflare.com/ips-v6.
   optional string media_ipv6_allowlist = 5;
+
+  // (TODO) When implemented, this actually changes the whole Jonline protocol (in terms of ports).
+  // When enabled, Jonline should *not* server a secure site on HTTPS, and instead serve
+  // the Tonic gRPC server there (on port 443). Jonine clients will need to be updated to
+  // always seek out a secure client on port 443 when this feature is enabled.
+  // This would let Jonline leverage Cloudflare's DDOS protection and performance on gRPC as well as HTTP.
+  // (This is a Cloudflare-specific feature requirement.)
+  bool cdn_grpc = 6;
 }
 
 enum AuthenticationFeature {

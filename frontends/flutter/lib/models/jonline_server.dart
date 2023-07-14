@@ -87,7 +87,18 @@ class JonlineServer {
     final serversJson = jsonArrayString
         .map((e) => jsonDecode(e) as Map<String, dynamic>)
         .toList();
-    final servers = serversJson.map((e) => JonlineServer._fromJson(e)).toList();
+    final servers = serversJson
+        .map((e) {
+          try {
+            return JonlineServer._fromJson(e);
+          } catch (e) {
+            log.warning("Failed to load server from json: $e");
+            return null;
+          }
+        })
+        .where((e) => e != null)
+        .map((e) => e!)
+        .toList();
     if (servers.isEmpty && !MyPlatform.isWeb) {
       servers.add(JonlineServer("jonline.io"));
     }

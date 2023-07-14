@@ -4,6 +4,9 @@ package jonline;
 
 import "google/protobuf/timestamp.proto";
 import "posts.proto";
+import "visibility_moderation.proto";
+import "users.proto";
+import "location.proto";
 
 // Valid GetEventsRequest formats:
 // - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
@@ -65,6 +68,7 @@ message Event {
 }
 
 // To be used for ticketing, RSVPs, etc.
+// Stored as JSON in the database.
 message EventInfo {
 
 }
@@ -76,27 +80,57 @@ message EventInstance {
   EventInstanceInfo info = 4;
   google.protobuf.Timestamp starts_at = 5;
   google.protobuf.Timestamp ends_at = 6;
+  optional Location location = 7;
 }
 
 // To be used for ticketing, RSVPs, etc.
+// Stored as JSON in the database.
 message EventInstanceInfo {
 
 }
 
+// EventInstance attendance statuses. State transitions may generally happen
+// in any direction, but:
+// * `REQUESTED` can only be selected if another user invited the user whose attendance is being described.
+// * `GOING` and `NOT_GOING` cannot be selected if the EventInstance has ended (end time is in the past).
+// * `WENT` and `DID_NOT_GO` cannot be selected if the EventInstance has not started (start time is in the future).
+// `INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
 enum AttendanceStatus {
+  // The user is interested in attending. This is the default status.
   INTERESTED = 0;
-  GOING = 1;
-  NOT_GOING = 2;
-  REQUESTED = 3;
+  // Another user has invited the user to the event.
+  REQUESTED = 1;
+  // The user plans to go to the event.
+  GOING = 2;
+  // The user does not plan to go to the event.
+  NOT_GOING = 3;
+  // The user went to the event.
   WENT = 10;
+  // The user did not go to the event.
   DID_NOT_GO = 11;
 }
 
+// Describes the attendance of a user at an event. Such as:
+// * A user's RSVP to an event.
+// * Invitation status of a user to an event.
+// * `ContactMethod`-driven managment for anonymous RSVPs to an EventInstance.
 message EventAttendance {
   string event_instance_id = 1;
-  string user_id = 2;
-  AttendanceStatus status = 3;
-  optional string inviting_user_id = 4;
+  oneof attendee {
+    string user_id = 2;
+    AnonymousAttendee anonymous_attendee = 3;
+  }
+  uint32 number_of_guests = 4;
+  AttendanceStatus status = 5;
+  optional string inviting_user_id = 6;
+  string private_note = 7;
+  string public_note = 8;
+  Moderation moderation = 9;
   google.protobuf.Timestamp created_at = 10;
   optional google.protobuf.Timestamp updated_at = 11;
+}
+
+message AnonymousAttendee {
+  string name = 1;
+  repeated ContactMethod contact_methods = 2;
 }

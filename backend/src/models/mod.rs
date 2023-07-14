@@ -13,5 +13,8 @@ pub use group_models::*;
 mod post_models;
 pub use post_models::*;
 
+mod event_loaders;
+pub use event_loaders::*;
+
 mod event_models;
 pub use event_models::*;

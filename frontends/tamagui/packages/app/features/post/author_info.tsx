@@ -102,10 +102,10 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
 
         <Heading size="$1" ml='$1' mr='$2'
           marginVertical='auto'>
-          {author
+          {author ?? authorName
             ? disableLink
-              ? `${author?.username}`
-              : <Anchor size='$1' {...authorLinkProps}>{author?.username}</Anchor>
+              ? `${author?.username ?? authorName}`
+              : <Anchor size='$1' {...authorLinkProps}>{author?.username ?? authorName}</Anchor>
             : 'anonymous'}
         </Heading>
       </XStack>

@@ -1,26 +1,8 @@
 use std::time::SystemTime;
 
-use tonic::{Status, Code};
 use diesel::*;
 
-use crate::{schema::{events, event_instances}, db_connection::PgPooledConnection};
-
-pub fn get_event(event_id: i64, conn: &mut PgPooledConnection,) -> Result<Event, Status> {
-    events::table
-        .select(events::all_columns)
-        .filter(events::id.eq(event_id))
-        .first::<Event>(conn)
-        .map_err(|_| Status::new(Code::NotFound, "event_not_found"))
-}
-
-// pub fn get_group_event(group_id: i64, event_id: i64, conn: &mut PgPooledConnection,) -> Result<GroupEvent, Status> {
-//     group_posts::table
-//         .select(group_posts::all_columns)
-//         .filter(group_posts::group_id.eq(group_id))
-//         .filter(group_posts::event_id.eq(event_id))
-//         .first::<GroupEvent>(conn)
-//         .map_err(|_| Status::new(Code::NotFound, "group_event_not_found"))
-// }
+use crate::schema::{event_attendances, event_instances, events};
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
 pub struct Event {
@@ -58,6 +40,31 @@ pub struct NewEventInstance {
     pub info: serde_json::Value,
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
+}
+
+#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+pub struct EventAttendance {
+    pub id: i64,
+    pub event_instance_id: i64,
+    pub user_id: Option<i64>,
+    pub anonymous_attendee: Option<serde_json::Value>,
+    pub number_of_guests: i32,
+    pub public_note: String,
+    pub private_note: String,
+    pub moderation: String,
+    pub created_at: SystemTime,
+    pub updated_at: Option<SystemTime>,
+}
+
+#[derive(Debug, Insertable)]
+#[diesel(table_name = event_attendances)]
+pub struct NewEventAttendance {
+    pub event_instance_id: i64,
+    pub user_id: Option<i64>,
+    pub anonymous_attendee: Option<serde_json::Value>,
+    pub number_of_guests: i32,
+    pub public_note: String,
+    pub private_note: String,
 }
 
 // #[derive(Debug, Queryable, Identifiable, AsChangeset)]

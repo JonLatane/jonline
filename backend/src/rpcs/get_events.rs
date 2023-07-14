@@ -37,12 +37,12 @@ pub fn get_events(
             _ => return Err(Status::new(Code::InvalidArgument, "group_id_invalid")),
         },
         (_, Some(event_id), _, _) => vec![get_event_by_id(&user, &event_id, conn)?],
-        _ => get_applicable_events(&user, conn, request.time_filter),
+        _ => get_public_and_following_events(&user, conn, request.time_filter),
     };
     Ok(GetEventsResponse { events: result })
 }
 
-fn get_applicable_events(
+fn get_public_and_following_events(
     user: &Option<models::User>,
     conn: &mut PgPooledConnection,
     _filter: Option<TimeFilter>,
@@ -187,28 +187,29 @@ fn get_event_by_id(
         Err(_) => return Err(Status::new(Code::NotFound, "event_not_found")),
     };
 
-    let binding = event_instances::table
-        .left_join(posts::table.on(event_instances::post_id.eq(posts::id.nullable())))
-        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .left_join(
-            follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
-                follows::user_id
-                    .nullable()
-                    .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
-            )),
-        )
-        .select((
-            event_instances::all_columns,
-            posts::all_columns.nullable(),
-            users::all_columns.nullable(),
-        ))
-        .filter(event_instances::event_id.eq(event_db_id))
-        .load::<(
-            models::EventInstance,
-            Option<models::Post>,
-            Option<models::User>,
-        )>(conn)
-        .unwrap();
+    let binding = models::get_event_instances(event_db_id, user, conn)?;
+    // event_instances::table
+    //     .left_join(posts::table.on(event_instances::post_id.eq(posts::id.nullable())))
+    //     .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+    //     .left_join(
+    //         follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
+    //             follows::user_id
+    //                 .nullable()
+    //                 .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+    //         )),
+    //     )
+    //     .select((
+    //         event_instances::all_columns,
+    //         posts::all_columns.nullable(),
+    //         users::all_columns.nullable(),
+    //     ))
+    //     .filter(event_instances::event_id.eq(event_db_id))
+    //     .load::<(
+    //         models::EventInstance,
+    //         Option<models::Post>,
+    //         Option<models::User>,
+    //     )>(conn)
+    //     .unwrap();
     let instances = binding
         .iter()
         .map(|(instance, instance_post, instance_user)| {

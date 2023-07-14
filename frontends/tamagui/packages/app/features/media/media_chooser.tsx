@@ -76,7 +76,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const showSpinnerForUploading = uploading && (uploadProgress == undefined || uploadProgress < 0.1 || uploadProgress > 0.9);
   return (
     <>
-      <Button backgroundColor={navColor} color={navTextColor}
+      <Button backgroundColor={navColor} o={0.95} hoverStyle={{backgroundColor: navColor, opacity: 1}} color={navTextColor}
         onPress={() => setOpen(!open)}>
         {children ?? <XStack>
           <ImageIcon size={24} color={navTextColor} />

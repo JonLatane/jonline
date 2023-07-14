@@ -97,7 +97,10 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
           width='250px'
           onDraggingStateChange={setDragging}
           types={["JPG", "JPEG", "PNG", "SVG", "WEBP", "GIF", "PDF", "MOV", "AVI", "OGG", "MP3", "MP4", "MPG", "WEBM", "WEBP", "WMV"]}>
-          <Button onPress={() => { }} backgroundColor={dragging ? primaryColor : navColor}>
+          <Button onPress={() => { }}
+            backgroundColor={dragging ? primaryColor : navColor}
+            opacity={0.95}
+            hoverStyle={{ opacity: 1, backgroundColor: dragging ? primaryColor : navColor }}>
             <XStack space='$2'>
               <XStack my='auto'>
                 <Upload size={24} color={dragging ? primaryTextColor : navTextColor} />
