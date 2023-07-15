@@ -47,7 +47,7 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
         let external_cdn_config: Option<ExternalCdnConfig> = self
             .external_cdn_config
             .to_owned()
-            .map(|c| serde_json::from_value(c).unwrap());
+            .map(|c| serde_json::from_value(c).unwrap_or(ExternalCdnConfig::default()));
 
         ServerConfiguration {
             server_info: Some(server_info),
