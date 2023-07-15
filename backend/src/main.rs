@@ -43,7 +43,7 @@ pub mod schema;
 pub mod servers;
 pub mod web;
 
-use ::jonline::{env_var, init_service_logging, report_error, rpcs::get_server_configuration};
+use ::jonline::{env_var, init_service_logging, report_error};
 use futures::future::join_all;
 use servers::{start_rocket_secure, start_rocket_unsecured, start_tonic_server};
 use std::sync::Arc;
@@ -69,8 +69,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = pool
         .get()
         .expect("Failed to get connection trying to load server configuration");
-    let server_configuration =
-        get_server_configuration(&mut conn).expect("Failed to load server configuration");
+    let server_configuration = rpcs::get_server_configuration(&mut conn)
+        .or_else(|_| {
+            log::warn!("Failed to load server configuration, regenerating...");
+            rpcs::create_default_server_configuration(&mut conn)
+        })
+        .expect("Failed to load or regenerate server configuration");
+
     let external_cdn_config = server_configuration.external_cdn_config;
 
     let tls_configuration_successful = start_tonic_server(pool.clone(), bucket.clone())?;
@@ -81,7 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         bucket.clone(),
         tempdir.clone(),
         tls_configuration_successful,
-        external_cdn_config.is_some()
+        external_cdn_config.is_some(),
     );
     let rocket_unsecure_80 = start_rocket_unsecured(
         80,
@@ -89,7 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         bucket.clone(),
         tempdir.clone(),
         tls_configuration_successful,
-        external_cdn_config.is_some()
+        external_cdn_config.is_some(),
     );
     let rocket_secure = start_rocket_secure(pool.clone(), bucket.clone(), tempdir.clone());
 

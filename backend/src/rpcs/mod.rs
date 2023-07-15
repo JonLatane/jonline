@@ -6,6 +6,7 @@ pub use get_service_version::get_service_version;
 
 mod get_server_configuration;
 pub use get_server_configuration::get_server_configuration;
+pub use get_server_configuration::create_default_server_configuration;
 
 mod configure_server;
 pub use configure_server::configure_server;
