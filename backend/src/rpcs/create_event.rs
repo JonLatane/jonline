@@ -98,7 +98,11 @@ pub fn create_event(
                 visibility: visibility.to_string_visibility(),
                 embed_link: post.embed_link.to_owned(),
                 context: PostContext::Event.as_str_name().to_string(),
-                media: post.media.iter().map(|m: &String| m.to_db_id().unwrap()).collect(),
+                media: post
+                    .media
+                    .iter()
+                    .map(|m: &String| m.to_db_id().unwrap())
+                    .collect(),
             })
             .get_result::<models::Post>(conn)?;
         let inserted_event = insert_into(events::table)
@@ -121,7 +125,11 @@ pub fn create_event(
                             visibility: p.visibility.to_string_visibility(),
                             embed_link: p.embed_link.to_owned(),
                             context: PostContext::EventInstance.as_str_name().to_string(),
-                            media: p.media.iter().map(|m: &String| m.to_db_id().unwrap()).collect(),
+                            media: p
+                                .media
+                                .iter()
+                                .map(|m: &String| m.to_db_id().unwrap())
+                                .collect(),
                         })
                         .get_result::<models::Post>(conn)?,
                 ),
@@ -133,7 +141,10 @@ pub fn create_event(
                     post_id: instance_post.as_ref().map(|p| p.id),
                     starts_at: instance.starts_at.as_ref().unwrap().to_db(),
                     ends_at: instance.ends_at.as_ref().unwrap().to_db(),
-                    // location: i.location,
+                    location: instance
+                        .location
+                        .as_ref()
+                        .map(|c| serde_json::to_value(c).unwrap()),
                     info: json!({}),
                 })
                 .get_result::<models::EventInstance>(conn)?;

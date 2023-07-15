@@ -23,6 +23,7 @@ table! {
         info -> Jsonb,
         starts_at -> Timestamp,
         ends_at -> Timestamp,
+        location -> Nullable<Jsonb>,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
     }

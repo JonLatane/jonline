@@ -219,6 +219,7 @@ CREATE TABLE event_instances (
   info JSONB NOT NULL DEFAULT '{}'::JSONB,
   starts_at TIMESTAMP NOT NULL,
   ends_at TIMESTAMP NOT NULL,
+  location JSONB NULL DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NULL DEFAULT NULL
 );

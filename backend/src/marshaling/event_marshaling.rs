@@ -65,6 +65,10 @@ pub trait ToProtoEventInstance {
 
 impl ToProtoEventInstance for models::EventInstance {
     fn to_proto(&self, post: &Option<&models::Post>, user: &Option<&models::User>) -> EventInstance {
+        let location: Option<Location> = self
+            .location
+            .to_owned()
+            .map(|c| serde_json::from_value(c).unwrap());
         EventInstance {
             id: self.id.to_proto_id(),
             event_id: self.event_id.to_proto_id(),
@@ -74,6 +78,7 @@ impl ToProtoEventInstance for models::EventInstance {
             info: Some(EventInstanceInfo {
                 ..Default::default()
             }),
+            location: location,
             ..Default::default()
         }
     }

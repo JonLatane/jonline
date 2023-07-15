@@ -28,6 +28,7 @@ pub struct EventInstance {
     pub info: serde_json::Value,
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
+    pub location: Option<serde_json::Value>,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
 }
@@ -40,6 +41,7 @@ pub struct NewEventInstance {
     pub info: serde_json::Value,
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
+    pub location: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset)]
@@ -49,6 +51,8 @@ pub struct EventAttendance {
     pub user_id: Option<i64>,
     pub anonymous_attendee: Option<serde_json::Value>,
     pub number_of_guests: i32,
+    pub status: String,
+    pub inviting_user_id: Option<i64>,
     pub public_note: String,
     pub private_note: String,
     pub moderation: String,

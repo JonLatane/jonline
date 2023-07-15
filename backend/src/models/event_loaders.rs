@@ -9,7 +9,7 @@ use crate::{
 
 pub fn get_event(
     event_id: i64,
-    user: &Option<User>,
+    _user: &Option<User>,
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
     events::table
@@ -48,6 +48,37 @@ pub fn get_event_instances(
                 e
             );
             Status::new(Code::Internal, "failed_to_load_event_instances")
+        })
+}
+
+pub fn get_event_attendances(
+    event_instance_id: i64,
+    user: &Option<User>,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<EventAttendance>, Status> {
+    event_attendances::table
+        .inner_join(
+            event_instances::table.on(event_attendances::event_instance_id.eq(event_instances::id)),
+        )
+        .left_join(posts::table.on(event_instances::post_id.eq(posts::id.nullable())))
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .left_join(
+            follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
+                follows::user_id
+                    .nullable()
+                    .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+            )),
+        )
+        .select(event_attendances::all_columns)
+        .filter(event_attendances::event_instance_id.eq(event_instance_id))
+        .load::<EventAttendance>(conn)
+        .map_err(|e| {
+            log::error!(
+                "Failed to load event attendances for event_instance_id={}: {:?}",
+                event_instance_id,
+                e
+            );
+            Status::new(Code::Internal, "failed_to_load_event_attendances")
         })
 }
 
