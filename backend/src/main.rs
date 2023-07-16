@@ -80,14 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tls_configuration_successful = start_tonic_server(pool.clone(), bucket.clone())?;
 
-    let rocket_unsecure_8000 = start_rocket_unsecured(
-        8000,
-        pool.clone(),
-        bucket.clone(),
-        tempdir.clone(),
-        tls_configuration_successful,
-        external_cdn_config.is_some(),
-    );
+    let rocket_secure = start_rocket_secure(pool.clone(), bucket.clone(), tempdir.clone());
     let rocket_unsecure_80 = start_rocket_unsecured(
         80,
         pool.clone(),
@@ -96,13 +89,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tls_configuration_successful,
         external_cdn_config.is_some(),
     );
-    let rocket_secure = start_rocket_secure(pool.clone(), bucket.clone(), tempdir.clone());
+    let rocket_unsecure_8000 = start_rocket_unsecured(
+        8000,
+        pool.clone(),
+        bucket.clone(),
+        tempdir.clone(),
+        tls_configuration_successful,
+        external_cdn_config.is_some(),
+    );
 
     join_all::<_>([
         // tonic_server,
-        rocket_unsecure_8000,
-        rocket_unsecure_80,
         rocket_secure,
+        rocket_unsecure_80,
+        rocket_unsecure_8000,
     ])
     .await;
 
