@@ -16,6 +16,7 @@ import { TamaguiMarkdown } from "./tamagui_markdown";
 import { MediaRenderer } from "../media/media_renderer";
 import { GroupsSheet } from '../groups/groups_sheet';
 import { useGroupContext } from "../groups/group_context";
+import { useOnScreen } from '../../hooks/use_on_screen';
 
 interface Props {
   post: Post;
@@ -31,9 +32,12 @@ export const GroupPostManager: React.FC<Props> = ({ post }) => {
   const selectedGroup = useGroupContext();
   const [loading, setLoading] = useState(false);
   const groupPostData = useTypedSelector((state: RootState) => state.groups.postIdGroupPosts[post.id]);
+  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+
+  const onScreen = useOnScreen(ref, '-1px');
 
   useEffect(() => {
-    if (!groupPostData && !loading) {
+    if (onScreen && !groupPostData && !loading) {
       setLoading(true);
       dispatch(loadPostGroupPosts({ ...accountOrServer, postId: post.id }))
         .then(() => setLoading(false));
@@ -46,7 +50,7 @@ export const GroupPostManager: React.FC<Props> = ({ post }) => {
     ? groupPostData.length - (sharedToSelectedGroup ? 1 : 0)
     : undefined;
 
-  return <XStack>
+  return <XStack ref={ref}>
     {!selectedGroup && otherGroupCount
       ?
       <Text my='auto' ml='$2' fontSize={'$1'} fontFamily='$body'>
