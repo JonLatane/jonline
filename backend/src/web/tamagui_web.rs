@@ -25,28 +25,53 @@ lazy_static! {
         tamagui_group_post,
         tamagui_group_event,
         tamagui_group_event_instance,
-        tamagui_file_or_username
+        tamagui_css,
+        tamagui_favicon,
+        tamagui_vercel_svg,
+        tamagui_script,
+        tamagui_username
     ];
 }
 
-#[rocket::get("/<file..>")]
-async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
-    log::info!("tamagui_file_or_username: {:?}", file);
-    let result = match NamedFile::open(Path::new("opt/tamagui_web/").join(file.to_owned())).await {
-        Ok(file) => Ok(file),
-        Err(_) => {
-            match NamedFile::open(Path::new("../frontends/tamagui/apps/next/out/").join(file)).await
-            {
-                Ok(file) => Ok(file),
-                Err(_) => return tamagui_path("[username].html").await,
-            }
-        }
-    };
-    CacheResponse::Public {
-        responder: result,
-        max_age: 60,
-        must_revalidate: false,
-    }
+#[rocket::get("/<_>")]
+async fn tamagui_username() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("[username].html").await
+    // log::info!("tamagui_file_or_username: {:?}", file);
+    // let result = match NamedFile::open(Path::new("opt/tamagui_web/").join(file.to_owned())).await {
+    //     Ok(file) => Ok(file),
+    //     Err(_) => {
+    //         match NamedFile::open(Path::new("../frontends/tamagui/apps/next/out/").join(file)).await
+    //         {
+    //             Ok(file) => Ok(file),
+    //             Err(_) => return tamagui_path("[username].html").await,
+    //         }
+    //     }
+    // };
+    // CacheResponse::Public {
+    //     responder: result,
+    //     max_age: 60,
+    //     must_revalidate: false,
+    // }
+}
+
+#[rocket::get("/tamagui.css")]
+async fn tamagui_css() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("tamagui.css").await
+}
+
+#[rocket::get("/favicon.ico")]
+async fn tamagui_favicon() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("favicon.ico").await
+}
+
+#[rocket::get("/vercel.svg")]
+async fn tamagui_vercel_svg() -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path("vercel.svg").await
+}
+
+#[rocket::get("/_next/<path..>")]
+async fn tamagui_script(path: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+    tamagui_path(&format!("_next/{}", path.to_string_lossy())).await
 }
 
 #[rocket::get("/tamagui")]

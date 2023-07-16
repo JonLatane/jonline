@@ -45,7 +45,6 @@ async function createClient(host: string, server: JonlineServer) {
       console.warn("Created Jonline client with different frontend host than server host. Correcting server host.");
       // server.host = frontendHost;
     }
-    // const frontendHost = serverConfiguration.externalCdnConfig?.frontendHost ?? server.host;
     store.dispatch(upsertServer({ ...server, serviceVersion, serverConfiguration }));
   } catch (e) {
     clients.delete(host);
