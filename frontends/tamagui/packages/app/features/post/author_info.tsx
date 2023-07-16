@@ -7,6 +7,8 @@ import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
 import { useLink } from "solito/link";
 import { FadeInView } from "./fade_in_view";
 import { useMediaUrl } from "app/hooks/use_media_url";
+import { useOnScreen } from "app/hooks/use_on_screen";
+import { View } from "react-native";
 
 export type AuthorInfoProps = {
   post: Post;
@@ -37,8 +39,11 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
       authorOnPress?.(event);
     }
   }
+  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+
+  const onScreen = useOnScreen(ref, '-1px');
   useEffect(() => {
-    if (authorId) {
+    if (authorId && onScreen) {
       if (!loadingAuthor && !author && !authorLoadFailed) {
         setLoadingAuthor(true);
         setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
@@ -46,11 +51,11 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
         setLoadingAuthor(false);
       }
     }
-  });
+  }, [authorId, onScreen]);
   const avatarUrl = useMediaUrl(author?.avatarMediaId);
   // debugger;
 
-  return <XStack f={1} ml={media.gtXs ? 0 : -7} alignContent='flex-start'>
+  return <XStack ref={ref} f={1} ml={media.gtXs ? 0 : -7} alignContent='flex-start'>
     <YStack w={detailsMargins}/>
     {(avatarUrl && avatarUrl != '') ?
       <YStack marginVertical='auto'>
