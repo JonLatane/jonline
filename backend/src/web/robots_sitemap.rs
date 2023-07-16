@@ -1,6 +1,7 @@
 use rocket::*;
+use rocket::http::uri::Host;
 
-use super::{headers::HostHeader, RocketState};
+use super::RocketState;
 use rocket::response::content::{RawText, RawXml};
 
 use rocket_cache_response::CacheResponse;
@@ -13,9 +14,9 @@ lazy_static! {
 #[rocket::get("/robots.txt")]
 async fn robots(
     state: &State<RocketState>,
-    host: HostHeader<'_>,
+    host: &Host<'_>,
 ) -> CacheResponse<RawText<String>> {
-    let domain = host.0.split(":").next().unwrap();
+    let domain = host.domain();
     let mut conn = state.pool.get().unwrap();
     let _configuration = get_server_configuration(&mut conn).unwrap();
     let response = RawText(
@@ -40,9 +41,9 @@ Sitemap: https://{}/sitemap.xml
 #[rocket::get("/sitemap.xml")]
 async fn sitemap(
     state: &State<RocketState>,
-    host: HostHeader<'_>,
+    host: &Host<'_>,
 ) -> CacheResponse<RawXml<String>> {
-    let domain = host.0.split(":").next().unwrap();
+    let domain = host.domain();
     let mut conn = state.pool.get().unwrap();
     let _configuration = get_server_configuration(&mut conn).unwrap();
 
