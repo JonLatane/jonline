@@ -12,6 +12,7 @@ import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { InstanceTime } from "./instance_time";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import { History } from "@tamagui/lucide-icons";
+import { GroupPostManager } from "../post/group_post_manager";
 
 interface Props {
   event: Event;
@@ -229,8 +230,37 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                   /> : undefined}
                 {contentView}
               </YStack>
-              <XStack pt={10} {...detailsProps}>
+              <XStack pt={10} ml='auto' mr={0}>
+                <GroupPostManager post={post} />
+              </XStack>
+              <XStack {...detailsProps}>
                 <AuthorInfo {...{ post, detailsMargins }} />
+                <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                  <YStack h='100%' mr='$3'>
+                    <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+
+                      disabled={true}
+                      marginVertical='auto'
+                      mr={media.gtXs || isPreview ? 0 : -10}
+                      // onPress={toggleReplies} 
+                      px='$2'
+                    >
+                      <XStack opacity={0.9}>
+                        <YStack marginVertical='auto'>
+                          {!post.replyToPostId ? <Heading size="$1" ta='right'>
+                            {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                          </Heading> : undefined}
+                          {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
+                            {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
+                          </Heading> : undefined}
+                          {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
+                            {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
+                          </Heading>}
+                        </YStack>
+                      </XStack>
+                    </Button>
+                  </YStack>
+                </Anchor>
               </XStack>
             </YStack>
           </Card.Footer>

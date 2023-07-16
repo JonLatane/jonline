@@ -16,9 +16,15 @@ export type GroupsSheetProps = {
 
   noGroupSelectedText?: string;
   onGroupSelected?: (group: Group) => void;
+
+  title?: string;
+  disableSelection?: boolean;
+  hideInfoButtons?: boolean;
+  topGroupIds?: string[];
+  extraListComponents?: (group: Group) => JSX.Element | undefined;
 }
 
-export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, title, disableSelection, hideInfoButtons, topGroupIds, extraListComponents }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
@@ -54,11 +60,14 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   const matchedGroups: Group[] = allGroups.filter(g =>
     g.name.toLowerCase().includes(searchText.toLowerCase()) ||
     g.description.toLowerCase().includes(searchText.toLowerCase()));
-  const sortedGroups: Group[] = [
+  const topGroups: Group[] = [
     ...(selectedGroup != undefined ? [selectedGroup] : []),
-    ...matchedGroups.filter(g => g.id !== selectedGroup?.id)
+    ...((topGroupIds ?? []).filter(id => id != selectedGroup?.id)
+      .map(id => allGroups.find(g => g.id == id)).filter(g => g != undefined) as Group[]),
   ];
-  const groups = sortedGroups;
+  const sortedGroups: Group[] = [
+    ...matchedGroups.filter(g => g.id !== selectedGroup?.id && topGroupIds?.includes(g.id) !== true)
+  ];
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
@@ -75,8 +84,8 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
 
     <>
       <Button icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup && !noGroupSelectedText}
-        paddingRight={selectedGroup ? infoPaddingRight : undefined}
-        paddingLeft={selectedGroup ? '$2' : undefined}
+        paddingRight={selectedGroup && !hideInfoButtons ? infoPaddingRight : undefined}
+        paddingLeft={selectedGroup && !hideInfoButtons ? '$2' : undefined}
         onPress={() => setOpen((x) => !x)}
         w={noGroupSelectedText ? '100%' : undefined}>
         {selectedGroup || noGroupSelectedText
@@ -94,7 +103,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay  />
+        <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
@@ -130,11 +139,11 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
 
           <Sheet.ScrollView p="$4" space>
             <YStack maw={600} als='center' width='100%'>
-              {groups.length > 0
+              {topGroups.length > 0
                 ?
                 <>
                   <YStack>
-                    {groups.map((group, index) => {
+                    {topGroups.map((group, index) => {
                       return <GroupButton
                         key={`groupButton-${group.id}`}
                         group={group}
@@ -145,7 +154,35 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                           setInfoGroup(group);
                           setInfoOpen(true);
                         }}
-                        setOpen={setOpen} />
+                        setOpen={setOpen}
+                        disabled={disableSelection}
+                        hideInfoButton={hideInfoButtons}
+                      />
+                    })}
+                  </YStack>
+                </>
+                : undefined}
+              {sortedGroups.length > 0
+                ?
+                <>
+                  {topGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
+                  <YStack>
+                    {sortedGroups.map((group, index) => {
+                      return <GroupButton
+                        key={`groupButton-${group.id}`}
+                        group={group}
+                        groupPageForwarder={groupPageForwarder}
+                        onGroupSelected={onGroupSelected}
+                        selected={group.id == selectedGroup?.id}
+                        onShowInfo={() => {
+                          setInfoGroup(group);
+                          setInfoOpen(true);
+                        }}
+                        setOpen={setOpen}
+                        disabled={disableSelection}
+                        hideInfoButton={hideInfoButtons}
+                        extraListComponents={extraListComponents}
+                      />
                     })}
                   </YStack>
                 </>
@@ -154,9 +191,10 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
           </Sheet.ScrollView>
         </Sheet.Frame>
       </Sheet>
-      {selectedGroup
+      {selectedGroup && !hideInfoButtons
         ? <Theme inverse>
-          <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto' ml={infoMarginLeft} onPress={() => setInfoOpen((x) => !x)} />
+          <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto'
+            ml={infoMarginLeft} onPress={() => setInfoOpen((x) => !x)} />
         </Theme>
         : undefined}
       <Sheet
@@ -168,7 +206,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay  />
+        <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
@@ -221,9 +259,12 @@ type GroupButtonProps = {
   // But, for instance, post pages can link to /g/:shortname/p/:id.
   groupPageForwarder?: (group: Group) => string;
   onGroupSelected?: (group: Group) => void;
+  disabled?: boolean;
+  hideInfoButton?: boolean;
+  extraListComponents?: (group: Group) => JSX.Element | undefined;
 }
 
-function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected }: GroupButtonProps) {
+function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton }: GroupButtonProps) {
   const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
     useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
   const media = useMedia();
@@ -251,6 +292,7 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
       backgroundColor={selected ? navColor : undefined}
       // size="$8"
       // disabled={appSection == AppSection.HOME}
+      disabled={disabled}
       {...link}
     >
       <YStack w='100%' marginVertical='auto'>
@@ -277,11 +319,12 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
         </Paragraph>
       </YStack>
     </Button>
-    <Button
-      size='$2'
-      my='auto'
-      ml='$2'
-      circular
-      icon={Info} onPress={() => onShowInfo()} />
+    {hideInfoButton ? undefined :
+      <Button
+        size='$2'
+        my='auto'
+        ml='$2'
+        circular
+        icon={Info} onPress={() => onShowInfo()} />}
   </XStack>;
 }

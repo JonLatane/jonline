@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use rocket::{get, response::Redirect, State};
 use rocket::http::uri::Host;
+use rocket::{get, response::Redirect, State};
 
 use super::{configured_backend_domain, RocketState};
 

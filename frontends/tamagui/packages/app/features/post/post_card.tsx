@@ -12,6 +12,7 @@ import { AuthorInfo } from "./author_info";
 import { TamaguiMarkdown } from "./tamagui_markdown";
 
 import { MediaRenderer } from "../media/media_renderer";
+import { GroupPostManager } from './group_post_manager';
 
 interface Props {
   post: Post;
@@ -269,7 +270,11 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     }
                   </YStack>
                 </Anchor>
-                <XStack pt={10} {...detailsProps}>
+                <XStack pt={10} ml='auto' mr={0}>
+                  <GroupPostManager post={post} />
+                </XStack>
+
+                <XStack {...detailsProps}>
                   <AuthorInfo {...{ post, detailsMargins }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$3'>

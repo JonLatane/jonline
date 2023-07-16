@@ -24,6 +24,17 @@ export const updateGroups: AsyncThunk<GetGroupsResponse, UpdateGroups, any> = cr
   }
 );
 
+export type LoadPostGroupPosts = AccountOrServer & { postId: string };
+export const loadPostGroupPosts: AsyncThunk<GetGroupPostsResponse, LoadPostGroupPosts, any> = createAsyncThunk<GetGroupPostsResponse, LoadPostGroupPosts>(
+  "groups/loadPostGroupPosts",
+  async (request) => {
+    const { postId } = request;
+    const client = await getCredentialClient(request);
+    const result = await client.getGroupPosts({ postId }, client.credential);
+    return result;
+  }
+);
+
 export type LoadGroupPostsPage = AccountOrServer & { groupId: string, page?: number };
 export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage, any> = createAsyncThunk<GetPostsResponse, LoadGroupPostsPage>(
   "groups/loadPostsPage",

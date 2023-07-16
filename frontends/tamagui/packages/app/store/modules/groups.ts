@@ -12,7 +12,7 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { GroupedEventInstancePages } from "./events";
-import { createGroup, createGroupPost, loadGroup, loadGroupEventsPage, loadGroupPostsPage, updateGroups } from "./group_actions";
+import { createGroup, createGroupPost, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, updateGroups } from "./group_actions";
 import { GroupedPostPages } from "./posts";
 import { store } from "../store";
 
@@ -105,6 +105,13 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
     });
 
 
+    builder.addCase(loadPostGroupPosts.fulfilled, (state, action) => {
+      state.postPageStatus = "loaded";
+      const { groupPosts } = action.payload;
+
+      state.postIdGroupPosts[action.meta.arg.postId] = groupPosts;
+      state.successMessage = `${groupPosts.length} Group Posts loaded for PostID=${action.meta.arg.postId}.`;
+    });
 
     builder.addCase(loadGroupPostsPage.pending, (state) => {
       state.postPageStatus = "loading";
