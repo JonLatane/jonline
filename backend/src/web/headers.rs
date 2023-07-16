@@ -9,6 +9,7 @@ impl<'r> FromRequest<'r> for HostHeader<'r> {
     type Error = ();
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        log::info!("HostHeader: {:?}", req.headers());
         match req.headers().get_one("Host") {
             Some(h) => Outcome::Success(HostHeader(h)),
             None => Outcome::Forward(()),
