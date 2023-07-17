@@ -23,15 +23,17 @@ export type GroupsSheetProps = {
   hideInfoButtons?: boolean;
   topGroupIds?: string[];
   extraListComponents?: (group: Group) => JSX.Element | undefined;
+  delayRenderingSheet?: boolean;
 }
 
-export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, disableSelection, hideInfoButtons, topGroupIds, extraListComponents }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, disableSelection, hideInfoButtons, topGroupIds, extraListComponents, delayRenderingSheet }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
   const [position, setPosition] = useState(0);
   const [searchText, setSearchText] = useState('');
   const { dispatch, accountOrServer } = useCredentialDispatch();
+  const [hasRenderedSheet, setHasRenderedSheet] = useState(false);
 
   // const app = useTypedSelector((state: RootState) => state.app);
   // const serversState = useTypedSelector((state: RootState) => state.servers);
@@ -49,6 +51,11 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
       setLoadingGroups(false);
     }
   });
+  useEffect(() => {
+    if (open && !hasRenderedSheet) {
+      setHasRenderedSheet(true);
+    }
+  }, [open]);
 
   function reloadGroups() {
     if (!accountOrServer.server) return;
@@ -97,159 +104,166 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
           </Paragraph>
           : undefined}
       </Button>
-      <Sheet
-        modal
-        open={open}
-        onOpenChange={setOpen}
-        snapPoints={[87]}
-        position={position}
-        onPositionChange={setPosition}
-        dismissOnSnapToBottom
-      >
-        <Sheet.Overlay />
-        <Sheet.Frame>
-          <Sheet.Handle />
-          <XStack space='$4' paddingHorizontal='$3'>
-            <XStack f={1} />
-            <Button
-              alignSelf='center'
-              size="$3"
-              mb='$3'
-              circular
-              icon={ChevronDown}
-              onPress={() => setOpen(false)} />
-            <XStack f={1} />
-          </XStack>
-
-          <YStack space="$3" mb='$2' maw={800} als='center' width='100%'>
-            {title ? <Heading size="$7" paddingHorizontal='$3' mb='$3'>{title}</Heading> : undefined}
-
-            <XStack space="$3" paddingHorizontal='$3'>
-              <XStack marginVertical='auto' ml='$3' mr={-44}>
-                <Search />
-              </XStack>
-              <Input size="$3" id={'groupSearch'} f={1} placeholder='Search for Groups' textContentType='name'
-                paddingHorizontal={40} ref={searchInputRef}
-                onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} />
-              <Button icon={XIcon} ml={-44} mr='$3'
-                onPress={() => {
-                  setSearchText('');
-                  searchInputRef.current?.focus();
-                }}
-                size='$2' circular marginVertical='auto'
-                disabled={searchText == ''} opacity={searchText == '' ? 0.5 : 1} />
-              {/* </Input> */}
-            </XStack>
-          </YStack>
-
-          <Sheet.ScrollView p="$4" space>
-            <YStack maw={600} als='center' width='100%'>
-              {topGroups.length > 0
-                ?
-                <>
-                  <YStack>
-                    {topGroups.map((group, index) => {
-                      return <GroupButton
-                        key={`groupButton-${group.id}`}
-                        group={group}
-                        groupPageForwarder={groupPageForwarder}
-                        onGroupSelected={onGroupSelected}
-                        selected={group.id == selectedGroup?.id}
-                        onShowInfo={() => {
-                          setInfoGroup(group);
-                          setInfoOpen(true);
-                        }}
-                        setOpen={setOpen}
-                        disabled={disableSelection}
-                        hideInfoButton={hideInfoButtons}
-                      />
-                    })}
-                  </YStack>
-                </>
-                : undefined}
-              {sortedGroups.length > 0
-                ?
-                <>
-                  {topGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
-                  <YStack>
-                    {sortedGroups.map((group, index) => {
-                      return <GroupButton
-                        key={`groupButton-${group.id}`}
-                        group={group}
-                        groupPageForwarder={groupPageForwarder}
-                        onGroupSelected={onGroupSelected}
-                        selected={group.id == selectedGroup?.id}
-                        onShowInfo={() => {
-                          setInfoGroup(group);
-                          setInfoOpen(true);
-                        }}
-                        setOpen={setOpen}
-                        disabled={disableSelection}
-                        hideInfoButton={hideInfoButtons}
-                        extraListComponents={extraListComponents}
-                      />
-                    })}
-                  </YStack>
-                </>
-                : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
-            </YStack>
-          </Sheet.ScrollView>
-        </Sheet.Frame>
-      </Sheet>
-      {selectedGroup && !hideInfoButtons
-        ? <Theme inverse>
-          <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto'
-            ml={infoMarginLeft} onPress={() => setInfoOpen((x) => !x)} />
-        </Theme>
-        : undefined}
-      <Sheet
-        modal
-        open={infoOpen}
-        onOpenChange={setInfoOpen}
-        snapPoints={[81]}
-        position={position}
-        onPositionChange={setPosition}
-        dismissOnSnapToBottom
-      >
-        <Sheet.Overlay />
-        <Sheet.Frame>
-          <Sheet.Handle />
-          <XStack space='$4' paddingHorizontal='$3'>
-            <XStack f={1} />
-            <Button
-              alignSelf='center'
-              size="$4"
-              mb='$3'
-              circular
-              icon={ChevronDown}
-              onPress={() => setInfoOpen(false)} />
-            <XStack f={1} />
-          </XStack>
-
-          <YStack space="$3" mb='$2' p='$4' maw={800} als='center' width='100%'>
-            <Heading>{infoRenderingGroup?.name}</Heading>
-            <XStack>
-              <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
+      {delayRenderingSheet && !hasRenderedSheet && !open
+        ? undefined
+        : <Sheet
+          modal
+          open={open}
+          onOpenChange={setOpen}
+          snapPoints={[87]}
+          position={position}
+          onPositionChange={setPosition}
+          dismissOnSnapToBottom
+        >
+          <Sheet.Overlay />
+          <Sheet.Frame>
+            <Sheet.Handle />
+            <XStack space='$4' paddingHorizontal='$3'>
               <XStack f={1} />
-              <Heading size='$1' marginVertical='auto'>
-                {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
-              </Heading>
+              <Button
+                alignSelf='center'
+                size="$3"
+                mb='$3'
+                circular
+                icon={ChevronDown}
+                onPress={() => setOpen(false)} />
+              <XStack f={1} />
             </XStack>
-          </YStack>
 
-          <Sheet.ScrollView p="$4" space>
-            <YStack maw={600} als='center' width='100%'>
-              {/* <ReactMarkdown children={infoRenderingGroup?.description ?? ''}
+            <YStack space="$3" mb='$2' maw={800} als='center' width='100%'>
+              {title ? <Heading size="$7" paddingHorizontal='$3' mb='$3'>{title}</Heading> : undefined}
+
+              <XStack space="$3" paddingHorizontal='$3'>
+                <XStack marginVertical='auto' ml='$3' mr={-44}>
+                  <Search />
+                </XStack>
+                <Input size="$3" f={1} placeholder='Search for Groups' textContentType='name'
+                  paddingHorizontal={40} ref={searchInputRef}
+                  onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} />
+                <Button icon={XIcon} ml={-44} mr='$3'
+                  onPress={() => {
+                    setSearchText('');
+                    searchInputRef.current?.focus();
+                  }}
+                  size='$2' circular marginVertical='auto'
+                  disabled={searchText == ''} opacity={searchText == '' ? 0.5 : 1} />
+                {/* </Input> */}
+              </XStack>
+            </YStack>
+
+            <Sheet.ScrollView p="$4" space>
+              <YStack maw={600} als='center' width='100%'>
+                {topGroups.length > 0
+                  ?
+                  <>
+                    <YStack>
+                      {topGroups.map((group, index) => {
+                        return <GroupButton
+                          key={`groupButton-${group.id}`}
+                          group={group}
+                          groupPageForwarder={groupPageForwarder}
+                          onGroupSelected={onGroupSelected}
+                          selected={group.id == selectedGroup?.id}
+                          onShowInfo={() => {
+                            setInfoGroup(group);
+                            setInfoOpen(true);
+                          }}
+                          setOpen={setOpen}
+                          disabled={disableSelection}
+                          hideInfoButton={hideInfoButtons}
+                        />
+                      })}
+                    </YStack>
+                  </>
+                  : undefined}
+                {sortedGroups.length > 0
+                  ?
+                  <>
+                    {topGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
+                    <YStack>
+                      {sortedGroups.map((group, index) => {
+                        return <GroupButton
+                          key={`groupButton-${group.id}`}
+                          group={group}
+                          groupPageForwarder={groupPageForwarder}
+                          onGroupSelected={onGroupSelected}
+                          selected={group.id == selectedGroup?.id}
+                          onShowInfo={() => {
+                            setInfoGroup(group);
+                            setInfoOpen(true);
+                          }}
+                          setOpen={setOpen}
+                          disabled={disableSelection}
+                          hideInfoButton={hideInfoButtons}
+                          extraListComponents={extraListComponents}
+                        />
+                      })}
+                    </YStack>
+                  </>
+                  : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
+              </YStack>
+            </Sheet.ScrollView>
+          </Sheet.Frame>
+        </Sheet>
+      }
+      {selectedGroup && !hideInfoButtons
+        ? <>
+          <Theme inverse>
+            <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto'
+              ml={infoMarginLeft} onPress={() => setInfoOpen((x) => !x)} />
+          </Theme>
+        </>
+        : undefined}
+      {!hideInfoButtons ?
+        <Sheet
+          modal
+          open={infoOpen}
+          onOpenChange={setInfoOpen}
+          snapPoints={[81]}
+          position={position}
+          onPositionChange={setPosition}
+          dismissOnSnapToBottom
+        >
+          <Sheet.Overlay />
+          <Sheet.Frame>
+            <Sheet.Handle />
+            <XStack space='$4' paddingHorizontal='$3'>
+              <XStack f={1} />
+              <Button
+                alignSelf='center'
+                size="$4"
+                mb='$3'
+                circular
+                icon={ChevronDown}
+                onPress={() => setInfoOpen(false)} />
+              <XStack f={1} />
+            </XStack>
+
+            <YStack space="$3" mb='$2' p='$4' maw={800} als='center' width='100%'>
+              <Heading>{infoRenderingGroup?.name}</Heading>
+              <XStack>
+                <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
+                <XStack f={1} />
+                <Heading size='$1' marginVertical='auto'>
+                  {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
+                </Heading>
+              </XStack>
+            </YStack>
+
+            <Sheet.ScrollView p="$4" space>
+              <YStack maw={600} als='center' width='100%'>
+                {/* <ReactMarkdown children={infoRenderingGroup?.description ?? ''}
                     components={{
                       // li: ({ node, ordered, ...props }) => <li }} {...props} />,
                       p: ({ node, ...props }) => <Paragraph children={props.children} size='$1' />,
                       a: ({ node, ...props }) => <Anchor color={navColor} target='_blank' href={props.href} children={props.children} />,
                     }} /> */}
-              <TamaguiMarkdown text={infoRenderingGroup?.description ?? ''} />
-            </YStack>
-          </Sheet.ScrollView>
-        </Sheet.Frame>
-      </Sheet>
+                <TamaguiMarkdown text={infoRenderingGroup?.description ?? ''} />
+              </YStack>
+            </Sheet.ScrollView>
+          </Sheet.Frame>
+        </Sheet>
+        : undefined}
     </>
   )
 }
@@ -280,14 +294,6 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
   }
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   return <XStack>
-    {/* <Button
-      size='$2'
-      my='auto'
-      mr='$2'
-      circular
-      o={0}
-      pointerEvents='none'
-      icon={Info} onPress={() => { }} /> */}
     <Button
       f={1}
       h={75}

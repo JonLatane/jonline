@@ -43,7 +43,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  const onScreen = true;//useIsVisible(ref);
+  const onScreen = useIsVisible(ref);
 
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
@@ -174,7 +174,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
 
   return (
     <>
-      <YStack w='100%'>
+      <YStack w='100%' ref={ref!}>
         {previewParent && post.replyToPostId
           ? <XStack w='100%'>
             {media.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}
@@ -222,7 +222,6 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             f={isPreview ? undefined : 1}
             animation="bouncy"
             pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
-            ref={ref!}
             scale={1}
             opacity={1}
             y={0}

@@ -31,8 +31,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
   const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor } = useServerTheme();
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  const onScreen = true;//useIsVisible(ref);
-
+  const onScreen = useIsVisible(ref);
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
