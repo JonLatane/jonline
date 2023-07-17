@@ -9,6 +9,7 @@ import { View } from "react-native";
 import { useLink } from "solito/link";
 import { FadeInView } from "../post/fade_in_view";
 import { login } from '../../store/modules/account_actions';
+import { hasAdminPermission, hasPermission } from '../../utils/permissions';
 
 interface Props {
   account: JonlineAccount;
@@ -71,8 +72,8 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Heading size="$7" mr='auto'>{account.user.username}</Heading>
             </YStack>
             {/* {account.server.secure ? <Lock/> : <Unlock/>} */}
-            {account.user.permissions.includes(Permission.ADMIN) ? <Shield /> : undefined}
-            {account.user.permissions.includes(Permission.RUN_BOTS) ? <Bot /> : undefined}
+            {hasAdminPermission(account.user) ? <Shield /> : undefined}
+            {hasPermission(account.user, Permission.RUN_BOTS) ? <Bot /> : undefined}
 
           </XStack>
         </Card.Header>

@@ -16,6 +16,7 @@ import ServerCard from './server_card'
 import { SingleMediaChooser } from './single_media_chooser'
 import { MediaRenderer } from '../media/media_renderer'
 import { themedButtonBackground } from '../../utils/themed_button_background';
+import { hasAdminPermission } from 'app/utils/permissions'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -38,7 +39,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const serverIsSelected = server && selectedServer &&
     serverID(server) == serverID(selectedServer);
   const isAdmin = account && server && serverID(account.server) == serverID(server) &&
-    account?.user?.permissions.includes(Permission.ADMIN);
+    hasAdminPermission(account?.user);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const aboutJonlineLink = useLink({ href: '/about_jonline' })

@@ -12,7 +12,7 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { GroupedEventInstancePages } from "./events";
-import { createGroup, createGroupPost, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, updateGroups } from "./group_actions";
+import { createGroup, createGroupPost, deleteGroupPost, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, updateGroups } from "./group_actions";
 import { GroupedPostPages } from "./posts";
 import { store } from "../store";
 
@@ -106,11 +106,26 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
 
     builder.addCase(loadPostGroupPosts.fulfilled, (state, action) => {
-      state.postPageStatus = "loaded";
       const { groupPosts } = action.payload;
-
       state.postIdGroupPosts[action.meta.arg.postId] = groupPosts;
-      state.successMessage = `${groupPosts.length} Group Posts loaded for PostID=${action.meta.arg.postId}.`;
+      // state.successMessage = `${groupPosts.length} Group Posts loaded for PostID=${action.meta.arg.postId}.`;
+    });
+
+    builder.addCase(createGroupPost.fulfilled, (state, action) => {
+      const groupPost = action.payload;
+
+      state.postIdGroupPosts[groupPost.postId] = [groupPost,
+        ...(state.postIdGroupPosts[groupPost.postId] ?? [])];
+
+      setTimeout(() => {
+        store.dispatch(loadGroupPostsPage({ groupId: action.payload.groupId, page: 0 }));
+      }, 1);
+    });
+
+    builder.addCase(deleteGroupPost.fulfilled, (state, action) => {
+      const { postId, groupId } = action.meta.arg;
+      state.postIdGroupPosts[postId] = (state.postIdGroupPosts[postId] ?? [])
+        .filter(gp => gp.groupId !== groupId);
     });
 
     builder.addCase(loadGroupPostsPage.pending, (state) => {
@@ -213,11 +228,6 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
-    });
-    builder.addCase(createGroupPost.fulfilled, (state, action) => {
-      setTimeout(() => {
-        store.dispatch(loadGroupPostsPage({ groupId: action.payload.groupId, page: 0 }));
-      }, 1);
     });
   },
 });

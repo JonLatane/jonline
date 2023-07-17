@@ -19,6 +19,7 @@ export type GroupsSheetProps = {
 
   disabled?: boolean;
   title?: string;
+  itemTitle?: string;
   disableSelection?: boolean;
   hideInfoButtons?: boolean;
   topGroupIds?: string[];
@@ -26,7 +27,7 @@ export type GroupsSheetProps = {
   delayRenderingSheet?: boolean;
 }
 
-export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, disableSelection, hideInfoButtons, topGroupIds, extraListComponents, delayRenderingSheet }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListComponents, delayRenderingSheet }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
@@ -131,7 +132,8 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
             </XStack>
 
             <YStack space="$3" mb='$2' maw={800} als='center' width='100%'>
-              {title ? <Heading size="$7" paddingHorizontal='$3' mb='$3'>{title}</Heading> : undefined}
+              {title ? <Heading size={itemTitle ? '$2' : "$7"} paddingHorizontal='$3' mb={itemTitle ? -15 : '$3'}>{title}</Heading> : undefined}
+              {itemTitle ? <Heading size="$7" paddingHorizontal='$3' mb='$3'>{itemTitle}</Heading> : undefined}
 
               <XStack space="$3" paddingHorizontal='$3'>
                 <XStack marginVertical='auto' ml='$3' mr={-44}>
@@ -171,6 +173,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                           setOpen={setOpen}
                           disabled={disableSelection}
                           hideInfoButton={hideInfoButtons}
+                          extraListComponents={extraListComponents}
                         />
                       })}
                     </YStack>
@@ -283,7 +286,7 @@ type GroupButtonProps = {
   extraListComponents?: (group: Group) => JSX.Element | undefined;
 }
 
-function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton }: GroupButtonProps) {
+function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListComponents }: GroupButtonProps) {
   const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
     useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
   const media = useMedia();
@@ -293,49 +296,52 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
     onPress?.(e);
   }
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-  return <XStack>
-    <Button
-      f={1}
-      h={75}
-      // bordered={false}
-      // href={`/g/${group.shortname}`}
-      transparent={!selected}
-      backgroundColor={selected ? navColor : undefined}
-      // size="$8"
-      // disabled={appSection == AppSection.HOME}
-      disabled={disabled}
-      {...link}
-    >
-      <YStack w='100%' marginVertical='auto'>
-        <Paragraph
-          size="$5"
-          color={selected ? navTextColor : undefined}
-          whiteSpace='nowrap'
-          overflow='hidden'
-          numberOfLines={1}
-          ta='left'
-        >
-          {group.name}
-        </Paragraph>
-        <Paragraph
-          size="$2"
-          color={selected ? navTextColor : undefined}
-          whiteSpace='nowrap'
-          overflow='hidden'
-          numberOfLines={1}
-          ta='left'
-          o={0.8}
-        >
-          {group.description}
-        </Paragraph>
-      </YStack>
-    </Button>
-    {hideInfoButton ? undefined :
+  return <YStack>
+    <XStack>
       <Button
-        size='$2'
-        my='auto'
-        ml='$2'
-        circular
-        icon={Info} onPress={() => onShowInfo()} />}
-  </XStack>;
+        f={1}
+        h={75}
+        // bordered={false}
+        // href={`/g/${group.shortname}`}
+        transparent={!selected}
+        backgroundColor={selected ? navColor : undefined}
+        // size="$8"
+        // disabled={appSection == AppSection.HOME}
+        disabled={disabled}
+        {...link}
+      >
+        <YStack w='100%' marginVertical='auto'>
+          <Paragraph
+            size="$5"
+            color={selected ? navTextColor : undefined}
+            whiteSpace='nowrap'
+            overflow='hidden'
+            numberOfLines={1}
+            ta='left'
+          >
+            {group.name}
+          </Paragraph>
+          <Paragraph
+            size="$2"
+            color={selected ? navTextColor : undefined}
+            whiteSpace='nowrap'
+            overflow='hidden'
+            numberOfLines={1}
+            ta='left'
+            o={0.8}
+          >
+            {group.description}
+          </Paragraph>
+        </YStack>
+      </Button>
+      {hideInfoButton ? undefined :
+        <Button
+          size='$2'
+          my='auto'
+          ml='$2'
+          circular
+          icon={Info} onPress={() => onShowInfo()} />}
+    </XStack>
+    {extraListComponents?.(group)}
+  </YStack>;
 }

@@ -92,3 +92,13 @@ export const createGroupPost: AsyncThunk<GroupPost, CreateGroupPost, any> = crea
     return result;
   }
 );
+
+export type DeleteGroupPost = AccountOrServer & { groupId: string, postId: string };
+export const deleteGroupPost: AsyncThunk<void, DeleteGroupPost, any> = createAsyncThunk<void, DeleteGroupPost>(
+  'groups/deleteGroupPost',
+  async (request) => {
+    const { groupId, postId } = request;
+    const client = await getCredentialClient(request);
+    await client.deleteGroupPost({ groupId, postId }, client.credential);
+  }
+);

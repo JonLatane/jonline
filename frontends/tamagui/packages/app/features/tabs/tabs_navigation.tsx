@@ -63,7 +63,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
     (shrinkHomeButton && logo?.squareMediaId != undefined);
   const showHomeIcon = serverNameEmoji == undefined && !canUseLogo;
   const renderButtonChildren = !shrinkHomeButton || serverNameEmoji || canUseLogo;
-  console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo, logo?.wideMediaId, logo?.squareMediaId, maxWidth, renderButtonChildren);
+  // console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo, logo?.wideMediaId, logo?.squareMediaId, maxWidth, renderButtonChildren);
   // debugger;
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <GroupContextProvider value={selectedGroup}>
