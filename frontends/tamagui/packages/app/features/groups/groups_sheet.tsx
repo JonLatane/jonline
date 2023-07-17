@@ -17,6 +17,7 @@ export type GroupsSheetProps = {
   noGroupSelectedText?: string;
   onGroupSelected?: (group: Group) => void;
 
+  disabled?: boolean;
   title?: string;
   disableSelection?: boolean;
   hideInfoButtons?: boolean;
@@ -24,7 +25,7 @@ export type GroupsSheetProps = {
   extraListComponents?: (group: Group) => JSX.Element | undefined;
 }
 
-export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, title, disableSelection, hideInfoButtons, topGroupIds, extraListComponents }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, disableSelection, hideInfoButtons, topGroupIds, extraListComponents }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
@@ -86,6 +87,8 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
       <Button icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup && !noGroupSelectedText}
         paddingRight={selectedGroup && !hideInfoButtons ? infoPaddingRight : undefined}
         paddingLeft={selectedGroup && !hideInfoButtons ? '$2' : undefined}
+        disabled={disabled}
+        o={disabled ? 0.5 : 1}
         onPress={() => setOpen((x) => !x)}
         w={noGroupSelectedText ? '100%' : undefined}>
         {selectedGroup || noGroupSelectedText
@@ -119,6 +122,8 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
           </XStack>
 
           <YStack space="$3" mb='$2' maw={800} als='center' width='100%'>
+            {title ? <Heading size="$7" paddingHorizontal='$3' mb='$3'>{title}</Heading> : undefined}
+
             <XStack space="$3" paddingHorizontal='$3'>
               <XStack marginVertical='auto' ml='$3' mr={-44}>
                 <Search />

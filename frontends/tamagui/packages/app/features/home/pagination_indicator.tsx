@@ -1,5 +1,4 @@
 import { Paragraph, Spinner, XStack } from '@jonline/ui';
-import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useServerTheme } from 'app/store';
 import React, { useEffect } from "react";
 import { View } from 'react-native';
@@ -9,11 +8,11 @@ interface Props {
   loadingPage: boolean;
   hasNextPage?: boolean;
   loadNextPage: () => void;
+  onScreen?: boolean
 }
 
-export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNextPage = true, loadNextPage }) => {
+export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNextPage = true, loadNextPage, onScreen = true }) => {
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  const onScreen = useIsVisible(ref);
   const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   useEffect(() => {
     if (onScreen && !loadingPage && hasNextPage) {

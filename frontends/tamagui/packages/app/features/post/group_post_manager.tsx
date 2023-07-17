@@ -2,31 +2,30 @@ import { loadPostGroupPosts, RootState, useCredentialDispatch, useTypedSelector 
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 
-import { Post } from "@jonline/api";
+import { Post, PostContext } from "@jonline/api";
 import { Text, XStack } from '@jonline/ui';
 
 
-import { useIsVisible } from '../../hooks/use_is_visible';
 import { useGroupContext } from "../groups/group_context";
 import { GroupsSheet } from '../groups/groups_sheet';
 
 interface Props {
   post: Post;
+  onScreen?: boolean;
 }
 
-export const GroupPostManager: React.FC<Props> = ({ post }) => {
+export const GroupPostManager: React.FC<Props> = ({ post, onScreen = true }) => {
   // const disabled = false;
   function onValueSelected(v: string) {
     // const selectedVisibility = parseInt(v) as Visibility;
     // onChange(selectedVisibility)
   }
+  const title = `Group ${post.context== PostContext.EVENT ? 'Event' : 'Post'} Sharing`;
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const selectedGroup = useGroupContext();
   const [loading, setLoading] = useState(false);
   const groupPostData = useTypedSelector((state: RootState) => state.groups.postIdGroupPosts[post.id]);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-
-  const onScreen = useIsVisible(ref);
 
   useEffect(() => {
     if (onScreen && !groupPostData && !loading) {
@@ -54,9 +53,10 @@ export const GroupPostManager: React.FC<Props> = ({ post }) => {
       {sharedToSelectedGroup === false ? 'Not yet shared to ' : undefined}
     </Text>
     <GroupsSheet
-      title="Group Sharing"
+      title={title}
       selectedGroup={selectedGroup}
       // onGroupSelected={() => { }}
+      disabled={!groupPostData}
       topGroupIds={groupPostData?.map(gp => gp.groupId) ?? []}
       disableSelection
       hideInfoButtons

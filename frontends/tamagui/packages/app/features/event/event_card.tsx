@@ -1,6 +1,7 @@
 import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
+import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { Event, EventInstance, Group } from "@jonline/api";
 import { Anchor, Button, Card, Heading, Image, Paragraph, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
@@ -30,6 +31,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
   const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor } = useServerTheme();
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  const onScreen = true;//useIsVisible(ref);
 
 
   const authorId = post.author?.userId;
@@ -231,10 +233,10 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                 {contentView}
               </YStack>
               <XStack pt={10} ml='auto' mr={0}>
-                <GroupPostManager post={post} />
+                <GroupPostManager post={post} onScreen={onScreen} />
               </XStack>
               <XStack {...detailsProps}>
-                <AuthorInfo {...{ post, detailsMargins }} />
+                <AuthorInfo {...{ post, detailsMargins, onScreen }} />
                 <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                   <YStack h='100%' mr='$3'>
                     <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}

@@ -10,6 +10,7 @@ import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmb
 import { useLink } from "solito/link";
 import { AuthorInfo } from "./author_info";
 import { TamaguiMarkdown } from "./tamagui_markdown";
+import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { MediaRenderer } from "../media/media_renderer";
 import { GroupPostManager } from './group_post_manager';
@@ -42,6 +43,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  const onScreen = useIsVisible(ref);
+
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
   // ... than 300px of element is visible.
@@ -203,7 +206,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     </XStack>
 
                     <XStack ml='$2'>
-                      <AuthorInfo post={previewParent!} disableLink={false} />
+                      <AuthorInfo post={previewParent!} disableLink={false} onScreen={onScreen} />
                     </XStack>
                   </YStack>
                 </Card.Footer>
@@ -273,13 +276,13 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 {post?.replyToPostId
                   ? undefined
                   : <XStack pt={10} ml='auto' mr={0}>
-                    <GroupPostManager post={post} />
+                    <GroupPostManager post={post} onScreen={onScreen} />
                   </XStack>}
 
                 <XStack pt={post?.replyToPostId
                   ? 10
                   : undefined} {...detailsProps}>
-                  <AuthorInfo {...{ post, detailsMargins }} />
+                  <AuthorInfo {...{ post, detailsMargins, onScreen }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$3'>
                       <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}

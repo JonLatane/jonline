@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Permission, Post } from "@jonline/api";
 import { Anchor, DateViewer, Heading, Image, useMedia, XStack, YStack } from "@jonline/ui";
 import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
-import { useIsVisible } from "app/hooks/use_is_visible";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { View } from "react-native";
 import { useLink } from "solito/link";
@@ -13,8 +12,9 @@ export type AuthorInfoProps = {
   post: Post;
   detailsMargins?: number;
   disableLink?: boolean;
+  onScreen?: boolean;
 }
-export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: AuthorInfoProps) => {
+export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, onScreen = true }: AuthorInfoProps) => {
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -40,7 +40,6 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
   }
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
-  const onScreen = useIsVisible(ref);
   useEffect(() => {
     if (authorId && onScreen) {
       if (!loadingAuthor && !author && !authorLoadFailed) {
