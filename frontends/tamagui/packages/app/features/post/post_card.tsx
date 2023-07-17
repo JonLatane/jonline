@@ -270,11 +270,15 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     }
                   </YStack>
                 </Anchor>
-                <XStack pt={10} ml='auto' mr={0}>
-                  <GroupPostManager post={post} />
-                </XStack>
+                {post?.replyToPostId
+                  ? undefined
+                  : <XStack pt={10} ml='auto' mr={0}>
+                    <GroupPostManager post={post} />
+                  </XStack>}
 
-                <XStack {...detailsProps}>
+                <XStack pt={post?.replyToPostId
+                  ? 10
+                  : undefined} {...detailsProps}>
                   <AuthorInfo {...{ post, detailsMargins }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$3'>

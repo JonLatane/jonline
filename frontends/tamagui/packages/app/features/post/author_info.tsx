@@ -4,11 +4,10 @@ import React, { useEffect, useState } from "react";
 import { Permission, Post } from "@jonline/api";
 import { Anchor, DateViewer, Heading, Image, useMedia, XStack, YStack } from "@jonline/ui";
 import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
-import { useLink } from "solito/link";
-import { FadeInView } from "./fade_in_view";
+import { useIsVisible } from "app/hooks/use_is_visible";
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { useOnScreen } from "app/hooks/use_on_screen";
 import { View } from "react-native";
+import { useLink } from "solito/link";
 
 export type AuthorInfoProps = {
   post: Post;
@@ -41,7 +40,7 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
   }
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
-  const onScreen = useOnScreen(ref, '-1px');
+  const onScreen = useIsVisible(ref);
   useEffect(() => {
     if (authorId && onScreen) {
       if (!loadingAuthor && !author && !authorLoadFailed) {
@@ -56,14 +55,33 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
   // debugger;
 
   return <XStack ref={ref} f={1} ml={media.gtXs ? 0 : -7} alignContent='flex-start'>
-    <YStack w={detailsMargins}/>
+    <YStack w={detailsMargins} />
     {(avatarUrl && avatarUrl != '') ?
       <YStack marginVertical='auto'>
         {disableLink
-          ? 
+          ?
           // <FadeInView>
-            <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}
-              mr={media.gtXs ? '$3' : '$2'}>
+          <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}
+            mr={media.gtXs ? '$3' : '$2'}>
+            <Image
+              pos="absolute"
+              width={media.gtXs ? 50 : 26}
+              // opacity={0.25}
+              height={media.gtXs ? 50 : 26}
+              borderRadius={media.gtXs ? 25 : 13}
+              resizeMode="cover"
+              als="flex-start"
+              source={{ uri: avatarUrl }}
+            // blurRadius={1.5}
+            // borderRadius={5}
+            />
+          </XStack>
+          // </FadeInView>
+          :
+          // <FadeInView>
+          <Anchor {...authorLinkProps}
+            mr={media.gtXs ? '$3' : '$2'}>
+            <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
               <Image
                 pos="absolute"
                 width={media.gtXs ? 50 : 26}
@@ -77,28 +95,9 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0 }: Au
               // borderRadius={5}
               />
             </XStack>
+          </Anchor>
           // </FadeInView>
-          :
-          // <FadeInView>
-            <Anchor {...authorLinkProps}
-              mr={media.gtXs ? '$3' : '$2'}>
-              <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
-                <Image
-                  pos="absolute"
-                  width={media.gtXs ? 50 : 26}
-                  // opacity={0.25}
-                  height={media.gtXs ? 50 : 26}
-                  borderRadius={media.gtXs ? 25 : 13}
-                  resizeMode="cover"
-                  als="flex-start"
-                  source={{ uri: avatarUrl }}
-                // blurRadius={1.5}
-                // borderRadius={5}
-                />
-              </XStack>
-            </Anchor>
-          // </FadeInView>
-          }
+        }
       </YStack>
       : undefined}
     <YStack>

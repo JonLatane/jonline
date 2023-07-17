@@ -1,22 +1,14 @@
-import { colorMeta, loadMedia, loadPostGroupPosts, loadPostReplies, loadUser, RootState, selectMediaById, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { loadPostGroupPosts, RootState, useCredentialDispatch, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
-import { GestureResponderEvent, Platform, View } from "react-native";
+import { View } from "react-native";
 
-import { Group, GroupPost, Media, Post } from "@jonline/api";
-import { Adapt, Anchor, Button, Card, Heading, Image, ScrollView, Select, Sheet, Text, Theme, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
-import { ChevronDown, ChevronRight, ChevronUp } from "@tamagui/lucide-icons";
-import { LinearGradient } from "@tamagui/linear-gradient";
+import { Post } from "@jonline/api";
+import { Text, XStack } from '@jonline/ui';
 
-import { useMediaUrl } from "app/hooks/use_media_url";
-import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
-import { useLink } from "solito/link";
-import { AuthorInfo } from "./author_info";
-import { TamaguiMarkdown } from "./tamagui_markdown";
 
-import { MediaRenderer } from "../media/media_renderer";
-import { GroupsSheet } from '../groups/groups_sheet';
+import { useIsVisible } from '../../hooks/use_is_visible';
 import { useGroupContext } from "../groups/group_context";
-import { useOnScreen } from '../../hooks/use_on_screen';
+import { GroupsSheet } from '../groups/groups_sheet';
 
 interface Props {
   post: Post;
@@ -34,7 +26,7 @@ export const GroupPostManager: React.FC<Props> = ({ post }) => {
   const groupPostData = useTypedSelector((state: RootState) => state.groups.postIdGroupPosts[post.id]);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
-  const onScreen = useOnScreen(ref, '-1px');
+  const onScreen = useIsVisible(ref);
 
   useEffect(() => {
     if (onScreen && !groupPostData && !loading) {
