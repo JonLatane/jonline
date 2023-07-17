@@ -7,6 +7,7 @@ import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { View } from "react-native";
 import { useLink } from "solito/link";
+import { hasAdminPermission, hasPermission } from "app/utils/permissions";
 
 export type AuthorInfoProps = {
   post: Post;
@@ -114,9 +115,9 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, onSc
       </XStack>
       <XStack>
         <DateViewer date={post.createdAt} />
-        {author && author.permissions.includes(Permission.ADMIN)
+        {author && hasAdminPermission(author)
           ? <PermissionIndicator permission={Permission.ADMIN} /> : undefined}
-        {author && author.permissions.includes(Permission.RUN_BOTS)
+        {author && hasPermission(author, Permission.RUN_BOTS)
           ? <PermissionIndicator permission={Permission.RUN_BOTS} /> : undefined}
       </XStack>
     </YStack>

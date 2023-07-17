@@ -1,14 +1,11 @@
 import { Permission } from "@jonline/api";
-import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack, Image, useMedia } from "@jonline/ui";
+import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia } from "@jonline/ui";
 
 import { Bot, Shield, Trash, User as UserIcon } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { accountId, JonlineAccount, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
+import { JonlineAccount, accountId, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
 import React from "react";
-import { View } from "react-native";
 import { useLink } from "solito/link";
-import { FadeInView } from "../post/fade_in_view";
-import { login } from '../../store/modules/account_actions';
 import { hasAdminPermission, hasPermission } from '../../utils/permissions';
 
 interface Props {
@@ -73,7 +70,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
             </YStack>
             {/* {account.server.secure ? <Lock/> : <Unlock/>} */}
             {hasAdminPermission(account.user) ? <Shield /> : undefined}
-            {account.user.permissions.includes(Permission.RUN_BOTS) ? <Bot /> : undefined}
+            {hasPermission(account.user, Permission.RUN_BOTS) ? <Bot /> : undefined}
 
           </XStack>
         </Card.Header>

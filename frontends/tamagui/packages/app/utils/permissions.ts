@@ -25,7 +25,13 @@ function _hasPermission(list: Permission[] | undefined, permission: Permission) 
   if (!list) return false;
 
   return list.includes(permission)
-    || list.includes(Permission.ADMIN);
+    || (![
+      Permission.RUN_BOTS,
+      Permission.UNRECOGNIZED,
+      Permission.VIEW_PRIVATE_CONTACT_METHODS
+    ].includes(permission) &&
+      list.includes(Permission.ADMIN)
+    );
 }
 
 function _hasAdminPermission(list: Permission[] | undefined) {

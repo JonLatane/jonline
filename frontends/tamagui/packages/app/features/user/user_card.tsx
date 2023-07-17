@@ -6,7 +6,7 @@ import { standardAnimation } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { followUnfollowUser, isUserLocked, respondToFollowRequest, RootState, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation";
-import { hasAdminPermission } from "app/utils/permissions";
+import { hasAdminPermission, hasPermission } from "app/utils/permissions";
 import React from "react";
 import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
@@ -112,7 +112,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
                   <Heading size='$2'>User is an admin.</Heading>
                 </Tooltip.Content>
               </Tooltip> : undefined}
-            {user.permissions.includes(Permission.RUN_BOTS)
+            {hasPermission(user, Permission.RUN_BOTS)
               ? <Tooltip placement="bottom-end">
                 <Tooltip.Trigger>
                   <Bot />
