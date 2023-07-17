@@ -34,7 +34,7 @@ export const GroupPostManager: React.FC<Props> = ({ post }) => {
       dispatch(loadPostGroupPosts({ ...accountOrServer, postId: post.id }))
         .then(() => setLoading(false));
     }
-  }, [post]);
+  }, [post, onScreen]);
 
   // This is undefined if data isn't loaded, true if shared, false if not shared.
   const sharedToSelectedGroup = selectedGroup && groupPostData?.some(gp => gp.groupId == selectedGroup?.id);
