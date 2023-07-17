@@ -43,7 +43,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  const onScreen = useIsVisible(ref);
+  const onScreen = true;//useIsVisible(ref);
 
   // Call the hook passing in ref and root margin
   // In this case it would only be considered onScreen if more ...
