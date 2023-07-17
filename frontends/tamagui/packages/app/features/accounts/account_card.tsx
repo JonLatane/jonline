@@ -73,7 +73,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
             </YStack>
             {/* {account.server.secure ? <Lock/> : <Unlock/>} */}
             {hasAdminPermission(account.user) ? <Shield /> : undefined}
-            {hasPermission(account.user, Permission.RUN_BOTS) ? <Bot /> : undefined}
+            {account.user.permissions.includes(Permission.RUN_BOTS) ? <Bot /> : undefined}
 
           </XStack>
         </Card.Header>

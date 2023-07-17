@@ -1,16 +1,15 @@
 import { Permission, User } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
-import { Bot, Camera, Shield, Trash } from "@tamagui/lucide-icons";
+import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { followUnfollowUser, isUserLocked, respondToFollowRequest, RootState, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation";
+import { hasAdminPermission } from "app/utils/permissions";
 import React from "react";
 import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
-import { MediaChooser } from "../media/media_chooser";
-import { } from "../post/post_card";
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 
 interface Props {
@@ -37,7 +36,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const [username, avatarMediaId] = editable ? [inputUsername, inputAvatarMediaId]
     : [user.username, user.avatarMediaId];
 
-  const isAdmin = accountOrServer?.account?.user?.permissions?.includes(Permission.ADMIN);
+  const isAdmin = hasAdminPermission(accountOrServer?.account?.user);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
   const { server, primaryColor, navColor, primaryTextColor, navTextColor, textColor } = useServerTheme();
 
@@ -104,7 +103,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               </Anchor>
               : usernameRegion}
 
-            {user.permissions.includes(Permission.ADMIN)
+            {hasAdminPermission(user)
               ? <Tooltip placement="bottom-end">
                 <Tooltip.Trigger>
                   <Shield />
@@ -139,26 +138,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               : undefined}
             <AnimatePresence>
               {canEditAvatar
-                ? 
-                <SingleMediaChooser mediaId={avatarMediaId} setMediaId={setAvatarMediaId} />
-                /*<YStack key='avatar-selection' animation='quick' {...standardAnimation}
-                  space='$2' mb='$2'>
-                  <MediaChooser
-                    selectedMedia={avatarMediaId ? [avatarMediaId] : []}
-                    onMediaSelected={media => { setAvatarMediaId?.(media.length == 0 ? undefined : media[0]) }} >
-                    <XStack>
-                      <Camera color={navTextColor} />
-                      <Heading color={navTextColor} ml='$3' my='auto' size='$1'>Choose Avatar</Heading>
-                    </XStack>
-                  </MediaChooser>
-                  <Button disabled={!avatarMediaId} opacity={avatarMediaId ? 1 : 0.5}
-                  onPress={() => setAvatarMediaId(undefined)}>
-                    <XStack>
-                      <Trash />
-                      <Heading ml='$3' my='auto' size='$1'>Remove Avatar</Heading>
-                    </XStack>
-                  </Button>
-                </YStack>*/
+                ? <SingleMediaChooser mediaId={avatarMediaId} setMediaId={setAvatarMediaId} />
                 : undefined}
               {followsCurrentUser
                 ? <Heading key='follow-request-heading' animation='quick' {...standardAnimation}

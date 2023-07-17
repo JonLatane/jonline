@@ -15,6 +15,7 @@ import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PermissionsEditor, PermissionsEditorProps } from './permissions_editor';
 import { UserCard, useFullAvatarHeight } from './user_card';
+import { hasAdminPermission } from 'app/utils/permissions';
 
 const { useParam } = createParam<{ username: string }>()
 
@@ -32,7 +33,7 @@ export function UsernameDetailsScreen() {
   const [showUserSettings, setShowUserSettings] = useState(false);
   const userLoadFailed = usersState.failedUsernames.includes(username!);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user?.id;
-  const isAdmin = accountOrServer.account?.user?.permissions?.includes(Permission.ADMIN);
+  const isAdmin = hasAdminPermission(accountOrServer.account?.user);
   const canEdit = isCurrentUser || isAdmin;
   const [name, setName] = useState(user?.username);
   const [bio, setBio] = useState(user?.bio);
@@ -157,16 +158,16 @@ export function UsernameDetailsScreen() {
                 avatarMediaId={avatarMediaId}
                 setAvatarMediaId={setAvatarMediaId} />
               <YStack als='center' w='100%' paddingHorizontal='$2' paddingVertical='$3' space>
-                  {editMode ?
-                    <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
-                      value={bio} onChangeText={t => setBio(t)}
-                      // size='$5'
-                      h='$14'
-                      placeholder={`Edit ${isCurrentUser ? 'your' : `${name}'s`} user bio. Markdown is supported.`}
-                    />
-                    : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
-                      <TamaguiMarkdown text={bio!} />
-                    </YStack>}
+                {editMode ?
+                  <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
+                    value={bio} onChangeText={t => setBio(t)}
+                    // size='$5'
+                    h='$14'
+                    placeholder={`Edit ${isCurrentUser ? 'your' : `${name}'s`} user bio. Markdown is supported.`}
+                  />
+                  : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
+                    <TamaguiMarkdown text={bio!} />
+                  </YStack>}
               </YStack>
               <Button mt={-15} onPress={() => setShowUserSettings(!showUserSettings)} transparent>
                 <XStack ac='center' jc='center'>
@@ -279,7 +280,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
   const media = useMedia();
   const account = useAccount();
   const isCurrentUser = account && account?.user?.id == user.id;
-  const isAdmin = account?.user?.permissions?.includes(Permission.ADMIN);
+  const isAdmin = hasAdminPermission(account?.user);
   const canEdit = isCurrentUser || isAdmin;
   const disableInputs = !editMode || !canEdit;
   return <AnimatePresence>
