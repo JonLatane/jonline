@@ -7,7 +7,7 @@ import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { View } from "react-native";
 import { useLink } from "solito/link";
-import { hasAdminPermission, hasPermission } from "app/utils/permissions";
+import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
 
 export type AuthorInfoProps = {
   post: Post;
@@ -54,7 +54,7 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, onSc
   const avatarUrl = useMediaUrl(author?.avatarMediaId);
   // debugger;
 
-  return <XStack ref={ref} f={1} ml={media.gtXs ? 0 : -7} alignContent='flex-start'>
+  return <XStack ref={ref} f={1} /*ml={media.gtXs ? 0 : -7}*/ alignContent='flex-start'>
     <YStack w={detailsMargins} />
     {(avatarUrl && avatarUrl != '') ?
       <YStack marginVertical='auto'>

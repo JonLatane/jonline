@@ -8,7 +8,7 @@ import {
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
-import { publicVisibility } from "app/utils/visibility";
+import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { loadGroupPostsPage } from "./group_actions";
 import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';

@@ -133,7 +133,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
 
             <YStack space="$3" mb='$2' maw={800} als='center' width='100%'>
               {title ? <Heading size={itemTitle ? '$2' : "$7"} paddingHorizontal='$3' mb={itemTitle ? -15 : '$3'}>{title}</Heading> : undefined}
-              {itemTitle ? <Heading size="$7" paddingHorizontal='$3' mb='$3'>{itemTitle}</Heading> : undefined}
+              {itemTitle ? <Heading size="$7" paddingHorizontal='$3' whiteSpace='nowrap' overflow='hidden' textOverflow='ellipsis'>{itemTitle}</Heading> : undefined}
 
               <XStack space="$3" paddingHorizontal='$3'>
                 <XStack marginVertical='auto' ml='$3' mr={-44}>

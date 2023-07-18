@@ -8,7 +8,7 @@ import {
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
-import { publicVisibility } from "app/utils/visibility";
+import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { LoadEvent, createEvent, defaultEventListingType, loadEvent, loadEventsPage } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";

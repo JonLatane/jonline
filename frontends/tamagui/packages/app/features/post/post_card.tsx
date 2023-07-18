@@ -274,7 +274,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 </Anchor>
                 {post?.replyToPostId
                   ? undefined
-                  : <XStack pt={10} ml='auto' mr={0}>
+                  : <XStack pt={10} ml='auto' px='$2' maw='100%'>
                     <GroupPostManager post={post} onScreen={onScreen} />
                   </XStack>}
 

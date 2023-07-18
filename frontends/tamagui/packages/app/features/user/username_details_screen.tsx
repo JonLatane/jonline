@@ -2,7 +2,7 @@ import { Moderation, Permission, User, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
 import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
-import { pending } from 'app/utils/moderation';
+import { pending } from 'app/utils/moderation_utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { createParam } from 'solito';
@@ -15,7 +15,7 @@ import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PermissionsEditor, PermissionsEditorProps } from './permissions_editor';
 import { UserCard, useFullAvatarHeight } from './user_card';
-import { hasAdminPermission } from 'app/utils/permissions';
+import { hasAdminPermission } from 'app/utils/permission_utils';
 
 const { useParam } = createParam<{ username: string }>()
 

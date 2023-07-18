@@ -2,7 +2,7 @@ import { Group, Media, Post, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
 import { RootState, clearPostAlerts, createGroupPost, createPost, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
-import { publicVisibility } from 'app/utils/visibility';
+import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { GroupsSheet } from '../groups/groups_sheet';

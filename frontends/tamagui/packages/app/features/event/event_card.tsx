@@ -231,7 +231,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                   /> : undefined}
                 {contentView}
               </YStack>
-              <XStack pt={10} ml='auto' mr={0}>
+              <XStack pt={10} ml='auto' px='$2' maw='100%'>
                 <GroupPostManager post={post} onScreen={onScreen} />
               </XStack>
               <XStack {...detailsProps}>

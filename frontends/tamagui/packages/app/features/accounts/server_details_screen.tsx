@@ -16,7 +16,7 @@ import ServerCard from './server_card'
 import { SingleMediaChooser } from './single_media_chooser'
 import { MediaRenderer } from '../media/media_renderer'
 import { themedButtonBackground } from '../../utils/themed_button_background';
-import { hasAdminPermission } from 'app/utils/permissions'
+import { hasAdminPermission } from 'app/utils/permission_utils'
 
 const { useParam } = createParam<{ id: string }>()
 

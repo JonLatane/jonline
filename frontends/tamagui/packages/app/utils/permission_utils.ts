@@ -5,8 +5,6 @@ export type ContainsPermissions = {
 }
 export type HasPermissions = ContainsPermissions | Permission[] | undefined;
 
-
-
 export function hasPermission(item: HasPermissions, permission: Permission) {
   if (typeof item === "undefined") return false;
   if (Array.isArray(item)) return _hasAdminPermission(item);

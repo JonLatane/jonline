@@ -6,7 +6,7 @@ import { useMediaUrl } from "app/hooks/use_media_url";
 import { JonlineAccount, accountId, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
-import { hasAdminPermission, hasPermission } from '../../utils/permissions';
+import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 
 interface Props {
   account: JonlineAccount;

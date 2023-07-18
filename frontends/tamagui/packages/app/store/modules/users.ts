@@ -9,7 +9,7 @@ import {
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
-import { passes } from "app/utils/moderation";
+import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
 import { store, upsertUserDataToAccounts } from "..";
 import { LoadUser, LoadUsername, defaultUserListingType, followUnfollowUser, loadUser, loadUserPosts, loadUsername, loadUsersPage, respondToFollowRequest, updateUser, userSaved } from "./user_actions";

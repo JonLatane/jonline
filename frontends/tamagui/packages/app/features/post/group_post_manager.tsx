@@ -9,7 +9,7 @@ import { Button, Separator, Spinner, Text, XStack, YStack } from '@jonline/ui';
 import { useGroupContext } from "../groups/group_context";
 import { GroupsSheet } from '../groups/groups_sheet';
 import { AuthorInfo } from "./author_info";
-import { hasAdminPermission, hasPermission } from '../../utils/permissions';
+import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 import { themedButtonBackground } from "app/utils/themed_button_background";
 
 interface Props {
@@ -60,7 +60,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, onScreen = true }) => 
     : undefined;
   // return <></>;
 
-  return <XStack>
+  return <XStack flexWrap='wrap' maw='100%'>
     {!selectedGroup && otherGroupCount
       ?
       <Text my='auto' ml='$2' fontSize={'$1'} fontFamily='$body'>
@@ -68,10 +68,11 @@ export const GroupPostManager: React.FC<Props> = ({ post, onScreen = true }) => 
       </Text>
       : undefined}
     <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
-      {sharedToSelectedGroup === true ? 'Shared to ' : undefined}
-      {sharedToSelectedGroup === false ? 'Not yet shared to ' : undefined}
+      {sharedToSelectedGroup === true ? 'In ' : undefined}
+      {sharedToSelectedGroup === false ? 'Not shared to ' : undefined}
     </Text>
     {loading && errorCount < maxErrors ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
+    <XStack>
     <GroupsSheet
       title={title}
       itemTitle={post.title}
@@ -91,7 +92,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, onScreen = true }) => 
         const canShare = !shared && hasPermission(group.currentUserMembership, Permission.CREATE_POSTS);
         const canUnshare = shared && (groupPost.userId === accountOrServer.account?.user?.id || hasAdminPermission(accountOrServer.account?.user) || hasAdminPermission(group.currentUserMembership));
         return <YStack>
-          <XStack space='$2' mb='$2'>
+          <XStack space='$1' my='$2'>
             <XStack f={1}>
               <XStack mx='auto'>
                 <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
@@ -126,14 +127,16 @@ export const GroupPostManager: React.FC<Props> = ({ post, onScreen = true }) => 
       hideInfoButtons
       delayRenderingSheet
     />
-    {selectedGroup
+    {selectedGroup && otherGroupCount && sharedToSelectedGroup === false ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text> : undefined}
+    </XStack>
+    {groupPostData && selectedGroup
       ? otherGroupCount
-        ? <Text my='auto' ml='$2' fontSize={'$1'} fontFamily='$body'>
-          {sharedToSelectedGroup === true ? ' and ' : undefined}
-          {sharedToSelectedGroup === false ? '. Shared to ' : undefined}
-          {otherGroupCount} other group{otherGroupCount > 1 ? 's' : undefined}.
+        ? <Text my='auto' ml={selectedGroup && otherGroupCount && sharedToSelectedGroup === false ? 0 : '$2'} fontSize={'$1'} fontFamily='$body'>
+          {sharedToSelectedGroup === true ? ' + ' : undefined}
+          {sharedToSelectedGroup === false ? 'Shared to ' : undefined}
+          {otherGroupCount} group{otherGroupCount > 1 ? 's' : undefined}.
         </Text>
-        : '.'
+        : <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text>
       : undefined}
     {/* {onScreen ? "hi!" : undefined} */}
   </XStack>;
