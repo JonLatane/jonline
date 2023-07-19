@@ -144,7 +144,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         open={open}
         onOpenChange={setOpen}
         // snapPoints={[80]}
-        snapPoints={[87]}
+        snapPoints={[92]}
         position={position}
         onPositionChange={setPosition}
         dismissOnSnapToBottom

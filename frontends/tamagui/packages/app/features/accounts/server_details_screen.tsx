@@ -1,4 +1,4 @@
-import { Media, Permission, ServerConfiguration } from '@jonline/api'
+import { ExternalCDNConfig, Media, Permission, ServerConfiguration } from '@jonline/api'
 import { Button, Heading, Input, Paragraph, ScrollView, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
 import { Info } from '@tamagui/lucide-icons'
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
@@ -314,7 +314,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     disabled={!isAdmin}
                     opacity={isAdmin ? 1 : 0.5}
                     onCheckedChange={(checked) => setExternalCdnConfig(
-                      checked ? { backendHost: '', frontendHost: '' } : undefined
+                      checked ? ExternalCDNConfig.fromPartial({ backendHost: '', frontendHost: '' }) : undefined
                     )}>
                     <Switch.Thumb animation="quick" backgroundColor='black' />
                   </Switch>

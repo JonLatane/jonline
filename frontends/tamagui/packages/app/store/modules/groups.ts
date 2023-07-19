@@ -131,6 +131,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
       setTimeout(() => {
         store.dispatch(loadGroupPostsPage({ groupId: action.payload.groupId, page: 0 }));
+        store.dispatch(loadGroupEventsPage({ groupId: action.payload.groupId, page: 0 }));
       }, 1);
     });
 

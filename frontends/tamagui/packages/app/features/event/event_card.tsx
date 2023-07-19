@@ -4,7 +4,7 @@ import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { Event, EventInstance, Group } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, Paragraph, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
+import { Anchor, Button, Card, Heading, Image, Paragraph, ScrollView, TamaguiElement, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -30,7 +30,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const post = event.post!;
 
   const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor } = useServerTheme();
-  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  const ref = React.createRef<TamaguiElement>();
   const isVisible = useIsVisible(ref);
 
   const authorId = post.author?.userId;
@@ -165,6 +165,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
       </Anchor>
       : <TamaguiMarkdown text={post.content} disableLinks={isPreview} />
     : undefined;
+    // return <></>;
   return (
     <>
       <YStack w='100%'>

@@ -1,9 +1,9 @@
 import { GetGroupsRequest, Group } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text } from '@jonline/ui';
+import { Button, Heading, Input, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text, standardAnimation, Separator } from '@jonline/ui';
 import { Boxes, Calendar, ChevronDown, Info, MessageSquare, Search, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, joinLeaveGroup, selectAllGroups, serverID, updateGroups, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
-import React, { useEffect, useState } from 'react';
-import { FlatList, GestureResponderEvent, View } from 'react-native';
+import { RootState, isGroupLocked, joinLeaveGroup, selectAllGroups, serverID, updateGroups, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import React, { createRef, useEffect, useState } from 'react';
+import { FlatList, GestureResponderEvent, TextInput, View } from 'react-native';
 import { useLink } from 'solito/link';
 import { } from '../post/post_card';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
@@ -41,8 +41,8 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   // const app = useTypedSelector((state: RootState) => state.app);
   // const serversState = useTypedSelector((state: RootState) => state.servers);
   // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-  const searchInputRef = React.createRef() as React.MutableRefObject<HTMLElement | View>;
+  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const searchInputRef= React.createRef<TextInput>();// = React.createRef() as React.MutableRefObject<HTMLElement | View>;
 
   const groupsState = useTypedSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
@@ -71,7 +71,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
   const renderedTopGroupIds = topGroupIds ?? recentGroupIds;
-  console.log('renderedTopGroupIds', renderedTopGroupIds);
+  // console.log('renderedTopGroupIds', renderedTopGroupIds);
 
   const allGroups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
   const matchedGroups: Group[] = allGroups.filter(g =>
@@ -100,6 +100,26 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   }, [infoOpen]);
 
   const infoRenderingGroup = infoGroup ?? selectedGroup;
+
+
+  //TODO: Simplify/abstract this into its own component? But then, with this design, will there ever be a need
+  // for a *third* "Join" button in this app?
+  const joined = passes(selectedGroup?.currentUserMembership?.userModeration)
+    && passes(selectedGroup?.currentUserMembership?.groupModeration);
+  const membershipRequested = selectedGroup?.currentUserMembership && !joined && passes(selectedGroup?.currentUserMembership?.userModeration);
+  const invited = selectedGroup?.currentUserMembership && !joined && passes(selectedGroup?.currentUserMembership?.groupModeration)
+  const requiresPermissionToJoin = pending(selectedGroup?.defaultMembershipModeration);
+  const isLocked = useTypedSelector((state: RootState) => !selectedGroup || isGroupLocked(state.groups, selectedGroup.id));
+
+  const onJoinPressed = () => {
+    if (!selectedGroup) {
+      console.warn("onJoinPressed with no selectedGroup");
+      return;
+    }
+    // e.stopPropagation();
+    const join = !(joined || membershipRequested || invited);
+    dispatch(joinLeaveGroup({ groupId: selectedGroup.id, join, ...accountOrServer }));
+  };
 
   return (
 
@@ -257,7 +277,29 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
             </XStack>
 
             <YStack space="$3" mb='$2' p='$4' maw={800} als='center' width='100%'>
-              <Heading>{infoRenderingGroup?.name}</Heading>
+              <XStack>
+                <Heading my='auto' f={1}>{infoRenderingGroup?.name}</Heading>
+                {accountOrServer.account
+                  ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
+                    <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
+                      animation='quick' {...standardAnimation}
+                      mb='$2'
+                      p='$3'
+                      disabled={isLocked} opacity={isLocked ? 0.5 : 1}
+                      onPress={onJoinPressed}>
+                      <YStack jc='center' ac='center'>
+                        <Heading jc='center' ta='center' size='$2' color={!joined && !membershipRequested ? primaryTextColor : textColor}>
+                          {!joined && !membershipRequested ? requiresPermissionToJoin ? 'Join Request' : 'Join'
+                            : joined ? 'Leave' : 'Cancel Request'}
+                        </Heading>
+                        {requiresPermissionToJoin && joined ? <Paragraph size='$1'>
+                          Permission required to re-join
+                        </Paragraph>
+                          : undefined}
+                      </YStack>
+                    </Button>
+                  </XStack> : undefined}
+              </XStack>
               <XStack>
                 <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
                 <XStack f={1} />
@@ -312,15 +354,17 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
     setOpen(false);
     onPress?.(e);
   }
-  const { server, primaryColor, navColor, navTextColor } = useServerTheme();
+  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+
   const joined = passes(group.currentUserMembership?.userModeration)
     && passes(group.currentUserMembership?.groupModeration);
   const membershipRequested = group.currentUserMembership && !joined && passes(group.currentUserMembership?.userModeration);
   const invited = group.currentUserMembership && !joined && passes(group.currentUserMembership?.groupModeration)
   const requiresPermissionToJoin = pending(group.defaultMembershipModeration);
+  const isLocked = useTypedSelector((state: RootState) => isGroupLocked(state.groups, group.id));
 
-  const onJoinPressed = (e: GestureResponderEvent) => {
-    e.stopPropagation();
+  const onJoinPressed = () => {
+    // e.stopPropagation();
     const join = !(joined || membershipRequested || invited);
     dispatch(joinLeaveGroup({ groupId: group.id, join, ...accountOrServer }));
   };
@@ -391,11 +435,31 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
           circular
           icon={Info} onPress={() => onShowInfo()} />}
     </XStack>
-    {extraListItemChrome?.(group)
-      ?? account
-      ? <Button>
-        Join
-      </Button>
+    <XStack flexWrap='wrap' w='100%'>
+      {accountOrServer.account
+        ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
+          <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
+            animation='quick' {...standardAnimation}
+            mb='$2'
+            p='$3'
+            disabled={isLocked} opacity={isLocked ? 0.5 : 1}
+            onPress={onJoinPressed}>
+            <YStack jc='center' ac='center'>
+              <Heading jc='center' ta='center' size='$2' color={!joined && !membershipRequested ? primaryTextColor : textColor}>
+                {!joined && !membershipRequested ? requiresPermissionToJoin ? 'Join Request' : 'Join'
+                  : joined ? 'Leave' : 'Cancel Request'}
+              </Heading>
+              {requiresPermissionToJoin && joined ? <Paragraph size='$1'>
+                Permission required to re-join
+              </Paragraph>
+                : undefined}
+            </YStack>
+          </Button>
+        </XStack> : undefined}
+      {extraListItemChrome?.(group)}
+    </XStack>
+    {accountOrServer.account || extraListItemChrome
+      ? <Separator mt='$1' />
       : undefined}
   </YStack>;
 }

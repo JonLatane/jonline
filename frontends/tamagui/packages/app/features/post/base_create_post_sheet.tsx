@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Unlock } from '
 import { RootState, clearPostAlerts, createGroupPost, createPost, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, TextInput, View } from 'react-native';
 import { GroupsSheet } from '../groups/groups_sheet';
 import { MediaChooser } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
@@ -114,7 +114,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
     title, link, content, shareable, embedLink, media, visibility,
     author: { userId: account?.user.id, username: account?.user.username }
   })
-  const textAreaRef = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  const textAreaRef = React.createRef<TextInput>();
 
   const [posting, setPosting] = useState(false);
   const serversState = useTypedSelector((state: RootState) => state.servers);

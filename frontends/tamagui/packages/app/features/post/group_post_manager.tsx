@@ -139,7 +139,7 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
       .then(() => setLoadingGroup(false));
     setLoadingGroup(true);
   }
-  return <YStack>
+  return <YStack mx='auto'>
     <XStack space='$1' my='$2' flexWrap="wrap">
       <XStack f={1}>
         <XStack mx='auto'>
@@ -150,7 +150,7 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
         </XStack>
       </XStack>
       <XStack mx='auto'>
-        {shared === true ? <Button mr='$2' {...viewLink}>View</Button> : undefined}
+        {shared === true ? <Button mx='$2' {...viewLink}>View</Button> : undefined}
         {accountOrServer.account && shared != undefined ?
           canShare
             ? <Button
@@ -171,6 +171,5 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
           : undefined}
       </XStack>
     </XStack>
-    <Separator mt='$2' />
   </YStack>;
 }

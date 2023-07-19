@@ -40,8 +40,8 @@ const AccountCard: React.FC<Props> = ({ account }) => {
         // w={250}
         // h={50}
         scale={0.9}
-        hoverStyle={{ scale: 0.925 }}
-        pressStyle={{ scale: 0.875 }}
+        // hoverStyle={{ scale: 0.925 }}
+        // pressStyle={{ scale: 0.875 }}
         onPress={doSelectAccount}
       >
         <Card.Header>

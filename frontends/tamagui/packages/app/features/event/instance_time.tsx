@@ -42,7 +42,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
       return <YStack
         backgroundColor={themeBgColor} opacity={0.8} pl='$2' borderRadius='$3'>
         <XStack>
-          <Paragraph size="$3" fontWeight='bold' color={primaryColor} mr='$2'>
+          <Paragraph size="$3" fontWeight='800' color={primaryColor} mr='$2'>
             {startsAtDate}
           </Paragraph>
         </XStack>
@@ -77,7 +77,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
       backgroundColor={linkToInstance ? undefined : themeBgColor}
       opacity={linkToInstance ? undefined : 0.8} pl='$2' borderRadius='$3'>
       <XStack>
-        <Paragraph size="$3" color={highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryColor} fontWeight='bold' mr='$2'>
+        <Paragraph size="$3" color={highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryColor} fontWeight='800' mr='$2'>
           {startsAtDate}
         </Paragraph>
       </XStack>

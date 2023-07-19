@@ -3,6 +3,7 @@ import { createInterFont } from '@tamagui/font-inter'
 import { shorthands } from '@tamagui/shorthands'
 import { themes, tokens } from '@tamagui/themes'
 import { createMedia } from '@tamagui/react-native-media-driver'
+import { createFont } from '@tamagui/core'
 
 import { animations } from './animations'
 
@@ -50,6 +51,31 @@ const bodyFont = createInterFont(
   }
 )
 
+const monoFont = createFont({
+  family: '"SFMono-Regular", "SF Mono", Menlo, Monaco, Consolas, Ubuntu Mono, "Liberation Mono", Fira Code, monospace',
+  size: {
+    1: 11,
+    2: 12,
+    3: 13,
+    4: 14,
+    5: 15,
+    6: 16,
+    7: 18,
+    8: 21,
+    9: 28,
+    10: 42,
+    11: 52,
+    12: 62,
+    13: 72,
+    14: 92,
+    15: 114,
+    16: 124,
+  },
+  weight: {
+    4: '400',
+  },
+});
+
 export const config = createTamagui({
   defaultFont: 'body',
   animations,
@@ -59,6 +85,7 @@ export const config = createTamagui({
   fonts: {
     heading: headingFont,
     body: bodyFont,
+    mono: monoFont,
   },
   themes,
   tokens,
