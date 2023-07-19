@@ -3478,7 +3478,6 @@ __metadata:
     "@tamagui/font-inter": latest
     "@tamagui/react-native-media-driver": latest
     "@tamagui/shorthands": latest
-    "@tamagui/site-config": latest
     "@tamagui/themes": latest
     "@tamagui/toast": latest
     tamagui: latest
@@ -3495,7 +3494,6 @@ __metadata:
     "@tamagui/font-inter": latest
     "@tamagui/react-native-media-driver": latest
     "@tamagui/shorthands": latest
-    "@tamagui/site-config": latest
     "@tamagui/themes": latest
     "@tamagui/toast": latest
     tamagui: latest
@@ -4617,17 +4615,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tamagui/animations-reanimated@npm:1.43.12":
-  version: 1.43.12
-  resolution: "@tamagui/animations-reanimated@npm:1.43.12"
-  dependencies:
-    "@tamagui/animations-react-native": 1.43.12
-    "@tamagui/use-presence": 1.43.12
-    "@tamagui/web": 1.43.12
-  checksum: 72f7533a436085aab36ce3ec2395c3137b88303570a118579c59eb0bacee12561bc0c66d55abc10571747066c4163264b50d143316dc345359bc58136342f67c
-  languageName: node
-  linkType: hard
-
 "@tamagui/aria-hidden@npm:1.43.12":
   version: 1.43.12
   resolution: "@tamagui/aria-hidden@npm:1.43.12"
@@ -4945,39 +4932,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tamagui/font-cherry-bomb@npm:1.43.12":
-  version: 1.43.12
-  resolution: "@tamagui/font-cherry-bomb@npm:1.43.12"
-  dependencies:
-    "@tamagui/core": 1.43.12
-  checksum: 68ed7ac6195f7fa837fa1a65c108e129441dc0704a9b27cf10b4f4486f7bac0f5b630702e3c645dc47650b9adb106cf69b6129df108bcb966fe85fc10b022a84
-  languageName: node
-  linkType: hard
-
-"@tamagui/font-glusp@npm:1.43.12":
-  version: 1.43.12
-  resolution: "@tamagui/font-glusp@npm:1.43.12"
-  dependencies:
-    "@tamagui/web": 1.43.12
-  checksum: dca877053274706a98d7adfa27204e508392c4fe83a307b93b0eb7a8bbce9ffe995c07dda1ded53256262a508d30abf4a47df595555a4d64530a1cdc604f9138
-  languageName: node
-  linkType: hard
-
-"@tamagui/font-inter@npm:1.43.12, @tamagui/font-inter@npm:latest":
+"@tamagui/font-inter@npm:latest":
   version: 1.43.12
   resolution: "@tamagui/font-inter@npm:1.43.12"
   dependencies:
     "@tamagui/core": 1.43.12
   checksum: 1b44908a4194a511db187f5d3451b35aa1f0a35b0423c03de06da198415f7561ad0e5fc4c660544abddee006607147b2f43b1baea37f1bf0071f0ea9ed14188d
-  languageName: node
-  linkType: hard
-
-"@tamagui/font-silkscreen@npm:1.43.12":
-  version: 1.43.12
-  resolution: "@tamagui/font-silkscreen@npm:1.43.12"
-  dependencies:
-    "@tamagui/core": 1.43.12
-  checksum: 569002ec501030fdf7acffe4880f3adecebbe631917726a41a8762e9210fe04859a03e8b4c8afa7608f22461186c3d00c60ab1027fafeccdcc9bd06b04b4cd37
   languageName: node
   linkType: hard
 
@@ -5507,25 +5467,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tamagui/site-config@npm:latest":
-  version: 1.43.12
-  resolution: "@tamagui/site-config@npm:1.43.12"
-  dependencies:
-    "@tamagui/animations-react-native": 1.43.12
-    "@tamagui/animations-reanimated": 1.43.12
-    "@tamagui/colors": 1.43.12
-    "@tamagui/font-cherry-bomb": 1.43.12
-    "@tamagui/font-glusp": 1.43.12
-    "@tamagui/font-inter": 1.43.12
-    "@tamagui/font-silkscreen": 1.43.12
-    "@tamagui/react-native-media-driver": 1.43.12
-    "@tamagui/shorthands": 1.43.12
-    "@tamagui/themes": 1.43.12
-    "@tamagui/web": 1.43.12
-  checksum: 1973bc74e0e1912dbf6e98a015f3d0d7e37e92937abf3e7e83fd87d8c7817e3295423b693fa711819b2235b97782d27840e02dcc94f7d38aa8cc82b2ccae4438
-  languageName: node
-  linkType: hard
-
 "@tamagui/slider@npm:1.43.12":
   version: 1.43.12
   resolution: "@tamagui/slider@npm:1.43.12"
@@ -5667,7 +5608,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tamagui/themes@npm:1.43.12, @tamagui/themes@npm:latest":
+"@tamagui/themes@npm:latest":
   version: 1.43.12
   resolution: "@tamagui/themes@npm:1.43.12"
   dependencies:
@@ -6960,7 +6901,6 @@ __metadata:
     "@tamagui/font-inter": latest
     "@tamagui/lucide-icons": latest
     "@tamagui/shorthands": latest
-    "@tamagui/site-config": latest
     "@tamagui/themes": latest
     "@types/react": ^18.0.27
     "@types/react-native": ^0.71.3
