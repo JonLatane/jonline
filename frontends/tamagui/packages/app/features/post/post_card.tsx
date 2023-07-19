@@ -43,17 +43,17 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  const onScreen = useIsVisible(ref);
+  const isVisible = useIsVisible(ref);
 
   // Call the hook passing in ref and root margin
-  // In this case it would only be considered onScreen if more ...
+  // In this case it would only be considered isVisible if more ...
   // ... than 300px of element is visible.
-  // const onScreen = useOnScreen(ref, "-1px");
+  // const isVisible = useOnScreen(ref, "-1px");
   // useEffect(() => {
-  //   if (onScreen) {
+  //   if (isVisible) {
   //     onOnScreen?.();
   //   }
-  // }, [onScreen]);
+  // }, [isVisible]);
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
@@ -206,7 +206,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     </XStack>
 
                     <XStack ml='$2'>
-                      <AuthorInfo post={previewParent!} disableLink={false} onScreen={onScreen} />
+                      <AuthorInfo post={previewParent!} disableLink={false} isVisible={isVisible} />
                     </XStack>
                   </YStack>
                 </Card.Footer>
@@ -275,13 +275,13 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                 {post?.replyToPostId
                   ? undefined
                   : <XStack pt={10} ml='auto' px='$2' maw='100%'>
-                    <GroupPostManager post={post} onScreen={onScreen} />
+                    <GroupPostManager post={post} isVisible={isVisible} />
                   </XStack>}
 
                 <XStack pt={post?.replyToPostId
                   ? 10
                   : undefined} {...detailsProps}>
-                  <AuthorInfo {...{ post, detailsMargins, onScreen }} />
+                  <AuthorInfo {...{ post, detailsMargins, isVisible }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$3'>
                       <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}

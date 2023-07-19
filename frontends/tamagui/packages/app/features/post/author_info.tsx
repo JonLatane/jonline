@@ -13,9 +13,9 @@ export type AuthorInfoProps = {
   post: Post;
   detailsMargins?: number;
   disableLink?: boolean;
-  onScreen?: boolean;
+  isVisible?: boolean;
 }
-export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, onScreen = true }: AuthorInfoProps) => {
+export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVisible = true }: AuthorInfoProps) => {
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -29,7 +29,9 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, onSc
   const authorLink = useLink({
     href: authorName
       ? `/${authorName}`
-      : `/user/${authorId}`
+      : author
+        ? `/${author.username}`
+        : `/user/${authorId}`
   });
   const authorLinkProps = author ? authorLink : undefined;
   if (authorLinkProps) {
@@ -42,15 +44,15 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, onSc
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
   useEffect(() => {
-    if (authorId && onScreen) {
+    if (authorId && isVisible) {
       if (!loadingAuthor && !author && !authorLoadFailed) {
+        dispatch(loadUser({ id: authorId, ...accountOrServer }));
         setLoadingAuthor(true);
-        setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
       } else if (loadingAuthor && author) {
         setLoadingAuthor(false);
       }
     }
-  }, [authorId, onScreen]);
+  }, [authorId, isVisible]);
   const avatarUrl = useMediaUrl(author?.avatarMediaId);
   // debugger;
 

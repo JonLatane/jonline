@@ -77,6 +77,7 @@ export interface Group {
   visibility: Visibility;
   memberCount: number;
   postCount: number;
+  eventCount: number;
   currentUserMembership?: Membership | undefined;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
@@ -133,6 +134,7 @@ function createBaseGroup(): Group {
     visibility: 0,
     memberCount: 0,
     postCount: 0,
+    eventCount: 0,
     currentUserMembership: undefined,
     createdAt: undefined,
     updatedAt: undefined,
@@ -179,14 +181,17 @@ export const Group = {
     if (message.postCount !== 0) {
       writer.uint32(96).uint32(message.postCount);
     }
+    if (message.eventCount !== 0) {
+      writer.uint32(104).uint32(message.eventCount);
+    }
     if (message.currentUserMembership !== undefined) {
-      Membership.encode(message.currentUserMembership, writer.uint32(106).fork()).ldelim();
+      Membership.encode(message.currentUserMembership, writer.uint32(154).fork()).ldelim();
     }
     if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(114).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(162).fork()).ldelim();
     }
     if (message.updatedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(122).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(170).fork()).ldelim();
     }
     return writer;
   },
@@ -242,12 +247,15 @@ export const Group = {
           message.postCount = reader.uint32();
           break;
         case 13:
+          message.eventCount = reader.uint32();
+          break;
+        case 19:
           message.currentUserMembership = Membership.decode(reader, reader.uint32());
           break;
-        case 14:
+        case 20:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
-        case 15:
+        case 21:
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
@@ -278,6 +286,7 @@ export const Group = {
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       memberCount: isSet(object.memberCount) ? Number(object.memberCount) : 0,
       postCount: isSet(object.postCount) ? Number(object.postCount) : 0,
+      eventCount: isSet(object.eventCount) ? Number(object.eventCount) : 0,
       currentUserMembership: isSet(object.currentUserMembership)
         ? Membership.fromJSON(object.currentUserMembership)
         : undefined,
@@ -307,6 +316,7 @@ export const Group = {
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
     message.memberCount !== undefined && (obj.memberCount = Math.round(message.memberCount));
     message.postCount !== undefined && (obj.postCount = Math.round(message.postCount));
+    message.eventCount !== undefined && (obj.eventCount = Math.round(message.eventCount));
     message.currentUserMembership !== undefined && (obj.currentUserMembership = message.currentUserMembership
       ? Membership.toJSON(message.currentUserMembership)
       : undefined);
@@ -333,6 +343,7 @@ export const Group = {
     message.visibility = object.visibility ?? 0;
     message.memberCount = object.memberCount ?? 0;
     message.postCount = object.postCount ?? 0;
+    message.eventCount = object.eventCount ?? 0;
     message.currentUserMembership =
       (object.currentUserMembership !== undefined && object.currentUserMembership !== null)
         ? Membership.fromPartial(object.currentUserMembership)

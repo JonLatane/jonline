@@ -1,7 +1,10 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
+import { Location } from "./location";
 import { Post } from "./posts";
+import { ContactMethod } from "./users";
+import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_moderation";
 
 export const protobufPackage = "jonline";
 
@@ -76,12 +79,26 @@ export function eventListingTypeToJSON(object: EventListingType): string {
   }
 }
 
+/**
+ * EventInstance attendance statuses. State transitions may generally happen
+ * in any direction, but:
+ * * `REQUESTED` can only be selected if another user invited the user whose attendance is being described.
+ * * `GOING` and `NOT_GOING` cannot be selected if the EventInstance has ended (end time is in the past).
+ * * `WENT` and `DID_NOT_GO` cannot be selected if the EventInstance has not started (start time is in the future).
+ * `INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
+ */
 export enum AttendanceStatus {
+  /** INTERESTED - The user is interested in attending. This is the default status. */
   INTERESTED = 0,
-  GOING = 1,
-  NOT_GOING = 2,
-  REQUESTED = 3,
+  /** REQUESTED - Another user has invited the user to the event. */
+  REQUESTED = 1,
+  /** GOING - The user plans to go to the event. */
+  GOING = 2,
+  /** NOT_GOING - The user does not plan to go to the event. */
+  NOT_GOING = 3,
+  /** WENT - The user went to the event. */
   WENT = 10,
+  /** DID_NOT_GO - The user did not go to the event. */
   DID_NOT_GO = 11,
   UNRECOGNIZED = -1,
 }
@@ -92,14 +109,14 @@ export function attendanceStatusFromJSON(object: any): AttendanceStatus {
     case "INTERESTED":
       return AttendanceStatus.INTERESTED;
     case 1:
-    case "GOING":
-      return AttendanceStatus.GOING;
-    case 2:
-    case "NOT_GOING":
-      return AttendanceStatus.NOT_GOING;
-    case 3:
     case "REQUESTED":
       return AttendanceStatus.REQUESTED;
+    case 2:
+    case "GOING":
+      return AttendanceStatus.GOING;
+    case 3:
+    case "NOT_GOING":
+      return AttendanceStatus.NOT_GOING;
     case 10:
     case "WENT":
       return AttendanceStatus.WENT;
@@ -117,12 +134,12 @@ export function attendanceStatusToJSON(object: AttendanceStatus): string {
   switch (object) {
     case AttendanceStatus.INTERESTED:
       return "INTERESTED";
+    case AttendanceStatus.REQUESTED:
+      return "REQUESTED";
     case AttendanceStatus.GOING:
       return "GOING";
     case AttendanceStatus.NOT_GOING:
       return "NOT_GOING";
-    case AttendanceStatus.REQUESTED:
-      return "REQUESTED";
     case AttendanceStatus.WENT:
       return "WENT";
     case AttendanceStatus.DID_NOT_GO:
@@ -180,7 +197,10 @@ export interface Event {
   instances: EventInstance[];
 }
 
-/** To be used for ticketing, RSVPs, etc. */
+/**
+ * To be used for ticketing, RSVPs, etc.
+ * Stored as JSON in the database.
+ */
 export interface EventInfo {
 }
 
@@ -191,19 +211,51 @@ export interface EventInstance {
   info: EventInstanceInfo | undefined;
   startsAt: string | undefined;
   endsAt: string | undefined;
+  location?: Location | undefined;
 }
 
-/** To be used for ticketing, RSVPs, etc. */
+/**
+ * To be used for ticketing, RSVPs, etc.
+ * Stored as JSON in the database.
+ */
 export interface EventInstanceInfo {
 }
 
+/**
+ * Describes the attendance of a user at an `EventInstance`. Such as:
+ * * A user's RSVP to an `EventInstance`.
+ * * Invitation status of a user to an `EventInstance`.
+ * * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
+ *
+ * `EventAttendance.status` works like a state machine, but state transitions are governed only
+ * by the current time and the start/end times of `EventInstance`s:
+ * * Before an event starts, EventAttendance essentially only describes RSVPs and invitations.
+ * * After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate
+ * they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
+ * * During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
+ */
 export interface EventAttendance {
   eventInstanceId: string;
-  userId: string;
+  userId?: string | undefined;
+  anonymousAttendee?: AnonymousAttendee | undefined;
+  numberOfGuests: number;
   status: AttendanceStatus;
   invitingUserId?: string | undefined;
+  privateNote: string;
+  publicNote: string;
+  moderation: Moderation;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
+}
+
+/**
+ * The visibility on `AnonymousAttendee` `ContactMethod`s support the `LIMITED` visibility, which will
+ * make them visible to the event creator.
+ */
+export interface AnonymousAttendee {
+  name: string;
+  /** The visibility on `AnonymousAttendee` */
+  contactMethods: ContactMethod[];
 }
 
 function createBaseGetEventsRequest(): GetEventsRequest {
@@ -577,7 +629,15 @@ export const EventInfo = {
 };
 
 function createBaseEventInstance(): EventInstance {
-  return { id: "", eventId: "", post: undefined, info: undefined, startsAt: undefined, endsAt: undefined };
+  return {
+    id: "",
+    eventId: "",
+    post: undefined,
+    info: undefined,
+    startsAt: undefined,
+    endsAt: undefined,
+    location: undefined,
+  };
 }
 
 export const EventInstance = {
@@ -599,6 +659,9 @@ export const EventInstance = {
     }
     if (message.endsAt !== undefined) {
       Timestamp.encode(toTimestamp(message.endsAt), writer.uint32(50).fork()).ldelim();
+    }
+    if (message.location !== undefined) {
+      Location.encode(message.location, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -628,6 +691,9 @@ export const EventInstance = {
         case 6:
           message.endsAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
+        case 7:
+          message.location = Location.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -644,6 +710,7 @@ export const EventInstance = {
       info: isSet(object.info) ? EventInstanceInfo.fromJSON(object.info) : undefined,
       startsAt: isSet(object.startsAt) ? String(object.startsAt) : undefined,
       endsAt: isSet(object.endsAt) ? String(object.endsAt) : undefined,
+      location: isSet(object.location) ? Location.fromJSON(object.location) : undefined,
     };
   },
 
@@ -655,6 +722,7 @@ export const EventInstance = {
     message.info !== undefined && (obj.info = message.info ? EventInstanceInfo.toJSON(message.info) : undefined);
     message.startsAt !== undefined && (obj.startsAt = message.startsAt);
     message.endsAt !== undefined && (obj.endsAt = message.endsAt);
+    message.location !== undefined && (obj.location = message.location ? Location.toJSON(message.location) : undefined);
     return obj;
   },
 
@@ -672,6 +740,9 @@ export const EventInstance = {
       : undefined;
     message.startsAt = object.startsAt ?? undefined;
     message.endsAt = object.endsAt ?? undefined;
+    message.location = (object.location !== undefined && object.location !== null)
+      ? Location.fromPartial(object.location)
+      : undefined;
     return message;
   },
 };
@@ -722,9 +793,14 @@ export const EventInstanceInfo = {
 function createBaseEventAttendance(): EventAttendance {
   return {
     eventInstanceId: "",
-    userId: "",
+    userId: undefined,
+    anonymousAttendee: undefined,
+    numberOfGuests: 0,
     status: 0,
     invitingUserId: undefined,
+    privateNote: "",
+    publicNote: "",
+    moderation: 0,
     createdAt: undefined,
     updatedAt: undefined,
   };
@@ -735,14 +811,29 @@ export const EventAttendance = {
     if (message.eventInstanceId !== "") {
       writer.uint32(10).string(message.eventInstanceId);
     }
-    if (message.userId !== "") {
+    if (message.userId !== undefined) {
       writer.uint32(18).string(message.userId);
     }
+    if (message.anonymousAttendee !== undefined) {
+      AnonymousAttendee.encode(message.anonymousAttendee, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.numberOfGuests !== 0) {
+      writer.uint32(32).uint32(message.numberOfGuests);
+    }
     if (message.status !== 0) {
-      writer.uint32(24).int32(message.status);
+      writer.uint32(40).int32(message.status);
     }
     if (message.invitingUserId !== undefined) {
-      writer.uint32(34).string(message.invitingUserId);
+      writer.uint32(50).string(message.invitingUserId);
+    }
+    if (message.privateNote !== "") {
+      writer.uint32(58).string(message.privateNote);
+    }
+    if (message.publicNote !== "") {
+      writer.uint32(66).string(message.publicNote);
+    }
+    if (message.moderation !== 0) {
+      writer.uint32(72).int32(message.moderation);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(82).fork()).ldelim();
@@ -767,10 +858,25 @@ export const EventAttendance = {
           message.userId = reader.string();
           break;
         case 3:
-          message.status = reader.int32() as any;
+          message.anonymousAttendee = AnonymousAttendee.decode(reader, reader.uint32());
           break;
         case 4:
+          message.numberOfGuests = reader.uint32();
+          break;
+        case 5:
+          message.status = reader.int32() as any;
+          break;
+        case 6:
           message.invitingUserId = reader.string();
+          break;
+        case 7:
+          message.privateNote = reader.string();
+          break;
+        case 8:
+          message.publicNote = reader.string();
+          break;
+        case 9:
+          message.moderation = reader.int32() as any;
           break;
         case 10:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
@@ -789,9 +895,16 @@ export const EventAttendance = {
   fromJSON(object: any): EventAttendance {
     return {
       eventInstanceId: isSet(object.eventInstanceId) ? String(object.eventInstanceId) : "",
-      userId: isSet(object.userId) ? String(object.userId) : "",
+      userId: isSet(object.userId) ? String(object.userId) : undefined,
+      anonymousAttendee: isSet(object.anonymousAttendee)
+        ? AnonymousAttendee.fromJSON(object.anonymousAttendee)
+        : undefined,
+      numberOfGuests: isSet(object.numberOfGuests) ? Number(object.numberOfGuests) : 0,
       status: isSet(object.status) ? attendanceStatusFromJSON(object.status) : 0,
       invitingUserId: isSet(object.invitingUserId) ? String(object.invitingUserId) : undefined,
+      privateNote: isSet(object.privateNote) ? String(object.privateNote) : "",
+      publicNote: isSet(object.publicNote) ? String(object.publicNote) : "",
+      moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
       createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
     };
@@ -801,8 +914,15 @@ export const EventAttendance = {
     const obj: any = {};
     message.eventInstanceId !== undefined && (obj.eventInstanceId = message.eventInstanceId);
     message.userId !== undefined && (obj.userId = message.userId);
+    message.anonymousAttendee !== undefined && (obj.anonymousAttendee = message.anonymousAttendee
+      ? AnonymousAttendee.toJSON(message.anonymousAttendee)
+      : undefined);
+    message.numberOfGuests !== undefined && (obj.numberOfGuests = Math.round(message.numberOfGuests));
     message.status !== undefined && (obj.status = attendanceStatusToJSON(message.status));
     message.invitingUserId !== undefined && (obj.invitingUserId = message.invitingUserId);
+    message.privateNote !== undefined && (obj.privateNote = message.privateNote);
+    message.publicNote !== undefined && (obj.publicNote = message.publicNote);
+    message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
     message.createdAt !== undefined && (obj.createdAt = message.createdAt);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
     return obj;
@@ -815,11 +935,86 @@ export const EventAttendance = {
   fromPartial<I extends Exact<DeepPartial<EventAttendance>, I>>(object: I): EventAttendance {
     const message = createBaseEventAttendance();
     message.eventInstanceId = object.eventInstanceId ?? "";
-    message.userId = object.userId ?? "";
+    message.userId = object.userId ?? undefined;
+    message.anonymousAttendee = (object.anonymousAttendee !== undefined && object.anonymousAttendee !== null)
+      ? AnonymousAttendee.fromPartial(object.anonymousAttendee)
+      : undefined;
+    message.numberOfGuests = object.numberOfGuests ?? 0;
     message.status = object.status ?? 0;
     message.invitingUserId = object.invitingUserId ?? undefined;
+    message.privateNote = object.privateNote ?? "";
+    message.publicNote = object.publicNote ?? "";
+    message.moderation = object.moderation ?? 0;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseAnonymousAttendee(): AnonymousAttendee {
+  return { name: "", contactMethods: [] };
+}
+
+export const AnonymousAttendee = {
+  encode(message: AnonymousAttendee, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.contactMethods) {
+      ContactMethod.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AnonymousAttendee {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAnonymousAttendee();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.contactMethods.push(ContactMethod.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AnonymousAttendee {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      contactMethods: Array.isArray(object?.contactMethods)
+        ? object.contactMethods.map((e: any) => ContactMethod.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: AnonymousAttendee): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.contactMethods) {
+      obj.contactMethods = message.contactMethods.map((e) => e ? ContactMethod.toJSON(e) : undefined);
+    } else {
+      obj.contactMethods = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AnonymousAttendee>, I>>(base?: I): AnonymousAttendee {
+    return AnonymousAttendee.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AnonymousAttendee>, I>>(object: I): AnonymousAttendee {
+    const message = createBaseAnonymousAttendee();
+    message.name = object.name ?? "";
+    message.contactMethods = object.contactMethods?.map((e) => ContactMethod.fromPartial(e)) || [];
     return message;
   },
 };

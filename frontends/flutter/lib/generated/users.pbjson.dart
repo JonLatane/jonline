@@ -156,6 +156,8 @@ const ContactMethod$json = {
   '2': [
     {'1': 'value', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'value', '17': true},
     {'1': 'visibility', '3': 2, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
+    {'1': 'supported_by_server', '3': 3, '4': 1, '5': 8, '10': 'supportedByServer'},
+    {'1': 'verified', '3': 4, '4': 1, '5': 8, '10': 'verified'},
   ],
   '8': [
     {'1': '_value'},
@@ -165,7 +167,9 @@ const ContactMethod$json = {
 /// Descriptor for `ContactMethod`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List contactMethodDescriptor = $convert.base64Decode(
     'Cg1Db250YWN0TWV0aG9kEhkKBXZhbHVlGAEgASgJSABSBXZhbHVliAEBEjMKCnZpc2liaWxpdH'
-    'kYAiABKA4yEy5qb25saW5lLlZpc2liaWxpdHlSCnZpc2liaWxpdHlCCAoGX3ZhbHVl');
+    'kYAiABKA4yEy5qb25saW5lLlZpc2liaWxpdHlSCnZpc2liaWxpdHkSLgoTc3VwcG9ydGVkX2J5'
+    'X3NlcnZlchgDIAEoCFIRc3VwcG9ydGVkQnlTZXJ2ZXISGgoIdmVyaWZpZWQYBCABKAhSCHZlcm'
+    'lmaWVkQggKBl92YWx1ZQ==');
 
 @$core.Deprecated('Use getUsersRequestDescriptor instead')
 const GetUsersRequest$json = {

@@ -38,6 +38,7 @@ pub struct Group {
     pub moderation: String,
     pub member_count: i32,
     pub post_count: i32,
+    pub event_count: i32,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }

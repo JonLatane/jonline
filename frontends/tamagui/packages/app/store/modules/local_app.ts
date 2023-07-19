@@ -2,6 +2,9 @@ import {
   createSlice, PayloadAction
 } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
+import { JonlineServer } from "../types";
+import { Group } from "@jonline/api";
+import { serverID } from './servers';
 
 export type LocalAppConfiguration = {
   showIntro: boolean;
@@ -15,6 +18,7 @@ export type LocalAppConfiguration = {
   discussionRefreshIntervalSeconds: number;
   showUserIds: boolean;
   showEventsOnLatest: boolean;
+  serverRecentGroups: { [serverId: string]: string[] };
 }
 
 const initialState: LocalAppConfiguration = {
@@ -29,6 +33,7 @@ const initialState: LocalAppConfiguration = {
   discussionRefreshIntervalSeconds: 6,
   showUserIds: false,
   showEventsOnLatest: true,
+  serverRecentGroups: {}
 };
 
 export const localAppSlice = createSlice({
@@ -68,6 +73,19 @@ export const localAppSlice = createSlice({
     },
     setShowEventsOnLatest: (state, action: PayloadAction<boolean>) => {
       state.showEventsOnLatest = action.payload;
+    },
+    markGroupVisit: (state, action: PayloadAction<{server: JonlineServer, group: Group}>) => {
+      // state.showEventsOnLatest = action.payload;
+      const serverId = serverID(action.payload.server);
+      if (!state.serverRecentGroups) {
+        state.serverRecentGroups = {};
+      }
+      const currentValue = state.serverRecentGroups[serverId] ?? [];
+
+      state.serverRecentGroups[serverId] = [
+        action.payload.group.id, 
+        ...currentValue.filter((g) => g != action.payload.group.id)
+      ];
     }
   },
   extraReducers: (builder) => {
@@ -76,7 +94,7 @@ export const localAppSlice = createSlice({
 
 export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection,
   setSeparateAccountsByServer, setShowBetaNavigation, resetLocalApp, setDiscussionChatUI,
-  setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest
+  setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

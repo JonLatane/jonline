@@ -111,12 +111,12 @@ const ExternalCDNConfig$json = {
   '2': [
     {'1': 'frontend_host', '3': 1, '4': 1, '5': 9, '10': 'frontendHost'},
     {'1': 'backend_host', '3': 2, '4': 1, '5': 9, '10': 'backendHost'},
-    {'1': 'secure_media', '3': 3, '4': 1, '5': 8, '9': 0, '10': 'secureMedia', '17': true},
-    {'1': 'media_ipv4_allowlist', '3': 4, '4': 1, '5': 9, '9': 1, '10': 'mediaIpv4Allowlist', '17': true},
-    {'1': 'media_ipv6_allowlist', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'mediaIpv6Allowlist', '17': true},
+    {'1': 'secure_media', '3': 3, '4': 1, '5': 8, '10': 'secureMedia'},
+    {'1': 'media_ipv4_allowlist', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'mediaIpv4Allowlist', '17': true},
+    {'1': 'media_ipv6_allowlist', '3': 5, '4': 1, '5': 9, '9': 1, '10': 'mediaIpv6Allowlist', '17': true},
+    {'1': 'cdn_grpc', '3': 6, '4': 1, '5': 8, '10': 'cdnGrpc'},
   ],
   '8': [
-    {'1': '_secure_media'},
     {'1': '_media_ipv4_allowlist'},
     {'1': '_media_ipv6_allowlist'},
   ],
@@ -125,11 +125,11 @@ const ExternalCDNConfig$json = {
 /// Descriptor for `ExternalCDNConfig`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List externalCDNConfigDescriptor = $convert.base64Decode(
     'ChFFeHRlcm5hbENETkNvbmZpZxIjCg1mcm9udGVuZF9ob3N0GAEgASgJUgxmcm9udGVuZEhvc3'
-    'QSIQoMYmFja2VuZF9ob3N0GAIgASgJUgtiYWNrZW5kSG9zdBImCgxzZWN1cmVfbWVkaWEYAyAB'
-    'KAhIAFILc2VjdXJlTWVkaWGIAQESNQoUbWVkaWFfaXB2NF9hbGxvd2xpc3QYBCABKAlIAVISbW'
-    'VkaWFJcHY0QWxsb3dsaXN0iAEBEjUKFG1lZGlhX2lwdjZfYWxsb3dsaXN0GAUgASgJSAJSEm1l'
-    'ZGlhSXB2NkFsbG93bGlzdIgBAUIPCg1fc2VjdXJlX21lZGlhQhcKFV9tZWRpYV9pcHY0X2FsbG'
-    '93bGlzdEIXChVfbWVkaWFfaXB2Nl9hbGxvd2xpc3Q=');
+    'QSIQoMYmFja2VuZF9ob3N0GAIgASgJUgtiYWNrZW5kSG9zdBIhCgxzZWN1cmVfbWVkaWEYAyAB'
+    'KAhSC3NlY3VyZU1lZGlhEjUKFG1lZGlhX2lwdjRfYWxsb3dsaXN0GAQgASgJSABSEm1lZGlhSX'
+    'B2NEFsbG93bGlzdIgBARI1ChRtZWRpYV9pcHY2X2FsbG93bGlzdBgFIAEoCUgBUhJtZWRpYUlw'
+    'djZBbGxvd2xpc3SIAQESGQoIY2RuX2dycGMYBiABKAhSB2NkbkdycGNCFwoVX21lZGlhX2lwdj'
+    'RfYWxsb3dsaXN0QhcKFV9tZWRpYV9pcHY2X2FsbG93bGlzdA==');
 
 @$core.Deprecated('Use featureSettingsDescriptor instead')
 const FeatureSettings$json = {

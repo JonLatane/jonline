@@ -465,6 +465,8 @@ class ContactMethod extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethod', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'value')
     ..e<$11.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..aOB(3, _omitFieldNames ? '' : 'supportedByServer')
+    ..aOB(4, _omitFieldNames ? '' : 'verified')
     ..hasRequiredFields = false
   ;
 
@@ -506,6 +508,24 @@ class ContactMethod extends $pb.GeneratedMessage {
   $core.bool hasVisibility() => $_has(1);
   @$pb.TagNumber(2)
   void clearVisibility() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.bool get supportedByServer => $_getBF(2);
+  @$pb.TagNumber(3)
+  set supportedByServer($core.bool v) { $_setBool(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasSupportedByServer() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSupportedByServer() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.bool get verified => $_getBF(3);
+  @$pb.TagNumber(4)
+  set verified($core.bool v) { $_setBool(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasVerified() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearVerified() => clearField(4);
 }
 
 class GetUsersRequest extends $pb.GeneratedMessage {

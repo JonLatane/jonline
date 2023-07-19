@@ -18,14 +18,17 @@ message Group {
   Moderation default_membership_moderation = 7;
   Moderation default_post_moderation = 8;
   Moderation default_event_moderation = 9;
+
   // LIMITED visibility groups are only visible to members. PRIVATE groups are only
   // visibile to users with the ADMIN group permission.
   Visibility visibility = 10;
   uint32 member_count = 11;
   uint32 post_count = 12;
-  optional Membership current_user_membership = 13;
-  google.protobuf.Timestamp created_at = 14;
-  optional google.protobuf.Timestamp updated_at = 15;
+  uint32 event_count = 13;
+
+  optional Membership current_user_membership = 19;
+  google.protobuf.Timestamp created_at = 20;
+  optional google.protobuf.Timestamp updated_at = 21;
 }
 
 message GetGroupsRequest {

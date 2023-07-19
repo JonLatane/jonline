@@ -40,9 +40,10 @@ class Group extends $pb.GeneratedMessage {
     ..e<$11.Visibility>(10, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
     ..a<$core.int>(11, _omitFieldNames ? '' : 'memberCount', $pb.PbFieldType.OU3)
     ..a<$core.int>(12, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU3)
-    ..aOM<$4.Membership>(13, _omitFieldNames ? '' : 'currentUserMembership', subBuilder: $4.Membership.create)
-    ..aOM<$9.Timestamp>(14, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(15, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
+    ..a<$core.int>(13, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU3)
+    ..aOM<$4.Membership>(19, _omitFieldNames ? '' : 'currentUserMembership', subBuilder: $4.Membership.create)
+    ..aOM<$9.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$9.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -170,37 +171,46 @@ class Group extends $pb.GeneratedMessage {
   void clearPostCount() => clearField(12);
 
   @$pb.TagNumber(13)
-  $4.Membership get currentUserMembership => $_getN(12);
+  $core.int get eventCount => $_getIZ(12);
   @$pb.TagNumber(13)
-  set currentUserMembership($4.Membership v) { setField(13, v); }
+  set eventCount($core.int v) { $_setUnsignedInt32(12, v); }
   @$pb.TagNumber(13)
-  $core.bool hasCurrentUserMembership() => $_has(12);
+  $core.bool hasEventCount() => $_has(12);
   @$pb.TagNumber(13)
-  void clearCurrentUserMembership() => clearField(13);
-  @$pb.TagNumber(13)
-  $4.Membership ensureCurrentUserMembership() => $_ensure(12);
+  void clearEventCount() => clearField(13);
 
-  @$pb.TagNumber(14)
-  $9.Timestamp get createdAt => $_getN(13);
-  @$pb.TagNumber(14)
-  set createdAt($9.Timestamp v) { setField(14, v); }
-  @$pb.TagNumber(14)
-  $core.bool hasCreatedAt() => $_has(13);
-  @$pb.TagNumber(14)
-  void clearCreatedAt() => clearField(14);
-  @$pb.TagNumber(14)
-  $9.Timestamp ensureCreatedAt() => $_ensure(13);
+  @$pb.TagNumber(19)
+  $4.Membership get currentUserMembership => $_getN(13);
+  @$pb.TagNumber(19)
+  set currentUserMembership($4.Membership v) { setField(19, v); }
+  @$pb.TagNumber(19)
+  $core.bool hasCurrentUserMembership() => $_has(13);
+  @$pb.TagNumber(19)
+  void clearCurrentUserMembership() => clearField(19);
+  @$pb.TagNumber(19)
+  $4.Membership ensureCurrentUserMembership() => $_ensure(13);
 
-  @$pb.TagNumber(15)
-  $9.Timestamp get updatedAt => $_getN(14);
-  @$pb.TagNumber(15)
-  set updatedAt($9.Timestamp v) { setField(15, v); }
-  @$pb.TagNumber(15)
-  $core.bool hasUpdatedAt() => $_has(14);
-  @$pb.TagNumber(15)
-  void clearUpdatedAt() => clearField(15);
-  @$pb.TagNumber(15)
-  $9.Timestamp ensureUpdatedAt() => $_ensure(14);
+  @$pb.TagNumber(20)
+  $9.Timestamp get createdAt => $_getN(14);
+  @$pb.TagNumber(20)
+  set createdAt($9.Timestamp v) { setField(20, v); }
+  @$pb.TagNumber(20)
+  $core.bool hasCreatedAt() => $_has(14);
+  @$pb.TagNumber(20)
+  void clearCreatedAt() => clearField(20);
+  @$pb.TagNumber(20)
+  $9.Timestamp ensureCreatedAt() => $_ensure(14);
+
+  @$pb.TagNumber(21)
+  $9.Timestamp get updatedAt => $_getN(15);
+  @$pb.TagNumber(21)
+  set updatedAt($9.Timestamp v) { setField(21, v); }
+  @$pb.TagNumber(21)
+  $core.bool hasUpdatedAt() => $_has(15);
+  @$pb.TagNumber(21)
+  void clearUpdatedAt() => clearField(21);
+  @$pb.TagNumber(21)
+  $9.Timestamp ensureUpdatedAt() => $_ensure(15);
 }
 
 class GetGroupsRequest extends $pb.GeneratedMessage {

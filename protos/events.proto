@@ -110,10 +110,17 @@ enum AttendanceStatus {
   DID_NOT_GO = 11;
 }
 
-// Describes the attendance of a user at an event. Such as:
-// * A user's RSVP to an event.
-// * Invitation status of a user to an event.
-// * `ContactMethod`-driven managment for anonymous RSVPs to an EventInstance.
+// Describes the attendance of a user at an `EventInstance`. Such as:
+// * A user's RSVP to an `EventInstance`.
+// * Invitation status of a user to an `EventInstance`.
+// * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
+//
+// `EventAttendance.status` works like a state machine, but state transitions are governed only 
+// by the current time and the start/end times of `EventInstance`s:
+// * Before an event starts, EventAttendance essentially only describes RSVPs and invitations.
+// * After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate 
+// they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
+// * During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
 message EventAttendance {
   string event_instance_id = 1;
   oneof attendee {
@@ -130,7 +137,10 @@ message EventAttendance {
   optional google.protobuf.Timestamp updated_at = 11;
 }
 
+// The visibility on `AnonymousAttendee` `ContactMethod`s support the `LIMITED` visibility, which will
+// make them visible to the event creator.
 message AnonymousAttendee {
   string name = 1;
+  // The visibility on `AnonymousAttendee`
   repeated ContactMethod contact_methods = 2;
 }

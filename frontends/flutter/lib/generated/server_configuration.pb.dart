@@ -173,6 +173,7 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
     ..aOB(3, _omitFieldNames ? '' : 'secureMedia')
     ..aOS(4, _omitFieldNames ? '' : 'mediaIpv4Allowlist')
     ..aOS(5, _omitFieldNames ? '' : 'mediaIpv6Allowlist')
+    ..aOB(6, _omitFieldNames ? '' : 'cdnGrpc')
     ..hasRequiredFields = false
   ;
 
@@ -241,6 +242,15 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   $core.bool hasMediaIpv6Allowlist() => $_has(4);
   @$pb.TagNumber(5)
   void clearMediaIpv6Allowlist() => clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.bool get cdnGrpc => $_getBF(5);
+  @$pb.TagNumber(6)
+  set cdnGrpc($core.bool v) { $_setBool(5, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasCdnGrpc() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearCdnGrpc() => clearField(6);
 }
 
 class FeatureSettings extends $pb.GeneratedMessage {

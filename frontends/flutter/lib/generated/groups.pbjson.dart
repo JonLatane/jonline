@@ -45,9 +45,10 @@ const Group$json = {
     {'1': 'visibility', '3': 10, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
     {'1': 'member_count', '3': 11, '4': 1, '5': 13, '10': 'memberCount'},
     {'1': 'post_count', '3': 12, '4': 1, '5': 13, '10': 'postCount'},
-    {'1': 'current_user_membership', '3': 13, '4': 1, '5': 11, '6': '.jonline.Membership', '9': 1, '10': 'currentUserMembership', '17': true},
-    {'1': 'created_at', '3': 14, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'updated_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'updatedAt', '17': true},
+    {'1': 'event_count', '3': 13, '4': 1, '5': 13, '10': 'eventCount'},
+    {'1': 'current_user_membership', '3': 19, '4': 1, '5': 11, '6': '.jonline.Membership', '9': 1, '10': 'currentUserMembership', '17': true},
+    {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'updatedAt', '17': true},
   ],
   '8': [
     {'1': '_avatar_media_id'},
@@ -68,12 +69,13 @@ final $typed_data.Uint8List groupDescriptor = $convert.base64Decode(
     'RlZmF1bHRQb3N0TW9kZXJhdGlvbhJNChhkZWZhdWx0X2V2ZW50X21vZGVyYXRpb24YCSABKA4y'
     'Ey5qb25saW5lLk1vZGVyYXRpb25SFmRlZmF1bHRFdmVudE1vZGVyYXRpb24SMwoKdmlzaWJpbG'
     'l0eRgKIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIhCgxtZW1iZXJfY291'
-    'bnQYCyABKA1SC21lbWJlckNvdW50Eh0KCnBvc3RfY291bnQYDCABKA1SCXBvc3RDb3VudBJQCh'
-    'djdXJyZW50X3VzZXJfbWVtYmVyc2hpcBgNIAEoCzITLmpvbmxpbmUuTWVtYmVyc2hpcEgBUhVj'
-    'dXJyZW50VXNlck1lbWJlcnNoaXCIAQESOQoKY3JlYXRlZF9hdBgOIAEoCzIaLmdvb2dsZS5wcm'
-    '90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GA8gASgLMhouZ29vZ2xl'
-    'LnByb3RvYnVmLlRpbWVzdGFtcEgCUgl1cGRhdGVkQXSIAQFCEgoQX2F2YXRhcl9tZWRpYV9pZE'
-    'IaChhfY3VycmVudF91c2VyX21lbWJlcnNoaXBCDQoLX3VwZGF0ZWRfYXQ=');
+    'bnQYCyABKA1SC21lbWJlckNvdW50Eh0KCnBvc3RfY291bnQYDCABKA1SCXBvc3RDb3VudBIfCg'
+    'tldmVudF9jb3VudBgNIAEoDVIKZXZlbnRDb3VudBJQChdjdXJyZW50X3VzZXJfbWVtYmVyc2hp'
+    'cBgTIAEoCzITLmpvbmxpbmUuTWVtYmVyc2hpcEgBUhVjdXJyZW50VXNlck1lbWJlcnNoaXCIAQ'
+    'ESOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0'
+    'ZWRBdBI+Cgp1cGRhdGVkX2F0GBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgCUg'
+    'l1cGRhdGVkQXSIAQFCEgoQX2F2YXRhcl9tZWRpYV9pZEIaChhfY3VycmVudF91c2VyX21lbWJl'
+    'cnNoaXBCDQoLX3VwZGF0ZWRfYXQ=');
 
 @$core.Deprecated('Use getGroupsRequestDescriptor instead')
 const GetGroupsRequest$json = {

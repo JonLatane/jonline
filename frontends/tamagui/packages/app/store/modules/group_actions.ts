@@ -1,4 +1,4 @@
-import { EventListingType, GetEventsResponse, GetGroupPostsRequest, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, PostListingType } from "@jonline/api";
+import { Empty, EventListingType, GetEventsResponse, GetGroupPostsRequest, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, Membership, Moderation, PostListingType } from "@jonline/api";
 
 import {
   AsyncThunk,
@@ -102,3 +102,32 @@ export const deleteGroupPost: AsyncThunk<void, DeleteGroupPost, any> = createAsy
     await client.deleteGroupPost({ groupId, postId }, client.credential);
   }
 );
+
+
+export type JoinLeaveGroup = { groupId: string, join: boolean } & AccountOrServer;
+export const joinLeaveGroup: AsyncThunk<Membership | undefined, JoinLeaveGroup, any> = createAsyncThunk<Membership | undefined, JoinLeaveGroup>(
+  "groups/joinLeave",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const membership = { userId: request.account!.user.id, groupId: request.groupId };
+    if (request.join) {
+      return await client.createMembership(membership, client.credential);
+    } else {
+      await client.deleteMembership(membership, client.credential);
+      return undefined;
+    }
+  });
+
+export type RespondToMembershipRequest = { userId: string, groupId: string, accept: boolean } & AccountOrServer;
+export const respondToMembershipRequest: AsyncThunk<Membership | undefined, RespondToMembershipRequest, any> = createAsyncThunk<Membership | undefined, RespondToMembershipRequest>(
+  "groups/respondToMembershipRequest",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const membership = { userId: request.userId, groupId: request.groupId, targetUserModeration: request.accept ? Moderation.APPROVED : Moderation.REJECTED };
+    if (request.accept) {
+      return await client.updateMembership(membership, client.credential);
+    } else {
+      await client.deleteMembership(membership, client.credential);
+      return undefined;
+    }
+  });

@@ -1,12 +1,13 @@
 import { GetGroupsRequest, Group } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, Theme, useMedia, XStack, YStack } from '@jonline/ui';
-import { Boxes, ChevronDown, Info, Search, Users, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, selectAllGroups, updateGroups, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { Button, Heading, Input, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text } from '@jonline/ui';
+import { Boxes, Calendar, ChevronDown, Info, MessageSquare, Search, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
+import { RootState, joinLeaveGroup, selectAllGroups, serverID, updateGroups, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
-import { FlatList, View } from 'react-native';
+import { FlatList, GestureResponderEvent, View } from 'react-native';
 import { useLink } from 'solito/link';
 import { } from '../post/post_card';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
+import { passes, pending } from '../../utils/moderation_utils';
 
 export type GroupsSheetProps = {
   selectedGroup?: Group;
@@ -23,11 +24,12 @@ export type GroupsSheetProps = {
   disableSelection?: boolean;
   hideInfoButtons?: boolean;
   topGroupIds?: string[];
-  extraListComponents?: (group: Group) => JSX.Element | undefined;
+  extraListItemChrome?: (group: Group) => JSX.Element | undefined;
   delayRenderingSheet?: boolean;
+  hideAdditionalGroups?: boolean;
 }
 
-export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListComponents, delayRenderingSheet }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
@@ -65,14 +67,24 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
       dispatch(updateGroups({ ...accountOrServer, ...GetGroupsRequest.create() })), 1);
   }
 
+  const recentGroupIds = useTypedSelector((state: RootState) => server
+    ? state.app.serverRecentGroups?.[serverID(server)] ?? []
+    : []);
+  const renderedTopGroupIds = topGroupIds ?? recentGroupIds;
+  console.log('renderedTopGroupIds', renderedTopGroupIds);
+
   const allGroups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
   const matchedGroups: Group[] = allGroups.filter(g =>
     g.name.toLowerCase().includes(searchText.toLowerCase()) ||
     g.description.toLowerCase().includes(searchText.toLowerCase()));
   const topGroups: Group[] = [
     ...(selectedGroup != undefined ? [selectedGroup] : []),
-    ...((topGroupIds ?? []).filter(id => id != selectedGroup?.id)
-      .map(id => allGroups.find(g => g.id == id)).filter(g => g != undefined) as Group[]),
+    ...(
+      renderedTopGroupIds.filter(id => id != selectedGroup?.id)
+        .map(id => allGroups.find(g => g.id == id)).filter(g => g != undefined) as Group[]
+    ).filter(g =>
+      g.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      g.description.toLowerCase().includes(searchText.toLowerCase())),
   ];
   const sortedGroups: Group[] = [
     ...matchedGroups.filter(g => g.id !== selectedGroup?.id && topGroupIds?.includes(g.id) !== true)
@@ -173,37 +185,39 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                           setOpen={setOpen}
                           disabled={disableSelection}
                           hideInfoButton={hideInfoButtons}
-                          extraListComponents={extraListComponents}
+                          extraListItemChrome={extraListItemChrome}
                         />
                       })}
                     </YStack>
                   </>
                   : undefined}
-                {sortedGroups.length > 0
-                  ?
-                  <>
-                    {topGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
-                    <YStack>
-                      {sortedGroups.map((group, index) => {
-                        return <GroupButton
-                          key={`groupButton-${group.id}`}
-                          group={group}
-                          groupPageForwarder={groupPageForwarder}
-                          onGroupSelected={onGroupSelected}
-                          selected={group.id == selectedGroup?.id}
-                          onShowInfo={() => {
-                            setInfoGroup(group);
-                            setInfoOpen(true);
-                          }}
-                          setOpen={setOpen}
-                          disabled={disableSelection}
-                          hideInfoButton={hideInfoButtons}
-                          extraListComponents={extraListComponents}
-                        />
-                      })}
-                    </YStack>
-                  </>
-                  : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
+                {hideAdditionalGroups
+                  ? undefined
+                  : sortedGroups.length > 0
+                    ? <>
+                      {topGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
+                      <YStack>
+                        {sortedGroups.map((group, index) => {
+                          return <GroupButton
+                            key={`groupButton-${group.id}`}
+                            group={group}
+                            groupPageForwarder={groupPageForwarder}
+                            onGroupSelected={onGroupSelected}
+                            selected={group.id == selectedGroup?.id}
+                            onShowInfo={() => {
+                              setInfoGroup(group);
+                              setInfoOpen(true);
+                            }}
+                            setOpen={setOpen}
+                            disabled={disableSelection}
+                            hideInfoButton={hideInfoButtons}
+                            extraListItemChrome={extraListItemChrome}
+                          />
+                        })}
+                      </YStack>
+                    </>
+                    : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>
+                }
               </YStack>
             </Sheet.ScrollView>
           </Sheet.Frame>
@@ -283,10 +297,13 @@ type GroupButtonProps = {
   onGroupSelected?: (group: Group) => void;
   disabled?: boolean;
   hideInfoButton?: boolean;
-  extraListComponents?: (group: Group) => JSX.Element | undefined;
+  extraListItemChrome?: (group: Group) => JSX.Element | undefined;
 }
 
-function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListComponents }: GroupButtonProps) {
+function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome }: GroupButtonProps) {
+  const accountOrServer = useAccountOrServer();
+  const { account } = accountOrServer;
+  const dispatch = useTypedDispatch();
   const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
     useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
   const media = useMedia();
@@ -296,6 +313,18 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
     onPress?.(e);
   }
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
+  const joined = passes(group.currentUserMembership?.userModeration)
+    && passes(group.currentUserMembership?.groupModeration);
+  const membershipRequested = group.currentUserMembership && !joined && passes(group.currentUserMembership?.userModeration);
+  const invited = group.currentUserMembership && !joined && passes(group.currentUserMembership?.groupModeration)
+  const requiresPermissionToJoin = pending(group.defaultMembershipModeration);
+
+  const onJoinPressed = (e: GestureResponderEvent) => {
+    e.stopPropagation();
+    const join = !(joined || membershipRequested || invited);
+    dispatch(joinLeaveGroup({ groupId: group.id, join, ...accountOrServer }));
+  };
+
   return <YStack>
     <XStack>
       <Button
@@ -311,16 +340,36 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
         {...link}
       >
         <YStack w='100%' marginVertical='auto'>
-          <Paragraph
-            size="$5"
-            color={selected ? navTextColor : undefined}
-            whiteSpace='nowrap'
-            overflow='hidden'
-            numberOfLines={1}
-            ta='left'
-          >
-            {group.name}
-          </Paragraph>
+          <XStack>
+            <Paragraph f={1}
+              my='auto'
+              size="$5"
+              color={selected ? navTextColor : undefined}
+              whiteSpace='nowrap'
+              overflow='hidden'
+              numberOfLines={1}
+              ta='left'
+            >
+              {group.name}
+            </Paragraph>
+            <XStack o={0.6} my='auto'>
+              <XStack my='auto'>
+                <Users2 size='$1' />
+              </XStack>
+              <Text mx='$1' my='auto' fontFamily='$body' fontSize='$1'
+                color={selected ? navTextColor : undefined}
+                whiteSpace='nowrap'
+                overflow='hidden'
+                numberOfLines={1}
+                ta='left'>
+                {group.memberCount}
+              </Text>
+
+
+              {/* <MessageSquare /> {group.postCount}
+              <Calendar /> {group.eventCount} */}
+            </XStack>
+          </XStack>
           <Paragraph
             size="$2"
             color={selected ? navTextColor : undefined}
@@ -342,6 +391,11 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
           circular
           icon={Info} onPress={() => onShowInfo()} />}
     </XStack>
-    {extraListComponents?.(group)}
+    {extraListItemChrome?.(group)
+      ?? account
+      ? <Button>
+        Join
+      </Button>
+      : undefined}
   </YStack>;
 }

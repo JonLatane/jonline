@@ -39,9 +39,9 @@ const AttendanceStatus$json = {
   '1': 'AttendanceStatus',
   '2': [
     {'1': 'INTERESTED', '2': 0},
-    {'1': 'GOING', '2': 1},
-    {'1': 'NOT_GOING', '2': 2},
-    {'1': 'REQUESTED', '2': 3},
+    {'1': 'REQUESTED', '2': 1},
+    {'1': 'GOING', '2': 2},
+    {'1': 'NOT_GOING', '2': 3},
     {'1': 'WENT', '2': 10},
     {'1': 'DID_NOT_GO', '2': 11},
   ],
@@ -49,8 +49,8 @@ const AttendanceStatus$json = {
 
 /// Descriptor for `AttendanceStatus`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List attendanceStatusDescriptor = $convert.base64Decode(
-    'ChBBdHRlbmRhbmNlU3RhdHVzEg4KCklOVEVSRVNURUQQABIJCgVHT0lORxABEg0KCU5PVF9HT0'
-    'lORxACEg0KCVJFUVVFU1RFRBADEggKBFdFTlQQChIOCgpESURfTk9UX0dPEAs=');
+    'ChBBdHRlbmRhbmNlU3RhdHVzEg4KCklOVEVSRVNURUQQABINCglSRVFVRVNURUQQARIJCgVHT0'
+    'lORxACEg0KCU5PVF9HT0lORxADEggKBFdFTlQQChIOCgpESURfTk9UX0dPEAs=');
 
 @$core.Deprecated('Use getEventsRequestDescriptor instead')
 const GetEventsRequest$json = {
@@ -158,9 +158,11 @@ const EventInstance$json = {
     {'1': 'info', '3': 4, '4': 1, '5': 11, '6': '.jonline.EventInstanceInfo', '10': 'info'},
     {'1': 'starts_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'startsAt'},
     {'1': 'ends_at', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'endsAt'},
+    {'1': 'location', '3': 7, '4': 1, '5': 11, '6': '.jonline.Location', '9': 1, '10': 'location', '17': true},
   ],
   '8': [
     {'1': '_post'},
+    {'1': '_location'},
   ],
 };
 
@@ -170,7 +172,8 @@ final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
     'RJZBImCgRwb3N0GAMgASgLMg0uam9ubGluZS5Qb3N0SABSBHBvc3SIAQESLgoEaW5mbxgEIAEo'
     'CzIaLmpvbmxpbmUuRXZlbnRJbnN0YW5jZUluZm9SBGluZm8SNwoJc3RhcnRzX2F0GAUgASgLMh'
     'ouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIIc3RhcnRzQXQSMwoHZW5kc19hdBgGIAEoCzIa'
-    'Lmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSBmVuZHNBdEIHCgVfcG9zdA==');
+    'Lmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSBmVuZHNBdBIyCghsb2NhdGlvbhgHIAEoCzIRLm'
+    'pvbmxpbmUuTG9jYXRpb25IAVIIbG9jYXRpb26IAQFCBwoFX3Bvc3RCCwoJX2xvY2F0aW9u');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {
@@ -186,13 +189,19 @@ const EventAttendance$json = {
   '1': 'EventAttendance',
   '2': [
     {'1': 'event_instance_id', '3': 1, '4': 1, '5': 9, '10': 'eventInstanceId'},
-    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '10': 'userId'},
-    {'1': 'status', '3': 3, '4': 1, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'status'},
-    {'1': 'inviting_user_id', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'invitingUserId', '17': true},
+    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'userId'},
+    {'1': 'anonymous_attendee', '3': 3, '4': 1, '5': 11, '6': '.jonline.AnonymousAttendee', '9': 0, '10': 'anonymousAttendee'},
+    {'1': 'number_of_guests', '3': 4, '4': 1, '5': 13, '10': 'numberOfGuests'},
+    {'1': 'status', '3': 5, '4': 1, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'status'},
+    {'1': 'inviting_user_id', '3': 6, '4': 1, '5': 9, '9': 1, '10': 'invitingUserId', '17': true},
+    {'1': 'private_note', '3': 7, '4': 1, '5': 9, '10': 'privateNote'},
+    {'1': 'public_note', '3': 8, '4': 1, '5': 9, '10': 'publicNote'},
+    {'1': 'moderation', '3': 9, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
     {'1': 'created_at', '3': 10, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'updated_at', '3': 11, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
+    {'1': 'updated_at', '3': 11, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'updatedAt', '17': true},
   ],
   '8': [
+    {'1': 'attendee'},
     {'1': '_inviting_user_id'},
     {'1': '_updated_at'},
   ],
@@ -201,10 +210,28 @@ const EventAttendance$json = {
 /// Descriptor for `EventAttendance`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventAttendanceDescriptor = $convert.base64Decode(
     'Cg9FdmVudEF0dGVuZGFuY2USKgoRZXZlbnRfaW5zdGFuY2VfaWQYASABKAlSD2V2ZW50SW5zdG'
-    'FuY2VJZBIXCgd1c2VyX2lkGAIgASgJUgZ1c2VySWQSMQoGc3RhdHVzGAMgASgOMhkuam9ubGlu'
-    'ZS5BdHRlbmRhbmNlU3RhdHVzUgZzdGF0dXMSLQoQaW52aXRpbmdfdXNlcl9pZBgEIAEoCUgAUg'
-    '5pbnZpdGluZ1VzZXJJZIgBARI5CgpjcmVhdGVkX2F0GAogASgLMhouZ29vZ2xlLnByb3RvYnVm'
-    'LlRpbWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYCyABKAsyGi5nb29nbGUucHJvdG'
-    '9idWYuVGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBAUITChFfaW52aXRpbmdfdXNlcl9pZEINCgtf'
-    'dXBkYXRlZF9hdA==');
+    'FuY2VJZBIZCgd1c2VyX2lkGAIgASgJSABSBnVzZXJJZBJLChJhbm9ueW1vdXNfYXR0ZW5kZWUY'
+    'AyABKAsyGi5qb25saW5lLkFub255bW91c0F0dGVuZGVlSABSEWFub255bW91c0F0dGVuZGVlEi'
+    'gKEG51bWJlcl9vZl9ndWVzdHMYBCABKA1SDm51bWJlck9mR3Vlc3RzEjEKBnN0YXR1cxgFIAEo'
+    'DjIZLmpvbmxpbmUuQXR0ZW5kYW5jZVN0YXR1c1IGc3RhdHVzEi0KEGludml0aW5nX3VzZXJfaW'
+    'QYBiABKAlIAVIOaW52aXRpbmdVc2VySWSIAQESIQoMcHJpdmF0ZV9ub3RlGAcgASgJUgtwcml2'
+    'YXRlTm90ZRIfCgtwdWJsaWNfbm90ZRgIIAEoCVIKcHVibGljTm90ZRIzCgptb2RlcmF0aW9uGA'
+    'kgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEjkKCmNyZWF0ZWRfYXQYCiAB'
+    'KAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSPgoKdXBkYXRlZF9hdB'
+    'gLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAlIJdXBkYXRlZEF0iAEBQgoKCGF0'
+    'dGVuZGVlQhMKEV9pbnZpdGluZ191c2VyX2lkQg0KC191cGRhdGVkX2F0');
+
+@$core.Deprecated('Use anonymousAttendeeDescriptor instead')
+const AnonymousAttendee$json = {
+  '1': 'AnonymousAttendee',
+  '2': [
+    {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'contact_methods', '3': 2, '4': 3, '5': 11, '6': '.jonline.ContactMethod', '10': 'contactMethods'},
+  ],
+};
+
+/// Descriptor for `AnonymousAttendee`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List anonymousAttendeeDescriptor = $convert.base64Decode(
+    'ChFBbm9ueW1vdXNBdHRlbmRlZRISCgRuYW1lGAEgASgJUgRuYW1lEj8KD2NvbnRhY3RfbWV0aG'
+    '9kcxgCIAMoCzIWLmpvbmxpbmUuQ29udGFjdE1ldGhvZFIOY29udGFjdE1ldGhvZHM=');
 

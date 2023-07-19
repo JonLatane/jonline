@@ -15,7 +15,10 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'events.pbenum.dart';
 import 'google/protobuf/timestamp.pb.dart' as $9;
+import 'location.pb.dart' as $12;
 import 'posts.pb.dart' as $7;
+import 'users.pb.dart' as $4;
+import 'visibility_moderation.pbenum.dart' as $11;
 
 export 'events.pbenum.dart';
 
@@ -344,6 +347,7 @@ class EventInstance extends $pb.GeneratedMessage {
     ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: EventInstanceInfo.create)
     ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$12.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $12.Location.create)
     ..hasRequiredFields = false
   ;
 
@@ -429,6 +433,17 @@ class EventInstance extends $pb.GeneratedMessage {
   void clearEndsAt() => clearField(6);
   @$pb.TagNumber(6)
   $9.Timestamp ensureEndsAt() => $_ensure(5);
+
+  @$pb.TagNumber(7)
+  $12.Location get location => $_getN(6);
+  @$pb.TagNumber(7)
+  set location($12.Location v) { setField(7, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasLocation() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearLocation() => clearField(7);
+  @$pb.TagNumber(7)
+  $12.Location ensureLocation() => $_ensure(6);
 }
 
 class EventInstanceInfo extends $pb.GeneratedMessage {
@@ -463,17 +478,34 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   static EventInstanceInfo? _defaultInstance;
 }
 
+enum EventAttendance_Attendee {
+  userId, 
+  anonymousAttendee, 
+  notSet
+}
+
 class EventAttendance extends $pb.GeneratedMessage {
   factory EventAttendance() => create();
   EventAttendance._() : super();
   factory EventAttendance.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventAttendance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
+  static const $core.Map<$core.int, EventAttendance_Attendee> _EventAttendance_AttendeeByTag = {
+    2 : EventAttendance_Attendee.userId,
+    3 : EventAttendance_Attendee.anonymousAttendee,
+    0 : EventAttendance_Attendee.notSet
+  };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..oo(0, [2, 3])
     ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
-    ..e<AttendanceStatus>(3, _omitFieldNames ? '' : 'status', $pb.PbFieldType.OE, defaultOrMaker: AttendanceStatus.INTERESTED, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values)
-    ..aOS(4, _omitFieldNames ? '' : 'invitingUserId')
+    ..aOM<AnonymousAttendee>(3, _omitFieldNames ? '' : 'anonymousAttendee', subBuilder: AnonymousAttendee.create)
+    ..a<$core.int>(4, _omitFieldNames ? '' : 'numberOfGuests', $pb.PbFieldType.OU3)
+    ..e<AttendanceStatus>(5, _omitFieldNames ? '' : 'status', $pb.PbFieldType.OE, defaultOrMaker: AttendanceStatus.INTERESTED, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values)
+    ..aOS(6, _omitFieldNames ? '' : 'invitingUserId')
+    ..aOS(7, _omitFieldNames ? '' : 'privateNote')
+    ..aOS(8, _omitFieldNames ? '' : 'publicNote')
+    ..e<$11.Moderation>(9, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..aOM<$9.Timestamp>(10, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(11, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
@@ -500,6 +532,9 @@ class EventAttendance extends $pb.GeneratedMessage {
   static EventAttendance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventAttendance>(create);
   static EventAttendance? _defaultInstance;
 
+  EventAttendance_Attendee whichAttendee() => _EventAttendance_AttendeeByTag[$_whichOneof(0)]!;
+  void clearAttendee() => clearField($_whichOneof(0));
+
   @$pb.TagNumber(1)
   $core.String get eventInstanceId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -519,44 +554,137 @@ class EventAttendance extends $pb.GeneratedMessage {
   void clearUserId() => clearField(2);
 
   @$pb.TagNumber(3)
-  AttendanceStatus get status => $_getN(2);
+  AnonymousAttendee get anonymousAttendee => $_getN(2);
   @$pb.TagNumber(3)
-  set status(AttendanceStatus v) { setField(3, v); }
+  set anonymousAttendee(AnonymousAttendee v) { setField(3, v); }
   @$pb.TagNumber(3)
-  $core.bool hasStatus() => $_has(2);
+  $core.bool hasAnonymousAttendee() => $_has(2);
   @$pb.TagNumber(3)
-  void clearStatus() => clearField(3);
+  void clearAnonymousAttendee() => clearField(3);
+  @$pb.TagNumber(3)
+  AnonymousAttendee ensureAnonymousAttendee() => $_ensure(2);
 
   @$pb.TagNumber(4)
-  $core.String get invitingUserId => $_getSZ(3);
+  $core.int get numberOfGuests => $_getIZ(3);
   @$pb.TagNumber(4)
-  set invitingUserId($core.String v) { $_setString(3, v); }
+  set numberOfGuests($core.int v) { $_setUnsignedInt32(3, v); }
   @$pb.TagNumber(4)
-  $core.bool hasInvitingUserId() => $_has(3);
+  $core.bool hasNumberOfGuests() => $_has(3);
   @$pb.TagNumber(4)
-  void clearInvitingUserId() => clearField(4);
+  void clearNumberOfGuests() => clearField(4);
+
+  @$pb.TagNumber(5)
+  AttendanceStatus get status => $_getN(4);
+  @$pb.TagNumber(5)
+  set status(AttendanceStatus v) { setField(5, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasStatus() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearStatus() => clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get invitingUserId => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set invitingUserId($core.String v) { $_setString(5, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasInvitingUserId() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearInvitingUserId() => clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get privateNote => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set privateNote($core.String v) { $_setString(6, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasPrivateNote() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearPrivateNote() => clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get publicNote => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set publicNote($core.String v) { $_setString(7, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasPublicNote() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearPublicNote() => clearField(8);
+
+  @$pb.TagNumber(9)
+  $11.Moderation get moderation => $_getN(8);
+  @$pb.TagNumber(9)
+  set moderation($11.Moderation v) { setField(9, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasModeration() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearModeration() => clearField(9);
 
   @$pb.TagNumber(10)
-  $9.Timestamp get createdAt => $_getN(4);
+  $9.Timestamp get createdAt => $_getN(9);
   @$pb.TagNumber(10)
   set createdAt($9.Timestamp v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasCreatedAt() => $_has(4);
+  $core.bool hasCreatedAt() => $_has(9);
   @$pb.TagNumber(10)
   void clearCreatedAt() => clearField(10);
   @$pb.TagNumber(10)
-  $9.Timestamp ensureCreatedAt() => $_ensure(4);
+  $9.Timestamp ensureCreatedAt() => $_ensure(9);
 
   @$pb.TagNumber(11)
-  $9.Timestamp get updatedAt => $_getN(5);
+  $9.Timestamp get updatedAt => $_getN(10);
   @$pb.TagNumber(11)
   set updatedAt($9.Timestamp v) { setField(11, v); }
   @$pb.TagNumber(11)
-  $core.bool hasUpdatedAt() => $_has(5);
+  $core.bool hasUpdatedAt() => $_has(10);
   @$pb.TagNumber(11)
   void clearUpdatedAt() => clearField(11);
   @$pb.TagNumber(11)
-  $9.Timestamp ensureUpdatedAt() => $_ensure(5);
+  $9.Timestamp ensureUpdatedAt() => $_ensure(10);
+}
+
+class AnonymousAttendee extends $pb.GeneratedMessage {
+  factory AnonymousAttendee() => create();
+  AnonymousAttendee._() : super();
+  factory AnonymousAttendee.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory AnonymousAttendee.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AnonymousAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..pc<$4.ContactMethod>(2, _omitFieldNames ? '' : 'contactMethods', $pb.PbFieldType.PM, subBuilder: $4.ContactMethod.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  AnonymousAttendee clone() => AnonymousAttendee()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  AnonymousAttendee copyWith(void Function(AnonymousAttendee) updates) => super.copyWith((message) => updates(message as AnonymousAttendee)) as AnonymousAttendee;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static AnonymousAttendee create() => AnonymousAttendee._();
+  AnonymousAttendee createEmptyInstance() => create();
+  static $pb.PbList<AnonymousAttendee> createRepeated() => $pb.PbList<AnonymousAttendee>();
+  @$core.pragma('dart2js:noInline')
+  static AnonymousAttendee getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AnonymousAttendee>(create);
+  static AnonymousAttendee? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get name => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set name($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearName() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.List<$4.ContactMethod> get contactMethods => $_getList(1);
 }
 
 

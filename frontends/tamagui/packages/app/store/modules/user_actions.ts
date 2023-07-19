@@ -103,23 +103,31 @@ export const updateUser: AsyncThunk<User, UpdateUser, any> = createAsyncThunk<Us
 );
 
 export type FollowUnfollowUser = { userId: string, follow: boolean } & AccountOrServer;
-export const followUnfollowUser: AsyncThunk<Follow | Empty, FollowUnfollowUser, any> = createAsyncThunk<Follow | Empty, FollowUnfollowUser>(
+export const followUnfollowUser: AsyncThunk<Follow | undefined, FollowUnfollowUser, any> = createAsyncThunk<Follow | undefined, FollowUnfollowUser>(
   "users/followUnfollow",
   async (request) => {
     const client = await getCredentialClient(request);
     const follow = { userId: request.account!.user.id, targetUserId: request.userId };
-    const result: Follow | Empty = request.follow ? await client.createFollow(follow, client.credential) : await client.deleteFollow(follow, client.credential);
-    return result;
+    if (request.follow) {
+      return await client.createFollow(follow, client.credential);
+    } else {
+      await client.deleteFollow(follow, client.credential);
+      return undefined;
+    }
   });
 
 export type RespondToFollowRequest = { userId: string, accept: boolean } & AccountOrServer;
-export const respondToFollowRequest: AsyncThunk<Follow | Empty, RespondToFollowRequest, any> = createAsyncThunk<Follow | Empty, RespondToFollowRequest>(
+export const respondToFollowRequest: AsyncThunk<Follow | undefined, RespondToFollowRequest, any> = createAsyncThunk<Follow | undefined, RespondToFollowRequest>(
   "users/respondToFollowRequest",
   async (request) => {
     const client = await getCredentialClient(request);
     const follow = { targetUserId: request.account!.user.id, userId: request.userId, targetUserModeration: request.accept ? Moderation.APPROVED : Moderation.REJECTED };
-    const result: Follow | Empty = request.accept ? await client.updateFollow(follow, client.credential) : await client.deleteFollow(follow, client.credential);
-    return result;
+    if (request.accept) {
+      return await client.updateFollow(follow, client.credential);
+    } else {
+      await client.deleteFollow(follow, client.credential);
+      return undefined;
+    }
   });
 
 

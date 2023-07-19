@@ -132,7 +132,7 @@ final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
   DemoGroup.gamers: Group()
     ..name = "Gamers"
     ..description =
-        "Bro honestly I'm just tryna play Doom Eternal and soon Sonic Frontiers on easy mode here",
+        "Honestly just tryna play my Zeldas and Final Fantasies and Marios, is this how my dad feels with his classic blues/funk-infused rock love?",
   DemoGroup.homeImprovement: Group()
     ..name = "Home Improvement"
     ..description = "An endless and delightful hole",

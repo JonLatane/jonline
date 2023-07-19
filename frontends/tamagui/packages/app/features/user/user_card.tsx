@@ -52,7 +52,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
 
   const onFollowPressed = (e: GestureResponderEvent) => {
     e.stopPropagation();
-    dispatch(followUnfollowUser({ userId: user.id, follow: !(following || followRequested), ...accountOrServer }))
+    const follow = !(following || followRequested);
+    dispatch(followUnfollowUser({ userId: user.id, follow, ...accountOrServer }))
   };
 
   const doRespondToFollowRequest = (e: GestureResponderEvent, accept: boolean) => {

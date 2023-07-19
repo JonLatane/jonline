@@ -1,4 +1,4 @@
-import { Group, GroupPost } from "@jonline/api";
+import { Group, GroupPost, Membership } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 
 import {
@@ -12,9 +12,11 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { GroupedEventInstancePages } from "./events";
-import { createGroup, createGroupPost, deleteGroupPost, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, updateGroups } from "./group_actions";
+import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroups } from "./group_actions";
 import { GroupedPostPages } from "./posts";
 import { store } from "../store";
+import { passes } from "app/utils/moderation_utils";
+import { usersAdapter } from "./users";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -32,7 +34,7 @@ export interface GroupsState {
   groupEventPages: GroupedEventInstancePages;
   postIdGroupPosts: Dictionary<GroupPost[]>;
   failedShortnames: string[];
-  recentGroups: EntityId[];
+  mutatingGroupIds: string[];
 }
 
 
@@ -48,13 +50,23 @@ const initialState: GroupsState = {
   groupPostsStatus: undefined,
   draftGroup: Group.create(),
   shortnameIds: {},
-  recentGroups: [],
   failedShortnames: [],
   groupPostPages: {},
   groupEventPages: {},
   postIdGroupPosts: {},
+  mutatingGroupIds: [],
   ...groupsAdapter.getInitialState(),
 };
+
+function lockGroup(state: GroupsState, groupId: string) {
+  state.mutatingGroupIds = [groupId, ...state.mutatingGroupIds];
+}
+function unlockGroup(state: GroupsState, groupId: string) {
+  state.mutatingGroupIds = state.mutatingGroupIds.filter(u => u != groupId);
+}
+export function isGroupLocked(state: GroupsState, groupId: string): boolean {
+  return state.mutatingGroupIds.includes(groupId);
+}
 
 export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice({
   name: "groups",
@@ -228,6 +240,60 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
+    });
+    builder.addCase(joinLeaveGroup.pending, (state, action) => {
+      lockGroup(state, action.meta.arg.groupId);
+    });
+    builder.addCase(joinLeaveGroup.rejected, (state, action) => {
+      unlockGroup(state, action.meta.arg.groupId);
+    });
+    builder.addCase(joinLeaveGroup.fulfilled, (state, action) => {
+      unlockGroup(state, action.meta.arg.groupId);
+      let group = groupsAdapter.getSelectors().selectById(state, action.meta.arg.groupId)!;
+      // let currentUser = usersAdapter.getSelectors().selectById(state, action.meta.arg.account!.user.id);
+      if (action.meta.arg.join) {
+        const result = action.payload as Membership;
+        if (passes(result.userModeration) && passes(result.groupModeration)) {
+          group = { ...group, memberCount: (group.memberCount || 0) + 1 };
+          // if (currentUser) {
+          //   currentUser = { ...currentUser, groupCount: (currentUser.groupCount || 0) + 1 };
+          // }
+        }
+        group = { ...group, currentUserMembership: result };
+      } else {
+        if (passes(group.currentUserMembership?.userModeration) && passes(group.currentUserMembership?.groupModeration)) {
+          group = { ...group, memberCount: (group.memberCount || 0) - 1 };
+          // if (currentUser) {
+          //   currentUser = { ...currentUser, groupCount: (currentUser.groupCount || 0) - 1 };
+          // }
+        }
+        group = { ...group, currentUserMembership: undefined };
+      }
+      groupsAdapter.upsertOne(state, group);
+      // if (currentUser) {
+      //   groupsAdapter.upsertOne(state, currentUser);
+      // }
+    });
+
+    builder.addCase(respondToMembershipRequest.pending, (state, action) => {
+      lockGroup(state, action.meta.arg.groupId);
+    });
+    builder.addCase(respondToMembershipRequest.rejected, (state, action) => {
+      unlockGroup(state, action.meta.arg.groupId);
+    });
+    builder.addCase(respondToMembershipRequest.fulfilled, (state, action) => {
+      unlockGroup(state, action.meta.arg.groupId);
+      const currentUserId = action.meta.arg.account?.user?.id;
+      let group: Group = groupsAdapter.getSelectors().selectById(state, action.meta.arg.groupId)!;
+      if (action.meta.arg.accept) {
+        const result = action.payload as Membership;
+        const currentUserMembership = action.meta.arg.userId === currentUserId ? result : undefined;
+        group = { ...group, memberCount: (group.memberCount || 0) + 1, currentUserMembership };
+        groupsAdapter.upsertOne(state, group);
+      } else if (action.meta.arg.userId === currentUserId) {
+        group = { ...group, currentUserMembership: undefined };
+      }
+      groupsAdapter.upsertOne(state, group);
     });
   },
 });

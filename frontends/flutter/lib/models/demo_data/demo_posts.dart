@@ -84,6 +84,20 @@ class DemoPost {
 
 final List<DemoPost> _demoPosts = [
   DemoPost(
+      [DemoGroup.gamers],
+      Post()
+        ..title = "Build the things! Save the kingdom!"
+        ..link = "https://www.zelda.com/tears-of-the-kingdom/"
+        ..content = "Explore the skies and the depths!"),
+  DemoPost(
+      [DemoGroup.gamers],
+      Post()
+        ..title =
+            "Moving, well-documented, large-scale story, efficient sidequest management, ..."
+        ..link = "https://na.finalfantasyxvi.com/"
+        ..content =
+            "... and the Sony action/adventure RPG formula applied to Final Fantasy"),
+  DemoPost(
       [DemoGroup.yoga, DemoGroup.fitness, DemoGroup.coolKidsClub],
       Post()
         ..title = "Magical fountain of kinesthetic knowledge"
@@ -93,11 +107,6 @@ final List<DemoPost> _demoPosts = [
       Post()
         ..title = "Homegirl know how to make you work n have fun"
         ..link = "https://www.laurenaliviayoga.com"),
-  DemoPost(
-      [DemoGroup.gamers],
-      Post()
-        ..title = "Gonna play this with my lil second cousin"
-        ..link = "https://frontiers.sonicthehedgehog.com"),
   DemoPost(
       [DemoGroup.fitness],
       Post()
@@ -193,9 +202,13 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
   DemoPost(
       [DemoGroup.everyoneWelcome],
       Post()
-        ..title = "My reddit account, or at least the one I'd post here 🙃"
-        ..link = "https://www.reddit.com/user/pseudocomposer"
-        ..embedLink = true),
+        ..title = "My reddit profile, or at least the one I'd post here 🙃"
+        ..link = "https://www.reddit.com/user/pseudocomposer"),
+  DemoPost(
+      [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
+      Post()
+        ..title = "My GitHub profile"
+        ..link = "https://github.com/JonLatane"),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech],
       Post()
@@ -246,7 +259,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
 Jonline is a new approach to social media that hopes to keep user data hyper-local - 
 owned by ourselves or others in our physical communities, rather than any single 
 corporation or data source. At its core is a 
-[well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md). 
+[well-documented, performant open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline). 
 A Jonline *instance* or community (like the one you're reading this post on - probably 
 [jonline.io](https://jonline.io)) 
 is designed for use cases like:

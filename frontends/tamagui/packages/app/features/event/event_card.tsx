@@ -31,7 +31,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
   const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor } = useServerTheme();
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-  const onScreen = useIsVisible(ref);
+  const isVisible = useIsVisible(ref);
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
@@ -41,19 +41,29 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     : instances.length === 1 ? instances[0] : undefined;
 
   const eventLink = useLink({
-    href: instance
-      ? groupContext
+    href: groupContext
+      ? instance
         ? `/g/${groupContext.shortname}/e/${event.id}/i/${instance!.id}`
-        : `/event/${event.id}/i/${instance!.id}`
-      : groupContext
-        ? `/g/${groupContext.shortname}/e/${event.id}`
+        : `/g/${groupContext.shortname}/e/${event.id}`
+      : instance
+        ? `/event/${event.id}/i/${instance!.id}`
         : `/event/${event.id}`,
+    // instance
+    //   ? groupContext
+    //     ? `/g/${groupContext.shortname}/e/${event.id}/i/${instance!.id}`
+    //     : `/event/${event.id}/i/${instance!.id}`
+    //   : groupContext
+    //     ? `/g/${groupContext.shortname}/e/${event.id}`
+    //     : `/event/${event.id}`,
   });
   const authorLink = useLink({
     href: authorName
       ? `/${authorName}`
       : `/user/${authorId}`
   });
+  const createGroupEventViewHref = (group: Group) => instance
+    ? `/g/${group.shortname}/e/${event.id}/i/${instance!.id}`
+    : `/g/${group.shortname}/e/${event.id}`;
 
   const maxContentHeight = isPreview ? horizontal ? 100 : 300 : undefined;
   const detailsLink = isPreview ? eventLink : undefined;
@@ -232,10 +242,11 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                 {contentView}
               </YStack>
               <XStack pt={10} ml='auto' px='$2' maw='100%'>
-                <GroupPostManager post={post} onScreen={onScreen} />
+                <GroupPostManager post={post} isVisible={isVisible}
+                  createViewHref={createGroupEventViewHref} />
               </XStack>
               <XStack {...detailsProps}>
-                <AuthorInfo {...{ post, detailsMargins, onScreen }} />
+                <AuthorInfo {...{ post, detailsMargins, isVisible }} />
                 <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                   <YStack h='100%' mr='$3'>
                     <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}

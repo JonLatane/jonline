@@ -60,6 +60,7 @@
     - [PostListingType](#jonline-PostListingType)
   
 - [events.proto](#events-proto)
+    - [AnonymousAttendee](#jonline-AnonymousAttendee)
     - [Event](#jonline-Event)
     - [EventAttendance](#jonline-EventAttendance)
     - [EventInfo](#jonline-EventInfo)
@@ -422,8 +423,10 @@ Returned when creating an account or logging in.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| value | [string](#string) | optional |  |
+| value | [string](#string) | optional | `mailto:` or `tel:` URL. |
 | visibility | [Visibility](#jonline-Visibility) |  |  |
+| supported_by_server | [bool](#bool) |  | Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method. |
+| verified | [bool](#bool) |  | Indicates the user has completed verification of the contact method. Verification requires `supported_by_server` to be `true`. |
 
 
 
@@ -495,7 +498,7 @@ to reconcile memberships with groups.
 | ----- | ---- | ----- | ----------- |
 | user_id | [string](#string) |  |  |
 | group_id | [string](#string) |  |  |
-| permissions | [Permission](#jonline-Permission) | repeated | Valid Membership Permissions are: * VIEW_POSTS, CREATE_POSTS, MODERATE_POSTS * VIEW_EVENTS, CREATE_EVENTS, MODERATE_EVENTS * ADMIN and MODERATE_USERS |
+| permissions | [Permission](#jonline-Permission) | repeated | Valid Membership Permissions are: * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS` * `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS` * `ADMIN` and `MODERATE_USERS` |
 | group_moderation | [Moderation](#jonline-Moderation) |  | Tracks whether group moderators need to approve the membership. |
 | user_moderation | [Moderation](#jonline-Moderation) |  | Tracks whether the user needs to approve the membership. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -761,6 +764,7 @@ On success, the endpoint will return the media ID in plaintext.
 | visibility | [Visibility](#jonline-Visibility) |  | LIMITED visibility groups are only visible to members. PRIVATE groups are only visibile to users with the ADMIN group permission. |
 | member_count | [uint32](#uint32) |  |  |
 | post_count | [uint32](#uint32) |  |  |
+| event_count | [uint32](#uint32) |  |  |
 | current_user_membership | [Membership](#jonline-Membership) | optional |  |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
@@ -1044,6 +1048,23 @@ A high-level enumeration of general ways of requesting posts.
 
 
 
+<a name="jonline-AnonymousAttendee"></a>
+
+### AnonymousAttendee
+The visibility on `AnonymousAttendee` `ContactMethod`s support the `LIMITED` visibility, which will
+make them visible to the event creator.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| contact_methods | [ContactMethod](#jonline-ContactMethod) | repeated | The visibility on `AnonymousAttendee` |
+
+
+
+
+
+
 <a name="jonline-Event"></a>
 
 ### Event
@@ -1065,15 +1086,30 @@ A high-level enumeration of general ways of requesting posts.
 <a name="jonline-EventAttendance"></a>
 
 ### EventAttendance
+Describes the attendance of a user at an `EventInstance`. Such as:
+* A user&#39;s RSVP to an `EventInstance`.
+* Invitation status of a user to an `EventInstance`.
+* `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
 
+`EventAttendance.status` works like a state machine, but state transitions are governed only 
+by the current time and the start/end times of `EventInstance`s:
+* Before an event starts, EventAttendance essentially only describes RSVPs and invitations.
+* After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate 
+they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
+* During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | event_instance_id | [string](#string) |  |  |
 | user_id | [string](#string) |  |  |
+| anonymous_attendee | [AnonymousAttendee](#jonline-AnonymousAttendee) |  |  |
+| number_of_guests | [uint32](#uint32) |  |  |
 | status | [AttendanceStatus](#jonline-AttendanceStatus) |  |  |
 | inviting_user_id | [string](#string) | optional |  |
+| private_note | [string](#string) |  |  |
+| public_note | [string](#string) |  |  |
+| moderation | [Moderation](#jonline-Moderation) |  |  |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 
@@ -1086,6 +1122,7 @@ A high-level enumeration of general ways of requesting posts.
 
 ### EventInfo
 To be used for ticketing, RSVPs, etc.
+Stored as JSON in the database.
 
 
 
@@ -1106,6 +1143,7 @@ To be used for ticketing, RSVPs, etc.
 | info | [EventInstanceInfo](#jonline-EventInstanceInfo) |  |  |
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| location | [Location](#jonline-Location) | optional |  |
 
 
 
@@ -1116,6 +1154,7 @@ To be used for ticketing, RSVPs, etc.
 
 ### EventInstanceInfo
 To be used for ticketing, RSVPs, etc.
+Stored as JSON in the database.
 
 
 
@@ -1188,16 +1227,21 @@ Time filter that simply works on the starts_at and ends_at fields.
 <a name="jonline-AttendanceStatus"></a>
 
 ### AttendanceStatus
-
+EventInstance attendance statuses. State transitions may generally happen
+in any direction, but:
+* `REQUESTED` can only be selected if another user invited the user whose attendance is being described.
+* `GOING` and `NOT_GOING` cannot be selected if the EventInstance has ended (end time is in the past).
+* `WENT` and `DID_NOT_GO` cannot be selected if the EventInstance has not started (start time is in the future).
+`INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| INTERESTED | 0 |  |
-| GOING | 1 |  |
-| NOT_GOING | 2 |  |
-| REQUESTED | 3 |  |
-| WENT | 10 |  |
-| DID_NOT_GO | 11 |  |
+| INTERESTED | 0 | The user is interested in attending. This is the default status. |
+| REQUESTED | 1 | Another user has invited the user to the event. |
+| GOING | 2 | The user plans to go to the event. |
+| NOT_GOING | 3 | The user does not plan to go to the event. |
+| WENT | 10 | The user went to the event. |
+| DID_NOT_GO | 11 | The user did not go to the event. |
 
 
 
@@ -1244,9 +1288,10 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 | ----- | ---- | ----- | ----------- |
 | frontend_host | [string](#string) |  | The domain where the frontend is hosted. For example, jonline.io. Typically your CDN (like Cloudflare) should own the DNS for this domain. |
 | backend_host | [string](#string) |  | The domain where the backend is hosted. For example, jonline.io.itsj.online. Typically your Kubernetes provider should own DNS for this domain. |
-| secure_media | [bool](#bool) | optional | (TODO) When set, the HTTP `GET /media/&lt;id&gt;?&lt;authorization&gt;` endpoint will be disabled by default on the HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed. |
-| media_ipv4_allowlist | [string](#string) | optional | Whitespace- and/or comma- separated list of IPv4 addresses/ranges to media file serving to. Only applicable if `secure_media` is `true`. For reference, Cloudflare&#39;s are at https://www.cloudflare.com/ips-v4. |
-| media_ipv6_allowlist | [string](#string) | optional | Whitespace- and/or comma- separated list of IPv6 addresses/ranges to media file serving to. Only applicable if `secure_media` is `true`. For reference, Cloudflare&#39;s are at https://www.cloudflare.com/ips-v6. |
+| secure_media | [bool](#bool) |  | (TODO) When set, the HTTP `GET /media/&lt;id&gt;?&lt;authorization&gt;` endpoint will be disabled by default on the HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed. |
+| media_ipv4_allowlist | [string](#string) | optional | Whitespace- and/or comma- separated list of IPv4 addresses/ranges to whom media data may be served. Only applicable if `secure_media` is `true`. For reference, Cloudflare&#39;s are at https://www.cloudflare.com/ips-v4. |
+| media_ipv6_allowlist | [string](#string) | optional | Whitespace- and/or comma- separated list of IPv6 addresses/ranges to whom media data may be served. Only applicable if `secure_media` is `true`. For reference, Cloudflare&#39;s are at https://www.cloudflare.com/ips-v6. |
+| cdn_grpc | [bool](#bool) |  | (TODO) When implemented, this actually changes the whole Jonline protocol (in terms of ports). When enabled, Jonline should *not* server a secure site on HTTPS, and instead serve the Tonic gRPC server there (on port 443). Jonine clients will need to be updated to always seek out a secure client on port 443 when this feature is enabled. This would let Jonline leverage Cloudflare&#39;s DDOS protection and performance on gRPC as well as HTTP. (This is a Cloudflare-specific feature requirement.) |
 
 
 
@@ -1330,7 +1375,7 @@ Configuration for a Jonline server instance.
 
 See ExternalCDNConfig for more details on securing this setup. |
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
-| authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
+| authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 
 
 

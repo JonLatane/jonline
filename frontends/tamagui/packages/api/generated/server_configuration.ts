@@ -230,7 +230,7 @@ export interface ServerConfiguration {
   /** Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. */
   privateUserStrategy: PrivateUserStrategy;
   /**
-   * Allows admins to enable/disable creating accounts and logging in.
+   * (TODO) Allows admins to enable/disable creating accounts and logging in.
    * Eventually, external auth too hopefully!
    */
   authenticationFeatures: AuthenticationFeature[];
@@ -257,12 +257,10 @@ export interface ExternalCDNConfig {
    * HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in
    * `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed.
    */
-  secureMedia?:
-    | boolean
-    | undefined;
+  secureMedia: boolean;
   /**
    * Whitespace- and/or comma- separated list of IPv4 addresses/ranges
-   * to media file serving to. Only applicable if `secure_media` is `true`.
+   * to whom media data may be served. Only applicable if `secure_media` is `true`.
    * For reference, Cloudflare's are at https://www.cloudflare.com/ips-v4.
    */
   mediaIpv4Allowlist?:
@@ -270,10 +268,21 @@ export interface ExternalCDNConfig {
     | undefined;
   /**
    * Whitespace- and/or comma- separated list of IPv6 addresses/ranges
-   * to media file serving to. Only applicable if `secure_media` is `true`.
+   * to whom media data may be served. Only applicable if `secure_media` is `true`.
    * For reference, Cloudflare's are at https://www.cloudflare.com/ips-v6.
    */
-  mediaIpv6Allowlist?: string | undefined;
+  mediaIpv6Allowlist?:
+    | string
+    | undefined;
+  /**
+   * (TODO) When implemented, this actually changes the whole Jonline protocol (in terms of ports).
+   * When enabled, Jonline should *not* server a secure site on HTTPS, and instead serve
+   * the Tonic gRPC server there (on port 443). Jonine clients will need to be updated to
+   * always seek out a secure client on port 443 when this feature is enabled.
+   * This would let Jonline leverage Cloudflare's DDOS protection and performance on gRPC as well as HTTP.
+   * (This is a Cloudflare-specific feature requirement.)
+   */
+  cdnGrpc: boolean;
 }
 
 export interface FeatureSettings {
@@ -622,9 +631,10 @@ function createBaseExternalCDNConfig(): ExternalCDNConfig {
   return {
     frontendHost: "",
     backendHost: "",
-    secureMedia: undefined,
+    secureMedia: false,
     mediaIpv4Allowlist: undefined,
     mediaIpv6Allowlist: undefined,
+    cdnGrpc: false,
   };
 }
 
@@ -636,7 +646,7 @@ export const ExternalCDNConfig = {
     if (message.backendHost !== "") {
       writer.uint32(18).string(message.backendHost);
     }
-    if (message.secureMedia !== undefined) {
+    if (message.secureMedia === true) {
       writer.uint32(24).bool(message.secureMedia);
     }
     if (message.mediaIpv4Allowlist !== undefined) {
@@ -644,6 +654,9 @@ export const ExternalCDNConfig = {
     }
     if (message.mediaIpv6Allowlist !== undefined) {
       writer.uint32(42).string(message.mediaIpv6Allowlist);
+    }
+    if (message.cdnGrpc === true) {
+      writer.uint32(48).bool(message.cdnGrpc);
     }
     return writer;
   },
@@ -670,6 +683,9 @@ export const ExternalCDNConfig = {
         case 5:
           message.mediaIpv6Allowlist = reader.string();
           break;
+        case 6:
+          message.cdnGrpc = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -682,9 +698,10 @@ export const ExternalCDNConfig = {
     return {
       frontendHost: isSet(object.frontendHost) ? String(object.frontendHost) : "",
       backendHost: isSet(object.backendHost) ? String(object.backendHost) : "",
-      secureMedia: isSet(object.secureMedia) ? Boolean(object.secureMedia) : undefined,
+      secureMedia: isSet(object.secureMedia) ? Boolean(object.secureMedia) : false,
       mediaIpv4Allowlist: isSet(object.mediaIpv4Allowlist) ? String(object.mediaIpv4Allowlist) : undefined,
       mediaIpv6Allowlist: isSet(object.mediaIpv6Allowlist) ? String(object.mediaIpv6Allowlist) : undefined,
+      cdnGrpc: isSet(object.cdnGrpc) ? Boolean(object.cdnGrpc) : false,
     };
   },
 
@@ -695,6 +712,7 @@ export const ExternalCDNConfig = {
     message.secureMedia !== undefined && (obj.secureMedia = message.secureMedia);
     message.mediaIpv4Allowlist !== undefined && (obj.mediaIpv4Allowlist = message.mediaIpv4Allowlist);
     message.mediaIpv6Allowlist !== undefined && (obj.mediaIpv6Allowlist = message.mediaIpv6Allowlist);
+    message.cdnGrpc !== undefined && (obj.cdnGrpc = message.cdnGrpc);
     return obj;
   },
 
@@ -706,9 +724,10 @@ export const ExternalCDNConfig = {
     const message = createBaseExternalCDNConfig();
     message.frontendHost = object.frontendHost ?? "";
     message.backendHost = object.backendHost ?? "";
-    message.secureMedia = object.secureMedia ?? undefined;
+    message.secureMedia = object.secureMedia ?? false;
     message.mediaIpv4Allowlist = object.mediaIpv4Allowlist ?? undefined;
     message.mediaIpv6Allowlist = object.mediaIpv6Allowlist ?? undefined;
+    message.cdnGrpc = object.cdnGrpc ?? false;
     return message;
   },
 };

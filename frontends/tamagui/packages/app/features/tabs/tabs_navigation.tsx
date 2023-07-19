@@ -2,7 +2,7 @@ import { Group, Media, WebUserInterface } from "@jonline/api";
 import { Button, Heading, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useTheme } from "@react-navigation/native";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, useServerTheme, useTypedSelector } from "app/store";
+import { JonlineServer, RootState, markGroupVisit, useServerTheme, useTypedDispatch, useTypedSelector } from "app/store";
 import { Platform } from 'react-native';
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
@@ -11,6 +11,8 @@ import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, sectionTitle } from "./features_navigation";
 import { GroupContextProvider } from "../groups/group_context";
 import { MediaRenderer } from "../media/media_renderer";
+import { useEffect } from "react";
+import { serverID } from '../../store/modules/servers';
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -37,6 +39,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
             ? '/tamagui'
             : '/'
   });
+  const dispatch = useTypedDispatch();
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || 'Jonline';
   const app = useTypedSelector((state: RootState) => state.app);
   const serverNameEmoji = serverName.match(/\p{Emoji}/u)?.at(0);
@@ -65,6 +68,15 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const renderButtonChildren = !shrinkHomeButton || serverNameEmoji || canUseLogo;
   // console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo, logo?.wideMediaId, logo?.squareMediaId, maxWidth, renderButtonChildren);
   // debugger;
+  const recentGroupIds = useTypedSelector((state: RootState) => server
+    ? state.app.serverRecentGroups[serverID(server)] ?? []
+    : []);
+
+  useEffect(() => {
+    if (selectedGroup && server && recentGroupIds[0] != selectedGroup.id) {
+      dispatch(markGroupVisit({ group: selectedGroup, server }));
+    }
+  }, [selectedGroup?.id]);
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <GroupContextProvider value={selectedGroup}>
       {Platform.select({

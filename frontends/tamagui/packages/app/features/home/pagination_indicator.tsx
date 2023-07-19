@@ -8,17 +8,17 @@ interface Props {
   loadingPage: boolean;
   hasNextPage?: boolean;
   loadNextPage: () => void;
-  onScreen?: boolean
+  isVisible?: boolean
 }
 
-export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNextPage = true, loadNextPage, onScreen = true }) => {
+export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNextPage = true, loadNextPage, isVisible = true }) => {
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   useEffect(() => {
-    if (onScreen && !loadingPage && hasNextPage) {
+    if (isVisible && !loadingPage && hasNextPage) {
       loadNextPage();
     }
-  }, [onScreen, loadingPage]);
+  }, [isVisible, loadingPage]);
 
   const [fgColor, bgColor] = hasNextPage ? [navTextColor, navColor] : [primaryTextColor, primaryColor];
 

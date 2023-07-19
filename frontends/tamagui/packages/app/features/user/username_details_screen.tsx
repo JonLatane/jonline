@@ -326,60 +326,61 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
         disabled={disableInputs} />
       <XStack h='$1' />
       <PermissionsEditor {...permissionsEditorProps} />
-      <Dialog>
-        <Dialog.Trigger asChild>
-          <Button icon={<Trash />} color="red" mb='$3'>
-            Delete Account
-          </Button>
-        </Dialog.Trigger>
-        <Dialog.Portal zi={1000011}>
-          <Dialog.Overlay
-            key="overlay"
-            animation="quick"
-            o={0.5}
-            enterStyle={{ o: 0 }}
-            exitStyle={{ o: 0 }}
-          />
-          <Dialog.Content
-            bordered
-            elevate
-            key="content"
-            animation={[
-              'quick',
-              {
-                opacity: {
-                  overshootClamping: true,
+      {isCurrentUser || isAdmin ?
+        <Dialog>
+          <Dialog.Trigger asChild>
+            <Button icon={<Trash />} color="red" mb='$3'>
+              Delete Account
+            </Button>
+          </Dialog.Trigger>
+          <Dialog.Portal zi={1000011}>
+            <Dialog.Overlay
+              key="overlay"
+              animation="quick"
+              o={0.5}
+              enterStyle={{ o: 0 }}
+              exitStyle={{ o: 0 }}
+            />
+            <Dialog.Content
+              bordered
+              elevate
+              key="content"
+              animation={[
+                'quick',
+                {
+                  opacity: {
+                    overshootClamping: true,
+                  },
                 },
-              },
-            ]}
-            m='$3'
-            enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-            exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-            x={0}
-            scale={1}
-            opacity={1}
-            y={0}
-          >
-            <YStack space>
-              <Dialog.Title>Delete Account</Dialog.Title>
-              <Dialog.Description>
-                Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
-              </Dialog.Description>
+              ]}
+              m='$3'
+              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              x={0}
+              scale={1}
+              opacity={1}
+              y={0}
+            >
+              <YStack space>
+                <Dialog.Title>Delete Account</Dialog.Title>
+                <Dialog.Description>
+                  Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
+                </Dialog.Description>
 
-              <XStack space="$3" jc="flex-end">
-                <Dialog.Close asChild>
-                  <Button>Cancel</Button>
-                </Dialog.Close>
-                {/* <Dialog.Action asChild> */}
-                <Theme inverse>
-                  <Button onPress={() => dispatch(deleteUser({ ...user, ...accountOrServer }))}>Delete</Button>
-                </Theme>
-                {/* </Dialog.Action> */}
-              </XStack>
-            </YStack>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
+                <XStack space="$3" jc="flex-end">
+                  <Dialog.Close asChild>
+                    <Button>Cancel</Button>
+                  </Dialog.Close>
+                  {/* <Dialog.Action asChild> */}
+                  <Theme inverse>
+                    <Button onPress={() => dispatch(deleteUser({ ...user, ...accountOrServer }))}>Delete</Button>
+                  </Theme>
+                  {/* </Dialog.Action> */}
+                </XStack>
+              </YStack>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog> : undefined}
     </YStack> : undefined}
   </AnimatePresence>;
 }

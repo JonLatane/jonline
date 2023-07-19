@@ -131,9 +131,9 @@ export interface Membership {
   groupId: string;
   /**
    * Valid Membership Permissions are:
-   * * VIEW_POSTS, CREATE_POSTS, MODERATE_POSTS
-   * * VIEW_EVENTS, CREATE_EVENTS, MODERATE_EVENTS
-   * * ADMIN and MODERATE_USERS
+   * * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`
+   * * `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`
+   * * `ADMIN` and `MODERATE_USERS`
    */
   permissions: Permission[];
   /** Tracks whether group moderators need to approve the membership. */
@@ -145,8 +145,19 @@ export interface Membership {
 }
 
 export interface ContactMethod {
+  /** `mailto:` or `tel:` URL. */
   value?: string | undefined;
   visibility: Visibility;
+  /**
+   * Server-side flag indicating whether the server can verify
+   * (and otherwise interact via) the contact method.
+   */
+  supportedByServer: boolean;
+  /**
+   * Indicates the user has completed verification of the contact method.
+   * Verification requires `supported_by_server` to be `true`.
+   */
+  verified: boolean;
 }
 
 export interface GetUsersRequest {
@@ -679,7 +690,7 @@ export const Membership = {
 };
 
 function createBaseContactMethod(): ContactMethod {
-  return { value: undefined, visibility: 0 };
+  return { value: undefined, visibility: 0, supportedByServer: false, verified: false };
 }
 
 export const ContactMethod = {
@@ -689,6 +700,12 @@ export const ContactMethod = {
     }
     if (message.visibility !== 0) {
       writer.uint32(16).int32(message.visibility);
+    }
+    if (message.supportedByServer === true) {
+      writer.uint32(24).bool(message.supportedByServer);
+    }
+    if (message.verified === true) {
+      writer.uint32(32).bool(message.verified);
     }
     return writer;
   },
@@ -706,6 +723,12 @@ export const ContactMethod = {
         case 2:
           message.visibility = reader.int32() as any;
           break;
+        case 3:
+          message.supportedByServer = reader.bool();
+          break;
+        case 4:
+          message.verified = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -718,6 +741,8 @@ export const ContactMethod = {
     return {
       value: isSet(object.value) ? String(object.value) : undefined,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
+      supportedByServer: isSet(object.supportedByServer) ? Boolean(object.supportedByServer) : false,
+      verified: isSet(object.verified) ? Boolean(object.verified) : false,
     };
   },
 
@@ -725,6 +750,8 @@ export const ContactMethod = {
     const obj: any = {};
     message.value !== undefined && (obj.value = message.value);
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
+    message.supportedByServer !== undefined && (obj.supportedByServer = message.supportedByServer);
+    message.verified !== undefined && (obj.verified = message.verified);
     return obj;
   },
 
@@ -736,6 +763,8 @@ export const ContactMethod = {
     const message = createBaseContactMethod();
     message.value = object.value ?? undefined;
     message.visibility = object.visibility ?? 0;
+    message.supportedByServer = object.supportedByServer ?? false;
+    message.verified = object.verified ?? false;
     return message;
   },
 };

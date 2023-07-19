@@ -45,6 +45,7 @@ impl ToProtoGroup for models::Group {
             visibility: self.visibility.to_i32_visibility(),
             member_count: self.member_count as u32,
             post_count: self.post_count as u32,
+            event_count: self.event_count as u32,
             current_user_membership: user_membership,
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
