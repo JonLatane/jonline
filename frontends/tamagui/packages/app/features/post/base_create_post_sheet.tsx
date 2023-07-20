@@ -166,7 +166,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
         onPress={() => setOpen(!open)}>
         <Heading size='$2' color={primaryTextColor}>Create {entityName}</Heading>
       </Button>
-      {false && (open || renderSheet)
+      {true && (open || renderSheet)
         ? <Sheet
           modal
           open={open}
