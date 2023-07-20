@@ -31,7 +31,6 @@ interface Props {
 
 export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
 
   const theme = useTheme();

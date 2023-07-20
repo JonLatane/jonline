@@ -91,39 +91,39 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
             </Button>
           </XStack>
           : undefined}
-        <AnimatePresence>
-          {showEventsOnLatest && eventsLoaded && postsLoaded ?
-            <YStack
-              key='latest-events'
-              w='100%'
-              h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
-              overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
-              animation='quick'
-              {...standardAnimation}
-            >
-              {events.length == 0
-                ? eventsLoaded
-                  ? <YStack width='100%' maw={600} jc="center" ai="center">
-                    <Heading size='$5' mb='$3'>No events found.</Heading>
-                    <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                  </YStack>
-                  : undefined
-                : <ScrollView horizontal
-                  w='100%'>
-                  <XStack w={media.gtSm ? 400 : 310} space='$2'>
-                    {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`} event={event} isPreview horizontal />)}
-                    <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
-                      <YStack ai='center' py='$3' jc='center'>
-                        <Heading size='$4'>More</Heading>
-                        <Heading size='$5'>Events</Heading>
-                        <ChevronRight />
-                      </YStack>
-                    </Button>
-                  </XStack>
-                </ScrollView>}
-            </YStack>
-            : undefined}
-        </AnimatePresence>
+        {/* <AnimatePresence> */}
+        {showEventsOnLatest && eventsLoaded && postsLoaded ?
+          <YStack
+            key='latest-events'
+            w='100%'
+            h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
+            overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
+          // animation='quick'
+          // {...standardAnimation}
+          >
+            {events.length == 0
+              ? eventsLoaded
+                ? <YStack width='100%' maw={600} jc="center" ai="center">
+                  <Heading size='$5' mb='$3'>No events found.</Heading>
+                  <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                </YStack>
+                : undefined
+              : <ScrollView horizontal
+                w='100%'>
+                <XStack w={media.gtSm ? 400 : 310} space='$2'>
+                  {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`} event={event} isPreview horizontal />)}
+                  <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
+                    <YStack ai='center' py='$3' jc='center'>
+                      <Heading size='$4'>More</Heading>
+                      <Heading size='$5'>Events</Heading>
+                      <ChevronRight />
+                    </YStack>
+                  </Button>
+                </XStack>
+              </ScrollView>}
+          </YStack>
+          : undefined}
+        {/* </AnimatePresence> */}
         {eventsLoaded && postsLoaded
           ? posts.length === 0
             ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}
