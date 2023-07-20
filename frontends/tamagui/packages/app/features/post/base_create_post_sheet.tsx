@@ -235,14 +235,16 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                 ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' p='$3'
                   animation="bouncy" {...standardAnimation}
                 >
-                  <XStack w='100%' mb='$2'>
-                    <GroupsSheet
-                      noGroupSelectedText={publicVisibility(visibility)
-                        ? 'Share Everywhere' : 'Share To A Group'}
-                      selectedGroup={group}
-                      onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
-                    />
-                  </XStack>
+                  {visibility != Visibility.PRIVATE
+                    ? <XStack w='100%' mb='$2'>
+                      <GroupsSheet
+                        noGroupSelectedText={publicVisibility(visibility)
+                          ? 'Share Everywhere' : 'Share To A Group'}
+                        selectedGroup={group}
+                        onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+                      />
+                    </XStack>
+                    : undefined}
                   {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
                   <VisibilityPicker id={`visibility-picker-create-${entityName?.toLowerCase() ?? 'post'}`}
                     label='Post Visibility'
