@@ -69,7 +69,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   // console.log('showHomeIcon', showHomeIcon, serverNameEmoji, canUseLogo, logo?.wideMediaId, logo?.squareMediaId, maxWidth, renderButtonChildren);
   // debugger;
   const recentGroupIds = useTypedSelector((state: RootState) => server
-    ? state.app.serverRecentGroups[serverID(server)] ?? []
+    ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
 
   useEffect(() => {
