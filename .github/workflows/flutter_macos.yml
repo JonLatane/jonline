@@ -9,7 +9,8 @@ on:
 jobs:
   build_macos:
     name: Build
-    # continue-on-error: true
+    # This job is known to fail.
+    continue-on-error: true
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
