@@ -1,7 +1,7 @@
 import { Permission, permissionToJSON } from '@jonline/api';
 import { Adapt, Button, Heading, Paragraph, Select, Sheet, XStack, YStack } from '@jonline/ui';
 import { LinearGradient } from "@tamagui/linear-gradient";
-import { Check, ChevronUp, Plus } from '@tamagui/lucide-icons';
+import { Check, ChevronDown, ChevronUp, Plus } from '@tamagui/lucide-icons';
 import React from 'react';
 
 export type PermissionsEditorProps = {
@@ -17,7 +17,7 @@ export type PermissionsEditorProps = {
 function toTitleCase(str: string) {
   return str.replace(
     /\w\S*/g,
-    function(txt: string) {
+    function (txt: string) {
       return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
     }
   );
@@ -55,13 +55,18 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
           </XStack>
         </Button>)
       }
-      {editMode ? <Select key={`permissions-${JSON.stringify(selectedPermissions)}`} onValueChange={(p) => selectPermission(parseInt(p) as Permission)}
+      {editMode ? <Select native key={`permissions-${JSON.stringify(selectedPermissions)}`}
+        onValueChange={(p) => {
+          if (p !== Permission.PERMISSION_UNKNOWN.toString()) {
+            selectPermission(parseInt(p) as Permission);
+          }
+        }}
         value={undefined}>
         <Select.Trigger height='$2' f={1} maw={350} opacity={disabled ? 0.5 : 1} iconAfter={Plus} {...{ disabled }}>
           <Select.Value placeholder="Add a Permission..." />
         </Select.Trigger>
 
-        <Adapt when="xs" platform="touch">
+        {/* <Adapt when="xs" platform="touch">
           <Sheet modal dismissOnSnapToBottom>
             <Sheet.Frame>
               <Sheet.ScrollView>
@@ -70,7 +75,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
             </Sheet.Frame>
             <Sheet.Overlay  />
           </Sheet>
-        </Adapt>
+        </Adapt> */}
 
         <Select.Content zIndex={200000}>
           <Select.ScrollUpButton ai="center" jc="center" pos="relative" w="100%" h="$3">
@@ -87,25 +92,49 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
           </Select.ScrollUpButton>
 
           <Select.Viewport minWidth={200}>
-            <Select.Group space="$0">
-              <Select.Label>{'Available Permissions'}</Select.Label>
-              {addablePermissions.map((item, i) => {
-                const description = permissionDescription?.(item);
-                return (
-                  <Select.Item index={i} key={`${item}`} value={item.toString()}>
-                    <Select.ItemText>
-                      <YStack>
-                        <Heading size='$2'>{permissionName(item)}</Heading>
-                        <Paragraph size='$1'>{permissionDescription(item)}</Paragraph>
-                      </YStack>
-                    </Select.ItemText>
-                    <Select.ItemIndicator ml="auto">
-                      <Check size={16} />
-                    </Select.ItemIndicator>
-                  </Select.Item>
-                )
-              })}
-            </Select.Group>
+            <XStack>
+              <Select.Group space="$0" w='100%'>
+                <Select.Label>{'Available Permissions'}</Select.Label>
+                <Select.Item disabled index={0} key='placeholder' value={Permission.PERMISSION_UNKNOWN.toString()}>
+                  <Select.ItemText>
+                    Add a Permission...
+                  </Select.ItemText>
+                  {/* <Select.ItemIndicator ml="auto">
+                    <Check size={16} />
+                  </Select.ItemIndicator> */}
+                </Select.Item>
+                {addablePermissions.map((item, i) => {
+                  const description = permissionDescription?.(item);
+                  return (
+                    <Select.Item index={i + 1} key={`${item}`} value={item.toString()}>
+                      <Select.ItemText>
+                        {/* <YStack> */}
+                        {/* <Heading size='$2'> */}
+                        {permissionName(item)}
+                        {/* </Heading> */}
+                        {/* <Paragraph size='$1'>{permissionDescription(item)}</Paragraph> */}
+                        {/* </YStack> */}
+                      </Select.ItemText>
+                      <Select.ItemIndicator ml="auto">
+                        <Check size={16} />
+                      </Select.ItemIndicator>
+                    </Select.Item>
+                  )
+                })}
+              </Select.Group>
+              <YStack
+                position="absolute"
+                right={0}
+                top={0}
+                bottom={0}
+                alignItems="center"
+                justifyContent="center"
+                width={'$4'}
+                pointerEvents="none"
+              >
+                <ChevronDown size='$2' />
+              </YStack>
+            </XStack>
           </Select.Viewport>
 
           <Select.ScrollDownButton ai="center" jc="center" pos="relative" w="100%" h="$3">
