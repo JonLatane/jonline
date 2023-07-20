@@ -27,9 +27,10 @@ export type GroupsSheetProps = {
   extraListItemChrome?: (group: Group) => JSX.Element | undefined;
   delayRenderingSheet?: boolean;
   hideAdditionalGroups?: boolean;
+  hideLeaveButtons?: boolean;
 }
 
-export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups, hideLeaveButtons }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
@@ -206,6 +207,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                           disabled={disableSelection}
                           hideInfoButton={hideInfoButtons}
                           extraListItemChrome={extraListItemChrome}
+                          hideLeaveButton={hideLeaveButtons}
                         />
                       })}
                     </YStack>
@@ -232,6 +234,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                             disabled={disableSelection}
                             hideInfoButton={hideInfoButtons}
                             extraListItemChrome={extraListItemChrome}
+                            hideLeaveButton={hideLeaveButtons}
                           />
                         })}
                       </YStack>
@@ -340,9 +343,11 @@ type GroupButtonProps = {
   disabled?: boolean;
   hideInfoButton?: boolean;
   extraListItemChrome?: (group: Group) => JSX.Element | undefined;
+
+  hideLeaveButton?: boolean;
 }
 
-function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome }: GroupButtonProps) {
+function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome, hideLeaveButton }: GroupButtonProps) {
   const accountOrServer = useAccountOrServer();
   const { account } = accountOrServer;
   const dispatch = useTypedDispatch();
@@ -436,7 +441,7 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
           icon={Info} onPress={() => onShowInfo()} />}
     </XStack>
     <XStack flexWrap='wrap' w='100%'>
-      {accountOrServer.account
+      {accountOrServer.account && (!hideLeaveButton || !joined)
         ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
           <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
             animation='quick' {...standardAnimation}

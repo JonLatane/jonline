@@ -82,6 +82,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
         hideInfoButtons
         delayRenderingSheet
         hideAdditionalGroups={accountOrServer.account === undefined}
+        hideLeaveButtons
       />
       {selectedGroup && otherGroupCount && sharedToSelectedGroup === false ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text> : undefined}
     </XStack>
@@ -139,8 +140,8 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
       .then(() => setLoadingGroup(false));
     setLoadingGroup(true);
   }
-  return <YStack mx='auto'>
-    <XStack space='$1' my='$2' flexWrap="wrap">
+  return <YStack mx='auto' w='100%'>
+    <XStack space='$1' my='$2' w='100%' flexWrap="wrap">
       <XStack f={1}>
         <XStack mx='auto'>
           <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
