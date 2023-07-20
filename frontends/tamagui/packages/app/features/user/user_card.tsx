@@ -64,7 +64,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
   const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatarMediaId && !editingDisabled;
 
-  const usernameRegion = <XStack f={1}>
+  const usernameRegion = <XStack f={1} w='100%'>
     {hasAvatarUrl ? <Image
       width={50}
       height={50}
@@ -78,7 +78,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       <Heading size="$1" mr='auto'>{server?.host}/</Heading>
 
       {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
-      <Heading size="$7" marginRight='auto'>{username}</Heading>
+      <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>
     </YStack>
     {app.showUserIds ? <XStack o={0.6}>
       <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
@@ -97,9 +97,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         y={0}
       >
         <Card.Header>
-          <XStack>
+          <XStack w='100%'>
             {isPreview
-              ? <Anchor f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
+              ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
                 {usernameRegion}
               </Anchor>
               : usernameRegion}
