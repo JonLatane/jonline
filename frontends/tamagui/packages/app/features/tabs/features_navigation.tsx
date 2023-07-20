@@ -116,7 +116,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     <XStack w={selectedGroup ? 11 : 3.5} />
     <Popover size="$5">
       <Popover.Trigger asChild>
-        <Button scale={0.95} ml={-4} {...themedButtonBackground(navColor)}>
+        <Button scale={0.95} ml={selectedGroup ? -4 : -3} {...themedButtonBackground(navColor)}>
           <Heading size="$4"
             // color={primaryTextColor}
             color={navTextColor}
