@@ -231,7 +231,47 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
               </XStack>
 
               {/* <AnimatePresence> */}
-              
+              {showSettings
+                ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' p='$3'
+                  animation="bouncy" {...standardAnimation}
+                >
+                  <XStack w='100%' mb='$2'>
+                    <GroupsSheet
+                      noGroupSelectedText={publicVisibility(visibility)
+                        ? 'Share Everywhere' : 'Share To A Group'}
+                      selectedGroup={group}
+                      onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+                    />
+                  </XStack>
+                  {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
+                  <VisibilityPicker label='Post Visibility' visibility={visibility} onChange={setVisibility}
+                    visibilityDescription={(v) => {
+                      switch (v) {
+                        case Visibility.PRIVATE:
+                          return 'Only you can see this post.';
+                        case Visibility.LIMITED:
+                          return group
+                            ? `Only your followers and members of ${group.name} can see this post.`
+                            : 'Only your followers and groups you choose can see this post.';
+                        case Visibility.SERVER_PUBLIC:
+                          return 'Anyone on this server can see this post.';
+                        case Visibility.GLOBAL_PUBLIC:
+                          return 'Anyone on the internet can see this post.';
+                        default:
+                          return 'Unknown';
+                      }
+                    }} />
+                  <ToggleRow
+                    // key={`'create-post-shareable-${shareable}`} 
+                    name={
+                      publicVisibility(visibility) || visibility == Visibility.LIMITED ?
+                        `Allow sharing to ${group ? 'other ' : ''} Groups`
+                        : 'Allow sharing to other users'
+                    }
+                    value={shareable}
+                    setter={(v) => setShareable(v)}
+                    disabled={disableInputs || visibility == Visibility.PRIVATE} />
+                </YStack> : undefined}
               {/* </AnimatePresence> */}
               {/* <Sheet.ScrollView> */}
               <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
