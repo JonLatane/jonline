@@ -30,7 +30,7 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
         key={`media-card-${media.id}`}
         margin='$0'
         my='$3'
-        animation="bouncy"
+        animation='standard'
         {...standardAnimation}
         width='100%'
         scale={1}

@@ -88,7 +88,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   return (
     <Theme inverse={isCurrentUser}>
       <Card theme="dark" elevate size="$4" bordered
-        animation="bouncy"
+        animation='standard'
         // scale={0.9}
         margin='$0'
         width={'100%'}

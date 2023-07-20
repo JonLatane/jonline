@@ -40,7 +40,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
   return (
     <Theme inverse={selected}>
       <Card theme="dark" elevate size="$4" bordered
-        animation="bouncy"
+        animation='standard'
         scale={0.9}
         width={isPreview ? 260 : '100%'}
         hoverStyle={{ scale: 0.925 }}

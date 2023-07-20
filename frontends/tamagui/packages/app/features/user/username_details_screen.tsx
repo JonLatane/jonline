@@ -172,7 +172,7 @@ export function UsernameDetailsScreen() {
               <Button mt={-15} onPress={() => setShowUserSettings(!showUserSettings)} transparent>
                 <XStack ac='center' jc='center'>
                   <Heading size='$4' ta='center'>User Settings</Heading>
-                  <XStack animation='bouncy' rotate={showUserSettings ? '90deg' : '0deg'}>
+                  <XStack animation='standard' rotate={showUserSettings ? '90deg' : '0deg'}>
                     <ChevronRight />
                   </XStack>
                 </XStack>
@@ -284,7 +284,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
   const canEdit = isCurrentUser || isAdmin;
   const disableInputs = !editMode || !canEdit;
   return <AnimatePresence>
-    {expanded ? <YStack animation="bouncy" key='user-visibility-permissions'
+    {expanded ? <YStack animation='standard' key='user-visibility-permissions'
       p='$3'
       ac='center'
       jc='center'

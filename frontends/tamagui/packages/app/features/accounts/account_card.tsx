@@ -36,7 +36,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
   return (
     <Theme inverse={selected}>
       <Card theme="dark" elevate size="$4" bordered
-        animation="bouncy"
+        animation='standard'
         // w={250}
         // h={50}
         scale={0.9}

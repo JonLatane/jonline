@@ -42,7 +42,7 @@ export function AsyncPostCard({ postId }: AsyncPostCardProps) {
       padding='$0'
       f={1}
       // f={isPreview ? undefined : 1}
-      animation="bouncy"
+      animation='standard'
       pressStyle={{ scale: 0.990 }}
     // ref={ref!}
     >

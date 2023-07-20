@@ -275,7 +275,7 @@ export function PostDetailsScreen() {
                     const result = <XStack key={`reply-${post.id}`} id={`reply-${post.id}`}
                       // w='100%' f={1}
                       mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == subjectPost?.id) ? '$3' : 0}
-                      animation="bouncy"
+                      animation='standard'
                       opacity={1}
                       scale={1}
                       y={0}

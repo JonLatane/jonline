@@ -1,5 +1,5 @@
 import { EventListingType, Group, PostListingType } from '@jonline/api';
-import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, standardFadeAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks/pagination_hooks';
 import { RootState, setShowEventsOnLatest, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
@@ -98,7 +98,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
               w='100%'
               h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
               overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
-              animation='quick'
+              animation='standard'
               {...standardAnimation}
             >
               {events.length == 0

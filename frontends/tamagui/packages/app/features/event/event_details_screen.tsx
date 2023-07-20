@@ -292,7 +292,7 @@ export function EventDetailsScreen() {
                   const result = <XStack key={`reply-${reply.id}`} id={`reply-${reply.id}`}
                     // w='100%' f={1}
                     mt={(chatUI && !hideTopMargin) || (!chatUI && parentEvent?.id == subjectEvent?.id) ? '$3' : 0}
-                    animation="bouncy"
+                    animation='standard'
                     opacity={1}
                     scale={1}
                     y={0}

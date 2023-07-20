@@ -15,6 +15,14 @@ export const animations = createAnimations({
     mass: 0.9,
     stiffness: 100,
   },
+  
+  // TODO: Maybe standard for web, bouncy for native/iOS?
+  // Only worth any effort if we wanted to ship the iOS version of the Tamagui app...
+  standard: {
+    type: 'timing',
+    duration: 300,
+  },
+  
   lazy: {
     type: 'spring',
     damping: 20,

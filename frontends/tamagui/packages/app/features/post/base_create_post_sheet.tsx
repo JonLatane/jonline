@@ -233,7 +233,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
               {/* <AnimatePresence> */}
               {showSettings
                 ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' p='$3'
-                  animation="bouncy" {...standardAnimation}
+                  animation='standard' {...standardAnimation}
                 >
                   {visibility != Visibility.PRIVATE
                     ? <XStack w='100%' mb='$2'>
