@@ -1,13 +1,8 @@
-import { Button, Heading, Input, Label, Sheet, SizeTokens, standardAnimation, Switch, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, useLoadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
-import React, { useState, useEffect } from 'react';
-import { FlatList, Platform } from 'react-native';
-import { useLink } from 'solito/link';
-import { v4 as uuidv4 } from 'uuid';
-import { SettingsSheet } from '../settings_sheet';
+import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
+import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
+import { accountId, clearAccountAlerts, createAccount, login, RootState, selectAllAccounts, serverID, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import React, { useEffect, useState } from 'react';
 import AccountCard from './account_card';
-import ServerCard from './server_card';
 
 export type AddAccountSheetProps = {
   // primaryServer?: JonlineServer;

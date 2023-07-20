@@ -82,54 +82,26 @@ setTimeout(async () => {
   while (!globalThis.window) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  // (window.fetch(
-  //   `${window.location.protocol}//${window.location.hostname}/backend_host`
-  // ).then(async (r) => {
-  //   const domain = await r.text();
-  //   return domain;
-  // }).catch((e) => {
-  //   console.error(e);
-  //   return undefined;
-  // })).then(
-  //   async (backendHost) => {
-  //     // Also fetch the FE host for use in the UI.
-  //     const frontendHost = await window.fetch(
-  //       `${window.location.protocol}//${window.location.hostname}/frontend_host`
-  //     ).then(async (r) => {
-  //       const domain = await r.text();
-  //       return domain;
-  //     }).catch((e) => {
-  //       console.error(e);
-  //       return undefined;
-  //     });
-  //     if(!frontendHost) {
-  //       console.warn('Got backend_host but failed to get frontend_host');
-  //       return;
-  //     }
-  //     _backendHost = backendHost;
-  //     _frontendHost = frontendHost;
 
-      if (!store.getState().servers.server) {
-        let initialServer: JonlineServer;
-        if (Platform.OS == 'web' && globalThis.window?.location) {
-          const domain = //backendHost && backendHost != ''
-            //? backendHost
-            //: 
-            window.location.hostname;
-          initialServer = {
-            host: domain,
-            secure: window.location.protocol === 'https:',
-          }
-        } else {
-          initialServer = {
-            host: 'jonline.io',
-            secure: true,
-          };
-        }
-        initializeWithServer(initialServer);
+  if (!store.getState().servers.server) {
+    let initialServer: JonlineServer;
+    if (Platform.OS == 'web' && globalThis.window?.location) {
+      const domain = //backendHost && backendHost != ''
+        //? backendHost
+        //: 
+        window.location.hostname;
+      initialServer = {
+        host: domain,
+        secure: window.location.protocol === 'https:',
       }
-  //   }
-  // );
+    } else {
+      initialServer = {
+        host: 'jonline.io',
+        secure: true,
+      };
+    }
+    initializeWithServer(initialServer);
+  }
 }, 1);
 
 function initializeWithServer(initialServer: JonlineServer) {

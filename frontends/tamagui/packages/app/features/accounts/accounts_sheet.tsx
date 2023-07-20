@@ -90,31 +90,39 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     }
   });
 
-  if (serversState.successMessage) {
-    setTimeout(() => {
-      setNewServerHost('');
-      setNewServerSecure(true);
-      dispatch(clearServerAlerts());
-      setAddingServer(false);
-    }, 1000);
-  }
-  if (accountsState.successMessage) {
-    setTimeout(() => {
-      setAddingAccount(false);
+  useEffect(() => {
+    if (serversState.successMessage) {
       setTimeout(() => {
-        dispatch(clearAccountAlerts());
-        setNewAccountUser('');
-        setNewAccountPass('');
-        setForceDisableAccountButtons(false);
-        setLoginMethod(undefined);
+        setNewServerHost('');
+        setNewServerSecure(true);
+        dispatch(clearServerAlerts());
+        setAddingServer(false);
       }, 1000);
-    }, 1500);
-  } else if (accountsState.errorMessage && forceDisableAccountButtons) {
-    setForceDisableAccountButtons(false);
-  }
-  if (!app.allowServerSelection && browsingServers) {
-    setBrowsingServers(false);
-  }
+    }
+  }, [serversState.successMessage]);
+
+  useEffect(() => {
+    if (accountsState.successMessage) {
+      setTimeout(() => {
+        setAddingAccount(false);
+        setTimeout(() => {
+          dispatch(clearAccountAlerts());
+          setNewAccountUser('');
+          setNewAccountPass('');
+          setForceDisableAccountButtons(false);
+          setLoginMethod(undefined);
+        }, 1000);
+      }, 1500);
+    } else if (accountsState.errorMessage && forceDisableAccountButtons) {
+      setForceDisableAccountButtons(false);
+    }
+  }, [accountsState.successMessage, accountsState.errorMessage, forceDisableAccountButtons]);
+
+  useEffect(() => {
+    if (!app.allowServerSelection && browsingServers) {
+      setBrowsingServers(false);
+    }
+  }, [app.allowServerSelection, browsingServers]);
   const serversDiffer = onlyShowServer && serversState.server && serverID(onlyShowServer) != serverID(serversState.server);
   const serverId = serversState.server ? serverID(serversState.server) : undefined;
   // debugger;

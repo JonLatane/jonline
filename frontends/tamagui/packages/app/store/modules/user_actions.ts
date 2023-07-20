@@ -26,10 +26,13 @@ export const loadUser: AsyncThunk<User, LoadUser, any> = createAsyncThunk<User, 
   "users/loadById",
   async (request) => {
     let user: User | undefined = undefined;
-    while (_loadingUserIds.has(request.id)) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      user = usersAdapter.getSelectors().selectById(store.getState().users, request.id);
+    if (_loadingUserIds.has(request.id)) {
+      throw 'Already loading user...';
     }
+    // while (_loadingUserIds.has(request.id)) {
+    //   await new Promise(resolve => setTimeout(resolve, 100));
+    //   user = usersAdapter.getSelectors().selectById(store.getState().users, request.id);
+    // }
     if (store.getState().users.failedUserIds.includes(request.id)) {
       throw 'User not found';
     }
