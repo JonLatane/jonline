@@ -1,9 +1,9 @@
-import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { loadMedia, loadUser, RootState, selectMediaById, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
-import { Event, EventInstance, Group } from "@jonline/api";
+import { Event, EventInstance, Group, Media } from "@jonline/api";
 import { Anchor, Button, Card, Heading, Image, Paragraph, ScrollView, TamaguiElement, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
@@ -14,6 +14,9 @@ import { InstanceTime } from "./instance_time";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import { History } from "@tamagui/lucide-icons";
 import { GroupPostManager } from "../post/group_post_manager";
+import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
+import { MediaRenderer } from "../media/media_renderer";
+import { FadeInView } from "../post/fade_in_view";
 
 interface Props {
   event: Event;
@@ -32,6 +35,12 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor } = useServerTheme();
   const ref = React.createRef<TamaguiElement>();
   const isVisible = useIsVisible(ref);
+  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  useEffect(() => {
+    if (isVisible && !hasBeenVisible) {
+      setHasBeenVisible(true);
+    }
+  }, [isVisible]);
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
@@ -94,7 +103,42 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   } : {
     // mr: -2 * detailsMargins,
   };
-  const previewUrl = useMediaUrl(post?.media[0]);
+  const embedSupported = post.embedLink && post.link && post.link.length;
+  let embedComponent: React.ReactNode | undefined = undefined;
+  if (embedSupported) {
+    const url = new URL(post.link!);
+    const hostname = url.hostname.split(':')[0]!;
+    if (hostname.endsWith('twitter.com')) {
+      embedComponent = <TwitterEmbed url={post.link!} />;
+    } else if (hostname.endsWith('instagram.com')) {
+      embedComponent = <InstagramEmbed url={post.link!} />;
+    } else if (hostname.endsWith('facebook.com')) {
+      embedComponent = <FacebookEmbed url={post.link!} />;
+    } else if (hostname.endsWith('youtube.com')) {
+      embedComponent = <YouTubeEmbed url={post.link!} />;
+    } else if (hostname.endsWith('tiktok.com')) {
+      embedComponent = <TikTokEmbed url={post.link!} />;
+    } else if (hostname.endsWith('pinterest.com')) {
+      embedComponent = <PinterestEmbed url={post.link!} />;
+    } else if (hostname.endsWith('linkedin.com')) {
+      embedComponent = <LinkedInEmbed url={post.link!} />;
+    }
+  }
+
+  const previewMediaId = post?.media[0];
+  const previewMedia = useTypedSelector((state: RootState) =>
+    previewMediaId && hasBeenVisible ? selectMediaById(state.media, previewMediaId) : undefined);
+  useEffect(() => {
+    if (hasBeenVisible && !previewMedia && previewMediaId) {
+      dispatch(loadMedia({ id: previewMediaId, ...accountOrServer }));
+    }
+  }, [previewMedia, hasBeenVisible]);
+
+  const hasPrimaryImage = previewMedia?.contentType.startsWith('image')
+    && post?.media?.length == 1 && !embedComponent;
+  const hasMediaToPreview = post?.media?.length > 1;
+  const previewUrl = useMediaUrl(hasPrimaryImage ? previewMediaId : undefined);
+
 
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
   // const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
@@ -102,7 +146,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   useEffect(() => {
-    if (authorId) {
+    if (hasBeenVisible && authorId) {
       if (!loadingAuthor && !author && !authorLoadFailed) {
         setLoadingAuthor(true);
         setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
@@ -110,7 +154,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
         setLoadingAuthor(false);
       }
     }
-  });
+  }, [authorId, loadingAuthor, author, authorLoadFailed]);
 
   const [showPastInstances, setShowPastInstances] = useState(false);
   const displayedInstances = instances
@@ -165,7 +209,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
       </Anchor>
       : <TamaguiMarkdown text={post.content} disableLinks={isPreview} />
     : undefined;
-    // return <></>;
+  // return <></>;
   return (
     <>
       <YStack w='100%'>
@@ -229,6 +273,19 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
             {/* {...postLinkProps}> */}
             <YStack zi={1000} width='100%' {...footerProps}>
+              {hasBeenVisible && embedComponent ? <FadeInView>{embedComponent}</FadeInView> : undefined}
+              {hasMediaToPreview && hasBeenVisible ? <FadeInView>
+                <XStack w='100%' maw={800}>
+                  <ScrollView horizontal w={isPreview ? '260px' : '100%'}
+                    h={media.gtXs ? '400px' : '260px'} >
+                    <XStack space='$2'>
+                      {post.media.map((mediaId, i) => <YStack w={media.gtXs ? '400px' : '260px'} h='100%'>
+                        <MediaRenderer key={mediaId} media={Media.create({ id: mediaId })} />
+                      </YStack>)}
+                    </XStack>
+                  </ScrollView>
+                </XStack>
+              </FadeInView> : undefined}
               <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
                 {(!isPreview && previewUrl && previewUrl != '') ?
                   <Image
@@ -278,21 +335,21 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
             </YStack>
           </Card.Footer>
           <Card.Background>
-            {(isPreview && previewUrl && previewUrl != '') ?
-              // <FadeInView>
-              <Image
-                pos="absolute"
-                width={300}
-                opacity={0.25}
-                height={300}
-                resizeMode="contain"
-                als="flex-start"
-                source={{ uri: previewUrl }}
-                blurRadius={1.5}
-                // borderRadius={5}
-                borderBottomRightRadius={5}
-              />
-              // </FadeInView>
+            {(hasBeenVisible && isPreview && previewUrl && previewUrl != '') ?
+              <FadeInView>
+                <Image
+                  pos="absolute"
+                  width={300}
+                  opacity={0.25}
+                  height={300}
+                  resizeMode="contain"
+                  als="flex-start"
+                  source={{ uri: previewUrl }}
+                  blurRadius={1.5}
+                  // borderRadius={5}
+                  borderBottomRightRadius={5}
+                />
+              </FadeInView>
               : undefined}
           </Card.Background>
         </Card >

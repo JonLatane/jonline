@@ -11,6 +11,7 @@ const loadingClients = new Set<string>();
 // Creates a client and upserts the server into the store.
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {
   const serverId = serverID(server);
+  let retries = 5;
   while (!clients.has(serverId)) {
     if (loadingClients.has(serverId)) {
       await new Promise((res) => setTimeout(res, 200));
@@ -34,8 +35,11 @@ export async function getServerClient(server: JonlineServer): Promise<Jonline> {
         const client = await createClient(host, server);
         return client;
       } catch (e) {
-        console.error(e);
-        throw e;
+        if (retries-- == 0) {
+          throw e;
+        } else {
+          console.warn(`Failed to load Jonline client for ${serverId}, retrying ${retries} more times...`, e);
+        }
       } finally {
         loadingClients.delete(serverId);
       }

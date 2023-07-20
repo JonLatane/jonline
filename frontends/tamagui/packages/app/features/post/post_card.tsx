@@ -14,6 +14,7 @@ import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { MediaRenderer } from "../media/media_renderer";
 import { GroupPostManager } from './group_post_manager';
+import { FadeInView } from './fade_in_view';
 
 interface Props {
   post: Post;
@@ -43,6 +44,12 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const isVisible = useIsVisible(ref);
+  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  useEffect(() => {
+    if (isVisible && !hasBeenVisible) {
+      setHasBeenVisible(true);
+    }
+  }, [isVisible]);
 
   // Call the hook passing in ref and root margin
   // In this case it would only be considered isVisible if more ...
@@ -101,7 +108,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   useEffect(() => {
-    if (authorId) {
+    if (hasBeenVisible && authorId) {
       if (!loadingAuthor && !author && !authorLoadFailed) {
         setLoadingAuthor(true);
         setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
@@ -109,7 +116,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
         setLoadingAuthor(false);
       }
     }
-  });
+  }, [authorId, loadingAuthor, author, authorLoadFailed]);
 
   // const loadingReplies = postsStatus == 'loading';
   const [loadingReplies, setLoadingReplies] = useState(false);
@@ -160,12 +167,13 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
 
   const previewMediaId = post?.media[0];
   const previewMedia = useTypedSelector((state: RootState) =>
-    previewMediaId ? selectMediaById(state.media, previewMediaId) : undefined);
+    previewMediaId && hasBeenVisible ? selectMediaById(state.media, previewMediaId) : undefined);
   useEffect(() => {
-    if (!previewMedia && previewMediaId) {
+    if (hasBeenVisible && !previewMedia && previewMediaId) {
       dispatch(loadMedia({ id: previewMediaId, ...accountOrServer }));
     }
-  }, [previewMedia])
+  }, [previewMedia, hasBeenVisible]);
+
   const hasPrimaryImage = previewMedia?.contentType.startsWith('image')
     && post?.media?.length == 1 && !embedComponent;
   const hasMediaToPreview = post?.media?.length > 1;
@@ -239,16 +247,19 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               : undefined}
             <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
               <YStack zi={1000} width='100%' {...footerProps}>
-                {embedComponent}
-                {hasMediaToPreview ? <XStack w='100%' maw={800}>
-                  <ScrollView horizontal w={isPreview ? '260px' : '100%'}
-                    h={media.gtXs ? '400px' : '260px'} >
-                    <XStack space='$2'>
-                      {post.media.map((mediaId, i) => <YStack w={media.gtXs ? '400px' : '260px'} h='100%'>
-                        <MediaRenderer key={mediaId} media={Media.create({ id: mediaId })} />
-                      </YStack>)}
-                    </XStack>
-                  </ScrollView></XStack> : undefined}
+                {hasBeenVisible && embedComponent ? <FadeInView>{embedComponent}</FadeInView> : undefined}
+                {hasMediaToPreview && hasBeenVisible ? <FadeInView>
+                  <XStack w='100%' maw={800}>
+                    <ScrollView horizontal w={isPreview ? '260px' : '100%'}
+                      h={media.gtXs ? '400px' : '260px'} >
+                      <XStack space='$2'>
+                        {post.media.map((mediaId, i) => <YStack w={media.gtXs ? '400px' : '260px'} h='100%'>
+                          <MediaRenderer key={mediaId} media={Media.create({ id: mediaId })} />
+                        </YStack>)}
+                      </XStack>
+                    </ScrollView>
+                  </XStack>
+                </FadeInView> : undefined}
 
                 <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                   <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
@@ -315,21 +326,21 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               </YStack>
             </Card.Footer>
             <Card.Background>
-              {(isPreview && hasPrimaryImage) ?
-                // <FadeInView>
-                <Image
-                  pos="absolute"
-                  width={300}
-                  opacity={0.25}
-                  height={300}
-                  resizeMode="cover"
-                  als="flex-start"
-                  source={{ uri: previewUrl! }}
-                  blurRadius={1.5}
-                  // borderRadius={5}
-                  borderBottomRightRadius={5}
-                />
-                // </FadeInView> 
+              {(hasBeenVisible && isPreview && hasPrimaryImage && previewUrl) ?
+                <FadeInView>
+                  <Image
+                    pos="absolute"
+                    width={300}
+                    opacity={0.25}
+                    height={300}
+                    resizeMode="cover"
+                    als="flex-start"
+                    source={{ uri: previewUrl! }}
+                    blurRadius={1.5}
+                    // borderRadius={5}
+                    borderBottomRightRadius={5}
+                  />
+                </FadeInView>
                 : undefined}
             </Card.Background>
           </Card >
