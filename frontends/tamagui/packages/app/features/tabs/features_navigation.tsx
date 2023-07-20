@@ -103,6 +103,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         transparent
         size="$3"
         disabled={selected}
+        o={selected ? 0.5 : 1}
         backgroundColor={selected ? navColor : undefined}
         {...link}
       >
@@ -114,10 +115,18 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     <XStack w={selectedGroup ? 11 : 3.5} />
     <Popover size="$5">
       <Popover.Trigger asChild>
-        <Button transparent 
-        borderColor='transparent'
-        hoverStyle={{backgroundColor: 'transparent', borderColor: 'transparent'}} pressStyle={{backgroundColor: 'transparent', borderColor: 'transparent'}} bordered={false}>
-          <Heading size="$4" color={primaryTextColor}>{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
+        <Button //transparent 
+          //borderColor='transparent'
+          borderColor={navTextColor}
+          backgroundColor={navColor}
+          color={navTextColor}
+          o={0.95}
+          hoverStyle={{ o: 1}}
+          pressStyle={{ o: 1}}>
+          <Heading size="$4"
+            // color={primaryTextColor}
+            color={navTextColor}
+          >{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
         </Button>
       </Popover.Trigger>
       <Popover.Content
