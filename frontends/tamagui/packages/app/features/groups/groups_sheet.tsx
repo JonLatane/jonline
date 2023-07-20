@@ -47,7 +47,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   const groupsState = useTypedSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
   useEffect(() => {
-    if (!loadingGroups && groupsState.status == 'unloaded') {
+    if (!loadingGroups && groupsState.status == 'unloaded' && !extraListItemChrome) {
       setLoadingGroups(true);
       reloadGroups();
     } else if (loadingGroups && !['unloaded', 'loading'].includes(groupsState.status)) {
