@@ -4,6 +4,7 @@ import { Button, Heading, Popover, ScrollView, XStack, YStack } from '@jonline/u
 import { useAccount, useLocalApp, useServerTheme } from 'app/store';
 import { useLink } from "solito/link";
 import { AlertTriangle } from "@tamagui/lucide-icons";
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export enum AppSection {
   HOME = 'home',
@@ -115,14 +116,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     <XStack w={selectedGroup ? 11 : 3.5} />
     <Popover size="$5">
       <Popover.Trigger asChild>
-        <Button //transparent 
-          //borderColor='transparent'
-          borderColor={navTextColor}
-          backgroundColor={navColor}
-          color={navTextColor}
-          o={0.95}
-          hoverStyle={{ o: 1}}
-          pressStyle={{ o: 1}}>
+        <Button scale={0.95} ml={-4} {...themedButtonBackground(navColor)}>
           <Heading size="$4"
             // color={primaryTextColor}
             color={navTextColor}
