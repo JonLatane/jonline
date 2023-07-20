@@ -244,7 +244,10 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                     />
                   </XStack>
                   {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
-                  <VisibilityPicker label='Post Visibility' visibility={visibility} onChange={setVisibility}
+                  <VisibilityPicker id={`visibility-picker-create-${entityName?.toLowerCase() ?? 'post'}`}
+                    label='Post Visibility'
+                    visibility={visibility}
+                    onChange={setVisibility}
                     visibilityDescription={(v) => {
                       switch (v) {
                         case Visibility.PRIVATE:
@@ -265,7 +268,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                     // key={`'create-post-shareable-${shareable}`} 
                     name={
                       publicVisibility(visibility) || visibility == Visibility.LIMITED ?
-                        `Allow sharing to ${group ? 'other ' : ''} Groups`
+                        `Allow sharing to ${group ? 'other ' : ''}Groups`
                         : 'Allow sharing to other users'
                     }
                     value={shareable}
