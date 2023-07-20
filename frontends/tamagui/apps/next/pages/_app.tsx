@@ -12,6 +12,7 @@ import type { SolitoAppProps } from 'solito'
 if (process.env.NODE_ENV === 'production') {
   require('../public/tamagui.css')
 }
+require('../public/select-fix.css')
 
 function MyApp({ Component, pageProps }: SolitoAppProps) {
   // usePreserveScroll();
