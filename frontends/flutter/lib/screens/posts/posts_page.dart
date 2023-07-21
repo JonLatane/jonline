@@ -464,6 +464,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
                                 .replaceAll('_POSTS', '')
                                 .replaceAll('_', ' ')),
                     style: TextStyle(
+                        fontWeight: FontWeight.w200,
                         color: l == listingType
                             ? null
                             : usable

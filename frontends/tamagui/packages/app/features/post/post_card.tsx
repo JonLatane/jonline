@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
 import { Group, Media, Post } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, ScrollView, Theme, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
+import { Anchor, Button, Card, Heading, Image, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
 import { ChevronRight } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -247,7 +247,11 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               : undefined}
             <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
               <YStack zi={1000} width='100%' {...footerProps}>
-                {hasBeenVisible && embedComponent ? <FadeInView>{embedComponent}</FadeInView> : undefined}
+                {hasBeenVisible && embedComponent
+                  ? <FadeInView>{embedComponent}</FadeInView>
+                  : embedComponent
+                    ? <Spinner color={primaryColor} />
+                    : undefined}
                 {hasMediaToPreview && hasBeenVisible ? <FadeInView>
                   <XStack w='100%' maw={800}>
                     <ScrollView horizontal w={isPreview ? '260px' : '100%'}

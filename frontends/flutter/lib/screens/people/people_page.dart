@@ -574,6 +574,7 @@ class PeopleScreenState extends JonlineState<PeopleScreen>
                   Text(
                     l.name.constantCase.replaceAll('_', '\n'),
                     style: TextStyle(
+                        fontWeight: FontWeight.w200,
                         color: l == listingType
                             ? null
                             : usable

@@ -18,7 +18,15 @@ extension HomePageAppBar on HomePageState {
     Widget bar = AppBar(
       backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.7),
       // backgroundColor: Colors.transparent,
-      title: titleWidget ?? Text(title),
+      title: titleWidget ??
+          Text(
+            title,
+            // style: const TextStyle(
+            // fontSize: 20,
+            // color: Colors.white,
+            // fontWeight: FontWeight.w200,
+            // ),
+          ),
       key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
       leading: leadingNavWidget,
       automaticallyImplyLeading: false,

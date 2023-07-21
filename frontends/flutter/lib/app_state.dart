@@ -321,12 +321,32 @@ class AppState extends State<MyApp> {
       },
       theme: ThemeData.dark().copyWith(
         colorScheme: ColorScheme.fromSeed(seedColor: primaryColor),
-        textTheme: ThemeData.dark().textTheme.apply(
+        textTheme: ThemeData.dark()
+            .textTheme
+            .apply(
               fontFamily: 'PublicSans',
-            ),
-        primaryTextTheme: ThemeData.dark().textTheme.apply(
+            )
+            .merge(const TextTheme(
+              displayLarge: TextStyle(fontWeight: FontWeight.w300),
+              titleLarge: TextStyle(fontWeight: FontWeight.w200),
+              titleMedium: TextStyle(fontWeight: FontWeight.w200),
+              titleSmall: TextStyle(fontWeight: FontWeight.w200),
+              bodySmall: TextStyle(fontWeight: FontWeight.w300),
+              bodyMedium: TextStyle(fontWeight: FontWeight.w200),
+            )),
+        primaryTextTheme: ThemeData.dark()
+            .textTheme
+            .apply(
               fontFamily: 'PublicSans',
-            ),
+            )
+            .merge(const TextTheme(
+              displayLarge: TextStyle(fontWeight: FontWeight.w300),
+              titleLarge: TextStyle(fontWeight: FontWeight.w300),
+              titleMedium: TextStyle(fontWeight: FontWeight.w300),
+              titleSmall: TextStyle(fontWeight: FontWeight.w300),
+              bodySmall: TextStyle(fontWeight: FontWeight.w300),
+              bodyMedium: TextStyle(fontWeight: FontWeight.w300),
+            )),
         pageTransitionsTheme: const PageTransitionsTheme(builders: {
           TargetPlatform.macOS: NoShadowCupertinoPageTransitionsBuilder(),
           TargetPlatform.iOS: NoShadowCupertinoPageTransitionsBuilder(),

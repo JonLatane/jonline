@@ -162,12 +162,12 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                   child: Text(
                     title!,
                     style: content != null
-                        ? Theme.of(context).textTheme.titleLarge
+                        ? textTheme.titleLarge
                         : title!.length < 20
-                            ? Theme.of(context).textTheme.titleLarge
+                            ? textTheme.titleLarge
                             : title!.length < 255
-                                ? Theme.of(context).textTheme.titleMedium
-                                : Theme.of(context).textTheme.titleSmall,
+                                ? textTheme.titleMedium
+                                : textTheme.titleSmall,
                     // const TextStyle(
                     //     fontSize: 16, fontWeight: FontWeight.w500),
                     textAlign: TextAlign.left,
