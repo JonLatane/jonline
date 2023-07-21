@@ -331,9 +331,17 @@ class AppState extends State<MyApp> {
               titleLarge: TextStyle(fontWeight: FontWeight.w200),
               titleMedium: TextStyle(fontWeight: FontWeight.w200),
               titleSmall: TextStyle(fontWeight: FontWeight.w200),
-              bodySmall: TextStyle(fontWeight: FontWeight.w300),
-              bodyMedium: TextStyle(fontWeight: FontWeight.w200),
+              bodySmall: TextStyle(fontWeight: FontWeight.w200),
+              bodyMedium: TextStyle(fontWeight: FontWeight.w100),
+              bodyLarge: TextStyle(fontWeight: FontWeight.w100),
+              labelLarge: TextStyle(fontWeight: FontWeight.w200),
+              labelMedium: TextStyle(fontWeight: FontWeight.w300),
+              labelSmall: TextStyle(fontWeight: FontWeight.w300),
             )),
+        buttonTheme: const ButtonThemeData(
+          // buttonColor: primaryColor,
+          textTheme: ButtonTextTheme.primary,
+        ),
         primaryTextTheme: ThemeData.dark()
             .textTheme
             .apply(

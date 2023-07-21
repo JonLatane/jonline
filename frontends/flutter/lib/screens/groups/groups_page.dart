@@ -340,7 +340,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                   Text(
                     l.name.replaceAll('_', '\n'),
                     style: TextStyle(
-                        fontWeight: FontWeight.w200,
+                        // fontWeight: FontWeight.w200,
                         color: l == listingType
                             ? null
                             : usable

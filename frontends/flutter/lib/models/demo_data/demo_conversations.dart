@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:jonline/generated/events.pb.dart';
 import 'package:jonline/models/jonline_account_operations.dart';
 
 import '../../app_state.dart';
@@ -22,11 +23,14 @@ createDemoConversations(
   final posts = (await client.getPosts(
           GetPostsRequest()..listingType = PostListingType.PUBLIC_POSTS))
       .posts;
+  final events = (await client.getEvents(
+          GetEventsRequest()..listingType = EventListingType.PUBLIC_EVENTS))
+      .events;
   List<JonlineAccount> sideAccounts =
       await generateSideAccounts(client, account, showSnackBar, appState, 30);
 
-  await generateConversations(
-      client, account, showSnackBar, appState, posts, sideAccounts);
+  await generateConversations(client, account, showSnackBar, appState,
+      posts + events.map((e) => e.post).toList(), sideAccounts);
 }
 
 Future<void> generateConversations(

@@ -25,7 +25,7 @@ createDemoData(JonlineAccount account, Function(String) showSnackBar,
   final List<Post> posts = await generateTopicPosts(
       client, account, showSnackBar, appState, demoGroups);
 
-  await generateEvents(
+  final events = await generateEvents(
     client,
     account,
     showSnackBar,
@@ -37,8 +37,8 @@ createDemoData(JonlineAccount account, Function(String) showSnackBar,
       await generateSideAccounts(client, account, showSnackBar, appState, 30);
 
   showSnackBar("Generating conversations...");
-  await generateConversations(
-      client, account, showSnackBar, appState, posts, sideAccounts);
+  await generateConversations(client, account, showSnackBar, appState,
+      posts + events.map((e) => e.post).toList(), sideAccounts);
 
   await createFollowsAndGroupMemberships(
       account, showSnackBar, appState, sideAccounts);
