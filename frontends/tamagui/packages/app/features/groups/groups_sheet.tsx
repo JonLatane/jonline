@@ -105,21 +105,21 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
 
   //TODO: Simplify/abstract this into its own component? But then, with this design, will there ever be a need
   // for a *third* "Join" button in this app?
-  const joined = passes(selectedGroup?.currentUserMembership?.userModeration)
-    && passes(selectedGroup?.currentUserMembership?.groupModeration);
-  const membershipRequested = selectedGroup?.currentUserMembership && !joined && passes(selectedGroup?.currentUserMembership?.userModeration);
-  const invited = selectedGroup?.currentUserMembership && !joined && passes(selectedGroup?.currentUserMembership?.groupModeration)
-  const requiresPermissionToJoin = pending(selectedGroup?.defaultMembershipModeration);
-  const isLocked = useTypedSelector((state: RootState) => !selectedGroup || isGroupLocked(state.groups, selectedGroup.id));
+  const joined = passes(infoRenderingGroup?.currentUserMembership?.userModeration)
+    && passes(infoRenderingGroup?.currentUserMembership?.groupModeration);
+  const membershipRequested = infoRenderingGroup?.currentUserMembership && !joined && passes(infoRenderingGroup?.currentUserMembership?.userModeration);
+  const invited = infoRenderingGroup?.currentUserMembership && !joined && passes(infoRenderingGroup?.currentUserMembership?.groupModeration)
+  const requiresPermissionToJoin = pending(infoRenderingGroup?.defaultMembershipModeration);
+  const isLocked = useTypedSelector((state: RootState) => !infoRenderingGroup || isGroupLocked(state.groups, infoRenderingGroup.id));
 
   const onJoinPressed = () => {
-    if (!selectedGroup) {
-      console.warn("onJoinPressed with no selectedGroup");
+    if (!infoRenderingGroup) {
+      console.warn("onJoinPressed with no infoRenderingGroup");
       return;
     }
     // e.stopPropagation();
     const join = !(joined || membershipRequested || invited);
-    dispatch(joinLeaveGroup({ groupId: selectedGroup.id, join, ...accountOrServer }));
+    dispatch(joinLeaveGroup({ groupId: infoRenderingGroup.id, join, ...accountOrServer }));
   };
 
   return (
