@@ -11,7 +11,7 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { store, upsertUserDataToAccounts } from "..";
+import { store, upsertUserData } from "..";
 import { LoadUser, LoadUsername, defaultUserListingType, followUnfollowUser, loadUser, loadUserPosts, loadUsername, loadUsersPage, respondToFollowRequest, updateUser, userSaved } from "./user_actions";
 
 export interface UsersState {
@@ -93,7 +93,7 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
 
       setTimeout(() => {
         for (const user of action.payload.users) {
-          store.dispatch(upsertUserDataToAccounts({ server, user }));
+          store.dispatch(upsertUserData({ server, user }));
         }
       }, 1);
     });
@@ -122,7 +122,7 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
         // Update the user in any relevant accounts.
         const server = action.meta.arg.server!;
         setTimeout(() => {
-          store.dispatch(upsertUserDataToAccounts({ server, user }));
+          store.dispatch(upsertUserData({ server, user }));
         }, 1);
       });
       builder.addCase(loader.rejected, (state, action) => {

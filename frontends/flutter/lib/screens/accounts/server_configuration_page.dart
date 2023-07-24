@@ -103,8 +103,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
             .firstWhere((a) => a.server == (account?.server ?? widget.server!));
     final client = this.client ??
         await JonlineClients.getServerClient(server,
-            allowInsecure:
-                server.server == "localhost" || server.server == "Armothy");
+            allowInsecure: JonlineClients.isInsecureAllowed(server.server));
     await server.updateServiceVersion();
     await server.updateConfiguration();
 

@@ -67,7 +67,7 @@ export const accountsSlice = createSlice({
       state.successMessage = undefined;
       state.error = undefined;
     },
-    upsertUserDataToAccounts(state, action: PayloadAction<{ user: User, server: JonlineServer }>) {
+    upsertUserData(state, action: PayloadAction<{ user: User, server: JonlineServer }>) {
       for (const accountId in state.entities) {
         const account = state.entities[accountId]!;
         const { user: accountUser, server: accountServer } = account;
@@ -127,7 +127,7 @@ export const accountsSlice = createSlice({
   },
 });
 
-export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts, upsertUserDataToAccounts } = accountsSlice.actions;
+export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts, upsertUserData } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;

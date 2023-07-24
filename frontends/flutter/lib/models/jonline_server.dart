@@ -117,7 +117,7 @@ class JonlineServer {
       {Function(String)? showMessage}) async {
     final client = await JonlineClients.getServerClient(this,
         showMessage: (m) => log.info(m),
-        allowInsecure: server == "localhost" || server == "Armothy");
+        allowInsecure: JonlineClients.isInsecureAllowed(server));
     if (client == null) return null;
 
     configuration = (await client.getServerConfiguration(Empty()));

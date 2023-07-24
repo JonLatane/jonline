@@ -6913,6 +6913,7 @@ __metadata:
     react-colorful: ^5.6.1
     react-drag-drop-files: ^2.3.10
     react-markdown: ^8.0.5
+    react-native-animation-library: ^0.0.8
     react-native-get-random-values: ^1.8.0
     react-native-image-picker: ^5.0.1
     react-native-markdown-renderer: ^3.2.8
@@ -10496,6 +10497,13 @@ __metadata:
   version: 5.0.1
   resolution: "event-target-shim@npm:5.0.1"
   checksum: 1ffe3bb22a6d51bdeb6bf6f7cf97d2ff4a74b017ad12284cc9e6a279e727dc30a5de6bb613e5596ff4dc3e517841339ad09a7eec44266eccb1aa201a30448166
+  languageName: node
+  linkType: hard
+
+"events@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "events@npm:1.1.1"
+  checksum: 40431eb005cc4c57861b93d44c2981a49e7feb99df84cf551baed299ceea4444edf7744733f6a6667e942af687359b1f4a87ec1ec4f21d5127dac48a782039b9
   languageName: node
   linkType: hard
 
@@ -17274,6 +17282,18 @@ __metadata:
     "@types/react": ">=16"
     react: ">=16"
   checksum: 9d11b7aba16216d590e56b4744e05d2925141bfb0f5885b3d9400ccf006cd24b79ce3b3d20af8a083a01324215b58fa4c5979e44f69d54123ff1dd5dacb0dc89
+  languageName: node
+  linkType: hard
+
+"react-native-animation-library@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "react-native-animation-library@npm:0.0.8"
+  dependencies:
+    events: ^1.1.1
+  peerDependencies:
+    react: 15.4.1
+    react-native: 0.38.0
+  checksum: 7eb48bcff8c0658bad58943751021b5281f7d742b9fe402b761227891f4997b9967d9f972f6b85dbdbb835dcf4023c5a0bf4621b4e61b31e57d1d85d9e0ce25b
   languageName: node
   linkType: hard
 
