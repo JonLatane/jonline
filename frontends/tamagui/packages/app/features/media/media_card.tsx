@@ -25,7 +25,7 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
   const canDelete = isAdmin || isOwnMedia;
   const mediaName = media.name && media.name.length > 0 ? media.name : undefined;
   return (
-    <Theme inverse={selected}>
+    <Theme inverse={selected} key={`media-card-${media.id}`}>
       <Card theme="dark" elevate size="$4" bordered
         key={`media-card-${media.id}`}
         margin='$0'

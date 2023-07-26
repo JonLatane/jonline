@@ -1,11 +1,19 @@
 use std::time::SystemTime;
 
-use tonic::{Status, Code};
+use super::User;
+use super::Author;
 use diesel::*;
+use tonic::{Code, Status};
 
-use crate::{schema::{posts, user_posts, group_posts}, db_connection::PgPooledConnection};
+use crate::{
+    db_connection::PgPooledConnection,
+    schema::{group_posts, posts, user_posts},
+};
 
-pub fn get_post(post_id: i64, conn: &mut PgPooledConnection,) -> Result<Post, Status> {
+// A wrapper for all data needed to marshal a Post that has with a 1:1 relationship with a Post.
+pub struct MarshalablePost(pub Post, pub Option<Author>, pub Option<GroupPost>);
+
+pub fn get_post(post_id: i64, conn: &mut PgPooledConnection) -> Result<Post, Status> {
     posts::table
         .select(posts::all_columns)
         .filter(posts::id.eq(post_id))
@@ -13,7 +21,11 @@ pub fn get_post(post_id: i64, conn: &mut PgPooledConnection,) -> Result<Post, St
         .map_err(|_| Status::new(Code::NotFound, "post_not_found"))
 }
 
-pub fn get_group_post(group_id: i64, post_id: i64, conn: &mut PgPooledConnection,) -> Result<GroupPost, Status> {
+pub fn get_group_post(
+    group_id: i64,
+    post_id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<GroupPost, Status> {
     group_posts::table
         .select(group_posts::all_columns)
         .filter(group_posts::group_id.eq(group_id))
@@ -22,7 +34,9 @@ pub fn get_group_post(group_id: i64, post_id: i64, conn: &mut PgPooledConnection
         .map_err(|_| Status::new(Code::NotFound, "group_post_not_found"))
 }
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
+#[diesel(belongs_to(User))]
+
 pub struct Post {
     pub id: i64,
     pub user_id: Option<i64>,
@@ -65,8 +79,8 @@ pub struct NewPost {
     pub embed_link: bool,
 }
 
-
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
+#[diesel(belongs_to(User))]
 pub struct GroupPost {
     pub id: i64,
     pub group_id: i64,

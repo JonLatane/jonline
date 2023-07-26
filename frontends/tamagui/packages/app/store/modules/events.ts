@@ -159,7 +159,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       while (action.meta.arg.page && eventPages[initialPage]) {
         initialPage++;
       }
-      const chunkSize = 10;
+      const chunkSize = 7;
       for (let i = 0; i < instanceIds.length; i += chunkSize) {
         const chunk = instanceIds.slice(i, i + chunkSize);
         state.eventInstancePages[listingType]![initialPage + (i / chunkSize)] = chunk;

@@ -27,8 +27,8 @@ pub fn create_event(
         Some(p) => p,
     };
 
-    for media_proto_id in &post.media {
-        media_proto_id.to_db_id_or_err("media")?;
+    for media in &post.media {
+        media.id.to_db_id_or_err("media")?;
         //TODO further media ID validations?
     }
     let instances = req.instances;
@@ -43,8 +43,8 @@ pub fn create_event(
             Some(p) => {
                 validate_max_length(p.link.to_owned(), "instance.post.link", 10000)?;
                 validate_max_length(p.content.to_owned(), "instance.post.content", 10000)?;
-                for media_proto_id in &p.media {
-                    media_proto_id.to_db_id_or_err("instance.media")?;
+                for m in &p.media {
+                    m.id.to_db_id_or_err("instance.media")?;
                 }
                 let visibility = match p.visibility() {
                     Visibility::Unknown => Visibility::GlobalPublic,
@@ -101,7 +101,7 @@ pub fn create_event(
                 media: post
                     .media
                     .iter()
-                    .map(|m: &String| m.to_db_id().unwrap())
+                    .map(|m| m.id.to_db_id().unwrap())
                     .collect(),
             })
             .get_result::<models::Post>(conn)?;
@@ -128,7 +128,7 @@ pub fn create_event(
                             media: p
                                 .media
                                 .iter()
-                                .map(|m: &String| m.to_db_id().unwrap())
+                                .map(|m| m.id.to_db_id().unwrap())
                                 .collect(),
                         })
                         .get_result::<models::Post>(conn)?,

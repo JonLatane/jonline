@@ -1,5 +1,5 @@
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
@@ -8,28 +8,27 @@ use diesel::*;
 use tonic::Code;
 use tonic::Status;
 
+use super::MediaLookup;
+
 pub trait ToProtoUser {
-    fn to_proto(&self) -> User;
-    fn to_proto_with(&self, follow: &Option<&models::Follow>, target_follow: &Option<&models::Follow>) -> User;
-    fn to_proto_auto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> User;
+    // fn to_proto(&self) -> User;
+    fn to_proto(
+        &self,
+        follow: &Option<&models::Follow>,
+        target_follow: &Option<&models::Follow>,
+        media_lookup: Option<&MediaLookup>,
+    ) -> User;
 }
 impl ToProtoUser for models::User {
-    fn to_proto(&self) -> User {
-        return self.to_proto_with(&None, &None);
-    }
-    fn to_proto_auto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> User {
-        let follow = match user {
-            Some(user) => follows::table
-                .select(follows::all_columns)
-                .filter(follows::user_id.eq(user.id))
-                .filter(follows::target_user_id.eq(self.id))
-                .first::<models::Follow>(conn)
-                .ok(),
-            None => None,
-        };
-        self.to_proto_with(&follow.as_ref(), &None)
-    }
-    fn to_proto_with(&self, follow: &Option<&models::Follow>, target_follow: &Option<&models::Follow>) -> User {
+    // fn to_proto(&self) -> User {
+    //     return self.to_proto(&None, &None);
+    // }
+    fn to_proto(
+        &self,
+        follow: &Option<&models::Follow>,
+        target_follow: &Option<&models::Follow>,
+        media_lookup: Option<&MediaLookup>,
+    ) -> User {
         let email: Option<ContactMethod> = self
             .email
             .to_owned()
@@ -39,7 +38,7 @@ impl ToProtoUser for models::User {
             .to_owned()
             .map(|cm| serde_json::from_value(cm).unwrap());
 
-            log::info!("user.avatar_media_id={:?}", &self.avatar_media_id);
+        log::info!("user.avatar_media_id={:?}", &self.avatar_media_id);
         let user = User {
             id: self.id.to_proto_id().to_string(),
             username: self.username.to_owned(),
@@ -68,6 +67,30 @@ impl ToProtoUser for models::User {
         };
         // log::info!("Converted user: {:?}", user);
         return user;
+    }
+}
+
+pub trait ToProtoAuthor {
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Author;
+}
+impl ToProtoAuthor for models::Author {
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Author {
+        // log::info!("user.avatar_media_id={:?}", &self.avatar_media_id);
+        Author {
+            user_id: self.id.to_proto_id().to_string(),
+            username: Some(self.username.to_owned()),
+            avatar: self
+                .avatar_media_id
+                .to_owned()
+                .map(|id| media_lookup.find_media(id).map(|media_ref| media_ref.to_proto()))
+                .flatten(),
+            /*media_lookup.map(|lookup| {
+                self.avatar_media_id
+                    .to_owned()
+                    .map(|id| lookup.get(&id).map(|media_ref| media_ref.to_proto()))
+            }),*/
+            //  self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
+        }
     }
 }
 

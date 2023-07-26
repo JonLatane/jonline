@@ -35,9 +35,22 @@ pub fn create_post(
     }
     validate_max_length(req.link.to_owned(), "link", 10000)?;
     validate_max_length(req.content.to_owned(), "content", 10000)?;
-    for media_proto_id in &req.media {
-        media_proto_id.to_db_id_or_err("media")?;
+    for media in &req.media {
+        media.id.to_db_id_or_err("media")?;
     }
+    let media_ids = req
+        .media
+        .iter()
+        .map(|m| m.id.to_db_id().unwrap())
+        .collect::<Vec<i64>>();
+    let media_references: MediaLookup = models::get_all_media(media_ids, conn)
+        .unwrap_or_else(|e| {
+            log::error!("Error getting media references: {:?}", e);
+            vec![]
+        })
+        .iter()
+        .map(|media| (media.id, media))
+        .collect();
 
     // Generate the list of the post's ancestors so we can increment their response_count all at once.
     let mut ancestor_post_ids: Vec<i64> = vec![];
@@ -135,7 +148,7 @@ pub fn create_post(
     match post {
         Ok(post) => {
             log::info!("Post created! PostID:{:?}", post.id);
-            Ok(Response::new(post.to_proto(Some(user.username))))
+            Ok(Response::new(post.to_proto(Some(user.username), None, Some(&media_references))))
         }
         Err(e) => {
             log::error!("Error creating post! {:?}", e);

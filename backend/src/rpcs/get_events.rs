@@ -432,7 +432,7 @@ fn _get_group_posts(
             .unwrap()
             .iter()
             .map(|(post, username, group_post)| {
-                post.to_group_proto(username.to_owned(), Some(group_post))
+                post.to_proto(username.to_owned(), Some(group_post))
             })
             .collect::<Vec<Post>>(),
         (Visibility::GlobalPublic, Some(_)) => group_posts::table
@@ -456,7 +456,7 @@ fn _get_group_posts(
             .unwrap()
             .iter()
             .map(|(post, username, group_post)| {
-                post.to_group_proto(username.to_owned(), Some(group_post))
+                post.to_proto(username.to_owned(), Some(group_post))
             })
             .collect::<Vec<Post>>(),
         (_, None) => return Err(Status::new(Code::NotFound, "group_not_found")),

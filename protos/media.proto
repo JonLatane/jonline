@@ -51,6 +51,15 @@ message Media {
   google.protobuf.Timestamp updated_at = 16;
 }
 
+// A reference to a media item, designed to be included in other messages as a reference.
+// Contains the bare minimum data needed to fetch media via the HTTP API and render it,
+// and the media item's name (for alt text usage).
+message MediaReference {
+  string content_type = 1;
+  string id = 2;
+  optional string name = 3;
+}
+
 // Valid GetMediaRequest formats:
 // - `{user_id: "123"}` - Gets the media of the given user that the current user can see. IE:
 //     - *all* of the current user's own media

@@ -165,7 +165,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       while (action.meta.arg.page && postPages[initialPage]) {
         initialPage++;
       }
-      const chunkSize = 10;
+      const chunkSize = 7;
       for (let i = 0; i < postIds.length; i += chunkSize) {
         const chunk = postIds.slice(i, i + chunkSize);
         state.groupPostPages[groupId]![initialPage + (i / chunkSize)] = chunk;
@@ -207,7 +207,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       while (action.meta.arg.page && eventPages[initialPage]) {
         initialPage++;
       }
-      const chunkSize = 10;
+      const chunkSize = 7;
       for (let i = 0; i < eventInstanceIds.length; i += chunkSize) {
         const chunk = eventInstanceIds.slice(i, i + chunkSize);
         state.groupEventPages[groupId]![initialPage + (i / chunkSize)] = chunk;

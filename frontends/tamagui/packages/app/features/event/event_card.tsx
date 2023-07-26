@@ -4,7 +4,7 @@ import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { Event, EventInstance, Group, Media } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, Paragraph, ScrollView, TamaguiElement, Theme, useMedia, XStack, YStack } from "@jonline/ui";
+import { Anchor, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -212,7 +212,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   // return <></>;
   return (
     <>
-      <YStack w='100%'>
+      <YStack w='100%' key={`event-card-${event.id}-${instance?.id}-${isPreview ? '-preview' : ''}`}>
         {/* <Theme inverse={false}> */}
         <Card theme="dark" elevate size="$4" bordered
           margin='$0'
@@ -273,9 +273,11 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
             {/* {...postLinkProps}> */}
             <YStack zi={1000} width='100%' {...footerProps}>
-              {hasBeenVisible && embedComponent ? <FadeInView>{embedComponent}</FadeInView> : undefined}
-              {hasMediaToPreview && hasBeenVisible ? <FadeInView>
-                <XStack w='100%' maw={800}>
+              {hasBeenVisible && embedComponent
+                ? <FadeInView><div>{embedComponent}</div></FadeInView>
+                : undefined}
+              {hasMediaToPreview && hasBeenVisible
+                ? <XStack w='100%' maw={800}>
                   <ScrollView horizontal w={isPreview ? '260px' : '100%'}
                     h={media.gtXs ? '400px' : '260px'} >
                     <XStack space='$2'>
@@ -285,7 +287,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                     </XStack>
                   </ScrollView>
                 </XStack>
-              </FadeInView> : undefined}
+                : undefined}
               <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
                 {(!isPreview && previewUrl && previewUrl != '') ?
                   <Image

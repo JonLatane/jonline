@@ -41,7 +41,6 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
     const now = moment.utc();
     const expired = accessExpiresAt.subtract(1, 'minutes').isBefore(now);
     if (expired) {
-      console.log(`Access token expired, refreshing..., now=${now}, expiresAt=${accessExpiresAt}`)
       let newAccessToken: ExpirableToken | undefined = undefined;
       let newRefreshToken: ExpirableToken | undefined = undefined;
       while (_accessFetchLock) {
@@ -52,6 +51,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
       const newTokenExpired = !newAccessToken ||
         moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
       if (newTokenExpired) {
+        console.log(`Access token expired, refreshing..., now=${now}, expiresAt=${accessExpiresAt}`);
         _accessFetchLock = true;
         let { accessToken: fetchedAccessToken, refreshToken: fetchedRefreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
         newAccessToken = fetchedAccessToken!;

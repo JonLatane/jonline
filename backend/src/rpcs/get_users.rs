@@ -93,7 +93,7 @@ fn get_all_users(
         .unwrap()
         .iter()
         .map(|(user, follow, target_follow)| {
-            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+            user.to_proto(&follow.as_ref(), &target_follow.as_ref())
         })
         .collect();
     GetUsersResponse {
@@ -135,7 +135,7 @@ fn get_follow_requests(
         .unwrap()
         .iter()
         .map(|(user, follow, target_follow)| {
-            user.to_proto_with(&follow.as_ref(), &Some(target_follow))
+            user.to_proto(&follow.as_ref(), &Some(target_follow))
         })
         .collect();
     GetUsersResponse {
@@ -199,7 +199,7 @@ fn get_by_username(
         .unwrap()
         .iter()
         .map(|(user, follow, target_follow)| {
-            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+            user.to_proto(&follow.as_ref(), &target_follow.as_ref())
         })
         .collect();
     GetUsersResponse {
@@ -256,7 +256,7 @@ fn get_by_user_id(
         .unwrap()
         .iter()
         .map(|(user, follow, target_follow)| {
-            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+            user.to_proto(&follow.as_ref(), &target_follow.as_ref())
         })
         .collect();
     GetUsersResponse {

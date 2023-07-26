@@ -3,13 +3,21 @@ use std::time::SystemTime;
 use tonic::{Status, Code};
 use diesel::*;
 
-use crate::{schema::{media}, db_connection::PgPooledConnection};
+use crate::{schema::media, db_connection::PgPooledConnection};
+use super::User;
 
 pub fn get_media(media_id: i64, conn: &mut PgPooledConnection,) -> Result<Media, Status> {
     media::table
         .select(media::all_columns)
         .filter(media::id.eq(media_id))
         .first::<Media>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "media_not_found"))
+}
+pub fn get_all_media(media_ids: Vec<i64>, conn: &mut PgPooledConnection,) -> Result<Vec<MediaReference>, Status> {
+    media::table
+        .select((media::id, media::content_type, media::name))
+        .filter(media::id.eq_any(media_ids))
+        .load::<MediaReference>(conn)
         .map_err(|_| Status::new(Code::NotFound, "media_not_found"))
 }
 
@@ -25,7 +33,8 @@ pub fn get_media(media_id: i64, conn: &mut PgPooledConnection,) -> Result<Media,
 //         .map_err(|_| Status::new(Code::NotFound, "group_media_not_found"))
 // }
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset)]
+#[diesel(belongs_to(User))]
 #[diesel(table_name = media)]
 pub struct Media {
     pub id: i64,
@@ -54,4 +63,22 @@ pub struct NewMedia {
     pub description: Option<String>,
     pub generated: bool,
     pub visibility: String,
+}
+
+pub const MEDIA_REFEENCE_COLUMNS: (
+    media::id,
+    media::content_type,
+    media::name,
+) = (
+    media::id,
+    media::content_type,
+    media::name,
+);
+
+#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[diesel(table_name = media)]
+pub struct MediaReference {
+    pub id: i64,
+    pub content_type: String,
+    pub name: Option<String>,
 }
