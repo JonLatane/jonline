@@ -9,6 +9,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::logic::*;
 use crate::marshaling::*;
 use crate::models;
+use crate::models::AUTHOR_COLUMNS;
 use crate::protos::*;
 use crate::schema::*;
 
@@ -20,7 +21,7 @@ pub fn get_events(
     conn: &mut PgPooledConnection,
 ) -> Result<GetEventsResponse, Status> {
     // log::info!("GetEvents called");
-    let result: Vec<Event> = match (
+    let result: Vec<MarshalableEvent> = match (
         request.listing_type(),
         request.to_owned().event_id,
         request.to_owned().event_instance_id,
@@ -46,7 +47,7 @@ fn get_public_and_following_events(
     user: &Option<models::User>,
     conn: &mut PgPooledConnection,
     _filter: Option<TimeFilter>,
-) -> Vec<Event> {
+) -> Vec<MarshalableEvent> {
     let public_visibilities = public_string_visibilities(user);
 
     let event_posts = alias!(posts as event_posts);
@@ -61,7 +62,15 @@ fn get_public_and_following_events(
         .field(posts::visibility)
         .eq(Visibility::Limited.to_string_visibility())
         .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
-    event_instances::table
+    let event_data: Vec<&(
+        models::EventInstance,
+        models::Event,
+        models::Post,
+        Option<models::Author>,
+        // Option<models::Post>,
+        // Option<models::User>,
+        // bool,
+    )> = event_instances::table
         .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
         .inner_join(event_posts.on(event_posts.field(posts::id).eq(events::post_id)))
         .left_join(
@@ -90,7 +99,7 @@ fn get_public_and_following_events(
             event_instances::all_columns,
             events::all_columns,
             event_posts.fields(posts::all_columns),
-            event_users.fields(users::all_columns).nullable(),
+            event_users.fields(AUTHOR_COLUMNS).nullable(),
             // instance_posts.fields(posts::all_columns).nullable(),
             // instance_users.fields(users::all_columns).nullable(),
             // instance_posts.field(posts::preview).is_not_null(),
@@ -103,19 +112,35 @@ fn get_public_and_following_events(
             models::EventInstance,
             models::Event,
             models::Post,
-            Option<models::User>,
+            Option<models::Author>,
             // Option<models::Post>,
             // Option<models::User>,
             // bool,
         )>(conn)
         .unwrap()
         .iter()
+        .collect();
+    let mut media_ids: Vec<i64> = vec![];
+    event_data
+        .iter()
+        .for_each(|(_, _, post, author /*_, _, _*/)| {
+            media_ids.extend(post.media.iter());
+            author
+                .map(|a| a.avatar_media_id)
+                .flatten()
+                .map(|amid| media_ids.push(amid));
+        });
+    let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
+    let media_lookup: MediaLookup = media_lookup(&media_references);
+
+    Ok(event_data
+        .iter()
         .map(
             |(
                 instance,
                 event,
                 event_post,
-                event_user,
+                event_author,
                 // instance_post,
                 // instance_user,
                 // has_instance_preview,
@@ -123,12 +148,13 @@ fn get_public_and_following_events(
                 info!("instance: {:?}", instance);
                 event.to_proto(
                     &event_post,
-                    event_user.as_ref(),
+                    event_author.as_ref(),
+                    Some(&media_lookup),
                     &vec![(instance, None, None)],
                 )
             },
         )
-        .collect()
+        .collect())
 }
 
 fn get_event_by_id(
@@ -227,7 +253,7 @@ fn get_group_events(
     user: &Option<models::User>,
     conn: &mut PgPooledConnection,
     _filter: Option<TimeFilter>,
-) -> Result<Vec<Event>, Status> {
+) -> Result<Vec<MarshalableEvent>, Status> {
     let group = models::get_group(group_id, conn)
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))?;
 

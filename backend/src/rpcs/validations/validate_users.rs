@@ -15,7 +15,7 @@ pub fn validate_user(user: &User) -> Result<(), Status> {
         Some(e) => validate_phone(&e.value)?,
         None => {}
     }
-    user.avatar_media_id.to_db_opt_id_or_err("avatar_media_id")?;
+    user.avatar.map(|a| a.id).to_db_opt_id_or_err("avatar_media_id")?;
     match user.visibility.to_proto_visibility().unwrap() {
         Visibility::Unknown => return Err(Status::new(Code::NotFound, "invalid_visibility")),
         _ => (),

@@ -11,6 +11,7 @@ use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs;
 use crate::schema::users;
 
 use super::validations::*;
@@ -53,7 +54,7 @@ pub fn update_user(
             if admin || self_update {
                 existing_user.username = request.username.to_owned();
                 existing_user.bio = request.bio.to_owned();
-                existing_user.avatar_media_id = request.avatar_media_id.to_db_opt_id().unwrap();
+                existing_user.avatar_media_id = request.avatar.map(|a|a.id).to_db_opt_id().unwrap();
                 if request.visibility == Visibility::GlobalPublic as i32
                     && existing_user.visibility.to_proto_visibility().unwrap()
                         != Visibility::GlobalPublic
@@ -81,7 +82,18 @@ pub fn update_user(
         });
 
     let result = match transaction_result {
-        Ok(result) => Ok(result.to_proto()),
+        //TODO: properly marshal this stuff
+        Ok(result) => {
+            rpcs::get_users(
+                GetUsersRequest {
+                    user_id: Some(request.id),
+                    ..Default::default()
+                },
+                Some(current_user),
+                conn,
+            ).map(|u| u.users[0])
+            // Ok(result.to_proto(&None, &None, None))
+        },
         Err(NotFound) => Err(Status::new(Code::NotFound, "user_not_found")),
         Err(RollbackTransaction) => Err(Status::new(
             Code::InvalidArgument,

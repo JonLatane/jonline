@@ -43,14 +43,17 @@ pub fn create_post(
         .iter()
         .map(|m| m.id.to_db_id().unwrap())
         .collect::<Vec<i64>>();
-    let media_references: MediaLookup = models::get_all_media(media_ids, conn)
-        .unwrap_or_else(|e| {
-            log::error!("Error getting media references: {:?}", e);
-            vec![]
-        })
-        .iter()
-        .map(|media| (media.id, media))
-        .collect();
+    let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
+    let media_lookup: MediaLookup = media_lookup(&media_references);
+
+    // let media_references: MediaLookup = models::get_all_media(media_ids, conn)
+    //     .unwrap_or_else(|e| {
+    //         log::error!("Error getting media references: {:?}", e);
+    //         vec![]
+    //     })
+    //     .iter()
+    //     .map(|media| (media.id, media))
+    //     .collect();
 
     // Generate the list of the post's ancestors so we can increment their response_count all at once.
     let mut ancestor_post_ids: Vec<i64> = vec![];
@@ -110,11 +113,7 @@ pub fn create_post(
                 .to_string(),
                 visibility: visibility.to_string_visibility(),
                 embed_link: req.embed_link.to_owned(),
-                media: req
-                    .media
-                    .iter()
-                    .map(|m: &String| m.to_db_id().unwrap())
-                    .collect(),
+                media: req.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
             })
             .get_result::<models::Post>(conn)?;
         match parent_post_db_id.to_owned() {
@@ -148,7 +147,11 @@ pub fn create_post(
     match post {
         Ok(post) => {
             log::info!("Post created! PostID:{:?}", post.id);
-            Ok(Response::new(post.to_proto(Some(user.username), None, Some(&media_references))))
+            Ok(Response::new(post.to_proto(
+                Some(&user.to_author()),
+                None,
+                Some(&media_lookup),
+            )))
         }
         Err(e) => {
             log::error!("Error creating post! {:?}", e);

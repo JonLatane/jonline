@@ -2,11 +2,13 @@ use diesel::*;
 use tonic::Status;
 
 use super::validations::*;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
+use crate::models::MEDIA_REFERENCE_COLUMNS;
 use crate::protos::*;
 
+use crate::schema::media;
 use crate::schema::{follows, memberships, users};
 
 pub fn get_members(
@@ -68,7 +70,11 @@ pub fn get_members(
         ),
         // _ => return Err(Status::invalid_argument("invalid_request")),
     };
-    log::info!("GetMembers::request: {:?}\nresponse: {:?}", request, response);
+    log::info!(
+        "GetMembers::request: {:?}\nresponse: {:?}",
+        request,
+        response
+    );
     Ok(response)
 }
 
@@ -105,11 +111,13 @@ fn get_all_members(
                 .eq(users::id)
                 .and(target_follows_target_user_id.nullable().eq(user.id))),
         )
+        .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
             memberships::all_columns,
             users::all_columns,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
+            MEDIA_REFERENCE_COLUMNS.nullable(),
         ))
         .filter(memberships::group_id.eq(group_id))
         .filter(memberships::user_moderation.eq_any(user_moderations_string))
@@ -128,13 +136,20 @@ fn get_all_members(
             models::User,
             Option<models::Follow>,
             Option<models::Follow>,
+            Option<models::MediaReference>,
         )>(conn)
         .unwrap()
         .iter()
-        .map(|(membership, user, follow, target_follow)| Member {
-            user: Some(user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())),
-            membership: Some(membership.to_proto()),
-        })
+        .map(
+            |(membership, user, follow, target_follow, media_reference)| Member {
+                user: Some(user.to_proto(
+                    &follow.as_ref(),
+                    &target_follow.as_ref(),
+                    media_reference.map(|mr| &media_lookup(&vec![mr])),
+                )),
+                membership: Some(membership.to_proto()),
+            },
+        )
         .collect();
     GetMembersResponse {
         members,
@@ -176,11 +191,13 @@ fn get_members_by_username(
                 .eq(users::id)
                 .and(target_follows_target_user_id.nullable().eq(user.id))),
         )
+        .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
             memberships::all_columns,
             users::all_columns,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
+            MEDIA_REFERENCE_COLUMNS.nullable(),
         ))
         .filter(memberships::group_id.eq(group_id))
         .filter(memberships::user_moderation.eq_any(user_moderations_string))
@@ -200,13 +217,20 @@ fn get_members_by_username(
             models::User,
             Option<models::Follow>,
             Option<models::Follow>,
+            Option<models::MediaReference>,
         )>(conn)
         .unwrap()
         .iter()
-        .map(|(membership, user, follow, target_follow)| Member {
-            user: Some(user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())),
-            membership: Some(membership.to_proto()),
-        })
+        .map(
+            |(membership, user, follow, target_follow, media_reference)| Member {
+                user: Some(user.to_proto(
+                    &follow.as_ref(),
+                    &target_follow.as_ref(),
+                    media_reference.map(|mr| &media_lookup(&vec![mr])),
+                )),
+                membership: Some(membership.to_proto()),
+            },
+        )
         .collect();
     GetMembersResponse {
         members,

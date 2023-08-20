@@ -9,10 +9,18 @@ use tonic::Status;
 use super::{MediaLookup, ToI32Moderation, ToI32Visibility, ToLink, ToProtoId, ToProtoTime};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
-use crate::models::MarshalablePost;
+use crate::models::AUTHOR_COLUMNS;
 use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::{group_posts, groups, posts, users};
+use crate::ToProtoAuthor;
+use crate::ToProtoMediaReference;
+
+pub struct MarshalablePost(
+    pub models::Post,
+    pub Option<models::Author>,
+    pub Option<models::GroupPost>,
+);
 
 pub fn convert_posts(
     data: &Vec<MarshalablePost>,
@@ -38,18 +46,18 @@ pub fn convert_posts(
                 }
                 let replies = posts::table
                     .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-                    .select((posts::all_columns, users::username.nullable()))
+                    .select((posts::all_columns, AUTHOR_COLUMNS.nullable()))
                     // .filter(posts::visibility.eq(Visibility::GlobalPublic.as_str_name()))
                     .filter(posts::visibility.ne(Visibility::Private.as_str_name()))
                     .filter(posts::parent_post_id.eq(post.id))
                     .order(posts::created_at.desc())
                     .limit(100)
-                    .load::<(models::Post, Option<String>)>(conn)
+                    .load::<(models::Post, Option<models::Author>)>(conn)
                     .unwrap()
                     .iter()
-                    .map(|(reply, username)| {
+                    .map(|(reply, author)| {
                         media_ids.extend(reply.media.iter());
-                        MarshalablePost(reply.clone(), username.clone(), None)
+                        MarshalablePost(reply.clone(), *author, None)
                     })
                     .collect();
 
@@ -64,13 +72,13 @@ pub fn convert_posts(
             vec![]
         })
         .iter()
-        .map(|media| (media.id, media))
+        .map(|media| (media.id, *media))
         .collect();
 
     let mut posts = vec![];
-    for MarshalablePost(post, username, group_post) in data {
+    for MarshalablePost(post, author, group_post) in data {
         let post = post.to_proto(
-            username.to_owned(),
+            author.as_ref(),
             group_post.as_ref(),
             Some(&media_references),
         );
@@ -86,7 +94,6 @@ pub trait ToProtoPost {
         group_post: Option<&models::GroupPost>,
         media_lookup: Option<&MediaLookup>,
     ) -> Post;
-    fn proto_author(&self, author: Option<String>) -> Option<Author>;
 }
 
 impl ToProtoPost for models::Post {
@@ -99,7 +106,7 @@ impl ToProtoPost for models::Post {
         Post {
             id: self.id.to_proto_id(),
             reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
-            author: self.proto_author(username),
+            author: author.map(|a| a.to_proto(media_lookup)),
 
             title: self.title.to_owned(),
             link: self.link.to_link(),
@@ -137,17 +144,6 @@ impl ToProtoPost for models::Post {
             published_at: self.published_at.map(|t| t.to_proto()),
             last_activity_at: Some(self.last_activity_at.to_proto()),
         }
-    }
-    fn proto_author(
-        &self,
-        author: Option<&models::Author>,
-        media_lookup: Option<&MediaLookup>,
-    ) -> Option<Author> {
-        self.user_id.map(|user_id| Author {
-            user_id: user_id.to_proto_id(),
-            username: author.username,
-            avatar: media_lookup.map,
-        })
     }
 }
 

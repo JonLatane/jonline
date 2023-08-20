@@ -67,7 +67,7 @@ impl Jonline for JonLineImpl {
         let mut conn = get_connection(&self.pool)?;
         match auth::get_auth_user(&request, &mut conn) {
             Err(e) => Err(e),
-            Ok(user) => rpcs::get_current_user(user),
+            Ok(user) => rpcs::get_current_user(user, &mut conn),
         }
     }
 

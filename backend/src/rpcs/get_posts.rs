@@ -183,7 +183,7 @@ fn get_my_group_posts(
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((
             posts::all_columns,
-            models::models::AUTHOR_COLUMNS.nullable(),
+            models::AUTHOR_COLUMNS.nullable(),
         ))
         .filter(memberships::user_id.eq(user.id))
         .filter(

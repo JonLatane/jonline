@@ -7,49 +7,54 @@
 use super::id_marshaling::ToProtoId;
 use super::ToProtoPost;
 
+use super::MediaLookup;
 use super::ToProtoTime;
 use crate::models;
-use crate::models::MediaLookup;
 use crate::protos::*;
+
+use super::MarshalablePost;
+
+pub struct MarshalableEvent(
+    pub models::Event,
+    pub MarshalablePost,
+    pub Vec<MarshalableEventInstance>,
+);
+pub struct MarshalableEventInstance(pub models::EventInstance, pub Option<MarshalablePost>);
 
 pub trait ToProtoEvent {
     fn to_proto(
         &self,
         post: &models::Post,
-        user: Option<&models::User>,
+        author: Option<&models::Author>,
         media_lookup: Option<&MediaLookup>,
         instances: &Vec<(
             &models::EventInstance,
             Option<&models::Post>,
-            Option<&models::User>,
+            Option<&models::Author>,
         )>,
     ) -> Event;
-    // fn to_proto(
-    //     &self,
-    //     username: Option<String>,
-    //     has_preview: &bool,
-    //     group_post: Option<&models::GroupPost>,
-    // ) -> Post;
-    // fn proto_author(&self, username: Option<String>) -> Option<Author>;
 }
 
 impl ToProtoEvent for models::Event {
     fn to_proto(
         &self,
         post: &models::Post,
-        user: Option<&models::User>,
+        author: Option<&models::Author>,
         media_lookup: Option<&MediaLookup>,
         instances: &Vec<(
             &models::EventInstance,
             Option<&models::Post>,
-            Option<&models::User>,
+            Option<&models::Author>,
         )>,
     ) -> Event {
         // self.to_proto(username, None)
         Event {
             id: self.id.to_proto_id(),
-            post: Some(post.to_proto(user.map(|u| u.username.to_owned()), None, media_lookup)),
-            instances: instances.iter().map(|(i, p, u)| i.to_proto(p, u, media_lookup)).collect(),
+            post: Some(post.to_proto(author, None, media_lookup)),
+            instances: instances
+                .iter()
+                .map(|(i, p, a)| i.to_proto(p, a, media_lookup))
+                .collect(),
             info: Some(EventInfo {
                 // start_time: self.start_time.map(|t| t.to_proto()),
                 // end_time: self.end_time.map(|t| t.to_proto()),
@@ -65,7 +70,7 @@ pub trait ToProtoEventInstance {
     fn to_proto(
         &self,
         post: &Option<&models::Post>,
-        user: &Option<&models::User>,
+        author: &Option<&models::Author>,
         media_lookup: Option<&MediaLookup>,
     ) -> EventInstance;
 }
@@ -74,7 +79,7 @@ impl ToProtoEventInstance for models::EventInstance {
     fn to_proto(
         &self,
         post: &Option<&models::Post>,
-        user: &Option<&models::User>,
+        author: &Option<&models::Author>,
         media_lookup: Option<&MediaLookup>,
     ) -> EventInstance {
         let location: Option<Location> = self
@@ -84,7 +89,7 @@ impl ToProtoEventInstance for models::EventInstance {
         EventInstance {
             id: self.id.to_proto_id(),
             event_id: self.event_id.to_proto_id(),
-            post: post.map(|p| p.to_proto(user.map(|u| u.username.to_owned()), None, media_lookup)),
+            post: post.map(|p| p.to_proto(author.as_deref(), None, media_lookup)),
             starts_at: Some(self.starts_at.to_proto()),
             ends_at: Some(self.ends_at.to_proto()),
             info: Some(EventInstanceInfo {

@@ -13,6 +13,13 @@ pub fn get_media(media_id: i64, conn: &mut PgPooledConnection,) -> Result<Media,
         .first::<Media>(conn)
         .map_err(|_| Status::new(Code::NotFound, "media_not_found"))
 }
+pub fn get_media_reference(media_id: i64, conn: &mut PgPooledConnection,) -> Result<MediaReference, Status> {
+    media::table
+        .select(MEDIA_REFERENCE_COLUMNS)
+        .filter(media::id.eq(media_id))
+        .first::<MediaReference>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "media_not_found"))
+}
 pub fn get_all_media(media_ids: Vec<i64>, conn: &mut PgPooledConnection,) -> Result<Vec<MediaReference>, Status> {
     media::table
         .select((media::id, media::content_type, media::name))
@@ -65,7 +72,7 @@ pub struct NewMedia {
     pub visibility: String,
 }
 
-pub const MEDIA_REFEENCE_COLUMNS: (
+pub const MEDIA_REFERENCE_COLUMNS: (
     media::id,
     media::content_type,
     media::name,

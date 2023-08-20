@@ -156,17 +156,27 @@ pub fn create_event(
     match result {
         Ok((event, post, instances)) => {
             log::info!("Event created! EventID: {:?}", event.id);
+            let mut media_ids = post.media;
+            user.avatar_media_id.map(|id| media_ids.push(id));
+            media_ids.append(&mut instances
+                .iter()
+                .map(|(_, p)| p.as_ref().map(|p| p.media.clone()).unwrap_or(vec![]))
+                .flatten()
+                .collect::<Vec<i64>>());
+            let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
+            let media_lookup: MediaLookup = media_lookup(&media_references);
             Ok(Response::new(
                 event.to_proto(
                     &post,
-                    Some(&user),
+                    Some(&user.to_author()),
+                    Some(&media_lookup),
                     &instances
                         .iter()
-                        .map(|(i, p)| (i, p.as_ref(), Some(&user)))
+                        .map(|(i, p)| (i, p.as_ref(), Some(&user.to_author())))
                         .collect::<Vec<(
                             &models::EventInstance,
                             Option<&models::Post>,
-                            Option<&models::User>,
+                            Option<&models::Author>,
                         )>>(),
                 ),
             ))

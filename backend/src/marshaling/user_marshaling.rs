@@ -11,13 +11,14 @@ use tonic::Status;
 use super::MediaLookup;
 
 pub trait ToProtoUser {
-    // fn to_proto(&self) -> User;
     fn to_proto(
         &self,
         follow: &Option<&models::Follow>,
         target_follow: &Option<&models::Follow>,
         media_lookup: Option<&MediaLookup>,
     ) -> User;
+
+    fn to_author(&self) -> models::Author;
 }
 impl ToProtoUser for models::User {
     // fn to_proto(&self) -> User {
@@ -47,7 +48,9 @@ impl ToProtoUser for models::User {
             phone: phone,
             permissions: self.permissions.to_i32_permissions(),
             bio: self.bio.to_owned(),
-            avatar_media_id: self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
+            // avatar_media_id: self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
+            avatar: media_lookup
+                .map(|ml| ml.get(&self.avatar_media_id.unwrap()).unwrap().to_proto()),
             visibility: self.visibility.to_proto_visibility().unwrap() as i32,
             moderation: self.moderation.to_proto_moderation().unwrap() as i32,
             follower_count: Some(self.follower_count),
@@ -68,6 +71,14 @@ impl ToProtoUser for models::User {
         // log::info!("Converted user: {:?}", user);
         return user;
     }
+
+    fn to_author(&self) -> models::Author {
+        models::Author {
+            id: self.id,
+            username: self.username,
+            avatar_media_id: self.avatar_media_id,
+        }
+    }
 }
 
 pub trait ToProtoAuthor {
@@ -75,21 +86,18 @@ pub trait ToProtoAuthor {
 }
 impl ToProtoAuthor for models::Author {
     fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Author {
-        // log::info!("user.avatar_media_id={:?}", &self.avatar_media_id);
         Author {
             user_id: self.id.to_proto_id().to_string(),
             username: Some(self.username.to_owned()),
             avatar: self
                 .avatar_media_id
                 .to_owned()
-                .map(|id| media_lookup.find_media(id).map(|media_ref| media_ref.to_proto()))
+                .map(|id| {
+                    media_lookup
+                        .find_media(id)
+                        .map(|media_ref| media_ref.to_proto())
+                })
                 .flatten(),
-            /*media_lookup.map(|lookup| {
-                self.avatar_media_id
-                    .to_owned()
-                    .map(|id| lookup.get(&id).map(|media_ref| media_ref.to_proto()))
-            }),*/
-            //  self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
         }
     }
 }

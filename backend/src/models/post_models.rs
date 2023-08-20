@@ -1,7 +1,6 @@
 use std::time::SystemTime;
 
 use super::User;
-use super::Author;
 use diesel::*;
 use tonic::{Code, Status};
 
@@ -9,9 +8,6 @@ use crate::{
     db_connection::PgPooledConnection,
     schema::{group_posts, posts, user_posts},
 };
-
-// A wrapper for all data needed to marshal a Post that has with a 1:1 relationship with a Post.
-pub struct MarshalablePost(pub Post, pub Option<Author>, pub Option<GroupPost>);
 
 pub fn get_post(post_id: i64, conn: &mut PgPooledConnection) -> Result<Post, Status> {
     posts::table
