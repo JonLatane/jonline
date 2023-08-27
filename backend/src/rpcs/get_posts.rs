@@ -1,5 +1,4 @@
 use std::cmp::min;
-use std::collections::HashMap;
 
 use diesel::*;
 use tonic::{Code, Status};
@@ -8,7 +7,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::logic::*;
 use crate::marshaling::*;
 use crate::models;
-use crate::models::MarshalablePost;
+// use crate::models::MarshalablePost;
 use crate::protos::*;
 use crate::schema::{follows, group_posts, groups, memberships, posts, users};
 
@@ -82,6 +81,26 @@ pub fn get_posts(
     })
 }
 
+macro_rules! filter_visible_posts {
+    ($user:expr) => {
+        {
+            let public_visibilities = public_string_visibilities($user);
+            let public = posts::visibility.eq_any(public_visibilities);
+            let limited_to_followers = posts::visibility
+                .eq(Visibility::Limited.to_string_visibility())
+                .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)));
+            posts::table
+                .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+                .left_join(
+                    follows::table.on(posts::user_id
+                        .eq(follows::target_user_id.nullable())
+                        .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))),
+                )
+                .filter(public.or(limited_to_followers))
+        }
+    };
+}
+
 fn get_by_post_id(
     user: &Option<models::User>,
     post_id: &str,
@@ -95,10 +114,10 @@ fn get_by_post_id(
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         .filter(posts::id.eq(post_db_id))
-        .load::<(models::Post, Option<Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None))
+        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
         .collect();
 
     if result.len() == 0 {
@@ -139,17 +158,14 @@ fn get_public_and_following_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::created_at.desc())
         .limit(100)
-        .load::<(models::Post, Option<Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None))
+        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
         .collect()
 }
 
-fn get_my_group_posts(
-    user: &models::User,
-    conn: &mut PgPooledConnection,
-) -> Vec<MarshalablePost> {
+fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec<MarshalablePost> {
     let is_admin = user
         .permissions
         .to_proto_permissions()
@@ -170,10 +186,10 @@ fn get_my_group_posts(
             .order(posts::id.desc())
             .distinct_on(posts::id)
             .limit(100)
-            .load::<(models::Post, Option<Author>)>(conn)
+            .load::<(models::Post, Option<models::Author>)>(conn)
             .unwrap()
             .iter()
-            .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None))
+            .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
             .collect();
     }
     memberships::table
@@ -181,10 +197,7 @@ fn get_my_group_posts(
         .inner_join(group_posts::table.on(group_posts::group_id.eq(groups::id)))
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((
-            posts::all_columns,
-            models::AUTHOR_COLUMNS.nullable(),
-        ))
+        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         .filter(memberships::user_id.eq(user.id))
         .filter(
             memberships::permissions.has_any_key(
@@ -199,10 +212,10 @@ fn get_my_group_posts(
         .order(posts::id.desc())
         .distinct_on(posts::id)
         .limit(100)
-        .load::<(models::Post, Option<Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None))
+        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
         .collect()
 }
 
@@ -214,73 +227,83 @@ fn get_group_posts(
 ) -> Result<Vec<MarshalablePost>, Status> {
     let group = models::get_group(group_id, conn)
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))?;
-    let result: Vec<MarshalablePost> =
-        match (group.visibility.to_proto_visibility().unwrap(), user) {
-            (Visibility::GlobalPublic, None) => group_posts::table
-                .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
-                .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-                .select((
-                    posts::all_columns,
-                    models::AUTHOR_COLUMNS.nullable(),
-                    group_posts::all_columns,
-                ))
-                .filter(group_posts::group_id.eq(group_id))
-                .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
-                .filter(posts::visibility.eq(Visibility::GlobalPublic.as_str_name()))
-                .filter(posts::context.eq(PostContext::Post.as_str_name()))
-                .order(posts::created_at.desc())
-                .limit(100)
-                .load::<(models::Post, Option<Author>, models::GroupPost)>(conn)
+    let result: Vec<MarshalablePost> = match (group.visibility.to_proto_visibility().unwrap(), user)
+    {
+        (Visibility::GlobalPublic, None) => group_posts::table
+            .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
+            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+            .select((
+                posts::all_columns,
+                models::AUTHOR_COLUMNS.nullable(),
+                group_posts::all_columns,
+            ))
+            .filter(group_posts::group_id.eq(group_id))
+            .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
+            .filter(posts::visibility.eq(Visibility::GlobalPublic.as_str_name()))
+            .filter(posts::context.eq(PostContext::Post.as_str_name()))
+            .order(posts::created_at.desc())
+            .limit(100)
+            .load::<(models::Post, Option<models::Author>, models::GroupPost)>(conn)
+            .unwrap()
+            .iter()
+            .map(|(post, author, group_post)| {
+                MarshalablePost(
+                    post.clone(),
+                    *author.clone(),
+                    Some(group_post.clone()),
+                    vec![],
+                )
+            })
+            .collect(),
+        (Visibility::GlobalPublic, Some(_)) => group_posts::table
+            .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
+            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+            .select((
+                posts::all_columns,
+                models::AUTHOR_COLUMNS.nullable(),
+                group_posts::all_columns,
+            ))
+            .filter(group_posts::group_id.eq(group_id))
+            .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
+            .filter(posts::visibility.eq_any(vec![
+                Visibility::GlobalPublic.as_str_name(),
+                Visibility::ServerPublic.as_str_name(),
+            ]))
+            .filter(posts::context.eq(PostContext::Post.as_str_name()))
+            .order(posts::created_at.desc())
+            .limit(100)
+            .load::<(models::Post, Option<models::Author>, models::GroupPost)>(conn)
+            .unwrap()
+            .iter()
+            .map(|(post, author, group_post)| {
+                MarshalablePost(
+                    post.clone(),
+                    *author.clone(),
+                    Some(group_post.clone()),
+                    vec![],
+                )
+            })
+            .collect(),
+        (_, None) => return Err(Status::new(Code::NotFound, "group_not_found")),
+        (Visibility::ServerPublic, Some(user)) => {
+            match group
+                .default_membership_moderation
+                .to_proto_moderation()
                 .unwrap()
-                .iter()
-                .map(|(post, author, group_post)| {
-                    MarshalablePost(post.clone(), author.clone(), Some(group_post.clone()))
-                })
-                .collect(),
-            (Visibility::GlobalPublic, Some(_)) => group_posts::table
-                .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
-                .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-                .select((
-                    posts::all_columns,
-                    models::AUTHOR_COLUMNS.nullable(),
-                    group_posts::all_columns,
-                ))
-                .filter(group_posts::group_id.eq(group_id))
-                .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
-                .filter(posts::visibility.eq_any(vec![
-                    Visibility::GlobalPublic.as_str_name(),
-                    Visibility::ServerPublic.as_str_name(),
-                ]))
-                .filter(posts::context.eq(PostContext::Post.as_str_name()))
-                .order(posts::created_at.desc())
-                .limit(100)
-                .load::<(models::Post, Option<Author>, models::GroupPost)>(conn)
-                .unwrap()
-                .iter()
-                .map(|(post, author, group_post)| {
-                    MarshalablePost(post.clone(), author.clone(), Some(group_post.clone()))
-                })
-                .collect(),
-            (_, None) => return Err(Status::new(Code::NotFound, "group_not_found")),
-            (Visibility::ServerPublic, Some(user)) => {
-                match group
-                    .default_membership_moderation
-                    .to_proto_moderation()
-                    .unwrap()
-                {
-                    Moderation::Pending => {
-                        let membership = models::get_membership(group_id, user.id, conn).ok();
-                        // log::info!("membership: {:?}", membership);
-                        if !membership.map(|m| m.passes()).unwrap_or(false) {
-                            return Err(Status::new(Code::PermissionDenied, "not_a_member"));
-                        }
-                        load_group_posts(group_id, moderations, conn)
+            {
+                Moderation::Pending => {
+                    let membership = models::get_membership(group_id, user.id, conn).ok();
+                    // log::info!("membership: {:?}", membership);
+                    if !membership.map(|m| m.passes()).unwrap_or(false) {
+                        return Err(Status::new(Code::PermissionDenied, "not_a_member"));
                     }
-                    _ => load_group_posts(group_id, moderations, conn),
+                    load_group_posts(group_id, moderations, conn)
                 }
+                _ => load_group_posts(group_id, moderations, conn),
             }
-            _ => return Err(Status::new(Code::NotFound, "group_not_found")),
-        };
+        }
+        _ => return Err(Status::new(Code::NotFound, "group_not_found")),
+    };
     Ok(result)
 }
 
@@ -299,10 +322,10 @@ fn load_group_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::created_at.desc())
         .limit(100)
-        .load::<(models::Post, Option<Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None))
+        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
         .collect()
 }
 
@@ -325,17 +348,14 @@ fn get_user_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::last_activity_at.desc())
         .limit(100)
-        .load::<(models::Post, Option<Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None))
+        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
         .collect()
 }
 
-fn get_following_posts(
-    user: &models::User,
-    conn: &mut PgPooledConnection,
-) -> Vec<MarshalablePost> {
+fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec<MarshalablePost> {
     follows::table
         .inner_join(posts::table.on(follows::target_user_id.nullable().eq(posts::user_id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
@@ -348,15 +368,15 @@ fn get_following_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::created_at.desc())
         .limit(100)
-        .load::<(models::Post, Option<Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None))
+        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
         .collect()
 }
 
 fn get_replies_to_post_id(
-    _user: &Option<models::User>,
+    user: &Option<models::User>,
     post_id: &str,
     reply_depth: u32,
     conn: &mut PgPooledConnection,
@@ -370,17 +390,28 @@ fn get_replies_to_post_id(
             ))
         }
     };
-    let result = posts::table
-        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
-        .filter(posts::visibility.eq(Visibility::GlobalPublic.as_str_name()))
+    let result = filter_visible_posts!(user)
         .filter(posts::parent_post_id.eq(post_db_id))
+        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         .order(posts::created_at.desc())
         .limit(100)
-        .load::<(models::Post, Option<Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None))
+        .map(|(post, author)| {
+            if reply_depth > 1 {
+                let replies = get_replies_to_post_id(
+                    user,
+                    &post.id.to_proto_id(),
+                    min(reply_depth - 1, 1),
+                    conn,
+                )
+                .unwrap_or(vec![]);
+                MarshalablePost(post.clone(), *author.clone(), None, replies)
+            } else {
+                MarshalablePost(post.clone(), *author.clone(), None, vec![])
+            }
+        })
         .collect();
     // if reply_depth > 1 {
     //     let extended_result: Vec<Post> = result

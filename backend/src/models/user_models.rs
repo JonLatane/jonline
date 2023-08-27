@@ -13,6 +13,13 @@ pub fn get_user(user_id: i64, conn: &mut PgPooledConnection,) -> Result<User, St
         .first::<User>(conn)
         .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
 }
+pub fn get_author(user_id: i64, conn: &mut PgPooledConnection,) -> Result<Author, Status> {
+    users::table
+        .select(AUTHOR_COLUMNS)
+        .filter(users::id.eq(user_id))
+        .first::<Author>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
+}
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 pub struct User {

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::mem::transmute;
 
 use diesel::*;
@@ -9,10 +8,10 @@ use tonic::Status;
 use super::{MediaLookup, ToI32Moderation, ToI32Visibility, ToLink, ToProtoId, ToProtoTime};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
-use crate::models::AUTHOR_COLUMNS;
+
 use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
-use crate::schema::{group_posts, groups, posts, users};
+use crate::schema::{group_posts, groups, posts};
 use crate::ToProtoAuthor;
 use crate::ToProtoMediaReference;
 
@@ -20,6 +19,7 @@ pub struct MarshalablePost(
     pub models::Post,
     pub Option<models::Author>,
     pub Option<models::GroupPost>,
+    pub Vec<MarshalablePost>,
 );
 
 pub fn convert_posts(
@@ -30,41 +30,18 @@ pub fn convert_posts(
 ) -> Vec<Post> {
     let mut media_ids = data
         .iter()
-        .map(|post| post.0.media.iter())
+        .map(|post| {
+            let mut ids = post.0.media;
+            post.1.map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+            post.3.iter().for_each(|reply| {
+                ids.extend(reply.0.media.iter());
+                reply.1.map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+            });
+            ids.iter()
+        })
         .flatten()
         .map(|media| *media)
         .collect::<Vec<i64>>();
-
-    let post_children: HashMap<i64, Vec<MarshalablePost>> = if reply_depth <= 1 {
-        HashMap::new()
-    } else {
-        data.iter()
-            .map(|data| {
-                let post = &data.0;
-                if post.reply_count == 0 {
-                    return (post.id, vec![]);
-                }
-                let replies = posts::table
-                    .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-                    .select((posts::all_columns, AUTHOR_COLUMNS.nullable()))
-                    // .filter(posts::visibility.eq(Visibility::GlobalPublic.as_str_name()))
-                    .filter(posts::visibility.ne(Visibility::Private.as_str_name()))
-                    .filter(posts::parent_post_id.eq(post.id))
-                    .order(posts::created_at.desc())
-                    .limit(100)
-                    .load::<(models::Post, Option<models::Author>)>(conn)
-                    .unwrap()
-                    .iter()
-                    .map(|(reply, author)| {
-                        media_ids.extend(reply.media.iter());
-                        MarshalablePost(reply.clone(), *author, None)
-                    })
-                    .collect();
-
-                (post.id, replies)
-            })
-            .collect()
-    };
 
     let media_references: MediaLookup = models::get_all_media(media_ids, conn)
         .unwrap_or_else(|e| {
@@ -75,49 +52,40 @@ pub fn convert_posts(
         .map(|media| (media.id, *media))
         .collect();
 
-    let mut posts = vec![];
-    for MarshalablePost(post, author, group_post) in data {
-        let post = post.to_proto(
-            author.as_ref(),
-            group_post.as_ref(),
-            Some(&media_references),
-        );
-        posts.push(post);
-    }
-    posts
+    data.iter().map(|marshalable_post| marshalable_post.to_proto(Some(&media_references))).collect()
 }
 
-pub trait ToProtoPost {
+pub trait ToProtoMarshalablePost {
     fn to_proto(
         &self,
-        author: Option<&models::Author>,
-        group_post: Option<&models::GroupPost>,
         media_lookup: Option<&MediaLookup>,
     ) -> Post;
 }
 
-impl ToProtoPost for models::Post {
+impl ToProtoMarshalablePost for MarshalablePost {
     fn to_proto(
         &self,
-        author: Option<&models::Author>,
-        group_post: Option<&models::GroupPost>,
         media_lookup: Option<&MediaLookup>,
     ) -> Post {
+        let post = self.0;
+        let author = self.1;
+        let group_post = self.2;
+        let replies = self.3;
         Post {
-            id: self.id.to_proto_id(),
-            reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
+            id: post.id.to_proto_id(),
+            reply_to_post_id: post.parent_post_id.map(|i| i.to_proto_id()),
             author: author.map(|a| a.to_proto(media_lookup)),
 
-            title: self.title.to_owned(),
-            link: self.link.to_link(),
-            content: self.content.to_owned(),
+            title: post.title.to_owned(),
+            link: post.link.to_link(),
+            content: post.content.to_owned(),
 
-            response_count: self.response_count,
-            reply_count: self.reply_count,
-            group_count: self.group_count,
+            response_count: post.response_count,
+            reply_count: post.reply_count,
+            group_count: post.group_count,
             current_group_post: group_post.map(|gp| gp.to_proto()),
             media: match media_lookup {
-                Some(lookup) => self
+                Some(lookup) => post
                     .media
                     .iter()
                     .map(|v| match lookup.get(v) {
@@ -129,23 +97,83 @@ impl ToProtoPost for models::Post {
                     .collect_vec(),
                 None => vec![],
             }, // self.media.iter().map(|v| v.to_proto_id()).collect_vec(),
-            media_generated: self.media_generated,
-            embed_link: self.embed_link,
-            shareable: self.shareable,
+            media_generated: post.media_generated,
+            embed_link: post.embed_link,
+            shareable: post.shareable,
 
-            context: self.context.to_i32_post_context(),
-            visibility: self.visibility.to_i32_visibility(),
-            moderation: self.moderation.to_i32_moderation(),
+            context: post.context.to_i32_post_context(),
+            visibility: post.visibility.to_i32_visibility(),
+            moderation: post.moderation.to_i32_moderation(),
 
-            replies: vec![], //TODO update this
+            replies: replies.iter().map(|r| r.to_proto(media_lookup)).collect_vec(),
 
-            created_at: Some(self.created_at.to_proto()),
-            updated_at: self.updated_at.map(|t| t.to_proto()),
-            published_at: self.published_at.map(|t| t.to_proto()),
-            last_activity_at: Some(self.last_activity_at.to_proto()),
+            created_at: Some(post.created_at.to_proto()),
+            updated_at: post.updated_at.map(|t| t.to_proto()),
+            published_at: post.published_at.map(|t| t.to_proto()),
+            last_activity_at: Some(post.last_activity_at.to_proto()),
         }
     }
 }
+
+// pub trait ToProtoPost {
+//     fn to_proto(
+//         &self,
+//         author: Option<&models::Author>,
+//         group_post: Option<&models::GroupPost>,
+//         media_lookup: Option<&MediaLookup>,
+//     ) -> Post;
+// }
+
+// impl ToProtoPost for models::Post {
+//     fn to_proto(
+//         &self,
+//         author: Option<&models::Author>,
+//         group_post: Option<&models::GroupPost>,
+//         media_lookup: Option<&MediaLookup>,
+//     ) -> Post {
+//         Post {
+//             id: self.id.to_proto_id(),
+//             reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
+//             author: author.map(|a| a.to_proto(media_lookup)),
+
+//             title: self.title.to_owned(),
+//             link: self.link.to_link(),
+//             content: self.content.to_owned(),
+
+//             response_count: self.response_count,
+//             reply_count: self.reply_count,
+//             group_count: self.group_count,
+//             current_group_post: group_post.map(|gp| gp.to_proto()),
+//             media: match media_lookup {
+//                 Some(lookup) => self
+//                     .media
+//                     .iter()
+//                     .map(|v| match lookup.get(v) {
+//                         Some(media) => Some(media.to_proto()),
+//                         None => None,
+//                     })
+//                     .filter(|v| v.is_some())
+//                     .map(|v| v.unwrap())
+//                     .collect_vec(),
+//                 None => vec![],
+//             }, // self.media.iter().map(|v| v.to_proto_id()).collect_vec(),
+//             media_generated: self.media_generated,
+//             embed_link: self.embed_link,
+//             shareable: self.shareable,
+
+//             context: self.context.to_i32_post_context(),
+//             visibility: self.visibility.to_i32_visibility(),
+//             moderation: self.moderation.to_i32_moderation(),
+
+//             replies: vec![], //TODO update this
+
+//             created_at: Some(self.created_at.to_proto()),
+//             updated_at: self.updated_at.map(|t| t.to_proto()),
+//             published_at: self.published_at.map(|t| t.to_proto()),
+//             last_activity_at: Some(self.last_activity_at.to_proto()),
+//         }
+//     }
+// }
 
 pub trait ToProtoGroupPost {
     fn to_proto(&self) -> GroupPost;

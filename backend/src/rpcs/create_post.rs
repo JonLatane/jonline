@@ -147,9 +147,8 @@ pub fn create_post(
     match post {
         Ok(post) => {
             log::info!("Post created! PostID:{:?}", post.id);
-            Ok(Response::new(post.to_proto(
-                Some(&user.to_author()),
-                None,
+            let author = models::get_author(user.id, conn)?;
+            Ok(Response::new(MarshalablePost(post, Some(author), None, vec![]).to_proto(
                 Some(&media_lookup),
             )))
         }
