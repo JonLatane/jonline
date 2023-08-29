@@ -4,7 +4,7 @@ use diesel::*;
 
 use crate::schema::{event_attendances, event_instances, events};
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 pub struct Event {
     pub id: i64,
     pub post_id: i64,
@@ -20,7 +20,7 @@ pub struct NewEvent {
     pub info: serde_json::Value,
 }
 
-#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
 #[diesel(belongs_to(Event))]
 pub struct EventInstance {
     pub id: i64,

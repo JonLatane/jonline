@@ -82,23 +82,21 @@ pub fn get_posts(
 }
 
 macro_rules! filter_visible_posts {
-    ($user:expr) => {
-        {
-            let public_visibilities = public_string_visibilities($user);
-            let public = posts::visibility.eq_any(public_visibilities);
-            let limited_to_followers = posts::visibility
-                .eq(Visibility::Limited.to_string_visibility())
-                .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)));
-            posts::table
-                .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-                .left_join(
-                    follows::table.on(posts::user_id
-                        .eq(follows::target_user_id.nullable())
-                        .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))),
-                )
-                .filter(public.or(limited_to_followers))
-        }
-    };
+    ($user:expr) => {{
+        let public_visibilities = public_string_visibilities($user);
+        let public = posts::visibility.eq_any(public_visibilities);
+        let limited_to_followers = posts::visibility
+            .eq(Visibility::Limited.to_string_visibility())
+            .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)));
+        posts::table
+            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+            .left_join(
+                follows::table.on(posts::user_id
+                    .eq(follows::target_user_id.nullable())
+                    .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))),
+            )
+            .filter(public.or(limited_to_followers))
+    }};
 }
 
 fn get_by_post_id(
@@ -110,14 +108,13 @@ fn get_by_post_id(
         Ok(db_id) => db_id,
         Err(_) => return Err(Status::new(Code::InvalidArgument, "post_id_invalid")),
     };
-    let result: Vec<MarshalablePost> = posts::table
-        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
+    let result: Vec<MarshalablePost> = filter_visible_posts!(user)
         .filter(posts::id.eq(post_db_id))
+        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
         .collect();
 
     if result.len() == 0 {
@@ -161,7 +158,7 @@ fn get_public_and_following_posts(
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
         .collect()
 }
 
@@ -189,7 +186,7 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
             .load::<(models::Post, Option<models::Author>)>(conn)
             .unwrap()
             .iter()
-            .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
+            .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
             .collect();
     }
     memberships::table
@@ -215,7 +212,7 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
         .collect()
 }
 
@@ -249,7 +246,7 @@ fn get_group_posts(
             .map(|(post, author, group_post)| {
                 MarshalablePost(
                     post.clone(),
-                    *author.clone(),
+                    author.clone(),
                     Some(group_post.clone()),
                     vec![],
                 )
@@ -278,7 +275,7 @@ fn get_group_posts(
             .map(|(post, author, group_post)| {
                 MarshalablePost(
                     post.clone(),
-                    *author.clone(),
+                    author.clone(),
                     Some(group_post.clone()),
                     vec![],
                 )
@@ -325,7 +322,7 @@ fn load_group_posts(
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
         .collect()
 }
 
@@ -351,7 +348,7 @@ fn get_user_posts(
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
         .collect()
 }
 
@@ -371,7 +368,7 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), *author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
         .collect()
 }
 
@@ -407,9 +404,9 @@ fn get_replies_to_post_id(
                     conn,
                 )
                 .unwrap_or(vec![]);
-                MarshalablePost(post.clone(), *author.clone(), None, replies)
+                MarshalablePost(post.clone(), author.clone(), None, replies)
             } else {
-                MarshalablePost(post.clone(), *author.clone(), None, vec![])
+                MarshalablePost(post.clone(), author.clone(), None, vec![])
             }
         })
         .collect();

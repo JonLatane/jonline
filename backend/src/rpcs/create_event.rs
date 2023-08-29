@@ -146,7 +146,7 @@ pub fn create_event(
                 .get_result::<models::EventInstance>(conn)?;
             let marshalable_instance = MarshalableEventInstance(
                 inserted_instance,
-                instance_post.map(|ip| MarshalablePost(ip, Some(author), None, vec![])),
+                instance_post.map(|ip| MarshalablePost(ip, Some(author.clone()), None, vec![])),
             );
             inserted_instances.push(marshalable_instance);
         }
@@ -159,12 +159,12 @@ pub fn create_event(
 
     match result {
         Ok(marshalable_event) => {
-            let event = marshalable_event.0;
-            let marshalable_post = marshalable_event.1;
-            let post = marshalable_post.0;
-            let instances = marshalable_event.2;
+            let event = &marshalable_event.0;
+            let marshalable_post = &marshalable_event.1;
+            let post = &marshalable_post.0;
+            let instances = &marshalable_event.2;
             log::info!("Event created! EventID: {:?}", event.id);
-            let mut media_ids = post.media;
+            let mut media_ids = post.media.clone();
             user.avatar_media_id.map(|id| media_ids.push(id));
             media_ids.append(
                 &mut instances
@@ -177,14 +177,14 @@ pub fn create_event(
             );
             let media_references: Vec<models::MediaReference> =
                 models::get_all_media(media_ids, conn)?;
-            let media_lookup: MediaLookup = media_lookup(&media_references);
-            let author = models::Author {
-                id: user.id,
-                username: user.username,
-                avatar_media_id: user.avatar_media_id,
-            };
+            let media_lookup: MediaLookup = media_lookup(media_references);
+            // let author = models::Author {
+            //     id: user.id,
+            //     username: user.username,
+            //     avatar_media_id: user.avatar_media_id,
+            // };
             Ok(Response::new(
-                marshalable_event.to_proto(Some(&media_lookup)),
+                marshalable_event.clone().to_proto(Some(&media_lookup)),
             ))
         }
         Err(e) => {

@@ -15,6 +15,7 @@ use crate::schema::{group_posts, groups, posts};
 use crate::ToProtoAuthor;
 use crate::ToProtoMediaReference;
 
+#[derive(Debug, Clone)]
 pub struct MarshalablePost(
     pub models::Post,
     pub Option<models::Author>,

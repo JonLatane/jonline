@@ -8,6 +8,8 @@ fn main() {
     tonic_build::configure()
         .build_server(true)
         .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
+        // This is specifically for rust-analyzer in VSCode
+        // .client_attribute(".", "#![allow(non_snake_case)]")
         .extern_path(
             ".google.protobuf.Any",
             "::prost_wkt_types::Any"

@@ -141,13 +141,18 @@ fn get_all_members(
         .unwrap()
         .iter()
         .map(
-            |(membership, user, follow, target_follow, media_reference)| Member {
-                user: Some(user.to_proto(
-                    &follow.as_ref(),
-                    &target_follow.as_ref(),
-                    media_reference.map(|mr| &media_lookup(&vec![mr])),
-                )),
-                membership: Some(membership.to_proto()),
+            |(membership, user, follow, target_follow, media_reference)| {
+                let lookup = media_reference
+                    .as_ref()
+                    .map(|mr| media_lookup(vec![mr.clone()]));
+                Member {
+                    user: Some(user.to_proto(
+                        &follow.as_ref(),
+                        &target_follow.as_ref(),
+                        lookup.as_ref(),
+                    )),
+                    membership: Some(membership.to_proto()),
+                }
             },
         )
         .collect();
@@ -222,13 +227,18 @@ fn get_members_by_username(
         .unwrap()
         .iter()
         .map(
-            |(membership, user, follow, target_follow, media_reference)| Member {
-                user: Some(user.to_proto(
-                    &follow.as_ref(),
-                    &target_follow.as_ref(),
-                    media_reference.map(|mr| &media_lookup(&vec![mr])),
-                )),
-                membership: Some(membership.to_proto()),
+            |(membership, user, follow, target_follow, media_reference)| {
+                let lookup = media_reference
+                    .as_ref()
+                    .map(|mr| media_lookup(vec![mr.clone()]));
+                Member {
+                    user: Some(user.to_proto(
+                        &follow.as_ref(),
+                        &target_follow.as_ref(),
+                        lookup.as_ref(),
+                    )),
+                    membership: Some(membership.to_proto()),
+                }
             },
         )
         .collect();

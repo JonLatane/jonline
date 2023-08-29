@@ -82,7 +82,7 @@ pub const MEDIA_REFERENCE_COLUMNS: (
     media::name,
 );
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 #[diesel(table_name = media)]
 pub struct MediaReference {
     pub id: i64,

@@ -19,7 +19,8 @@ pub fn get_current_user(
         Some(amid) => models::get_media_reference(amid, conn).ok(),
     };
 
-    let result = user.to_proto(&None, &None, avatar.map(|mr| &media_lookup(&vec![mr])));
+    let lookup = avatar.map(|mr| media_lookup(vec![mr.clone()]));
+    let result = user.to_proto(&None, &None, lookup.as_ref());
     // log::info!("GetCurrentUser::response={:?}", result);
     Ok(Response::new(result))
 }

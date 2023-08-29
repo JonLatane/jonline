@@ -16,11 +16,13 @@ use crate::protos::*;
 
 use super::MarshalablePost;
 
+#[derive(Debug, Clone)]
 pub struct MarshalableEvent(
     pub models::Event,
     pub MarshalablePost,
     pub Vec<MarshalableEventInstance>,
 );
+#[derive(Debug, Clone)]
 pub struct MarshalableEventInstance(pub models::EventInstance, pub Option<MarshalablePost>);
 
 pub fn convert_events(
@@ -30,8 +32,8 @@ pub fn convert_events(
     let mut media_ids = data
         .iter()
         .map(|marshalable_event| {
-            let post = marshalable_event.1;
-            let mut ids = post.0.media;
+            let post = &marshalable_event.1;
+            let mut ids = &post.0.media;
             post.1.map(|a| a.avatar_media_id.map(|id| ids.push(id)));
             post.3.iter().for_each(|reply| {
                 ids.extend(reply.0.media.iter());

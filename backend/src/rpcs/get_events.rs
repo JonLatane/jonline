@@ -127,8 +127,8 @@ fn get_public_and_following_events(
                 .flatten()
                 .map(|amid| media_ids.push(amid));
         });
-    let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
-    let media_lookup: MediaLookup = media_lookup(&media_references);
+    // let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
+    // let media_lookup: MediaLookup = media_lookup(media_references);
 
     Ok(event_data
         .iter()

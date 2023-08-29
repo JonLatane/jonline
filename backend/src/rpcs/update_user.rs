@@ -54,7 +54,7 @@ pub fn update_user(
             if admin || self_update {
                 existing_user.username = request.username.to_owned();
                 existing_user.bio = request.bio.to_owned();
-                existing_user.avatar_media_id = request.avatar.map(|a|a.id).to_db_opt_id().unwrap();
+                existing_user.avatar_media_id = request.avatar.as_ref().map(|a| &a.id).to_db_opt_id().unwrap();
                 if request.visibility == Visibility::GlobalPublic as i32
                     && existing_user.visibility.to_proto_visibility().unwrap()
                         != Visibility::GlobalPublic
@@ -83,15 +83,15 @@ pub fn update_user(
 
     let result = match transaction_result {
         //TODO: properly marshal this stuff
-        Ok(result) => {
+        Ok(_user) => {
             rpcs::get_users(
                 GetUsersRequest {
-                    user_id: Some(request.id),
+                    user_id: Some(request.id.clone()),
                     ..Default::default()
                 },
                 Some(current_user),
                 conn,
-            ).map(|u| u.users[0])
+            ).map(|u| u.users[0].to_owned())
             // Ok(result.to_proto(&None, &None, None))
         },
         Err(NotFound) => Err(Status::new(Code::NotFound, "user_not_found")),
@@ -107,7 +107,7 @@ pub fn update_user(
             Err(Status::new(Code::Internal, "data_error"))
         }
     };
-    log::info!("UpdateUser::request: {:?}, result: {:?}", request, result);
+    log::info!("UpdateUser::request: {:?}, result: {:?}", &request, result);
 
     result
 }

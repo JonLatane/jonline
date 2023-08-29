@@ -75,7 +75,7 @@ impl ToProtoUser for models::User {
     fn to_author(&self) -> models::Author {
         models::Author {
             id: self.id,
-            username: self.username,
+            username: self.username.clone(),
             avatar_media_id: self.avatar_media_id,
         }
     }

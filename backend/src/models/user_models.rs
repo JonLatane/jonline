@@ -56,7 +56,7 @@ pub const AUTHOR_COLUMNS: (
     users::avatar_media_id,
 );
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 #[diesel(table_name = users)]
 pub struct Author {
     pub id: i64,
@@ -64,7 +64,7 @@ pub struct Author {
     pub avatar_media_id: Option<i64>,
 }
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 pub struct Follow {
     pub id: i64,
     pub user_id: i64,

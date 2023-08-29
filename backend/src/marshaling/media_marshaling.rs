@@ -6,8 +6,8 @@ use crate::protos::*;
 
 pub type MediaLookup = HashMap<i64, models::MediaReference>;
 // pub use MediaLookupType as MediaLookup;
-pub fn media_lookup(media: &Vec<models::MediaReference>) -> MediaLookup {
-    media.iter().map(|m| (m.id, *m.to_owned())).collect()
+pub fn media_lookup(media: Vec<models::MediaReference>) -> MediaLookup {
+    media.iter().map(|m| (m.id, m.to_owned())).collect()
 }
 
 pub trait FindMedia {

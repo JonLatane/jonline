@@ -44,7 +44,7 @@ pub fn create_post(
         .map(|m| m.id.to_db_id().unwrap())
         .collect::<Vec<i64>>();
     let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
-    let media_lookup: MediaLookup = media_lookup(&media_references);
+    let media_lookup: MediaLookup = media_lookup(media_references);
 
     // let media_references: MediaLookup = models::get_all_media(media_ids, conn)
     //     .unwrap_or_else(|e| {
