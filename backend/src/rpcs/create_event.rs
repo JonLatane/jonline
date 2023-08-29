@@ -82,12 +82,12 @@ pub fn create_event(
         Visibility::ServerPublic => validate_permission(&user, Permission::PublishEventsLocally)?,
         _ => {}
     };
-
-    let result = conn.transaction::<(
-        models::Event,
-        models::Post,
-        Vec<(models::EventInstance, Option<models::Post>)>,
-    ), diesel::result::Error, _>(|conn| {
+    let author = models::Author {
+        id: user.id,
+        username: user.username,
+        avatar_media_id: user.avatar_media_id,
+    };
+    let result = conn.transaction::<MarshalableEvent, diesel::result::Error, _>(|conn| {
         let event_post = insert_into(posts::table)
             .values(&models::NewPost {
                 user_id: Some(user.id),
@@ -111,7 +111,7 @@ pub fn create_event(
                 info: json!({}),
             })
             .get_result::<models::Event>(conn)?;
-        let mut inserted_instances: Vec<(models::EventInstance, Option<models::Post>)> = vec![];
+        let mut inserted_instances: Vec<MarshalableEventInstance> = vec![];
         for instance in &instances {
             let instance_post: Option<models::Post> = match &instance.post {
                 Some(p) => Some(
@@ -125,11 +125,7 @@ pub fn create_event(
                             visibility: p.visibility.to_string_visibility(),
                             embed_link: p.embed_link.to_owned(),
                             context: PostContext::EventInstance.as_str_name().to_string(),
-                            media: p
-                                .media
-                                .iter()
-                                .map(|m| m.id.to_db_id().unwrap())
-                                .collect(),
+                            media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
                         })
                         .get_result::<models::Post>(conn)?,
                 ),
@@ -148,37 +144,47 @@ pub fn create_event(
                     info: json!({}),
                 })
                 .get_result::<models::EventInstance>(conn)?;
-            inserted_instances.push((inserted_instance, instance_post));
+            let marshalable_instance = MarshalableEventInstance(
+                inserted_instance,
+                instance_post.map(|ip| MarshalablePost(ip, Some(author), None, vec![])),
+            );
+            inserted_instances.push(marshalable_instance);
         }
-        Ok((inserted_event, event_post, inserted_instances))
+        Ok(MarshalableEvent(
+            inserted_event,
+            MarshalablePost(event_post, Some(author), None, vec![]),
+            inserted_instances,
+        ))
     });
 
     match result {
-        Ok((event, post, instances)) => {
+        Ok(marshalable_event) => {
+            let event = marshalable_event.0;
+            let marshalable_post = marshalable_event.1;
+            let post = marshalable_post.0;
+            let instances = marshalable_event.2;
             log::info!("Event created! EventID: {:?}", event.id);
             let mut media_ids = post.media;
             user.avatar_media_id.map(|id| media_ids.push(id));
-            media_ids.append(&mut instances
-                .iter()
-                .map(|(_, p)| p.as_ref().map(|p| p.media.clone()).unwrap_or(vec![]))
-                .flatten()
-                .collect::<Vec<i64>>());
-            let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
+            media_ids.append(
+                &mut instances
+                    .iter()
+                    .map(|MarshalableEventInstance(_, p)| {
+                        p.as_ref().map(|p| p.0.media.clone()).unwrap_or(vec![])
+                    })
+                    .flatten()
+                    .collect::<Vec<i64>>(),
+            );
+            let media_references: Vec<models::MediaReference> =
+                models::get_all_media(media_ids, conn)?;
             let media_lookup: MediaLookup = media_lookup(&media_references);
+            let author = models::Author {
+                id: user.id,
+                username: user.username,
+                avatar_media_id: user.avatar_media_id,
+            };
             Ok(Response::new(
-                event.to_proto(
-                    &post,
-                    Some(&user.to_author()),
-                    Some(&media_lookup),
-                    &instances
-                        .iter()
-                        .map(|(i, p)| (i, p.as_ref(), Some(&user.to_author())))
-                        .collect::<Vec<(
-                            &models::EventInstance,
-                            Option<&models::Post>,
-                            Option<&models::Author>,
-                        )>>(),
-                ),
+                marshalable_event.to_proto(Some(&media_lookup)),
             ))
         }
         Err(e) => {

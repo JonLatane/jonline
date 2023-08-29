@@ -24,8 +24,6 @@ pub struct MarshalablePost(
 
 pub fn convert_posts(
     data: &Vec<MarshalablePost>,
-    reply_depth: u32,
-    user: &Option<models::User>,
     conn: &mut PgPooledConnection,
 ) -> Vec<Post> {
     let mut media_ids = data

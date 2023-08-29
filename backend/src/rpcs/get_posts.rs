@@ -77,7 +77,7 @@ pub fn get_posts(
 
     // log::info!("GetPosts::request: {:?}, result: {:?}", request, result);
     Ok(GetPostsResponse {
-        posts: convert_posts(&result, request.reply_depth.unwrap_or(0), &user, conn),
+        posts: convert_posts(&result, conn),
     })
 }
 

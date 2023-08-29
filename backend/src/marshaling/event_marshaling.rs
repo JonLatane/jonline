@@ -10,6 +10,7 @@ use super::id_marshaling::ToProtoId;
 use super::MediaLookup;
 use super::ToProtoTime;
 use crate::ToProtoMarshalablePost;
+use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
 
@@ -22,6 +23,37 @@ pub struct MarshalableEvent(
 );
 pub struct MarshalableEventInstance(pub models::EventInstance, pub Option<MarshalablePost>);
 
+pub fn convert_events(
+    data: &Vec<MarshalableEvent>,
+    conn: &mut PgPooledConnection,
+) -> Vec<Event> {
+    let mut media_ids = data
+        .iter()
+        .map(|marshalable_event| {
+            let post = marshalable_event.1;
+            let mut ids = post.0.media;
+            post.1.map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+            post.3.iter().for_each(|reply| {
+                ids.extend(reply.0.media.iter());
+                reply.1.map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+            });
+            ids.iter()
+        })
+        .flatten()
+        .map(|media| *media)
+        .collect::<Vec<i64>>();
+
+    let media_references: MediaLookup = models::get_all_media(media_ids, conn)
+        .unwrap_or_else(|e| {
+            log::error!("Error getting media references: {:?}", e);
+            vec![]
+        })
+        .iter()
+        .map(|media| (media.id, *media))
+        .collect();
+
+    data.iter().map(|marshalable_event| marshalable_event.to_proto(Some(&media_references))).collect()
+}
 pub trait ToProtoMarshalableEvent {
     fn to_proto(
         &self,
