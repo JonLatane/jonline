@@ -13,8 +13,15 @@ pub fn get_user(user_id: i64, conn: &mut PgPooledConnection,) -> Result<User, St
         .first::<User>(conn)
         .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
 }
+pub fn get_author(user_id: i64, conn: &mut PgPooledConnection,) -> Result<Author, Status> {
+    users::table
+        .select(AUTHOR_COLUMNS)
+        .filter(users::id.eq(user_id))
+        .first::<Author>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
+}
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 pub struct User {
     pub id: i64,
     pub username: String,
@@ -39,7 +46,25 @@ pub struct User {
     pub updated_at: SystemTime,
 }
 
-#[derive(Debug, Queryable, Identifiable, AsChangeset)]
+pub const AUTHOR_COLUMNS: (
+    users::id,
+    users::username,
+    users::avatar_media_id,
+) = (
+    users::id,
+    users::username,
+    users::avatar_media_id,
+);
+
+#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
+#[diesel(table_name = users)]
+pub struct Author {
+    pub id: i64,
+    pub username: String,
+    pub avatar_media_id: Option<i64>,
+}
+
+#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 pub struct Follow {
     pub id: i64,
     pub user_id: i64,

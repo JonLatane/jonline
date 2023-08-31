@@ -1,4 +1,4 @@
-import { Paragraph, Spinner, XStack } from '@jonline/ui';
+import { Paragraph, Spinner, TamaguiElement, XStack } from '@jonline/ui';
 import { useServerTheme } from 'app/store';
 import React, { useEffect } from "react";
 import { View } from 'react-native';
@@ -12,10 +12,12 @@ interface Props {
 }
 
 export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNextPage = true, loadNextPage, isVisible = true }) => {
-  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  const ref = React.createRef<TamaguiElement>();
   const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   useEffect(() => {
     if (isVisible && !loadingPage && hasNextPage) {
+      console.log(`loading next page (page=${page})`)
       loadNextPage();
     }
   }, [isVisible, loadingPage]);
@@ -32,7 +34,8 @@ export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNex
     </Paragraph>
     <XStack my='auto' animation='lazy' o={loadingPage ? 1 : hasNextPage ? 0.5 : 0}>
       <Spinner color={fgColor} size='small' />
+      {/* {loadingPage ? <Spinner color={fgColor} my='auto' size='small' /> : undefined} */}
+
     </XStack>
-    {/* {loadingPage ? <Spinner color={fgColor} my='auto' size='small' /> : undefined} */}
   </XStack>
 };

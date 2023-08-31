@@ -2,12 +2,14 @@ use diesel::*;
 // use diesel::internal::operators_macro::FieldAliasMapper;
 use tonic::Status;
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
+use crate::models::MEDIA_REFERENCE_COLUMNS;
 use crate::protos::UserListingType::*;
 use crate::protos::*;
 use crate::schema::follows;
+use crate::schema::media;
 use crate::schema::users;
 
 pub fn get_users(
@@ -76,10 +78,12 @@ fn get_all_users(
                     .eq(user.as_ref().map(|u| u.id)),
             )),
         )
+        .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
             users::all_columns,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
+            MEDIA_REFERENCE_COLUMNS.nullable(),
         ))
         .filter(
             users::visibility
@@ -89,11 +93,17 @@ fn get_all_users(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
+        .load::<(
+            models::User,
+            Option<models::Follow>,
+            Option<models::Follow>,
+            Option<models::MediaReference>,
+        )>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow)| {
-            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+        .map(|(user, follow, target_follow, media_reference)| {
+            let lookup = media_reference.to_media_lookup();
+            user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
         })
         .collect();
     GetUsersResponse {
@@ -120,10 +130,12 @@ fn get_follow_requests(
                 .eq(users::id)
                 .and(follows::user_id.nullable().eq(user.id))),
         )
+        .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
             users::all_columns,
             follows::all_columns.nullable(),
             target_follows_columns,
+            MEDIA_REFERENCE_COLUMNS.nullable(),
         ))
         .filter(target_follows_target_user_id.eq(user.id).and(
             target_follows_target_user_moderation.eq(Moderation::Pending.to_string_moderation()),
@@ -131,11 +143,17 @@ fn get_follow_requests(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<(models::User, Option<models::Follow>, models::Follow)>(conn)
+        .load::<(
+            models::User,
+            Option<models::Follow>,
+            models::Follow,
+            Option<models::MediaReference>,
+        )>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow)| {
-            user.to_proto_with(&follow.as_ref(), &Some(target_follow))
+        .map(|(user, follow, target_follow, media_reference)| {
+            let lookup = media_reference.to_media_lookup();
+            user.to_proto(&follow.as_ref(), &Some(target_follow), lookup.as_ref())
         })
         .collect();
     GetUsersResponse {
@@ -179,10 +197,12 @@ fn get_by_username(
                     .eq(user.as_ref().map(|u| u.id)),
             )),
         )
+        .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
             users::all_columns,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
+            MEDIA_REFERENCE_COLUMNS.nullable(),
         ))
         .filter(
             users::visibility
@@ -195,11 +215,17 @@ fn get_by_username(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
+        .load::<(
+            models::User,
+            Option<models::Follow>,
+            Option<models::Follow>,
+            Option<models::MediaReference>,
+        )>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow)| {
-            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+        .map(|(user, follow, target_follow, media_reference)| {
+            let lookup = media_reference.to_media_lookup();
+            user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
         })
         .collect();
     GetUsersResponse {
@@ -238,10 +264,12 @@ fn get_by_user_id(
                     .eq(user.as_ref().map(|u| u.id)),
             )),
         )
+        .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
             users::all_columns,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
+            MEDIA_REFERENCE_COLUMNS.nullable(),
         ))
         .filter(
             users::visibility
@@ -252,11 +280,17 @@ fn get_by_user_id(
         .order(users::created_at.desc())
         .limit(100)
         .offset((request.page.unwrap_or(0) * 100).into())
-        .load::<(models::User, Option<models::Follow>, Option<models::Follow>)>(conn)
+        .load::<(
+            models::User,
+            Option<models::Follow>,
+            Option<models::Follow>,
+            Option<models::MediaReference>,
+        )>(conn)
         .unwrap()
         .iter()
-        .map(|(user, follow, target_follow)| {
-            user.to_proto_with(&follow.as_ref(), &target_follow.as_ref())
+        .map(|(user, follow, target_follow, media_reference)| {
+            let lookup = media_reference.to_media_lookup();
+            user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
         })
         .collect();
     GetUsersResponse {

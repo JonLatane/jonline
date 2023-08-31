@@ -26,7 +26,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
-    document.title = `Events | ${title}`;  });
+    document.title = `Events | ${title}`;
+  });
 
   const [currentPage, setCurrentPage] = useState(0);
   const { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
@@ -63,7 +64,9 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 {events.map((event) => {
                   return <EventCard event={event} isPreview />;
                 })}
-                <PaginationIndicator page={currentPage} loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
+                <PaginationIndicator
+                  page={currentPage}
+                  loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
                   hasNextPage={hasMorePages}
                   loadNextPage={() => setCurrentPage(currentPage + 1)} />
                 {showScrollPreserver ? <YStack h={100000} /> : undefined}

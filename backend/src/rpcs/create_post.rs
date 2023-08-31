@@ -35,9 +35,25 @@ pub fn create_post(
     }
     validate_max_length(req.link.to_owned(), "link", 10000)?;
     validate_max_length(req.content.to_owned(), "content", 10000)?;
-    for media_proto_id in &req.media {
-        media_proto_id.to_db_id_or_err("media")?;
+    for media in &req.media {
+        media.id.to_db_id_or_err("media")?;
     }
+    let media_ids = req
+        .media
+        .iter()
+        .map(|m| m.id.to_db_id().unwrap())
+        .collect::<Vec<i64>>();
+    let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
+    let media_lookup: MediaLookup = media_lookup(media_references);
+
+    // let media_references: MediaLookup = models::get_all_media(media_ids, conn)
+    //     .unwrap_or_else(|e| {
+    //         log::error!("Error getting media references: {:?}", e);
+    //         vec![]
+    //     })
+    //     .iter()
+    //     .map(|media| (media.id, media))
+    //     .collect();
 
     // Generate the list of the post's ancestors so we can increment their response_count all at once.
     let mut ancestor_post_ids: Vec<i64> = vec![];
@@ -97,11 +113,7 @@ pub fn create_post(
                 .to_string(),
                 visibility: visibility.to_string_visibility(),
                 embed_link: req.embed_link.to_owned(),
-                media: req
-                    .media
-                    .iter()
-                    .map(|m: &String| m.to_db_id().unwrap())
-                    .collect(),
+                media: req.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
             })
             .get_result::<models::Post>(conn)?;
         match parent_post_db_id.to_owned() {
@@ -135,7 +147,10 @@ pub fn create_post(
     match post {
         Ok(post) => {
             log::info!("Post created! PostID:{:?}", post.id);
-            Ok(Response::new(post.to_proto(Some(user.username))))
+            let author = models::get_author(user.id, conn)?;
+            Ok(Response::new(MarshalablePost(post, Some(author), None, vec![]).to_proto(
+                Some(&media_lookup),
+            )))
         }
         Err(e) => {
             log::error!("Error creating post! {:?}", e);

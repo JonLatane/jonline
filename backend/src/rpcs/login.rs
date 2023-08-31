@@ -37,6 +37,10 @@ pub fn login(
         Err(_) => return Err(permission_denied),
         Ok(user) => user,
     };
+    let avatar: Option<models::MediaReference> = match user.avatar_media_id {
+        None => None,
+        Some(amid) => models::get_media_reference(amid, conn).ok(),
+    };
 
     let tokens = match verify(req.password, &user.password_salted_hash) {
         Err(_) => return Err(permission_denied),
@@ -46,9 +50,11 @@ pub fn login(
 
     log::info!("Logged in user {}, user_id={}", &req.username, user.id);
 
+    let lookup = avatar.to_media_lookup();
+
     Ok(Response::new(RefreshTokenResponse {
         refresh_token: tokens.refresh_token,
         access_token: tokens.access_token,
-        user: Some(user.to_proto()),
+        user: Some(user.to_proto(&None, &None, lookup.as_ref())),
     }))
 }

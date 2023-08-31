@@ -1,52 +1,60 @@
-// use std::mem::transmute;
-
-// use diesel::*;
-// use tonic::Code;
-// use tonic::Status;
-
-use super::id_marshaling::ToProtoId;
-use super::ToProtoPost;
-
-use super::ToProtoTime;
+use super::{load_media_lookup, MediaLookup, ToProtoId, ToProtoMarshalablePost, ToProtoTime};
+use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
 
-pub trait ToProtoEvent {
-    fn to_proto(
-        &self,
-        post: &models::Post,
-        user: Option<&models::User>,
-        instances: &Vec<(
-            &models::EventInstance,
-            Option<&models::Post>,
-            Option<&models::User>
-        )>,
-    ) -> Event;
-    // fn to_group_proto(
-    //     &self,
-    //     username: Option<String>,
-    //     has_preview: &bool,
-    //     group_post: Option<&models::GroupPost>,
-    // ) -> Post;
-    // fn proto_author(&self, username: Option<String>) -> Option<Author>;
+use super::MarshalablePost;
+
+#[derive(Debug, Clone)]
+pub struct MarshalableEvent(
+    pub models::Event,
+    pub MarshalablePost,
+    pub Vec<MarshalableEventInstance>,
+);
+#[derive(Debug, Clone)]
+pub struct MarshalableEventInstance(pub models::EventInstance, pub Option<MarshalablePost>);
+
+pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnection) -> Vec<Event> {
+    let media_ids: Vec<i64> = data
+        .iter()
+        .map(|ref marshalable_event| {
+            let post = marshalable_event.1.to_owned();
+            let mut ids = post.0.media.to_owned();
+            post.1
+                .as_ref()
+                .map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+            post.3.iter().for_each(|reply| {
+                ids.extend(reply.0.media.iter());
+                reply
+                    .1
+                    .as_ref()
+                    .map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+            });
+            ids
+        })
+        .flatten()
+        .collect();
+
+    let lookup = load_media_lookup(media_ids, conn);
+
+    data.iter()
+        .map(|marshalable_event| marshalable_event.to_proto(lookup.as_ref()))
+        .collect()
+}
+pub trait ToProtoMarshalableEvent {
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Event;
 }
 
-impl ToProtoEvent for models::Event {
-    fn to_proto(
-        &self,
-        post: &models::Post,
-        user: Option<&models::User>,
-        instances: &Vec<(
-            &models::EventInstance,
-            Option<&models::Post>,
-            Option<&models::User>
-        )>,
-    ) -> Event {
-        // self.to_group_proto(username, None)
+impl ToProtoMarshalableEvent for MarshalableEvent {
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Event {
+        let event = self.0.to_owned();
+        let post = self.1.to_owned();
+        let instances = self.2.to_owned();
+        // self.to_proto(username, None)
         Event {
-            id: self.id.to_proto_id(),
-            post: Some(post.to_proto(user.map(|u| u.username.to_owned()))),
-            instances: instances.iter().map(|(i, p, u)| i.to_proto(p, u)).collect(),
+            id: event.id.to_proto_id(),
+            post: Some(post.to_proto(media_lookup)),
+            instances: instances.iter().map(|i| i.to_proto(media_lookup)).collect(),
             info: Some(EventInfo {
                 // start_time: self.start_time.map(|t| t.to_proto()),
                 // end_time: self.end_time.map(|t| t.to_proto()),
@@ -58,27 +66,28 @@ impl ToProtoEvent for models::Event {
     }
 }
 
-pub trait ToProtoEventInstance {
-    fn to_proto(&self, post: &Option<&models::Post>, user: &Option<&models::User>)
-        -> EventInstance;
+pub trait ToProtoMarshalableEventInstance {
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> EventInstance;
 }
 
-impl ToProtoEventInstance for models::EventInstance {
-    fn to_proto(&self, post: &Option<&models::Post>, user: &Option<&models::User>) -> EventInstance {
-        let location: Option<Location> = self
+impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> EventInstance {
+        let event_instance = self.0.to_owned();
+        let marshalable_post = self.1.to_owned();
+        let location: Option<Location> = event_instance
             .location
             .to_owned()
             .map(|c| serde_json::from_value(c).unwrap());
         EventInstance {
-            id: self.id.to_proto_id(),
-            event_id: self.event_id.to_proto_id(),
-            post: post.map(|p| p.to_proto(user.map(|u| u.username.to_owned()))),
-            starts_at: Some(self.starts_at.to_proto()),
-            ends_at: Some(self.ends_at.to_proto()),
+            id: event_instance.id.to_proto_id(),
+            event_id: event_instance.event_id.to_proto_id(),
+            post: marshalable_post.map(|p| p.to_proto(media_lookup)),
+            starts_at: Some(event_instance.starts_at.to_proto()),
+            ends_at: Some(event_instance.ends_at.to_proto()),
             info: Some(EventInstanceInfo {
                 ..Default::default()
             }),
-            location: location,
+            location,
             ..Default::default()
         }
     }

@@ -6,6 +6,8 @@ package jonline;
 import "google/protobuf/timestamp.proto";
 // import "users.proto";
 import "visibility_moderation.proto";
+import "media.proto";
+import "users.proto";
 
 // Valid GetPostsRequest formats:
 //
@@ -96,7 +98,7 @@ message Post {
   int32 group_count = 9;
 
   // List of Media IDs associated with this post. Order is preserved.
-  repeated string media = 10;
+  repeated MediaReference media = 10;
   // Flag indicating whether Media has been generated for this Post.
   // Currently previews are generated for any Link post.
   bool media_generated = 11;
@@ -129,13 +131,6 @@ message Post {
   optional google.protobuf.Timestamp updated_at = 21;
   optional google.protobuf.Timestamp published_at = 22;
   google.protobuf.Timestamp last_activity_at = 23;
-}
-
-// Post-centric version of User. UI can cross-reference user details
-// from its own cache (for things like admin/bot icons).
-message Author {
-  string user_id = 1;
-  optional string username = 2;
 }
 
 // A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains

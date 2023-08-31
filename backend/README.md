@@ -4,6 +4,24 @@
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
 
+- [Jonline Backend](#jonline-backend)
+  - [Build and release management](#build-and-release-management)
+  - [Architecture](#architecture)
+    - [Marshaling Data](#marshaling-data)
+      - [Media Data](#media-data)
+  - [Building and running locally](#building-and-running-locally)
+    - [Unit testing](#unit-testing)
+    - [Local integration testing](#local-integration-testing)
+  - [Deploying](#deploying)
+    - [Deploying with TLS support](#deploying-with-tls-support)
+    - [Testing your (or any) deployment](#testing-your-or-any-deployment)
+  - [Building and Deploying Your Own Image](#building-and-deploying-your-own-image)
+      - [Create a Local Registry to host Build Image](#create-a-local-registry-to-host-build-image)
+      - [Build the `jonline-be-build` Image](#build-the-jonline-be-build-image)
+      - [Build an Image to Deploy](#build-an-image-to-deploy)
+      - [Deploying your image](#deploying-your-image)
+
+
 The backend of Jonline is built in Rust, with [Tonic](https://github.com/hyperium/tonic), [Rocket](http://rocket.rs), and [Diesel](https://diesel.rs), atop PostreSQL. A Tonic thread serves up the Jonline gRPC backend on port 27707, while Rocket threads serve up the Flutter Web frontend on ports 80, 8000, and 443 if TLS is configured.
 
 ## Build and release management
@@ -31,6 +49,30 @@ or, more succinctly:
 ```bash
 make deploy_data_delete deploy_data_create deploy_be_restart
 ```
+
+## Architecture
+
+Jonline BE is, fundamentally, mostly a dumb Diesel-DB-model to Prost-gRPC-interface translator that respects permissions¹. The two fundamental modules to understand are [`models`](https://github.com/JonLatane/jonline/tree/main/backend/src/models) (the Diesel ORM models and related access methods) and [`protos`](https://github.com/JonLatane/jonline/tree/main/backend/src/protos) (the generated gRPC models/server trait/client interface [unused in the BE for now]). Most of Jonline's BE code is a matter of transforming between `models::DieselType` (say, `models::Post`) and `protos::GrpcType` (say, `protos::Post`).
+
+Though it's yet to be done, Jonline's API-model mappings are designed to be pretty deeply metaprogrammable with Rust. This could be a great contribution opportunity for other devs!
+
+¹ *(**Mostly** respects permissions, except not on Media at all yet 😬😅. PRs for tests and/or fixes for permissions issues would make wonderful contributions!)*
+
+### Marshaling Data
+
+Just to differentiate from the "serializers" we're used to, and because it has fewer syllables, Jonline's serialization module is named [`marshaling`](https://github.com/JonLatane/jonline/tree/main/backend/src/marshaling). A keen observer may notice that the Protos have types that are derived from numerous DB sources. To keep things sane, Jonline uses the `Marshalable` prefix to denote types derived from multiple Diesel sources to straightforwardly convert them.
+
+The basic things to know are:
+
+* [`MarshalablePost`](https://github.com/JonLatane/jonline/tree/main/backend/src/marshaling/post_marshaling.rs) and [`MarshalableEvent`](https://github.com/JonLatane/jonline/tree/main/backend/src/marshaling/event_marshaling.rs) contain exactly the data from `models::Post`, `models::Author` (a subset of `models::User`), and `models::Event`.
+* `MarshalablePost` has a vector of replies and is designed to facilitate multi-layer reply loading.
+* A `MarshalableEvent` contains a `MarshalablePost`.
+
+#### Media Data
+
+Media data is designed to be loosely coupled from the rest of the system. There is a `media` table, but the `posts` table does not have a foreign key relationship with `media` (though `users` and `groups` do). To facilitate access, when using `Marshalable` types that may contain media, the `MediaLookup` type is provided.
+
+Another way of thinking about this: the primary function of any Jonline RPC is to load Post, Event, and User data. After that, it loads `MediaReference`s in a separate pass for the entire result set, at marshaling time. So, conversion of any Jonline type to a
 
 
 ## Building and running locally

@@ -167,7 +167,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       while (action.meta.arg.page && postPages[initialPage]) {
         initialPage++;
       }
-      const chunkSize = 10;
+      const chunkSize = 7;
       for (let i = 0; i < postIds.length; i += chunkSize) {
         const chunk = postIds.slice(i, i + chunkSize);
         state.postPages[listingType]![initialPage + (i / chunkSize)] = chunk;
