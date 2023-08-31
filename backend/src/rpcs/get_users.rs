@@ -102,7 +102,7 @@ fn get_all_users(
         .unwrap()
         .iter()
         .map(|(user, follow, target_follow, media_reference)| {
-            let lookup = media_reference.as_mut().map(|mr| media_lookup(vec![*mr]));
+            let lookup = media_reference.to_media_lookup();
             user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
         })
         .collect();
@@ -152,11 +152,8 @@ fn get_follow_requests(
         .unwrap()
         .iter()
         .map(|(user, follow, target_follow, media_reference)| {
-            user.to_proto(
-                &follow.as_ref(),
-                &Some(target_follow),
-                media_reference.map(|mr| &media_lookup(vec![mr])),
-            )
+            let lookup = media_reference.to_media_lookup();
+            user.to_proto(&follow.as_ref(), &Some(target_follow), lookup.as_ref())
         })
         .collect();
     GetUsersResponse {
@@ -227,11 +224,8 @@ fn get_by_username(
         .unwrap()
         .iter()
         .map(|(user, follow, target_follow, media_reference)| {
-            user.to_proto(
-                &follow.as_ref(),
-                &target_follow.as_ref(),
-                media_reference.map(|mr| &media_lookup(vec![mr])),
-            )
+            let lookup = media_reference.to_media_lookup();
+            user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
         })
         .collect();
     GetUsersResponse {
@@ -295,14 +289,8 @@ fn get_by_user_id(
         .unwrap()
         .iter()
         .map(|(user, follow, target_follow, media_reference)| {
-            user.to_proto(
-                &follow.as_ref(),
-                &target_follow.as_ref(),
-                media_reference
-                    .as_ref()
-                    .map(move |mr| media_lookup(vec![*mr]))
-                    .as_ref(),
-            )
+            let lookup = media_reference.to_media_lookup();
+            user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
         })
         .collect();
     GetUsersResponse {

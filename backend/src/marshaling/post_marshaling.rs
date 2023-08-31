@@ -5,15 +5,16 @@ use itertools::Itertools;
 use tonic::Code;
 use tonic::Status;
 
-use super::{MediaLookup, ToI32Moderation, ToI32Visibility, ToLink, ToProtoId, ToProtoTime};
+use super::{
+    load_media_lookup, MediaLookup, ToI32Moderation, ToI32Visibility, ToLink, ToProtoAuthor,
+    ToProtoId, ToProtoMediaReference, ToProtoTime,
+};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 
 use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::{group_posts, groups, posts};
-use crate::ToProtoAuthor;
-use crate::ToProtoMediaReference;
 
 #[derive(Debug, Clone)]
 pub struct MarshalablePost(
@@ -23,57 +24,47 @@ pub struct MarshalablePost(
     pub Vec<MarshalablePost>,
 );
 
-pub fn convert_posts(
-    data: &Vec<MarshalablePost>,
-    conn: &mut PgPooledConnection,
-) -> Vec<Post> {
-    let mut media_ids = data
+pub fn convert_posts(data: &Vec<MarshalablePost>, conn: &mut PgPooledConnection) -> Vec<Post> {
+    let media_ids: Vec<i64> = data
         .iter()
-        .map(|post| {
-            let mut ids = post.0.media;
-            post.1.map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+        .map(|ref post| {
+            let mut ids = post.0.media.to_owned();
+            post.1
+                .as_ref()
+                .map(|a| a.avatar_media_id.map(|id| ids.push(id)));
             post.3.iter().for_each(|reply| {
                 ids.extend(reply.0.media.iter());
-                reply.1.map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+                reply
+                    .1
+                    .as_ref()
+                    .map(|a| a.avatar_media_id.map(|id| ids.push(id)));
             });
-            ids.iter()
+            ids
         })
         .flatten()
-        .map(|media| *media)
-        .collect::<Vec<i64>>();
-
-    let media_references: MediaLookup = models::get_all_media(media_ids, conn)
-        .unwrap_or_else(|e| {
-            log::error!("Error getting media references: {:?}", e);
-            vec![]
-        })
-        .iter()
-        .map(|media| (media.id, *media))
         .collect();
 
-    data.iter().map(|marshalable_post| marshalable_post.to_proto(Some(&media_references))).collect()
+    let lookup = load_media_lookup(media_ids, conn);
+
+    data.iter()
+        .map(|marshalable_post| marshalable_post.to_proto(lookup.as_ref()))
+        .collect()
 }
 
 pub trait ToProtoMarshalablePost {
-    fn to_proto(
-        &self,
-        media_lookup: Option<&MediaLookup>,
-    ) -> Post;
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Post;
 }
 
 impl ToProtoMarshalablePost for MarshalablePost {
-    fn to_proto(
-        &self,
-        media_lookup: Option<&MediaLookup>,
-    ) -> Post {
-        let post = self.0;
-        let author = self.1;
-        let group_post = self.2;
-        let replies = self.3;
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Post {
+        let post = &self.0;
+        let author = &self.1;
+        let group_post = &self.2;
+        let replies = self.3.to_owned();
         Post {
             id: post.id.to_proto_id(),
             reply_to_post_id: post.parent_post_id.map(|i| i.to_proto_id()),
-            author: author.map(|a| a.to_proto(media_lookup)),
+            author: author.as_ref().map(|a| a.to_proto(media_lookup)),
 
             title: post.title.to_owned(),
             link: post.link.to_link(),
@@ -82,7 +73,7 @@ impl ToProtoMarshalablePost for MarshalablePost {
             response_count: post.response_count,
             reply_count: post.reply_count,
             group_count: post.group_count,
-            current_group_post: group_post.map(|gp| gp.to_proto()),
+            current_group_post: group_post.as_ref().map(|gp| gp.to_proto()),
             media: match media_lookup {
                 Some(lookup) => post
                     .media
@@ -104,7 +95,10 @@ impl ToProtoMarshalablePost for MarshalablePost {
             visibility: post.visibility.to_i32_visibility(),
             moderation: post.moderation.to_i32_moderation(),
 
-            replies: replies.iter().map(|r| r.to_proto(media_lookup)).collect_vec(),
+            replies: replies
+                .iter()
+                .map(|r| r.to_proto(media_lookup))
+                .collect_vec(),
 
             created_at: Some(post.created_at.to_proto()),
             updated_at: post.updated_at.map(|t| t.to_proto()),

@@ -28,19 +28,7 @@ pub fn get_all_media(media_ids: Vec<i64>, conn: &mut PgPooledConnection,) -> Res
         .map_err(|_| Status::new(Code::NotFound, "media_not_found"))
 }
 
-// Group Media, when/if implemented, will probably go along a "Group designated User's Media" route,
-// rather than how Group Posts and Group Events work. This is because Media is a layer "under" Posts and Events.
-
-// pub fn get_group_media(group_id: i64, media_id: i32, conn: &mut PgPooledConnection,) -> Result<GroupMedia, Status> {
-//     group_posts::table
-//         .select(group_posts::all_columns)
-//         .filter(group_posts::group_id.eq(group_id))
-//         .filter(group_posts::media_id.eq(media_id))
-//         .first::<GroupMedia>(conn)
-//         .map_err(|_| Status::new(Code::NotFound, "group_media_not_found"))
-// }
-
-#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
 #[diesel(belongs_to(User))]
 #[diesel(table_name = media)]
 pub struct Media {

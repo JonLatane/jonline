@@ -1,14 +1,55 @@
 use std::collections::HashMap;
 
 use super::{ToI32Moderation, ToI32Visibility, ToProtoId, ToProtoTime};
+use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
 
 pub type MediaLookup = HashMap<i64, models::MediaReference>;
-// pub use MediaLookupType as MediaLookup;
+
 pub fn media_lookup(media: Vec<models::MediaReference>) -> MediaLookup {
     media.iter().map(|m| (m.id, m.to_owned())).collect()
 }
+
+pub trait ToMediaLookup {
+    fn to_media_lookup(&self) -> Option<MediaLookup>;
+}
+
+impl ToMediaLookup for Vec<models::MediaReference> {
+    fn to_media_lookup(&self) -> Option<MediaLookup> {
+        Some(media_lookup(self.to_owned()))
+    }
+}
+
+impl ToMediaLookup for Option<Vec<models::MediaReference>> {
+    fn to_media_lookup(&self) -> Option<MediaLookup> {
+        self.as_ref().map(|v| v.to_media_lookup()).flatten()
+        // .unwrap_or_else(|| HashMap::new())
+    }
+}
+
+impl ToMediaLookup for Option<models::MediaReference> {
+    fn to_media_lookup(&self) -> Option<MediaLookup> {
+        self.as_ref().map(|mr| media_lookup(vec![mr.clone()]))
+    }
+}
+
+// impl ToMediaLookup for (Vec<i64>, &mut PgPooledConnection) {
+    pub fn load_media_lookup(media_ids: Vec<i64>, conn: &mut PgPooledConnection) -> Option<MediaLookup> {
+        // let (media_ids, conn) = self;
+        Some(
+            models::get_all_media(media_ids.to_owned(), conn)
+                .unwrap_or_else(|e| {
+                    log::error!("Error loading media references: {:?}", e);
+                    vec![]
+                })
+                .iter()
+                .map(|media| (media.id, media.to_owned()))
+                .collect::<MediaLookup>()
+                .to_owned(),
+        )
+    }
+// }
 
 pub trait FindMedia {
     fn find_media(&self, media_id: i64) -> Option<&models::MediaReference>;

@@ -50,7 +50,8 @@ pub fn login(
 
     log::info!("Logged in user {}, user_id={}", &req.username, user.id);
 
-    let lookup = avatar.map(|mr| media_lookup(vec![mr]));
+    let lookup = avatar.to_media_lookup();
+
     Ok(Response::new(RefreshTokenResponse {
         refresh_token: tokens.refresh_token,
         access_token: tokens.access_token,

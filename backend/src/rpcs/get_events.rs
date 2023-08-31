@@ -37,7 +37,9 @@ pub fn get_events(
         (_, Some(event_id), _, _) => get_event_by_id(&user, &event_id, conn)?,
         _ => get_public_and_following_events(&user, conn, request.time_filter)?,
     };
-    Ok(GetEventsResponse { events: convert_events(&result, conn) })
+    Ok(GetEventsResponse {
+        events: convert_events(&result, conn),
+    })
 }
 
 fn get_public_and_following_events(
@@ -59,15 +61,7 @@ fn get_public_and_following_events(
         .field(posts::visibility)
         .eq(Visibility::Limited.to_string_visibility())
         .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
-    let event_data: Vec<&(
-        models::EventInstance,
-        models::Event,
-        models::Post,
-        Option<models::Author>,
-        // Option<models::Post>,
-        // Option<models::User>,
-        // bool,
-    )> = event_instances::table
+    let binding = event_instances::table
         .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
         .inner_join(event_posts.on(event_posts.field(posts::id).eq(events::post_id)))
         .left_join(
@@ -114,15 +108,23 @@ fn get_public_and_following_events(
             // Option<models::User>,
             // bool,
         )>(conn)
-        .unwrap()
-        .iter()
-        .collect();
+        .unwrap();
+    let event_data: Vec<&(
+        models::EventInstance,
+        models::Event,
+        models::Post,
+        Option<models::Author>,
+        // Option<models::Post>,
+        // Option<models::User>,
+        // bool,
+    )> = binding.iter().collect();
     let mut media_ids: Vec<i64> = vec![];
     event_data
         .iter()
         .for_each(|(_, _, post, author /*_, _, _*/)| {
             media_ids.extend(post.media.iter());
             author
+                .as_ref()
                 .map(|a| a.avatar_media_id)
                 .flatten()
                 .map(|amid| media_ids.push(amid));
@@ -144,9 +146,9 @@ fn get_public_and_following_events(
             )| {
                 info!("instance: {:?}", instance);
                 MarshalableEvent(
-                    *event,
-                    MarshalablePost(*event_post, *event_author, None, vec![]),
-                    vec![MarshalableEventInstance(*instance, None)],
+                    event.clone(),
+                    MarshalablePost(event_post.clone(), event_author.clone(), None, vec![]),
+                    vec![MarshalableEventInstance(instance.clone(), None)],
                 )
                 // event.to_proto(
                 //     &event_post,
@@ -198,7 +200,9 @@ fn get_event_by_id(
                 MarshalablePost(event_post, author, None, vec![]),
                 instances
                     .iter()
-                    .map(|(instance, _post, _user)| MarshalableEventInstance(*instance, None))
+                    .map(|(instance, _post, _user)| {
+                        MarshalableEventInstance(instance.clone(), None)
+                    })
                     .collect(),
             )
         });
@@ -299,7 +303,16 @@ fn get_group_events(
                     // has_instance_preview,
                 )| {
                     info!("instance: {:?}", instance);
-                    MarshalableEvent(*event, MarshalablePost(*event_post, *author, Some(*group_post), vec![]), vec![MarshalableEventInstance(*instance, None)])
+                    MarshalableEvent(
+                        event.clone(),
+                        MarshalablePost(
+                            event_post.clone(),
+                            author.clone(),
+                            Some(group_post.clone()),
+                            vec![],
+                        ),
+                        vec![MarshalableEventInstance(instance.clone(), None)],
+                    )
                     // event.to_proto(
                     //     &event_post,
                     //     event_user.as_ref(),

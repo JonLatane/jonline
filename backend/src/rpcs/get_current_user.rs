@@ -1,8 +1,8 @@
 use tonic::{Response, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::marshaling::ToProtoUser;
-use crate::{media_lookup, models, protos};
+use crate::marshaling::{ToMediaLookup, ToProtoUser};
+use crate::{models, protos};
 
 pub fn get_current_user(
     user: models::User,
@@ -19,8 +19,8 @@ pub fn get_current_user(
         Some(amid) => models::get_media_reference(amid, conn).ok(),
     };
 
-    let lookup = avatar.map(|mr| media_lookup(vec![mr.clone()]));
+    let lookup = avatar.to_media_lookup();
     let result = user.to_proto(&None, &None, lookup.as_ref());
-    // log::info!("GetCurrentUser::response={:?}", result);
+    log::info!("GetCurrentUser::response={:?}", &result);
     Ok(Response::new(result))
 }
