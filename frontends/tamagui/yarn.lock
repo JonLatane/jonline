@@ -3687,15 +3687,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@jonline/api@workspace:packages/api"
   dependencies:
-    "@tamagui/animations-css": latest
-    "@tamagui/animations-react-native": latest
     "@tamagui/build": latest
-    "@tamagui/font-inter": latest
-    "@tamagui/react-native-media-driver": latest
-    "@tamagui/shorthands": latest
-    "@tamagui/themes": latest
-    "@tamagui/toast": latest
-    tamagui: latest
   languageName: unknown
   linkType: soft
 
