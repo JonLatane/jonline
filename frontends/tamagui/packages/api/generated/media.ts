@@ -76,6 +76,7 @@ export interface MediaReference {
   contentType: string;
   id: string;
   name?: string | undefined;
+  generated: boolean;
 }
 
 /**
@@ -258,7 +259,7 @@ export const Media = {
 };
 
 function createBaseMediaReference(): MediaReference {
-  return { contentType: "", id: "", name: undefined };
+  return { contentType: "", id: "", name: undefined, generated: false };
 }
 
 export const MediaReference = {
@@ -271,6 +272,9 @@ export const MediaReference = {
     }
     if (message.name !== undefined) {
       writer.uint32(26).string(message.name);
+    }
+    if (message.generated === true) {
+      writer.uint32(32).bool(message.generated);
     }
     return writer;
   },
@@ -291,6 +295,9 @@ export const MediaReference = {
         case 3:
           message.name = reader.string();
           break;
+        case 4:
+          message.generated = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -304,6 +311,7 @@ export const MediaReference = {
       contentType: isSet(object.contentType) ? String(object.contentType) : "",
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : undefined,
+      generated: isSet(object.generated) ? Boolean(object.generated) : false,
     };
   },
 
@@ -312,6 +320,7 @@ export const MediaReference = {
     message.contentType !== undefined && (obj.contentType = message.contentType);
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
+    message.generated !== undefined && (obj.generated = message.generated);
     return obj;
   },
 
@@ -324,6 +333,7 @@ export const MediaReference = {
     message.contentType = object.contentType ?? "";
     message.id = object.id ?? "";
     message.name = object.name ?? undefined;
+    message.generated = object.generated ?? false;
     return message;
   },
 };

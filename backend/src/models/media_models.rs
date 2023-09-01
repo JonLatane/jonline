@@ -22,7 +22,7 @@ pub fn get_media_reference(media_id: i64, conn: &mut PgPooledConnection,) -> Res
 }
 pub fn get_all_media(media_ids: Vec<i64>, conn: &mut PgPooledConnection,) -> Result<Vec<MediaReference>, Status> {
     media::table
-        .select((media::id, media::content_type, media::name))
+        .select(MEDIA_REFERENCE_COLUMNS)
         .filter(media::id.eq_any(media_ids))
         .load::<MediaReference>(conn)
         .map_err(|_| Status::new(Code::NotFound, "media_not_found"))
@@ -64,10 +64,12 @@ pub const MEDIA_REFERENCE_COLUMNS: (
     media::id,
     media::content_type,
     media::name,
+    media::generated,
 ) = (
     media::id,
     media::content_type,
     media::name,
+    media::generated,
 );
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
@@ -76,4 +78,5 @@ pub struct MediaReference {
     pub id: i64,
     pub content_type: String,
     pub name: Option<String>,
+    pub generated: bool,
 }

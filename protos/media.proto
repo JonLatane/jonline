@@ -58,6 +58,7 @@ message MediaReference {
   string content_type = 1;
   string id = 2;
   optional string name = 3;
+  bool generated = 4;
 }
 
 // Valid GetMediaRequest formats:

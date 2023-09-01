@@ -99,6 +99,7 @@ impl ToProtoMediaReference for models::MediaReference {
             id: self.id.to_proto_id(),
             content_type: self.content_type.to_owned(),
             name: self.name.to_owned(),
+            generated: self.generated,
         }
     }
 }
