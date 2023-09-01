@@ -30,7 +30,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
   function doLogout() {
     dispatch(selectAccount(undefined));
   }
-  const avatarUrl = useMediaUrl(account.user.avatarMediaId, { account, server: account.server });
+  const avatarUrl = useMediaUrl(account.user.avatar?.id, { account, server: account.server });
   const mediaQuery = useMedia();
 
   return (

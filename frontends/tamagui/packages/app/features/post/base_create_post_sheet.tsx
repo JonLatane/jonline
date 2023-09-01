@@ -1,4 +1,4 @@
-import { Group, Media, Post, Visibility } from '@jonline/api';
+import { Group, Media, MediaReference, Post, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
 import { RootState, clearPostAlerts, createGroupPost, createPost, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
@@ -83,7 +83,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
   const [link, setLink] = useState('');
   const [content, setContent] = useState('');
   const [embedLink, setEmbedLink] = useState(false);
-  const [media, setMedia] = useState<string[]>([]);
+  const [media, setMedia] = useState<MediaReference[]>([]);
 
   function setVisibility(v: Visibility) {
     const currentlyPublic = publicVisibility(visibility);
@@ -324,23 +324,23 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                       >
                         {media.length > 0 ? <ScrollView horizontal w='100%'>
                           <XStack space='$2'>
-                            {media.map((mediaId, index) =>
+                            {media.map((mediaRef, index) =>
                               <ZStack w={mediaQuery.gtXs ? 350 : 148} h={mediaQuery.gtXs ? 280 : 195}>
                                 {/* <ZStack> */}
-                                <MediaRenderer key={mediaId} media={Media.create({ id: mediaId })} />
+                                <MediaRenderer key={`media-renderer-${mediaRef.id}`} media={mediaRef} />
                                 <XStack w='100%' my='auto' zi={1000}>
                                   <Button ml='$2' circular o={index == 0 ? 0.3 : 0.9} icon={ArrowLeft} onPress={() => {
-                                    const updatedMedia = new Array<string>(...media);
+                                    const updatedMedia = new Array<MediaReference>(...media);
                                     const leftValue = updatedMedia[index - 1]!;
-                                    updatedMedia[index - 1] = mediaId;
+                                    updatedMedia[index - 1] = mediaRef;
                                     updatedMedia[index] = leftValue;
                                     setMedia(updatedMedia);
                                   }} />
                                   <YStack f={1} />
                                   <Button mr='$2' circular o={index < media.length - 1 ? 0.9 : 0.3} icon={ArrowRight} onPress={() => {
-                                    const updatedMedia = new Array<string>(...media);
+                                    const updatedMedia = new Array<MediaReference>(...media);
                                     const rightValue = updatedMedia[index + 1]!;
-                                    updatedMedia[index + 1] = mediaId;
+                                    updatedMedia[index + 1] = mediaRef;
                                     updatedMedia[index] = rightValue;
                                     setMedia(updatedMedia);
                                   }} />

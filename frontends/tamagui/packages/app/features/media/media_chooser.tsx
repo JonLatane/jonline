@@ -1,19 +1,23 @@
 import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
-import { RootState, deleteMedia, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, deleteMedia, selectMediaById, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
-// import { StickyCreateButton } from '../post/create_post_sheet';
+
+import { Media, MediaReference } from '@jonline/api';
 import { overlayAnimation } from '@jonline/ui';
+
 import { Image as ImageIcon, Trash, Wand2 } from '@tamagui/lucide-icons';
+
 import { useAccount } from 'app/store';
 import { MediaRenderer } from './media_renderer';
 import { useMediaPage } from './media_screen';
 import { MediaUploader } from './media_uploader';
 
+export type MediaRef = Media | MediaReference;
 
 interface MediaChooserProps {
   children?: React.ReactNode;
-  selectedMedia: string[];
-  onMediaSelected?: (media: string[]) => void;
+  selectedMedia: MediaRef[];
+  onMediaSelected?: (media: MediaRef[]) => void;
   multiselect?: boolean;
 }
 
@@ -53,22 +57,29 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
     () => { }
   );
 
+  const uploadedMedia = useTypedSelector(
+    (state: RootState) => uploadedMediaId
+      ? selectMediaById(state.media, uploadedMediaId) ?? { id: uploadedMediaId } as MediaRef
+      : undefined
+  );
 
   useEffect(() => {
-    if (uploadedMediaId && (media ?? []).filter((m) => m.id == uploadedMediaId).length > 0) {
-      selectMedia(uploadedMediaId);
+    if (uploadedMediaId
+      && (media ?? []).filter((m) => m.id == uploadedMediaId).length > 0
+      && uploadedMedia) {
+      selectMedia(uploadedMedia);
       setUploadedMediaId(undefined);
     }
-  }, [uploadedMediaId, media]);
+  }, [uploadedMediaId, media, uploadedMedia]);
 
-  function selectMedia(itemId: string) {
-    if (selectedMedia.includes(itemId)) {
-      onMediaSelected?.(selectedMedia.filter((x) => x != itemId))
+  async function selectMedia(item: MediaRef) {
+    if (selectedMedia.some(m => m.id === item.id)) {
+      onMediaSelected?.(selectedMedia.filter((x) => x.id != item.id))
     } else {
       if (multiselect) {
-        onMediaSelected?.([...selectedMedia, itemId])
+        onMediaSelected?.([...selectedMedia, item])
       } else {
-        onMediaSelected?.([itemId])
+        onMediaSelected?.([item])
       }
     }
   }
@@ -76,7 +87,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const showSpinnerForUploading = uploading && (uploadProgress == undefined || uploadProgress < 0.1 || uploadProgress > 0.9);
   return (
     <>
-      <Button backgroundColor={navColor} o={0.95} hoverStyle={{backgroundColor: navColor, opacity: 1}} color={navTextColor}
+      <Button backgroundColor={navColor} o={0.95} hoverStyle={{ backgroundColor: navColor, opacity: 1 }} color={navTextColor}
         onPress={() => setOpen(!open)}>
         {children ?? <XStack>
           <ImageIcon size={24} color={navTextColor} />
@@ -128,11 +139,11 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                 : <>
                   <XStack space='$0' flexWrap='wrap' als='center' mx='auto'>
                     {media?.map((item) => {
-                      const _selectionIndex = selectedMedia.indexOf(item.id);
-                      const selectionIndexBase1 = _selectionIndex == -1 ? undefined : _selectionIndex + 1;
+                      const selectionIndex = selectedMedia.findIndex(selectedItem => selectedItem.id === item.id);
+                      const selectionIndexBase1 = selectionIndex == -1 ? undefined : selectionIndex + 1;
                       const mediaName = item.name && item.name.length > 0 ? item.name : undefined;
-                      const selected = selectedMedia.includes(item.id);
-                      const onSelect = onMediaSelected ? () => selectMedia(item.id) : undefined;
+                      const selected = selectedMedia.some(selectedItem => selectedItem.id === item.id);
+                      const onSelect = onMediaSelected ? () => selectMedia(item) : undefined;
 
                       return <YStack w={mediaQuery.gtXs ? '260px' : '105px'}
                         key={`media-chooser-item-${item.id}-${selected}`}
@@ -203,7 +214,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                                     <AlertDialog.Action asChild>
                                       <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
                                         console.log("calling deleteMedia!");
-                                        onMediaSelected?.(selectedMedia.filter((id) => id != item.id));
+                                        onMediaSelected?.(selectedMedia.filter((selectedItem) => selectedItem.id != item.id));
                                         dispatch(deleteMedia({ id: item.id, ...accountOrServer }));
                                       }}>Delete</Button>
                                     </AlertDialog.Action>

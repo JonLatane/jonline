@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -13,23 +13,76 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'permissions.pbenum.dart' as $10;
+import 'permissions.pbenum.dart' as $11;
 import 'server_configuration.pbenum.dart';
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'visibility_moderation.pbenum.dart' as $10;
 
 export 'server_configuration.pbenum.dart';
 
+/// Configuration for a Jonline server instance.
 class ServerConfiguration extends $pb.GeneratedMessage {
-  factory ServerConfiguration() => create();
+  factory ServerConfiguration({
+    ServerInfo? serverInfo,
+    $core.Iterable<$11.Permission>? anonymousUserPermissions,
+    $core.Iterable<$11.Permission>? defaultUserPermissions,
+    $core.Iterable<$11.Permission>? basicUserPermissions,
+    FeatureSettings? peopleSettings,
+    FeatureSettings? groupSettings,
+    PostSettings? postSettings,
+    FeatureSettings? eventSettings,
+    FeatureSettings? mediaSettings,
+    ExternalCDNConfig? externalCdnConfig,
+    PrivateUserStrategy? privateUserStrategy,
+    $core.Iterable<AuthenticationFeature>? authenticationFeatures,
+  }) {
+    final $result = create();
+    if (serverInfo != null) {
+      $result.serverInfo = serverInfo;
+    }
+    if (anonymousUserPermissions != null) {
+      $result.anonymousUserPermissions.addAll(anonymousUserPermissions);
+    }
+    if (defaultUserPermissions != null) {
+      $result.defaultUserPermissions.addAll(defaultUserPermissions);
+    }
+    if (basicUserPermissions != null) {
+      $result.basicUserPermissions.addAll(basicUserPermissions);
+    }
+    if (peopleSettings != null) {
+      $result.peopleSettings = peopleSettings;
+    }
+    if (groupSettings != null) {
+      $result.groupSettings = groupSettings;
+    }
+    if (postSettings != null) {
+      $result.postSettings = postSettings;
+    }
+    if (eventSettings != null) {
+      $result.eventSettings = eventSettings;
+    }
+    if (mediaSettings != null) {
+      $result.mediaSettings = mediaSettings;
+    }
+    if (externalCdnConfig != null) {
+      $result.externalCdnConfig = externalCdnConfig;
+    }
+    if (privateUserStrategy != null) {
+      $result.privateUserStrategy = privateUserStrategy;
+    }
+    if (authenticationFeatures != null) {
+      $result.authenticationFeatures.addAll(authenticationFeatures);
+    }
+    return $result;
+  }
   ServerConfiguration._() : super();
   factory ServerConfiguration.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServerConfiguration.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerConfiguration', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ServerInfo>(1, _omitFieldNames ? '' : 'serverInfo', subBuilder: ServerInfo.create)
-    ..pc<$10.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
-    ..pc<$10.Permission>(11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
-    ..pc<$10.Permission>(12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
+    ..pc<$11.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
+    ..pc<$11.Permission>(11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
+    ..pc<$11.Permission>(12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
     ..aOM<FeatureSettings>(20, _omitFieldNames ? '' : 'peopleSettings', subBuilder: FeatureSettings.create)
     ..aOM<FeatureSettings>(21, _omitFieldNames ? '' : 'groupSettings', subBuilder: FeatureSettings.create)
     ..aOM<PostSettings>(22, _omitFieldNames ? '' : 'postSettings', subBuilder: PostSettings.create)
@@ -62,6 +115,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   static ServerConfiguration getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerConfiguration>(create);
   static ServerConfiguration? _defaultInstance;
 
+  /// The name, description, logo, color scheme, etc. of the server.
   @$pb.TagNumber(1)
   ServerInfo get serverInfo => $_getN(0);
   @$pb.TagNumber(1)
@@ -73,15 +127,31 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ServerInfo ensureServerInfo() => $_ensure(0);
 
+  /// Permissions for a user who isn't logged in to the server. Allows
+  /// admins to disable certain features for anonymous users. Valid values are
+  /// `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`.
   @$pb.TagNumber(10)
-  $core.List<$10.Permission> get anonymousUserPermissions => $_getList(1);
+  $core.List<$11.Permission> get anonymousUserPermissions => $_getList(1);
 
+  /// Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also
+  /// grant/revoke these permissions for others. Valid values are
+  /// `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`,
+  /// `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`,
+  /// `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`,
+  /// `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(11)
-  $core.List<$10.Permission> get defaultUserPermissions => $_getList(2);
+  $core.List<$11.Permission> get defaultUserPermissions => $_getList(2);
 
+  /// Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are
+  /// `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`,
+  /// `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`,
+  /// `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`,
+  /// `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(12)
-  $core.List<$10.Permission> get basicUserPermissions => $_getList(3);
+  $core.List<$11.Permission> get basicUserPermissions => $_getList(3);
 
+  /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  /// contain `PUBLISH_USERS_GLOBALLY`.
   @$pb.TagNumber(20)
   FeatureSettings get peopleSettings => $_getN(4);
   @$pb.TagNumber(20)
@@ -93,6 +163,8 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   FeatureSettings ensurePeopleSettings() => $_ensure(4);
 
+  /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  /// contain `PUBLISH_GROUPS_GLOBALLY`.
   @$pb.TagNumber(21)
   FeatureSettings get groupSettings => $_getN(5);
   @$pb.TagNumber(21)
@@ -104,6 +176,8 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   FeatureSettings ensureGroupSettings() => $_ensure(5);
 
+  /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  /// contain `PUBLISH_POSTS_GLOBALLY`.
   @$pb.TagNumber(22)
   PostSettings get postSettings => $_getN(6);
   @$pb.TagNumber(22)
@@ -115,6 +189,8 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(22)
   PostSettings ensurePostSettings() => $_ensure(6);
 
+  /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  /// contain `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(23)
   FeatureSettings get eventSettings => $_getN(7);
   @$pb.TagNumber(23)
@@ -126,6 +202,8 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(23)
   FeatureSettings ensureEventSettings() => $_ensure(7);
 
+  /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
+  /// contain `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(24)
   FeatureSettings get mediaSettings => $_getN(8);
   @$pb.TagNumber(24)
@@ -137,6 +215,13 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(24)
   FeatureSettings ensureMediaSettings() => $_ensure(8);
 
+  ///  If set, enables External CDN support for the server. This means that the
+  ///  non-secure HTTP server (on port 80) will *not* redirect to the secure server,
+  ///  and instead serve up Tamagui Web/Flutter clients directly. This allows you
+  ///  to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
+  ///  up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
+  ///
+  ///  See ExternalCDNConfig for more details on securing this setup.
   @$pb.TagNumber(90)
   ExternalCDNConfig get externalCdnConfig => $_getN(9);
   @$pb.TagNumber(90)
@@ -148,6 +233,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(90)
   ExternalCDNConfig ensureExternalCdnConfig() => $_ensure(9);
 
+  /// Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   @$pb.TagNumber(100)
   PrivateUserStrategy get privateUserStrategy => $_getN(10);
   @$pb.TagNumber(100)
@@ -157,12 +243,45 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(100)
   void clearPrivateUserStrategy() => clearField(100);
 
+  /// (TODO) Allows admins to enable/disable creating accounts and logging in.
+  /// Eventually, external auth too hopefully!
   @$pb.TagNumber(101)
   $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(11);
 }
 
+/// Useful for setting your Jonline instance up to run underneath a CDN.
+/// By default, the web client uses `window.location.hostname` to determine the backend server.
+/// If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
 class ExternalCDNConfig extends $pb.GeneratedMessage {
-  factory ExternalCDNConfig() => create();
+  factory ExternalCDNConfig({
+    $core.String? frontendHost,
+    $core.String? backendHost,
+    $core.bool? secureMedia,
+    $core.String? mediaIpv4Allowlist,
+    $core.String? mediaIpv6Allowlist,
+    $core.bool? cdnGrpc,
+  }) {
+    final $result = create();
+    if (frontendHost != null) {
+      $result.frontendHost = frontendHost;
+    }
+    if (backendHost != null) {
+      $result.backendHost = backendHost;
+    }
+    if (secureMedia != null) {
+      $result.secureMedia = secureMedia;
+    }
+    if (mediaIpv4Allowlist != null) {
+      $result.mediaIpv4Allowlist = mediaIpv4Allowlist;
+    }
+    if (mediaIpv6Allowlist != null) {
+      $result.mediaIpv6Allowlist = mediaIpv6Allowlist;
+    }
+    if (cdnGrpc != null) {
+      $result.cdnGrpc = cdnGrpc;
+    }
+    return $result;
+  }
   ExternalCDNConfig._() : super();
   factory ExternalCDNConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ExternalCDNConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -198,6 +317,8 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   static ExternalCDNConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExternalCDNConfig>(create);
   static ExternalCDNConfig? _defaultInstance;
 
+  /// The domain where the frontend is hosted. For example, jonline.io. Typically
+  /// your CDN (like Cloudflare) should own the DNS for this domain.
   @$pb.TagNumber(1)
   $core.String get frontendHost => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -207,6 +328,8 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearFrontendHost() => clearField(1);
 
+  /// The domain where the backend is hosted. For example, jonline.io.itsj.online.
+  /// Typically your Kubernetes provider should own DNS for this domain.
   @$pb.TagNumber(2)
   $core.String get backendHost => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -216,6 +339,9 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearBackendHost() => clearField(2);
 
+  /// (TODO) When set, the HTTP `GET /media/<id>?<authorization>` endpoint will be disabled by default on the
+  /// HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in
+  /// `media_ipv4_allowlist` and `media_ipv6_allowlist` will be allowed.
   @$pb.TagNumber(3)
   $core.bool get secureMedia => $_getBF(2);
   @$pb.TagNumber(3)
@@ -225,6 +351,9 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearSecureMedia() => clearField(3);
 
+  /// Whitespace- and/or comma- separated list of IPv4 addresses/ranges
+  /// to whom media data may be served. Only applicable if `secure_media` is `true`.
+  /// For reference, Cloudflare's are at https://www.cloudflare.com/ips-v4.
   @$pb.TagNumber(4)
   $core.String get mediaIpv4Allowlist => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -234,6 +363,9 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearMediaIpv4Allowlist() => clearField(4);
 
+  /// Whitespace- and/or comma- separated list of IPv6 addresses/ranges
+  /// to whom media data may be served. Only applicable if `secure_media` is `true`.
+  /// For reference, Cloudflare's are at https://www.cloudflare.com/ips-v6.
   @$pb.TagNumber(5)
   $core.String get mediaIpv6Allowlist => $_getSZ(4);
   @$pb.TagNumber(5)
@@ -243,6 +375,12 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearMediaIpv6Allowlist() => clearField(5);
 
+  /// (TODO) When implemented, this actually changes the whole Jonline protocol (in terms of ports).
+  /// When enabled, Jonline should *not* server a secure site on HTTPS, and instead serve
+  /// the Tonic gRPC server there (on port 443). Jonine clients will need to be updated to
+  /// always seek out a secure client on port 443 when this feature is enabled.
+  /// This would let Jonline leverage Cloudflare's DDOS protection and performance on gRPC as well as HTTP.
+  /// (This is a Cloudflare-specific feature requirement.)
   @$pb.TagNumber(6)
   $core.bool get cdnGrpc => $_getBF(5);
   @$pb.TagNumber(6)
@@ -254,15 +392,35 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
 }
 
 class FeatureSettings extends $pb.GeneratedMessage {
-  factory FeatureSettings() => create();
+  factory FeatureSettings({
+    $core.bool? visible,
+    $10.Moderation? defaultModeration,
+    $10.Visibility? defaultVisibility,
+    $core.String? customTitle,
+  }) {
+    final $result = create();
+    if (visible != null) {
+      $result.visible = visible;
+    }
+    if (defaultModeration != null) {
+      $result.defaultModeration = defaultModeration;
+    }
+    if (defaultVisibility != null) {
+      $result.defaultVisibility = defaultVisibility;
+    }
+    if (customTitle != null) {
+      $result.customTitle = customTitle;
+    }
+    return $result;
+  }
   FeatureSettings._() : super();
   factory FeatureSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FeatureSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FeatureSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
-    ..e<$11.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$10.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$10.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
     ..aOS(4, _omitFieldNames ? '' : 'customTitle')
     ..hasRequiredFields = false
   ;
@@ -288,6 +446,7 @@ class FeatureSettings extends $pb.GeneratedMessage {
   static FeatureSettings getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FeatureSettings>(create);
   static FeatureSettings? _defaultInstance;
 
+  /// Hide the Posts or Events tab from the user with this flag.
   @$pb.TagNumber(1)
   $core.bool get visible => $_getBF(0);
   @$pb.TagNumber(1)
@@ -297,19 +456,28 @@ class FeatureSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearVisible() => clearField(1);
 
+  /// Only `UNMODERATED` and `PENDING` are valid.
+  /// When `UNMODERATED`, user reports may transition status to `PENDING`.
+  /// When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+  /// be visible until a moderator approves them. `LIMITED` visiblity
+  /// posts are always visible to targeted users (who have not blocked
+  /// the author) regardless of default_moderation.
   @$pb.TagNumber(2)
-  $11.Moderation get defaultModeration => $_getN(1);
+  $10.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($11.Moderation v) { setField(2, v); }
+  set defaultModeration($10.Moderation v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
   void clearDefaultModeration() => clearField(2);
 
+  /// Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+  /// if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
+  /// as appropriate.
   @$pb.TagNumber(3)
-  $11.Visibility get defaultVisibility => $_getN(2);
+  $10.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($11.Visibility v) { setField(3, v); }
+  set defaultVisibility($10.Visibility v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -326,15 +494,39 @@ class FeatureSettings extends $pb.GeneratedMessage {
 }
 
 class PostSettings extends $pb.GeneratedMessage {
-  factory PostSettings() => create();
+  factory PostSettings({
+    $core.bool? visible,
+    $10.Moderation? defaultModeration,
+    $10.Visibility? defaultVisibility,
+    $core.String? customTitle,
+    $core.bool? enableReplies,
+  }) {
+    final $result = create();
+    if (visible != null) {
+      $result.visible = visible;
+    }
+    if (defaultModeration != null) {
+      $result.defaultModeration = defaultModeration;
+    }
+    if (defaultVisibility != null) {
+      $result.defaultVisibility = defaultVisibility;
+    }
+    if (customTitle != null) {
+      $result.customTitle = customTitle;
+    }
+    if (enableReplies != null) {
+      $result.enableReplies = enableReplies;
+    }
+    return $result;
+  }
   PostSettings._() : super();
   factory PostSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory PostSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PostSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
-    ..e<$11.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$10.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$10.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
     ..aOS(4, _omitFieldNames ? '' : 'customTitle')
     ..aOB(5, _omitFieldNames ? '' : 'enableReplies')
     ..hasRequiredFields = false
@@ -361,6 +553,7 @@ class PostSettings extends $pb.GeneratedMessage {
   static PostSettings getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PostSettings>(create);
   static PostSettings? _defaultInstance;
 
+  /// Hide the Posts or Events tab from the user with this flag.
   @$pb.TagNumber(1)
   $core.bool get visible => $_getBF(0);
   @$pb.TagNumber(1)
@@ -370,19 +563,28 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearVisible() => clearField(1);
 
+  /// Only `UNMODERATED` and `PENDING` are valid.
+  /// When `UNMODERATED`, user reports may transition status to `PENDING`.
+  /// When `PENDING`, users' SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not
+  /// be visible until a moderator approves them. `LIMITED` visiblity
+  /// posts are always visible to targeted users (who have not blocked
+  /// the author) regardless of default_moderation.
   @$pb.TagNumber(2)
-  $11.Moderation get defaultModeration => $_getN(1);
+  $10.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($11.Moderation v) { setField(2, v); }
+  set defaultModeration($10.Moderation v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
   void clearDefaultModeration() => clearField(2);
 
+  /// Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid
+  /// if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]`
+  /// as appropriate.
   @$pb.TagNumber(3)
-  $11.Visibility get defaultVisibility => $_getN(2);
+  $10.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($11.Visibility v) { setField(3, v); }
+  set defaultVisibility($10.Visibility v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -397,6 +599,8 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearCustomTitle() => clearField(4);
 
+  /// Controls whether replies are shown in the UI. Note that users' ability to reply
+  /// is controlled by the `REPLY_TO_POSTS` permission.
   @$pb.TagNumber(5)
   $core.bool get enableReplies => $_getBF(4);
   @$pb.TagNumber(5)
@@ -407,8 +611,41 @@ class PostSettings extends $pb.GeneratedMessage {
   void clearEnableReplies() => clearField(5);
 }
 
+/// User-facing information about the server displayed on the "about" page.
 class ServerInfo extends $pb.GeneratedMessage {
-  factory ServerInfo() => create();
+  factory ServerInfo({
+    $core.String? name,
+    $core.String? shortName,
+    $core.String? description,
+    $core.String? privacyPolicy,
+    ServerLogo? logo,
+    WebUserInterface? webUserInterface,
+    ServerColors? colors,
+  }) {
+    final $result = create();
+    if (name != null) {
+      $result.name = name;
+    }
+    if (shortName != null) {
+      $result.shortName = shortName;
+    }
+    if (description != null) {
+      $result.description = description;
+    }
+    if (privacyPolicy != null) {
+      $result.privacyPolicy = privacyPolicy;
+    }
+    if (logo != null) {
+      $result.logo = logo;
+    }
+    if (webUserInterface != null) {
+      $result.webUserInterface = webUserInterface;
+    }
+    if (colors != null) {
+      $result.colors = colors;
+    }
+    return $result;
+  }
   ServerInfo._() : super();
   factory ServerInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServerInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -445,6 +682,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   static ServerInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerInfo>(create);
   static ServerInfo? _defaultInstance;
 
+  /// Name of the server.
   @$pb.TagNumber(1)
   $core.String get name => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -514,7 +752,27 @@ class ServerInfo extends $pb.GeneratedMessage {
 }
 
 class ServerLogo extends $pb.GeneratedMessage {
-  factory ServerLogo() => create();
+  factory ServerLogo({
+    $core.String? squareMediaId,
+    $core.String? squareMediaIdDark,
+    $core.String? wideMediaId,
+    $core.String? wideMediaIdDark,
+  }) {
+    final $result = create();
+    if (squareMediaId != null) {
+      $result.squareMediaId = squareMediaId;
+    }
+    if (squareMediaIdDark != null) {
+      $result.squareMediaIdDark = squareMediaIdDark;
+    }
+    if (wideMediaId != null) {
+      $result.wideMediaId = wideMediaId;
+    }
+    if (wideMediaIdDark != null) {
+      $result.wideMediaIdDark = wideMediaIdDark;
+    }
+    return $result;
+  }
   ServerLogo._() : super();
   factory ServerLogo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServerLogo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -585,8 +843,33 @@ class ServerLogo extends $pb.GeneratedMessage {
   void clearWideMediaIdDark() => clearField(4);
 }
 
+/// Color in ARGB hex format (i.e `0xAARRGGBB`).
 class ServerColors extends $pb.GeneratedMessage {
-  factory ServerColors() => create();
+  factory ServerColors({
+    $core.int? primary,
+    $core.int? navigation,
+    $core.int? author,
+    $core.int? admin,
+    $core.int? moderator,
+  }) {
+    final $result = create();
+    if (primary != null) {
+      $result.primary = primary;
+    }
+    if (navigation != null) {
+      $result.navigation = navigation;
+    }
+    if (author != null) {
+      $result.author = author;
+    }
+    if (admin != null) {
+      $result.admin = admin;
+    }
+    if (moderator != null) {
+      $result.moderator = moderator;
+    }
+    return $result;
+  }
   ServerColors._() : super();
   factory ServerColors.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ServerColors.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -621,6 +904,7 @@ class ServerColors extends $pb.GeneratedMessage {
   static ServerColors getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerColors>(create);
   static ServerColors? _defaultInstance;
 
+  /// App Bar/primary accent color.
   @$pb.TagNumber(1)
   $core.int get primary => $_getIZ(0);
   @$pb.TagNumber(1)
@@ -630,6 +914,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearPrimary() => clearField(1);
 
+  /// Nav/secondary accent color.
   @$pb.TagNumber(2)
   $core.int get navigation => $_getIZ(1);
   @$pb.TagNumber(2)
@@ -639,6 +924,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearNavigation() => clearField(2);
 
+  /// Color used on author of a post in discussion threads for it.
   @$pb.TagNumber(3)
   $core.int get author => $_getIZ(2);
   @$pb.TagNumber(3)
@@ -648,6 +934,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearAuthor() => clearField(3);
 
+  /// Color used on author for admin posts.
   @$pb.TagNumber(4)
   $core.int get admin => $_getIZ(3);
   @$pb.TagNumber(4)
@@ -657,6 +944,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearAdmin() => clearField(4);
 
+  /// Color used on author for moderator posts.
   @$pb.TagNumber(5)
   $core.int get moderator => $_getIZ(4);
   @$pb.TagNumber(5)

@@ -1,6 +1,7 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
+import { MediaReference } from "./media";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
 import {
   Moderation,
@@ -75,7 +76,7 @@ export interface User {
    * Media ID for the user's avatar. Note that its visibility is managed by the User and thus
    * it may not be accessible to the current user.
    */
-  avatarMediaId?: string | undefined;
+  avatar?: MediaReference | undefined;
   bio: string;
   /**
    * User visibility is a bit different from Post visibility.
@@ -111,6 +112,16 @@ export interface User {
   currentGroupMembership?: Membership | undefined;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
+}
+
+/**
+ * Post/authorship-centric version of User. UI can cross-reference user details
+ * from its own cache (for things like admin/bot icons).
+ */
+export interface Author {
+  userId: string;
+  username?: string | undefined;
+  avatar?: MediaReference | undefined;
 }
 
 export interface Follow {
@@ -187,7 +198,7 @@ function createBaseUser(): User {
     email: undefined,
     phone: undefined,
     permissions: [],
-    avatarMediaId: undefined,
+    avatar: undefined,
     bio: "",
     visibility: 0,
     moderation: 0,
@@ -227,8 +238,8 @@ export const User = {
       writer.int32(v);
     }
     writer.ldelim();
-    if (message.avatarMediaId !== undefined) {
-      writer.uint32(58).string(message.avatarMediaId);
+    if (message.avatar !== undefined) {
+      MediaReference.encode(message.avatar, writer.uint32(58).fork()).ldelim();
     }
     if (message.bio !== "") {
       writer.uint32(66).string(message.bio);
@@ -308,7 +319,7 @@ export const User = {
           }
           break;
         case 7:
-          message.avatarMediaId = reader.string();
+          message.avatar = MediaReference.decode(reader, reader.uint32());
           break;
         case 8:
           message.bio = reader.string();
@@ -368,7 +379,7 @@ export const User = {
       email: isSet(object.email) ? ContactMethod.fromJSON(object.email) : undefined,
       phone: isSet(object.phone) ? ContactMethod.fromJSON(object.phone) : undefined,
       permissions: Array.isArray(object?.permissions) ? object.permissions.map((e: any) => permissionFromJSON(e)) : [],
-      avatarMediaId: isSet(object.avatarMediaId) ? String(object.avatarMediaId) : undefined,
+      avatar: isSet(object.avatar) ? MediaReference.fromJSON(object.avatar) : undefined,
       bio: isSet(object.bio) ? String(object.bio) : "",
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
@@ -404,7 +415,7 @@ export const User = {
     } else {
       obj.permissions = [];
     }
-    message.avatarMediaId !== undefined && (obj.avatarMediaId = message.avatarMediaId);
+    message.avatar !== undefined && (obj.avatar = message.avatar ? MediaReference.toJSON(message.avatar) : undefined);
     message.bio !== undefined && (obj.bio = message.bio);
     message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
     message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
@@ -444,7 +455,9 @@ export const User = {
       ? ContactMethod.fromPartial(object.phone)
       : undefined;
     message.permissions = object.permissions?.map((e) => e) || [];
-    message.avatarMediaId = object.avatarMediaId ?? undefined;
+    message.avatar = (object.avatar !== undefined && object.avatar !== null)
+      ? MediaReference.fromPartial(object.avatar)
+      : undefined;
     message.bio = object.bio ?? "";
     message.visibility = object.visibility ?? 0;
     message.moderation = object.moderation ?? 0;
@@ -467,6 +480,79 @@ export const User = {
         : undefined;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseAuthor(): Author {
+  return { userId: "", username: undefined, avatar: undefined };
+}
+
+export const Author = {
+  encode(message: Author, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.username !== undefined) {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.avatar !== undefined) {
+      MediaReference.encode(message.avatar, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Author {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAuthor();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.userId = reader.string();
+          break;
+        case 2:
+          message.username = reader.string();
+          break;
+        case 3:
+          message.avatar = MediaReference.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Author {
+    return {
+      userId: isSet(object.userId) ? String(object.userId) : "",
+      username: isSet(object.username) ? String(object.username) : undefined,
+      avatar: isSet(object.avatar) ? MediaReference.fromJSON(object.avatar) : undefined,
+    };
+  },
+
+  toJSON(message: Author): unknown {
+    const obj: any = {};
+    message.userId !== undefined && (obj.userId = message.userId);
+    message.username !== undefined && (obj.username = message.username);
+    message.avatar !== undefined && (obj.avatar = message.avatar ? MediaReference.toJSON(message.avatar) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Author>, I>>(base?: I): Author {
+    return Author.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Author>, I>>(object: I): Author {
+    const message = createBaseAuthor();
+    message.userId = object.userId ?? "";
+    message.username = object.username ?? undefined;
+    message.avatar = (object.avatar !== undefined && object.avatar !== null)
+      ? MediaReference.fromPartial(object.avatar)
+      : undefined;
     return message;
   },
 };

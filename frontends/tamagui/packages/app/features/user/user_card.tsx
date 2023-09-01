@@ -11,14 +11,15 @@ import React from "react";
 import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
+import { MediaRef } from "../media/media_chooser";
 
 interface Props {
   user: User;
   isPreview?: boolean;
   username?: string;
   setUsername?: (username: string) => void;
-  avatarMediaId?: string;
-  setAvatarMediaId?: (mediaId?: string) => void;
+  avatar?: MediaRef;
+  setAvatar?: (avatar?: MediaRef) => void;
   editable?: boolean;
   editingDisabled?: boolean;
 }
@@ -28,13 +29,13 @@ export function useFullAvatarHeight(): number {
   return media.gtXs ? 400 : 300;
 }
 
-export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: inputUsername, setUsername, avatarMediaId: inputAvatarMediaId, setAvatarMediaId, editable, editingDisabled }) => {
+export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: inputUsername, setUsername, avatar: inputAvatar, setAvatar, editable, editingDisabled }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
   const app = useLocalApp();
 
-  const [username, avatarMediaId] = editable ? [inputUsername, inputAvatarMediaId]
-    : [user.username, user.avatarMediaId];
+  const [username, avatar] = editable ? [inputUsername, inputAvatar]
+    : [user.username, user.avatar];
 
   const isAdmin = hasAdminPermission(accountOrServer?.account?.user);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
@@ -60,9 +61,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     e.stopPropagation();
     dispatch(respondToFollowRequest({ userId: user.id, accept, ...accountOrServer }))
   };
-  const avatarUrl = useMediaUrl(avatarMediaId);
+  const avatarUrl = useMediaUrl(avatar?.id);
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
-  const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatarMediaId && !editingDisabled;
+  const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatar && !editingDisabled;
 
   const usernameRegion = <XStack f={1} w='100%'>
     {hasAvatarUrl ? <Image
@@ -134,12 +135,12 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
                 height={fullAvatarHeight}
                 resizeMode="contain"
                 als="center"
-                source={{ uri: avatarUrl }}
+                source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
                 borderRadius={10} />
               : undefined}
             <AnimatePresence>
               {canEditAvatar
-                ? <SingleMediaChooser mediaId={avatarMediaId} setMediaId={setAvatarMediaId} />
+                ? <SingleMediaChooser selectedMedia={avatar} setSelectedMedia={setAvatar} />
                 : undefined}
               {followsCurrentUser
                 ? <Heading key='follow-request-heading' animation='quick' {...standardAnimation}
@@ -207,7 +208,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               opacity={0.25}
               resizeMode="cover"
               als="flex-start"
-              source={{ uri: avatarUrl }}
+              source={{ uri: avatarUrl, height: media.gtSm ? 300 : 150, width: media.gtSm ? 300 : 150 }}
               blurRadius={1.5}
               borderBottomRightRadius={5}
             />

@@ -68,6 +68,17 @@ export interface Media {
 }
 
 /**
+ * A reference to a media item, designed to be included in other messages as a reference.
+ * Contains the bare minimum data needed to fetch media via the HTTP API and render it,
+ * and the media item's name (for alt text usage).
+ */
+export interface MediaReference {
+  contentType: string;
+  id: string;
+  name?: string | undefined;
+}
+
+/**
  * Valid GetMediaRequest formats:
  * - `{user_id: "123"}` - Gets the media of the given user that the current user can see. IE:
  *     - *all* of the current user's own media
@@ -242,6 +253,77 @@ export const Media = {
     message.processed = object.processed ?? false;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseMediaReference(): MediaReference {
+  return { contentType: "", id: "", name: undefined };
+}
+
+export const MediaReference = {
+  encode(message: MediaReference, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.contentType !== "") {
+      writer.uint32(10).string(message.contentType);
+    }
+    if (message.id !== "") {
+      writer.uint32(18).string(message.id);
+    }
+    if (message.name !== undefined) {
+      writer.uint32(26).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MediaReference {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMediaReference();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.contentType = reader.string();
+          break;
+        case 2:
+          message.id = reader.string();
+          break;
+        case 3:
+          message.name = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MediaReference {
+    return {
+      contentType: isSet(object.contentType) ? String(object.contentType) : "",
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : undefined,
+    };
+  },
+
+  toJSON(message: MediaReference): unknown {
+    const obj: any = {};
+    message.contentType !== undefined && (obj.contentType = message.contentType);
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MediaReference>, I>>(base?: I): MediaReference {
+    return MediaReference.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<MediaReference>, I>>(object: I): MediaReference {
+    const message = createBaseMediaReference();
+    message.contentType = object.contentType ?? "";
+    message.id = object.id ?? "";
+    message.name = object.name ?? undefined;
     return message;
   },
 };

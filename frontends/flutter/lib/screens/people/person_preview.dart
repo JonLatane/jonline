@@ -149,10 +149,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                         SizedBox(
                             height: 48,
                             width: 48,
-                            child: (user.avatarMediaId.isNotEmpty)
+                            child: (user.hasAvatar())
                                 ? CircleAvatar(
                                     backgroundImage:
-                                        mediaImageProvider(user.avatarMediaId),
+                                        mediaImageProvider(user.avatar.id),
                                   )
                                 : const CircleAvatar(
                                     backgroundColor: Colors.black12,
@@ -259,10 +259,10 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                           ),
                       ],
                     ),
-                    if (!widget.navigable && user.avatarMediaId.isNotEmpty)
+                    if (!widget.navigable && user.hasAvatar())
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Image.network(mediaImageUrl(user.avatarMediaId)),
+                        child: Image.network(mediaImageUrl(user.avatar.id)),
                       ),
                     if (member) const SizedBox(height: 4),
                     AnimatedContainer(

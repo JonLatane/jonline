@@ -1,13 +1,14 @@
 import { RootState, loadMedia, selectMediaById, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useState, useEffect } from 'react';
 
-import { Media } from "@jonline/api";
+import { Media, MediaReference } from "@jonline/api";
 import { Anchor, Image, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
 import ReactPlayer from 'react-player/lazy';
 import { useMediaUrl } from '../../hooks/use_media_url';
+import { MediaRef } from "./media_chooser";
 
 interface Props {
-  media: Media;
+  media: MediaRef;
   failQuietly?: boolean;
 }
 

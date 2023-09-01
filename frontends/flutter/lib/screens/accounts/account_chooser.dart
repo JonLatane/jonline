@@ -331,11 +331,11 @@ Widget _accountItem(JonlineAccount a, BuildContext context) {
                 SizedBox(
                     height: 36,
                     width: 36,
-                    child: a.user?.avatarMediaId.isNotEmpty == true
+                    child: a.user?.hasAvatar() ?? false
                         ? CircleAvatar(
                             key: Key('avatar-${a.id}'),
                             backgroundImage:
-                                mediaImageProvider(a.user!.avatarMediaId)
+                                mediaImageProvider(a.user!.avatar.id)
                             // MemoryImage(Uint8List.fromList(a.user!.avatar)),
                             )
                         : const CircleAvatar(

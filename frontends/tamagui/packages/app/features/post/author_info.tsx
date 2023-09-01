@@ -2,7 +2,7 @@ import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTh
 import React, { useEffect, useState } from "react";
 
 import { Permission, Post } from "@jonline/api";
-import { Anchor, DateViewer, Heading, Image, useMedia, XStack, YStack } from "@jonline/ui";
+import { Anchor, Avatar, DateViewer, Heading, Image, useMedia, XStack, YStack } from "@jonline/ui";
 import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { View } from "react-native";
@@ -53,8 +53,28 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
       }
     }
   }, [authorId, isVisible]);
-  const avatarUrl = useMediaUrl(author?.avatarMediaId);
+  const avatarUrl = useMediaUrl(author?.avatar?.id);
   // debugger;
+
+  console.log('avatarUrl', avatarUrl)
+  const avatarImage = <XStack p={0} w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
+    {/* <Avatar circular size="$6">
+      <Avatar.Image source={{ uri: avatarUrl }} />
+      <Avatar.Fallback bc={navColor} />
+    </Avatar> */}
+    <Image
+      // pos="absolute"
+      width={media.gtXs ? 50 : 26}
+      // opacity={0.25}
+      height={media.gtXs ? 50 : 26}
+      borderRadius={media.gtXs ? 25 : 13}
+      // resizeMode="cover"
+      als="flex-start"
+      source={{ uri: avatarUrl, width: media.gtXs ? 50 : 26, height: media.gtXs ? 50 : 26 }}
+    // blurRadius={1.5}
+    // borderRadius={5}
+    />
+  </XStack>;
 
   return <XStack ref={ref} f={1} /*ml={media.gtXs ? 0 : -7}*/ alignContent='flex-start'>
     <YStack w={detailsMargins} />
@@ -63,40 +83,13 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
         {disableLink
           ?
           // <FadeInView>
-          <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}
-            mr={media.gtXs ? '$3' : '$2'}>
-            <Image
-              pos="absolute"
-              width={media.gtXs ? 50 : 26}
-              // opacity={0.25}
-              height={media.gtXs ? 50 : 26}
-              borderRadius={media.gtXs ? 25 : 13}
-              resizeMode="cover"
-              als="flex-start"
-              source={{ uri: avatarUrl }}
-            // blurRadius={1.5}
-            // borderRadius={5}
-            />
-          </XStack>
+          { avatarImage }
           // </FadeInView>
           :
           // <FadeInView>
           <Anchor {...authorLinkProps}
             mr={media.gtXs ? '$3' : '$2'}>
-            <XStack w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
-              <Image
-                pos="absolute"
-                width={media.gtXs ? 50 : 26}
-                // opacity={0.25}
-                height={media.gtXs ? 50 : 26}
-                borderRadius={media.gtXs ? 25 : 13}
-                resizeMode="cover"
-                als="flex-start"
-                source={{ uri: avatarUrl }}
-              // blurRadius={1.5}
-              // borderRadius={5}
-              />
-            </XStack>
+            {avatarImage}
           </Anchor>
           // </FadeInView>
         }

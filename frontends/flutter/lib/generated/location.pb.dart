@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -13,8 +13,25 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// Locations
 class Location extends $pb.GeneratedMessage {
-  factory Location() => create();
+  factory Location({
+    $core.String? id,
+    $core.String? creatorId,
+    $core.String? uniformlyFormattedAddress,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (creatorId != null) {
+      $result.creatorId = creatorId;
+    }
+    if (uniformlyFormattedAddress != null) {
+      $result.uniformlyFormattedAddress = uniformlyFormattedAddress;
+    }
+    return $result;
+  }
   Location._() : super();
   factory Location.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Location.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -65,6 +82,9 @@ class Location extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearCreatorId() => clearField(2);
 
+  /// This should probably come from OpenStreetMap APIs, with an option for Google Maps.
+  /// Ideally both the Flutter and React apps, and any others, should prefer OpenStreetMap
+  /// but give the user the option to use Google Maps.
   @$pb.TagNumber(3)
   $core.String get uniformlyFormattedAddress => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -76,7 +96,23 @@ class Location extends $pb.GeneratedMessage {
 }
 
 class LocationAlias extends $pb.GeneratedMessage {
-  factory LocationAlias() => create();
+  factory LocationAlias({
+    $core.String? id,
+    $core.String? alias,
+    $core.String? creatorId,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (alias != null) {
+      $result.alias = alias;
+    }
+    if (creatorId != null) {
+      $result.creatorId = creatorId;
+    }
+    return $result;
+  }
   LocationAlias._() : super();
   factory LocationAlias.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory LocationAlias.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);

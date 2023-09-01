@@ -14,6 +14,7 @@ import { loadGroupPostsPage } from "./group_actions";
 import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
 import { loadUserPosts } from "./user_actions";
 import { loadEvent, loadEventsPage } from "./event_actions";
+import { GroupedPages } from "../pagination";
 export * from './post_actions';
 
 export interface PostsState {
@@ -27,18 +28,9 @@ export interface PostsState {
   draftPost: DraftPost;
   ids: EntityId[];
   entities: Dictionary<Post>;
-  postPages: GroupedPostPages;
+  postPages: GroupedPages;
   failedPostIds: string[];
 }
-
-// Stores pages of listed posts used in the UI. May be keyed by PostListingType or groupId.
-// Posts should be loaded from the adapter/slice's entities. An empty page indicates there is no more data to load.
-// Maps either: 
-//  * PostListingType -> page -> postIds
-//  * groupId -> page -> postIds
-// i.e.: postPages[PostListingType.PUBLIC_POSTS][0] -> ["postId1", "postId2"].
-//       groupPostPages['groupId1'][0] -> ["postId1", "postId2"].
-export type GroupedPostPages = Dictionary<Dictionary<string[]>>;
 
 export interface DraftPost {
   newPost: Post;

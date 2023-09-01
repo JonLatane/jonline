@@ -122,6 +122,21 @@ final List<DemoPost> _demoPosts = [
         ..content =
             "Not maintained, but still available on the Play Store. For the time (around 2011) I wrote a pretty novel algorithm for naming chords that I've reused in BeatScratch."),
   DemoPost(
+      [
+        DemoGroup.tech,
+        DemoGroup.math,
+        DemoGroup.programming,
+        DemoGroup.toolSharing
+      ],
+      Post()
+        ..title =
+            "Introductory, Practical Web Development Principles You Don't Learn At School"
+        ..content = '''
+* Ideally, do your job work in Chrome
+* Do your personal work in Safari, Firefox, or honestly even Edge - or whatever you want, really
+* A password manager is absolutely a necessary investment, probably before paying for an IDE or paying Apple/Google developer fees.
+'''),
+  DemoPost(
       [DemoGroup.music, DemoGroup.math, DemoGroup.programming],
       Post()
         ..title = "ChordCalc on GitHub"

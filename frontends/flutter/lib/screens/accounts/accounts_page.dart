@@ -577,12 +577,11 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                       'account/${account.id}/profile');
                                 },
                                 child:
-                                    (account.user?.avatarMediaId.isNotEmpty ==
-                                            true)
+                                    (account.user?.hasAvatar() ?? false == true)
                                         ? CircleAvatar(
                                             key: Key('avatar-${account.id}'),
                                             backgroundImage: mediaImageProvider(
-                                                account.user!.avatarMediaId,
+                                                account.user!.avatar.id,
                                                 serverOverride: account.server))
                                         : const CircleAvatar(
                                             backgroundColor: Colors.black12,

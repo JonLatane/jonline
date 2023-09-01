@@ -30,7 +30,7 @@ impl ToDbId for String {
     fn to_db_id_or_err(&self, field_name: &str) -> Result<i64, Status> {
         match self.to_db_id() {
             Ok(id) => Ok(id),
-            Err(_) => Err(Status::new(Code::InvalidArgument, format!("invalid_id_{}", field_name))),
+            Err(_) => Err(Status::new(Code::InvalidArgument, format!("invalid_id:{}", field_name))),
         }
     }
 

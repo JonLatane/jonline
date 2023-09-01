@@ -14,6 +14,11 @@ export * from './generated/federation'
 
 export { Empty } from './generated/google/protobuf/empty'
 export { Timestamp } from './generated/google/protobuf/timestamp'
-export { Jonline, JonlineClientImpl } from './generated/jonline'
+// export { Jonline, JonlineClientImpl } from './generated/jonline'
 
-export { DeepPartial, Exact, protobufPackage, GrpcWebImpl }
+export type { Exact } from './generated/server_configuration'
+export { GrpcWebImpl, JonlineClientImpl, protobufPackage } from './generated/jonline'
+export type { Jonline, DeepPartial } from './generated/jonline'
+
+
+// export { DeepPartial, Exact, protobufPackage, GrpcWebImpl }

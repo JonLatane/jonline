@@ -1,6 +1,8 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
+import { MediaReference } from "./media";
+import { Author } from "./users";
 import {
   Moderation,
   moderationFromJSON,
@@ -210,7 +212,7 @@ export interface Post {
   /** The number of groups this post is in. */
   groupCount: number;
   /** List of Media IDs associated with this post. Order is preserved. */
-  media: string[];
+  media: MediaReference[];
   /**
    * Flag indicating whether Media has been generated for this Post.
    * Currently previews are generated for any Link post.
@@ -250,15 +252,6 @@ export interface Post {
   updatedAt?: string | undefined;
   publishedAt?: string | undefined;
   lastActivityAt: string | undefined;
-}
-
-/**
- * Post-centric version of User. UI can cross-reference user details
- * from its own cache (for things like admin/bot icons).
- */
-export interface Author {
-  userId: string;
-  username?: string | undefined;
 }
 
 /**
@@ -509,7 +502,7 @@ export const Post = {
       writer.uint32(72).int32(message.groupCount);
     }
     for (const v of message.media) {
-      writer.uint32(82).string(v!);
+      MediaReference.encode(v!, writer.uint32(82).fork()).ldelim();
     }
     if (message.mediaGenerated === true) {
       writer.uint32(88).bool(message.mediaGenerated);
@@ -585,7 +578,7 @@ export const Post = {
           message.groupCount = reader.int32();
           break;
         case 10:
-          message.media.push(reader.string());
+          message.media.push(MediaReference.decode(reader, reader.uint32()));
           break;
         case 11:
           message.mediaGenerated = reader.bool();
@@ -642,7 +635,7 @@ export const Post = {
       responseCount: isSet(object.responseCount) ? Number(object.responseCount) : 0,
       replyCount: isSet(object.replyCount) ? Number(object.replyCount) : 0,
       groupCount: isSet(object.groupCount) ? Number(object.groupCount) : 0,
-      media: Array.isArray(object?.media) ? object.media.map((e: any) => String(e)) : [],
+      media: Array.isArray(object?.media) ? object.media.map((e: any) => MediaReference.fromJSON(e)) : [],
       mediaGenerated: isSet(object.mediaGenerated) ? Boolean(object.mediaGenerated) : false,
       embedLink: isSet(object.embedLink) ? Boolean(object.embedLink) : false,
       shareable: isSet(object.shareable) ? Boolean(object.shareable) : false,
@@ -670,7 +663,7 @@ export const Post = {
     message.replyCount !== undefined && (obj.replyCount = Math.round(message.replyCount));
     message.groupCount !== undefined && (obj.groupCount = Math.round(message.groupCount));
     if (message.media) {
-      obj.media = message.media.map((e) => e);
+      obj.media = message.media.map((e) => e ? MediaReference.toJSON(e) : undefined);
     } else {
       obj.media = [];
     }
@@ -711,7 +704,7 @@ export const Post = {
     message.responseCount = object.responseCount ?? 0;
     message.replyCount = object.replyCount ?? 0;
     message.groupCount = object.groupCount ?? 0;
-    message.media = object.media?.map((e) => e) || [];
+    message.media = object.media?.map((e) => MediaReference.fromPartial(e)) || [];
     message.mediaGenerated = object.mediaGenerated ?? false;
     message.embedLink = object.embedLink ?? false;
     message.shareable = object.shareable ?? false;
@@ -726,68 +719,6 @@ export const Post = {
     message.updatedAt = object.updatedAt ?? undefined;
     message.publishedAt = object.publishedAt ?? undefined;
     message.lastActivityAt = object.lastActivityAt ?? undefined;
-    return message;
-  },
-};
-
-function createBaseAuthor(): Author {
-  return { userId: "", username: undefined };
-}
-
-export const Author = {
-  encode(message: Author, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.userId !== "") {
-      writer.uint32(10).string(message.userId);
-    }
-    if (message.username !== undefined) {
-      writer.uint32(18).string(message.username);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Author {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAuthor();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.userId = reader.string();
-          break;
-        case 2:
-          message.username = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Author {
-    return {
-      userId: isSet(object.userId) ? String(object.userId) : "",
-      username: isSet(object.username) ? String(object.username) : undefined,
-    };
-  },
-
-  toJSON(message: Author): unknown {
-    const obj: any = {};
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.username !== undefined && (obj.username = message.username);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Author>, I>>(base?: I): Author {
-    return Author.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<Author>, I>>(object: I): Author {
-    const message = createBaseAuthor();
-    message.userId = object.userId ?? "";
-    message.username = object.username ?? undefined;
     return message;
   },
 };

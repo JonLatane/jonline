@@ -125,19 +125,18 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     }
   }
 
-  const previewMediaId = post?.media[0];
-  const previewMedia = useTypedSelector((state: RootState) =>
-    previewMediaId && hasBeenVisible ? selectMediaById(state.media, previewMediaId) : undefined);
+  const previewMediaRef = post?.media[0];
+  const previewMedia = previewMediaRef && hasBeenVisible ? previewMediaRef : undefined;
   useEffect(() => {
-    if (hasBeenVisible && !previewMedia && previewMediaId) {
-      dispatch(loadMedia({ id: previewMediaId, ...accountOrServer }));
+    if (hasBeenVisible && !previewMedia && previewMediaRef) {
+      dispatch(loadMedia({ ...previewMediaRef, ...accountOrServer }));
     }
   }, [previewMedia, hasBeenVisible]);
 
   const hasPrimaryImage = previewMedia?.contentType.startsWith('image')
     && post?.media?.length == 1 && !embedComponent;
   const hasMediaToPreview = post?.media?.length > 1;
-  const previewUrl = useMediaUrl(hasPrimaryImage ? previewMediaId : undefined);
+  const previewUrl = useMediaUrl(hasPrimaryImage ? previewMediaRef?.id : undefined);
 
 
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
@@ -281,8 +280,8 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                   <ScrollView horizontal w={isPreview ? '260px' : '100%'}
                     h={media.gtXs ? '400px' : '260px'} >
                     <XStack space='$2'>
-                      {post.media.map((mediaId, i) => <YStack w={media.gtXs ? '400px' : '260px'} h='100%'>
-                        <MediaRenderer key={mediaId} media={Media.create({ id: mediaId })} />
+                      {post.media.map((mediaRef, i) => <YStack w={media.gtXs ? '400px' : '260px'} h='100%'>
+                        <MediaRenderer key={mediaRef.id} media={mediaRef} />
                       </YStack>)}
                     </XStack>
                   </ScrollView>

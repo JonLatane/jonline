@@ -13,10 +13,10 @@ import {
 import moment from "moment";
 import { GroupedEventInstancePages } from "./events";
 import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroups } from "./group_actions";
-import { GroupedPostPages } from "./posts";
 import { store } from "../store";
 import { passes } from "app/utils/moderation_utils";
 import { usersAdapter } from "./users";
+import { GroupedPages } from "../pagination";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -30,7 +30,7 @@ export interface GroupsState {
   ids: EntityId[];
   entities: Dictionary<Group>;
   shortnameIds: Dictionary<string>;
-  groupPostPages: GroupedPostPages;
+  groupPostPages: GroupedPages;
   groupEventPages: GroupedEventInstancePages;
   postIdGroupPosts: Dictionary<GroupPost[]>;
   failedShortnames: string[];

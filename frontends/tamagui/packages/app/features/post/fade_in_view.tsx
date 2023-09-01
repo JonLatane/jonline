@@ -9,7 +9,7 @@ export const FadeInView: React.FC<FadeInViewProps> = props => {
   //   {props.children}
   // </YStack>;
   if (isWeb) {
-    return <div style={{ animation: 'animation: fadeIn 5s;' }}>
+    return <div style={{ animation: 'animation: fadeIn 5s' }}>
       {props.children}
     </div>;
   }

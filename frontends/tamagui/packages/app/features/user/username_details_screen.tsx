@@ -20,24 +20,24 @@ import { hasAdminPermission } from 'app/utils/permission_utils';
 const { useParam } = createParam<{ username: string }>()
 
 export function UsernameDetailsScreen() {
-  const [username] = useParam('username');
+  const [inputUsername] = useParam('username');
   const linkProps = useLink({ href: '/' });
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const paramUserId: string | undefined = useTypedSelector((state: RootState) => username ? state.users.usernameIds[username] : undefined);
+  const paramUserId: string | undefined = useTypedSelector((state: RootState) => inputUsername ? state.users.usernameIds[inputUsername] : undefined);
   const [userId, setUserId] = useState(paramUserId);
   const user = useTypedSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const usersState = useTypedSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
-  const userLoadFailed = usersState.failedUsernames.includes(username!);
+  const userLoadFailed = usersState.failedUsernames.includes(inputUsername!);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user?.id;
   const isAdmin = hasAdminPermission(accountOrServer.account?.user);
   const canEdit = isCurrentUser || isAdmin;
-  const [name, setName] = useState(user?.username);
+  const [username, setUsername] = useState(user?.username);
   const [bio, setBio] = useState(user?.bio);
-  const [avatarMediaId, setAvatarMediaId] = useState(user?.avatarMediaId);
+  const [avatar, setAvatar] = useState(user?.avatar);
   const [editMode, setEditMode] = useState(false);
   const [defaultFollowModeration, setDefaultFollowModeration] = useState(user?.defaultFollowModeration ?? Moderation.MODERATION_UNKNOWN);
   const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
@@ -62,7 +62,7 @@ export function UsernameDetailsScreen() {
 
   const successSaving = useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
   const permissionsModified = JSON.stringify(permissions) !== JSON.stringify(user?.permissions ?? []);
-  const dirtyData = name != user?.username || bio != user?.bio || avatarMediaId != user?.avatarMediaId
+  const dirtyData = username != user?.username || bio != user?.bio || avatar?.id != user?.avatar?.id
     || defaultFollowModeration != user?.defaultFollowModeration || visibility != user?.visibility
     || permissionsModified;
 
@@ -74,18 +74,18 @@ export function UsernameDetailsScreen() {
   const fullAvatarHeight = useFullAvatarHeight();
   function resetFormData() {
     if (!user) {
-      setName(undefined);
+      setUsername(undefined);
       setBio(undefined);
-      setAvatarMediaId(undefined);
+      setAvatar(undefined);
       setDefaultFollowModeration(Moderation.MODERATION_UNKNOWN);
       setVisibility(Visibility.VISIBILITY_UNKNOWN);
       setPermissions([]);
       return;
     };
 
-    setName(user.username);
+    setUsername(user.username);
     setBio(user.bio);
-    setAvatarMediaId(user.avatarMediaId);
+    setAvatar(user.avatar);
     setDefaultFollowModeration(user.defaultFollowModeration);
     setVisibility(user.visibility);
     setPermissions(user.permissions);
@@ -96,14 +96,22 @@ export function UsernameDetailsScreen() {
       setUserId(paramUserId);
       resetFormData();
     }
-    if (user && !name) {
+  }, [paramUserId, userId]);
+  useEffect(() => {
+    if (user && !username) {
       setUserId(paramUserId);
       resetFormData();
     }
+  }, [user, username]);
+  useEffect(() => {
     if (dirtyData && successSaving) {
       dispatch(clearUserAlerts!());
     }
+  }, [dirtyData, successSaving]);
+  useEffect(() => {
     if (editMode && !canEdit) setEditMode(false);
+  }, [editMode, canEdit]);
+  useEffect(() => {
     if (userId && !userPosts && !loadingUserPosts) {
       setLoadingUserPosts(true);
       reloadPosts();
@@ -111,7 +119,7 @@ export function UsernameDetailsScreen() {
       setLoadingUserPosts(false);
       dismissScrollPreserver(setShowScrollPreserver);
     }
-  });
+  }, [userId, userPosts, loadingUserPosts]);
 
   function reloadPosts() {
     if (!accountOrServer.server) return;
@@ -122,15 +130,16 @@ export function UsernameDetailsScreen() {
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   useEffect(() => {
-    if (username && !loadingUser && (!user || usersState.status == 'unloaded') && !userLoadFailed) {
+    // debugger;
+    if (inputUsername && !loadingUser && (!user || usersState.status == 'unloaded') && !userLoadFailed) {
       setLoadingUser(true);
-      setTimeout(() => dispatch(loadUsername({ ...accountOrServer, username: username! })));
+      setTimeout(() => dispatch(loadUsername({ ...accountOrServer, username: inputUsername! })));
     } else if (loadingUser && (user || userLoadFailed)) {
       setLoadingUser(false);
     }
     if (user && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
-    }
+    } 
   });
   const windowHeight = useWindowDimensions().height;
   function saveUser() {
@@ -138,7 +147,7 @@ export function UsernameDetailsScreen() {
 
     setTimeout(() => dispatch(updateUser({
       ...accountOrServer,
-      ...{ ...user!, bio: bio ?? '', avatarMediaId, defaultFollowModeration, visibility, permissions },
+      ...{ ...user!, bio: bio ?? '', avatarMediaId: avatar, defaultFollowModeration, visibility, permissions },
     })));
   }
   const postsState = useTypedSelector((state: RootState) => state.posts);
@@ -151,19 +160,20 @@ export function UsernameDetailsScreen() {
         {user ? <>
           <ScrollView w='100%'>
             <YStack maw={800} w='100%' als='center' p='$2' marginHorizontal='auto'>
-              <UserCard user={user}
+              <UserCard
                 editable editingDisabled={!editMode}
-                username={name}
-                setUsername={setName}
-                avatarMediaId={avatarMediaId}
-                setAvatarMediaId={setAvatarMediaId} />
+                user={user}
+                username={username}
+                setUsername={setUsername}
+                avatar={avatar}
+                setAvatar={setAvatar} />
               <YStack als='center' w='100%' paddingHorizontal='$2' paddingVertical='$3' space>
                 {editMode ?
                   <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
                     value={bio} onChangeText={t => setBio(t)}
                     // size='$5'
                     h='$14'
-                    placeholder={`Edit ${isCurrentUser ? 'your' : `${name}'s`} user bio. Markdown is supported.`}
+                    placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}
                   />
                   : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
                     <TamaguiMarkdown text={bio!} />
@@ -226,7 +236,7 @@ export function UsernameDetailsScreen() {
                         onPress={() => {
                           setEditMode(true);
                           // setShowPermissionsAndVisibility(true);
-                          const maxScrollPosition = 270 + (avatarMediaId ? fullAvatarHeight : 0);
+                          const maxScrollPosition = 270 + (avatar ? fullAvatarHeight : 0);
                           if (window.scrollY > maxScrollPosition) {
                             isClient && window.scrollTo({ top: maxScrollPosition, behavior: 'smooth' });
                           }

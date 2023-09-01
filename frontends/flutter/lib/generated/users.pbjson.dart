@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -40,7 +40,7 @@ const User$json = {
     {'1': 'email', '3': 4, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 0, '10': 'email', '17': true},
     {'1': 'phone', '3': 5, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 1, '10': 'phone', '17': true},
     {'1': 'permissions', '3': 6, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'permissions'},
-    {'1': 'avatar_media_id', '3': 7, '4': 1, '5': 9, '9': 2, '10': 'avatarMediaId', '17': true},
+    {'1': 'avatar', '3': 7, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 2, '10': 'avatar', '17': true},
     {'1': 'bio', '3': 8, '4': 1, '5': 9, '10': 'bio'},
     {'1': 'visibility', '3': 20, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
     {'1': 'moderation', '3': 21, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
@@ -59,7 +59,7 @@ const User$json = {
   '8': [
     {'1': '_email'},
     {'1': '_phone'},
-    {'1': '_avatar_media_id'},
+    {'1': '_avatar'},
     {'1': '_follower_count'},
     {'1': '_following_count'},
     {'1': '_group_count'},
@@ -78,26 +78,46 @@ final $typed_data.Uint8List userDescriptor = $convert.base64Decode(
     'VhbF9uYW1lGAMgASgJUghyZWFsTmFtZRIxCgVlbWFpbBgEIAEoCzIWLmpvbmxpbmUuQ29udGFj'
     'dE1ldGhvZEgAUgVlbWFpbIgBARIxCgVwaG9uZRgFIAEoCzIWLmpvbmxpbmUuQ29udGFjdE1ldG'
     'hvZEgBUgVwaG9uZYgBARI1CgtwZXJtaXNzaW9ucxgGIAMoDjITLmpvbmxpbmUuUGVybWlzc2lv'
-    'blILcGVybWlzc2lvbnMSKwoPYXZhdGFyX21lZGlhX2lkGAcgASgJSAJSDWF2YXRhck1lZGlhSW'
-    'SIAQESEAoDYmlvGAggASgJUgNiaW8SMwoKdmlzaWJpbGl0eRgUIAEoDjITLmpvbmxpbmUuVmlz'
-    'aWJpbGl0eVIKdmlzaWJpbGl0eRIzCgptb2RlcmF0aW9uGBUgASgOMhMuam9ubGluZS5Nb2Rlcm'
-    'F0aW9uUgptb2RlcmF0aW9uEk8KGWRlZmF1bHRfZm9sbG93X21vZGVyYXRpb24YHiABKA4yEy5q'
-    'b25saW5lLk1vZGVyYXRpb25SF2RlZmF1bHRGb2xsb3dNb2RlcmF0aW9uEioKDmZvbGxvd2VyX2'
-    'NvdW50GB8gASgFSANSDWZvbGxvd2VyQ291bnSIAQESLAoPZm9sbG93aW5nX2NvdW50GCAgASgF'
-    'SARSDmZvbGxvd2luZ0NvdW50iAEBEiQKC2dyb3VwX2NvdW50GCEgASgFSAVSCmdyb3VwQ291bn'
-    'SIAQESIgoKcG9zdF9jb3VudBgiIAEoBUgGUglwb3N0Q291bnSIAQESKgoOcmVzcG9uc2VfY291'
-    'bnQYIyABKAVIB1INcmVzcG9uc2VDb3VudIgBARJEChNjdXJyZW50X3VzZXJfZm9sbG93GDIgAS'
-    'gLMg8uam9ubGluZS5Gb2xsb3dICFIRY3VycmVudFVzZXJGb2xsb3eIAQESUQoadGFyZ2V0X2N1'
-    'cnJlbnRfdXNlcl9mb2xsb3cYMyABKAsyDy5qb25saW5lLkZvbGxvd0gJUhd0YXJnZXRDdXJyZW'
-    '50VXNlckZvbGxvd4gBARJSChhjdXJyZW50X2dyb3VwX21lbWJlcnNoaXAYNCABKAsyEy5qb25s'
-    'aW5lLk1lbWJlcnNoaXBIClIWY3VycmVudEdyb3VwTWVtYmVyc2hpcIgBARI5CgpjcmVhdGVkX2'
-    'F0GGQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0'
-    'ZWRfYXQYZSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAtSCXVwZGF0ZWRBdIgBAU'
-    'IICgZfZW1haWxCCAoGX3Bob25lQhIKEF9hdmF0YXJfbWVkaWFfaWRCEQoPX2ZvbGxvd2VyX2Nv'
+    'blILcGVybWlzc2lvbnMSNAoGYXZhdGFyGAcgASgLMhcuam9ubGluZS5NZWRpYVJlZmVyZW5jZU'
+    'gCUgZhdmF0YXKIAQESEAoDYmlvGAggASgJUgNiaW8SMwoKdmlzaWJpbGl0eRgUIAEoDjITLmpv'
+    'bmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIzCgptb2RlcmF0aW9uGBUgASgOMhMuam9ubG'
+    'luZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEk8KGWRlZmF1bHRfZm9sbG93X21vZGVyYXRpb24Y'
+    'HiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SF2RlZmF1bHRGb2xsb3dNb2RlcmF0aW9uEioKDm'
+    'ZvbGxvd2VyX2NvdW50GB8gASgFSANSDWZvbGxvd2VyQ291bnSIAQESLAoPZm9sbG93aW5nX2Nv'
+    'dW50GCAgASgFSARSDmZvbGxvd2luZ0NvdW50iAEBEiQKC2dyb3VwX2NvdW50GCEgASgFSAVSCm'
+    'dyb3VwQ291bnSIAQESIgoKcG9zdF9jb3VudBgiIAEoBUgGUglwb3N0Q291bnSIAQESKgoOcmVz'
+    'cG9uc2VfY291bnQYIyABKAVIB1INcmVzcG9uc2VDb3VudIgBARJEChNjdXJyZW50X3VzZXJfZm'
+    '9sbG93GDIgASgLMg8uam9ubGluZS5Gb2xsb3dICFIRY3VycmVudFVzZXJGb2xsb3eIAQESUQoa'
+    'dGFyZ2V0X2N1cnJlbnRfdXNlcl9mb2xsb3cYMyABKAsyDy5qb25saW5lLkZvbGxvd0gJUhd0YX'
+    'JnZXRDdXJyZW50VXNlckZvbGxvd4gBARJSChhjdXJyZW50X2dyb3VwX21lbWJlcnNoaXAYNCAB'
+    'KAsyEy5qb25saW5lLk1lbWJlcnNoaXBIClIWY3VycmVudEdyb3VwTWVtYmVyc2hpcIgBARI5Cg'
+    'pjcmVhdGVkX2F0GGQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0'
+    'Ej4KCnVwZGF0ZWRfYXQYZSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAtSCXVwZG'
+    'F0ZWRBdIgBAUIICgZfZW1haWxCCAoGX3Bob25lQgkKB19hdmF0YXJCEQoPX2ZvbGxvd2VyX2Nv'
     'dW50QhIKEF9mb2xsb3dpbmdfY291bnRCDgoMX2dyb3VwX2NvdW50Qg0KC19wb3N0X2NvdW50Qh'
     'EKD19yZXNwb25zZV9jb3VudEIWChRfY3VycmVudF91c2VyX2ZvbGxvd0IdChtfdGFyZ2V0X2N1'
     'cnJlbnRfdXNlcl9mb2xsb3dCGwoZX2N1cnJlbnRfZ3JvdXBfbWVtYmVyc2hpcEINCgtfdXBkYX'
     'RlZF9hdA==');
+
+@$core.Deprecated('Use authorDescriptor instead')
+const Author$json = {
+  '1': 'Author',
+  '2': [
+    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
+    {'1': 'username', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'username', '17': true},
+    {'1': 'avatar', '3': 3, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 1, '10': 'avatar', '17': true},
+  ],
+  '8': [
+    {'1': '_username'},
+    {'1': '_avatar'},
+  ],
+};
+
+/// Descriptor for `Author`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List authorDescriptor = $convert.base64Decode(
+    'CgZBdXRob3ISFwoHdXNlcl9pZBgBIAEoCVIGdXNlcklkEh8KCHVzZXJuYW1lGAIgASgJSABSCH'
+    'VzZXJuYW1liAEBEjQKBmF2YXRhchgDIAEoCzIXLmpvbmxpbmUuTWVkaWFSZWZlcmVuY2VIAVIG'
+    'YXZhdGFyiAEBQgsKCV91c2VybmFtZUIJCgdfYXZhdGFy');
 
 @$core.Deprecated('Use followDescriptor instead')
 const Follow$json = {

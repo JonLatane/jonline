@@ -151,7 +151,7 @@ Future<List<JonlineAccount>> generateSideAccounts(
                   .onError((error, stackTrace) =>
                       showSnackBar("Failed to upload avatar: $error"));
               if (uploadResult.statusCode == 200) {
-                user.avatarMediaId = uploadResult.body;
+                user.avatar.id = uploadResult.body;
               }
               // client.get
               // JonlineServer? server = account.server;

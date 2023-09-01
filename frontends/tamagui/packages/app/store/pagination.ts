@@ -1,6 +1,31 @@
 import { Event, EventInstance, EventListingType, Post, PostListingType } from "@jonline/api";
 import { EventsState, GroupsState, PostsState, selectEventById, selectPostById } from "./modules";
 import { RootState } from "./store";
+import { Dictionary } from "@reduxjs/toolkit";
+
+
+/**
+ * Fundamental type for Jonline pagination. Stores IDs of paginated resources like Groups, People, Posts, Events, etc. used in the UI.
+ * May be keyed by [Resource]ListingType or groupId.
+ * Posts should be loaded from the adapter/slice's entities. An empty page indicates there is no more data to load.
+ * Maps either: 
+ *  * <code>PostListingType</code> -> <code>page</code> -> <code>postIds</code>, or
+ *  * <code>groupId</code> -> <code>page</code> -> <code>postIds</code>
+ * Access for page <code>0</code> looks like:
+ *  * <code>postPages[PostListingType.PUBLIC_POSTS][0]</code> -> <code>["postId1", "postId2"]</code>.
+ *  * <code>groupPostPages['groupId1'][0]</code> -> <code>["postId1", "postId2"]</code>.
+ */
+export type GroupedPages = Dictionary<PaginatedIds>;
+
+/**
+ * Pagination state building block, accessed via <code>number</code> rather than <code>string</code> keys.
+ * I.E: An array of the form: <code> [["postId1", "postId2"], ["postId3"]]</code> (with "implicit" pagesize 2), just as a `Dictionary`
+ * for serializability. Access looks like: <code> pages[0] -> ["postId1", "postId2"], pages[1] -> ["postId3"]</code>.
+ * 
+ * We trust that the server will return the same consistent pagination data, and if not, "refresh the page to see the updated version"
+ * is a reasonable fallback.
+ */
+export type PaginatedIds = Dictionary<string[]>;
 
 function getPostsPage(posts: PostsState, listingType: PostListingType, page: number): Post[] {
   const pagePostIds: string[] = (posts.postPages[listingType] ?? {})[page] ?? [];

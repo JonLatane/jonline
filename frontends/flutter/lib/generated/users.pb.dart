@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -14,14 +14,103 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
-import 'permissions.pbenum.dart' as $10;
+import 'media.pb.dart' as $5;
+import 'permissions.pbenum.dart' as $11;
 import 'users.pbenum.dart';
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'visibility_moderation.pbenum.dart' as $10;
 
 export 'users.pbenum.dart';
 
 class User extends $pb.GeneratedMessage {
-  factory User() => create();
+  factory User({
+    $core.String? id,
+    $core.String? username,
+    $core.String? realName,
+    ContactMethod? email,
+    ContactMethod? phone,
+    $core.Iterable<$11.Permission>? permissions,
+    $5.MediaReference? avatar,
+    $core.String? bio,
+    $10.Visibility? visibility,
+    $10.Moderation? moderation,
+    $10.Moderation? defaultFollowModeration,
+    $core.int? followerCount,
+    $core.int? followingCount,
+    $core.int? groupCount,
+    $core.int? postCount,
+    $core.int? responseCount,
+    Follow? currentUserFollow,
+    Follow? targetCurrentUserFollow,
+    Membership? currentGroupMembership,
+    $9.Timestamp? createdAt,
+    $9.Timestamp? updatedAt,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (realName != null) {
+      $result.realName = realName;
+    }
+    if (email != null) {
+      $result.email = email;
+    }
+    if (phone != null) {
+      $result.phone = phone;
+    }
+    if (permissions != null) {
+      $result.permissions.addAll(permissions);
+    }
+    if (avatar != null) {
+      $result.avatar = avatar;
+    }
+    if (bio != null) {
+      $result.bio = bio;
+    }
+    if (visibility != null) {
+      $result.visibility = visibility;
+    }
+    if (moderation != null) {
+      $result.moderation = moderation;
+    }
+    if (defaultFollowModeration != null) {
+      $result.defaultFollowModeration = defaultFollowModeration;
+    }
+    if (followerCount != null) {
+      $result.followerCount = followerCount;
+    }
+    if (followingCount != null) {
+      $result.followingCount = followingCount;
+    }
+    if (groupCount != null) {
+      $result.groupCount = groupCount;
+    }
+    if (postCount != null) {
+      $result.postCount = postCount;
+    }
+    if (responseCount != null) {
+      $result.responseCount = responseCount;
+    }
+    if (currentUserFollow != null) {
+      $result.currentUserFollow = currentUserFollow;
+    }
+    if (targetCurrentUserFollow != null) {
+      $result.targetCurrentUserFollow = targetCurrentUserFollow;
+    }
+    if (currentGroupMembership != null) {
+      $result.currentGroupMembership = currentGroupMembership;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      $result.updatedAt = updatedAt;
+    }
+    return $result;
+  }
   User._() : super();
   factory User.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory User.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -32,12 +121,12 @@ class User extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'realName')
     ..aOM<ContactMethod>(4, _omitFieldNames ? '' : 'email', subBuilder: ContactMethod.create)
     ..aOM<ContactMethod>(5, _omitFieldNames ? '' : 'phone', subBuilder: ContactMethod.create)
-    ..pc<$10.Permission>(6, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
-    ..aOS(7, _omitFieldNames ? '' : 'avatarMediaId')
+    ..pc<$11.Permission>(6, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
+    ..aOM<$5.MediaReference>(7, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..aOS(8, _omitFieldNames ? '' : 'bio')
-    ..e<$11.Visibility>(20, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
-    ..e<$11.Moderation>(21, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(30, _omitFieldNames ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$10.Visibility>(20, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
+    ..e<$10.Moderation>(21, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$10.Moderation>(30, _omitFieldNames ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..a<$core.int>(31, _omitFieldNames ? '' : 'followerCount', $pb.PbFieldType.O3)
     ..a<$core.int>(32, _omitFieldNames ? '' : 'followingCount', $pb.PbFieldType.O3)
     ..a<$core.int>(33, _omitFieldNames ? '' : 'groupCount', $pb.PbFieldType.O3)
@@ -122,16 +211,20 @@ class User extends $pb.GeneratedMessage {
   ContactMethod ensurePhone() => $_ensure(4);
 
   @$pb.TagNumber(6)
-  $core.List<$10.Permission> get permissions => $_getList(5);
+  $core.List<$11.Permission> get permissions => $_getList(5);
 
+  /// Media ID for the user's avatar. Note that its visibility is managed by the User and thus
+  /// it may not be accessible to the current user.
   @$pb.TagNumber(7)
-  $core.String get avatarMediaId => $_getSZ(6);
+  $5.MediaReference get avatar => $_getN(6);
   @$pb.TagNumber(7)
-  set avatarMediaId($core.String v) { $_setString(6, v); }
+  set avatar($5.MediaReference v) { setField(7, v); }
   @$pb.TagNumber(7)
-  $core.bool hasAvatarMediaId() => $_has(6);
+  $core.bool hasAvatar() => $_has(6);
   @$pb.TagNumber(7)
-  void clearAvatarMediaId() => clearField(7);
+  void clearAvatar() => clearField(7);
+  @$pb.TagNumber(7)
+  $5.MediaReference ensureAvatar() => $_ensure(6);
 
   @$pb.TagNumber(8)
   $core.String get bio => $_getSZ(7);
@@ -142,28 +235,35 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearBio() => clearField(8);
 
+  /// User visibility is a bit different from Post visibility.
+  /// LIMITED means the user can only be seen by users they follow
+  /// (as opposed to Posts' individualized visibilities).
+  /// PRIVATE visibility means no one can see the user.
+  /// See server_configuration.proto for details about PRIVATE
+  /// users' ability to creep.
   @$pb.TagNumber(20)
-  $11.Visibility get visibility => $_getN(8);
+  $10.Visibility get visibility => $_getN(8);
   @$pb.TagNumber(20)
-  set visibility($11.Visibility v) { setField(20, v); }
+  set visibility($10.Visibility v) { setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasVisibility() => $_has(8);
   @$pb.TagNumber(20)
   void clearVisibility() => clearField(20);
 
   @$pb.TagNumber(21)
-  $11.Moderation get moderation => $_getN(9);
+  $10.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(21)
-  set moderation($11.Moderation v) { setField(21, v); }
+  set moderation($10.Moderation v) { setField(21, v); }
   @$pb.TagNumber(21)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(21)
   void clearModeration() => clearField(21);
 
+  /// Only PENDING or UNMODERATED are valid.
   @$pb.TagNumber(30)
-  $11.Moderation get defaultFollowModeration => $_getN(10);
+  $10.Moderation get defaultFollowModeration => $_getN(10);
   @$pb.TagNumber(30)
-  set defaultFollowModeration($11.Moderation v) { setField(30, v); }
+  set defaultFollowModeration($10.Moderation v) { setField(30, v); }
   @$pb.TagNumber(30)
   $core.bool hasDefaultFollowModeration() => $_has(10);
   @$pb.TagNumber(30)
@@ -214,6 +314,8 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(35)
   void clearResponseCount() => clearField(35);
 
+  /// Presence indicates the current user is following
+  /// or has a pending follow request for this user.
   @$pb.TagNumber(50)
   Follow get currentUserFollow => $_getN(16);
   @$pb.TagNumber(50)
@@ -225,6 +327,8 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(50)
   Follow ensureCurrentUserFollow() => $_ensure(16);
 
+  /// Presence indicates this user is following or has
+  /// a pending follow request for the current user.
   @$pb.TagNumber(51)
   Follow get targetCurrentUserFollow => $_getN(17);
   @$pb.TagNumber(51)
@@ -270,8 +374,114 @@ class User extends $pb.GeneratedMessage {
   $9.Timestamp ensureUpdatedAt() => $_ensure(20);
 }
 
+/// Post/authorship-centric version of User. UI can cross-reference user details
+/// from its own cache (for things like admin/bot icons).
+class Author extends $pb.GeneratedMessage {
+  factory Author({
+    $core.String? userId,
+    $core.String? username,
+    $5.MediaReference? avatar,
+  }) {
+    final $result = create();
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (avatar != null) {
+      $result.avatar = avatar;
+    }
+    return $result;
+  }
+  Author._() : super();
+  factory Author.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Author.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Author', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..aOS(2, _omitFieldNames ? '' : 'username')
+    ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  Author clone() => Author()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  Author copyWith(void Function(Author) updates) => super.copyWith((message) => updates(message as Author)) as Author;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Author create() => Author._();
+  Author createEmptyInstance() => create();
+  static $pb.PbList<Author> createRepeated() => $pb.PbList<Author>();
+  @$core.pragma('dart2js:noInline')
+  static Author getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Author>(create);
+  static Author? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get userId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set userId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUserId() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get username => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set username($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasUsername() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearUsername() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $5.MediaReference get avatar => $_getN(2);
+  @$pb.TagNumber(3)
+  set avatar($5.MediaReference v) { setField(3, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasAvatar() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAvatar() => clearField(3);
+  @$pb.TagNumber(3)
+  $5.MediaReference ensureAvatar() => $_ensure(2);
+}
+
 class Follow extends $pb.GeneratedMessage {
-  factory Follow() => create();
+  factory Follow({
+    $core.String? userId,
+    $core.String? targetUserId,
+    $10.Moderation? targetUserModeration,
+    $9.Timestamp? createdAt,
+    $9.Timestamp? updatedAt,
+  }) {
+    final $result = create();
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (targetUserId != null) {
+      $result.targetUserId = targetUserId;
+    }
+    if (targetUserModeration != null) {
+      $result.targetUserModeration = targetUserModeration;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      $result.updatedAt = updatedAt;
+    }
+    return $result;
+  }
   Follow._() : super();
   factory Follow.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Follow.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -279,7 +489,7 @@ class Follow extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Follow', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'targetUserId')
-    ..e<$11.Moderation>(3, _omitFieldNames ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$10.Moderation>(3, _omitFieldNames ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..aOM<$9.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
@@ -325,9 +535,9 @@ class Follow extends $pb.GeneratedMessage {
   void clearTargetUserId() => clearField(2);
 
   @$pb.TagNumber(3)
-  $11.Moderation get targetUserModeration => $_getN(2);
+  $10.Moderation get targetUserModeration => $_getN(2);
   @$pb.TagNumber(3)
-  set targetUserModeration($11.Moderation v) { setField(3, v); }
+  set targetUserModeration($10.Moderation v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasTargetUserModeration() => $_has(2);
   @$pb.TagNumber(3)
@@ -356,8 +566,43 @@ class Follow extends $pb.GeneratedMessage {
   $9.Timestamp ensureUpdatedAt() => $_ensure(4);
 }
 
+/// Model for a user's membership in a group. Memberships are generically
+/// included as part of User models when relevant in Jonline, but UIs should use the group_id
+/// to reconcile memberships with groups.
 class Membership extends $pb.GeneratedMessage {
-  factory Membership() => create();
+  factory Membership({
+    $core.String? userId,
+    $core.String? groupId,
+    $core.Iterable<$11.Permission>? permissions,
+    $10.Moderation? groupModeration,
+    $10.Moderation? userModeration,
+    $9.Timestamp? createdAt,
+    $9.Timestamp? updatedAt,
+  }) {
+    final $result = create();
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (permissions != null) {
+      $result.permissions.addAll(permissions);
+    }
+    if (groupModeration != null) {
+      $result.groupModeration = groupModeration;
+    }
+    if (userModeration != null) {
+      $result.userModeration = userModeration;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      $result.updatedAt = updatedAt;
+    }
+    return $result;
+  }
   Membership._() : super();
   factory Membership.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Membership.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -365,9 +610,9 @@ class Membership extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Membership', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'groupId')
-    ..pc<$10.Permission>(3, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
-    ..e<$11.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(5, _omitFieldNames ? '' : 'userModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..pc<$11.Permission>(3, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
+    ..e<$10.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$10.Moderation>(5, _omitFieldNames ? '' : 'userModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..aOM<$9.Timestamp>(6, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(7, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
@@ -412,22 +657,28 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearGroupId() => clearField(2);
 
+  /// Valid Membership Permissions are:
+  /// * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`
+  /// * `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`
+  /// * `ADMIN` and `MODERATE_USERS`
   @$pb.TagNumber(3)
-  $core.List<$10.Permission> get permissions => $_getList(2);
+  $core.List<$11.Permission> get permissions => $_getList(2);
 
+  /// Tracks whether group moderators need to approve the membership.
   @$pb.TagNumber(4)
-  $11.Moderation get groupModeration => $_getN(3);
+  $10.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($11.Moderation v) { setField(4, v); }
+  set groupModeration($10.Moderation v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
   void clearGroupModeration() => clearField(4);
 
+  /// Tracks whether the user needs to approve the membership.
   @$pb.TagNumber(5)
-  $11.Moderation get userModeration => $_getN(4);
+  $10.Moderation get userModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set userModeration($11.Moderation v) { setField(5, v); }
+  set userModeration($10.Moderation v) { setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasUserModeration() => $_has(4);
   @$pb.TagNumber(5)
@@ -457,14 +708,34 @@ class Membership extends $pb.GeneratedMessage {
 }
 
 class ContactMethod extends $pb.GeneratedMessage {
-  factory ContactMethod() => create();
+  factory ContactMethod({
+    $core.String? value,
+    $10.Visibility? visibility,
+    $core.bool? supportedByServer,
+    $core.bool? verified,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    if (visibility != null) {
+      $result.visibility = visibility;
+    }
+    if (supportedByServer != null) {
+      $result.supportedByServer = supportedByServer;
+    }
+    if (verified != null) {
+      $result.verified = verified;
+    }
+    return $result;
+  }
   ContactMethod._() : super();
   factory ContactMethod.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ContactMethod.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethod', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'value')
-    ..e<$11.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$10.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
     ..aOB(3, _omitFieldNames ? '' : 'supportedByServer')
     ..aOB(4, _omitFieldNames ? '' : 'verified')
     ..hasRequiredFields = false
@@ -491,6 +762,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   static ContactMethod getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ContactMethod>(create);
   static ContactMethod? _defaultInstance;
 
+  /// `mailto:` or `tel:` URL.
   @$pb.TagNumber(1)
   $core.String get value => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -501,14 +773,16 @@ class ContactMethod extends $pb.GeneratedMessage {
   void clearValue() => clearField(1);
 
   @$pb.TagNumber(2)
-  $11.Visibility get visibility => $_getN(1);
+  $10.Visibility get visibility => $_getN(1);
   @$pb.TagNumber(2)
-  set visibility($11.Visibility v) { setField(2, v); }
+  set visibility($10.Visibility v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasVisibility() => $_has(1);
   @$pb.TagNumber(2)
   void clearVisibility() => clearField(2);
 
+  /// Server-side flag indicating whether the server can verify
+  /// (and otherwise interact via) the contact method.
   @$pb.TagNumber(3)
   $core.bool get supportedByServer => $_getBF(2);
   @$pb.TagNumber(3)
@@ -518,6 +792,8 @@ class ContactMethod extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearSupportedByServer() => clearField(3);
 
+  /// Indicates the user has completed verification of the contact method.
+  /// Verification requires `supported_by_server` to be `true`.
   @$pb.TagNumber(4)
   $core.bool get verified => $_getBF(3);
   @$pb.TagNumber(4)
@@ -529,7 +805,27 @@ class ContactMethod extends $pb.GeneratedMessage {
 }
 
 class GetUsersRequest extends $pb.GeneratedMessage {
-  factory GetUsersRequest() => create();
+  factory GetUsersRequest({
+    $core.String? username,
+    $core.String? userId,
+    $core.int? page,
+    UserListingType? listingType,
+  }) {
+    final $result = create();
+    if (username != null) {
+      $result.username = username;
+    }
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (page != null) {
+      $result.page = page;
+    }
+    if (listingType != null) {
+      $result.listingType = listingType;
+    }
+    return $result;
+  }
   GetUsersRequest._() : super();
   factory GetUsersRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetUsersRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -581,6 +877,9 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUserId() => clearField(2);
 
+  /// optional string group_id = 3;
+  /// optional string email = 2;
+  /// optional string phone = 3;
   @$pb.TagNumber(99)
   $core.int get page => $_getIZ(2);
   @$pb.TagNumber(99)
@@ -601,7 +900,19 @@ class GetUsersRequest extends $pb.GeneratedMessage {
 }
 
 class GetUsersResponse extends $pb.GeneratedMessage {
-  factory GetUsersResponse() => create();
+  factory GetUsersResponse({
+    $core.Iterable<User>? users,
+    $core.bool? hasNextPage,
+  }) {
+    final $result = create();
+    if (users != null) {
+      $result.users.addAll(users);
+    }
+    if (hasNextPage != null) {
+      $result.hasNextPage = hasNextPage;
+    }
+    return $result;
+  }
   GetUsersResponse._() : super();
   factory GetUsersResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetUsersResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);

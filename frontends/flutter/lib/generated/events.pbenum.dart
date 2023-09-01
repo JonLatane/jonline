@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -38,6 +38,12 @@ class EventListingType extends $pb.ProtobufEnum {
   const EventListingType._($core.int v, $core.String n) : super(v, n);
 }
 
+/// EventInstance attendance statuses. State transitions may generally happen
+/// in any direction, but:
+/// * `REQUESTED` can only be selected if another user invited the user whose attendance is being described.
+/// * `GOING` and `NOT_GOING` cannot be selected if the EventInstance has ended (end time is in the past).
+/// * `WENT` and `DID_NOT_GO` cannot be selected if the EventInstance has not started (start time is in the future).
+/// `INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
 class AttendanceStatus extends $pb.ProtobufEnum {
   static const AttendanceStatus INTERESTED = AttendanceStatus._(0, _omitEnumNames ? '' : 'INTERESTED');
   static const AttendanceStatus REQUESTED = AttendanceStatus._(1, _omitEnumNames ? '' : 'REQUESTED');

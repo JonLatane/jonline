@@ -166,20 +166,16 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
     }
   }
 
-  const previewMediaId = post?.media[0];
-  const previewMedia = useTypedSelector((state: RootState) =>
-    previewMediaId && hasBeenVisible ? selectMediaById(state.media, previewMediaId) : undefined);
-  useEffect(() => {
-    if (hasBeenVisible && !previewMedia && previewMediaId) {
-      dispatch(loadMedia({ id: previewMediaId, ...accountOrServer }));
-    }
-  }, [previewMedia, hasBeenVisible]);
+  const firstImage = post?.media?.find(m => m.contentType.startsWith('image'));
+  const hasPrimaryImage = firstImage && post?.media?.length == 1 && !embedComponent;
+  const hasMediaToPreview = isPreview && (post?.media?.length ?? 0) > 1;
+  const previewUrl = useMediaUrl(hasPrimaryImage ? firstImage?.id : undefined);
 
-  const hasPrimaryImage = previewMedia?.contentType.startsWith('image')
-    && post?.media?.length == 1 && !embedComponent;
-  const hasMediaToPreview = post?.media?.length > 1;
-  const previewUrl = useMediaUrl(hasPrimaryImage ? previewMediaId : undefined);
-
+  const showBackgroundPreview = hasPrimaryImage;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
+  // if (hasPrimaryImage) {
+  //   debugger;
+  // }
+  // debugger;
   return (
     <>
       <YStack w='100%' ref={ref!} key={`post-card-${post.id}-${isPreview ? '-preview' : ''}`}>
@@ -258,8 +254,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     <ScrollView horizontal w={isPreview ? '260px' : '100%'}
                       h={media.gtXs ? '400px' : '260px'} >
                       <XStack space='$2'>
-                        {post.media.map((mediaId, i) => <YStack w={media.gtXs ? '400px' : '260px'} h='100%'>
-                          <MediaRenderer key={mediaId} media={Media.create({ id: mediaId })} />
+                        {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={media.gtXs ? '400px' : '260px'} h='100%'>
+                          <MediaRenderer media={mediaRef} />
                         </YStack>)}
                       </XStack>
                     </ScrollView>
@@ -274,7 +270,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                         height={media.sm ? 300 : 400}
                         resizeMode="contain"
                         als="center"
-                        source={{ uri: previewUrl }}
+                        source={{ uri: previewUrl, height: media.sm ? 300 : 400, width: media.sm ? 300 : 400 }}
                         borderRadius={10}
                       /> : undefined}
                     {
@@ -330,7 +326,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
               </YStack>
             </Card.Footer>
             <Card.Background>
-              {(hasBeenVisible && isPreview && hasPrimaryImage && previewUrl) ?
+              {(showBackgroundPreview) ?
                 <FadeInView>
                   <Image
                     pos="absolute"
@@ -339,7 +335,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                     height={300}
                     resizeMode="cover"
                     als="flex-start"
-                    source={{ uri: previewUrl! }}
+                    source={{ uri: previewUrl!, height: 300, width: 300 }}
                     blurRadius={1.5}
                     // borderRadius={5}
                     borderBottomRightRadius={5}

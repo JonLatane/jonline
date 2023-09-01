@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -18,7 +18,15 @@ import 'federation.pbenum.dart';
 export 'federation.pbenum.dart';
 
 class GetServiceVersionResponse extends $pb.GeneratedMessage {
-  factory GetServiceVersionResponse() => create();
+  factory GetServiceVersionResponse({
+    $core.String? version,
+  }) {
+    final $result = create();
+    if (version != null) {
+      $result.version = version;
+    }
+    return $result;
+  }
   GetServiceVersionResponse._() : super();
   factory GetServiceVersionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetServiceVersionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -59,8 +67,45 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   void clearVersion() => clearField(1);
 }
 
+/// Asks the Jonline instance the request is sent to federate your account with one at `server`.
+/// By default, a simple FederationRequest of `{server:, username:}` will create an account with
+/// the username on the server, generate a permanent auth token, and use it. If you want Jonline
+/// to store the remote Jonline account password, use `stored_credentials`. If you want to get the
+/// password and/or auth token for the remote account yourself, use `returned_credentials`.
 class FederateRequest extends $pb.GeneratedMessage {
-  factory FederateRequest() => create();
+  factory FederateRequest({
+    $core.String? server,
+    $core.bool? preexistingAccount,
+    $core.String? username,
+    $core.String? password,
+    $core.String? refreshToken,
+    FederationCredentials? storedCredentials,
+    FederationCredentials? returnedCredentials,
+  }) {
+    final $result = create();
+    if (server != null) {
+      $result.server = server;
+    }
+    if (preexistingAccount != null) {
+      $result.preexistingAccount = preexistingAccount;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (password != null) {
+      $result.password = password;
+    }
+    if (refreshToken != null) {
+      $result.refreshToken = refreshToken;
+    }
+    if (storedCredentials != null) {
+      $result.storedCredentials = storedCredentials;
+    }
+    if (returnedCredentials != null) {
+      $result.returnedCredentials = returnedCredentials;
+    }
+    return $result;
+  }
   FederateRequest._() : super();
   factory FederateRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FederateRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -97,6 +142,7 @@ class FederateRequest extends $pb.GeneratedMessage {
   static FederateRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederateRequest>(create);
   static FederateRequest? _defaultInstance;
 
+  /// The remote server to federate accounts with.
   @$pb.TagNumber(1)
   $core.String get server => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -106,6 +152,8 @@ class FederateRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearServer() => clearField(1);
 
+  /// Indicates whether the account already exists on the remote server.
+  /// When false, the instance will attempt to create the account on the remote server.
   @$pb.TagNumber(2)
   $core.bool get preexistingAccount => $_getBF(1);
   @$pb.TagNumber(2)
@@ -115,6 +163,7 @@ class FederateRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPreexistingAccount() => clearField(2);
 
+  /// The username of the account on the remote server.
   @$pb.TagNumber(3)
   $core.String get username => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -124,6 +173,8 @@ class FederateRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearUsername() => clearField(3);
 
+  /// When preexisting_account = true, will attempt to federate using that password.
+  /// When preexisting_account = false, will create a new account using that password.
   @$pb.TagNumber(4)
   $core.String get password => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -133,6 +184,8 @@ class FederateRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearPassword() => clearField(4);
 
+  /// When preexisting_account = true, will attempt to federate using that password.
+  /// When preexisting_account = false, will create a new account using that password.
   @$pb.TagNumber(5)
   $core.String get refreshToken => $_getSZ(4);
   @$pb.TagNumber(5)
@@ -142,6 +195,7 @@ class FederateRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearRefreshToken() => clearField(5);
 
+  /// Request whether to store only the auth token, or the auth token and password.
   @$pb.TagNumber(6)
   FederationCredentials get storedCredentials => $_getN(5);
   @$pb.TagNumber(6)
@@ -151,6 +205,7 @@ class FederateRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   void clearStoredCredentials() => clearField(6);
 
+  /// Request whether to return nothing, the auth token, or the auth token and password.
   @$pb.TagNumber(7)
   FederationCredentials get returnedCredentials => $_getN(6);
   @$pb.TagNumber(7)
@@ -162,7 +217,19 @@ class FederateRequest extends $pb.GeneratedMessage {
 }
 
 class FederateResponse extends $pb.GeneratedMessage {
-  factory FederateResponse() => create();
+  factory FederateResponse({
+    $core.String? refreshToken,
+    $core.String? password,
+  }) {
+    final $result = create();
+    if (refreshToken != null) {
+      $result.refreshToken = refreshToken;
+    }
+    if (password != null) {
+      $result.password = password;
+    }
+    return $result;
+  }
   FederateResponse._() : super();
   factory FederateResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FederateResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -214,7 +281,15 @@ class FederateResponse extends $pb.GeneratedMessage {
 }
 
 class GetFederatedAccountsRequest extends $pb.GeneratedMessage {
-  factory GetFederatedAccountsRequest() => create();
+  factory GetFederatedAccountsRequest({
+    FederationCredentials? returnedCredentials,
+  }) {
+    final $result = create();
+    if (returnedCredentials != null) {
+      $result.returnedCredentials = returnedCredentials;
+    }
+    return $result;
+  }
   GetFederatedAccountsRequest._() : super();
   factory GetFederatedAccountsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetFederatedAccountsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -256,7 +331,15 @@ class GetFederatedAccountsRequest extends $pb.GeneratedMessage {
 }
 
 class GetFederatedAccountsResponse extends $pb.GeneratedMessage {
-  factory GetFederatedAccountsResponse() => create();
+  factory GetFederatedAccountsResponse({
+    $core.Iterable<FederatedAccount>? federatedAccounts,
+  }) {
+    final $result = create();
+    if (federatedAccounts != null) {
+      $result.federatedAccounts.addAll(federatedAccounts);
+    }
+    return $result;
+  }
   GetFederatedAccountsResponse._() : super();
   factory GetFederatedAccountsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetFederatedAccountsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -292,7 +375,31 @@ class GetFederatedAccountsResponse extends $pb.GeneratedMessage {
 }
 
 class FederatedAccount extends $pb.GeneratedMessage {
-  factory FederatedAccount() => create();
+  factory FederatedAccount({
+    $core.String? id,
+    $core.String? server,
+    $core.String? username,
+    $core.String? password,
+    $core.String? refreshToken,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (server != null) {
+      $result.server = server;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (password != null) {
+      $result.password = password;
+    }
+    if (refreshToken != null) {
+      $result.refreshToken = refreshToken;
+    }
+    return $result;
+  }
   FederatedAccount._() : super();
   factory FederatedAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory FederatedAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);

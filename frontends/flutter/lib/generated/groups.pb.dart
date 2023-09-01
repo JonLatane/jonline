@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -15,14 +15,82 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
 import 'groups.pbenum.dart';
-import 'permissions.pbenum.dart' as $10;
+import 'permissions.pbenum.dart' as $11;
 import 'users.pb.dart' as $4;
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'visibility_moderation.pbenum.dart' as $10;
 
 export 'groups.pbenum.dart';
 
 class Group extends $pb.GeneratedMessage {
-  factory Group() => create();
+  factory Group({
+    $core.String? id,
+    $core.String? name,
+    $core.String? shortname,
+    $core.String? description,
+    $core.String? avatarMediaId,
+    $core.Iterable<$11.Permission>? defaultMembershipPermissions,
+    $10.Moderation? defaultMembershipModeration,
+    $10.Moderation? defaultPostModeration,
+    $10.Moderation? defaultEventModeration,
+    $10.Visibility? visibility,
+    $core.int? memberCount,
+    $core.int? postCount,
+    $core.int? eventCount,
+    $4.Membership? currentUserMembership,
+    $9.Timestamp? createdAt,
+    $9.Timestamp? updatedAt,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (name != null) {
+      $result.name = name;
+    }
+    if (shortname != null) {
+      $result.shortname = shortname;
+    }
+    if (description != null) {
+      $result.description = description;
+    }
+    if (avatarMediaId != null) {
+      $result.avatarMediaId = avatarMediaId;
+    }
+    if (defaultMembershipPermissions != null) {
+      $result.defaultMembershipPermissions.addAll(defaultMembershipPermissions);
+    }
+    if (defaultMembershipModeration != null) {
+      $result.defaultMembershipModeration = defaultMembershipModeration;
+    }
+    if (defaultPostModeration != null) {
+      $result.defaultPostModeration = defaultPostModeration;
+    }
+    if (defaultEventModeration != null) {
+      $result.defaultEventModeration = defaultEventModeration;
+    }
+    if (visibility != null) {
+      $result.visibility = visibility;
+    }
+    if (memberCount != null) {
+      $result.memberCount = memberCount;
+    }
+    if (postCount != null) {
+      $result.postCount = postCount;
+    }
+    if (eventCount != null) {
+      $result.eventCount = eventCount;
+    }
+    if (currentUserMembership != null) {
+      $result.currentUserMembership = currentUserMembership;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      $result.updatedAt = updatedAt;
+    }
+    return $result;
+  }
   Group._() : super();
   factory Group.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Group.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -33,11 +101,11 @@ class Group extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'shortname')
     ..aOS(4, _omitFieldNames ? '' : 'description')
     ..aOS(5, _omitFieldNames ? '' : 'avatarMediaId')
-    ..pc<$10.Permission>(6, _omitFieldNames ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $10.Permission.valueOf, enumValues: $10.Permission.values, defaultEnumValue: $10.Permission.PERMISSION_UNKNOWN)
-    ..e<$11.Moderation>(7, _omitFieldNames ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(8, _omitFieldNames ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(9, _omitFieldNames ? '' : 'defaultEventModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Visibility>(10, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..pc<$11.Permission>(6, _omitFieldNames ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
+    ..e<$10.Moderation>(7, _omitFieldNames ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$10.Moderation>(8, _omitFieldNames ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$10.Moderation>(9, _omitFieldNames ? '' : 'defaultEventModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$10.Visibility>(10, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
     ..a<$core.int>(11, _omitFieldNames ? '' : 'memberCount', $pb.PbFieldType.OU3)
     ..a<$core.int>(12, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU3)
     ..a<$core.int>(13, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU3)
@@ -114,39 +182,42 @@ class Group extends $pb.GeneratedMessage {
   void clearAvatarMediaId() => clearField(5);
 
   @$pb.TagNumber(6)
-  $core.List<$10.Permission> get defaultMembershipPermissions => $_getList(5);
+  $core.List<$11.Permission> get defaultMembershipPermissions => $_getList(5);
 
+  /// Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
   @$pb.TagNumber(7)
-  $11.Moderation get defaultMembershipModeration => $_getN(6);
+  $10.Moderation get defaultMembershipModeration => $_getN(6);
   @$pb.TagNumber(7)
-  set defaultMembershipModeration($11.Moderation v) { setField(7, v); }
+  set defaultMembershipModeration($10.Moderation v) { setField(7, v); }
   @$pb.TagNumber(7)
   $core.bool hasDefaultMembershipModeration() => $_has(6);
   @$pb.TagNumber(7)
   void clearDefaultMembershipModeration() => clearField(7);
 
   @$pb.TagNumber(8)
-  $11.Moderation get defaultPostModeration => $_getN(7);
+  $10.Moderation get defaultPostModeration => $_getN(7);
   @$pb.TagNumber(8)
-  set defaultPostModeration($11.Moderation v) { setField(8, v); }
+  set defaultPostModeration($10.Moderation v) { setField(8, v); }
   @$pb.TagNumber(8)
   $core.bool hasDefaultPostModeration() => $_has(7);
   @$pb.TagNumber(8)
   void clearDefaultPostModeration() => clearField(8);
 
   @$pb.TagNumber(9)
-  $11.Moderation get defaultEventModeration => $_getN(8);
+  $10.Moderation get defaultEventModeration => $_getN(8);
   @$pb.TagNumber(9)
-  set defaultEventModeration($11.Moderation v) { setField(9, v); }
+  set defaultEventModeration($10.Moderation v) { setField(9, v); }
   @$pb.TagNumber(9)
   $core.bool hasDefaultEventModeration() => $_has(8);
   @$pb.TagNumber(9)
   void clearDefaultEventModeration() => clearField(9);
 
+  /// LIMITED visibility groups are only visible to members. PRIVATE groups are only
+  /// visibile to users with the ADMIN group permission.
   @$pb.TagNumber(10)
-  $11.Visibility get visibility => $_getN(9);
+  $10.Visibility get visibility => $_getN(9);
   @$pb.TagNumber(10)
-  set visibility($11.Visibility v) { setField(10, v); }
+  set visibility($10.Visibility v) { setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasVisibility() => $_has(9);
   @$pb.TagNumber(10)
@@ -214,7 +285,31 @@ class Group extends $pb.GeneratedMessage {
 }
 
 class GetGroupsRequest extends $pb.GeneratedMessage {
-  factory GetGroupsRequest() => create();
+  factory GetGroupsRequest({
+    $core.String? groupId,
+    $core.String? groupName,
+    $core.String? groupShortname,
+    GroupListingType? listingType,
+    $core.int? page,
+  }) {
+    final $result = create();
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (groupName != null) {
+      $result.groupName = groupName;
+    }
+    if (groupShortname != null) {
+      $result.groupShortname = groupShortname;
+    }
+    if (listingType != null) {
+      $result.listingType = listingType;
+    }
+    if (page != null) {
+      $result.page = page;
+    }
+    return $result;
+  }
   GetGroupsRequest._() : super();
   factory GetGroupsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetGroupsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -267,6 +362,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearGroupName() => clearField(2);
 
+  /// Group shortname search is case-insensitive.
   @$pb.TagNumber(3)
   $core.String get groupShortname => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -296,7 +392,19 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
 }
 
 class GetGroupsResponse extends $pb.GeneratedMessage {
-  factory GetGroupsResponse() => create();
+  factory GetGroupsResponse({
+    $core.Iterable<Group>? groups,
+    $core.bool? hasNextPage,
+  }) {
+    final $result = create();
+    if (groups != null) {
+      $result.groups.addAll(groups);
+    }
+    if (hasNextPage != null) {
+      $result.hasNextPage = hasNextPage;
+    }
+    return $result;
+  }
   GetGroupsResponse._() : super();
   factory GetGroupsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetGroupsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -341,8 +449,22 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
   void clearHasNextPage() => clearField(2);
 }
 
+/// Used by group MODERATE_USERS mods to manage group requests from the People tab.
+/// See also: UserListingType.MEMBERSHIP_REQUESTS.
 class Member extends $pb.GeneratedMessage {
-  factory Member() => create();
+  factory Member({
+    $4.User? user,
+    $4.Membership? membership,
+  }) {
+    final $result = create();
+    if (user != null) {
+      $result.user = user;
+    }
+    if (membership != null) {
+      $result.membership = membership;
+    }
+    return $result;
+  }
   Member._() : super();
   factory Member.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Member.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -398,7 +520,27 @@ class Member extends $pb.GeneratedMessage {
 }
 
 class GetMembersRequest extends $pb.GeneratedMessage {
-  factory GetMembersRequest() => create();
+  factory GetMembersRequest({
+    $core.String? groupId,
+    $core.String? username,
+    $10.Moderation? groupModeration,
+    $core.int? page,
+  }) {
+    final $result = create();
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (username != null) {
+      $result.username = username;
+    }
+    if (groupModeration != null) {
+      $result.groupModeration = groupModeration;
+    }
+    if (page != null) {
+      $result.page = page;
+    }
+    return $result;
+  }
   GetMembersRequest._() : super();
   factory GetMembersRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetMembersRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -406,7 +548,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMembersRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
-    ..e<$11.Moderation>(3, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$10.Moderation>(3, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..a<$core.int>(10, _omitFieldNames ? '' : 'page', $pb.PbFieldType.O3)
     ..hasRequiredFields = false
   ;
@@ -451,9 +593,9 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   void clearUsername() => clearField(2);
 
   @$pb.TagNumber(3)
-  $11.Moderation get groupModeration => $_getN(2);
+  $10.Moderation get groupModeration => $_getN(2);
   @$pb.TagNumber(3)
-  set groupModeration($11.Moderation v) { setField(3, v); }
+  set groupModeration($10.Moderation v) { setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasGroupModeration() => $_has(2);
   @$pb.TagNumber(3)
@@ -470,7 +612,19 @@ class GetMembersRequest extends $pb.GeneratedMessage {
 }
 
 class GetMembersResponse extends $pb.GeneratedMessage {
-  factory GetMembersResponse() => create();
+  factory GetMembersResponse({
+    $core.Iterable<Member>? members,
+    $core.bool? hasNextPage,
+  }) {
+    final $result = create();
+    if (members != null) {
+      $result.members.addAll(members);
+    }
+    if (hasNextPage != null) {
+      $result.hasNextPage = hasNextPage;
+    }
+    return $result;
+  }
   GetMembersResponse._() : super();
   factory GetMembersResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetMembersResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);

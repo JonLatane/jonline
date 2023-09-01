@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -18,12 +18,49 @@ import 'google/protobuf/timestamp.pb.dart' as $9;
 import 'location.pb.dart' as $12;
 import 'posts.pb.dart' as $7;
 import 'users.pb.dart' as $4;
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'visibility_moderation.pbenum.dart' as $10;
 
 export 'events.pbenum.dart';
 
+/// Valid GetEventsRequest formats:
+/// - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
+/// - {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
+/// - {event_id:}                                     (TODO: get single event including preview data)
+/// - {listing_type: GroupEvents|
+///      GroupEventsPendingModeration,
+///      group_id:}                                  (TODO: get events/events needing moderation for a group)
+/// - {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
+/// - {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
 class GetEventsRequest extends $pb.GeneratedMessage {
-  factory GetEventsRequest() => create();
+  factory GetEventsRequest({
+    $core.String? eventId,
+    $core.String? authorUserId,
+    $core.String? groupId,
+    $core.String? eventInstanceId,
+    TimeFilter? timeFilter,
+    EventListingType? listingType,
+  }) {
+    final $result = create();
+    if (eventId != null) {
+      $result.eventId = eventId;
+    }
+    if (authorUserId != null) {
+      $result.authorUserId = authorUserId;
+    }
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (eventInstanceId != null) {
+      $result.eventInstanceId = eventInstanceId;
+    }
+    if (timeFilter != null) {
+      $result.timeFilter = timeFilter;
+    }
+    if (listingType != null) {
+      $result.listingType = listingType;
+    }
+    return $result;
+  }
   GetEventsRequest._() : super();
   factory GetEventsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetEventsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -59,6 +96,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   static GetEventsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventsRequest>(create);
   static GetEventsRequest? _defaultInstance;
 
+  /// Returns the single event with the given ID.
   @$pb.TagNumber(1)
   $core.String get eventId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -68,6 +106,9 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearEventId() => clearField(1);
 
+  /// Limits results to replies to the given event.
+  /// optional string replies_to_event_id = 2;
+  /// Limits results to those by the given author user ID.
   @$pb.TagNumber(2)
   $core.String get authorUserId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -116,8 +157,29 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   void clearListingType() => clearField(10);
 }
 
+/// Time filter that simply works on the starts_at and ends_at fields.
 class TimeFilter extends $pb.GeneratedMessage {
-  factory TimeFilter() => create();
+  factory TimeFilter({
+    $9.Timestamp? startsAfter,
+    $9.Timestamp? endsAfter,
+    $9.Timestamp? startsBefore,
+    $9.Timestamp? endsBefore,
+  }) {
+    final $result = create();
+    if (startsAfter != null) {
+      $result.startsAfter = startsAfter;
+    }
+    if (endsAfter != null) {
+      $result.endsAfter = endsAfter;
+    }
+    if (startsBefore != null) {
+      $result.startsBefore = startsBefore;
+    }
+    if (endsBefore != null) {
+      $result.endsBefore = endsBefore;
+    }
+    return $result;
+  }
   TimeFilter._() : super();
   factory TimeFilter.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory TimeFilter.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -197,7 +259,15 @@ class TimeFilter extends $pb.GeneratedMessage {
 }
 
 class GetEventsResponse extends $pb.GeneratedMessage {
-  factory GetEventsResponse() => create();
+  factory GetEventsResponse({
+    $core.Iterable<Event>? events,
+  }) {
+    final $result = create();
+    if (events != null) {
+      $result.events.addAll(events);
+    }
+    return $result;
+  }
   GetEventsResponse._() : super();
   factory GetEventsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetEventsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -233,7 +303,27 @@ class GetEventsResponse extends $pb.GeneratedMessage {
 }
 
 class Event extends $pb.GeneratedMessage {
-  factory Event() => create();
+  factory Event({
+    $core.String? id,
+    $7.Post? post,
+    EventInfo? info,
+    $core.Iterable<EventInstance>? instances,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (post != null) {
+      $result.post = post;
+    }
+    if (info != null) {
+      $result.info = info;
+    }
+    if (instances != null) {
+      $result.instances.addAll(instances);
+    }
+    return $result;
+  }
   Event._() : super();
   factory Event.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Event.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -302,6 +392,8 @@ class Event extends $pb.GeneratedMessage {
   $core.List<EventInstance> get instances => $_getList(3);
 }
 
+/// To be used for ticketing, RSVPs, etc.
+/// Stored as JSON in the database.
 class EventInfo extends $pb.GeneratedMessage {
   factory EventInfo() => create();
   EventInfo._() : super();
@@ -335,7 +427,39 @@ class EventInfo extends $pb.GeneratedMessage {
 }
 
 class EventInstance extends $pb.GeneratedMessage {
-  factory EventInstance() => create();
+  factory EventInstance({
+    $core.String? id,
+    $core.String? eventId,
+    $7.Post? post,
+    EventInstanceInfo? info,
+    $9.Timestamp? startsAt,
+    $9.Timestamp? endsAt,
+    $12.Location? location,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (eventId != null) {
+      $result.eventId = eventId;
+    }
+    if (post != null) {
+      $result.post = post;
+    }
+    if (info != null) {
+      $result.info = info;
+    }
+    if (startsAt != null) {
+      $result.startsAt = startsAt;
+    }
+    if (endsAt != null) {
+      $result.endsAt = endsAt;
+    }
+    if (location != null) {
+      $result.location = location;
+    }
+    return $result;
+  }
   EventInstance._() : super();
   factory EventInstance.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventInstance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -446,6 +570,8 @@ class EventInstance extends $pb.GeneratedMessage {
   $12.Location ensureLocation() => $_ensure(6);
 }
 
+/// To be used for ticketing, RSVPs, etc.
+/// Stored as JSON in the database.
 class EventInstanceInfo extends $pb.GeneratedMessage {
   factory EventInstanceInfo() => create();
   EventInstanceInfo._() : super();
@@ -484,8 +610,67 @@ enum EventAttendance_Attendee {
   notSet
 }
 
+///  Describes the attendance of a user at an `EventInstance`. Such as:
+///  * A user's RSVP to an `EventInstance`.
+///  * Invitation status of a user to an `EventInstance`.
+///  * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
+///
+///  `EventAttendance.status` works like a state machine, but state transitions are governed only
+///  by the current time and the start/end times of `EventInstance`s:
+///  * Before an event starts, EventAttendance essentially only describes RSVPs and invitations.
+///  * After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate
+///  they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
+///  * During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
 class EventAttendance extends $pb.GeneratedMessage {
-  factory EventAttendance() => create();
+  factory EventAttendance({
+    $core.String? eventInstanceId,
+    $core.String? userId,
+    AnonymousAttendee? anonymousAttendee,
+    $core.int? numberOfGuests,
+    AttendanceStatus? status,
+    $core.String? invitingUserId,
+    $core.String? privateNote,
+    $core.String? publicNote,
+    $10.Moderation? moderation,
+    $9.Timestamp? createdAt,
+    $9.Timestamp? updatedAt,
+  }) {
+    final $result = create();
+    if (eventInstanceId != null) {
+      $result.eventInstanceId = eventInstanceId;
+    }
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (anonymousAttendee != null) {
+      $result.anonymousAttendee = anonymousAttendee;
+    }
+    if (numberOfGuests != null) {
+      $result.numberOfGuests = numberOfGuests;
+    }
+    if (status != null) {
+      $result.status = status;
+    }
+    if (invitingUserId != null) {
+      $result.invitingUserId = invitingUserId;
+    }
+    if (privateNote != null) {
+      $result.privateNote = privateNote;
+    }
+    if (publicNote != null) {
+      $result.publicNote = publicNote;
+    }
+    if (moderation != null) {
+      $result.moderation = moderation;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      $result.updatedAt = updatedAt;
+    }
+    return $result;
+  }
   EventAttendance._() : super();
   factory EventAttendance.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventAttendance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -505,7 +690,7 @@ class EventAttendance extends $pb.GeneratedMessage {
     ..aOS(6, _omitFieldNames ? '' : 'invitingUserId')
     ..aOS(7, _omitFieldNames ? '' : 'privateNote')
     ..aOS(8, _omitFieldNames ? '' : 'publicNote')
-    ..e<$11.Moderation>(9, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$10.Moderation>(9, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..aOM<$9.Timestamp>(10, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(11, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
@@ -610,9 +795,9 @@ class EventAttendance extends $pb.GeneratedMessage {
   void clearPublicNote() => clearField(8);
 
   @$pb.TagNumber(9)
-  $11.Moderation get moderation => $_getN(8);
+  $10.Moderation get moderation => $_getN(8);
   @$pb.TagNumber(9)
-  set moderation($11.Moderation v) { setField(9, v); }
+  set moderation($10.Moderation v) { setField(9, v); }
   @$pb.TagNumber(9)
   $core.bool hasModeration() => $_has(8);
   @$pb.TagNumber(9)
@@ -641,8 +826,22 @@ class EventAttendance extends $pb.GeneratedMessage {
   $9.Timestamp ensureUpdatedAt() => $_ensure(10);
 }
 
+/// The visibility on `AnonymousAttendee` `ContactMethod`s support the `LIMITED` visibility, which will
+/// make them visible to the event creator.
 class AnonymousAttendee extends $pb.GeneratedMessage {
-  factory AnonymousAttendee() => create();
+  factory AnonymousAttendee({
+    $core.String? name,
+    $core.Iterable<$4.ContactMethod>? contactMethods,
+  }) {
+    final $result = create();
+    if (name != null) {
+      $result.name = name;
+    }
+    if (contactMethods != null) {
+      $result.contactMethods.addAll(contactMethods);
+    }
+    return $result;
+  }
   AnonymousAttendee._() : super();
   factory AnonymousAttendee.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AnonymousAttendee.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -683,6 +882,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearName() => clearField(1);
 
+  /// The visibility on `AnonymousAttendee`
   @$pb.TagNumber(2)
   $core.List<$4.ContactMethod> get contactMethods => $_getList(1);
 }

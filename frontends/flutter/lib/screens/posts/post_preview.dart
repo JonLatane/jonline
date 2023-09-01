@@ -78,7 +78,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
       : post.link.startsWith(RegExp(r'https?://'))
           ? post.link
           : 'http://${post.link}';
-  String? get previewMediaId => post.media.firstOrNull;
+  String? get previewMediaId => post.media.firstOrNull?.id;
   // String get previewKey => "post-preview-${widget.server}:${post.id}";
   // List<int>? previewImage;
   String? get content => post.content.isEmpty ? null : post.content;
@@ -266,12 +266,12 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                             fontWeight: FontWeight.w300,
                             color: Colors.grey),
                       ),
-                      if (author?.avatarMediaId.isNotEmpty ?? false)
+                      if (author?.hasAvatar() ?? false ?? false)
                         Padding(
                           padding: const EdgeInsets.only(right: 5.0),
                           child: CircleAvatar(
                             backgroundImage:
-                                mediaImageProvider(author!.avatarMediaId),
+                                mediaImageProvider(author!.avatar.id),
                             maxRadius: 10,
                           ),
                         ),

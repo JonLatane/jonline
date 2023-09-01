@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -16,8 +16,37 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import 'google/protobuf/timestamp.pb.dart' as $9;
 import 'users.pb.dart' as $4;
 
+/// Request to create a new account.
 class CreateAccountRequest extends $pb.GeneratedMessage {
-  factory CreateAccountRequest() => create();
+  factory CreateAccountRequest({
+    $core.String? username,
+    $core.String? password,
+    $4.ContactMethod? email,
+    $4.ContactMethod? phone,
+    $9.Timestamp? expiresAt,
+    $core.String? deviceName,
+  }) {
+    final $result = create();
+    if (username != null) {
+      $result.username = username;
+    }
+    if (password != null) {
+      $result.password = password;
+    }
+    if (email != null) {
+      $result.email = email;
+    }
+    if (phone != null) {
+      $result.phone = phone;
+    }
+    if (expiresAt != null) {
+      $result.expiresAt = expiresAt;
+    }
+    if (deviceName != null) {
+      $result.deviceName = deviceName;
+    }
+    return $result;
+  }
   CreateAccountRequest._() : super();
   factory CreateAccountRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateAccountRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -53,6 +82,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   static CreateAccountRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreateAccountRequest>(create);
   static CreateAccountRequest? _defaultInstance;
 
+  /// Username for the account to be created. Must not exist.
   @$pb.TagNumber(1)
   $core.String get username => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -62,6 +92,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUsername() => clearField(1);
 
+  /// Password for the account to be created. Must be at least 8 characters.
   @$pb.TagNumber(2)
   $core.String get password => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -71,6 +102,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPassword() => clearField(2);
 
+  /// Email to be used as a contact method.
   @$pb.TagNumber(3)
   $4.ContactMethod get email => $_getN(2);
   @$pb.TagNumber(3)
@@ -82,6 +114,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $4.ContactMethod ensureEmail() => $_ensure(2);
 
+  /// Phone number to be used as a contact method.
   @$pb.TagNumber(4)
   $4.ContactMethod get phone => $_getN(3);
   @$pb.TagNumber(4)
@@ -93,6 +126,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $4.ContactMethod ensurePhone() => $_ensure(3);
 
+  /// Request an expiration time for the Auth Token returned. By default it will not expire.
   @$pb.TagNumber(5)
   $9.Timestamp get expiresAt => $_getN(4);
   @$pb.TagNumber(5)
@@ -114,8 +148,33 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   void clearDeviceName() => clearField(6);
 }
 
+/// Request to login to an existing account.
 class LoginRequest extends $pb.GeneratedMessage {
-  factory LoginRequest() => create();
+  factory LoginRequest({
+    $core.String? username,
+    $core.String? password,
+    $9.Timestamp? expiresAt,
+    $core.String? deviceName,
+    $core.String? userId,
+  }) {
+    final $result = create();
+    if (username != null) {
+      $result.username = username;
+    }
+    if (password != null) {
+      $result.password = password;
+    }
+    if (expiresAt != null) {
+      $result.expiresAt = expiresAt;
+    }
+    if (deviceName != null) {
+      $result.deviceName = deviceName;
+    }
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    return $result;
+  }
   LoginRequest._() : super();
   factory LoginRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory LoginRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -150,6 +209,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   static LoginRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<LoginRequest>(create);
   static LoginRequest? _defaultInstance;
 
+  /// Username for the account to be logged into. Must exist.
   @$pb.TagNumber(1)
   $core.String get username => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -159,6 +219,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUsername() => clearField(1);
 
+  /// Password for the account to be logged into.
   @$pb.TagNumber(2)
   $core.String get password => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -168,6 +229,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPassword() => clearField(2);
 
+  /// Request an expiration time for the Auth Token returned. By default it will not expire.
   @$pb.TagNumber(3)
   $9.Timestamp get expiresAt => $_getN(2);
   @$pb.TagNumber(3)
@@ -179,6 +241,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $9.Timestamp ensureExpiresAt() => $_ensure(2);
 
+  /// (Not yet implemented.)
   @$pb.TagNumber(4)
   $core.String get deviceName => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -188,6 +251,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearDeviceName() => clearField(4);
 
+  /// (TODO) If provided, username is ignored and login is initiated via user_id instead.
   @$pb.TagNumber(5)
   $core.String get userId => $_getSZ(4);
   @$pb.TagNumber(5)
@@ -198,8 +262,25 @@ class LoginRequest extends $pb.GeneratedMessage {
   void clearUserId() => clearField(5);
 }
 
+/// Returned when creating an account or logging in.
 class RefreshTokenResponse extends $pb.GeneratedMessage {
-  factory RefreshTokenResponse() => create();
+  factory RefreshTokenResponse({
+    ExpirableToken? refreshToken,
+    ExpirableToken? accessToken,
+    $4.User? user,
+  }) {
+    final $result = create();
+    if (refreshToken != null) {
+      $result.refreshToken = refreshToken;
+    }
+    if (accessToken != null) {
+      $result.accessToken = accessToken;
+    }
+    if (user != null) {
+      $result.user = user;
+    }
+    return $result;
+  }
   RefreshTokenResponse._() : super();
   factory RefreshTokenResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory RefreshTokenResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -232,6 +313,8 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   static RefreshTokenResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RefreshTokenResponse>(create);
   static RefreshTokenResponse? _defaultInstance;
 
+  /// The persisted token the device should store and associate with the account.
+  /// Used to request new access tokens.
   @$pb.TagNumber(1)
   ExpirableToken get refreshToken => $_getN(0);
   @$pb.TagNumber(1)
@@ -243,6 +326,7 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ExpirableToken ensureRefreshToken() => $_ensure(0);
 
+  /// An initial access token provided for convenience.
   @$pb.TagNumber(2)
   ExpirableToken get accessToken => $_getN(1);
   @$pb.TagNumber(2)
@@ -254,6 +338,7 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   ExpirableToken ensureAccessToken() => $_ensure(1);
 
+  /// The user associated with the account that was created/logged into.
   @$pb.TagNumber(3)
   $4.User get user => $_getN(2);
   @$pb.TagNumber(3)
@@ -266,8 +351,21 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   $4.User ensureUser() => $_ensure(2);
 }
 
+/// Generic type for refresh and access tokens.
 class ExpirableToken extends $pb.GeneratedMessage {
-  factory ExpirableToken() => create();
+  factory ExpirableToken({
+    $core.String? token,
+    $9.Timestamp? expiresAt,
+  }) {
+    final $result = create();
+    if (token != null) {
+      $result.token = token;
+    }
+    if (expiresAt != null) {
+      $result.expiresAt = expiresAt;
+    }
+    return $result;
+  }
   ExpirableToken._() : super();
   factory ExpirableToken.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ExpirableToken.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -299,6 +397,7 @@ class ExpirableToken extends $pb.GeneratedMessage {
   static ExpirableToken getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExpirableToken>(create);
   static ExpirableToken? _defaultInstance;
 
+  /// The secure token value.
   @$pb.TagNumber(1)
   $core.String get token => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -308,6 +407,7 @@ class ExpirableToken extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearToken() => clearField(1);
 
+  /// Optional expiration time for the token. If not set, the token will not expire.
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
@@ -320,8 +420,21 @@ class ExpirableToken extends $pb.GeneratedMessage {
   $9.Timestamp ensureExpiresAt() => $_ensure(1);
 }
 
+/// Request for a new access token using a refresh token.
 class AccessTokenRequest extends $pb.GeneratedMessage {
-  factory AccessTokenRequest() => create();
+  factory AccessTokenRequest({
+    $core.String? refreshToken,
+    $9.Timestamp? expiresAt,
+  }) {
+    final $result = create();
+    if (refreshToken != null) {
+      $result.refreshToken = refreshToken;
+    }
+    if (expiresAt != null) {
+      $result.expiresAt = expiresAt;
+    }
+    return $result;
+  }
   AccessTokenRequest._() : super();
   factory AccessTokenRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AccessTokenRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -362,6 +475,7 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearRefreshToken() => clearField(1);
 
+  /// Optional *requested* expiration time for the token. Server may ignore this.
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
@@ -374,8 +488,21 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   $9.Timestamp ensureExpiresAt() => $_ensure(1);
 }
 
+/// Returned when requesting access tokens.
 class AccessTokenResponse extends $pb.GeneratedMessage {
-  factory AccessTokenResponse() => create();
+  factory AccessTokenResponse({
+    ExpirableToken? refreshToken,
+    ExpirableToken? accessToken,
+  }) {
+    final $result = create();
+    if (refreshToken != null) {
+      $result.refreshToken = refreshToken;
+    }
+    if (accessToken != null) {
+      $result.accessToken = accessToken;
+    }
+    return $result;
+  }
   AccessTokenResponse._() : super();
   factory AccessTokenResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory AccessTokenResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -407,6 +534,9 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   static AccessTokenResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AccessTokenResponse>(create);
   static AccessTokenResponse? _defaultInstance;
 
+  /// If a refresh token is returned, it should be stored. Old refresh tokens may expire *before*
+  /// their indicated expiration.
+  /// See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
   @$pb.TagNumber(1)
   ExpirableToken get refreshToken => $_getN(0);
   @$pb.TagNumber(1)

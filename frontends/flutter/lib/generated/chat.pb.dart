@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -15,8 +15,25 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'posts.pb.dart' as $7;
 
+/// User-to-user (or multi-user) conversation.
 class Conversation extends $pb.GeneratedMessage {
-  factory Conversation() => create();
+  factory Conversation({
+    $core.String? id,
+    $core.String? name,
+    $core.Iterable<$core.String>? userIds,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (name != null) {
+      $result.name = name;
+    }
+    if (userIds != null) {
+      $result.userIds.addAll(userIds);
+    }
+    return $result;
+  }
   Conversation._() : super();
   factory Conversation.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Conversation.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -72,7 +89,19 @@ class Conversation extends $pb.GeneratedMessage {
 }
 
 class ConversationPost extends $pb.GeneratedMessage {
-  factory ConversationPost() => create();
+  factory ConversationPost({
+    $core.String? conversationId,
+    $core.String? postId,
+  }) {
+    final $result = create();
+    if (conversationId != null) {
+      $result.conversationId = conversationId;
+    }
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    return $result;
+  }
   ConversationPost._() : super();
   factory ConversationPost.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory ConversationPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -123,8 +152,18 @@ class ConversationPost extends $pb.GeneratedMessage {
   void clearPostId() => clearField(2);
 }
 
+/// Conversation for a Group. Functionally 1:1 with its Group, and not actually
+/// stored in the database. Just presented as an API type for clarity and consistency.
 class GroupConversation extends $pb.GeneratedMessage {
-  factory GroupConversation() => create();
+  factory GroupConversation({
+    $core.String? groupId,
+  }) {
+    final $result = create();
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    return $result;
+  }
   GroupConversation._() : super();
   factory GroupConversation.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GroupConversation.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -166,7 +205,19 @@ class GroupConversation extends $pb.GeneratedMessage {
 }
 
 class GroupConversationPost extends $pb.GeneratedMessage {
-  factory GroupConversationPost() => create();
+  factory GroupConversationPost({
+    $core.String? groupId,
+    $core.String? postId,
+  }) {
+    final $result = create();
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    return $result;
+  }
   GroupConversationPost._() : super();
   factory GroupConversationPost.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GroupConversationPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -218,7 +269,19 @@ class GroupConversationPost extends $pb.GeneratedMessage {
 }
 
 class CreateConversationPostRequest extends $pb.GeneratedMessage {
-  factory CreateConversationPostRequest() => create();
+  factory CreateConversationPostRequest({
+    $core.String? conversationId,
+    $7.Post? post,
+  }) {
+    final $result = create();
+    if (conversationId != null) {
+      $result.conversationId = conversationId;
+    }
+    if (post != null) {
+      $result.post = post;
+    }
+    return $result;
+  }
   CreateConversationPostRequest._() : super();
   factory CreateConversationPostRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateConversationPostRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -272,7 +335,19 @@ class CreateConversationPostRequest extends $pb.GeneratedMessage {
 }
 
 class CreateGroupConversationPostRequest extends $pb.GeneratedMessage {
-  factory CreateGroupConversationPostRequest() => create();
+  factory CreateGroupConversationPostRequest({
+    $core.String? groupId,
+    $7.Post? post,
+  }) {
+    final $result = create();
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (post != null) {
+      $result.post = post;
+    }
+    return $result;
+  }
   CreateGroupConversationPostRequest._() : super();
   factory CreateGroupConversationPostRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory CreateGroupConversationPostRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -326,7 +401,15 @@ class CreateGroupConversationPostRequest extends $pb.GeneratedMessage {
 }
 
 class GetConversationsRequest extends $pb.GeneratedMessage {
-  factory GetConversationsRequest() => create();
+  factory GetConversationsRequest({
+    $core.int? page,
+  }) {
+    final $result = create();
+    if (page != null) {
+      $result.page = page;
+    }
+    return $result;
+  }
   GetConversationsRequest._() : super();
   factory GetConversationsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetConversationsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -368,7 +451,15 @@ class GetConversationsRequest extends $pb.GeneratedMessage {
 }
 
 class GetConversationsResponse extends $pb.GeneratedMessage {
-  factory GetConversationsResponse() => create();
+  factory GetConversationsResponse({
+    $core.Iterable<Conversation>? conversations,
+  }) {
+    final $result = create();
+    if (conversations != null) {
+      $result.conversations.addAll(conversations);
+    }
+    return $result;
+  }
   GetConversationsResponse._() : super();
   factory GetConversationsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetConversationsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -410,7 +501,23 @@ enum GetConversationRequest_RequestedId {
 }
 
 class GetConversationRequest extends $pb.GeneratedMessage {
-  factory GetConversationRequest() => create();
+  factory GetConversationRequest({
+    $core.String? conversationId,
+    $core.String? groupId,
+    $core.int? page,
+  }) {
+    final $result = create();
+    if (conversationId != null) {
+      $result.conversationId = conversationId;
+    }
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (page != null) {
+      $result.page = page;
+    }
+    return $result;
+  }
   GetConversationRequest._() : super();
   factory GetConversationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetConversationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -481,7 +588,15 @@ class GetConversationRequest extends $pb.GeneratedMessage {
 }
 
 class GetConversationResponse extends $pb.GeneratedMessage {
-  factory GetConversationResponse() => create();
+  factory GetConversationResponse({
+    $core.Iterable<$7.Post>? conversation,
+  }) {
+    final $result = create();
+    if (conversation != null) {
+      $result.conversation.addAll(conversation);
+    }
+    return $result;
+  }
   GetConversationResponse._() : super();
   factory GetConversationResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetConversationResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);

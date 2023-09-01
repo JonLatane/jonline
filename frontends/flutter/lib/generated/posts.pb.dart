@@ -4,7 +4,7 @@
 //
 // @dart = 2.12
 
-// ignore_for_file: annotate_overrides, camel_case_types
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
 // ignore_for_file: non_constant_identifier_names, prefer_final_fields
 // ignore_for_file: unnecessary_import, unnecessary_this, unused_import
@@ -14,13 +14,59 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
+import 'media.pb.dart' as $5;
 import 'posts.pbenum.dart';
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'users.pb.dart' as $4;
+import 'visibility_moderation.pbenum.dart' as $10;
 
 export 'posts.pbenum.dart';
 
+///  Valid GetPostsRequest formats:
+///
+///  - `{[listing_type: PublicPosts]}`
+///      - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
+///  - `{listing_type:MyGroupsPosts|FollowingPosts}`
+///      - Get posts from groups you're a member of or from users you're following. Authorization required.
+///  - `{post_id:}`
+///      - Get one post ,including preview data/
+///  - `{post_id:, reply_depth: 1}`
+///      - Get replies to a post - only support for replyDepth=1 is done for now though.
+///  - `{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}`
+///      - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
+///  - `{author_user_id:, group_id:}`
+///      - Get posts by a user for a group. (TODO)
+///  - `{listing_type: AuthorPosts, author_user_id:}`
+///      - Get posts by a user. (TODO)
 class GetPostsRequest extends $pb.GeneratedMessage {
-  factory GetPostsRequest() => create();
+  factory GetPostsRequest({
+    $core.String? postId,
+    $core.String? authorUserId,
+    $core.String? groupId,
+    $core.int? replyDepth,
+    PostListingType? listingType,
+    $core.int? page,
+  }) {
+    final $result = create();
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (authorUserId != null) {
+      $result.authorUserId = authorUserId;
+    }
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (replyDepth != null) {
+      $result.replyDepth = replyDepth;
+    }
+    if (listingType != null) {
+      $result.listingType = listingType;
+    }
+    if (page != null) {
+      $result.page = page;
+    }
+    return $result;
+  }
   GetPostsRequest._() : super();
   factory GetPostsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPostsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -56,6 +102,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   static GetPostsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPostsRequest>(create);
   static GetPostsRequest? _defaultInstance;
 
+  /// Returns the single post with the given ID.
   @$pb.TagNumber(1)
   $core.String get postId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -65,6 +112,9 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearPostId() => clearField(1);
 
+  /// Limits results to replies to the given post.
+  /// optional string replies_to_post_id = 2;
+  /// Limits results to those by the given author user ID.
   @$pb.TagNumber(2)
   $core.String get authorUserId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -83,6 +133,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearGroupId() => clearField(3);
 
+  /// TODO: Implement support for this
   @$pb.TagNumber(4)
   $core.int get replyDepth => $_getIZ(3);
   @$pb.TagNumber(4)
@@ -112,7 +163,15 @@ class GetPostsRequest extends $pb.GeneratedMessage {
 }
 
 class GetPostsResponse extends $pb.GeneratedMessage {
-  factory GetPostsResponse() => create();
+  factory GetPostsResponse({
+    $core.Iterable<Post>? posts,
+  }) {
+    final $result = create();
+    if (posts != null) {
+      $result.posts.addAll(posts);
+    }
+    return $result;
+  }
   GetPostsResponse._() : super();
   factory GetPostsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetPostsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -147,15 +206,114 @@ class GetPostsResponse extends $pb.GeneratedMessage {
   $core.List<Post> get posts => $_getList(0);
 }
 
+///  A `Post` is a message that can be posted to the server. Its `visibility`
+///  as well as any associated `GroupPost`s and `UserPost`s determine what users
+///  see it and where.
+///
+///  `Post`s are also a fundamental unit of the system. They provide a building block
+///  of Visibility and Moderation management that is used throughout Posts, Replies, Events,
+///  and Event Instances.
 class Post extends $pb.GeneratedMessage {
-  factory Post() => create();
+  factory Post({
+    $core.String? id,
+    $4.Author? author,
+    $core.String? replyToPostId,
+    $core.String? title,
+    $core.String? link,
+    $core.String? content,
+    $core.int? responseCount,
+    $core.int? replyCount,
+    $core.int? groupCount,
+    $core.Iterable<$5.MediaReference>? media,
+    $core.bool? mediaGenerated,
+    $core.bool? embedLink,
+    $core.bool? shareable,
+    PostContext? context,
+    $10.Visibility? visibility,
+    $10.Moderation? moderation,
+    GroupPost? currentGroupPost,
+    $core.Iterable<Post>? replies,
+    $9.Timestamp? createdAt,
+    $9.Timestamp? updatedAt,
+    $9.Timestamp? publishedAt,
+    $9.Timestamp? lastActivityAt,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (author != null) {
+      $result.author = author;
+    }
+    if (replyToPostId != null) {
+      $result.replyToPostId = replyToPostId;
+    }
+    if (title != null) {
+      $result.title = title;
+    }
+    if (link != null) {
+      $result.link = link;
+    }
+    if (content != null) {
+      $result.content = content;
+    }
+    if (responseCount != null) {
+      $result.responseCount = responseCount;
+    }
+    if (replyCount != null) {
+      $result.replyCount = replyCount;
+    }
+    if (groupCount != null) {
+      $result.groupCount = groupCount;
+    }
+    if (media != null) {
+      $result.media.addAll(media);
+    }
+    if (mediaGenerated != null) {
+      $result.mediaGenerated = mediaGenerated;
+    }
+    if (embedLink != null) {
+      $result.embedLink = embedLink;
+    }
+    if (shareable != null) {
+      $result.shareable = shareable;
+    }
+    if (context != null) {
+      $result.context = context;
+    }
+    if (visibility != null) {
+      $result.visibility = visibility;
+    }
+    if (moderation != null) {
+      $result.moderation = moderation;
+    }
+    if (currentGroupPost != null) {
+      $result.currentGroupPost = currentGroupPost;
+    }
+    if (replies != null) {
+      $result.replies.addAll(replies);
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    if (updatedAt != null) {
+      $result.updatedAt = updatedAt;
+    }
+    if (publishedAt != null) {
+      $result.publishedAt = publishedAt;
+    }
+    if (lastActivityAt != null) {
+      $result.lastActivityAt = lastActivityAt;
+    }
+    return $result;
+  }
   Post._() : super();
   factory Post.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory Post.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Post', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<Author>(2, _omitFieldNames ? '' : 'author', subBuilder: Author.create)
+    ..aOM<$4.Author>(2, _omitFieldNames ? '' : 'author', subBuilder: $4.Author.create)
     ..aOS(3, _omitFieldNames ? '' : 'replyToPostId')
     ..aOS(4, _omitFieldNames ? '' : 'title')
     ..aOS(5, _omitFieldNames ? '' : 'link')
@@ -163,13 +321,13 @@ class Post extends $pb.GeneratedMessage {
     ..a<$core.int>(7, _omitFieldNames ? '' : 'responseCount', $pb.PbFieldType.O3)
     ..a<$core.int>(8, _omitFieldNames ? '' : 'replyCount', $pb.PbFieldType.O3)
     ..a<$core.int>(9, _omitFieldNames ? '' : 'groupCount', $pb.PbFieldType.O3)
-    ..pPS(10, _omitFieldNames ? '' : 'media')
+    ..pc<$5.MediaReference>(10, _omitFieldNames ? '' : 'media', $pb.PbFieldType.PM, subBuilder: $5.MediaReference.create)
     ..aOB(11, _omitFieldNames ? '' : 'mediaGenerated')
     ..aOB(12, _omitFieldNames ? '' : 'embedLink')
     ..aOB(13, _omitFieldNames ? '' : 'shareable')
     ..e<PostContext>(14, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
-    ..e<$11.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
-    ..e<$11.Moderation>(16, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$10.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
+    ..e<$10.Moderation>(16, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..aOM<GroupPost>(18, _omitFieldNames ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
     ..pc<Post>(19, _omitFieldNames ? '' : 'replies', $pb.PbFieldType.PM, subBuilder: Post.create)
     ..aOM<$9.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
@@ -200,6 +358,7 @@ class Post extends $pb.GeneratedMessage {
   static Post getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Post>(create);
   static Post? _defaultInstance;
 
+  /// Unique ID of the post.
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -209,17 +368,19 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
+  /// The author of the post. This is a smaller version of User.
   @$pb.TagNumber(2)
-  Author get author => $_getN(1);
+  $4.Author get author => $_getN(1);
   @$pb.TagNumber(2)
-  set author(Author v) { setField(2, v); }
+  set author($4.Author v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasAuthor() => $_has(1);
   @$pb.TagNumber(2)
   void clearAuthor() => clearField(2);
   @$pb.TagNumber(2)
-  Author ensureAuthor() => $_ensure(1);
+  $4.Author ensureAuthor() => $_ensure(1);
 
+  /// If this is a reply, this is the ID of the post it's replying to.
   @$pb.TagNumber(3)
   $core.String get replyToPostId => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -229,6 +390,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearReplyToPostId() => clearField(3);
 
+  /// The title of the post. This is invalid for replies.
   @$pb.TagNumber(4)
   $core.String get title => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -238,6 +400,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearTitle() => clearField(4);
 
+  /// The link of the post. This is invalid for replies.
   @$pb.TagNumber(5)
   $core.String get link => $_getSZ(4);
   @$pb.TagNumber(5)
@@ -247,6 +410,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearLink() => clearField(5);
 
+  /// The content of the post. This is required for replies.
   @$pb.TagNumber(6)
   $core.String get content => $_getSZ(5);
   @$pb.TagNumber(6)
@@ -256,6 +420,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   void clearContent() => clearField(6);
 
+  /// The number of responses (replies *and* replies to replies, etc.) to this post.
   @$pb.TagNumber(7)
   $core.int get responseCount => $_getIZ(6);
   @$pb.TagNumber(7)
@@ -265,6 +430,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   void clearResponseCount() => clearField(7);
 
+  /// The number of *direct* replies to this post.
   @$pb.TagNumber(8)
   $core.int get replyCount => $_getIZ(7);
   @$pb.TagNumber(8)
@@ -274,6 +440,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearReplyCount() => clearField(8);
 
+  /// The number of groups this post is in.
   @$pb.TagNumber(9)
   $core.int get groupCount => $_getIZ(8);
   @$pb.TagNumber(9)
@@ -283,9 +450,12 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   void clearGroupCount() => clearField(9);
 
+  /// List of Media IDs associated with this post. Order is preserved.
   @$pb.TagNumber(10)
-  $core.List<$core.String> get media => $_getList(9);
+  $core.List<$5.MediaReference> get media => $_getList(9);
 
+  /// Flag indicating whether Media has been generated for this Post.
+  /// Currently previews are generated for any Link post.
   @$pb.TagNumber(11)
   $core.bool get mediaGenerated => $_getBF(10);
   @$pb.TagNumber(11)
@@ -295,6 +465,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   void clearMediaGenerated() => clearField(11);
 
+  /// Flag indicating
   @$pb.TagNumber(12)
   $core.bool get embedLink => $_getBF(11);
   @$pb.TagNumber(12)
@@ -304,6 +475,8 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   void clearEmbedLink() => clearField(12);
 
+  /// Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
+  /// and a `DIRECT` post can be shared with individuals.
   @$pb.TagNumber(13)
   $core.bool get shareable => $_getBF(12);
   @$pb.TagNumber(13)
@@ -313,6 +486,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(13)
   void clearShareable() => clearField(13);
 
+  /// Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.)
   @$pb.TagNumber(14)
   PostContext get context => $_getN(13);
   @$pb.TagNumber(14)
@@ -322,24 +496,28 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(14)
   void clearContext() => clearField(14);
 
+  /// The visibility of the Post.
   @$pb.TagNumber(15)
-  $11.Visibility get visibility => $_getN(14);
+  $10.Visibility get visibility => $_getN(14);
   @$pb.TagNumber(15)
-  set visibility($11.Visibility v) { setField(15, v); }
+  set visibility($10.Visibility v) { setField(15, v); }
   @$pb.TagNumber(15)
   $core.bool hasVisibility() => $_has(14);
   @$pb.TagNumber(15)
   void clearVisibility() => clearField(15);
 
+  /// The moderation of the Post.
   @$pb.TagNumber(16)
-  $11.Moderation get moderation => $_getN(15);
+  $10.Moderation get moderation => $_getN(15);
   @$pb.TagNumber(16)
-  set moderation($11.Moderation v) { setField(16, v); }
+  set moderation($10.Moderation v) { setField(16, v); }
   @$pb.TagNumber(16)
   $core.bool hasModeration() => $_has(15);
   @$pb.TagNumber(16)
   void clearModeration() => clearField(16);
 
+  /// If the Post was retrieved from GetPosts with a group_id, the GroupPost
+  /// metadata may be returned along with the Post.
   @$pb.TagNumber(18)
   GroupPost get currentGroupPost => $_getN(16);
   @$pb.TagNumber(18)
@@ -351,6 +529,13 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(18)
   GroupPost ensureCurrentGroupPost() => $_ensure(16);
 
+  ///  Hierarchical replies to this post.
+  ///
+  ///  There will never be more than `reply_count` replies. However,
+  ///  there may be fewer than `reply_count` replies if some replies are
+  ///  hidden by moderation or visibility.
+  ///  Replies are not generally loaded by default, but can be added to Posts
+  ///  in the frontend.
   @$pb.TagNumber(19)
   $core.List<Post> get replies => $_getList(17);
 
@@ -399,60 +584,35 @@ class Post extends $pb.GeneratedMessage {
   $9.Timestamp ensureLastActivityAt() => $_ensure(21);
 }
 
-class Author extends $pb.GeneratedMessage {
-  factory Author() => create();
-  Author._() : super();
-  factory Author.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Author.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Author', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'userId')
-    ..aOS(2, _omitFieldNames ? '' : 'username')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  Author clone() => Author()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  Author copyWith(void Function(Author) updates) => super.copyWith((message) => updates(message as Author)) as Author;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static Author create() => Author._();
-  Author createEmptyInstance() => create();
-  static $pb.PbList<Author> createRepeated() => $pb.PbList<Author>();
-  @$core.pragma('dart2js:noInline')
-  static Author getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Author>(create);
-  static Author? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $core.String get userId => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set userId($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasUserId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearUserId() => clearField(1);
-
-  @$pb.TagNumber(2)
-  $core.String get username => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set username($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasUsername() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearUsername() => clearField(2);
-}
-
+/// A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
+/// information about the moderation of the post in the group, as well as
+/// the time it was cross-posted and the user who did the cross-posting.
 class GroupPost extends $pb.GeneratedMessage {
-  factory GroupPost() => create();
+  factory GroupPost({
+    $core.String? groupId,
+    $core.String? postId,
+    $core.String? userId,
+    $10.Moderation? groupModeration,
+    $9.Timestamp? createdAt,
+  }) {
+    final $result = create();
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (groupModeration != null) {
+      $result.groupModeration = groupModeration;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    return $result;
+  }
   GroupPost._() : super();
   factory GroupPost.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GroupPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -461,7 +621,7 @@ class GroupPost extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..aOS(2, _omitFieldNames ? '' : 'postId')
     ..aOS(3, _omitFieldNames ? '' : 'userId')
-    ..e<$11.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$10.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
@@ -515,9 +675,9 @@ class GroupPost extends $pb.GeneratedMessage {
   void clearUserId() => clearField(3);
 
   @$pb.TagNumber(4)
-  $11.Moderation get groupModeration => $_getN(3);
+  $10.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($11.Moderation v) { setField(4, v); }
+  set groupModeration($10.Moderation v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
@@ -535,8 +695,25 @@ class GroupPost extends $pb.GeneratedMessage {
   $9.Timestamp ensureCreatedAt() => $_ensure(4);
 }
 
+/// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused.
 class UserPost extends $pb.GeneratedMessage {
-  factory UserPost() => create();
+  factory UserPost({
+    $core.String? groupId,
+    $core.String? userId,
+    $9.Timestamp? createdAt,
+  }) {
+    final $result = create();
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (createdAt != null) {
+      $result.createdAt = createdAt;
+    }
+    return $result;
+  }
   UserPost._() : super();
   factory UserPost.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory UserPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -599,8 +776,21 @@ class UserPost extends $pb.GeneratedMessage {
   $9.Timestamp ensureCreatedAt() => $_ensure(2);
 }
 
+/// Used for getting context about GroupPosts of an existing Post.
 class GetGroupPostsRequest extends $pb.GeneratedMessage {
-  factory GetGroupPostsRequest() => create();
+  factory GetGroupPostsRequest({
+    $core.String? postId,
+    $core.String? groupId,
+  }) {
+    final $result = create();
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (groupId != null) {
+      $result.groupId = groupId;
+    }
+    return $result;
+  }
   GetGroupPostsRequest._() : super();
   factory GetGroupPostsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetGroupPostsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
@@ -651,8 +841,17 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
   void clearGroupId() => clearField(2);
 }
 
+/// Used for getting context about GroupPosts of an existing Post.
 class GetGroupPostsResponse extends $pb.GeneratedMessage {
-  factory GetGroupPostsResponse() => create();
+  factory GetGroupPostsResponse({
+    $core.Iterable<GroupPost>? groupPosts,
+  }) {
+    final $result = create();
+    if (groupPosts != null) {
+      $result.groupPosts.addAll(groupPosts);
+    }
+    return $result;
+  }
   GetGroupPostsResponse._() : super();
   factory GetGroupPostsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory GetGroupPostsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);

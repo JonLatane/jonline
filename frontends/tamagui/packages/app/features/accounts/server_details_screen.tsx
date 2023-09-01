@@ -17,6 +17,7 @@ import { SingleMediaChooser } from './single_media_chooser'
 import { MediaRenderer } from '../media/media_renderer'
 import { themedButtonBackground } from '../../utils/themed_button_background';
 import { hasAdminPermission } from 'app/utils/permission_utils'
+import { MediaRef } from '../media/media_chooser'
 
 const { useParam } = createParam<{ id: string }>()
 
@@ -262,8 +263,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       : undefined}
                     {isAdmin
                       ? <SingleMediaChooser mediaUseName='Wide Logo'
-                        mediaId={logo?.wideMediaId}
-                        setMediaId={v => setLogo({ ...(logo ?? {}), wideMediaId: v })} />
+                        selectedMedia={logo ? { id: logo.wideMediaId } as MediaRef : undefined}
+                        setSelectedMedia={v => setLogo({ ...(logo ?? {}), wideMediaId: v?.id })} />
                       : undefined}
                     {isAdmin || logo?.wideMediaId
                       ? <Heading size='$2' mt='$2'>Square</Heading>
@@ -273,8 +274,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       : undefined}
                     {isAdmin
                       ? <SingleMediaChooser mediaUseName='Square Logo'
-                        mediaId={logo?.squareMediaId}
-                        setMediaId={v => setLogo({ ...(logo ?? {}), squareMediaId: v })} />
+                        selectedMedia={logo ? { id: logo.squareMediaId } as MediaRef : undefined}
+                        setSelectedMedia={v => setLogo({ ...(logo ?? {}), squareMediaId: v?.id })} />
                       : undefined}
                   </>
                   : undefined}
