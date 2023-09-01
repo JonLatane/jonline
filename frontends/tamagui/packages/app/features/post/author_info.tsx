@@ -54,14 +54,7 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
     }
   }, [authorId, isVisible]);
   const avatarUrl = useMediaUrl(author?.avatar?.id);
-  // debugger;
-
-  console.log('avatarUrl', avatarUrl)
   const avatarImage = <XStack p={0} w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
-    {/* <Avatar circular size="$6">
-      <Avatar.Image source={{ uri: avatarUrl }} />
-      <Avatar.Fallback bc={navColor} />
-    </Avatar> */}
     <Image
       width={media.gtXs ? 50 : 26}
       height={media.gtXs ? 50 : 26}
