@@ -4,7 +4,6 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jonline/models/jonline_server.dart';
-// import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:scrolls_to_top/scrolls_to_top.dart';
 
 import '../app_state.dart';
