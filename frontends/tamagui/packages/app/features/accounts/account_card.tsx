@@ -58,7 +58,7 @@ const AccountCard: React.FC<Props> = ({ account }) => {
                   borderRadius={mediaQuery.gtXs || true ? 25 : 13}
                   resizeMode="cover"
                   als="flex-start"
-                  source={{ uri: avatarUrl }}
+                  source={{ uri: avatarUrl, width: mediaQuery.gtXs || true ? 50 : 26, height: mediaQuery.gtXs || true ? 50 : 26 }}
                 // blurRadius={1.5}
                 // borderRadius={5}
                 />

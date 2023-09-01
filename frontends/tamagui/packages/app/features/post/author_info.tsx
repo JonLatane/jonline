@@ -63,16 +63,12 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
       <Avatar.Fallback bc={navColor} />
     </Avatar> */}
     <Image
-      // pos="absolute"
       width={media.gtXs ? 50 : 26}
-      // opacity={0.25}
       height={media.gtXs ? 50 : 26}
       borderRadius={media.gtXs ? 25 : 13}
-      // resizeMode="cover"
+      resizeMode="cover"
       als="flex-start"
       source={{ uri: avatarUrl, width: media.gtXs ? 50 : 26, height: media.gtXs ? 50 : 26 }}
-    // blurRadius={1.5}
-    // borderRadius={5}
     />
   </XStack>;
 

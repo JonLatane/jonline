@@ -73,7 +73,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       borderRadius={25}
       resizeMode="cover"
       als="flex-start"
-      source={{ uri: avatarUrl }}
+      source={{ uri: avatarUrl, height: 50, width: 50 }}
     /> : <XStack></XStack>}
     <YStack f={1}>
       <Heading size="$1" mr='auto'>{server?.host}/</Heading>

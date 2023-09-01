@@ -295,7 +295,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                     height={media.sm ? 300 : 400}
                     resizeMode="contain"
                     als="center"
-                    source={{ uri: previewUrl }}
+                    source={{ uri: previewUrl, height: media.sm ? 300 : 400, width: media.sm ? 300 : 400 }}
                     borderRadius={10}
                   /> : undefined}
                 {contentView}
@@ -345,7 +345,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                   height={300}
                   resizeMode="contain"
                   als="flex-start"
-                  source={{ uri: previewUrl }}
+                  source={{ uri: previewUrl, height: 300, width: 300 }}
                   blurRadius={1.5}
                   // borderRadius={5}
                   borderBottomRightRadius={5}
