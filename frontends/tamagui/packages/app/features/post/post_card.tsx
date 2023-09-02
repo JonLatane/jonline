@@ -170,20 +170,16 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const hasGeneratedPreview = generatedPreview && post?.media?.length == 1 && !embedComponent;
 
   const scrollableMediaMinCount = isPreview && hasGeneratedPreview ? 3 : 2;
-  const showScrollableMediaPreviews = (post?.media?.length ?? 0) > scrollableMediaMinCount;
+  const showScrollableMediaPreviews = (post?.media?.length ?? 0) >= scrollableMediaMinCount;
   const singleMediaPreview = showScrollableMediaPreviews
     ? undefined
-    : post?.media?.find(m => m.contentType.startsWith('image') && !m.generated);
+    : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
   const previewUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
   const showBackgroundPreview = hasGeneratedPreview;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
-  // if (hasPrimaryImage) {
-  //   debugger;
-  // }
-  // debugger;
-  // const foregroundSize = media.gtLg ? 1100 : media.gtMd ? 900 : media.gtSm ? 700 : media.gtXs ? 500 : 200;
-  const backgroundSize = media.gtLg ? 1100 : media.gtMd ? 900 : media.gtSm ? 700 : media.gtXs ? 500 : 300;
-  const foregroundSize = backgroundSize * 0.9;
+  const backgroundSize = media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500;
+  const foregroundSize = backgroundSize * 0.7;
+
   return (
     <>
       <YStack w='100%' ref={ref!} key={`post-card-${post.id}-${isPreview ? '-preview' : ''}`}>
@@ -271,8 +267,9 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
 
                 <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                   <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
-                    {(!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) ?
-                      <Image
+                    {singleMediaPreview
+                      // (!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) 
+                      ? <Image
                         mb='$3'
                         width={foregroundSize}
                         height={foregroundSize}

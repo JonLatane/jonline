@@ -125,19 +125,21 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     }
   }
 
-  const previewMediaRef = post?.media[0];
-  const previewMedia = previewMediaRef && hasBeenVisible ? previewMediaRef : undefined;
-  useEffect(() => {
-    if (hasBeenVisible && !previewMedia && previewMediaRef) {
-      dispatch(loadMedia({ ...previewMediaRef, ...accountOrServer }));
-    }
-  }, [previewMedia, hasBeenVisible]);
+  const generatedPreview = post?.media?.find(m => m.contentType.startsWith('image') && m.generated);
+  const hasGeneratedPreview = generatedPreview && post?.media?.length == 1 && !embedComponent;
 
-  const hasPrimaryImage = previewMedia?.contentType.startsWith('image')
-    && post?.media?.length == 1 && !embedComponent;
-  const hasMediaToPreview = post?.media?.length > 1;
-  const previewUrl = useMediaUrl(hasPrimaryImage ? previewMediaRef?.id : undefined);
+  const scrollableMediaMinCount = isPreview && hasGeneratedPreview ? 3 : 2;
+  const showScrollableMediaPreviews = (post?.media?.length ?? 0) >= scrollableMediaMinCount;
+  const singleMediaPreview = showScrollableMediaPreviews
+    ? undefined
+    : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
+  const previewUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
+  const showBackgroundPreview = hasGeneratedPreview;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
+  const backgroundSize = isPreview
+    ? (media.gtSm ? 400 : 310)
+    : (media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500);
+  const foregroundSize = backgroundSize * 0.7;
 
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
   // const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
@@ -275,27 +277,27 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
               {hasBeenVisible && embedComponent
                 ? <FadeInView><div>{embedComponent}</div></FadeInView>
                 : undefined}
-              {hasMediaToPreview && hasBeenVisible
-                ? <XStack w='100%' maw={800}>
+              {showScrollableMediaPreviews ?
+                <XStack w='100%' maw={800}>
                   <ScrollView horizontal w={isPreview ? '260px' : '100%'}
                     h={media.gtXs ? '400px' : '260px'} >
                     <XStack space='$2'>
-                      {post.media.map((mediaRef, i) => <YStack w={media.gtXs ? '400px' : '260px'} h='100%'>
-                        <MediaRenderer key={mediaRef.id} media={mediaRef} />
+                      {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={media.gtXs ? '400px' : '260px'} h='100%'>
+                        <MediaRenderer media={mediaRef} />
                       </YStack>)}
                     </XStack>
                   </ScrollView>
-                </XStack>
-                : undefined}
+                </XStack> : undefined}
               <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
-                {(!isPreview && previewUrl && previewUrl != '') ?
-                  <Image
+                {singleMediaPreview
+                  // (!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) 
+                  ? <Image
                     mb='$3'
-                    width={media.sm ? 300 : 400}
-                    height={media.sm ? 300 : 400}
+                    width={foregroundSize}
+                    height={foregroundSize}
                     resizeMode="contain"
                     als="center"
-                    source={{ uri: previewUrl, height: media.sm ? 300 : 400, width: media.sm ? 300 : 400 }}
+                    source={{ uri: previewUrl, height: foregroundSize, width: foregroundSize }}
                     borderRadius={10}
                   /> : undefined}
                 {contentView}
@@ -336,16 +338,16 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
             </YStack>
           </Card.Footer>
           <Card.Background>
-            {(hasBeenVisible && isPreview && previewUrl && previewUrl != '') ?
+            {(showBackgroundPreview) ?
               <FadeInView>
                 <Image
                   pos="absolute"
-                  width={300}
+                  width={backgroundSize}
                   opacity={0.25}
-                  height={300}
-                  resizeMode="contain"
+                  height={backgroundSize}
+                  resizeMode="cover"
                   als="flex-start"
-                  source={{ uri: previewUrl, height: 300, width: 300 }}
+                  source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
                   blurRadius={1.5}
                   // borderRadius={5}
                   borderBottomRightRadius={5}
