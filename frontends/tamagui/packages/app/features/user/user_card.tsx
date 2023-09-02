@@ -12,6 +12,7 @@ import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { MediaRef } from "../media/media_chooser";
+import { postBackgroundSize } from "../post/post_card";
 
 interface Props {
   user: User;
@@ -86,6 +87,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     </XStack> : undefined}
   </XStack>;
 
+const backgroundSize = postBackgroundSize(media);
   return (
     <Theme inverse={isCurrentUser}>
       <Card theme="dark" elevate size="$4" bordered
@@ -202,13 +204,13 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           {(isPreview && hasAvatarUrl) ?
             <Image
               mr={0}
-              o={0.25}
-              width={media.gtSm ? 300 : 150}
-              height={media.gtSm ? 300 : 150}
+              o={0.15}
+              width={backgroundSize}
+              height={backgroundSize}
               opacity={0.25}
               resizeMode="cover"
               als="flex-start"
-              source={{ uri: avatarUrl, height: media.gtSm ? 300 : 150, width: media.gtSm ? 300 : 150 }}
+              source={{ uri: avatarUrl, height: backgroundSize, width: backgroundSize }}
               blurRadius={1.5}
               borderBottomRightRadius={5}
             />

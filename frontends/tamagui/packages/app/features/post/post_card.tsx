@@ -339,7 +339,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                   <Image
                     pos="absolute"
                     width={backgroundSize}
-                    opacity={0.25}
+                    opacity={0.15}
                     height={backgroundSize}
                     resizeMode="cover"
                     als="flex-start"

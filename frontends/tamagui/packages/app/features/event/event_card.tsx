@@ -344,7 +344,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                 <Image
                   pos="absolute"
                   width={backgroundSize}
-                  opacity={0.25}
+                  opacity={0.15}
                   height={backgroundSize}
                   resizeMode="cover"
                   als="flex-start"
