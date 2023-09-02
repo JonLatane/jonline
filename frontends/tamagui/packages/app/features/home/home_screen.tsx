@@ -81,7 +81,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
-        {eventsLoaded /*&& postsLoaded*/
+        {eventsLoaded && postsLoaded
           ? <XStack w='100%'>
             <Button onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
               <Heading size='$6'>Upcoming Events</Heading>
@@ -92,7 +92,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
           </XStack>
           : undefined}
         <AnimatePresence>
-          {showEventsOnLatest && eventsLoaded /*&& postsLoaded*/ ?
+          {showEventsOnLatest && eventsLoaded && postsLoaded ?
             <YStack
               key='latest-events'
               w='100%'
