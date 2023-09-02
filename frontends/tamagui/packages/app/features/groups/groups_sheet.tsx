@@ -43,7 +43,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   // const serversState = useTypedSelector((state: RootState) => state.servers);
   // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
   const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const searchInputRef= React.createRef<TextInput>();// = React.createRef() as React.MutableRefObject<HTMLElement | View>;
+  const searchInputRef = React.createRef<TextInput>();// = React.createRef() as React.MutableRefObject<HTMLElement | View>;
 
   const groupsState = useTypedSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
@@ -71,25 +71,41 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   const recentGroupIds = useTypedSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
-  const renderedTopGroupIds = topGroupIds ?? recentGroupIds;
-  // console.log('renderedTopGroupIds', renderedTopGroupIds);
+  // const renderedTopGroupIds = topGroupIds ?? recentGroupIds;
+
 
   const allGroups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
+
+
   const matchedGroups: Group[] = allGroups.filter(g =>
     g.name.toLowerCase().includes(searchText.toLowerCase()) ||
     g.description.toLowerCase().includes(searchText.toLowerCase()));
+
   const topGroups: Group[] = [
     ...(selectedGroup != undefined ? [selectedGroup] : []),
     ...(
-      renderedTopGroupIds.filter(id => id != selectedGroup?.id)
+      (topGroupIds ?? []).filter(id => id != selectedGroup?.id)
         .map(id => allGroups.find(g => g.id == id)).filter(g => g != undefined) as Group[]
     ).filter(g =>
       g.name.toLowerCase().includes(searchText.toLowerCase()) ||
       g.description.toLowerCase().includes(searchText.toLowerCase())),
   ];
+
+
+  const recentGroups = recentGroupIds
+    .map(id => allGroups.find(g => g.id === id))
+    .filter(g => g != undefined && g.id !== selectedGroup?.id && matchedGroups.some(mg => mg.id === g.id)) as Group[];
+
   const sortedGroups: Group[] = [
-    ...matchedGroups.filter(g => g.id !== selectedGroup?.id && topGroupIds?.includes(g.id) !== true)
+    ...matchedGroups
+      .filter(g => g.id !== selectedGroup?.id &&
+        (!(topGroupIds || []).includes(g.id)) &&
+        (!(recentGroupIds || []).includes(g.id))),
   ];
+
+  console.log('topGroupIds', topGroupIds);
+  console.log('topGroups', topGroups);
+  console.log('sortedGroups', sortedGroups);
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
@@ -213,11 +229,37 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                     </YStack>
                   </>
                   : undefined}
+                {recentGroups.length > 0
+                  ? <>
+                    <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>
+                    <YStack>
+                      {recentGroups.map((group, index) => {
+                        return <GroupButton
+                          key={`groupButton-${group.id}`}
+                          group={group}
+                          groupPageForwarder={groupPageForwarder}
+                          onGroupSelected={onGroupSelected}
+                          selected={group.id == selectedGroup?.id}
+                          onShowInfo={() => {
+                            setInfoGroup(group);
+                            setInfoOpen(true);
+                          }}
+                          setOpen={setOpen}
+                          disabled={disableSelection}
+                          hideInfoButton={hideInfoButtons}
+                          extraListItemChrome={extraListItemChrome}
+                          hideLeaveButton={hideLeaveButtons}
+                        />
+                      })}
+                    </YStack>
+                  </>
+                  : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>
+                }
                 {hideAdditionalGroups
                   ? undefined
                   : sortedGroups.length > 0
                     ? <>
-                      {topGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
+                      {topGroups.length + recentGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
                       <YStack>
                         {sortedGroups.map((group, index) => {
                           return <GroupButton

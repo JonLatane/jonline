@@ -17,6 +17,7 @@ import { GroupPostManager } from "../post/group_post_manager";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
 import { MediaRenderer } from "../media/media_renderer";
 import { FadeInView } from "../post/fade_in_view";
+import { postBackgroundSize } from "../post/post_card";
 
 interface Props {
   event: Event;
@@ -136,9 +137,9 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const previewUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
   const showBackgroundPreview = hasGeneratedPreview;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
-  const backgroundSize = isPreview
+  const backgroundSize = isPreview && horizontal
     ? (media.gtSm ? 400 : 310)
-    : (media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500);
+    : postBackgroundSize(media);
   const foregroundSize = backgroundSize * 0.7;
 
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);

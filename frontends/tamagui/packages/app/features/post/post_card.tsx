@@ -1,21 +1,20 @@
-import { colorMeta, loadMedia, loadPostReplies, loadUser, RootState, selectMediaById, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { colorMeta, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
-import { Group, Media, Post } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, ScrollView, Spinner, standardFadeAnimation, Theme, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
+import { Group, Post } from "@jonline/api";
+import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
 import { ChevronRight } from "@tamagui/lucide-icons";
+import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 import { AuthorInfo } from "./author_info";
 import { TamaguiMarkdown } from "./tamagui_markdown";
-import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { MediaRenderer } from "../media/media_renderer";
-import { GroupPostManager } from './group_post_manager';
 import { FadeInView } from './fade_in_view';
-import { createFadeAnimation } from "@jonline/ui/src";
+import { GroupPostManager } from './group_post_manager';
 
 interface Props {
   post: Post;
@@ -30,6 +29,9 @@ interface Props {
   onPressParentPreview?: () => void;
   selectedPostId?: string;
 }
+
+export const postBackgroundSize = (media: TamaguiMediaState) =>
+  media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500;
 
 export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -177,7 +179,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   const previewUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
   const showBackgroundPreview = hasGeneratedPreview;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
-  const backgroundSize = media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500;
+  const backgroundSize = postBackgroundSize(media);
   const foregroundSize = backgroundSize * 0.7;
 
   return (
@@ -232,6 +234,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
             pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
             scale={1}
             opacity={1}
+            // w='100%'
             y={0}
           // enterStyle={{ y: -50, opacity: 0, }}
           // exitStyle={{ opacity: 0, }}

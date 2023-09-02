@@ -133,7 +133,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
               <Heading size='$5' mb='$3'>No posts found.</Heading>
               <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
-            : <YStack f={1} key={`post-list`}// animation='quick' {...standardAnimation}
+            : <YStack f={1} w='100%' key={`post-list`}// animation='quick' {...standardAnimation}
             >
               {posts.map((post) => {
                 return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
