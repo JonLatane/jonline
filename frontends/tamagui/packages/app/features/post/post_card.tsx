@@ -58,7 +58,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // In this case it would only be considered isVisible if more ...
   // ... than 300px of element is visible.
   // const isVisible = useOnScreen(ref, "-1px");
-  // useEffect(() => {
+// useEffect(() => {
   //   if (isVisible) {
   //     onOnScreen?.();
   //   }

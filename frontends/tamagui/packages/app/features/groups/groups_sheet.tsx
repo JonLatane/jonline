@@ -103,9 +103,9 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
         (!(recentGroupIds || []).includes(g.id))),
   ];
 
-  console.log('topGroupIds', topGroupIds);
-  console.log('topGroups', topGroups);
-  console.log('sortedGroups', sortedGroups);
+  // console.log('topGroupIds', topGroupIds);
+  // console.log('topGroups', topGroups);
+  // console.log('sortedGroups', sortedGroups);
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;

@@ -138,7 +138,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
               {posts.map((post) => {
                 return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
               })}
-              <PaginationIndicator page={currentPostsPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
+              <PaginationIndicator page={currentPostsPage} 
+                loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
                 hasNextPage={hasMorePages}
                 loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
               />

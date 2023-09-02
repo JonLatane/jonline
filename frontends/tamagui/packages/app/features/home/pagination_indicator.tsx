@@ -1,6 +1,7 @@
 import { Paragraph, Spinner, TamaguiElement, XStack } from '@jonline/ui';
+import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useServerTheme } from 'app/store';
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View } from 'react-native';
 
 interface Props {
@@ -8,19 +9,23 @@ interface Props {
   loadingPage: boolean;
   hasNextPage?: boolean;
   loadNextPage: () => void;
-  isVisible?: boolean
 }
 
-export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNextPage = true, loadNextPage, isVisible = true }) => {
+export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNextPage = true, loadNextPage }) => {
   // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const ref = React.createRef<TamaguiElement>();
+  const isVisible = useIsVisible(ref);
+
   const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  // debugger;
+  // const [lastPageLoad, setLastPageLoad] = useState(Date.now());
   useEffect(() => {
     if (isVisible && !loadingPage && hasNextPage) {
       console.log(`loading next page (page=${page})`)
       loadNextPage();
+      // setLastPageLoad(Date.now());
     }
-  }, [isVisible, loadingPage]);
+  }, [isVisible, loadingPage, page]);
 
   const [fgColor, bgColor] = hasNextPage ? [navTextColor, navColor] : [primaryTextColor, primaryColor];
 
