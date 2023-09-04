@@ -31,8 +31,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const [currentPage, setCurrentPage] = useState(0);
   const { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
-    ? useGroupEventPages(selectedGroup.id, 0)
-    : useEventPages(EventListingType.PUBLIC_EVENTS, 0);
+    ? useGroupEventPages(selectedGroup.id, currentPage)
+    : useEventPages(EventListingType.PUBLIC_EVENTS, currentPage);
   useEffect(() => {
     if (firstPageLoaded) {
       dismissScrollPreserver(setShowScrollPreserver);
