@@ -106,7 +106,7 @@ final List<DemoEvent> durhamDemoEvents = [
           ..content =
               "A weekly run club for all levels of runners. Meets at Bull City Running's downtown location, with running starting at 6pm. 3, 4 and 6 mile routes are available. Registration isn't required, but costs only \$1 (cash) and lets you earn free beers, pint glasses, and T-shirts!")
         ..instances.addAll(_generateWeeklyInstances(
-            '2023-04-12 18:00:00-04:00', '2023-04-12 19:00:00-04:00', 28))),
+            '2023-04-12 18:00:00-04:00', '2023-04-12 19:00:00-04:00', 30))),
   DemoEvent(
       [DemoGroup.yoga, DemoGroup.fitness, DemoGroup.coolKidsClub],
       Event()
@@ -116,7 +116,7 @@ final List<DemoEvent> durhamDemoEvents = [
           ..content =
               "Ride Around Durham is a weekly bike ride for all levels. Meets at Duke Chapel at 6pm, with the ride starting at 6:30. Bring a beer and grab another after the ride at the bar we land at! New routes every week.")
         ..instances.addAll(_generateWeeklyInstances(
-            '2023-04-13 18:00:00-04:00', '2023-04-13 21:00:00-04:00', 28))),
+            '2023-04-13 18:00:00-04:00', '2023-04-13 21:00:00-04:00', 30))),
   DemoEvent(
       [DemoGroup.yoga, DemoGroup.fitness, DemoGroup.coolKidsClub],
       Event()
