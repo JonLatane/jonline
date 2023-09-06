@@ -253,8 +253,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                       })}
                     </YStack>
                   </>
-                  : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>
-                }
+                  : undefined}
                 {hideAdditionalGroups
                   ? undefined
                   : sortedGroups.length > 0
@@ -281,8 +280,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                         })}
                       </YStack>
                     </>
-                    : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>
-                }
+                    : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
               </YStack>
             </Sheet.ScrollView>
           </Sheet.Frame>
