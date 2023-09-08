@@ -2,9 +2,9 @@ name: Flutter Windows
 
 on:
   push:
-    branches: [ "gh-action-flutter-windows" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "gh-action-flutter-windows" ]
+    branches: [ "main" ]
 
 jobs:
   build_windows:
