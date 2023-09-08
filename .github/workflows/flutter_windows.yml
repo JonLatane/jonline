@@ -2,15 +2,13 @@ name: Flutter Windows
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "gh-action-flutter-windows" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "gh-action-flutter-windows" ]
 
 jobs:
   build_windows:
     name: Build
-    # This job is known to fail.
-    continue-on-error: true
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
