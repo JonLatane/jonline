@@ -109,8 +109,7 @@ pub fn create_post(
                 } else {
                     PostContext::Reply
                 }
-                .as_str_name()
-                .to_string(),
+                .to_string_post_context(),
                 visibility: visibility.to_string_visibility(),
                 embed_link: req.embed_link.to_owned(),
                 media: req.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
@@ -148,9 +147,9 @@ pub fn create_post(
         Ok(post) => {
             log::info!("Post created! PostID:{:?}", post.id);
             let author = models::get_author(user.id, conn)?;
-            Ok(Response::new(MarshalablePost(post, Some(author), None, vec![]).to_proto(
-                Some(&media_lookup),
-            )))
+            Ok(Response::new(
+                MarshalablePost(post, Some(author), None, vec![]).to_proto(Some(&media_lookup)),
+            ))
         }
         Err(e) => {
             log::error!("Error creating post! {:?}", e);

@@ -97,7 +97,7 @@ pub fn create_event(
                 content: post.content.to_owned(),
                 visibility: visibility.to_string_visibility(),
                 embed_link: post.embed_link.to_owned(),
-                context: PostContext::Event.as_str_name().to_string(),
+                context: PostContext::Event.to_string_post_context(),
                 media: post
                     .media
                     .iter()

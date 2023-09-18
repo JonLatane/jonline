@@ -219,6 +219,14 @@ pub const ALL_POST_CONTEXTS: [PostContext; 4] = [
     PostContext::Event,
     PostContext::EventInstance,
 ];
+pub trait ToStringPostContext {
+    fn to_string_post_context(&self) -> String;
+}
+impl ToStringPostContext for PostContext {
+    fn to_string_post_context(&self) -> String {
+        self.as_str_name().to_string()
+    }
+}
 
 pub trait ToProtoPostContext {
     fn to_proto_post_context(&self) -> Option<PostContext>;
