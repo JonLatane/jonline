@@ -94,7 +94,9 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
 
   const recentGroups = recentGroupIds
     .map(id => allGroups.find(g => g.id === id))
-    .filter(g => g != undefined && g.id !== selectedGroup?.id && matchedGroups.some(mg => mg.id === g.id)) as Group[];
+    .filter(g => g != undefined && g.id !== selectedGroup?.id 
+      && !topGroups.some(tg => tg.id == g.id)
+      && matchedGroups.some(mg => mg.id === g.id)) as Group[];
 
   const sortedGroups: Group[] = [
     ...matchedGroups

@@ -68,6 +68,7 @@ pub fn update_post(
                     existing_post.title = request.title.to_owned();
                 }
                 existing_post.content = request.content.to_owned();
+                existing_post.updated_at = SystemTime::now().into();
                 // existing_post.username = request.username.to_owned();
                 // existing_post.bio = request.bio.to_owned();
                 // existing_post.avatar_media_id = request.avatar.as_ref().map(|a| &a.id).to_db_opt_id().unwrap();

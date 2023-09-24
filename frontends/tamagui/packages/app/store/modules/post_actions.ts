@@ -16,6 +16,15 @@ export const createPost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Po
   }
 );
 
+export type UpdatePost = AccountOrServer & Post;
+export const updatePost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, CreatePost>(
+  "posts/update",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    return await client.updatePost(request, client.credential);
+  }
+);
+
 export type ReplyToPost = AccountOrServer & { postIdPath: string[], content: string };
 export const replyToPost: AsyncThunk<Post, ReplyToPost, any> = createAsyncThunk<Post, ReplyToPost>(
   "posts/reply",

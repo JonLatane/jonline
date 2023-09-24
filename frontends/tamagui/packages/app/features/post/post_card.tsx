@@ -1,10 +1,10 @@
-import { colorMeta, loadPostReplies, loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { colorMeta, loadPostReplies, loadUser, RootState, selectUserById, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
-import { ChevronRight } from "@tamagui/lucide-icons";
+import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack, TextArea } from '@jonline/ui';
+import { ChevronRight, Edit, Eye, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -16,7 +16,7 @@ import { MediaRenderer } from "../media/media_renderer";
 import { FadeInView } from './fade_in_view';
 import { GroupPostManager } from './group_post_manager';
 
-interface Props {
+interface PostCardProps {
   post: Post;
   isPreview?: boolean;
   groupContext?: Group;
@@ -33,16 +33,31 @@ interface Props {
 export const postBackgroundSize = (media: TamaguiMediaState) =>
   media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500;
 
-export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
 
   const theme = useTheme();
+  const currentUser = useAccount()?.user;
   const textColor: string = theme.color?.val ?? '#000000';
   const themeBgColor = theme.background?.val ?? '#ffffff';
   const { luma: themeBgLuma } = colorMeta(themeBgColor);
-  const { server, primaryColor, navAnchorColor: navColor } = useServerTheme();
+  const { server, primaryColor, navAnchorColor: navColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
+  const [editing, setEditing] = useState(false);
+  const [previewingEdits, setPreviewingEdits] = useState(false);
+  const [editedContent, setEditedContent] = useState(post.content);
+  const [savingEdits, setSavingEdits] = useState(false);
+  const content = editing ? editedContent : post.content;
+
+  function saveEdits() {
+    setSavingEdits(true);
+    dispatch(updatePost({ ...accountOrServer, ...post, content: editedContent })).then(() => {
+      setEditing(false);
+      setSavingEdits(false);
+      setPreviewingEdits(false);
+    });
+  }
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
@@ -58,7 +73,7 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
   // In this case it would only be considered isVisible if more ...
   // ... than 300px of element is visible.
   // const isVisible = useOnScreen(ref, "-1px");
-// useEffect(() => {
+  // useEffect(() => {
   //   if (isVisible) {
   //     onOnScreen?.();
   //   }
@@ -108,6 +123,8 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
 
   const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
   const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
+  const isAuthor = author && author.id === currentUser?.id;
+  const showEdit = isAuthor && !isPreview;
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   useEffect(() => {
@@ -282,19 +299,48 @@ export const PostCard: React.FC<Props> = ({ post, isPreview, groupContext, reply
                         borderRadius={10}
                       /> : undefined}
                     {
-                      post.content && post.content != '' ? Platform.select({
-                        default: <TamaguiMarkdown text={post.content} disableLinks={isPreview} />,
-                        // default: post.content ? <NativeMarkdownShim>{cleanedContent}</NativeMarkdownShim> : undefined
-                        // default: <Heading size='$1'>Native Markdown support pending!</Heading>
-                      }) : undefined
+                      editing && !previewingEdits
+                        ?
+                        <TextArea f={1} pt='$2' value={content} //ref={textAreaRef}
+                          //onFocus={() => setShowSettings(false)}
+                          disabled={savingEdits} opacity={savingEdits || content == '' ? 0.5 : 1}
+                          onChangeText={t => setEditedContent(t)}
+                          // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
+                          // onBlur={() => _replyTextFocused = false}
+                          placeholder={`Text content (optional). Markdown is supported.`} />
+                        : content && content != '' ?
+                          <TamaguiMarkdown text={content} disableLinks={isPreview} /> : undefined
                     }
                   </YStack>
                 </Anchor>
-                {post?.replyToPostId
-                  ? undefined
-                  : <XStack pt={10} ml='auto' px='$2' maw='100%'>
-                    <GroupPostManager post={post} isVisible={isVisible} />
-                  </XStack>}
+                <XStack space='$2' flexWrap="wrap">
+                  {showEdit
+                    ? editing ? <>
+                      <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
+                        Save
+                      </Button>
+                      <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+                        Cancel
+                      </Button>
+                      {previewingEdits
+                        ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                          Edit
+                        </Button>
+                        :
+                        <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
+                          Preview
+                        </Button>}
+                    </> :
+                      <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} transparent>
+                        Edit
+                      </Button>
+                    : undefined}
+                  {post?.replyToPostId
+                    ? undefined
+                    : <XStack pt={10} ml='auto' px='$2' maw='100%'>
+                      <GroupPostManager post={post} isVisible={isVisible} />
+                    </XStack>}
+                </XStack>
 
                 <XStack pt={post?.replyToPostId
                   ? 10

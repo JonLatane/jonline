@@ -7,7 +7,7 @@ import React, { useEffect, useReducer, useState } from 'react'
 import { createParam } from 'solito'
 import EventCard from '../event/event_card'
 import PostCard from '../post/post_card'
-import { ReplyArea } from '../post/post_details_screen'
+import { ReplyArea } from '../post/reply_area'
 import { AppSection } from '../tabs/features_navigation'
 import { TabsNavigation } from '../tabs/tabs_navigation'
 
