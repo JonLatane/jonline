@@ -11,7 +11,7 @@ import {
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { loadGroupPostsPage } from "./group_actions";
-import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, replyToPost, updatePost } from './post_actions';
+import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, replyToPost, updatePost } from './post_actions';
 import { loadUserPosts } from "./user_actions";
 import { loadEvent, loadEventsPage } from "./event_actions";
 import { GroupedPages } from "../pagination";
@@ -23,6 +23,7 @@ export interface PostsState {
   sendReplyStatus?: "sending" | "sent" | "errored";
   createPostStatus?: "posting" | "posted" | "errored";
   updatePostStatus?: "posting" | "posted" | "errored";
+  deletePostStatus?: "deleting" | "deleted" | "errored";
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -106,16 +107,29 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.status = "loaded";
       state.updatePostStatus = "posted";
       postsAdapter.upsertOne(state, action.payload);
-      // if (publicVisibility(action.payload.visibility)) {
-      //   state.postPages[defaultPostListingType] = state.postPages[defaultPostListingType] || {};
-      //   const firstPage = state.postPages[defaultPostListingType][0] || [];
-      //   state.postPages[defaultPostListingType][0] = [action.payload.id, ...firstPage];
-      // }
       state.successMessage = `Post updated.`;
     });
     builder.addCase(updatePost.rejected, (state, action) => {
       state.status = "errored";
       state.updatePostStatus = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
+    });
+    builder.addCase(deletePost.pending, (state) => {
+      state.status = "loading";
+      state.deletePostStatus = "deleting";
+      state.error = undefined;
+    });
+    builder.addCase(deletePost.fulfilled, (state, action) => {
+      state.status = "loaded";
+      state.deletePostStatus = "deleted";
+      postsAdapter.upsertOne(state, action.payload);
+      state.successMessage = `Post updated.`;
+    });
+    builder.addCase(deletePost.rejected, (state, action) => {
+      state.status = "errored";
+      state.deletePostStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;

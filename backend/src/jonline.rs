@@ -194,11 +194,10 @@ impl Jonline for JonLineImpl {
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::update_post(request.into_inner(), user, &mut conn).map(Response::new)
     }
-    async fn delete_post(&self, _request: Request<Post>) -> Result<Response<Post>, Status> {
-        //TODO implement me!
-        Ok(Response::new(Post {
-            ..Default::default()
-        }))
+    async fn delete_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
+        rpcs::delete_post(request.into_inner(), user, &mut conn).map(Response::new)
     }
 
     async fn create_group_post(

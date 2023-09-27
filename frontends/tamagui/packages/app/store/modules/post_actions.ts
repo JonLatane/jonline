@@ -17,11 +17,19 @@ export const createPost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Po
 );
 
 export type UpdatePost = AccountOrServer & Post;
-export const updatePost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, CreatePost>(
+export const updatePost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, UpdatePost>(
   "posts/update",
   async (request) => {
     const client = await getCredentialClient(request);
     return await client.updatePost(request, client.credential);
+  }
+);
+export type DeletePost = AccountOrServer & Post;
+export const deletePost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, DeletePost>(
+  "posts/delete",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    return await client.deletePost(request, client.credential);
   }
 );
 

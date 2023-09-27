@@ -1,10 +1,10 @@
-import { colorMeta, loadPostReplies, loadUser, RootState, selectUserById, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { colorMeta, deletePost, loadPostReplies, loadUser, RootState, selectUserById, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack, TextArea } from '@jonline/ui';
-import { ChevronRight, Edit, Eye, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack, TextArea, Dialog } from '@jonline/ui';
+import { ChevronRight, Delete, Edit, Eye, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -56,6 +56,16 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
       setEditing(false);
       setSavingEdits(false);
       setPreviewingEdits(false);
+    });
+  }
+
+  const [deleted, setDeleted] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  function doDeletePost() {
+    setDeleting(true);
+    dispatch(deletePost(post)).then(() => {
+      setDeleted(true);
+      setDeleting(false);
     });
   }
   // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
@@ -315,25 +325,84 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
                 </Anchor>
                 <XStack space='$2' flexWrap="wrap">
                   {showEdit
-                    ? editing ? <>
-                      <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
-                        Save
-                      </Button>
-                      <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
-                        Cancel
-                      </Button>
-                      {previewingEdits
-                        ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                    ? editing
+                      ? <>
+                        <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
+                          Save
+                        </Button>
+                        <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+                          Cancel
+                        </Button>
+                        {previewingEdits
+                          ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                            Edit
+                          </Button>
+                          :
+                          <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
+                            Preview
+                          </Button>}
+                      </>
+                      : <>
+                        <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
                           Edit
                         </Button>
-                        :
-                        <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
-                          Preview
-                        </Button>}
-                    </> :
-                      <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} transparent>
-                        Edit
-                      </Button>
+
+                        <Dialog>
+                          <Dialog.Trigger asChild>
+                            <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
+                              Delete
+                            </Button>
+                          </Dialog.Trigger>
+                          <Dialog.Portal zi={1000011}>
+                            <Dialog.Overlay
+                              key="overlay"
+                              animation="quick"
+                              o={0.5}
+                              enterStyle={{ o: 0 }}
+                              exitStyle={{ o: 0 }}
+                            />
+                            <Dialog.Content
+                              bordered
+                              elevate
+                              key="content"
+                              animation={[
+                                'quick',
+                                {
+                                  opacity: {
+                                    overshootClamping: true,
+                                  },
+                                },
+                              ]}
+                              m='$3'
+                              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                              x={0}
+                              scale={1}
+                              opacity={1}
+                              y={0}
+                            >
+                              <YStack space>
+                                <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
+                                <Dialog.Description>
+                                  Really delete {post.replyToPostId ? 'reply' : 'post'}?
+                                  The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
+                                </Dialog.Description>
+
+                                <XStack space="$3" jc="flex-end">
+                                  <Dialog.Close asChild>
+                                    <Button>Cancel</Button>
+                                  </Dialog.Close>
+                                  {/* <Dialog.Action asChild> */}
+                                  <Theme inverse>
+                                    <Button onPress={doDeletePost}>Delete</Button>
+                                  </Theme>
+                                  {/* </Dialog.Action> */}
+                                </XStack>
+                              </YStack>
+                            </Dialog.Content>
+                          </Dialog.Portal>
+                        </Dialog>
+                      </>
                     : undefined}
                   {post?.replyToPostId
                     ? undefined

@@ -37,7 +37,7 @@ export function getPostPages(posts: PostsState, listingType: PostListingType, th
   const result: Post[] = [];
   for (let page = 0; page <= throughPage; page++) {
     const pagePosts = getPostsPage(posts, listingType, page);
-    result.push(...pagePosts);
+    result.push(...pagePosts.filter(p => p.author != undefined));
   }
   return result;
 }

@@ -3,10 +3,10 @@ import { Heading, Tooltip } from "@jonline/ui";
 import moment from "moment";
 
 export type DateViewerProps = {
-  date?: string
-  prefix?: string
-  disableTooltip?: boolean
-  updatedDate?: string
+  date?: string;
+  prefix?: string;
+  disableTooltip?: boolean;
+  updatedDate?: string;
 }
 export const DateViewer = ({ date, prefix, disableTooltip = false, updatedDate }: DateViewerProps) => {
   if (!date) return <></>;

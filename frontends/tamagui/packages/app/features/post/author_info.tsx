@@ -98,7 +98,7 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
         </Heading>
       </XStack>
       <XStack>
-        <DateViewer date={post.createdAt} />
+        <DateViewer date={post.createdAt} updatedDate={post.updatedAt} />
         {author && hasAdminPermission(author)
           ? <PermissionIndicator permission={Permission.ADMIN} /> : undefined}
         {author && hasPermission(author, Permission.RUN_BOTS)

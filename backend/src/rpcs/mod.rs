@@ -78,6 +78,8 @@ pub use create_post::create_post;
 
 mod update_post;
 pub use update_post::update_post;
+mod delete_post;
+pub use delete_post::delete_post;
 
 mod create_group_post;
 pub use create_group_post::create_group_post;
