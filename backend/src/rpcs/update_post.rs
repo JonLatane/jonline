@@ -1,7 +1,5 @@
 use std::time::SystemTime;
 
-use diesel::result::DatabaseErrorKind::UniqueViolation;
-use diesel::result::Error::DatabaseError;
 use diesel::result::Error::RollbackTransaction;
 use diesel::NotFound;
 use diesel::*;
@@ -101,7 +99,7 @@ pub fn update_post(
 
     let result = match transaction_result {
         //TODO: properly marshal this stuff
-        Ok(_user) => {
+        Ok(_post) => {
             rpcs::get_posts(
                 GetPostsRequest {
                     post_id: Some(request.id.clone()),
@@ -118,15 +116,12 @@ pub fn update_post(
             Code::InvalidArgument,
             "cannot_publish_globally",
         )),
-        Err(DatabaseError(UniqueViolation, _)) => {
-            Err(Status::new(Code::NotFound, "duplicate_username"))
-        }
         Err(e) => {
             log::error!("Error updating user: {:?}", e);
             Err(Status::new(Code::Internal, "data_error"))
         }
     };
-    log::info!("UpdateUser::request: {:?}, result: {:?}", &request, result);
+    log::info!("UpdatePost::request: {:?}, result: {:?}", &request, result);
 
     result
 }

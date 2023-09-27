@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack, TextArea, Dialog } from '@jonline/ui';
+import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack, TextArea, Dialog, Paragraph } from '@jonline/ui';
 import { ChevronRight, Delete, Edit, Eye, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useMediaUrl } from "app/hooks/use_media_url";
@@ -59,11 +59,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
     });
   }
 
-  const [deleted, setDeleted] = useState(false);
+  const [deleted, setDeleted] = useState(post.author === undefined);
   const [deleting, setDeleting] = useState(false);
   function doDeletePost() {
     setDeleting(true);
-    dispatch(deletePost(post)).then(() => {
+    dispatch(deletePost({ ...accountOrServer, ...post })).then(() => {
       setDeleted(true);
       setDeleting(false);
     });
@@ -277,176 +277,179 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
               </Card.Header>
               : undefined}
             <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
-              <YStack zi={1000} width='100%' {...footerProps}>
-                {hasBeenVisible && embedComponent && false
-                  ? <FadeInView><div>{embedComponent}</div></FadeInView>
-                  : embedComponent
-                    ? <Spinner color={primaryColor} />
-                    : undefined}
-                {showScrollableMediaPreviews ?
-                  <XStack w='100%' maw={800}>
-                    <ScrollView horizontal w={isPreview ? '260px' : '100%'}
-                      h={media.gtXs ? '400px' : '260px'} >
-                      <XStack space='$2'>
-                        {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={media.gtXs ? '400px' : '260px'} h='100%'>
-                          <MediaRenderer media={mediaRef} />
-                        </YStack>)}
-                      </XStack>
-                    </ScrollView>
-                  </XStack> : undefined}
-
-                <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                  <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
-                    {singleMediaPreview
-                      // (!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) 
-                      ? <Image
-                        mb='$3'
-                        width={foregroundSize}
-                        height={foregroundSize}
-                        resizeMode="contain"
-                        als="center"
-                        source={{ uri: previewUrl, height: foregroundSize, width: foregroundSize }}
-                        borderRadius={10}
-                      /> : undefined}
-                    {
-                      editing && !previewingEdits
-                        ?
-                        <TextArea f={1} pt='$2' value={content} //ref={textAreaRef}
-                          //onFocus={() => setShowSettings(false)}
-                          disabled={savingEdits} opacity={savingEdits || content == '' ? 0.5 : 1}
-                          onChangeText={t => setEditedContent(t)}
-                          // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
-                          // onBlur={() => _replyTextFocused = false}
-                          placeholder={`Text content (optional). Markdown is supported.`} />
-                        : content && content != '' ?
-                          <TamaguiMarkdown text={content} disableLinks={isPreview} /> : undefined
-                    }
-                  </YStack>
-                </Anchor>
-                <XStack space='$2' flexWrap="wrap">
-                  {showEdit
-                    ? editing
-                      ? <>
-                        <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
-                          Save
-                        </Button>
-                        <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
-                          Cancel
-                        </Button>
-                        {previewingEdits
-                          ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
-                            Edit
-                          </Button>
-                          :
-                          <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
-                            Preview
-                          </Button>}
-                      </>
-                      : <>
-                        <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
-                          Edit
-                        </Button>
-
-                        <Dialog>
-                          <Dialog.Trigger asChild>
-                            <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
-                              Delete
-                            </Button>
-                          </Dialog.Trigger>
-                          <Dialog.Portal zi={1000011}>
-                            <Dialog.Overlay
-                              key="overlay"
-                              animation="quick"
-                              o={0.5}
-                              enterStyle={{ o: 0 }}
-                              exitStyle={{ o: 0 }}
-                            />
-                            <Dialog.Content
-                              bordered
-                              elevate
-                              key="content"
-                              animation={[
-                                'quick',
-                                {
-                                  opacity: {
-                                    overshootClamping: true,
-                                  },
-                                },
-                              ]}
-                              m='$3'
-                              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                              x={0}
-                              scale={1}
-                              opacity={1}
-                              y={0}
-                            >
-                              <YStack space>
-                                <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
-                                <Dialog.Description>
-                                  Really delete {post.replyToPostId ? 'reply' : 'post'}?
-                                  The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
-                                </Dialog.Description>
-
-                                <XStack space="$3" jc="flex-end">
-                                  <Dialog.Close asChild>
-                                    <Button>Cancel</Button>
-                                  </Dialog.Close>
-                                  {/* <Dialog.Action asChild> */}
-                                  <Theme inverse>
-                                    <Button onPress={doDeletePost}>Delete</Button>
-                                  </Theme>
-                                  {/* </Dialog.Action> */}
-                                </XStack>
-                              </YStack>
-                            </Dialog.Content>
-                          </Dialog.Portal>
-                        </Dialog>
-                      </>
-                    : undefined}
-                  {post?.replyToPostId
-                    ? undefined
-                    : <XStack pt={10} ml='auto' px='$2' maw='100%'>
-                      <GroupPostManager post={post} isVisible={isVisible} />
-                    </XStack>}
-                </XStack>
-
-                <XStack pt={post?.replyToPostId
-                  ? 10
-                  : undefined} {...detailsProps}>
-                  <AuthorInfo {...{ post, detailsMargins, isVisible }} />
-                  <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                    <YStack h='100%' mr='$3'>
-                      <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
-                        borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
-                        disabled={cannotToggleReplies || loadingReplies}
-                        marginVertical='auto'
-                        mr={media.gtXs || isPreview ? 0 : -10}
-                        onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
-                        <XStack opacity={0.9}>
-                          <YStack marginVertical='auto'>
-                            {!post.replyToPostId ? <Heading size="$1" ta='right'>
-                              {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
-                            </Heading> : undefined}
-                            {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
-                              {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                            </Heading> : undefined}
-                            {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
-                              {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
-                            </Heading>}
-                          </YStack>
-                          {!cannotToggleReplies ? <XStack marginVertical='auto'
-                            animation='quick'
-                            rotate={collapsed ? '0deg' : '90deg'}
-                          >
-                            <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
-                          </XStack> : undefined}
+              {deleted
+                ? <Paragraph size='$1'>This post has been deleted.</Paragraph>
+                : <YStack zi={1000} width='100%' {...footerProps}>
+                  {hasBeenVisible && embedComponent && false
+                    ? <FadeInView><div>{embedComponent}</div></FadeInView>
+                    : embedComponent
+                      ? <Spinner color={primaryColor} />
+                      : undefined}
+                  {showScrollableMediaPreviews ?
+                    <XStack w='100%' maw={800}>
+                      <ScrollView horizontal w={isPreview ? '260px' : '100%'}
+                        h={media.gtXs ? '400px' : '260px'} >
+                        <XStack space='$2'>
+                          {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={media.gtXs ? '400px' : '260px'} h='100%'>
+                            <MediaRenderer media={mediaRef} />
+                          </YStack>)}
                         </XStack>
-                      </Button>
+                      </ScrollView>
+                    </XStack> : undefined}
+
+                  <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                    <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
+                      {singleMediaPreview
+                        // (!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) 
+                        ? <Image
+                          mb='$3'
+                          width={foregroundSize}
+                          height={foregroundSize}
+                          resizeMode="contain"
+                          als="center"
+                          source={{ uri: previewUrl, height: foregroundSize, width: foregroundSize }}
+                          borderRadius={10}
+                        /> : undefined}
+                      {
+                        editing && !previewingEdits
+                          ?
+                          <TextArea f={1} pt='$2' value={content} //ref={textAreaRef}
+                            //onFocus={() => setShowSettings(false)}
+                            disabled={savingEdits} opacity={savingEdits || content == '' ? 0.5 : 1}
+                            onChangeText={t => setEditedContent(t)}
+                            // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
+                            // onBlur={() => _replyTextFocused = false}
+                            placeholder={`Text content (optional). Markdown is supported.`} />
+                          : content && content != '' ?
+                            <TamaguiMarkdown text={content} disableLinks={isPreview} /> : undefined
+                      }
                     </YStack>
                   </Anchor>
-                </XStack>
-              </YStack>
+                  <XStack space='$2' flexWrap="wrap">
+                    {showEdit
+                      ? editing
+                        ? <>
+                          <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
+                            Save
+                          </Button>
+                          <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+                            Cancel
+                          </Button>
+                          {previewingEdits
+                            ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                              Edit
+                            </Button>
+                            :
+                            <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
+                              Preview
+                            </Button>}
+                        </>
+                        : <>
+                          <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
+                            Edit
+                          </Button>
+
+                          <Dialog>
+                            <Dialog.Trigger asChild>
+                              <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
+                                Delete
+                              </Button>
+                            </Dialog.Trigger>
+                            <Dialog.Portal zi={1000011}>
+                              <Dialog.Overlay
+                                key="overlay"
+                                animation="quick"
+                                o={0.5}
+                                enterStyle={{ o: 0 }}
+                                exitStyle={{ o: 0 }}
+                              />
+                              <Dialog.Content
+                                bordered
+                                elevate
+                                key="content"
+                                animation={[
+                                  'quick',
+                                  {
+                                    opacity: {
+                                      overshootClamping: true,
+                                    },
+                                  },
+                                ]}
+                                m='$3'
+                                enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                                exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                                x={0}
+                                scale={1}
+                                opacity={1}
+                                y={0}
+                              >
+                                <YStack space>
+                                  <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
+                                  <Dialog.Description>
+                                    Really delete {post.replyToPostId ? 'reply' : 'post'}?
+                                    The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
+                                  </Dialog.Description>
+
+                                  <XStack space="$3" jc="flex-end">
+                                    <Dialog.Close asChild>
+                                      <Button>Cancel</Button>
+                                    </Dialog.Close>
+                                    {/* <Dialog.Action asChild> */}
+                                    <Theme inverse>
+                                      <Button onPress={doDeletePost}>Delete</Button>
+                                    </Theme>
+                                    {/* </Dialog.Action> */}
+                                  </XStack>
+                                </YStack>
+                              </Dialog.Content>
+                            </Dialog.Portal>
+                          </Dialog>
+                        </>
+                      : undefined}
+                    {post?.replyToPostId
+                      ? undefined
+                      : <XStack pt={10} ml='auto' px='$2' maw='100%'>
+                        <GroupPostManager post={post} isVisible={isVisible} />
+                      </XStack>}
+                  </XStack>
+
+                  <XStack pt={post?.replyToPostId
+                    ? 10
+                    : undefined} {...detailsProps}>
+                    <AuthorInfo {...{ post, detailsMargins, isVisible }} />
+                    <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                      <YStack h='100%' mr='$3'>
+                        <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                          borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
+                          disabled={cannotToggleReplies || loadingReplies}
+                          marginVertical='auto'
+                          mr={media.gtXs || isPreview ? 0 : -10}
+                          onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
+                          <XStack opacity={0.9}>
+                            <YStack marginVertical='auto'>
+                              {!post.replyToPostId ? <Heading size="$1" ta='right'>
+                                {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                              </Heading> : undefined}
+                              {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
+                                {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
+                              </Heading> : undefined}
+                              {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
+                                {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
+                              </Heading>}
+                            </YStack>
+                            {!cannotToggleReplies ? <XStack marginVertical='auto'
+                              animation='quick'
+                              rotate={collapsed ? '0deg' : '90deg'}
+                            >
+                              <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
+                            </XStack> : undefined}
+                          </XStack>
+                        </Button>
+                      </YStack>
+                    </Anchor>
+                  </XStack>
+                </YStack>
+              }
             </Card.Footer>
             <Card.Background>
               {(showBackgroundPreview) ?

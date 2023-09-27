@@ -32,7 +32,7 @@ pub fn get_group_post(
 
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
 #[diesel(belongs_to(User))]
-
+#[diesel(treat_none_as_null = true)]
 pub struct Post {
     pub id: i64,
     pub user_id: Option<i64>,

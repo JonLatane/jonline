@@ -99,36 +99,30 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.error = action.error as Error;
     });
     builder.addCase(updatePost.pending, (state) => {
-      state.status = "loading";
       state.updatePostStatus = "posting";
       state.error = undefined;
     });
     builder.addCase(updatePost.fulfilled, (state, action) => {
-      state.status = "loaded";
       state.updatePostStatus = "posted";
       postsAdapter.upsertOne(state, action.payload);
       state.successMessage = `Post updated.`;
     });
     builder.addCase(updatePost.rejected, (state, action) => {
-      state.status = "errored";
       state.updatePostStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
     builder.addCase(deletePost.pending, (state) => {
-      state.status = "loading";
       state.deletePostStatus = "deleting";
       state.error = undefined;
     });
     builder.addCase(deletePost.fulfilled, (state, action) => {
-      state.status = "loaded";
       state.deletePostStatus = "deleted";
       postsAdapter.upsertOne(state, action.payload);
-      state.successMessage = `Post updated.`;
+      state.successMessage = `Post deleted.`;
     });
     builder.addCase(deletePost.rejected, (state, action) => {
-      state.status = "errored";
       state.deletePostStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);

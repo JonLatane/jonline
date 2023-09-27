@@ -1,7 +1,5 @@
 use std::time::SystemTime;
 
-use diesel::result::DatabaseErrorKind::UniqueViolation;
-use diesel::result::Error::DatabaseError;
 use diesel::result::Error::RollbackTransaction;
 use diesel::NotFound;
 use diesel::*;
@@ -70,12 +68,13 @@ pub fn delete_post(
                 existing_post.user_id = None;
                 existing_post.title = None;
                 existing_post.content = None;
+                existing_post.link = None;
                 existing_post.media = vec![];
                 existing_post.updated_at = SystemTime::now().into();
             }
             existing_post.updated_at = SystemTime::now().into();
 
-            log::info!("Updating post: {:?}", existing_post);
+            log::info!("Soft deleting post: {:?}", existing_post);
             match diesel::update(posts::table)
                 .filter(posts::id.eq(&existing_post.id))
                 .set(&existing_post)
@@ -105,15 +104,12 @@ pub fn delete_post(
             Code::InvalidArgument,
             "cannot_publish_globally",
         )),
-        Err(DatabaseError(UniqueViolation, _)) => {
-            Err(Status::new(Code::NotFound, "duplicate_username"))
-        }
         Err(e) => {
             log::error!("Error updating user: {:?}", e);
             Err(Status::new(Code::Internal, "data_error"))
         }
     };
-    log::info!("UpdateUser::request: {:?}, result: {:?}", &request, result);
+    log::info!("DeletePost::request: {:?}, result: {:?}", &request, result);
 
     result
 }
