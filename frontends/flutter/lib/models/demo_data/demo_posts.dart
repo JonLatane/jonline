@@ -312,7 +312,7 @@ and [validates your passwords](https://github.com/JonLatane/jonline/blob/main/ba
 even [the code that was used to generate *this post you're reading right now and the "bot"-generated demo comments on it*](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/demo_data/demo_posts.dart) 🤯🙃
 
 If you're familiar with OpenSocial and Mastodon, Jonline is something like them. Notably, Jonline does *not*
-support reactions to posts as they do (and is deliberately not architected in a "big data" way so as to support this).
+support reactions to posts as they do. In fact, Jonline's protocol, unlike ActivityPub, is designed *not* to support "algorithm"-based sorting.
 On similar hardware, Jonline has a faster web UI than either thanks to Tamagui and NextJS, and a faster BE thanks to Rust.
 [Jonline's Docker images are currently 115MB](https://hub.docker.com/r/jonlatane/jonline/tags),
 while [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags),
