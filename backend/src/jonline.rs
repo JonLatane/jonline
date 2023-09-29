@@ -284,6 +284,16 @@ impl Jonline for JonLineImpl {
         let user = auth::get_auth_user(&request, &mut conn)?;
         rpcs::create_event(request, user, &mut conn)
     }
+    async fn update_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
+        rpcs::update_event(request.into_inner(), user, &mut conn).map(Response::new)
+    }
+    async fn delete_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
+        let mut conn = get_connection(&self.pool)?;
+        let user = auth::get_auth_user(&request, &mut conn)?;
+        rpcs::delete_event(request.into_inner(), user, &mut conn).map(Response::new)
+    }
 
     async fn get_events(
         &self,

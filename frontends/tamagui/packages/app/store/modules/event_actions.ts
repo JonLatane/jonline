@@ -14,6 +14,23 @@ export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk
   }
 );
 
+export type UpdateEvent = AccountOrServer & Event;
+export const updateEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, UpdateEvent>(
+  "events/update",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    return await client.updateEvent(request, client.credential);
+  }
+);
+export type DeleteEvent = AccountOrServer & Event;
+export const deleteEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, DeleteEvent>(
+  "events/delete",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    return await client.deleteEvent(request, client.credential);
+  }
+);
+
 export type LoadEventsRequest = AccountOrServer & {
   listingType?: EventListingType,
   page?: number

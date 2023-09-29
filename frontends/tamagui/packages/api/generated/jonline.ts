@@ -163,6 +163,10 @@ export interface Jonline {
   streamReplies(request: DeepPartial<Post>, metadata?: grpc.Metadata): Observable<Post>;
   /** Creates an Event. *Authenticated.* */
   createEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event>;
+  /** Updates an Event. *Authenticated.* */
+  updateEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event>;
+  /** (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
+  deleteEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event>;
   /**
    * Gets Events. *Publicly accessible **or** Authenticated.*
    * Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
@@ -218,6 +222,8 @@ export class JonlineClientImpl implements Jonline {
     this.getGroupPosts = this.getGroupPosts.bind(this);
     this.streamReplies = this.streamReplies.bind(this);
     this.createEvent = this.createEvent.bind(this);
+    this.updateEvent = this.updateEvent.bind(this);
+    this.deleteEvent = this.deleteEvent.bind(this);
     this.getEvents = this.getEvents.bind(this);
     this.configureServer = this.configureServer.bind(this);
     this.resetData = this.resetData.bind(this);
@@ -349,6 +355,14 @@ export class JonlineClientImpl implements Jonline {
 
   createEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event> {
     return this.rpc.unary(JonlineCreateEventDesc, Event.fromPartial(request), metadata);
+  }
+
+  updateEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event> {
+    return this.rpc.unary(JonlineUpdateEventDesc, Event.fromPartial(request), metadata);
+  }
+
+  deleteEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event> {
+    return this.rpc.unary(JonlineDeleteEventDesc, Event.fromPartial(request), metadata);
   }
 
   getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse> {
@@ -1081,6 +1095,52 @@ export const JonlineStreamRepliesDesc: UnaryMethodDefinitionish = {
 
 export const JonlineCreateEventDesc: UnaryMethodDefinitionish = {
   methodName: "CreateEvent",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return Event.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Event.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineUpdateEventDesc: UnaryMethodDefinitionish = {
+  methodName: "UpdateEvent",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return Event.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Event.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineDeleteEventDesc: UnaryMethodDefinitionish = {
+  methodName: "DeleteEvent",
   service: JonlineDesc,
   requestStream: false,
   responseStream: false,

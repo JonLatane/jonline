@@ -46,8 +46,9 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
   const [editing, setEditing] = useState(false);
   const [previewingEdits, setPreviewingEdits] = useState(false);
-  const [editedContent, setEditedContent] = useState(post.content);
   const [savingEdits, setSavingEdits] = useState(false);
+
+  const [editedContent, setEditedContent] = useState(post.content);
   const content = editing ? editedContent : post.content;
 
   function saveEdits() {
@@ -68,7 +69,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
       setDeleting(false);
     });
   }
-  // const postsBaseStatus = useTypedSelector((state: RootState) => state.posts.baseStatus);
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const isVisible = useIsVisible(ref);
@@ -131,24 +131,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
     // mr: -2 * detailsMargins,
   };
 
-  const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
-  const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
-  const isAuthor = author && author.id === currentUser?.id;
+  const author = post.author;
+  const isAuthor = author && author.userId === currentUser?.id;
   const showEdit = isAuthor && !isPreview;
 
-  const [loadingAuthor, setLoadingAuthor] = useState(false);
-  useEffect(() => {
-    if (hasBeenVisible && authorId) {
-      if (!loadingAuthor && !author && !authorLoadFailed) {
-        setLoadingAuthor(true);
-        setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
-      } else if (loadingAuthor && author) {
-        setLoadingAuthor(false);
-      }
-    }
-  }, [authorId, loadingAuthor, author, authorLoadFailed]);
-
-  // const loadingReplies = postsStatus == 'loading';
   const [loadingReplies, setLoadingReplies] = useState(false);
   useEffect(() => {
     if (loadingReplies && (post.replyCount == 0 || post.replies.length > 0 || postsStatus != 'loading')) {
@@ -300,7 +286,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
                       {singleMediaPreview
-                        // (!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) 
                         ? <Image
                           mb='$3'
                           width={foregroundSize}
@@ -312,16 +297,13 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
                         /> : undefined}
                       {
                         editing && !previewingEdits
-                          ?
-                          <TextArea f={1} pt='$2' value={content} //ref={textAreaRef}
-                            //onFocus={() => setShowSettings(false)}
-                            disabled={savingEdits} opacity={savingEdits || content == '' ? 0.5 : 1}
-                            onChangeText={t => setEditedContent(t)}
-                            // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
-                            // onBlur={() => _replyTextFocused = false}
+                          ? <TextArea f={1} pt='$2' value={editedContent}
+                            disabled={savingEdits} opacity={savingEdits || editedContent == '' ? 0.5 : 1}
+                            onChangeText={setEditedContent}
                             placeholder={`Text content (optional). Markdown is supported.`} />
-                          : content && content != '' ?
-                            <TamaguiMarkdown text={content} disableLinks={isPreview} /> : undefined
+                          : content && content != ''
+                            ? <TamaguiMarkdown text={content} disableLinks={isPreview} />
+                            : undefined
                       }
                     </YStack>
                   </Anchor>

@@ -75,7 +75,6 @@ pub use get_members::get_members;
 
 mod create_post;
 pub use create_post::create_post;
-
 mod update_post;
 pub use update_post::update_post;
 mod delete_post;
@@ -96,6 +95,10 @@ pub use get_posts::get_posts;
 
 mod create_event;
 pub use create_event::create_event;
+mod update_event;
+pub use update_event::update_event;
+mod delete_event;
+pub use delete_event::delete_event;
 
 mod get_events;
 pub use get_events::*;

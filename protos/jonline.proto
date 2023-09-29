@@ -156,6 +156,12 @@ service Jonline {
   // Creates an Event. *Authenticated.*
   rpc CreateEvent(Event) returns (Event) {}
 
+  // Updates an Event. *Authenticated.*
+  rpc UpdateEvent(Event) returns (Event) {}
+
+  // (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.*
+  rpc DeleteEvent(Event) returns (Event) {}
+
   // Gets Events. *Publicly accessible **or** Authenticated.*
   // Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
   rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}

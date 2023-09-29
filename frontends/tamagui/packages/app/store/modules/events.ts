@@ -10,7 +10,7 @@ import {
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
-import { LoadEvent, createEvent, defaultEventListingType, loadEvent, loadEventsPage } from './event_actions';
+import { LoadEvent, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 export * from './event_actions';
@@ -18,7 +18,8 @@ export * from './event_actions';
 export interface EventsState {
   loadStatus: "unloaded" | "loading" | "loaded" | "errored";
   createStatus: "creating" | "created" | "errored" | undefined;
-  updateStatus: "creating" | "created" | "errored" | undefined;
+  updateStatus: "updating" | "updated" | "errored" | undefined;
+  deleteStatus: "deleting" | "deleted" | "errored" | undefined;
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -38,7 +39,7 @@ export interface EventsState {
 export type GroupedEventInstancePages = Dictionary<Dictionary<string[]>>
 
 
-const eventsAdapter: EntityAdapter<Event> = createEntityAdapter<Event>({
+export const eventsAdapter: EntityAdapter<Event> = createEntityAdapter<Event>({
   selectId: (event) => event.id,
   sortComparer: (a, b) => moment.utc(b.post!.createdAt).unix() - moment.utc(a.post!.createdAt).unix(),
 });
@@ -47,6 +48,7 @@ const initialState: EventsState = {
   loadStatus: "unloaded",
   createStatus: undefined,
   updateStatus: undefined,
+  deleteStatus: undefined,
   failedEventIds: [],
   eventInstancePages: {},
   instances: {},
@@ -90,42 +92,36 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
-    // builder.addCase(replyToPost.pending, (state) => {
-    //   state.sendReplyStatus = "sending";
-    //   state.error = undefined;
-    // });
-    // builder.addCase(replyToPost.fulfilled, (state, action) => {
-    //   state.sendReplyStatus = "sent";
-    //   // eventsAdapter.upsertOne(state, action.payload);
-    //   const reply = action.payload;
-    //   const postIdPath = action.meta.arg.postIdPath;
-    //   const basePost = eventsAdapter.getSelectors().selectById(state, postIdPath[0]!);
-    //   if (!basePost) {
-    //     console.error(`Root post ID (${postIdPath[0]}) not found.`);
-    //     return;
-    //   }
-    //   const rootPost: Post = { ...basePost }
-
-    //   let parentPost: Post = rootPost;
-    //   for (const postId of postIdPath.slice(1)) {
-    //     parentPost.replies = parentPost.replies.map(p => ({ ...p }));
-    //     const nextPost = parentPost.replies.find((reply) => reply.id === postId);
-    //     if (!nextPost) {
-    //       console.error(`Post ID (${postId}) not found along path ${JSON.stringify(postIdPath)}.`);
-    //       return;
-    //     }
-    //     parentPost = nextPost;
-    //   }
-    //   parentPost.replies = [reply].concat(...parentPost.replies);
-    //   eventsAdapter.upsertOne(state, rootPost);
-    //   state.successMessage = `Reply created.`;
-    // });
-    // builder.addCase(replyToPost.rejected, (state, action) => {
-    //   state.sendReplyStatus = "errored";
-    //   state.error = action.error as Error;
-    //   state.errorMessage = formatError(action.error as Error);
-    //   state.error = action.error as Error;
-    // });
+    builder.addCase(updateEvent.pending, (state) => {
+      state.updateStatus = "updating";
+      state.error = undefined;
+    });
+    builder.addCase(updateEvent.fulfilled, (state, action) => {
+      state.updateStatus = "updated";
+      eventsAdapter.upsertOne(state, action.payload);
+      state.successMessage = `Post updated.`;
+    });
+    builder.addCase(updateEvent.rejected, (state, action) => {
+      state.updateStatus = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
+    });
+    builder.addCase(deleteEvent.pending, (state) => {
+      state.deleteStatus = "deleting";
+      state.error = undefined;
+    });
+    builder.addCase(deleteEvent.fulfilled, (state, action) => {
+      state.deleteStatus = "deleted";
+      eventsAdapter.upsertOne(state, action.payload);
+      state.successMessage = `Post deleted.`;
+    });
+    builder.addCase(deleteEvent.rejected, (state, action) => {
+      state.deleteStatus = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
+    });
     builder.addCase(loadEventsPage.pending, (state) => {
       state.loadStatus = "loading";
       state.error = undefined;

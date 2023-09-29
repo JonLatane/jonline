@@ -1,4 +1,4 @@
-import { Post } from "@jonline/api";
+import { Post, PostContext } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   Dictionary,
@@ -15,6 +15,8 @@ import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loa
 import { loadUserPosts } from "./user_actions";
 import { loadEvent, loadEventsPage } from "./event_actions";
 import { GroupedPages } from "../pagination";
+import { eventsAdapter, eventsSlice } from './events';
+import { store } from "../store";
 export * from './post_actions';
 
 export interface PostsState {
@@ -22,7 +24,7 @@ export interface PostsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
   sendReplyStatus?: "sending" | "sent" | "errored";
   createPostStatus?: "posting" | "posted" | "errored";
-  updatePostStatus?: "posting" | "posted" | "errored";
+  updatePostStatus?: "updating" | "updated" | "errored";
   deletePostStatus?: "deleting" | "deleted" | "errored";
   error?: Error;
   successMessage?: string;
@@ -99,11 +101,11 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.error = action.error as Error;
     });
     builder.addCase(updatePost.pending, (state) => {
-      state.updatePostStatus = "posting";
+      state.updatePostStatus = "updating";
       state.error = undefined;
     });
     builder.addCase(updatePost.fulfilled, (state, action) => {
-      state.updatePostStatus = "posted";
+      state.updatePostStatus = "updated";
       postsAdapter.upsertOne(state, action.payload);
       state.successMessage = `Post updated.`;
     });
