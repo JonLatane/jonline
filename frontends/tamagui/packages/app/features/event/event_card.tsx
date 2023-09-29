@@ -410,10 +410,10 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                               y={0}
                             >
                               <YStack space>
-                                <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
+                                <Dialog.Title>Delete Event</Dialog.Title>
                                 <Dialog.Description>
-                                  Really delete {post.replyToPostId ? 'reply' : 'post'}?
-                                  The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
+                                  Really delete event?
+                                  The content and title, along with all event instances and RSVPs, will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
                                 </Dialog.Description>
 
                                 <XStack space="$3" jc="flex-end">

@@ -107,7 +107,6 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     builder.addCase(updatePost.fulfilled, (state, action) => {
       state.updatePostStatus = "updated";
       postsAdapter.upsertOne(state, action.payload);
-      state.successMessage = `Post updated.`;
     });
     builder.addCase(updatePost.rejected, (state, action) => {
       state.updatePostStatus = "errored";
@@ -122,7 +121,6 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     builder.addCase(deletePost.fulfilled, (state, action) => {
       state.deletePostStatus = "deleted";
       postsAdapter.upsertOne(state, action.payload);
-      state.successMessage = `Post deleted.`;
     });
     builder.addCase(deletePost.rejected, (state, action) => {
       state.deletePostStatus = "errored";

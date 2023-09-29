@@ -99,7 +99,6 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     builder.addCase(updateEvent.fulfilled, (state, action) => {
       state.updateStatus = "updated";
       eventsAdapter.upsertOne(state, action.payload);
-      state.successMessage = `Post updated.`;
     });
     builder.addCase(updateEvent.rejected, (state, action) => {
       state.updateStatus = "errored";
@@ -114,7 +113,6 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     builder.addCase(deleteEvent.fulfilled, (state, action) => {
       state.deleteStatus = "deleted";
       eventsAdapter.upsertOne(state, action.payload);
-      state.successMessage = `Post deleted.`;
     });
     builder.addCase(deleteEvent.rejected, (state, action) => {
       state.deleteStatus = "errored";

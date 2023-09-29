@@ -29,7 +29,8 @@ export type PaginatedIds = Dictionary<string[]>;
 
 function getPostsPage(posts: PostsState, listingType: PostListingType, page: number): Post[] {
   const pagePostIds: string[] = (posts.postPages[listingType] ?? {})[page] ?? [];
-  const pagePosts = pagePostIds.map(id => selectPostById(posts, id)).filter(p => p) as Post[];
+  const pagePosts = pagePostIds.map(id => selectPostById(posts, id))
+    .filter(p => p) as Post[];
   return pagePosts;
 }
 
@@ -63,7 +64,7 @@ export function getEventPages(events: EventsState, listingType: EventListingType
   const result: Event[] = [];
   for (let page = 0; page <= throughPage; page++) {
     const pageEvents = getEventsPage(events, listingType, page);
-    result.push(...pageEvents);
+    result.push(...pageEvents.filter(e => e.post?.author != undefined));
   }
   return result;
 }
