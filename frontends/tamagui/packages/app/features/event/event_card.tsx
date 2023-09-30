@@ -29,6 +29,8 @@ interface Props {
   horizontal?: boolean;
 }
 
+let newEventId = 0;
+
 export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview, groupContext, horizontal }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
@@ -67,9 +69,14 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   }
 
   function addInstance() {
-    setEditedInstances([EventInstance.create(defaultEventInstance()), ...editedInstances]);
+    const newInstance = EventInstance.create({...defaultEventInstance(), id: `${newEventId++}`});
+    setEditedInstances([newInstance, ...editedInstances]);
+    setEditingInstance(newInstance);
   }
   function removeInstance(target: EventInstance) {
+    if (target.id === editingInstance?.id) {
+      setEditingInstance(undefined);
+    }
     setEditedInstances(editedInstances.filter(i => i.id != target.id));
   }
   function updateInstance(target: EventInstance) {
