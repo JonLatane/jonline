@@ -94,7 +94,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
 
   const recentGroups = recentGroupIds
     .map(id => allGroups.find(g => g.id === id))
-    .filter(g => g != undefined && g.id !== selectedGroup?.id 
+    .filter(g => g != undefined && g.id !== selectedGroup?.id
       && !topGroups.some(tg => tg.id == g.id)
       && matchedGroups.some(mg => mg.id === g.id)) as Group[];
 
@@ -486,7 +486,7 @@ function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo,
       {accountOrServer.account && (!hideLeaveButton || !joined)
         ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
           <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
-            animation='quick' {...standardAnimation}
+            // {...standardAnimation} animation='quick'
             mb='$2'
             p='$3'
             disabled={isLocked} opacity={isLocked ? 0.5 : 1}

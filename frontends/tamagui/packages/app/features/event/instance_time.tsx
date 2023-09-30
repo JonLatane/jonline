@@ -1,7 +1,7 @@
 import { useServerTheme } from "app/store";
 import React from "react";
 
-import { Event, EventInstance } from "@jonline/api";
+import { Event, EventInstance, Group } from "@jonline/api";
 import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -14,15 +14,17 @@ interface Props {
   highlight?: boolean;
 }
 
+export const createInstanceLink = (event: Event, instance: EventInstance, group?: Group) => ({
+  href: group
+    ? `/g/${group.shortname}/e/${event.id}/i/${instance!.id}`
+    : `/event/${event.id}/i/${instance!.id}`
+});
+
 export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false }) => {
   const { startsAt, endsAt } = instance;
   const { server, primaryColor, primaryAnchorColor, navAnchorColor, backgroundColor: themeBgColor } = useServerTheme();
   const group = useGroupContext();
-  const instanceLink = useLink({
-    href: group
-      ? `/g/${group.shortname}/e/${event.id}/i/${instance!.id}`
-      : `/event/${event.id}/i/${instance!.id}`
-  });
+  const instanceLink = useLink(createInstanceLink(event, instance, group));
 
   function dateView(date: string) {
     return <YStack>

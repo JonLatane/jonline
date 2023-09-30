@@ -11,7 +11,7 @@ import { VisibilityPicker } from '../post/visibility_picker';
 import EventCard from './event_card';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
 
-
+export const defaultEventInstance = () => ({ id: '', startsAt: moment().toISOString(), endsAt: moment().toISOString() });
 
 export type CreateEventSheetProps = {
   selectedGroup?: Group;
@@ -28,7 +28,7 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   function previewEvent(post: Post) {
     return Event.create({
       post: post,
-      instances: [{ startsAt: moment(startTime).utc().toISOString(), endsAt: moment(endTime).utc().toISOString() }],
+      instances: [defaultEventInstance()],
     });
   }
 

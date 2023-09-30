@@ -1,10 +1,10 @@
 import { deleteEvent, deletePost, loadMedia, loadUser, RootState, selectMediaById, selectUserById, updateEvent, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { Event, EventInstance, Group, Media } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input } from "@jonline/ui";
+import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -12,12 +12,14 @@ import { AuthorInfo } from "../post/author_info";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { InstanceTime } from "./instance_time";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
-import { Delete, Edit, Eye, History, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { Repeat, Delete, Edit, Eye, History, Save, CalendarPlus, X as XIcon } from "@tamagui/lucide-icons";
+import icons from "@tamagui/lucide-icons";
 import { GroupPostManager } from "../post/group_post_manager";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
 import { MediaRenderer } from "../media/media_renderer";
 import { FadeInView } from "../post/fade_in_view";
 import { postBackgroundSize } from "../post/post_card";
+import { defaultEventInstance } from "./create_event_sheet";
 
 interface Props {
   event: Event;
@@ -43,6 +45,13 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const title = editing ? editedTitle : post.title;
   const [editedContent, setEditedContent] = useState(post.content);
   const content = editing ? editedContent : post.content;
+  const [editedInstances, setEditedInstances] = useState(event.instances);
+  const instances = editing ? editedInstances : event.instances;
+  console.log('instances', instances);
+  const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
+
+  const endDateInvalid = editingInstance && !moment(editingInstance.endsAt).isAfter(moment(editingInstance.startsAt));
+  const instance = editingInstance ?? selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
 
   function saveEdits() {
     setSavingEdits(true);
@@ -57,6 +66,25 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     });
   }
 
+  function addInstance() {
+    setEditedInstances([EventInstance.create(defaultEventInstance()), ...editedInstances]);
+  }
+  function removeInstance(target: EventInstance) {
+    setEditedInstances(editedInstances.filter(i => i.id != target.id));
+  }
+  function updateInstance(target: EventInstance) {
+    setEditedInstances(editedInstances.map(i => i.id == target.id ? target : i));
+    if (target.id === editingInstance?.id) {
+      setEditingInstance(target);
+    }
+  }
+  function repeatInstance(target: EventInstance, repititions: { weeks?: number, days?: number, hours?: number }) {
+    // setEditedInstances(editedInstances.map(i => i.id == target.id ? target : i));
+  }
+  function editInstance(target: EventInstance) {
+    setEditingInstance(target);
+  }
+
   const [deleted, setDeleted] = useState(post.author === undefined);
   const [deleting, setDeleting] = useState(false);
   function doDeletePost() {
@@ -67,7 +95,9 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     });
   }
 
+  const window = useWindowDimensions();
   const ref = React.createRef<TamaguiElement>();
+  const instanceScrollRef = React.createRef<ScrollView>();
   const isVisible = useIsVisible(ref);
   const [hasBeenVisible, setHasBeenVisible] = useState(false);
   useEffect(() => {
@@ -78,10 +108,6 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
-  const instances = event.instances;
-  const instance = selectedInstance
-    ? selectedInstance
-    : instances.length === 1 ? instances[0] : undefined;
 
   const eventLink = useLink({
     href: groupContext
@@ -194,13 +220,14 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   }, [authorId, loadingAuthor, author, authorLoadFailed]);
 
   const [showPastInstances, setShowPastInstances] = useState(false);
-  const displayedInstances = instances
-    ? (showPastInstances
-      ? [...instances]
-      : instances
-        .filter(isNotPastInstance)
-    ).sort(instanceTimeSort)
-    : undefined;
+  const sortedFilteredInstances = (showPastInstances
+    ? [...instances]
+    : instances
+      .filter(isNotPastInstance)
+  ).sort(instanceTimeSort);
+  const displayedInstances = editingInstance
+    ? [editingInstance, ...sortedFilteredInstances.filter(i => i.id != editingInstance.id)]
+    : sortedFilteredInstances;
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const headerLinks = (post.link?.length ?? 0) > 0
     ? <>
@@ -219,11 +246,13 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
             </YStack>
           </XStack>
         </Anchor>
-        {isPreview
-          ? <Anchor textDecorationLine='none' {...detailsLink}>
-            {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
-          </Anchor>
-          : instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+        {editing
+          ? undefined
+          : isPreview
+            ? <Anchor textDecorationLine='none' {...detailsLink}>
+              {instance ? <InstanceTime event={event} instance={instance} highlight={editing} /> : undefined}
+            </Anchor>
+            : instance ? <InstanceTime event={event} instance={instance} highlight={editing} /> : undefined}
       </YStack>
     </>
     : isPreview
@@ -260,62 +289,146 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
           ? <TamaguiMarkdown text={content} disableLinks={isPreview} />
           : undefined
     : undefined;
+
   return (
     <>
       <YStack w='100%' key={`event-card-${event.id}-${instance?.id}-${isPreview ? '-preview' : ''}`}>
-        {/* <Theme inverse={false}> */}
         <Card theme="dark" elevate size="$4" bordered
           margin='$0'
           marginBottom='$3'
           marginTop='$3'
           f={isPreview ? undefined : 1}
-          // animation='standard'
-          // pressStyle={previewUrl || post.replyToPostId ? { scale: 0.990 } : {}}
           ref={ref!}
           scale={1}
           opacity={1}
           y={0}
-        // enterStyle={{ y: -50, opacity: 0, }}
-        // exitStyle={{ opacity: 0, }}
         >
           {post.link || post.title
             ? <Card.Header>
               <YStack>
                 {headerLinks}
-                {/* <Anchor textDecorationLine='none' {...detailsLink}>
-                  <YStack>
-                    <XStack>
-                      <YStack f={1}>
-                        <Heading color={navColor} size="$7" marginRight='auto'>{post.title}</Heading>
-                      </YStack>
-                    </XStack>
-                    {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
-                  </YStack>
-                </Anchor> */}
 
-                {!isPreview && instances.length > 1
+                {!isPreview && (instances.length > 1 || editing)
                   ? <XStack w='100%' mt='$2' ml='$4' space>
                     {hasPastInstances
                       ? <Theme inverse={showPastInstances}>
-                        <Button mt='$2' mr={-7} size='$3' circular icon={History}
-                          // backgroundColor={showPastInstances ? undefined : navColor} 
-                          onPress={() => setShowPastInstances(!showPastInstances)} />
+                        <Button my='auto' mr={-7} size='$3' circular={(displayedInstances?.length ?? 0) > 0} icon={History}
+                          onPress={() => setShowPastInstances(!showPastInstances)} >
+                          {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
+                        </Button>
                       </Theme>
                       : undefined}
                     <ScrollView f={1} horizontal pb='$3'>
                       <XStack mt='$1'>
+                        {/* {displayedInstances?.length == 0 && hasPastInstances
+                        ? <Heading size="$1" mt='$2' color={primaryColor} mr='$2'>⬅️ Press "show past instances" to show past instances.</Heading>
+                          : undefined } */}
                         {displayedInstances?.map((i) =>
-                          <InstanceTime key={i.id} linkToInstance
-                            event={event} instance={i}
-                            highlight={i.id == instance?.id}
-                          />)}
-                      </XStack>
+                          <YStack mx={editing ? '$2' : undefined}>
+                            <InstanceTime key={i.id} linkToInstance={!editing}
+                              event={event} instance={i}
+                              highlight={i.id == instance?.id}
+                            />
+                            {editing
+                              ? <XStack w='100%'>
+                                <Theme inverse={editingInstance?.id === i.id}>
+                                  <Button mx='auto' mt='$2' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
+                                </Theme>
+                                <Dialog>
+                                  <Dialog.Trigger asChild>
+                                    <Button mx='auto' mt='$2' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
+                                  </Dialog.Trigger>
+                                  <Dialog.Portal zi={1000011}>
+                                    <Dialog.Overlay
+                                      key="overlay"
+                                      animation="quick"
+                                      o={0.5}
+                                      enterStyle={{ o: 0 }}
+                                      exitStyle={{ o: 0 }}
+                                    />
+                                    <Dialog.Content
+                                      bordered
+                                      elevate
+                                      key="content"
+                                      animation={[
+                                        'quick',
+                                        {
+                                          opacity: {
+                                            overshootClamping: true,
+                                          },
+                                        },
+                                      ]}
+                                      m='$3'
+                                      enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                                      exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                                      x={0}
+                                      scale={1}
+                                      opacity={1}
+                                      y={0}
+                                    >
+                                      <YStack space>
+                                        <Dialog.Title>Repeat Instance</Dialog.Title>
+                                        <Dialog.Description>
+                                          {/* <YStack> */}
+                                          <Paragraph size="$2">Repeat for:</Paragraph>
+                                          {/* </YStack> */}
+                                          <XStack> <Text fontFamily='$body'>weeks</Text></XStack>
+                                        </Dialog.Description>
 
+                                        <XStack space="$3" jc="flex-end">
+                                          <Dialog.Close asChild>
+                                            <Button>Cancel</Button>
+                                          </Dialog.Close>
+                                          <Theme inverse>
+                                            <Button onPress={() => ({})}>Repeat</Button>
+                                          </Theme>
+                                          {/* </Dialog.Action> */}
+                                        </XStack>
+                                      </YStack>
+                                    </Dialog.Content>
+                                  </Dialog.Portal>
+                                </Dialog>
+                                <Button mx='auto' mt='$2' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
+                              </XStack>
+                              : undefined}
+                          </YStack>)}
+                      </XStack>
                     </ScrollView>
+                    {editing
+                      ? <Button my='auto' mr='$4' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
+                      : undefined}
                   </XStack>
                   : undefined
 
                 }
+                {editingInstance
+                  ? <>
+                    <XStack mx='$2' key={editingInstance?.id}>
+                      <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
+                      <Text fontSize='$2' fontFamily='$body'>
+                        <input type='datetime-local' style={{ padding: 10 }} 
+                          value={editingInstance.startsAt}
+                          onChange={(v) => {
+                            const updatedInstance = { ...editingInstance, startsAt: v.target.value };
+                            updateInstance(updatedInstance);
+                            //  setStartTime(v.target.value)
+                          }} />
+                      </Text>
+                    </XStack>
+                    <XStack mx='$2' key={editingInstance?.id}>
+                      <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
+                      <Text fontSize='$2' fontFamily='$body'>
+
+                      <input type='datetime-local' style={{ padding: 10 }} 
+                          value={editingInstance.endsAt}
+                          onChange={(v) => {
+                            const updatedInstance = { ...editingInstance, endsAt: v.target.value };
+                            updateInstance(updatedInstance);
+                          }} />                      </Text>
+                    </XStack>
+                    {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
+                  </>
+                  : undefined}
               </YStack>
             </Card.Header>
             : undefined}
@@ -488,38 +601,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
               : undefined}
           </Card.Background>
         </Card >
-        {/* </Theme> */}
       </YStack>
-      {/* {
-        isPreview ?
-          <Anchor {...authorLinkProps} onPress={(e) => e.stopPropagation()}>
-            <XStack w={180} h={70}
-              // backgroundColor='#42424277' 
-              position='absolute' bottom={15} />
-          </Anchor >
-          : undefined}
-      {
-        isPreview && post.link ?
-          <Anchor href={post.link} target='_blank'>
-            <XStack w='100%' h={
-              Math.max(1, (post.title?.length ?? 0) / Math.round(
-                (media.xxxxxxs ? 15
-                  : media.xxxxxs ? 20
-                    : media.xxxxs ? 25
-                      : media.xxxs ? 30
-                        : media.xxs ? 35
-                          : media.xs ? 40
-                            : media.sm ? 45
-                              : media.md ? 50
-                                : media.lg ? 55
-                                  : 70
-                )
-              )) * 36}
-              // backgroundColor='#42424277' 
-              position='absolute' top={15} />
-          </Anchor>
-          : undefined
-      } */}
     </>
   );
 };

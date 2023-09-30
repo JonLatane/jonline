@@ -104,7 +104,7 @@ final List<DemoEvent> durhamDemoEvents = [
           ..title = "Bull City Run Club"
           ..link = "https://bullcityrunning.com/events/runclub/"
           ..content =
-              "A weekly run club for all levels of runners. Meets at Bull City Running's downtown location, with running starting at 6pm. 3, 4 and 6 mile routes are available. Registration isn't required, but costs only \$1 (cash) and lets you earn free beers, pint glasses, and T-shirts!")
+              "A weekly run club for all levels of runners. Meets at Bull City Running's downtown location, runs starting at 6pm. 3, 4 and 6 mile routes are available. Registration isn't required, but costs only \$1 (cash) and lets you earn free beers, pint glasses, and dope T-shirts just for showing up to run! If you'd like to register, pre-register online and try to arrive by 5:45.")
         ..instances.addAll(_generateWeeklyInstances(
             '2023-04-12 18:00:00-04:00', '2023-04-12 19:00:00-04:00', 30))),
   DemoEvent(
