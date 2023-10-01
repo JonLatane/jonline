@@ -45,7 +45,7 @@ export function sectionTitle(section: AppSection): string {
     case AppSection.GROUP:
       return 'Group';
     case AppSection.MEDIA:
-      return 'Media';
+      return 'My Media';
     case AppSection.INFO:
       return 'Info';
     // default:

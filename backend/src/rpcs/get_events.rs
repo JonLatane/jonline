@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use diesel::*;
 use log::info;
 use tonic::{Code, Status};
@@ -94,7 +96,7 @@ fn get_public_and_following_events(
             // instance_posts.field(posts::preview).is_not_null(),
         ))
         .filter(public.or(limited_to_followers))
-        // .filter(event_instances::ends_at.gt(SystemTime::now()))
+        .filter(event_instances::ends_at.gt(SystemTime::now()))
         .order(event_instances::ends_at)
         .limit(20)
         .load::<(
@@ -274,7 +276,7 @@ fn get_group_events(
             ))
             .filter(public) //.or(limited_to_followers))
             .filter(group_posts::group_id.eq(group_id))
-            // .filter(event_instances::ends_at.gt(SystemTime::now()))
+            .filter(event_instances::ends_at.gt(SystemTime::now()))
             .order(event_instances::ends_at)
             .limit(20)
             .load::<(

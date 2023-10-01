@@ -51,6 +51,7 @@ export function EventDetailsScreen() {
   }, [subjectInstances, instanceId]);
   // console.log("EventDetailsScreen.subjectInstance=", subjectInstance?.id, 'instanceId=', instanceId);
   // const postId = subjectPost?.id;
+  const [loadedEvent, setLoadedEvent] = useState(false);
   const [loadingEvent, setLoadingEvent] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());
@@ -122,13 +123,13 @@ export function EventDetailsScreen() {
 
   useEffect(() => {
     if (eventId) {
-      if ((!subjectEvent || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingEvent) {
+      if ((!subjectEvent || !loadedEvent || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingEvent) {
         setLoadingEvent(true);
         // useEffect(() => {
         console.log('loadEvent', eventId!)
         setTimeout(() =>
-          dispatch(loadEvent({ ...accountOrServer, id: eventId! })));
-        // });
+          dispatch(loadEvent({ ...accountOrServer, id: eventId! }))
+            .then(() => setLoadedEvent(true)));
       } else if (subjectPost && loadingEvent) {
         setLoadingEvent(false);
       }
@@ -149,6 +150,9 @@ export function EventDetailsScreen() {
         dismissScrollPreserver(setShowScrollPreserver);
       }
     }
+  }, [eventId, subjectPost, postsState, loadingEvent, loadedEvent, loadingReplies, replyPostIdPath, showScrollPreserver]);
+
+  useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
     let title = '';
     if (subjectPost) {
@@ -167,7 +171,8 @@ export function EventDetailsScreen() {
       title += `- ${group.name}`;
     }
     document.title = title;
-  }, [eventId, subjectPost, postsState, loadingEvent, loadingReplies, replyPostIdPath, showScrollPreserver]);
+
+  }, [subjectPost, group])
 
   function toggleCollapseReplies(eventId: string) {
     if (collapsedReplies.has(eventId)) {
@@ -231,7 +236,7 @@ export function EventDetailsScreen() {
 
           <ScrollView w='100%'>
             <XStack w='100%' paddingHorizontal='$3'>
-              {subjectEvent ? <EventCard event={subjectEvent} selectedInstance={subjectInstance} /> : undefined}
+              {subjectEvent ? <EventCard event={subjectEvent} key={`event-card-loaded-${loadedEvent}`} selectedInstance={subjectInstance} /> : undefined}
             </XStack>
             <XStack>
               <XStack f={1} />

@@ -111,6 +111,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                 <ScrollView horizontal>
                   <XStack w={1} />
                   <GroupsSheet selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                  <XStack w={3} />
                   <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
                 </ScrollView>
                 <XStack f={1} />
