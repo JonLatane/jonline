@@ -400,8 +400,8 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                           : undefined } */}
                         {displayedInstances?.map((i) => {
                           const isPrimary = i.id == primaryInstance?.id;
-                          const isEditing = i.id == editingInstance?.id;
-                          const highlight = isPrimary || isEditing;
+                          const isEditingInstance = i.id == editingInstance?.id;
+                          const highlight = editing ? isEditingInstance : isPrimary;
                           let result = <YStack mx={editing ? '$2' : undefined} o={highlight ? 1 : 0.5}>
                             <InstanceTime key={i.id} linkToInstance={!editing}
                               event={event} instance={i}
