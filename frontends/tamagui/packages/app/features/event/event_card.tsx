@@ -56,7 +56,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   const endDateInvalid = editingInstance && !moment(editingInstance.endsAt).isAfter(moment(editingInstance.startsAt));
-  const instance = editingInstance ?? selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
+  const primaryInstance = /*editingInstance ??*/ selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
 
   function saveEdits() {
     setSavingEdits(true);
@@ -123,11 +123,11 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
   const eventLink = useLink({
     href: groupContext
-      ? instance
-        ? `/g/${groupContext.shortname}/e/${event.id}/i/${instance!.id}`
+      ? primaryInstance
+        ? `/g/${groupContext.shortname}/e/${event.id}/i/${primaryInstance!.id}`
         : `/g/${groupContext.shortname}/e/${event.id}`
-      : instance
-        ? `/event/${event.id}/i/${instance!.id}`
+      : primaryInstance
+        ? `/event/${event.id}/i/${primaryInstance!.id}`
         : `/event/${event.id}`,
     // instance
     //   ? groupContext
@@ -142,8 +142,8 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
       ? `/${authorName}`
       : `/user/${authorId}`
   });
-  const createGroupEventViewHref = (group: Group) => instance
-    ? `/g/${group.shortname}/e/${event.id}/i/${instance!.id}`
+  const createGroupEventViewHref = (group: Group) => primaryInstance
+    ? `/g/${group.shortname}/e/${event.id}/i/${primaryInstance!.id}`
     : `/g/${group.shortname}/e/${event.id}`;
 
   const maxContentHeight = isPreview ? horizontal ? 100 : 300 : undefined;
@@ -262,7 +262,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
             </YStack>
           </XStack>
           {postLinkView}
-          {instance ? <InstanceTime event={event} instance={instance} highlight /> : undefined}
+          {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight /> : undefined}
         </YStack>
       </Anchor>
       : <YStack>
@@ -272,7 +272,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
           </YStack>
         </XStack>
         {postLinkView}
-        {instance ? <InstanceTime event={event} instance={instance} highlight /> : undefined}
+        {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight /> : undefined}
       </YStack>}
   </YStack>;
   const headerLinksEdit = <YStack space='$2'>
@@ -307,9 +307,9 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
           ? undefined
           : isPreview
             ? <Anchor textDecorationLine='none' {...detailsLink}>
-              {instance ? <InstanceTime event={event} instance={instance} highlight={editing} /> : undefined}
+              {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight={editing} /> : undefined}
             </Anchor>
-            : instance ? <InstanceTime event={event} instance={instance} highlight={editing} /> : undefined}
+            : primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight={editing} /> : undefined}
       </YStack>
     </>
     : isPreview
@@ -320,7 +320,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
               <Heading size="$7" marginRight='auto'>{title}</Heading>
             </YStack>
           </XStack>
-          {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+          {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} /> : undefined}
         </YStack>
       </Anchor>
       : <YStack>
@@ -329,7 +329,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
             <Heading size="$7" marginRight='auto'>{title}</Heading>
           </YStack>
         </XStack>
-        {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
+        {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} /> : undefined}
       </YStack>;
 
   const contentView = post.content && post.content != ''
@@ -348,6 +348,8 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     : undefined;
 
   const weeklyRepeatOptions = [...Array(52).keys()];
+  const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
+
   function doRepeatInstance() {
     [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
       const repeatedInstance = EventInstance.create({
@@ -356,11 +358,12 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
         endsAt: moment(editingInstance!.endsAt).add(weeksAfter, 'weeks').toISOString()
       });
       setEditedInstances([repeatedInstance, ...editedInstances]);
+      setTimeout(forceUpdate, 1);
     });
   }
   return (
     <>
-      <YStack w='100%' key={`event-card-${event.id}-${instance?.id}-${isPreview ? '-preview' : ''}`}>
+      <YStack w='100%' key={`event-card-${event.id}-${primaryInstance?.id}-${isPreview ? '-preview' : ''}`}>
         <Card theme="dark" elevate size="$4" bordered
           margin='$0'
           marginBottom='$3'
@@ -396,10 +399,13 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                         ? <Heading size="$1" mt='$2' color={primaryColor} mr='$2'>⬅️ Press "show past instances" to show past instances.</Heading>
                           : undefined } */}
                         {displayedInstances?.map((i) => {
-                          let result = <YStack mx={editing ? '$2' : undefined} o={i.id == instance?.id ? 1 : 0.5}>
+                          const isPrimary = i.id == primaryInstance?.id;
+                          const isEditing = i.id == editingInstance?.id;
+                          const highlight = isPrimary || isEditing;
+                          let result = <YStack mx={editing ? '$2' : undefined} o={highlight ? 1 : 0.5}>
                             <InstanceTime key={i.id} linkToInstance={!editing}
                               event={event} instance={i}
-                              highlight={i.id == instance?.id}
+                              highlight={highlight}
                             />
                             {editing
                               ? <XStack w='100%'>
@@ -508,9 +514,11 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                                             </Dialog.Close>
 
                                             <Dialog.Close asChild>
-                                              <Theme inverse>
-                                                <Button onPress={doRepeatInstance}>Repeat</Button>
-                                              </Theme>
+                                              {/* <Dialog.A> */}
+                                              {/* <Theme inverse> */}
+                                                <Button color={primaryAnchorColor} onPress={doRepeatInstance}>Repeat</Button>
+                                              {/* </Theme> */}
+                                              {/* </Dialog.Action> */}
                                             </Dialog.Close>
                                             {/* </Dialog.Action> */}
                                           </XStack>
