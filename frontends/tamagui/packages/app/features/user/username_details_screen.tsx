@@ -147,8 +147,8 @@ export function UsernameDetailsScreen() {
 
     setTimeout(() => dispatch(updateUser({
       ...accountOrServer,
-      ...{ ...user!, bio: bio ?? '', avatarMediaId: avatar, defaultFollowModeration, visibility, permissions },
-    })));
+      ...{ ...user!, bio: bio ?? '', avatar: avatar, defaultFollowModeration, visibility, permissions },
+    })), 1);
   }
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const loading = usersState.status == 'loading' || usersState.status == 'unloaded'

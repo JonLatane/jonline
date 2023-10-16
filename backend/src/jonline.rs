@@ -74,7 +74,9 @@ impl Jonline for JonLineImpl {
     async fn update_user(&self, request: Request<User>) -> Result<Response<User>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_user(request.into_inner(), &user, &mut conn).map(Response::new)
+        let result = rpcs::update_user(request.into_inner(), &user, &mut conn).map(Response::new);
+        println!("update_user result: {:?}", &result);
+        result
     }
 
     async fn delete_user(&self, request: Request<User>) -> Result<Response<()>, Status> {
