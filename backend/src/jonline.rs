@@ -65,18 +65,14 @@ impl Jonline for JonLineImpl {
 
     async fn get_current_user(&self, request: Request<()>) -> Result<Response<User>, Status> {
         let mut conn = get_connection(&self.pool)?;
-        match auth::get_auth_user(&request, &mut conn) {
-            Err(e) => Err(e),
-            Ok(user) => rpcs::get_current_user(user, &mut conn),
-        }
+        let user = auth::get_auth_user(&request, &mut conn)?;
+        rpcs::get_current_user(&user, &mut conn)
     }
 
     async fn update_user(&self, request: Request<User>) -> Result<Response<User>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        let result = rpcs::update_user(request.into_inner(), &user, &mut conn).map(Response::new);
-        println!("update_user result: {:?}", &result);
-        result
+        rpcs::update_user(request.into_inner(), &user, &mut conn).map(Response::new)
     }
 
     async fn delete_user(&self, request: Request<User>) -> Result<Response<()>, Status> {

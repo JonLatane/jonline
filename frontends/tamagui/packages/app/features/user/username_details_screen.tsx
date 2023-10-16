@@ -147,7 +147,7 @@ export function UsernameDetailsScreen() {
 
     setTimeout(() => dispatch(updateUser({
       ...accountOrServer,
-      ...{ ...user!, bio: bio ?? '', avatar: avatar, defaultFollowModeration, visibility, permissions },
+      ...{ ...user!, bio: bio ?? '', avatar, defaultFollowModeration, visibility, permissions },
     })), 1);
   }
   const postsState = useTypedSelector((state: RootState) => state.posts);

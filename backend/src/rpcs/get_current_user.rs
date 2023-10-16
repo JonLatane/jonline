@@ -5,7 +5,7 @@ use crate::marshaling::{ToMediaLookup, ToProtoUser};
 use crate::{models, protos};
 
 pub fn get_current_user(
-    user: models::User,
+    user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Response<protos::User>, Status> {
     log::info!(
