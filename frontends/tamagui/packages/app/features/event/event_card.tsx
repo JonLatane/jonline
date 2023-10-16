@@ -377,14 +377,19 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                 {headerLinks}
                 {!isPreview && (instances.length > 1 || editing)
                   ? <XStack w='100%' mt='$2' ml='$4' space>
-                    {hasPastInstances
-                      ? <Theme inverse={showPastInstances}>
-                        <Button my='auto' mr={-7} size='$3' circular={(displayedInstances?.length ?? 0) > 0} icon={History}
-                          onPress={() => setShowPastInstances(!showPastInstances)} >
-                          {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
-                        </Button>
-                      </Theme>
-                      : undefined}
+                    <YStack my='auto' space="$3">
+                      {hasPastInstances
+                        ? <Theme inverse={showPastInstances}>
+                          <Button  mr={-7} size='$3' circular={(displayedInstances?.length ?? 0) > 0} icon={History}
+                            onPress={() => setShowPastInstances(!showPastInstances)} >
+                            {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
+                          </Button>
+                        </Theme>
+                        : undefined}
+                      {editing
+                        ? <Button my='auto' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
+                        : undefined}
+                    </YStack>
                     <ScrollView f={1} horizontal pb='$3'>
                       <XStack mt='$1'>
                         {/* {displayedInstances?.length == 0 && hasPastInstances
@@ -401,7 +406,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                                 <Theme inverse={editingInstance?.id === i.id}>
                                   <Button mx='auto' mt='$2' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
                                 </Theme>
-                                {i.id == instance?.id
+                                {i.id == editingInstance?.id
                                   ? <Dialog>
                                     <Dialog.Trigger asChild>
                                       <Button mx='auto' mt='$2' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
@@ -531,9 +536,6 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                         })}
                       </XStack>
                     </ScrollView>
-                    {editing
-                      ? <Button my='auto' mr='$4' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
-                      : undefined}
                   </XStack>
                   : undefined
                 }
