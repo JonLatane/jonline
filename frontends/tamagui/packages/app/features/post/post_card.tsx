@@ -264,7 +264,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
               : undefined}
             <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
               {deleted
-                ? <Paragraph size='$1'>This post has been deleted.</Paragraph>
+                ? <Paragraph size='$1'>This {post.replyToPostId ? 'comment' : 'post'} has been deleted.</Paragraph>
                 : <YStack zi={1000} width='100%' {...footerProps}>
                   {hasBeenVisible && embedComponent && false
                     ? <FadeInView><div>{embedComponent}</div></FadeInView>

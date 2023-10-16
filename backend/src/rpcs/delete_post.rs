@@ -11,6 +11,7 @@ use crate::models;
 use crate::protos::*;
 use crate::rpcs;
 use crate::schema::posts;
+use crate::schema::users;
 // use crate::schema::users;
 
 use super::validations::*;
@@ -39,6 +40,22 @@ pub fn delete_post(
         .filter(posts::id.eq(request.id.to_db_id().unwrap()))
         .first::<models::Post>(conn)
         .map_err(|_| Status::new(Code::NotFound, "post_not_found"))?;
+    let mut ancestor_post_ids: Vec<i64> = vec![];
+    let parent_post_db_id: Option<i64> = match existing_post.parent_post_id {
+        Some(db_id) => {
+            let mut ppdpid: Option<i64> = Some(db_id);
+            while let Some(parent_id) = ppdpid {
+                ancestor_post_ids.push(parent_id);
+                ppdpid = posts::table
+                    .select(posts::parent_post_id)
+                    .find(parent_id)
+                    .first::<Option<i64>>(conn)
+                    .unwrap();
+            }
+            Some(db_id)
+        }
+        None => None,
+    };
 
     let self_update = existing_post.user_id == Some(current_user.id);
     log::info!(
@@ -49,10 +66,7 @@ pub fn delete_post(
     );
 
     if !self_update {
-        validate_any_permission(
-            &current_user,
-            vec![Permission::Admin],
-        )?;
+        validate_any_permission(&current_user, vec![Permission::Admin])?;
     }
     let transaction_result: Result<models::Post, diesel::result::Error> = conn
         .transaction::<models::Post, diesel::result::Error, _>(|conn| {
@@ -73,6 +87,24 @@ pub fn delete_post(
                 existing_post.updated_at = SystemTime::now().into();
             }
             existing_post.updated_at = SystemTime::now().into();
+
+            if parent_post_db_id.is_some() {
+                update(posts::table)
+                    .filter(posts::id.eq(parent_post_db_id.unwrap()))
+                    .set(posts::reply_count.eq(posts::reply_count - 1))
+                    .execute(conn)?;
+                update(posts::table)
+                    .filter(posts::id.eq_any(ancestor_post_ids))
+                    .set((
+                        posts::response_count.eq(posts::response_count - 1),
+                        // posts::last_activity_at.eq(inserted_post.created_at),
+                    ))
+                    .execute(conn)?;
+            }
+            update(users::table)
+                .filter(users::id.eq(current_user.id))
+                .set(users::post_count.eq(users::post_count - 1))
+                .execute(conn)?;
 
             log::info!("Soft deleting post: {:?}", existing_post);
             match diesel::update(posts::table)

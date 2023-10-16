@@ -188,6 +188,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     builder.addCase(loadPostsPage.fulfilled, (state, action) => {
       state.status = "loaded";
       state.baseStatus = "loaded";
+      // const loadedPosts = action.payload.posts.filter(p => p.author != undefined)
       action.payload.posts.forEach(post => {
         const oldPost = selectPostById(state, post.id);
         postsAdapter.upsertOne(state, { ...post, replies: oldPost?.replies ?? post.replies });

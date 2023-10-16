@@ -236,9 +236,10 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     ? instances
     : instances.filter(isNotPastInstance);
   const sortedFilteredInstances = [...filteredInstances].sort(instanceTimeSort);
-  const displayedInstances = editingInstance
-    ? [editingInstance, ...sortedFilteredInstances.filter(i => i.id != editingInstance.id)]
-    : sortedFilteredInstances;
+  const displayedInstances = //editingInstance
+    //? [editingInstance, ...sortedFilteredInstances.filter(i => i.id != editingInstance.id)]
+    //: 
+    sortedFilteredInstances;
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const postLinkView = postLink
     ? <Anchor textDecorationLine='none' {...(editing ? {} : postLink)}>
@@ -351,15 +352,17 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
 
   function doRepeatInstance() {
+    const repeatedInstances: EventInstance[] = [];
     [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
       const repeatedInstance = EventInstance.create({
         id: `${newEventId++}`,
         startsAt: moment(editingInstance!.startsAt).add(weeksAfter, 'weeks').toISOString(),
         endsAt: moment(editingInstance!.endsAt).add(weeksAfter, 'weeks').toISOString()
       });
-      setEditedInstances([repeatedInstance, ...editedInstances]);
-      setTimeout(forceUpdate, 1);
+      repeatedInstances.push(repeatedInstance);
     });
+    setEditedInstances([...editedInstances, ...repeatedInstances]);
+    setTimeout(forceUpdate, 1);
   }
   return (
     <>
@@ -383,7 +386,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                     <YStack my='auto' space="$3">
                       {hasPastInstances
                         ? <Theme inverse={showPastInstances}>
-                          <Button  mr={-7} size='$3' circular={(displayedInstances?.length ?? 0) > 0} icon={History}
+                          <Button mr={-7} size='$3' circular={(displayedInstances?.length ?? 0) > 0} icon={History}
                             onPress={() => setShowPastInstances(!showPastInstances)} >
                             {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
                           </Button>
@@ -516,7 +519,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                                             <Dialog.Close asChild>
                                               {/* <Dialog.A> */}
                                               {/* <Theme inverse> */}
-                                                <Button color={primaryAnchorColor} onPress={doRepeatInstance}>Repeat</Button>
+                                              <Button color={primaryAnchorColor} onPress={doRepeatInstance}>Repeat</Button>
                                               {/* </Theme> */}
                                               {/* </Dialog.Action> */}
                                             </Dialog.Close>
@@ -614,24 +617,29 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                   {showEdit
                     ? editing
                       ? <>
-                        <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
+                        <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
+                          disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                           Save
                         </Button>
-                        <Button my='auto' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} disabled={savingEdits} transparent>
+                        <Button my='auto' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
+                          disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                           Cancel
                         </Button>
-                        <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} disabled={savingEdits} transparent>
+                        <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
+                          disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                           {previewingEdits ? 'Edit' : 'Preview'}
                         </Button>
                       </>
                       : <>
-                        <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
+                        <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} transparent
+                          disabled={deleting} o={deleting ? 0.5 : 1}>
                           Edit
                         </Button>
 
                         <Dialog>
                           <Dialog.Trigger asChild>
-                            <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
+                            <Button my='auto' size='$2' icon={Delete} transparent 
+                            disabled={deleting} o={deleting ? 0.5 : 1}>
                               Delete
                             </Button>
                           </Dialog.Trigger>
