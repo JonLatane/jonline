@@ -36,6 +36,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
   const maxErrors = 3;
   const [errorCount, setErrorCount] = useState(0);
   useEffect(() => {
+    console.log('errorCount', errorCount);
     if (isVisible && !groupPostData && !loading && errorCount < maxErrors) {
       dispatch(loadPostGroupPosts({ ...accountOrServer, postId: post.id }))
         .then(() => setLoading(false))

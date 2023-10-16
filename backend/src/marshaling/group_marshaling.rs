@@ -14,10 +14,10 @@ use crate::schema::users;
 
 pub trait ToProtoGroup {
     fn to_proto_with(&self, user_membership: Option<Membership>) -> Group;
-    fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> Group;
+    fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<&models::User>) -> Group;
 }
 impl ToProtoGroup for models::Group {
-    fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<models::User>) -> Group {
+    fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<&models::User>) -> Group {
         let user_membership = match user {
             Some(user) => memberships::table
                 .select(memberships::all_columns)

@@ -9,7 +9,7 @@ use crate::schema::media;
 
 pub fn get_media(
     request: GetMediaRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetMediaResponse, Status> {
     log::info!("GetMedia called: ${:?}", request);
@@ -36,7 +36,7 @@ pub fn get_media(
 
 fn get_user_media(
     request: GetMediaRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetMediaResponse, Status> {
     log::info!("get_user_media: {:?}", request);
@@ -81,7 +81,7 @@ fn get_user_media(
 
 fn get_by_id(
     request: GetMediaRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetMediaResponse, Status> {
     log::info!("get_by_id: {:?}", request);

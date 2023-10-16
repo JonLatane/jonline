@@ -15,7 +15,7 @@ use super::validations::PASSING_MODERATIONS;
 
 pub fn get_posts(
     request: GetPostsRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetPostsResponse, Status> {
     // log::info!("GetPosts called");
@@ -31,15 +31,11 @@ pub fn get_posts(
             conn,
         ),
         (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
-            &user
-                .clone()
-                .ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
+            user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
             conn,
         ),
         (PostListingType::FollowingPosts, _, _) => get_following_posts(
-            &user
-                .clone()
-                .ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
+            user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
             conn,
         ),
         (PostListingType::GroupPosts, _, _) => get_group_posts(
@@ -100,7 +96,7 @@ macro_rules! filter_visible_posts {
 }
 
 fn get_by_post_id(
-    user: &Option<models::User>,
+    user: &Option<&models::User>,
     post_id: &str,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
@@ -133,7 +129,7 @@ fn get_by_post_id(
 }
 
 fn get_public_and_following_posts(
-    user: &Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Vec<MarshalablePost> {
     let public_visibilities = public_string_visibilities(user);
@@ -218,7 +214,7 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
 
 fn get_group_posts(
     group_id: i64,
-    user: &Option<models::User>,
+    user: &Option<&models::User>,
     moderations: Vec<Moderation>,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
@@ -328,7 +324,7 @@ fn load_group_posts(
 
 fn get_user_posts(
     user_id: i64,
-    current_user: &Option<models::User>,
+    current_user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Vec<MarshalablePost> {
     let visibilities = match current_user {
@@ -373,7 +369,7 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
 }
 
 fn get_replies_to_post_id(
-    user: &Option<models::User>,
+    user: &Option<&models::User>,
     post_id: &str,
     reply_depth: u32,
     conn: &mut PgPooledConnection,

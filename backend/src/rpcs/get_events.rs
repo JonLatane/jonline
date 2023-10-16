@@ -14,7 +14,7 @@ use crate::schema::*;
 
 pub fn get_events(
     request: GetEventsRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetEventsResponse, Status> {
     // log::info!("GetEvents called");
@@ -43,7 +43,7 @@ pub fn get_events(
 }
 
 fn get_public_and_following_events(
-    user: &Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
     _filter: Option<TimeFilter>,
 ) -> Result<Vec<MarshalableEvent>, Status> {
@@ -162,7 +162,7 @@ fn get_public_and_following_events(
 }
 
 fn get_event_by_id(
-    user: &Option<models::User>,
+    user: &Option<&models::User>,
     event_id: &str,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalableEvent>, Status> {
@@ -214,7 +214,7 @@ fn get_event_by_id(
 
 fn get_group_events(
     group_id: i64,
-    user: &Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
     _filter: Option<TimeFilter>,
 ) -> Result<Vec<MarshalableEvent>, Status> {
@@ -327,7 +327,7 @@ fn get_group_events(
 }
 //TODO Update below copypasta
 
-// fn _get_top_posts(user: &Option<models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
+// fn _get_top_posts(user: &Option<&models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
 //     let public_visibilities = public_string_visibilities(user);
 //     let public = posts::visibility.eq_any(public_visibilities);
 //     let limited_to_followers = posts::visibility
@@ -410,7 +410,7 @@ fn get_group_events(
 
 // fn _get_group_posts(
 //     group_id: i64,
-//     user: &Option<models::User>,
+//     user: &Option<&models::User>,
 //     moderations: Vec<Moderation>,
 //     conn: &mut PgPooledConnection,
 // ) -> Result<Vec<Post>, Status> {
@@ -509,7 +509,7 @@ fn get_group_events(
 
 // fn _get_user_posts(
 //     user_id: i64,
-//     current_user: &Option<models::User>,
+//     current_user: &Option<&models::User>,
 //     conn: &mut PgPooledConnection,
 // ) -> Vec<Post> {
 //     let visibilities = match current_user {
@@ -553,7 +553,7 @@ fn get_group_events(
 //         .collect()
 // }
 // fn _get_replies_to_post_id(
-//     _user: &Option<models::User>,
+//     _user: &Option<&models::User>,
 //     post_id: &str,
 //     reply_depth: u32,
 //     conn: &mut PgPooledConnection,

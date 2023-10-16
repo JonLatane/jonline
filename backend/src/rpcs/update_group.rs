@@ -56,7 +56,7 @@ pub fn update_group(
         .set(&group)
         .execute(conn)
     {
-        Ok(_) => Ok(group.to_proto(conn, &Some(user))),
+        Ok(_) => Ok(group.to_proto(conn, &Some(&user))),
         Err(DatabaseError(UniqueViolation, _)) => {
             Err(Status::new(Code::NotFound, "duplicate_group_name"))
         }

@@ -1,4 +1,4 @@
-import { Event, EventInstance } from "@jonline/api";
+import { Event, EventInstance, Post } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   Dictionary,
@@ -13,6 +13,8 @@ import moment from "moment";
 import { LoadEvent, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
+import postsReducer, { locallyUpsertPost, postsAdapter, upsertPost } from "./posts";
+import { store } from "../store";
 export * from './event_actions';
 
 export interface EventsState {
@@ -72,13 +74,15 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     }
   },
   extraReducers: (builder) => {
-    builder.addCase(createEvent.pending, (state) => {
+    builder.addCase(createEvent.pending, (state, action) => {
       state.createStatus = "creating";
       state.error = undefined;
+      console.log('creating event', action.meta.arg);
     });
     builder.addCase(createEvent.fulfilled, (state, action) => {
       state.createStatus = "created";
       eventsAdapter.upsertOne(state, action.payload);
+      console.log('created event from server', action.payload);
       if (publicVisibility(action.payload.post?.visibility)) {
         state.eventInstancePages[defaultEventListingType] = state.eventInstancePages[defaultEventListingType] || {};
         const firstPage = state.eventInstancePages[defaultEventListingType][0] || [];
@@ -89,6 +93,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     builder.addCase(createEvent.rejected, (state, action) => {
       state.createStatus = "errored";
       state.error = action.error as Error;
+      console.error("Error creating event", action.error);
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
@@ -179,6 +184,14 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       // const oldPost = selectEventById(state, action.payload.event.id);
       const event = action.payload;
       eventsAdapter.upsertOne(state, event);
+      if (event.post) {
+        setTimeout(() => {
+          console.log("upserting post", event.post);
+          store.dispatch(locallyUpsertPost({...action.meta.arg, ...event.post! }));
+
+        }, 1);
+      }
+      // postsReducer.upsertOne(state, event.post);
       state.successMessage = `Post data loaded.`;
     });
     builder.addCase(loadEvent.rejected, (state, action) => {

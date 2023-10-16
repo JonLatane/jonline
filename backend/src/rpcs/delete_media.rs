@@ -12,7 +12,7 @@ use super::validations::*;
 
 pub fn delete_media(
     request: Media,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     let affected_media = media::table

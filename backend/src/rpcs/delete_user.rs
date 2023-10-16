@@ -12,7 +12,7 @@ use super::validations::*;
 
 pub fn delete_user(
     request: User,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     validate_user(&request)?;

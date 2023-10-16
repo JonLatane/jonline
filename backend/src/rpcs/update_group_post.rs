@@ -13,7 +13,7 @@ use crate::schema::group_posts;
 
 pub fn update_group_post(
     request: GroupPost,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<GroupPost, Status> {
     // validate_group_user_moderator(&request, OperationType::Update)?;

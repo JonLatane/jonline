@@ -1,7 +1,7 @@
 import { EventInstance, Post } from '@jonline/api'
 import { Button, Heading, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui'
 import { ListEnd } from '@tamagui/lucide-icons'
-import { RootState, loadEvent, loadPostReplies, selectEventById, selectGroupById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
+import { RootState, loadEvent, loadPostReplies, selectEventById, selectGroupById, selectPostById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
 import moment, { Moment } from 'moment'
 import React, { useEffect, useReducer, useState } from 'react'
 import { createParam } from 'solito'
@@ -40,7 +40,8 @@ export function EventDetailsScreen() {
   const eventsState = useTypedSelector((state: RootState) => state.events);
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const subjectEvent = useTypedSelector((state: RootState) => selectEventById(state.events, eventId!));
-  const subjectPost = subjectEvent?.post;
+  const subjectPost = useTypedSelector((state: RootState) => selectPostById(state.posts, subjectEvent?.post?.id ?? ''));
+  // const subjectPost = subjectEvent?.post;
   const subjectInstances = subjectEvent?.instances;
   const [subjectInstance, setSubjectInstance] = useState<EventInstance | undefined>(undefined);
   // = subjectInstances?.find(i => i.id == instanceId);
@@ -77,45 +78,47 @@ export function EventDetailsScreen() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  if (chatUI && (app?.autoRefreshDiscussions ?? true)) {
-    if (!_nextChatReplyRefresh || moment().isAfter(_nextChatReplyRefresh)) {
-      const intervalSeconds = app?.discussionRefreshIntervalSeconds || 6;
-      _nextChatReplyRefresh = moment().add(intervalSeconds, 'second');
-      const wasAtBottom = isClient && !showScrollPreserver &&
-        document.body.scrollHeight - _viewportHeight - window.scrollY < 100;
-      const scrollYAtBottom = window.scrollY;
-      // console.log('wasAtBottom', wasAtBottom, document.body.scrollHeight, _viewportHeight, window.scrollY)
-      setTimeout(() => {
-        if (eventId) {
-          dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [subjectPost!.id] })).then(() => {
-            if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
-              scrollToBottom();
-            }
-            // forceUpdate();
+  useEffect(() => {
+    if (chatUI && (app?.autoRefreshDiscussions ?? true)) {
+      if (!_nextChatReplyRefresh || moment().isAfter(_nextChatReplyRefresh)) {
+        const intervalSeconds = app?.discussionRefreshIntervalSeconds || 6;
+        _nextChatReplyRefresh = moment().add(intervalSeconds, 'second');
+        const wasAtBottom = isClient && !showScrollPreserver &&
+          document.body.scrollHeight - _viewportHeight - window.scrollY < 100;
+        const scrollYAtBottom = window.scrollY;
+        // console.log('wasAtBottom', wasAtBottom, document.body.scrollHeight, _viewportHeight, window.scrollY)
+        setTimeout(() => {
+          if (subjectPost) {
+            dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [subjectPost!.id] })).then(() => {
+              if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
+                scrollToBottom();
+              }
+              // forceUpdate();
+              setTimeout(() => {
+                forceUpdate();
+              }, intervalSeconds * 1000);
+            });
+          } else {
             setTimeout(() => {
               forceUpdate();
             }, intervalSeconds * 1000);
-          });
-        } else {
-          setTimeout(() => {
-            forceUpdate();
-          }, intervalSeconds * 1000);
-        }
-      }, 1);
-      // if (wasAtBottom) {
-      //   setTimeout(() => {
-      //     if (chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
-      //       scrollToBottom();
-      //     }
-      //   }, 1000);
-      // }
-      // _nextChatReplyRefresh = moment().add(intervalSeconds, 'second');
-      // setTimeout(() => {
-      //   forceUpdate();
-      // }, intervalSeconds * 1000);
+          }
+        }, 1);
+        // if (wasAtBottom) {
+        //   setTimeout(() => {
+        //     if (chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
+        //       scrollToBottom();
+        //     }
+        //   }, 1000);
+        // }
+        // _nextChatReplyRefresh = moment().add(intervalSeconds, 'second');
+        // setTimeout(() => {
+        //   forceUpdate();
+        // }, intervalSeconds * 1000);
+      }
     }
-  }
-  const [replyPostIdPath, setReplyPostIdPath] = useState<string[]>(eventId ? [eventId] : []);
+  }, [chatUI && (app?.autoRefreshDiscussions ?? true), !_nextChatReplyRefresh || moment().isAfter(_nextChatReplyRefresh)]);
+  const [replyPostIdPath, setReplyPostIdPath] = useState<string[]>(subjectPost ? [subjectPost.id] : []);
 
   const failedToLoadEvent = eventId != undefined &&
     eventsState.failedEventIds.includes(eventId!);
@@ -159,14 +162,14 @@ export function EventDetailsScreen() {
       if (subjectPost.title && subjectPost.title.length > 0) {
         title = subjectPost.title;
       } else {
-        title = `Event Details (#${subjectEvent.id})`;
+        title = `Event Details (#${subjectEvent!.id})`;
       }
     } else if (failedToLoadEvent) {
       title = 'Event Not Found';
     } else {
       title = 'Loading Event...';
     }
-    title += ` - ${serverName}`;
+    title += ` - Event - ${serverName}`;
     if (shortname && shortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
     }
@@ -209,18 +212,12 @@ export function EventDetailsScreen() {
       flattenReplies(child, postIdPath.concat(child.id), true, reply, childIsLastReplyTo, isChildLastReply);
     }
   }
-  useEffect(() => {
-    if (subjectPost) {
-      flattenReplies(subjectPost, [subjectEvent.id]);
-    }
-  }, [subjectPost]);
-
-  useEffect(() => {
-    if (chatUI) {
-      flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
-    }
-  }, [chatUI])
-
+  if (subjectPost && subjectEvent) {
+    flattenReplies(subjectPost, [subjectPost!.id]);
+  }
+  if (chatUI) {
+    flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
+  }
 
   let logicallyReplyingTo: Post | undefined = undefined;
   return (

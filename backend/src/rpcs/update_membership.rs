@@ -12,7 +12,7 @@ use crate::schema::memberships;
 
 pub fn update_membership(
     request: Membership,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Membership, Status> {
     validate_membership(&request, OperationType::Create)?;

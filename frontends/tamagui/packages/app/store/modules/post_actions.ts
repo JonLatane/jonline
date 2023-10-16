@@ -7,6 +7,12 @@ import { AccountOrServer, getCredentialClient } from "..";
 
 export const defaultPostListingType = PostListingType.PUBLIC_POSTS;
 
+export type LocallyUpsertPost = AccountOrServer & Post;
+export const locallyUpsertPost: AsyncThunk<Post, LocallyUpsertPost, any> = createAsyncThunk<Post, LocallyUpsertPost>(
+  "posts/locally_upsert",
+  async (request) => request
+);
+
 export type CreatePost = AccountOrServer & Post;
 export const createPost: AsyncThunk<Post, CreatePost, any> = createAsyncThunk<Post, CreatePost>(
   "posts/create",

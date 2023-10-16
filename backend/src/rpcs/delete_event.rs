@@ -6,7 +6,7 @@ use crate::{
 
 pub fn delete_event(
     request: Event,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
     let event = get_event(

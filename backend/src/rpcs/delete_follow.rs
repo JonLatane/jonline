@@ -10,7 +10,7 @@ use crate::schema::follows;
 
 pub fn delete_follow(
     request: Follow,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     if request.user_id != current_user.id.to_proto_id() && request.target_user_id != current_user.id.to_proto_id() {

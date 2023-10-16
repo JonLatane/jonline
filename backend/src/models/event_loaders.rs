@@ -21,7 +21,7 @@ pub fn get_event(
 
 pub fn get_event_instances(
     event_id: i64,
-    user: &Option<User>,
+    user: &Option<&User>,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<(EventInstance, Option<Post>, Option<User>)>, Status> {
     event_instances::table

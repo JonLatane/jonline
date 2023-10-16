@@ -11,7 +11,7 @@ use crate::schema::group_posts;
 
 pub fn delete_group_post(
     request: GroupPost,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     let group_id = request.group_id.to_db_id_or_err("group_id")?;

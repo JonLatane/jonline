@@ -10,7 +10,7 @@ use crate::schema::groups;
 
 pub fn get_groups(
     request: GetGroupsRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetGroupsResponse, Status> {
     log::info!("GetGroups called");
@@ -41,7 +41,7 @@ pub fn get_groups(
 
 fn get_all_groups(
     request: GetGroupsRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     mut conn: &mut PgPooledConnection,
 ) -> GetGroupsResponse {
     let visibilities = match user {
@@ -71,7 +71,7 @@ fn get_all_groups(
 }
 fn get_by_name(
     request: GetGroupsRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     mut conn: &mut PgPooledConnection,
 ) -> GetGroupsResponse {
     let visibilities = match user {
@@ -101,7 +101,7 @@ fn get_by_name(
 
 fn get_by_id(
     request: GetGroupsRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     mut conn: &mut PgPooledConnection,
 ) -> GetGroupsResponse {
     let visibilities = match user {

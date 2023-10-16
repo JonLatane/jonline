@@ -1,4 +1,4 @@
-import { Event, EventListingType, Group, Post, Visibility } from '@jonline/api';
+import { Event, EventInstance, EventListingType, Group, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Text, TextArea, XStack, YStack, useMedia } from '@jonline/ui';
 import { ChevronDown, Settings } from '@tamagui/lucide-icons';
 import { RootState, clearPostAlerts, createEvent, createGroupPost, loadEventsPage, loadGroupEventsPage, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
@@ -11,11 +11,15 @@ import { VisibilityPicker } from '../post/visibility_picker';
 import EventCard from './event_card';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
 
-export const defaultEventInstance = () => ({ id: '', startsAt: moment().toISOString(), endsAt: moment().toISOString() });
+export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
 export type CreateEventSheetProps = {
   selectedGroup?: Group;
 };
+
+export const supportDateInput = (m: moment.Moment) => m.format('YYYY-MM-DDTHH:mm');
+export const toProtoISOString = (localDateTimeInput: string) =>
+  moment(localDateTimeInput).toISOString(true);
 
 export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -28,7 +32,12 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   function previewEvent(post: Post) {
     return Event.create({
       post: post,
-      instances: [defaultEventInstance()],
+      instances: [
+        EventInstance.create({
+          startsAt: toProtoISOString(startTime),
+          endsAt: toProtoISOString(endTime)
+        }),
+      ],
     });
   }
 
@@ -67,12 +76,15 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
     entityName='Event'
     selectedGroup={selectedGroup}
     doCreate={doCreate}
-    preview={(post, group) => <EventCard event={previewEvent(post)} />}
-    feedPreview={(post, group) => <EventCard event={previewEvent(post)} isPreview />}
+    preview={(post, group) => {
+      console.log('previewEvent', previewEvent(post));
+      return <EventCard event={previewEvent(post)} hideEditControls />;
+    }}
+    feedPreview={(post, group) => <EventCard event={previewEvent(post)} isPreview hideEditControls />}
     invalid={invalid}
     onFreshOpen={() => {
-      setStartTime(moment().format('YYYY-MM-DDTHH:mm'));
-      setEndTime(moment().add(1, 'hour').format('YYYY-MM-DDTHH:mm'));
+      setStartTime(supportDateInput(moment()));
+      setEndTime(supportDateInput(moment().add(1, 'hour')));
     }}
     additionalFields={(post, group) => <>
       <XStack mx='$2'>

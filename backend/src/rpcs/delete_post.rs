@@ -17,7 +17,7 @@ use super::validations::*;
 
 pub fn delete_post(
     request: Post,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Post, Status> {
     // validate_user(&request)?;
@@ -93,7 +93,7 @@ pub fn delete_post(
                     post_id: Some(request.id.clone()),
                     ..Default::default()
                 },
-                Some(current_user),
+                &Some(current_user),
                 conn,
             )
             .map(|u| u.posts[0].to_owned())

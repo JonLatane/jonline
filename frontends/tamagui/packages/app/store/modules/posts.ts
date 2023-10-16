@@ -4,14 +4,14 @@ import {
   Dictionary,
   Draft,
   EntityAdapter,
-  EntityId, Slice,
+  EntityId, PayloadAction, Slice,
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { loadGroupPostsPage } from "./group_actions";
-import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, replyToPost, updatePost } from './post_actions';
+import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, locallyUpsertPost, replyToPost, updatePost } from './post_actions';
 import { loadUserPosts } from "./user_actions";
 import { loadEvent, loadEventsPage } from "./event_actions";
 import { GroupedPages } from "../pagination";
@@ -41,7 +41,7 @@ export interface DraftPost {
   groupId?: string;
 }
 
-const postsAdapter: EntityAdapter<Post> = createEntityAdapter<Post>({
+export const postsAdapter: EntityAdapter<Post> = createEntityAdapter<Post>({
   selectId: (post) => post.id,
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
@@ -62,7 +62,6 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   name: "posts",
   initialState: initialState,
   reducers: {
-    upsertPost: postsAdapter.upsertOne,
     removePost: postsAdapter.removeOne,
     resetPosts: () => initialState,
     clearPostAlerts: (state) => {
@@ -74,6 +73,19 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     },
     confirmReplySent: (state) => {
       state.sendReplyStatus = undefined;
+    },
+    // upsertPost(state, action: PayloadAction<{post: Post}>) { 
+    //   if (action.payload.post.id) {
+    //     postsAdapter.upsertOne(state, action.payload.post)
+    //   }
+    // },
+    upsertPost: (state, action: PayloadAction<Post>) => {
+      if (action.payload.id) {
+        postsAdapter.upsertOne(state, action.payload);
+      }
+      // if (accountId(state.account) === accountId(action.payload)) {
+      //   state.account = action.payload;
+      // }
     },
   },
   extraReducers: (builder) => {
@@ -92,6 +104,10 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         state.postPages[defaultPostListingType][0] = [action.payload.id, ...firstPage];
       }
       state.successMessage = `Post created.`;
+    });
+    builder.addCase(locallyUpsertPost.fulfilled, (state, action) => {
+      // state.status = "loaded";
+      postsAdapter.upsertOne(state, action.payload);
     });
     builder.addCase(createPost.rejected, (state, action) => {
       state.status = "errored";
@@ -232,6 +248,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(loadPostReplies.fulfilled, (state, action) => {
       state.status = "loaded";
+      console.log('loaded post replies', action.payload)
       // Load the replies into the post tree.
       const postIdPath = action.meta.arg.postIdPath;
       const basePost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
@@ -284,9 +301,9 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   },
 });
 
-export const { removePost, clearPostAlerts: clearPostAlerts, confirmReplySent, resetPosts } = postsSlice.actions;
+export const { removePost, clearPostAlerts: clearPostAlerts, confirmReplySent, resetPosts, upsertPost } = postsSlice.actions;
 export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();
 export const postsReducer = postsSlice.reducer;
-export const upsertPost = postsAdapter.upsertOne;
-export const upsertPosts = postsAdapter.upsertMany;
+// export const upsertPost = postRe;
+const upsertPosts = postsAdapter.upsertMany;
 export default postsReducer;

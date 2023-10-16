@@ -12,7 +12,7 @@ use crate::schema::follows;
 
 pub fn update_follow(
     request: Follow,
-    current_user: models::User,
+    current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Follow, Status> {
     validate_follow(&request, OperationType::Update)?;

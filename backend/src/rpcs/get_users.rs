@@ -14,7 +14,7 @@ use crate::schema::users;
 
 pub fn get_users(
     request: GetUsersRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
     log::info!("GetUsers::request: {:?}", request);
@@ -50,7 +50,7 @@ pub fn get_users(
 
 fn get_all_users(
     request: GetUsersRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> GetUsersResponse {
     let visibilities = match user {
@@ -164,7 +164,7 @@ fn get_follow_requests(
 
 fn get_by_username(
     request: GetUsersRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> GetUsersResponse {
     let visibilities = match user {
@@ -236,7 +236,7 @@ fn get_by_username(
 
 fn get_by_user_id(
     request: GetUsersRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> GetUsersResponse {
     let visibilities = match user {

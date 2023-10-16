@@ -74,13 +74,13 @@ impl Jonline for JonLineImpl {
     async fn update_user(&self, request: Request<User>) -> Result<Response<User>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_user(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::update_user(request.into_inner(), &user, &mut conn).map(Response::new)
     }
 
     async fn delete_user(&self, request: Request<User>) -> Result<Response<()>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_user(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::delete_user(request.into_inner(), &user, &mut conn).map(Response::new)
     }
     async fn get_users(
         &self,
@@ -88,7 +88,7 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<GetUsersResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_users(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::get_users(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
     }
 
     async fn create_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
@@ -99,12 +99,12 @@ impl Jonline for JonLineImpl {
     async fn update_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_follow(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::update_follow(request.into_inner(), &user, &mut conn).map(Response::new)
     }
     async fn delete_follow(&self, request: Request<Follow>) -> Result<Response<()>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_follow(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::delete_follow(request.into_inner(), &user, &mut conn).map(Response::new)
     }
 
     async fn get_media(
@@ -113,13 +113,13 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<GetMediaResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_media(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::get_media(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
     }
 
     async fn delete_media(&self, request: Request<Media>) -> Result<Response<()>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_media(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::delete_media(request.into_inner(), &user, &mut conn).map(Response::new)
     }
 
     async fn get_groups(
@@ -128,7 +128,7 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<GetGroupsResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_groups(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::get_groups(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
     }
 
     async fn create_group(&self, request: Request<Group>) -> Result<Response<Group>, Status> {
@@ -162,7 +162,7 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<Membership>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_membership(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::update_membership(request.into_inner(), &user, &mut conn).map(Response::new)
     }
     async fn delete_membership(
         &self,
@@ -170,7 +170,7 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<()>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_membership(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::delete_membership(request.into_inner(), &user, &mut conn).map(Response::new)
     }
     async fn get_members(
         &self,
@@ -192,12 +192,12 @@ impl Jonline for JonLineImpl {
     async fn update_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_post(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::update_post(request.into_inner(), &user, &mut conn).map(Response::new)
     }
     async fn delete_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_post(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::delete_post(request.into_inner(), &user, &mut conn).map(Response::new)
     }
 
     async fn create_group_post(
@@ -214,12 +214,12 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<GroupPost>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_group_post(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::update_group_post(request.into_inner(), &user, &mut conn).map(Response::new)
     }
     async fn delete_group_post(&self, request: Request<GroupPost>) -> Result<Response<()>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_group_post(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::delete_group_post(request.into_inner(), &user, &mut conn).map(Response::new)
     }
 
     async fn get_group_posts(
@@ -228,7 +228,7 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<GetGroupPostsResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_group_posts(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::get_group_posts(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
     }
 
     async fn get_posts(
@@ -237,7 +237,7 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<GetPostsResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_posts(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::get_posts(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
     }
 
     type StreamRepliesStream = ReplyStream;
@@ -282,17 +282,19 @@ impl Jonline for JonLineImpl {
     async fn create_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::create_event(request, user, &mut conn)
+        let result = rpcs::create_event(request, user, &mut conn);
+        println!("create_event result: {:?}", &result);
+        result
     }
     async fn update_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_event(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::update_event(request.into_inner(), &user, &mut conn).map(Response::new)
     }
     async fn delete_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_event(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::delete_event(request.into_inner(), &user, &mut conn).map(Response::new)
     }
 
     async fn get_events(
@@ -301,7 +303,7 @@ impl Jonline for JonLineImpl {
     ) -> Result<Response<GetEventsResponse>, Status> {
         let mut conn = get_connection(&self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_events(request.into_inner(), user, &mut conn).map(Response::new)
+        rpcs::get_events(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
     }
 
     async fn get_server_configuration(

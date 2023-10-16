@@ -16,7 +16,7 @@ use super::validations::validate_group_permission;
 // Use get_posts to get Posts (and associated GroupPosts) by group_id.
 pub fn get_group_posts(
     request: GetGroupPostsRequest,
-    user: Option<models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetGroupPostsResponse, Status> {
     let post_id = request.post_id.to_db_id_or_err("post_id")?;

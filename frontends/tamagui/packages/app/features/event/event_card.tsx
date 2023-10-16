@@ -1,10 +1,10 @@
 import { deleteEvent, deletePost, loadMedia, loadUser, RootState, selectMediaById, selectUserById, updateEvent, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { Event, EventInstance, Group, Media } from "@jonline/api";
-import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions } from "@jonline/ui";
+import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions, Select, getFontSize, Sheet, Adapt } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -12,14 +12,15 @@ import { AuthorInfo } from "../post/author_info";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { InstanceTime } from "./instance_time";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
-import { Repeat, Delete, Edit, Eye, History, Save, CalendarPlus, X as XIcon } from "@tamagui/lucide-icons";
+import { Repeat, Delete, Edit, Eye, History, Save, CalendarPlus, X as XIcon, Link, Check, ChevronDown, ChevronUp } from "@tamagui/lucide-icons";
 import icons from "@tamagui/lucide-icons";
 import { GroupPostManager } from "../post/group_post_manager";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
 import { MediaRenderer } from "../media/media_renderer";
 import { FadeInView } from "../post/fade_in_view";
 import { postBackgroundSize } from "../post/post_card";
-import { defaultEventInstance } from "./create_event_sheet";
+import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
+import { LinearGradient } from '@tamagui/linear-gradient';
 
 interface Props {
   event: Event;
@@ -27,18 +28,19 @@ interface Props {
   isPreview?: boolean;
   groupContext?: Group;
   horizontal?: boolean;
+  hideEditControls?: boolean;
 }
 
 let newEventId = 0;
 
-export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview, groupContext, horizontal }) => {
+export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview, groupContext, horizontal, hideEditControls }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
   const currentUser = useAccount()?.user;
   const post = event.post!;
 
-  const { server, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
+  const { server, textColor, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
   const [editing, setEditing] = useState(false);
   const [previewingEdits, setPreviewingEdits] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
@@ -49,8 +51,9 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const content = editing ? editedContent : post.content;
   const [editedInstances, setEditedInstances] = useState(event.instances);
   const instances = editing ? editedInstances : event.instances;
-  console.log('instances', instances);
+  // console.log('instances', instances);
   const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
+  const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   const endDateInvalid = editingInstance && !moment(editingInstance.endsAt).isAfter(moment(editingInstance.startsAt));
   const instance = editingInstance ?? selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
@@ -60,16 +63,18 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     dispatch(updateEvent({
       ...accountOrServer,
       ...event,
-      post: { ...post, title: editedTitle, content: editedContent }
-    })).then(() => {
+      post: { ...post, title: editedTitle, content: editedContent },
+      instances: editedInstances,
+    })).then(result => {
       setEditing(false);
       setSavingEdits(false);
       setPreviewingEdits(false);
+      setEditedInstances(event.instances);
     });
   }
 
   function addInstance() {
-    const newInstance = EventInstance.create({...defaultEventInstance(), id: `${newEventId++}`});
+    const newInstance = { ...defaultEventInstance(), id: `${newEventId++}` };
     setEditedInstances([newInstance, ...editedInstances]);
     setEditingInstance(newInstance);
   }
@@ -79,8 +84,8 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     }
     setEditedInstances(editedInstances.filter(i => i.id != target.id));
   }
-  function updateInstance(target: EventInstance) {
-    setEditedInstances(editedInstances.map(i => i.id == target.id ? target : i));
+  function updateEditingInstance(target: EventInstance) {
+    setEditedInstances(editedInstances.map(i => i.id === target.id ? target : i));
     if (target.id === editingInstance?.id) {
       setEditingInstance(target);
     }
@@ -210,7 +215,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
   const author = post.author;
   const isAuthor = author && author.userId === currentUser?.id;
-  const showEdit = isAuthor && !isPreview;
+  const showEdit = isAuthor && !isPreview && !hideEditControls;
   // const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
   const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
 
@@ -227,16 +232,61 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   }, [authorId, loadingAuthor, author, authorLoadFailed]);
 
   const [showPastInstances, setShowPastInstances] = useState(false);
-  const sortedFilteredInstances = (showPastInstances
-    ? [...instances]
-    : instances
-      .filter(isNotPastInstance)
-  ).sort(instanceTimeSort);
+  const filteredInstances = showPastInstances
+    ? instances
+    : instances.filter(isNotPastInstance);
+  const sortedFilteredInstances = [...filteredInstances].sort(instanceTimeSort);
   const displayedInstances = editingInstance
     ? [editingInstance, ...sortedFilteredInstances.filter(i => i.id != editingInstance.id)]
     : sortedFilteredInstances;
   const hasPastInstances = instances.find(isPastInstance) != undefined;
-  const headerLinks = (post.link?.length ?? 0) > 0
+  const postLinkView = postLink
+    ? <Anchor textDecorationLine='none' {...(editing ? {} : postLink)}>
+      <XStack>
+        <YStack my='auto' mr='$1'>
+          <Link size='$1' color={navColor} />
+        </YStack>
+        <YStack f={1} my='auto'>
+          <Paragraph size="$2" color={navColor} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">{post.link}</Paragraph>
+        </YStack>
+      </XStack>
+    </Anchor>
+    : undefined;
+  const headerLinksView = <YStack>
+    {isPreview
+      ? <Anchor textDecorationLine='none' {...detailsLink}>
+        <YStack>
+          <XStack>
+            <YStack f={1}>
+              <Heading size="$7" marginRight='auto'>{title}</Heading>
+            </YStack>
+          </XStack>
+          {postLinkView}
+          {instance ? <InstanceTime event={event} instance={instance} highlight /> : undefined}
+        </YStack>
+      </Anchor>
+      : <YStack>
+        <XStack>
+          <YStack f={1}>
+            <Heading size="$7" marginRight='auto'>{title}</Heading>
+          </YStack>
+        </XStack>
+        {postLinkView}
+        {instance ? <InstanceTime event={event} instance={instance} highlight /> : undefined}
+      </YStack>}
+  </YStack>;
+  const headerLinksEdit = <YStack space='$2'>
+    <Input textContentType="name" placeholder={`Event Title (required)`}
+      disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
+      autoCapitalize='words'
+      value={editedTitle}
+      onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
+    {postLinkView}
+  </YStack>;
+
+  const headerLinks = editing && !previewingEdits ? headerLinksEdit : headerLinksView;
+
+  const headerLinksOld = (post.link?.length ?? 0) > 0
     ? <>
       <YStack>
         <Anchor textDecorationLine='none' {...(editing ? {} : postLink)}>
@@ -249,7 +299,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                   autoCapitalize='words'
                   value={editedTitle}
                   onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
-                : <Heading size="$7" color={navColor} marginRight='auto'>{post.title}</Heading>}
+                : <Heading size="$7" color={navColor} marginRight='auto'>{title}</Heading>}
             </YStack>
           </XStack>
         </Anchor>
@@ -267,7 +317,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
         <YStack>
           <XStack>
             <YStack f={1}>
-              <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+              <Heading size="$7" marginRight='auto'>{title}</Heading>
             </YStack>
           </XStack>
           {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
@@ -276,7 +326,7 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
       : <YStack>
         <XStack>
           <YStack f={1}>
-            <Heading size="$7" marginRight='auto'>{post.title}</Heading>
+            <Heading size="$7" marginRight='auto'>{title}</Heading>
           </YStack>
         </XStack>
         {instance ? <InstanceTime event={event} instance={instance} /> : undefined}
@@ -297,6 +347,17 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
           : undefined
     : undefined;
 
+  const weeklyRepeatOptions = [...Array(52).keys()];
+  function doRepeatInstance() {
+    [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
+      const repeatedInstance = EventInstance.create({
+        id: `${newEventId++}`,
+        startsAt: moment(editingInstance!.startsAt).add(weeksAfter, 'weeks').toISOString(),
+        endsAt: moment(editingInstance!.endsAt).add(weeksAfter, 'weeks').toISOString()
+      });
+      setEditedInstances([repeatedInstance, ...editedInstances]);
+    });
+  }
   return (
     <>
       <YStack w='100%' key={`event-card-${event.id}-${instance?.id}-${isPreview ? '-preview' : ''}`}>
@@ -314,7 +375,6 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
             ? <Card.Header>
               <YStack>
                 {headerLinks}
-
                 {!isPreview && (instances.length > 1 || editing)
                   ? <XStack w='100%' mt='$2' ml='$4' space>
                     {hasPastInstances
@@ -330,8 +390,8 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                         {/* {displayedInstances?.length == 0 && hasPastInstances
                         ? <Heading size="$1" mt='$2' color={primaryColor} mr='$2'>⬅️ Press "show past instances" to show past instances.</Heading>
                           : undefined } */}
-                        {displayedInstances?.map((i) =>
-                          <YStack mx={editing ? '$2' : undefined}>
+                        {displayedInstances?.map((i) => {
+                          let result = <YStack mx={editing ? '$2' : undefined} o={i.id == instance?.id ? 1 : 0.5}>
                             <InstanceTime key={i.id} linkToInstance={!editing}
                               event={event} instance={i}
                               highlight={i.id == instance?.id}
@@ -341,64 +401,134 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                                 <Theme inverse={editingInstance?.id === i.id}>
                                   <Button mx='auto' mt='$2' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
                                 </Theme>
-                                <Dialog>
-                                  <Dialog.Trigger asChild>
-                                    <Button mx='auto' mt='$2' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
-                                  </Dialog.Trigger>
-                                  <Dialog.Portal zi={1000011}>
-                                    <Dialog.Overlay
-                                      key="overlay"
-                                      animation="quick"
-                                      o={0.5}
-                                      enterStyle={{ o: 0 }}
-                                      exitStyle={{ o: 0 }}
-                                    />
-                                    <Dialog.Content
-                                      bordered
-                                      elevate
-                                      key="content"
-                                      animation={[
-                                        'quick',
-                                        {
-                                          opacity: {
-                                            overshootClamping: true,
+                                {i.id == instance?.id
+                                  ? <Dialog>
+                                    <Dialog.Trigger asChild>
+                                      <Button mx='auto' mt='$2' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
+                                    </Dialog.Trigger>
+                                    <Dialog.Portal zi={1000011}>
+                                      <Dialog.Overlay
+                                        key="overlay"
+                                        animation="quick"
+                                        o={0.5}
+                                        enterStyle={{ o: 0 }}
+                                        exitStyle={{ o: 0 }}
+                                      />
+                                      <Dialog.Content
+                                        bordered
+                                        elevate
+                                        key="content"
+                                        animation={[
+                                          'quick',
+                                          {
+                                            opacity: {
+                                              overshootClamping: true,
+                                            },
                                           },
-                                        },
-                                      ]}
-                                      m='$3'
-                                      enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                                      exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                                      x={0}
-                                      scale={1}
-                                      opacity={1}
-                                      y={0}
-                                    >
-                                      <YStack space>
-                                        <Dialog.Title>Repeat Instance</Dialog.Title>
-                                        <Dialog.Description>
-                                          {/* <YStack> */}
-                                          <Paragraph size="$2">Repeat for:</Paragraph>
-                                          {/* </YStack> */}
-                                          <XStack> <Text fontFamily='$body'>weeks</Text></XStack>
-                                        </Dialog.Description>
+                                        ]}
+                                        m='$3'
+                                        enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                                        exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                                        x={0}
+                                        scale={1}
+                                        opacity={1}
+                                        y={0}
+                                      >
+                                        <YStack space>
+                                          <Dialog.Title>Repeat Instance</Dialog.Title>
+                                          <Dialog.Description>
+                                            <Paragraph size="$2">Repeat for:</Paragraph>
+                                            <XStack>
+                                              <Select native id={'repeat-weeks'} onValueChange={v => setRepeatWeeks(parseInt(v))} value={repeatWeeks.toString()}>
+                                                <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
+                                                  <Select.Value w='100%' placeholder="Choose Visibility" />
+                                                </Select.Trigger>
 
-                                        <XStack space="$3" jc="flex-end">
-                                          <Dialog.Close asChild>
-                                            <Button>Cancel</Button>
-                                          </Dialog.Close>
-                                          <Theme inverse>
-                                            <Button onPress={() => ({})}>Repeat</Button>
-                                          </Theme>
-                                          {/* </Dialog.Action> */}
-                                        </XStack>
-                                      </YStack>
-                                    </Dialog.Content>
-                                  </Dialog.Portal>
-                                </Dialog>
+                                                <Select.Content zIndex={200000}>
+                                                  <Select.Viewport minWidth={200} w='100%'>
+                                                    <XStack w='100%'>
+                                                      <Select.Group space="$0" w='100%'>
+                                                        {weeklyRepeatOptions.map(i => i + 1).map((item, i) => {
+                                                          return (
+                                                            <Select.Item
+                                                              debug="verbose"
+                                                              index={i}
+                                                              key={item.toString()}
+                                                              value={item.toString()}
+                                                            >
+                                                              <Select.ItemText>{item} {item === 1 ? 'week' : 'weeks'}</Select.ItemText>
+                                                              <Select.ItemIndicator marginLeft="auto">
+                                                                <Check size={16} />
+                                                              </Select.ItemIndicator>
+                                                            </Select.Item>
+                                                          )
+                                                        })}
+                                                      </Select.Group>
+                                                      <YStack
+                                                        position="absolute"
+                                                        right={0}
+                                                        top={0}
+                                                        bottom={0}
+                                                        alignItems="center"
+                                                        justifyContent="center"
+                                                        width={'$4'}
+                                                        pointerEvents="none"
+                                                      >
+                                                        <ChevronDown size='$2' />
+                                                      </YStack>
+                                                    </XStack>
+                                                  </Select.Viewport>
+
+                                                  {/* <Select.ScrollDownButton ai="center" jc="center" pos="relative" w="100%" h="$3">
+        <YStack zi={10}>
+          <ChevronDown size={20} />
+        </YStack>
+        <LinearGradient
+          start={[0, 0]}
+          end={[0, 1]}
+          fullscreen
+          colors={['$backgroundTransparent', '$background']}
+          br="$4"
+        />
+      </Select.ScrollDownButton> */}
+                                                </Select.Content>
+                                              </Select>
+                                              {/* <Text fontFamily='$body'>weeks</Text> */}
+                                            </XStack>
+                                          </Dialog.Description>
+
+                                          <XStack space="$3" jc="flex-end">
+                                            <Dialog.Close asChild>
+                                              <Button>Cancel</Button>
+                                            </Dialog.Close>
+
+                                            <Dialog.Close asChild>
+                                              <Theme inverse>
+                                                <Button onPress={doRepeatInstance}>Repeat</Button>
+                                              </Theme>
+                                            </Dialog.Close>
+                                            {/* </Dialog.Action> */}
+                                          </XStack>
+                                        </YStack>
+                                      </Dialog.Content>
+                                    </Dialog.Portal>
+                                  </Dialog>
+                                  : undefined}
                                 <Button mx='auto' mt='$2' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
                               </XStack>
                               : undefined}
-                          </YStack>)}
+                          </YStack>;
+
+                          if (editing) {
+                            result = <YStack ml='$2' h={100}
+                              padding='$2'
+                              borderRadius='$3' backgroundColor='$backgroundStrong'>
+                              {result}
+                            </YStack>
+                          }
+
+                          return result;
+                        })}
                       </XStack>
                     </ScrollView>
                     {editing
@@ -406,32 +536,31 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                       : undefined}
                   </XStack>
                   : undefined
-
                 }
-                {editingInstance
+                {editingInstance && editing && !previewingEdits
                   ? <>
-                    <XStack mx='$2' key={editingInstance?.id}>
+                    <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
                       <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
                       <Text fontSize='$2' fontFamily='$body'>
-                        <input type='datetime-local' style={{ padding: 10 }} 
-                          value={editingInstance.startsAt}
+                        <input type='datetime-local' style={{ padding: 10 }}
+                          value={supportDateInput(moment(editingInstance.startsAt))}
                           onChange={(v) => {
-                            const updatedInstance = { ...editingInstance, startsAt: v.target.value };
-                            updateInstance(updatedInstance);
+                            const updatedInstance = { ...editingInstance, startsAt: toProtoISOString(v.target.value) };
+                            updateEditingInstance(updatedInstance);
                             //  setStartTime(v.target.value)
                           }} />
                       </Text>
                     </XStack>
-                    <XStack mx='$2' key={editingInstance?.id}>
+                    <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
                       <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
-                      <Text fontSize='$2' fontFamily='$body'>
-
-                      <input type='datetime-local' style={{ padding: 10 }} 
-                          value={editingInstance.endsAt}
+                      <Text fontSize='$2' fontFamily='$body' color={textColor}>
+                        <input type='datetime-local' style={{ padding: 10 }}
+                          value={supportDateInput(moment(editingInstance.endsAt))}
                           onChange={(v) => {
-                            const updatedInstance = { ...editingInstance, endsAt: v.target.value };
-                            updateInstance(updatedInstance);
-                          }} />                      </Text>
+                            const updatedInstance = { ...editingInstance, endsAt: toProtoISOString(v.target.value) };
+                            updateEditingInstance(updatedInstance);
+                          }} />
+                      </Text>
                     </XStack>
                     {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
                   </>
@@ -478,17 +607,12 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                         <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
                           Save
                         </Button>
-                        <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+                        <Button my='auto' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} disabled={savingEdits} transparent>
                           Cancel
                         </Button>
-                        {previewingEdits
-                          ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
-                            Edit
-                          </Button>
-                          :
-                          <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
-                            Preview
-                          </Button>}
+                        <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} disabled={savingEdits} transparent>
+                          {previewingEdits ? 'Edit' : 'Preview'}
+                        </Button>
                       </>
                       : <>
                         <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
