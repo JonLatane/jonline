@@ -56,7 +56,10 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   const endDateInvalid = editingInstance && !moment(editingInstance.endsAt).isAfter(moment(editingInstance.startsAt));
-  const primaryInstance = /*editingInstance ??*/ selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
+  const primaryInstance = /*editingInstance ??*/
+    editing && previewingEdits && !editedInstances.some(i => i.id === selectedInstance?.id)
+      ? undefined
+      : selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
 
   function saveEdits() {
     setSavingEdits(true);
@@ -236,10 +239,17 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
     ? instances
     : instances.filter(isNotPastInstance);
   const sortedFilteredInstances = [...filteredInstances].sort(instanceTimeSort);
-  const displayedInstances = //editingInstance
-    //? [editingInstance, ...sortedFilteredInstances.filter(i => i.id != editingInstance.id)]
-    //: 
-    sortedFilteredInstances;
+  const displayedInstances = editing
+    ? sortedFilteredInstances
+    : [
+      ...(selectedInstance ? [selectedInstance] : []),
+      ...sortedFilteredInstances.filter(i => i.id != selectedInstance?.id)
+    ];
+  // Old displayedInstances:
+  //editingInstance
+  //? [editingInstance, ...sortedFilteredInstances.filter(i => i.id != editingInstance.id)]
+  //: 
+  // sortedFilteredInstances
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const postLinkView = postLink
     ? <Anchor textDecorationLine='none' {...(editing ? {} : postLink)}>
@@ -273,7 +283,11 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
           </YStack>
         </XStack>
         {postLinkView}
-        {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight /> : undefined}
+        {primaryInstance
+          ? <InstanceTime event={event} instance={primaryInstance} highlight />
+          : editing && previewingEdits
+            ? <Paragraph size='$1'>This instance no longer exists.</Paragraph>
+            : undefined}
       </YStack>}
   </YStack>;
   const headerLinksEdit = <YStack space='$2'>
@@ -631,15 +645,20 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
                         </Button>
                       </>
                       : <>
-                        <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} transparent
+                        <Button my='auto' size='$2' icon={Edit}
+                          onPress={() => {
+                            setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
+                              setEditingInstance(selectedInstance)
+                            }
+                          }} transparent
                           disabled={deleting} o={deleting ? 0.5 : 1}>
                           Edit
                         </Button>
 
                         <Dialog>
                           <Dialog.Trigger asChild>
-                            <Button my='auto' size='$2' icon={Delete} transparent 
-                            disabled={deleting} o={deleting ? 0.5 : 1}>
+                            <Button my='auto' size='$2' icon={Delete} transparent
+                              disabled={deleting} o={deleting ? 0.5 : 1}>
                               Delete
                             </Button>
                           </Dialog.Trigger>
@@ -707,21 +726,21 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
 
                         disabled={true}
                         marginVertical='auto'
-                        mr={media.gtXs || isPreview ? 0 : -10}
+                        mr={isPreview ? horizontal ? '$1' : '$2' : undefined}
                         // onPress={toggleReplies} 
                         px='$2'
                       >
                         <XStack opacity={0.9}>
-                          <YStack marginVertical='auto'>
-                            {!post.replyToPostId ? <Heading size="$1" ta='right'>
+                          <YStack marginVertical='auto' scale={0.75}>
+                            <Paragraph size="$1" ta='right'>
                               {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
-                            </Heading> : undefined}
-                            {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
+                            </Paragraph>
+                            {/* {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Paragraph size="$1" ta='right'>
                               {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                            </Heading> : undefined}
-                            {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
+                            </Paragraph> : undefined} */}
+                            {isPreview || post.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
                               {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
-                            </Heading>}
+                            </Paragraph>}
                           </YStack>
                         </XStack>
                       </Button>

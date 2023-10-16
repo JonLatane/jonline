@@ -212,9 +212,11 @@ export function EventDetailsScreen() {
       flattenReplies(child, postIdPath.concat(child.id), true, reply, childIsLastReplyTo, isChildLastReply);
     }
   }
-  if (subjectPost && subjectEvent) {
-    flattenReplies(subjectPost, [subjectPost!.id]);
-  }
+  // useEffect(() => {
+    if (subjectPost && subjectEvent) {
+      flattenReplies(subjectPost, [subjectPost!.id]);
+    }
+  // });
   if (chatUI) {
     flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
   }
@@ -284,16 +286,16 @@ export function EventDetailsScreen() {
             </XStack>
             <XStack w='100%'>
               <YStack w='100%'>
-                {flattenedReplies.map(({ reply, postIdPath, parentPost: parentEvent, lastReplyTo }) => {
+                {flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
                   let stripeColor = navColor;
                   const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
-                  const showParentPreview = chatUI && parentEvent?.id != subjectEvent?.id
-                    && parentEvent?.id != logicallyReplyingTo?.id
-                    && parentEvent?.id != logicallyReplyingTo?.replyToPostId;
-                  const hideTopMargin = chatUI && parentEvent?.id != subjectEvent?.id && (parentEvent?.id == logicallyReplyingTo?.id || parentEvent?.id == logicallyReplyingTo?.replyToPostId);
+                  const showParentPreview = chatUI && parentPost?.id != subjectEvent?.id
+                    && parentPost?.id != logicallyReplyingTo?.id
+                    && parentPost?.id != logicallyReplyingTo?.replyToPostId;
+                  const hideTopMargin = chatUI && parentPost?.id != subjectEvent?.id && (parentPost?.id == logicallyReplyingTo?.id || parentPost?.id == logicallyReplyingTo?.replyToPostId);
                   const result = <XStack key={`reply-${reply.id}`} id={`reply-${reply.id}`}
                     // w='100%' f={1}
-                    mt={(chatUI && !hideTopMargin) || (!chatUI && parentEvent?.id == subjectEvent?.id) ? '$3' : 0}
+                    mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == subjectEvent?.id) ? '$3' : 0}
                     animation='standard'
                     opacity={1}
                     scale={1}
@@ -304,8 +306,6 @@ export function EventDetailsScreen() {
                       opacity: 0,
                     }}
                     exitStyle={{
-                      // scale: 1.5,
-                      // y: 50,
                       opacity: 0,
                     }}
                   >
@@ -313,34 +313,17 @@ export function EventDetailsScreen() {
                       stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
                       return <YStack w={7} bg={stripeColor} />
                     })}
-                    {/* {lastReplyToIndex == undefined && lastReplyToIndex != 0 ?
-                  postIdPath.slice(1).map(() => {
-                    stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                    return <YStack w={7} bg={stripeColor} />
-                  })
-                  : postIdPath.slice(1, lastReplyToIndex).map(() => {
-                    stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                    return <YStack w={7} bg={stripeColor} />
-                  })} */}
-                    <XStack f={1}
-                    // mb={lastReplyToIndex != undefined ? '$3' : 0}
-                    >
-                      {/* {lastReplyToIndex != undefined
-                    ? postIdPath.slice(Math.max(1,lastReplyToIndex)).map(() => {
-                      stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                      return <YStack w={7} bg={stripeColor} />
-                    })
-                    : undefined} */}
+                    <XStack f={1}>
                       <PostCard key={`comment-event-${reply.id}`} post={reply} replyPostIdPath={postIdPath}
                         selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
                         collapseReplies={collapsedReplies.has(reply.id)}
-                        previewParent={showParentPreview ? parentEvent : undefined}
+                        previewParent={showParentPreview && parentPost?.id != subjectPost?.id ? parentPost : undefined}
                         onLoadReplies={() => setExpandAnimation(true)}
                         toggleCollapseReplies={() => {
                           setExpandAnimation(collapsedReplies.has(reply.id));
                           toggleCollapseReplies(reply.id);
                         }}
-                        onPress={() => {
+                        onPressReply={() => {
                           if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
                             setReplyPostIdPath([eventId!]);
                           } else {

@@ -163,6 +163,10 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       let parentPost: Post = rootPost;
       for (const postId of postIdPath.slice(1)) {
         parentPost.replies = parentPost.replies.map(p => ({ ...p }));
+        parentPost.responseCount += 1;
+        if (postId === postIdPath[postIdPath.length - 1]) {
+          parentPost.replyCount += 1;
+        }
         const nextPost = parentPost.replies.find((reply) => reply.id === postId);
         if (!nextPost) {
           console.error(`Post ID (${postId}) not found along path ${JSON.stringify(postIdPath)}.`);

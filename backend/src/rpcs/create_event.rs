@@ -22,6 +22,15 @@ pub fn create_event(
     );
     validate_permission(&user, Permission::CreateEvents)?;
     let req = request.into_inner();
+    let configuration = super::get_server_configuration(conn)?;
+    let moderation = match &configuration
+        .event_settings
+        .unwrap_or_default()
+        .default_moderation()
+    {
+        Moderation::Pending => Moderation::Pending.as_str_name(),
+        _ => Moderation::Unmoderated.as_str_name(),
+    };
     let post = match req.post {
         None => return Err(Status::new(Code::InvalidArgument, "post_required")),
         Some(p) => p,
@@ -98,6 +107,7 @@ pub fn create_event(
                 visibility: visibility.to_string_visibility(),
                 embed_link: post.embed_link.to_owned(),
                 context: PostContext::Event.to_string_post_context(),
+                moderation: moderation.to_string(),
                 media: post
                     .media
                     .iter()
@@ -125,6 +135,7 @@ pub fn create_event(
                             visibility: p.visibility.to_string_visibility(),
                             embed_link: p.embed_link.to_owned(),
                             context: PostContext::EventInstance.as_str_name().to_string(),
+                            moderation: moderation.to_string(),
                             media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
                         })
                         .get_result::<models::Post>(conn)?,

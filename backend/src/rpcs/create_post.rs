@@ -21,6 +21,7 @@ pub fn create_post(
     );
     validate_permission(&user, Permission::CreatePosts)?;
     let req = request.into_inner();
+    let configuration = super::get_server_configuration(conn)?;
     match req.title.to_owned() {
         Some(t) if t.len() > 0 => match req.reply_to_post_id {
             Some(_) => {
@@ -113,6 +114,10 @@ pub fn create_post(
                 visibility: visibility.to_string_visibility(),
                 embed_link: req.embed_link.to_owned(),
                 media: req.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
+                moderation: match configuration.post_settings.unwrap_or_default().default_moderation() {
+                    Moderation::Pending => Moderation::Pending.as_str_name().to_string(),
+                    _ => Moderation::Unmoderated.as_str_name().to_string(),
+                }
             })
             .get_result::<models::Post>(conn)?;
         match parent_post_db_id.to_owned() {

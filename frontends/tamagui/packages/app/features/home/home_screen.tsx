@@ -89,6 +89,14 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                 <ChevronRight />
               </XStack>
             </Button>
+            <XStack f={1} />
+            <Button backgroundColor={navColor} animation='standard' o={0.00} hoverStyle={{ backgroundColor: navColor }} {...eventsLink}>
+              {/* <ChevronRight color={navTextColor} /> */}
+              <Heading mx='auto' size='$6' color={navTextColor} textDecorationLine='none'>Events</Heading>
+              {/* <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}> */}
+              {/* <ChevronRight color={navTextColor} /> */}
+              {/* </XStack> */}
+            </Button>
           </XStack>
           : undefined}
         <AnimatePresence>
@@ -138,7 +146,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
               {posts.map((post) => {
                 return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
               })}
-              <PaginationIndicator page={currentPostsPage} 
+              <PaginationIndicator page={currentPostsPage}
                 loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
                 hasNextPage={hasMorePages}
                 loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}

@@ -296,25 +296,9 @@ export function PostDetailsScreen() {
                         stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
                         return <YStack w={7} bg={stripeColor} />
                       })}
-                      {/* {lastReplyToIndex == undefined && lastReplyToIndex != 0 ?
-                  postIdPath.slice(1).map(() => {
-                    stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                    return <YStack w={7} bg={stripeColor} />
-                  })
-                  : postIdPath.slice(1, lastReplyToIndex).map(() => {
-                    stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                    return <YStack w={7} bg={stripeColor} />
-                  })} */}
-                      <XStack f={1}
-                      // mb={lastReplyToIndex != undefined ? '$3' : 0}
-                      >
-                        {/* {lastReplyToIndex != undefined
-                    ? postIdPath.slice(Math.max(1,lastReplyToIndex)).map(() => {
-                      stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-                      return <YStack w={7} bg={stripeColor} />
-                    })
-                    : undefined} */}
-                        <PostCard key={`comment-post-${post.id}`} post={post} replyPostIdPath={postIdPath}
+                      <XStack f={1}>
+                        <PostCard key={`comment-post-${post.id}`} 
+                          post={post} replyPostIdPath={postIdPath}
                           selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
                           collapseReplies={collapsedReplies.has(post.id)}
                           previewParent={showParentPreview ? parentPost : undefined}
@@ -323,7 +307,7 @@ export function PostDetailsScreen() {
                             setExpandAnimation(collapsedReplies.has(post.id));
                             toggleCollapseReplies(post.id);
                           }}
-                          onPress={() => {
+                          onPressReply={() => {
                             if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
                               setReplyPostIdPath([postId!]);
                             } else {

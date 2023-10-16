@@ -390,6 +390,7 @@ fn get_replies_to_post_id(
     };
     let result = filter_visible_posts!(user)
         .filter(posts::parent_post_id.eq(post_db_id))
+        .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
         .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         .order(posts::created_at.desc())
         .limit(100)

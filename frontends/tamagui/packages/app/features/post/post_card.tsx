@@ -4,7 +4,7 @@ import { GestureResponderEvent, Platform, View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
 import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack, TextArea, Dialog, Paragraph } from '@jonline/ui';
-import { ChevronRight, Delete, Edit, Eye, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { ChevronRight, Delete, Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -28,12 +28,13 @@ interface PostCardProps {
   onPress?: () => void;
   onPressParentPreview?: () => void;
   selectedPostId?: string;
+  onPressReply?: () => void;
 }
 
 export const postBackgroundSize = (media: TamaguiMediaState) =>
   media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500;
 
-export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId, onPressReply }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
 
@@ -399,25 +400,28 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
                     ? 10
                     : undefined} {...detailsProps}>
                     <AuthorInfo {...{ post, detailsMargins, isVisible }} />
+                    {onPressReply ? <Button onPress={onPressReply} circular icon={Reply}
+                     my='auto' size='$2' mr='$2' /> : undefined}
                     <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                      <YStack h='100%' mr='$3'>
+                      <YStack h='100%' mr='$1'>
                         <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
                           borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
                           disabled={cannotToggleReplies || loadingReplies}
                           marginVertical='auto'
-                          mr={media.gtXs || isPreview ? 0 : -10}
+                          mr={isPreview ? '$2' : undefined}
+                          size='$3' 
                           onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
                           <XStack opacity={0.9}>
-                            <YStack marginVertical='auto'>
-                              {!post.replyToPostId ? <Heading size="$1" ta='right'>
+                            <YStack marginVertical='auto' scale={0.75}>
+                              {!post.replyToPostId ? <Paragraph size="$1" ta='right'>
                                 {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
-                              </Heading> : undefined}
-                              {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Heading size="$1" ta='right'>
+                              </Paragraph> : undefined}
+                              {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Paragraph size="$1" ta='right'>
                                 {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                              </Heading> : undefined}
-                              {isPreview || post.replyCount == 0 ? undefined : <Heading size="$1" ta='right'>
+                              </Paragraph> : undefined}
+                              {isPreview || post.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
                                 {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
-                              </Heading>}
+                              </Paragraph>}
                             </YStack>
                             {!cannotToggleReplies ? <XStack marginVertical='auto'
                               animation='quick'

@@ -69,8 +69,9 @@ pub struct NewPost {
     pub title: Option<String>,
     pub link: Option<String>,
     pub content: Option<String>,
-    pub visibility: String,
     pub context: String,
+    pub visibility: String,
+    pub moderation: String,
     pub media: Vec<i64>,
     pub embed_link: bool,
 }
