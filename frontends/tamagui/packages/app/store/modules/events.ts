@@ -176,11 +176,11 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       state.error = action.error as Error;
     });
     builder.addCase(loadEvent.pending, (state) => {
-      state.loadStatus = "loading";
+      // state.loadStatus = "loading";
       state.error = undefined;
     });
     builder.addCase(loadEvent.fulfilled, (state, action) => {
-      state.loadStatus = "loaded";
+      // state.loadStatus = "loaded";
       // const oldPost = selectEventById(state, action.payload.event.id);
       const event = action.payload;
       eventsAdapter.upsertOne(state, event);
@@ -195,7 +195,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       state.successMessage = `Post data loaded.`;
     });
     builder.addCase(loadEvent.rejected, (state, action) => {
-      state.loadStatus = "errored";
+      // state.loadStatus = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;

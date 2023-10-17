@@ -61,9 +61,20 @@ export function EventDetailsScreen() {
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const chatUI = app?.discussionChatUI;
   // const [chatUI, setChatUI] = useState(false);
-  const showReplyArea = subjectEvent != undefined;
   const [_, forceUpdate] = useReducer((x) => x + 1, 0);
   const { width, height: windowHeight } = useWindowDimensions();
+
+  const [editingPosts, setEditingPosts] = useState([] as string[]);
+  const editHandler = (postId: string) => ((editing: boolean) => {
+    if (editing) {
+      setEditingPosts([...editingPosts, postId]);
+    } else {
+      setEditingPosts(editingPosts.filter(p => p != postId));
+    }
+  });
+
+  const showReplyArea = subjectEvent != undefined && editingPosts.length == 0;
+
   function scrollToBottom() {
     if (!isClient) return;
     if (_replyTextFocused && windowHeight > 0) {
@@ -213,9 +224,9 @@ export function EventDetailsScreen() {
     }
   }
   // useEffect(() => {
-    if (subjectPost && subjectEvent) {
-      flattenReplies(subjectPost, [subjectPost!.id]);
-    }
+  if (subjectPost && subjectEvent) {
+    flattenReplies(subjectPost, [subjectPost!.id]);
+  }
   // });
   if (chatUI) {
     flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
@@ -235,7 +246,11 @@ export function EventDetailsScreen() {
 
           <ScrollView w='100%'>
             <XStack w='100%' paddingHorizontal='$3'>
-              {subjectEvent ? <EventCard event={subjectEvent} key={`event-card-loaded-${loadedEvent}`} selectedInstance={subjectInstance} /> : undefined}
+              {subjectEvent
+                ? <EventCard event={subjectEvent} key={`event-card-loaded-${loadedEvent}`}
+                  onEditingChange={subjectPost ? editHandler(subjectPost.id) : undefined}
+                  selectedInstance={subjectInstance} />
+                : undefined}
             </XStack>
             <XStack>
               <XStack f={1} />
@@ -330,6 +345,7 @@ export function EventDetailsScreen() {
                             setReplyPostIdPath(postIdPath);
                           }
                         }}
+                        onEditingChange={editHandler(reply.id)}
                         onPressParentPreview={() => {
                           const parentEventIdPath = postIdPath.slice(0, -1);
                           if (replyPostIdPath[replyPostIdPath.length - 1] == parentEventIdPath[parentEventIdPath.length - 1]) {

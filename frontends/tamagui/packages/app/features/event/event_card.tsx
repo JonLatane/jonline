@@ -29,11 +29,20 @@ interface Props {
   groupContext?: Group;
   horizontal?: boolean;
   hideEditControls?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 }
 
 let newEventId = 0;
 
-export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview, groupContext, horizontal, hideEditControls }) => {
+export const EventCard: React.FC<Props> = ({
+  event,
+  selectedInstance,
+  isPreview,
+  groupContext,
+  horizontal,
+  hideEditControls,
+  onEditingChange,
+}) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
   const media = useMedia();
@@ -41,7 +50,11 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
   const post = event.post!;
 
   const { server, textColor, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
-  const [editing, setEditing] = useState(false);
+  const [editing, _setEditing] = useState(false);
+  function setEditing(value: boolean) {
+    _setEditing(value);
+    onEditingChange?.(value);
+  }
   const [previewingEdits, setPreviewingEdits] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
 
@@ -355,6 +368,8 @@ export const EventCard: React.FC<Props> = ({ event, selectedInstance, isPreview,
       : editing && !previewingEdits
         ? <TextArea f={1} pt='$2' value={content}
           disabled={savingEdits} opacity={savingEdits || content == '' ? 0.5 : 1}
+          h={(editedContent?.length ?? 0) > 300 ? window.height - 100 : undefined}
+
           onChangeText={t => setEditedContent(t)}
           placeholder={`Text content (optional). Markdown is supported.`} />
         : content && content != ''

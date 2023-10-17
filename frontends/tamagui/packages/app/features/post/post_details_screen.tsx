@@ -45,13 +45,19 @@ export function PostDetailsScreen() {
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());
   const [expandAnimation, setExpandAnimation] = useState(true);
-
-  const [editingPost, setEditingPost] = useState(undefined as Post | undefined);
+  const [editingPosts, setEditingPosts] = useState([] as string[]);
+  const editHandler = (postId: string) => ((editing:boolean) => {
+    if (editing) {
+      setEditingPosts([...editingPosts, postId]);
+    } else {
+      setEditingPosts(editingPosts.filter(p => p != postId));
+    }
+  })
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const chatUI = app?.discussionChatUI;
   // const [chatUI, setChatUI] = useState(false);
-  const showReplyArea = subjectPost != undefined;
+  const showReplyArea = subjectPost != undefined && editingPosts.length == 0;
   const [_, forceUpdate] = useReducer((x) => x + 1, 0);
   const { width, height: windowHeight } = useWindowDimensions();
   function scrollToBottom() {
@@ -215,7 +221,7 @@ export function PostDetailsScreen() {
         : <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
           <ScrollView w='100%'>
             <XStack w='100%' paddingHorizontal='$3'>
-              {subjectPost ? <PostCard post={subjectPost!} /> : undefined}
+              {subjectPost ? <PostCard post={subjectPost!} onEditingChange={editHandler(subjectPost.id)} /> : undefined}
             </XStack>
             <XStack>
               <XStack f={1} />
@@ -267,14 +273,14 @@ export function PostDetailsScreen() {
             <XStack w='100%'>
               <>
                 <YStack w='100%'>
-                  {flattenedReplies.map(({ reply: post, postIdPath, parentPost, lastReplyTo }) => {
+                  {flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
                     let stripeColor = navColor;
                     const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
                     const showParentPreview = chatUI && parentPost?.id != subjectPost?.id
                       && parentPost?.id != logicallyReplyingTo?.id
                       && parentPost?.id != logicallyReplyingTo?.replyToPostId;
                     const hideTopMargin = chatUI && parentPost?.id != subjectPost?.id && (parentPost?.id == logicallyReplyingTo?.id || parentPost?.id == logicallyReplyingTo?.replyToPostId);
-                    const result = <XStack key={`reply-${post.id}`} id={`reply-${post.id}`}
+                    const result = <XStack key={`reply-${reply.id}`} id={`reply-${reply.id}`}
                       // w='100%' f={1}
                       mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == subjectPost?.id) ? '$3' : 0}
                       animation='standard'
@@ -297,15 +303,15 @@ export function PostDetailsScreen() {
                         return <YStack w={7} bg={stripeColor} />
                       })}
                       <XStack f={1}>
-                        <PostCard key={`comment-post-${post.id}`} 
-                          post={post} replyPostIdPath={postIdPath}
+                        <PostCard key={`comment-post-${reply.id}`} 
+                          post={reply} replyPostIdPath={postIdPath}
                           selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
-                          collapseReplies={collapsedReplies.has(post.id)}
+                          collapseReplies={collapsedReplies.has(reply.id)}
                           previewParent={showParentPreview ? parentPost : undefined}
                           onLoadReplies={() => setExpandAnimation(true)}
                           toggleCollapseReplies={() => {
-                            setExpandAnimation(collapsedReplies.has(post.id));
-                            toggleCollapseReplies(post.id);
+                            setExpandAnimation(collapsedReplies.has(reply.id));
+                            toggleCollapseReplies(reply.id);
                           }}
                           onPressReply={() => {
                             if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
@@ -314,6 +320,7 @@ export function PostDetailsScreen() {
                               setReplyPostIdPath(postIdPath);
                             }
                           }}
+                          onEditingChange={editHandler(reply.id)}
                           onPressParentPreview={() => {
                             const parentPostIdPath = postIdPath.slice(0, -1);
                             if (replyPostIdPath[replyPostIdPath.length - 1] == parentPostIdPath[parentPostIdPath.length - 1]) {
@@ -326,7 +333,7 @@ export function PostDetailsScreen() {
                         />
                       </XStack>
                     </XStack>;
-                    logicallyReplyingTo = post;
+                    logicallyReplyingTo = reply;
                     return result;
                   })}
                   <YStack h={showScrollPreserver ? 100000 : chatUI ? 0 : 150} ></YStack>

@@ -29,12 +29,27 @@ interface PostCardProps {
   onPressParentPreview?: () => void;
   selectedPostId?: string;
   onPressReply?: () => void;
+  onEditingChange?: (editing: boolean) => void;
 }
 
 export const postBackgroundSize = (media: TamaguiMediaState) =>
   media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500;
 
-export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContext, replyPostIdPath, toggleCollapseReplies, onLoadReplies, collapseReplies, previewParent, onPress, onPressParentPreview, selectedPostId, onPressReply }) => {
+export const PostCard: React.FC<PostCardProps> = ({
+  post,
+  isPreview,
+  groupContext,
+  replyPostIdPath,
+  toggleCollapseReplies,
+  onLoadReplies,
+  collapseReplies,
+  previewParent,
+  onPress,
+  onPressParentPreview,
+  selectedPostId,
+  onPressReply,
+  onEditingChange
+}) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
 
@@ -45,7 +60,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
   const { luma: themeBgLuma } = colorMeta(themeBgColor);
   const { server, primaryColor, navAnchorColor: navColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
-  const [editing, setEditing] = useState(false);
+  const [editing, _setEditing] = useState(false);
+  function setEditing(value: boolean) {
+    _setEditing(value);
+    onEditingChange?.(value);
+  }
   const [previewingEdits, setPreviewingEdits] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
 
@@ -300,6 +319,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
                         editing && !previewingEdits
                           ? <TextArea f={1} pt='$2' value={editedContent}
                             disabled={savingEdits} opacity={savingEdits || editedContent == '' ? 0.5 : 1}
+                            h={(editedContent?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
                             onChangeText={setEditedContent}
                             placeholder={`Text content (optional). Markdown is supported.`} />
                           : content && content != ''
@@ -401,7 +421,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
                     : undefined} {...detailsProps}>
                     <AuthorInfo {...{ post, detailsMargins, isVisible }} />
                     {onPressReply ? <Button onPress={onPressReply} circular icon={Reply}
-                     my='auto' size='$2' mr='$2' /> : undefined}
+                      my='auto' size='$2' mr='$2' /> : undefined}
                     <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                       <YStack h='100%' mr='$1'>
                         <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
@@ -409,7 +429,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isPreview, groupContex
                           disabled={cannotToggleReplies || loadingReplies}
                           marginVertical='auto'
                           mr={isPreview ? '$2' : undefined}
-                          size='$3' 
+                          size='$3'
                           onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
                           <XStack opacity={0.9}>
                             <YStack marginVertical='auto' scale={0.75}>
