@@ -15,6 +15,8 @@ import { TamaguiMarkdown } from "./tamagui_markdown";
 import { MediaRenderer } from "../media/media_renderer";
 import { FadeInView } from './fade_in_view';
 import { GroupPostManager } from './group_post_manager';
+import { PostMediaRenderer } from "./post_media_renderer";
+import { PostMediaManager } from "./post_media_manager";
 
 interface PostCardProps {
   post: Post;
@@ -51,7 +53,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onEditingChange
 }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const media = useMedia();
+  const mediaQuery = useMedia();
 
   const theme = useTheme();
   const currentUser = useAccount()?.user;
@@ -69,11 +71,20 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [savingEdits, setSavingEdits] = useState(false);
 
   const [editedContent, setEditedContent] = useState(post.content);
+  const [editedMedia, setEditedMedia] = useState(post.media);
+  const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
   const content = editing ? editedContent : post.content;
+  const media = editing ? editedMedia : post.media;
+  const embedLink = editing ? editedEmbedLink : post.embedLink;
 
   function saveEdits() {
     setSavingEdits(true);
-    dispatch(updatePost({ ...accountOrServer, ...post, content: editedContent })).then(() => {
+    dispatch(updatePost({
+      ...accountOrServer, ...post,
+      content: editedContent,
+      media: editedMedia,
+      embedLink: editedEmbedLink,
+    })).then(() => {
       setEditing(false);
       setSavingEdits(false);
       setPreviewingEdits(false);
@@ -212,7 +223,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const previewUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
   const showBackgroundPreview = hasGeneratedPreview;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
-  const backgroundSize = postBackgroundSize(media);
+  const backgroundSize = postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
   return (
@@ -220,7 +231,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       <YStack w='100%' ref={ref!} key={`post-card-${post.id}-${isPreview ? '-preview' : ''}`}>
         {previewParent && post.replyToPostId
           ? <XStack w='100%'>
-            {media.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}
+            {mediaQuery.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}
             <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
 
             <Theme inverse={selectedPostId == previewParent.id}>
@@ -282,39 +293,30 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </Anchor>
               </Card.Header>
               : undefined}
-            <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
+            <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} >
               {deleted
                 ? <Paragraph size='$1'>This {post.replyToPostId ? 'comment' : 'post'} has been deleted.</Paragraph>
                 : <YStack zi={1000} width='100%' {...footerProps}>
-                  {hasBeenVisible && embedComponent && false
-                    ? <FadeInView><div>{embedComponent}</div></FadeInView>
-                    : embedComponent
-                      ? <Spinner color={primaryColor} />
-                      : undefined}
-                  {showScrollableMediaPreviews ?
-                    <XStack w='100%' maw={800}>
-                      <ScrollView horizontal w={isPreview ? '260px' : '100%'}
-                        h={media.gtXs ? '400px' : '260px'} >
-                        <XStack space='$2'>
-                          {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={media.gtXs ? '400px' : '260px'} h='100%'>
-                            <MediaRenderer media={mediaRef} />
-                          </YStack>)}
-                        </XStack>
-                      </ScrollView>
-                    </XStack> : undefined}
+
+                  {editing && !previewingEdits
+                    ? <PostMediaManager
+                      link={post.link}
+                      media={editedMedia}
+                      setMedia={setEditedMedia}
+                      embedLink={editedEmbedLink}
+                      setEmbedLink={setEditedEmbedLink}
+                      disableInputs={savingEdits}
+                    />
+                    : <PostMediaRenderer {...{
+                      post: {
+                        ...post,
+                        media,
+                        embedLink
+                      }, isPreview, groupContext, hasBeenVisible
+                    }} />}
 
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                    <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden' {...contentProps}>
-                      {singleMediaPreview
-                        ? <Image
-                          mb='$3'
-                          width={foregroundSize}
-                          height={foregroundSize}
-                          resizeMode="contain"
-                          als="center"
-                          source={{ uri: previewUrl, height: foregroundSize, width: foregroundSize }}
-                          borderRadius={10}
-                        /> : undefined}
+                    <YStack maxHeight={isPreview ? (singleMediaPreview || showScrollableMediaPreviews) ? 150 : 300 : undefined} overflow='hidden' {...contentProps}>
                       {
                         editing && !previewingEdits
                           ? <TextArea f={1} pt='$2' value={editedContent}

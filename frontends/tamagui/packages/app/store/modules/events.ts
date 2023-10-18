@@ -103,7 +103,15 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     });
     builder.addCase(updateEvent.fulfilled, (state, action) => {
       state.updateStatus = "updated";
-      eventsAdapter.upsertOne(state, action.payload);
+      const event = action.payload;
+      eventsAdapter.upsertOne(state, event);
+      if (event.post) {
+        setTimeout(() => {
+          console.log("upserting post", event.post);
+          store.dispatch(locallyUpsertPost({...action.meta.arg, ...event.post! }));
+
+        }, 1);
+      }
     });
     builder.addCase(updateEvent.rejected, (state, action) => {
       state.updateStatus = "errored";

@@ -21,6 +21,8 @@ import { FadeInView } from "../post/fade_in_view";
 import { postBackgroundSize } from "../post/post_card";
 import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
 import { LinearGradient } from '@tamagui/linear-gradient';
+import { PostMediaManager } from "../post/post_media_manager";
+import { PostMediaRenderer } from "../post/post_media_renderer";
 
 interface Props {
   event: Event;
@@ -45,7 +47,7 @@ export const EventCard: React.FC<Props> = ({
 }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
-  const media = useMedia();
+  const mediaQuery = useMedia();
   const currentUser = useAccount()?.user;
   const post = event.post!;
 
@@ -61,7 +63,11 @@ export const EventCard: React.FC<Props> = ({
   const [editedTitle, setEditedTitle] = useState(post.title);
   const title = editing ? editedTitle : post.title;
   const [editedContent, setEditedContent] = useState(post.content);
+  const [editedMedia, setEditedMedia] = useState(post.media);
+  const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
   const content = editing ? editedContent : post.content;
+  const media = editing ? editedMedia : post.media;
+  const embedLink = editing ? editedEmbedLink : post.embedLink;
   const [editedInstances, setEditedInstances] = useState(event.instances);
   const instances = editing ? editedInstances : event.instances;
   // console.log('instances', instances);
@@ -79,7 +85,7 @@ export const EventCard: React.FC<Props> = ({
     dispatch(updateEvent({
       ...accountOrServer,
       ...event,
-      post: { ...post, title: editedTitle, content: editedContent },
+      post: { ...post, title: editedTitle, content: editedContent, media: editedMedia },
       instances: editedInstances,
     })).then(result => {
       setEditing(false);
@@ -225,8 +231,8 @@ export const EventCard: React.FC<Props> = ({
 
   const showBackgroundPreview = hasGeneratedPreview;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
   const backgroundSize = isPreview && horizontal
-    ? (media.gtSm ? 400 : 310)
-    : postBackgroundSize(media);
+    ? (mediaQuery.gtSm ? 400 : 310)
+    : postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
   const author = post.author;
@@ -360,7 +366,7 @@ export const EventCard: React.FC<Props> = ({
         {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} /> : undefined}
       </YStack>;
 
-  const contentView = post.content && post.content != ''
+  const contentView = editing || (post.content && post.content) != ''
     ? isPreview
       ? <Anchor textDecorationLine='none' {...detailsLink}>
         <TamaguiMarkdown text={post.content} disableLinks={isPreview} />
@@ -368,7 +374,7 @@ export const EventCard: React.FC<Props> = ({
       : editing && !previewingEdits
         ? <TextArea f={1} pt='$2' value={content}
           disabled={savingEdits} opacity={savingEdits || content == '' ? 0.5 : 1}
-          h={(editedContent?.length ?? 0) > 300 ? window.height - 100 : undefined}
+          h={(editedContent?.length ?? 0) > 300 ? Math.max(120, window.height - 100) : undefined}
 
           onChangeText={t => setEditedContent(t)}
           placeholder={`Text content (optional). Markdown is supported.`} />
@@ -610,26 +616,42 @@ export const EventCard: React.FC<Props> = ({
               </YStack>
             </Card.Header>
             : undefined}
-          <Card.Footer p='$3' pr={media.gtXs ? '$3' : '$1'} >
+          <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} >
             {deleted
               ? <Paragraph size='$1'>This event has been deleted.</Paragraph>
               : <YStack zi={1000} width='100%' {...footerProps}>
-                {hasBeenVisible && embedComponent
+                {editing && !previewingEdits
+                  ? <PostMediaManager
+                    link={post.link}
+                    media={editedMedia}
+                    setMedia={setEditedMedia}
+                    embedLink={editedEmbedLink}
+                    setEmbedLink={setEditedEmbedLink}
+                    disableInputs={savingEdits}
+                  />
+                  : <PostMediaRenderer {...{
+                    post: {
+                      ...post,
+                      media,
+                      embedLink
+                    }, isPreview, groupContext, hasBeenVisible
+                  }} />}
+                {/* {hasBeenVisible && embedComponent
                   ? <FadeInView><div>{embedComponent}</div></FadeInView>
                   : undefined}
                 {showScrollableMediaPreviews ?
                   <XStack w='100%' maw={800}>
                     <ScrollView horizontal w={isPreview ? '260px' : '100%'}
-                      h={media.gtXs ? '400px' : '260px'} >
+                      h={mediaQuery.gtXs ? '400px' : '260px'} >
                       <XStack space='$2'>
-                        {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={media.gtXs ? '400px' : '260px'} h='100%'>
+                        {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={mediaQuery.gtXs ? '400px' : '260px'} h='100%'>
                           <MediaRenderer media={mediaRef} />
                         </YStack>)}
                       </XStack>
                     </ScrollView>
-                  </XStack> : undefined}
+                  </XStack> : undefined} */}
                 <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
-                  {singleMediaPreview
+                  {/* {singleMediaPreview
                     // (!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) 
                     ? <Image
                       mb='$3'
@@ -639,7 +661,7 @@ export const EventCard: React.FC<Props> = ({
                       als="center"
                       source={{ uri: previewUrl, height: foregroundSize, width: foregroundSize }}
                       borderRadius={10}
-                    /> : undefined}
+                    /> : undefined} */}
                   {contentView}
                 </YStack>
                 <XStack space='$2' flexWrap="wrap">

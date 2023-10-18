@@ -1,15 +1,13 @@
-import { Group, Media, MediaReference, Post, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
-import { ArrowLeft, ArrowRight, ChevronDown, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
-import { RootState, clearPostAlerts, createGroupPost, createPost, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { Group, MediaReference, Post, Visibility } from '@jonline/api';
+import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
+import { ChevronDown, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
+import { RootState, clearPostAlerts, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
-import { Platform, TextInput, View } from 'react-native';
+import { TextInput } from 'react-native';
 import { GroupsSheet } from '../groups/groups_sheet';
-import { MediaChooser } from '../media/media_chooser';
-import { MediaRenderer } from '../media/media_renderer';
 import { ToggleRow } from '../settings_sheet';
-import PostCard from './post_card';
+import { PostMediaManager } from './post_media_manager';
 import { VisibilityPicker } from './visibility_picker';
 
 export type BaseCreatePostSheetProps = {
@@ -34,7 +32,7 @@ export type BaseCreatePostSheetProps = {
   invalid?: boolean;
 }
 
-enum RenderType { Edit, FullPreview, ShortPreview }
+export enum RenderType { Edit, FullPreview, ShortPreview }
 const edit = (r: RenderType) => r == RenderType.Edit;
 const fullPreview = (r: RenderType) => r == RenderType.FullPreview;
 const shortPreview = (r: RenderType) => r == RenderType.ShortPreview;
@@ -313,52 +311,8 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
 
                     {/* <AnimatePresence> */}
                     {showMedia
-                      ? <YStack key='create-post-sheet-media' ac='center'
-                        jc='center'
-                        marginHorizontal='$5'
-                        p='$3'
-                        animation='quick'
-                        {...standardAnimation}
-                      // enterStyle={{ y: -50, opacity: 0, }}
-                      // exitStyle={{ opacity: 0, }}
-                      >
-                        {media.length > 0 ? <ScrollView horizontal w='100%'>
-                          <XStack space='$2'>
-                            {media.map((mediaRef, index) =>
-                              <ZStack w={mediaQuery.gtXs ? 350 : 148} h={mediaQuery.gtXs ? 280 : 195}>
-                                {/* <ZStack> */}
-                                <MediaRenderer key={`media-renderer-${mediaRef.id}`} media={mediaRef} />
-                                <XStack w='100%' my='auto' zi={1000}>
-                                  <Button ml='$2' circular o={index == 0 ? 0.3 : 0.9} icon={ArrowLeft} onPress={() => {
-                                    const updatedMedia = new Array<MediaReference>(...media);
-                                    const leftValue = updatedMedia[index - 1]!;
-                                    updatedMedia[index - 1] = mediaRef;
-                                    updatedMedia[index] = leftValue;
-                                    setMedia(updatedMedia);
-                                  }} />
-                                  <YStack f={1} />
-                                  <Button mr='$2' circular o={index < media.length - 1 ? 0.9 : 0.3} icon={ArrowRight} onPress={() => {
-                                    const updatedMedia = new Array<MediaReference>(...media);
-                                    const rightValue = updatedMedia[index + 1]!;
-                                    updatedMedia[index + 1] = mediaRef;
-                                    updatedMedia[index] = rightValue;
-                                    setMedia(updatedMedia);
-                                  }} />
-                                </XStack>
-                                {/* </ZStack> */}
-                              </ZStack>
-                            )}
-                          </XStack>
-                        </ScrollView> : undefined}
-                        <MediaChooser selectedMedia={media} onMediaSelected={setMedia} multiselect />
-                        <YStack h='$0' mt='$2' />
-                        {canEmbedLink
-                          ? <ToggleRow name='Embed Link'
-                            value={embedLink && canEmbedLink}
-                            setter={(v) => setEmbedLink(v)}
-                            disabled={disableInputs || !canEmbedLink} />
-                          : undefined}
-                      </YStack> : undefined}
+                      ? <PostMediaManager 
+                      {...{link, media, setMedia, embedLink, setEmbedLink}} /> : undefined}
                     {/* </AnimatePresence> */}
 
                     <TextArea f={1} pt='$2' value={content} ref={textAreaRef}
