@@ -89,83 +89,83 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
 
 
 
-  const mainImage = <YStack w='100%'>
-    {(!isPreview && hasAvatarUrl)
-      ? <Image
-        mb='$3'
-        width={fullAvatarHeight}
-        height={fullAvatarHeight}
-        resizeMode="contain"
-        als="center"
-        source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
-        borderRadius={10} />
-      : undefined}
-    {canEditAvatar
-      ? <SingleMediaChooser selectedMedia={avatar} setSelectedMedia={setAvatar} />
-      : undefined}
-  </YStack>;
-  const followHandler = <YStack w='100%'>
-    <AnimatePresence>
-      {followsCurrentUser
-        ? <Heading key='follow-request-heading' animation='quick' {...standardAnimation}
-          size='$1' ta='center'>
-          {following ? 'Friends' : 'Follows You'}
-        </Heading>
-        : undefined}
-      {followRequestReceived ?
-        <YStack key='follow-request-heading' animation='quick' {...standardAnimation}
-          space='$2'>
-          <Heading size='$1' ta='center'>Wants to follow you</Heading>
-          <XStack ac='center' jc='center' mb='$2' space='$2'>
-            <Button onPress={(e) => doRespondToFollowRequest(e, true)} backgroundColor={primaryColor}
-              disabled={isLocked} opacity={isLocked ? 0.5 : 1}>
-              <Heading size='$2' color={primaryTextColor}>
-                Accept
-              </Heading>
-            </Button>
-            <Button onPress={(e) => doRespondToFollowRequest(e, false)}
-              disabled={isLocked} opacity={isLocked ? 0.5 : 1} >
-              <Heading size='$2' color={textColor}>
-                Reject
-              </Heading>
-            </Button>
-          </XStack>
-        </YStack> : undefined}
-      {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack key='follow-button' ac='center' jc='center'>
-        <Button backgroundColor={!following && !followRequested ? primaryColor : undefined}
-          animation='quick' {...standardAnimation}
-          mb='$2'
-          p='$3'
-          disabled={isLocked} opacity={isLocked ? 0.5 : 1}
-          onPress={onFollowPressed}>
-          <YStack jc='center' ac='center'>
-            <Heading jc='center' ta='center' size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
-              {!following && !followRequested ? requiresPermissionToFollow ? 'Follow Request' : 'Follow'
-                : following ? 'Unfollow' : 'Cancel Request'}
-            </Heading>
-            {requiresPermissionToFollow && following ? <Paragraph size='$1'>
-              Permission required to re-follow
-            </Paragraph> : undefined}
-          </YStack>
-        </Button>
-      </XStack> : undefined}
-    </AnimatePresence>
-  </YStack>
+  // const mainImage = <YStack w='100%'>
+  //   {(!isPreview && hasAvatarUrl)
+  //     ? <Image
+  //       mb='$3'
+  //       width={fullAvatarHeight}
+  //       height={fullAvatarHeight}
+  //       resizeMode="contain"
+  //       als="center"
+  //       source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
+  //       borderRadius={10} />
+  //     : undefined}
+  //   {canEditAvatar
+  //     ? <SingleMediaChooser selectedMedia={avatar} setSelectedMedia={setAvatar} />
+  //     : undefined}
+  // </YStack>;
+  // const followHandler = <YStack w='100%'>
+  //   <AnimatePresence>
+  //     {followsCurrentUser
+  //       ? <Heading key='follow-request-heading' animation='quick' {...standardAnimation}
+  //         size='$1' ta='center'>
+  //         {following ? 'Friends' : 'Follows You'}
+  //       </Heading>
+  //       : undefined}
+  //     {followRequestReceived ?
+  //       <YStack key='follow-request-heading' animation='quick' {...standardAnimation}
+  //         space='$2'>
+  //         <Heading size='$1' ta='center'>Wants to follow you</Heading>
+  //         <XStack ac='center' jc='center' mb='$2' space='$2'>
+  //           <Button onPress={(e) => doRespondToFollowRequest(e, true)} backgroundColor={primaryColor}
+  //             disabled={isLocked} opacity={isLocked ? 0.5 : 1}>
+  //             <Heading size='$2' color={primaryTextColor}>
+  //               Accept
+  //             </Heading>
+  //           </Button>
+  //           <Button onPress={(e) => doRespondToFollowRequest(e, false)}
+  //             disabled={isLocked} opacity={isLocked ? 0.5 : 1} >
+  //             <Heading size='$2' color={textColor}>
+  //               Reject
+  //             </Heading>
+  //           </Button>
+  //         </XStack>
+  //       </YStack> : undefined}
+  //     {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack key='follow-button' ac='center' jc='center'>
+  //       <Button backgroundColor={!following && !followRequested ? primaryColor : undefined}
+  //         animation='quick' {...standardAnimation}
+  //         mb='$2'
+  //         p='$3'
+  //         disabled={isLocked} opacity={isLocked ? 0.5 : 1}
+  //         onPress={onFollowPressed}>
+  //         <YStack jc='center' ac='center'>
+  //           <Heading jc='center' ta='center' size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
+  //             {!following && !followRequested ? requiresPermissionToFollow ? 'Follow Request' : 'Follow'
+  //               : following ? 'Unfollow' : 'Cancel Request'}
+  //           </Heading>
+  //           {requiresPermissionToFollow && following ? <Paragraph size='$1'>
+  //             Permission required to re-follow
+  //           </Paragraph> : undefined}
+  //         </YStack>
+  //       </Button>
+  //     </XStack> : undefined}
+  //   </AnimatePresence>
+  // </YStack>
 
-  const footerContent = <YStack mt='$2' mr='$3' w='100%'>
-    <XStack>
-      <Heading size='$1' f={1}>{user.followerCount} followers</Heading>
-      <Heading size='$1' f={1} ta='right'>following {user.followingCount}</Heading>
-    </XStack>
-    <XStack>
-      <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
-      <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
-    </XStack>
-  </YStack>;
+  // const footerContent = <YStack mt='$2' mr='$3' w='100%'>
+  //   <XStack>
+  //     <Heading size='$1' f={1}>{user.followerCount} followers</Heading>
+  //     <Heading size='$1' f={1} ta='right'>following {user.followingCount}</Heading>
+  //   </XStack>
+  //   <XStack>
+  //     <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
+  //     <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
+  //   </XStack>
+  // </YStack>;
 
   const backgroundSize = postBackgroundSize(media);
   return (
-    <Theme inverse={isCurrentUser}>
+    <Theme /*inverse={isCurrentUser ?? false}*/>
       <Card theme="dark" elevate size="$4" bordered
         animation='standard'
         // scale={0.9}
@@ -206,7 +206,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         </Card.Header>
         <Card.Footer p='$3'>
           <YStack mt='$2' mr='$3' w='100%'>
-            {isPreview
+            {/* {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
                 {mainImage}
               </Anchor>
@@ -216,7 +216,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
                 {footerContent}
               </Anchor>
-              : footerContent}
+              : footerContent} */}
           </YStack>
         </Card.Footer>
         <Card.Background>

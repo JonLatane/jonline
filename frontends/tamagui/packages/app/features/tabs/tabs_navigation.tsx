@@ -27,7 +27,7 @@ export type TabsNavigationProps = {
 };
 
 export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, appSubsection, selectedGroup, customHomeAction, groupPageForwarder }: TabsNavigationProps) {
-  const media = useMedia()
+  const mediaQuery = useMedia()
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;
   const webUI = server?.serverConfiguration?.serverInfo?.webUserInterface;
@@ -49,7 +49,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const navColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.navigation;
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const wrapTitle = serverName.length > 20;
-  const maxWidth = media.gtXs ? 350 : 250;
+  const maxWidth = mediaQuery.gtXs ? 350 : 250;
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
   // const app = useLocalApp();
@@ -59,8 +59,8 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
-  const shrinkHomeButton = selectedGroup != undefined ||
-    appSubsection == AppSubsection.FOLLOW_REQUESTS;
+  const shrinkHomeButton = !mediaQuery.gtLg && (selectedGroup != undefined ||
+    appSubsection == AppSubsection.FOLLOW_REQUESTS);
   // console.log(`app.darkModeAuto=${app.darkModeAuto}, systemDark=${systemDark}, app.darkMode=${app.darkMode}, invert=${invert}, dark=${dark}, bgColor=${bgColor}`);
   const canUseLogo = (!shrinkHomeButton && logo?.wideMediaId != undefined) ||
     (shrinkHomeButton && logo?.squareMediaId != undefined);
@@ -115,7 +115,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
                 </ScrollView>
                 <XStack f={1} />
-                <AccountsSheet size='$4' circular={!media.gtSm} onlyShowServer={onlyShowServer} />
+                <AccountsSheet size='$4' circular={!mediaQuery.gtSm} onlyShowServer={onlyShowServer} />
                 <XStack w={5} />
               </XStack>
               {/* <XStack h={5}></XStack> */}

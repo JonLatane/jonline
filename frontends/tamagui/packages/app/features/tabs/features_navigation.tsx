@@ -3,7 +3,7 @@ import { JonlineServer, setInlineFeatureNavigation } from 'app/store';
 import { Button, Heading, Popover, ScrollView, XStack, YStack, useMedia } from '@jonline/ui';
 import { useAccount, useLocalApp, useServerTheme } from 'app/store';
 import { useLink } from "solito/link";
-import { AlertTriangle } from "@tamagui/lucide-icons";
+import { AlertTriangle, Menu } from "@tamagui/lucide-icons";
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export enum AppSection {
@@ -123,6 +123,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
   const triggerButton = <Button scale={0.95} ml={selectedGroup ? -4 : -3}
     disabled={inlineNavigation}
+    icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
     {...themedButtonBackground(navColor)}>
     <Heading size="$4"
       // color={primaryTextColor}
@@ -140,6 +141,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           disabled={selected}
           o={selected ? 0.5 : 1}
           backgroundColor={selected ? navColor : undefined}
+          hoverStyle={{ backgroundColor: '$colorTransparent' }}
           {...link}
         >
           <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>{name}</Heading>
