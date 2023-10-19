@@ -1,6 +1,6 @@
 import { Group } from "@jonline/api";
-import { JonlineServer } from "app/store";
-import { Button, Heading, Popover, ScrollView, XStack, YStack } from '@jonline/ui';
+import { JonlineServer, setInlineFeatureNavigation } from 'app/store';
+import { Button, Heading, Popover, ScrollView, XStack, YStack, useMedia } from '@jonline/ui';
 import { useAccount, useLocalApp, useServerTheme } from 'app/store';
 import { useLink } from "solito/link";
 import { AlertTriangle } from "@tamagui/lucide-icons";
@@ -61,6 +61,13 @@ export function subsectionTitle(subsection?: AppSubsection): string | undefined 
   }
 }
 
+export function useInlineFeatureNavigation() {
+  const mediaQuery = useMedia();
+  const { inlineFeatureNavigation } = useLocalApp();
+
+  return inlineFeatureNavigation || inlineFeatureNavigation == undefined && mediaQuery.gtXs;
+}
+
 export type FeaturesNavigationProps = {
   appSection?: AppSection;
   appSubsection?: AppSubsection;
@@ -97,68 +104,96 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const isPeople = appSection == AppSection.PEOPLE && appSubsection == undefined;
   const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
 
-  function navButton(selected, link, name) {
-    return <Popover.Close asChild>
-      <Button
-        // bordered={false}
-        transparent
-        size="$3"
-        disabled={selected}
-        o={selected ? 0.5 : 1}
-        backgroundColor={selected ? navColor : undefined}
-        {...link}
-      >
-        <Heading size="$4" color={selected ? navTextColor : textColor}>{name}</Heading>
-      </Button>
-    </Popover.Close>;
-  }
-  return <>
-    <XStack w={selectedGroup ? 11 : 3.5} />
-    <Popover size="$5">
-      <Popover.Trigger asChild>
-        <Button scale={0.95} ml={selectedGroup ? -4 : -3} {...themedButtonBackground(navColor)}>
-          <Heading size="$4"
-            // color={primaryTextColor}
-            color={navTextColor}
-          >{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
-        </Button>
-      </Popover.Trigger>
-      <Popover.Content
-        bw={1}
-        boc="$borderColor"
-        enterStyle={{ x: 0, y: -10, o: 0 }}
-        exitStyle={{ x: 0, y: -10, o: 0 }}
-        x={0}
-        y={0}
-        o={1}
-        animation={[
-          'quick',
-          {
-            opacity: {
-              overshootClamping: true,
-            },
-          },
-        ]}
-        elevate
-      >
-        <Popover.Arrow bw={1} boc="$borderColor" />
+  const inlineNavigation = useInlineFeatureNavigation();
 
-        <YStack space="$3">
-          <XStack ac='center' jc='center' space='$2'>
-            {navButton(isLatest, latestLink, sectionTitle(AppSection.HOME))}
-            {navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS))}
-            {navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS))}
-          </XStack>
-          <XStack ac='center' jc='center' space='$2'>
-            {navButton(isPeople, peopleLink, 'People')}
-            {account ? navButton(isFollowRequests, followRequestsLink, 'Follow Requests') : undefined}
-          </XStack>
-          {account ?
-            <XStack ac='center' jc='center' space='$2'>
-              {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
-            </XStack> : undefined}
-        </YStack>
-      </Popover.Content>
-    </Popover>
+  const firstRow = <>
+    {navButton(isLatest, latestLink, sectionTitle(AppSection.HOME))}
+    {navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS))}
+    {navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS))}
+  </>;
+
+  const secondRow = <>
+    {navButton(isPeople, peopleLink, 'People')}
+    {account ? navButton(isFollowRequests, followRequestsLink, 'Follow Requests') : undefined}
+  </>;
+
+  const thirdRow = <>
+    {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
   </>
+
+  const triggerButton = <Button scale={0.95} ml={selectedGroup ? -4 : -3}
+    disabled={inlineNavigation}
+    {...themedButtonBackground(navColor)}>
+    <Heading size="$4"
+      // color={primaryTextColor}
+      color={navTextColor}
+    >{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
+  </Button>;
+
+  function navButton(selected: boolean, link: object, name: string) {
+    return selected && inlineNavigation ? <></>
+      : <Popover.Close asChild>
+        <Button
+          // bordered={false}
+          transparent
+          size="$3"
+          disabled={selected}
+          o={selected ? 0.5 : 1}
+          backgroundColor={selected ? navColor : undefined}
+          {...link}
+        >
+          <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>{name}</Heading>
+        </Button>
+      </Popover.Close>;
+  }
+  return inlineNavigation
+    ? <>
+      <XStack w={selectedGroup ? 11 : 3.5} />
+      {triggerButton}
+      <XStack space='$2' ml='$1' my='auto'>
+        {firstRow}
+        {secondRow}
+        {thirdRow}
+      </XStack>
+    </>
+    : <>
+      <XStack w={selectedGroup ? 11 : 3.5} />
+      <Popover size="$5">
+        <Popover.Trigger asChild>
+          {triggerButton}
+        </Popover.Trigger>
+        <Popover.Content
+          bw={1}
+          boc="$borderColor"
+          enterStyle={{ x: 0, y: -10, o: 0 }}
+          exitStyle={{ x: 0, y: -10, o: 0 }}
+          x={0}
+          y={0}
+          o={1}
+          animation={[
+            'quick',
+            {
+              opacity: {
+                overshootClamping: true,
+              },
+            },
+          ]}
+          elevate
+        >
+          <Popover.Arrow bw={1} boc="$borderColor" />
+
+          <YStack space="$3">
+            <XStack ac='center' jc='center' space='$2'>
+              {firstRow}
+            </XStack>
+            <XStack ac='center' jc='center' space='$2'>
+              {secondRow}
+            </XStack>
+            <XStack ac='center' jc='center' space='$2'>
+              {thirdRow}
+            </XStack>
+          </YStack>
+        </Popover.Content>
+      </Popover>
+    </>;
 }

@@ -1,7 +1,8 @@
 import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, setShowUserIds, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, setShowUserIds, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
+import { useInlineFeatureNavigation } from './tabs/features_navigation';
 
 
 export type SettingsSheetProps = {
@@ -26,6 +27,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
     setTimeout(forceUpdate, 2000);
   }
 
+  const inlineNavigation = useInlineFeatureNavigation();
 
   return (
     <>
@@ -45,7 +47,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
         onPositionChange={setPosition}
         dismissOnSnapToBottom
       >
-        <Sheet.Overlay  />
+        <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
           <Button
@@ -90,6 +92,12 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch />
               <Heading size='$3' mt='$3'>Development</Heading>
               <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
+              <ToggleRow name='Auto Feature Navigation' value={app.inlineFeatureNavigation === undefined}
+                setter={(v) => setInlineFeatureNavigation(v ? undefined : false)} autoDispatch />
+              <ToggleRow name='Inline Feature Navigation' value={inlineNavigation}
+                disabled={app.inlineFeatureNavigation === undefined}
+                setter={setInlineFeatureNavigation} autoDispatch />
+
               {/* <ToggleRow name='Show (WIP) Extended Navigation' value={app.showBetaNavigation} setter={setShowBetaNavigation} autoDispatch /> */}
 
               {/* <XStack>

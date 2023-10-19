@@ -1,7 +1,7 @@
 import { Permission } from "@jonline/api";
 import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia } from "@jonline/ui";
 
-import { Bot, Shield, Trash, User as UserIcon } from "@tamagui/lucide-icons";
+import { Bot, Shield, Delete, User as UserIcon } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { JonlineAccount, accountId, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
 import React from "react";
@@ -83,10 +83,10 @@ const AccountCard: React.FC<Props> = ({ account }) => {
             <YStack f={1} />
             {selected ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button> : undefined}
 
-            <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$1' />
+            <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$3' />
             <Dialog>
               <Dialog.Trigger asChild>
-                <Button icon={<Trash />} circular onPress={(e) => { e.stopPropagation(); }} color="red" />
+                <Button icon={<Delete />} circular onPress={(e) => { e.stopPropagation(); }} color="red" />
               </Dialog.Trigger>
               <Dialog.Portal zi={1000011}>
                 <Dialog.Overlay

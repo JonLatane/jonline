@@ -89,10 +89,12 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                 <ChevronRight />
               </XStack>
             </Button>
-            <XStack f={1} />
-            <Button backgroundColor={navColor} animation='standard' o={0.00} hoverStyle={{ backgroundColor: navColor }} {...eventsLink}>
+            {/* <XStack f={1} /> */}
+            <Button ml='auto' transparent backgroundColor={navColor}
+              hoverStyle={{ backgroundColor: navColor }}
+              {...eventsLink}>
               {/* <ChevronRight color={navTextColor} /> */}
-              <Heading mx='auto' size='$6' color={navTextColor} textDecorationLine='none'>Events</Heading>
+              <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
               {/* <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}> */}
               {/* <ChevronRight color={navTextColor} /> */}
               {/* </XStack> */}

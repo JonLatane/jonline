@@ -1,6 +1,6 @@
 import { MediaReference } from '@jonline/api';
 import { Button, ScrollView, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
-import { ArrowLeft, ArrowRight } from '@tamagui/lucide-icons';
+import { ArrowLeft, ArrowRight, Delete } from '@tamagui/lucide-icons';
 import React from 'react';
 import { MediaChooser } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
@@ -66,6 +66,12 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
                 updatedMedia[index + 1] = mediaRef;
                 updatedMedia[index] = rightValue;
                 setMedia(updatedMedia);
+              }} />
+            </XStack>
+            <XStack w='100%' zi={1000}>
+              <YStack f={1} />
+              <Button size='$2' mr='$2' circular icon={Delete} onPress={() => {
+                setMedia(media.filter((_, i) => i != index));
               }} />
             </XStack>
             {/* </ZStack> */}

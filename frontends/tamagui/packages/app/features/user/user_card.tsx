@@ -87,7 +87,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     </XStack> : undefined}
   </XStack>;
 
-  const footerContent = <YStack mt='$2' mr='$3' w='100%'>
+
+
+  const mainImage = <YStack w='100%'>
     {(!isPreview && hasAvatarUrl)
       ? <Image
         mb='$3'
@@ -98,10 +100,12 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
         borderRadius={10} />
       : undefined}
+    {canEditAvatar
+      ? <SingleMediaChooser selectedMedia={avatar} setSelectedMedia={setAvatar} />
+      : undefined}
+  </YStack>;
+  const followHandler = <YStack w='100%'>
     <AnimatePresence>
-      {canEditAvatar
-        ? <SingleMediaChooser selectedMedia={avatar} setSelectedMedia={setAvatar} />
-        : undefined}
       {followsCurrentUser
         ? <Heading key='follow-request-heading' animation='quick' {...standardAnimation}
           size='$1' ta='center'>
@@ -127,8 +131,6 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
             </Button>
           </XStack>
         </YStack> : undefined}
-      {/* {followRequestReceived && accountOrServer.account && accountOrServer.account.user.id != user.id
-    ? <YStack h='$2' /> : undefined} */}
       {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack key='follow-button' ac='center' jc='center'>
         <Button backgroundColor={!following && !followRequested ? primaryColor : undefined}
           animation='quick' {...standardAnimation}
@@ -148,6 +150,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         </Button>
       </XStack> : undefined}
     </AnimatePresence>
+  </YStack>
+
+  const footerContent = <YStack mt='$2' mr='$3' w='100%'>
     <XStack>
       <Heading size='$1' f={1}>{user.followerCount} followers</Heading>
       <Heading size='$1' f={1} ta='right'>following {user.followingCount}</Heading>
@@ -200,11 +205,19 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           </XStack>
         </Card.Header>
         <Card.Footer p='$3'>
-          {isPreview
-            ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
-              {footerContent}
-            </Anchor>
-            : footerContent}
+          <YStack mt='$2' mr='$3' w='100%'>
+            {isPreview
+              ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
+                {mainImage}
+              </Anchor>
+              : mainImage}
+            {followHandler}
+            {isPreview
+              ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
+                {footerContent}
+              </Anchor>
+              : footerContent}
+          </YStack>
         </Card.Footer>
         <Card.Background>
           {(isPreview && hasAvatarUrl) ?

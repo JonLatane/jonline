@@ -35,6 +35,12 @@ pub fn get_events(
             _ => return Err(Status::new(Code::InvalidArgument, "group_id_invalid")),
         },
         (_, Some(event_id), _, _) => get_event_by_id(&user, &event_id, conn)?,
+        (_, _, _, Some(author_user_id)) => get_user_events(
+            author_user_id.to_db_id_or_err("author_user_id")?,
+            user,
+            conn,
+            request.time_filter,
+        )?,
         _ => get_public_and_following_events(&user, conn, request.time_filter)?,
     };
     Ok(GetEventsResponse {
@@ -45,39 +51,31 @@ pub fn get_events(
 fn get_public_and_following_events(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
-    _filter: Option<TimeFilter>,
+    filter: Option<TimeFilter>,
 ) -> Result<Vec<MarshalableEvent>, Status> {
+    let ends_after = filter
+        .map(|f| f.ends_after.map(|t| t.to_db()))
+        .flatten()
+        .unwrap_or(SystemTime::now());
     let public_visibilities = public_string_visibilities(user);
 
-    let event_posts = alias!(posts as event_posts);
     let _instance_posts = alias!(posts as instance_posts);
-    let event_users = alias!(users as event_users);
     let _instance_users = alias!(users as instance_users);
 
-    let public = event_posts
-        .field(posts::visibility)
-        .eq_any(public_visibilities);
-    let limited_to_followers = event_posts
-        .field(posts::visibility)
+    let public = posts::visibility.eq_any(public_visibilities);
+    let limited_to_followers = posts::visibility
         .eq(Visibility::Limited.to_string_visibility())
         .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
     let binding = event_instances::table
         .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
-        .inner_join(event_posts.on(event_posts.field(posts::id).eq(events::post_id)))
+        .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .left_join(
-            event_users.on(event_posts
-                .field(posts::user_id)
-                .eq(event_users.field(users::id).nullable())),
-        )
-        .left_join(
-            follows::table.on(event_posts
-                .field(posts::user_id)
-                .eq(follows::target_user_id.nullable())
-                .and(
-                    follows::user_id
-                        .nullable()
-                        .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
-                )),
+            follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
+                follows::user_id
+                    .nullable()
+                    .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+            )),
         )
         // .left_join(
         //     instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
@@ -89,15 +87,16 @@ fn get_public_and_following_events(
         .select((
             event_instances::all_columns,
             events::all_columns,
-            event_posts.fields(posts::all_columns),
-            event_users.fields(AUTHOR_COLUMNS).nullable(),
+            posts::all_columns,
+            AUTHOR_COLUMNS.nullable(),
             // instance_posts.fields(posts::all_columns).nullable(),
-            // instance_users.fields(users::all_columns).nullable(),
+            // instance_users.fields(AUTHOR_COLUMNS).nullable(),
             // instance_posts.field(posts::preview).is_not_null(),
         ))
         .filter(public.or(limited_to_followers))
-        .filter(event_instances::ends_at.gt(SystemTime::now()))
-        .order(event_instances::ends_at)
+        .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
+        .filter(event_instances::ends_at.gt(ends_after))
+        .order(event_instances::starts_at)
         .limit(20)
         .load::<(
             models::EventInstance,
@@ -117,6 +116,103 @@ fn get_public_and_following_events(
         // Option<models::Post>,
         // Option<models::User>,
         // bool,
+    )> = binding.iter().collect();
+    let mut media_ids: Vec<i64> = vec![];
+    event_data
+        .iter()
+        .for_each(|(_, _, post, author /*_, _, _*/)| {
+            media_ids.extend(post.media.iter());
+            author
+                .as_ref()
+                .map(|a| a.avatar_media_id)
+                .flatten()
+                .map(|amid| media_ids.push(amid));
+        });
+    // let media_references: Vec<models::MediaReference> = models::get_all_media(media_ids, conn)?;
+    // let media_lookup: MediaLookup = media_lookup(media_references);
+
+    Ok(event_data
+        .iter()
+        .map(
+            |(
+                instance,
+                event,
+                event_post,
+                event_author,
+                // instance_post,
+                // instance_user,
+                // has_instance_preview,
+            )| {
+                info!("instance: {:?}", instance);
+                MarshalableEvent(
+                    event.clone(),
+                    MarshalablePost(event_post.clone(), event_author.clone(), None, vec![]),
+                    vec![MarshalableEventInstance(instance.clone(), None)],
+                )
+                // event.to_proto(
+                //     &event_post,
+                //     event_author.as_ref(),
+                //     Some(&media_lookup),
+                //     &vec![(instance, None, None)],
+                // )
+            },
+        )
+        .collect())
+}
+
+fn get_user_events(
+    user_id: i64,
+    user: &Option<&models::User>,
+    conn: &mut PgPooledConnection,
+    filter: Option<TimeFilter>,
+) -> Result<Vec<MarshalableEvent>, Status> {
+    let ends_after = filter
+        .map(|f| f.ends_after.map(|t| t.to_db()))
+        .flatten()
+        .unwrap_or(SystemTime::now());
+    let public_visibilities = public_string_visibilities(user);
+
+    let _instance_posts = alias!(posts as instance_posts);
+    let _instance_users = alias!(users as instance_users);
+
+    let public = posts::visibility.eq_any(public_visibilities);
+    let limited_to_followers = posts::visibility
+        .eq(Visibility::Limited.to_string_visibility())
+        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
+    let binding = event_instances::table
+        .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
+        .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .left_join(
+            follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
+                follows::user_id
+                    .nullable()
+                    .eq(user.as_ref().map(|u| u.id).unwrap_or(0)),
+            )),
+        )
+        .select((
+            event_instances::all_columns,
+            events::all_columns,
+            posts::all_columns,
+            AUTHOR_COLUMNS.nullable(),
+        ))
+        .filter(public.or(limited_to_followers))
+        .filter(posts::user_id.eq(user_id))
+        .filter(event_instances::ends_at.gt(ends_after))
+        .order(event_instances::starts_at)
+        .limit(20)
+        .load::<(
+            models::EventInstance,
+            models::Event,
+            models::Post,
+            Option<models::Author>,
+        )>(conn)
+        .unwrap();
+    let event_data: Vec<&(
+        models::EventInstance,
+        models::Event,
+        models::Post,
+        Option<models::Author>,
     )> = binding.iter().collect();
     let mut media_ids: Vec<i64> = vec![];
     event_data
@@ -216,39 +312,33 @@ fn get_group_events(
     group_id: i64,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
-    _filter: Option<TimeFilter>,
+    filter: Option<TimeFilter>,
 ) -> Result<Vec<MarshalableEvent>, Status> {
+    let ends_after = filter
+        .map(|f| f.ends_after.map(|t| t.to_db()))
+        .flatten()
+        .unwrap_or(SystemTime::now());
     let group = models::get_group(group_id, conn)
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))?;
 
     let public_visibilities = public_string_visibilities(user);
-    let event_posts = alias!(posts as event_posts);
     let _instance_posts = alias!(posts as instance_posts);
-    let event_users = alias!(users as event_users);
+    // let users = alias!(users as users);
     let _instance_users = alias!(users as instance_users);
 
-    let public = event_posts
-        .field(posts::visibility)
-        .eq_any(public_visibilities);
-    // let limited_to_followers = event_posts
-    //     .field(posts::visibility)
+    let public = posts::visibility.eq_any(public_visibilities);
+    // let limited_to_followers = posts::visibility
     //     .eq(Visibility::Limited.to_string_visibility())
     //     .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
 
     let result = match (group.visibility.to_proto_visibility().unwrap(), user) {
         (Visibility::GlobalPublic, _) | (_, Some(_)) => event_instances::table
             .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
-            .inner_join(event_posts.on(event_posts.field(posts::id).eq(events::post_id)))
-            .inner_join(
-                group_posts::table.on(group_posts::post_id.eq(event_posts.field(posts::id))),
-            )
-            .left_join(
-                event_users.on(event_posts
-                    .field(posts::user_id)
-                    .eq(event_users.field(users::id).nullable())),
-            )
+            .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+            .inner_join(group_posts::table.on(group_posts::post_id.eq(posts::id)))
+            .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
             // .left_join(
-            //     follows::table.on(event_posts
+            //     follows::table.on(posts
             //         .field(posts::user_id)
             //         .eq(follows::target_user_id.nullable())
             //         .and(
@@ -267,17 +357,18 @@ fn get_group_events(
             .select((
                 event_instances::all_columns,
                 events::all_columns,
-                event_posts.fields(posts::all_columns),
+                posts::all_columns,
                 group_posts::all_columns,
-                event_users.fields(AUTHOR_COLUMNS).nullable(),
+                AUTHOR_COLUMNS.nullable(),
                 // instance_posts.fields(posts::all_columns).nullable(),
                 // instance_users.fields(users::all_columns).nullable(),
                 // instance_posts.field(posts::preview).is_not_null(),
             ))
             .filter(public) //.or(limited_to_followers))
+            .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
             .filter(group_posts::group_id.eq(group_id))
-            .filter(event_instances::ends_at.gt(SystemTime::now()))
-            .order(event_instances::ends_at)
+            .filter(event_instances::ends_at.gt(ends_after))
+            .order(event_instances::starts_at)
             .limit(20)
             .load::<(
                 models::EventInstance,
