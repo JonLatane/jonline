@@ -72,6 +72,8 @@ pub fn update_post(
                     .map(|m| m.id.to_db_id_or_err("media.id"))
                     .collect::<Result<Vec<i64>, Status>>()
                     .map_err(|_| diesel::result::Error::RollbackTransaction)?;
+                existing_post.embed_link = request.embed_link;
+                existing_post.shareable = request.shareable;
                 existing_post.updated_at = SystemTime::now().into();
                 // existing_post.username = request.username.to_owned();
                 // existing_post.bio = request.bio.to_owned();

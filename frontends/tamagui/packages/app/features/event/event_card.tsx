@@ -271,7 +271,7 @@ export const EventCard: React.FC<Props> = ({
   // sortedFilteredInstances
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const postLinkView = postLink
-    ? <Anchor textDecorationLine='none' {...(editing ? {} : postLink)}>
+    ? <Anchor textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
       <XStack>
         <YStack my='auto' mr='$1'>
           <Link size='$1' color={navColor} />
@@ -629,13 +629,15 @@ export const EventCard: React.FC<Props> = ({
                     setEmbedLink={setEditedEmbedLink}
                     disableInputs={savingEdits}
                   />
-                  : <PostMediaRenderer {...{
-                    post: {
-                      ...post,
-                      media,
-                      embedLink
-                    }, isPreview, groupContext, hasBeenVisible
-                  }} />}
+                  : <PostMediaRenderer
+                    horizontalPreview={horizontal && isPreview}
+                    {...{
+                      post: {
+                        ...post,
+                        media,
+                        embedLink
+                      }, isPreview, groupContext, hasBeenVisible
+                    }} />}
                 {/* {hasBeenVisible && embedComponent
                   ? <FadeInView><div>{embedComponent}</div></FadeInView>
                   : undefined}

@@ -1,15 +1,17 @@
-import { Button, Heading, Input, Label, overlayAnimation, reverseStandardAnimation, ScrollView, Sheet, SizeTokens, standardAnimation, Switch, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, Image, Input, Label, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, clearServerAlerts, createAccount, JonlineServer, useLoadingCredentialedData, login, resetCredentialedData, RootState, selectAllAccounts, selectAllServers, serverID, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector, getBackendHost, getFrontendHost } from 'app/store';
-import React, { useState, useEffect } from 'react';
-import { FlatList, Platform } from 'react-native';
+import { useMediaUrl } from 'app/hooks/use_media_url';
+import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import React, { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
+import { physicallyHostingServerId } from '../about/about_screen';
+import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
 import ServerCard from './server_card';
-import { physicallyHostingServerId } from '../about/about_screen';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -18,7 +20,7 @@ export type AccountsSheetProps = {
 }
 
 export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }: AccountsSheetProps) {
-  const media = useMedia();
+  const mediaQuery = useMedia();
   const [open, setOpen] = useState(false);
   const [browsingServers, setBrowsingServers] = useState(false);
   const [addingServer, setAddingServer] = useState(false);
@@ -133,19 +135,47 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const secureLabelUuid = uuidv4();
   const secureRequired = Platform.OS == 'web' && window.location.protocol == 'https';
   const disableSecureSelection = serversLoading || secureRequired;
+
+  const account = accountsState.account;
+  const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
+
   return (
     <>
       <Button
         size={size}
-        icon={circular ? UserIcon : open ? XIcon : ChevronDown}
+        icon={circular ? UserIcon : open ? XIcon : avatarUrl && avatarUrl != '' ? undefined : ChevronDown}
         circular={circular}
         color={serversDiffer || browsingOnDiffers ? warningAnchorColor : undefined}
         onPress={() => setOpen((x) => !x)}
+
       >
-        {circular ? undefined : <YStack>
-          {serversState.server ? <Heading transform={[{ translateY: serversState.server ? 2 : 0 }]} size='$1'>{serversState.server.host}/</Heading> : undefined}
-          {accountsState.account ? <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{accountsState.account.user.username}</Heading> : undefined}
-        </YStack>}
+        {circular ? undefined :
+          <>
+            {(avatarUrl && avatarUrl != '') ?
+
+              <XStack w={26} h={26}
+                ml={-5}
+                mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
+                <Image
+                  pos="absolute"
+                  width={26}
+                  // opacity={0.25}
+                  height={26}
+                  borderRadius={13}
+                  resizeMode="cover"
+                  als="flex-start"
+                  source={{ uri: avatarUrl, width: 26, height: 26 }}
+                // blurRadius={1.5}
+                // borderRadius={5}
+                />
+              </XStack>
+              : undefined}
+            <YStack>
+              {serversState.server ? <Heading transform={[{ translateY: serversState.server ? 2 : 0 }]} size='$1'>{serversState.server.host}/</Heading> : undefined}
+              {accountsState.account ? <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{accountsState.account.user.username}</Heading> : undefined}
+            </YStack>
+          </>
+        }
       </Button>
       <Sheet
         modal
@@ -180,7 +210,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
             <YStack maxWidth={800} width='100%' alignSelf='center'>
               {onlyShowServer && serversDiffer ? undefined : <YStack space="$2">
                 <XStack>
-                  {app.allowServerSelection && (browsingServers || media.gtXs)
+                  {app.allowServerSelection && (browsingServers || mediaQuery.gtXs)
                     ? <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
                     : undefined}
 
@@ -191,7 +221,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       {currentServerInfoLink && !onlyShowServer
                         ? <Button size='$3' mr='$2' disabled icon={<Info />} circular opacity={0} />
                         : undefined}
-                      <YStack maw={media.gtXs ? 350 : 250}>
+                      <YStack maw={mediaQuery.gtXs ? 350 : 250}>
                         <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading>
                         <Heading size='$3' als='center' marginTop='$2'>
                           {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
@@ -380,6 +410,14 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                               onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
                           </XStack>
                           : undefined}
+
+                        {loginMethod && newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
+
+                        {loginMethod === LoginMethod.CreateAccount && (server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                          ? <>
+                            <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
+                            <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                          </> : undefined}
 
                         {loginMethod
                           ? <XStack>

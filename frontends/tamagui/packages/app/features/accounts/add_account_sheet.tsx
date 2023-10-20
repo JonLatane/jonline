@@ -2,6 +2,7 @@ import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YSt
 import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
 import { accountId, clearAccountAlerts, createAccount, login, RootState, selectAllAccounts, serverID, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
+import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import AccountCard from './account_card';
 
 export type AddAccountSheetProps = {
@@ -104,7 +105,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
         onPositionChange={setPosition}
       // dismissOnSnapToBottom
       >
-        <Sheet.Overlay  />
+        <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
           <Button
@@ -195,6 +196,13 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                         Login
                       </Button>
                     </XStack>}
+
+                  {loginMethod === LoginMethod.CreateAccount && (server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                    ? <>
+                      {newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
+                      <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
+                      <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                    </> : undefined}
 
                   {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
                   {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}

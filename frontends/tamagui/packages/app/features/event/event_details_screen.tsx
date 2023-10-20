@@ -89,10 +89,12 @@ export function EventDetailsScreen() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const [hasLoadedReplies, setHasLoadedReplies] = useState(false);
   useEffect(() => {
     if (chatUI && (app?.autoRefreshDiscussions ?? true)) {
       if (!_nextChatReplyRefresh || moment().isAfter(_nextChatReplyRefresh)) {
-        const intervalSeconds = app?.discussionRefreshIntervalSeconds || 6;
+        const intervalSeconds = app?.discussionRefreshIntervalSeconds ?? 6;
+        if (!hasLoadedReplies) setHasLoadedReplies(true);
         _nextChatReplyRefresh = moment().add(intervalSeconds, 'second');
         const wasAtBottom = isClient && !showScrollPreserver &&
           document.body.scrollHeight - _viewportHeight - window.scrollY < 100;

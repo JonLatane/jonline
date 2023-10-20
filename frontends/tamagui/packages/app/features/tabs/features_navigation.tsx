@@ -3,7 +3,7 @@ import { JonlineServer, setInlineFeatureNavigation } from 'app/store';
 import { Button, Heading, Popover, ScrollView, XStack, YStack, useMedia } from '@jonline/ui';
 import { useAccount, useLocalApp, useServerTheme } from 'app/store';
 import { useLink } from "solito/link";
-import { AlertTriangle, Menu } from "@tamagui/lucide-icons";
+import { AlertTriangle, Menu, Circle, SeparatorVertical } from "@tamagui/lucide-icons";
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export enum AppSection {
@@ -79,6 +79,7 @@ export type FeaturesNavigationProps = {
 
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, groupPageForwarder }: FeaturesNavigationProps) {
   const account = useAccount();
+  const mediaQuery = useMedia();
   const { primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
 
   const latestLink = useLink({
@@ -105,19 +106,20 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
 
   const inlineNavigation = useInlineFeatureNavigation();
+  const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
 
-  const firstRow = <>
+  const postsEventsRow = <>
     {navButton(isLatest, latestLink, sectionTitle(AppSection.HOME))}
     {navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS))}
     {navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS))}
   </>;
 
-  const secondRow = <>
+  const peopleRow = <>
     {navButton(isPeople, peopleLink, 'People')}
     {account ? navButton(isFollowRequests, followRequestsLink, 'Follow Requests') : undefined}
   </>;
 
-  const thirdRow = <>
+  const myDataRow = <>
     {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
   </>
 
@@ -148,14 +150,22 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         </Button>
       </Popover.Close>;
   }
+
+  const inlineSeparator = inlineNavSeparators
+    ? <XStack my='auto'>
+      <SeparatorVertical color={primaryTextColor} size='$1' />
+    </XStack>
+    : undefined;
   return inlineNavigation
     ? <>
       <XStack w={selectedGroup ? 11 : 3.5} />
       {triggerButton}
       <XStack space='$2' ml='$1' my='auto'>
-        {firstRow}
-        {secondRow}
-        {thirdRow}
+        {postsEventsRow}
+        {inlineSeparator}
+        {peopleRow}
+        {inlineSeparator}
+        {myDataRow}
       </XStack>
     </>
     : <>
@@ -186,13 +196,13 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
           <YStack space="$3">
             <XStack ac='center' jc='center' space='$2'>
-              {firstRow}
+              {postsEventsRow}
             </XStack>
             <XStack ac='center' jc='center' space='$2'>
-              {secondRow}
+              {peopleRow}
             </XStack>
             <XStack ac='center' jc='center' space='$2'>
-              {thirdRow}
+              {myDataRow}
             </XStack>
           </YStack>
         </Popover.Content>

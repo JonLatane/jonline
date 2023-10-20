@@ -145,6 +145,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
             </YStack>
             : <YStack f={1} w='100%' key={`post-list`}// animation='quick' {...standardAnimation}
             >
+            <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
               {posts.map((post) => {
                 return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
               })}

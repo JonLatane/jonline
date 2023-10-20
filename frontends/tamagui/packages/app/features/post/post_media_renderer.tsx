@@ -16,13 +16,15 @@ interface PostMediaRendererProps {
   isPreview?: boolean;
   groupContext?: Group;
   hasBeenVisible?: boolean;
+  horizontalPreview?: boolean;
 }
 
 export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   post,
   isPreview,
   groupContext,
-  hasBeenVisible
+  hasBeenVisible,
+  horizontalPreview
 }) => {
   const mediaQuery = useMedia();
   const { primaryColor } = useServerTheme();
@@ -68,6 +70,8 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const backgroundSize = postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
+  const singlePreviewSize = horizontalPreview ? 300 : foregroundSize;
+
   return <YStack zi={1000} width='100%'>
     {hasBeenVisible && embedComponent && false
       ? <FadeInView><div>{embedComponent}</div></FadeInView>
@@ -87,7 +91,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       </XStack> : undefined}
 
     <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-      <YStack maxHeight={isPreview ? 300 : undefined} overflow='hidden'>
+      <YStack maxHeight={isPreview ? horizontalPreview ? 150 : 300 : undefined} overflow='hidden'>
         {singleMediaPreview
           ? <Image
             mb='$3'
@@ -97,7 +101,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
             // height={foregroundSize}
             resizeMode="contain"
             als="center"
-            source={{ uri: singleMediaPreviewUrl, height: foregroundSize, width: foregroundSize }}
+            source={{ uri: singleMediaPreviewUrl, height: singlePreviewSize, width: singlePreviewSize }}
             borderRadius={10}
           /> : undefined}
       </YStack>

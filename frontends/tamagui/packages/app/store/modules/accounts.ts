@@ -77,6 +77,20 @@ export const accountsSlice = createSlice({
         }
         //TODO does this work as expected?
       }
+    },
+    moveAccountUp: (state, action: PayloadAction<string>) => {
+      const index = state.ids.indexOf(action.payload);
+      if (index > 0) {
+        const element = state.ids.splice(index, 1)[0]!;
+        state.ids.splice(index - 1, 0, element);
+      }
+    },
+    moveAccountDown: (state, action: PayloadAction<string>) => {
+      const index = state.ids.indexOf(action.payload);
+      if (index < state.ids.length - 1) {
+        const element = state.ids.splice(index, 1)[0]!;
+        state.ids.splice(index + 1, 0, element);
+      }
     }
   },
   extraReducers: (builder) => {
@@ -127,7 +141,7 @@ export const accountsSlice = createSlice({
   },
 });
 
-export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts, upsertUserData } = accountsSlice.actions;
+export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts, upsertUserData, moveAccountUp, moveAccountDown } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;

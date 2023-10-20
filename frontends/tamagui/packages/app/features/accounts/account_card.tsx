@@ -1,9 +1,9 @@
 import { Permission } from "@jonline/api";
 import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia } from "@jonline/ui";
 
-import { Bot, Shield, Delete, User as UserIcon } from "@tamagui/lucide-icons";
+import { Bot, Shield, Delete, User as UserIcon, ChevronUp, ChevronDown } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { JonlineAccount, accountId, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
+import { JonlineAccount, accountId, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
@@ -29,6 +29,12 @@ const AccountCard: React.FC<Props> = ({ account }) => {
 
   function doLogout() {
     dispatch(selectAccount(undefined));
+  }
+  function  moveUp() {
+    dispatch(moveAccountUp(accountId(account)!));
+  }
+  function  moveDown() {
+    dispatch(moveAccountDown(accountId(account)!));
   }
   const avatarUrl = useMediaUrl(account.user.avatar?.id, { account, server: account.server });
   const mediaQuery = useMedia();
@@ -81,7 +87,12 @@ const AccountCard: React.FC<Props> = ({ account }) => {
               <Paragraph size='$1' alignSelf="center">{account.user.id}</Paragraph>
             </YStack>
             <YStack f={1} />
-            {selected ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button> : undefined}
+            {selected
+              ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button>
+              : <XStack my='auto' space='$2' mr='$3'>
+                <Button size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
+                <Button size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
+              </XStack>}
 
             <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$3' />
             <Dialog>
