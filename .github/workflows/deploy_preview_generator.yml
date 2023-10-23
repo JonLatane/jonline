@@ -98,8 +98,8 @@ jobs:
   # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server.yaml
   # have the same version number.
   deploy_to_bullcitysocial:
-    name: Deploy to BullCity.social
-    needs: build_and_deliver
+    name: Deploy to Bull City Social
+    needs: deploy_to_jonlineio
     runs-on: ubuntu-latest
 
     steps:
@@ -127,8 +127,8 @@ jobs:
   # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server.yaml
   # have the same version number.
   deploy_to_oakcitysocial:
-    name: Deploy to OakCity.social
-    needs: build_and_deliver
+    name: Deploy to Oak City Social
+    needs: deploy_to_jonlineio
     runs-on: ubuntu-latest
 
     steps:
