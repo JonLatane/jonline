@@ -16,7 +16,7 @@ on:
 
 jobs:
   build_and_deliver:
-    name: Build hub.docker.com/r/JonLatane/jonline
+    name: Build jonline
     runs-on: ubuntu-latest
 
     steps:
