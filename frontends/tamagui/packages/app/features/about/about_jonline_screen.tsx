@@ -3,6 +3,7 @@ import { RootState, selectAllPosts, useCredentialDispatch, useTypedSelector } fr
 import React, { useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import { TabsNavigation } from '../tabs/tabs_navigation';
+import { Container, Github } from '@tamagui/lucide-icons';
 
 const quotes = [
   'I read about it Jonline',
@@ -43,18 +44,27 @@ export function AboutJonlineScreen() {
             to make it easy to link to posts and events from other networks/local businesses;{' '}
             and to be intuitive and fun for customers, members, and administrators alike.
           </Paragraph>
+          <AboutListItem>
+            <XStack flexWrap='wrap' space='$2'>
+              <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
+                <XStack space='$2'>
+                  <YStack my='auto'><Github color={navColor} /></YStack>
+                  <Paragraph color={navColor} my='auto'>GitHub: https://github.com/JonLatane/jonline</Paragraph>
+                </XStack>
+              </Anchor>
+              <Paragraph>(released under the AGPLv3)</Paragraph>
+            </XStack>
+          </AboutListItem>
+          <AboutListItem mb='$3'>
+            <Anchor color={navColor} href="https://hub.docker.com/r/jonlatane/jonline" target="_blank">
+              <XStack space='$2'>
+                <YStack my='auto'><Container color={navColor} /></YStack>
+                <Paragraph color={navColor} my='auto'>DockerHub: https://hub.docker.com/r/jonlatane/jonline</Paragraph>
+              </XStack>
+            </Anchor>
+          </AboutListItem>
           {showTechDetails
             ? <>
-              <AboutListItem>
-                <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
-                  Jonline on GitHub (give it a ⭐️!)
-                </Anchor> (released under the AGPLv3)
-              </AboutListItem>
-              <AboutListItem mb='$3'>
-                <Anchor color={navColor} href="https://hub.docker.com/r/jonlatane/jonline" target="_blank">
-                  Jonline on DockerHub
-                </Anchor>
-              </AboutListItem>
               <Paragraph ta="left">
                 You're reading this from Jonline's{' '}
                 <Anchor color={navColor} href="https://github.com/JonLatane/jonline/tree/main/frontends/tamagui" target="_blank">

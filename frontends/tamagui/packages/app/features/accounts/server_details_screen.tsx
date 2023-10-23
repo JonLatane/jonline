@@ -1,6 +1,6 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration } from '@jonline/api'
 import { Button, Heading, Input, Paragraph, ScrollView, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
-import { Info } from '@tamagui/lucide-icons'
+import { Github, Info } from '@tamagui/lucide-icons'
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { HexColorPicker } from "react-colorful"
@@ -222,10 +222,13 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <Paragraph>{serviceVersion?.version}</Paragraph>
                 </XStack>
                 {githubVersion
-                  ? <Button {...githubLink} mt='$3' {...themedButtonBackground(navColor, navTextColor)} size='$3' iconAfter={Info}>
+                  ? <Button {...githubLink} mt='$2' {...themedButtonBackground(navColor, navTextColor)} size='$3' iconAfter={Github}>
                     <Heading size='$2' color={navTextColor}>View {githubVersion} on GitHub</Heading>
                   </Button>
                   : undefined}
+                <Button {...aboutJonlineLink} mt='$2' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
+                  <Heading size='$2' color={navTextColor}>About Jonline...</Heading>
+                </Button>
                 <Heading size='$3'>Name</Heading>
                 {isAdmin
                   ? <Input value={name ?? ''} opacity={name && name != '' ? 1 : 0.5}
@@ -366,10 +369,6 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       </Paragraph>}
                   </YStack>
                   : undefined}
-
-                <Button {...aboutJonlineLink} mt='$3' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
-                  <Heading size='$2' color={navTextColor}>About Jonline...</Heading>
-                </Button>
 
                 {isWeb && isAdmin ? <YStack h={50} /> : undefined}
               </YStack>
