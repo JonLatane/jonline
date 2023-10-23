@@ -123,7 +123,9 @@ jobs:
   # have the same version number.
   deploy_to_bullcitysocial:
     name: Deploy to Bull City Social
-    needs: build_and_deliver
+    needs: 
+      - build_and_deliver
+      - deploy_to_jonlineio
     runs-on: ubuntu-latest
 
     steps:
@@ -155,7 +157,9 @@ jobs:
   # have the same version number.
   deploy_to_oakcitysocial:
     name: Deploy to Oak City Social
-    needs: build_and_deliver
+    needs: 
+      - build_and_deliver
+      - deploy_to_jonlineio
     runs-on: ubuntu-latest
 
     steps:
