@@ -16,7 +16,7 @@ on:
 
 jobs:
   build_and_deliver:
-    name: Build and Deliver
+    name: Build hub.docker.com/r/JonLatane/jonline_preview_generator
     runs-on: ubuntu-latest
     env:
       BE_VERSION:
