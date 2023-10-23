@@ -17,7 +17,8 @@ import 'package:http/http.dart' as http;
 extension JonlineClients on JonlineAccount {
   static final log = Logger('JonlineClients');
 
-  static Future<JonlineClient> _createClient(String server, bool secure) async {
+  static Future<JonlineClient> _createClient(
+      String server, bool secure, int port) async {
     var host = server;
     log.warning("_createClient $server $secure", Exception("hi"));
     try {
@@ -38,7 +39,8 @@ extension JonlineClients on JonlineAccount {
     final ChannelCredentials credentials = secure
         ? const ChannelCredentials.secure()
         : const ChannelCredentials.insecure();
-    final ClientChannelBase channel = createJonlineChannel(host, credentials);
+    final ClientChannelBase channel =
+        createJonlineChannel(host, credentials, port);
     return JonlineClient(channel);
   }
 
@@ -51,27 +53,31 @@ extension JonlineClients on JonlineAccount {
     // use this "if" block instead.
     log.warning("createAndTestClient", server);
     if (server != "localhost") {
-      try {
-        client = await _createClient(server, true);
-        serviceVersion = (await client.getServiceVersion(Empty())).version;
-      } catch (e) {
-        if (!allowInsecure) {
-          showMessage?.call("Failed to connect to \"$server\" securely!");
+      for (final port in [443, 27707]) {
+        try {
+          client = await _createClient(server, true, port);
+          serviceVersion = (await client.getServiceVersion(Empty())).version;
+        } catch (e) {
+          if (!allowInsecure) {
+            showMessage?.call("Failed to connect to \"$server\" securely!");
+          }
+          client = null;
         }
-        client = null;
       }
     }
 
     if (allowInsecure && serviceVersion == null) {
       await communicationDelay;
-      try {
-        // showMessage?.call("Trying to connect to \"$server\" insecurely...");
-        client = await _createClient(server, false);
-        serviceVersion = (await client.getServiceVersion(Empty())).version;
-        showMessage?.call("Connected to \"$server\" insecurely 🤨");
-      } catch (e) {
-        showMessage?.call("Failed to connect to \"$server\" insecurely!");
-        return null;
+      for (final port in [27707, 443]) {
+        try {
+          // showMessage?.call("Trying to connect to \"$server\" insecurely...");
+          client = await _createClient(server, false, port);
+          serviceVersion = (await client.getServiceVersion(Empty())).version;
+          showMessage?.call("Connected to \"$server\" insecurely 🤨");
+        } catch (e) {
+          showMessage?.call("Failed to connect to \"$server\" insecurely!");
+          return null;
+        }
       }
     }
     // if (client != null) {

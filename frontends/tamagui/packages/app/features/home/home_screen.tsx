@@ -1,7 +1,7 @@
 import { EventListingType, Group, PostListingType } from '@jonline/api';
-import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, standardFadeAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks/pagination_hooks';
+import { useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks';
 import { RootState, setShowEventsOnLatest, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -145,7 +145,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
             </YStack>
             : <YStack f={1} w='100%' key={`post-list`}// animation='quick' {...standardAnimation}
             >
-            <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
+              <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
               {posts.map((post) => {
                 return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
               })}

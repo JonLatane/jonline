@@ -79,11 +79,6 @@ pub fn get_posts(
 
 macro_rules! filter_visible_posts {
     ($user:expr) => {{
-        let public_visibilities = public_string_visibilities($user);
-        let public = posts::visibility.eq_any(public_visibilities);
-        let limited_to_followers = posts::visibility
-            .eq(Visibility::Limited.to_string_visibility())
-            .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)));
         posts::table
             .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
             .left_join(
@@ -91,9 +86,51 @@ macro_rules! filter_visible_posts {
                     .eq(follows::target_user_id.nullable())
                     .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))),
             )
-            .filter(public.or(limited_to_followers))
+            .filter(visible_to_current_user!($user))
     }};
 }
+
+// #[macro_export]
+macro_rules! visible_to_current_user {
+    ($user:expr) => {{
+        posts::visibility.eq_any(public_string_visibilities($user))
+            .or(posts::visibility
+                .eq(Visibility::Limited.to_string_visibility())
+                .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
+            .or(posts::visibility
+                .eq(Visibility::Private.to_string_visibility())
+                .and(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
+    }};
+}
+// pub(crate) use visible_to_current_user;
+
+// #[macro_export]
+// macro_rules! post_public {
+//     ($user:expr) => {{
+//         posts::visibility.eq_any(public_string_visibilities($user))
+//     }};
+// }
+// pub(crate) use post_public;
+
+// #[macro_export]
+// macro_rules! limited_to_followers {
+//     ($user:expr) => {{
+//         posts::visibility
+//             .eq(Visibility::Limited.to_string_visibility())
+//             .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))
+//     }};
+// }
+// pub(crate) use limited_to_followers;
+
+// #[macro_export]
+// macro_rules! private_to_current_user {
+//     ($user:expr) => {{
+//         posts::visibility
+//             .eq(Visibility::Private.to_string_visibility())
+//             .and(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))
+//     }};
+// }
+// pub(crate) use private_to_current_user;
 
 fn get_by_post_id(
     user: &Option<&models::User>,
@@ -132,11 +169,6 @@ fn get_public_and_following_posts(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Vec<MarshalablePost> {
-    let public_visibilities = public_string_visibilities(user);
-    let public = posts::visibility.eq_any(public_visibilities);
-    let limited_to_followers = posts::visibility
-        .eq(Visibility::Limited.to_string_visibility())
-        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
     posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .left_join(
@@ -146,7 +178,7 @@ fn get_public_and_following_posts(
         )
         .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         // .filter(posts::visibility.eq_any(visibilities))
-        .filter(public.or(limited_to_followers))
+        .filter(visible_to_current_user!(user))
         .filter(posts::parent_post_id.is_null())
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(posts::user_id.is_not_null())

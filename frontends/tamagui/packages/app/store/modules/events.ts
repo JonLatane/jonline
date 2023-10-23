@@ -15,6 +15,7 @@ import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 import postsReducer, { locallyUpsertPost, postsAdapter, upsertPost } from "./posts";
 import { store } from "../store";
+import { TimeFilter } from '../../../api/generated/events';
 export * from './event_actions';
 
 export interface EventsState {
@@ -35,11 +36,15 @@ export interface EventsState {
 }
 
 // Stores pages of listed event *instances* for listing types used in the UI.
-// i.e.: eventPages[EventListingType.PUBLIC_EVENTS][0] -> ["eventInstanceId1", "eventInstanceId2"].
+// i.e.: eventPages[EventListingType.PUBLIC_EVENTS]['{"ends_after":null}'][0]:  -> ["eventInstanceId1", "eventInstanceId2"].
 // Events should be loaded from the adapter/slice's entities.
-// Maps EventListingType -> page (as a number) -> eventInstanceIds
-export type GroupedEventInstancePages = Dictionary<Dictionary<string[]>>
-
+// Maps EventListingType -> serialized timeFilter-> page (as a number) -> eventInstanceIds
+export type GroupedEventInstancePages = Dictionary<Dictionary<Dictionary<string[]>>>
+export const unfilteredTime = 'unfiltered';
+export function serializeTimeFilter(filter: TimeFilter | undefined): string {
+  if (!filter) return unfilteredTime;
+  return JSON.stringify(TimeFilter.toJSON(filter ?? TimeFilter.create()));
+};
 
 export const eventsAdapter: EntityAdapter<Event> = createEntityAdapter<Event>({
   selectId: (event) => event.id,
@@ -85,8 +90,9 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       console.log('created event from server', action.payload);
       if (publicVisibility(action.payload.post?.visibility)) {
         state.eventInstancePages[defaultEventListingType] = state.eventInstancePages[defaultEventListingType] || {};
-        const firstPage = state.eventInstancePages[defaultEventListingType][0] || [];
-        state.eventInstancePages[defaultEventListingType][0] = [action.payload.id, ...firstPage];
+        state.eventInstancePages[defaultEventListingType][unfilteredTime] = state.eventInstancePages[defaultEventListingType][unfilteredTime] || {};
+        const firstPage = state.eventInstancePages[defaultEventListingType][unfilteredTime][0] || [];
+        state.eventInstancePages[defaultEventListingType][unfilteredTime][0] = [action.payload.id, ...firstPage];
       }
       state.successMessage = `Event created.`;
     });
@@ -156,8 +162,10 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
 
-      if (!state.eventInstancePages[listingType] || page === 0) state.eventInstancePages[listingType] = {};
-      const eventPages: Dictionary<string[]> = state.eventInstancePages[listingType]!;
+      const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
+      if (!state.eventInstancePages[listingType]) state.eventInstancePages[listingType] = {};
+      if (!state.eventInstancePages[listingType]![serializedFilter] || page === 0) state.eventInstancePages[listingType]![serializedFilter] = {};
+      const eventPages: Dictionary<string[]> = state.eventInstancePages[listingType]![serializedFilter] ?? {};
       // Sensible approach:
       // eventPages[page] = postIds;
 
@@ -169,10 +177,10 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       const chunkSize = 7;
       for (let i = 0; i < instanceIds.length; i += chunkSize) {
         const chunk = instanceIds.slice(i, i + chunkSize);
-        state.eventInstancePages[listingType]![initialPage + (i / chunkSize)] = chunk;
+        state.eventInstancePages[listingType]![serializedFilter]![initialPage + (i / chunkSize)] = chunk;
       }
-      if (state.eventInstancePages[listingType]![0] == undefined) {
-        state.eventInstancePages[listingType]![0] = [];
+      if (state.eventInstancePages[listingType]![serializedFilter]![0] === undefined) {
+        state.eventInstancePages[listingType]![serializedFilter]![0] = [];
       }
 
       state.successMessage = `Events loaded.`;

@@ -13,7 +13,7 @@ import PostCard from './post_card'
 import { TamaguiMarkdown } from './tamagui_markdown'
 import { AppSection } from '../tabs/features_navigation'
 import { TextInput } from 'react-native'
-import { ReplyArea, isReplyTextFocused } from './reply_area'
+import { ReplyArea } from './reply_area'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -46,7 +46,7 @@ export function PostDetailsScreen() {
   const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());
   const [expandAnimation, setExpandAnimation] = useState(true);
   const [editingPosts, setEditingPosts] = useState([] as string[]);
-  const editHandler = (postId: string) => ((editing:boolean) => {
+  const editHandler = (postId: string) => ((editing: boolean) => {
     if (editing) {
       setEditingPosts([...editingPosts, postId]);
     } else {
@@ -62,11 +62,11 @@ export function PostDetailsScreen() {
   const { width, height: windowHeight } = useWindowDimensions();
   function scrollToBottom() {
     if (!isClient) return;
-    if (isReplyTextFocused() && windowHeight > 0) {
-      window.scrollTo({ top: document.body.scrollHeight - _viewportHeight, behavior: 'smooth' });
-    } else {
+    // if (isReplyTextFocused() && windowHeight > 0) {
+    //   window.scrollTo({ top: document.body.scrollHeight - _viewportHeight, behavior: 'smooth' });
+    // } else {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    }
+    // }
   }
   function scrollToTop() {
     if (!isClient) return;
@@ -303,7 +303,7 @@ export function PostDetailsScreen() {
                         return <YStack w={7} bg={stripeColor} />
                       })}
                       <XStack f={1}>
-                        <PostCard key={`comment-post-${reply.id}`} 
+                        <PostCard key={`comment-post-${reply.id}`}
                           post={reply} replyPostIdPath={postIdPath}
                           selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
                           collapseReplies={collapsedReplies.has(reply.id)}
@@ -341,9 +341,7 @@ export function PostDetailsScreen() {
               </>
             </XStack>
           </ScrollView>
-          {showReplyArea ?
-            <ReplyArea replyingToPath={replyPostIdPath} />
-            : undefined}
+          <ReplyArea replyingToPath={replyPostIdPath} hidden={!showReplyArea} />
 
         </YStack>
       }

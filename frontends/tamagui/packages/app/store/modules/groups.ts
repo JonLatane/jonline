@@ -11,7 +11,7 @@ import {
   Slice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import { GroupedEventInstancePages } from "./events";
+import { GroupedEventInstancePages, serializeTimeFilter } from "./events";
 import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroups } from "./group_actions";
 import { store } from "../store";
 import { passes } from "app/utils/moderation_utils";
@@ -197,8 +197,12 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
       const groupId = action.meta.arg.groupId;
       const page = action.meta.arg.page;
-      if (!state.groupEventPages[groupId] || page === 0) state.groupEventPages[groupId] = {};
-      const eventPages: Dictionary<string[]> = state.groupEventPages[groupId]!;
+
+      const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
+      if (!state.groupEventPages[groupId]) state.groupEventPages[groupId] = {};
+      if (!state.groupEventPages[groupId]![serializedFilter] || page === 0) state.groupEventPages[groupId]![serializedFilter] = {};
+
+      const eventPages: Dictionary<string[]> = state.groupEventPages[groupId]![serializedFilter]!;
       // Sensible approach:
       // postPages[page] = postIds;
 
@@ -210,10 +214,10 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       const chunkSize = 7;
       for (let i = 0; i < eventInstanceIds.length; i += chunkSize) {
         const chunk = eventInstanceIds.slice(i, i + chunkSize);
-        state.groupEventPages[groupId]![initialPage + (i / chunkSize)] = chunk;
+        state.groupEventPages[groupId]![serializedFilter]![initialPage + (i / chunkSize)] = chunk;
       }
-      if (state.groupEventPages[groupId]![0] == undefined) {
-        state.groupEventPages[groupId]![0] = [];
+      if (state.groupEventPages[groupId]![serializedFilter]![0] == undefined) {
+        state.groupEventPages[groupId]![serializedFilter]![0] = [];
       }
 
       state.successMessage = `Group Events for ${action.meta.arg.groupId} loaded.`;

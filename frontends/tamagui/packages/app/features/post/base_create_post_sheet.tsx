@@ -1,7 +1,7 @@
 import { Group, MediaReference, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
-import { RootState, clearPostAlerts, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
@@ -30,6 +30,28 @@ export type BaseCreatePostSheetProps = {
     group: Group | undefined) => JSX.Element;
   onFreshOpen?: () => void;
   invalid?: boolean;
+}
+
+export const postVisibilityDescription = (
+  v: Visibility, 
+  group: Group | undefined,
+  server: JonlineServer | undefined,
+  entity: string = 'post'
+) => {
+  switch (v) {
+    case Visibility.PRIVATE:
+      return `Only you can see this ${entity}.`;
+    case Visibility.LIMITED:
+      return group
+        ? `Only your followers and members of ${group.name} can see this ${entity}.`
+        : 'Only your followers and groups you choose can see this ${entity}.';
+    case Visibility.SERVER_PUBLIC:
+      return `Anyone on ${server?.serverConfiguration?.serverInfo?.name ?? 'this server'} can see this ${entity}.`;
+    case Visibility.GLOBAL_PUBLIC:
+      return `Anyone on the internet can see this ${entity}.`;
+    default:
+      return 'Unknown';
+  }
 }
 
 export enum RenderType { Edit, FullPreview, ShortPreview }
@@ -248,22 +270,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                     label='Post Visibility'
                     visibility={visibility}
                     onChange={setVisibility}
-                    visibilityDescription={(v) => {
-                      switch (v) {
-                        case Visibility.PRIVATE:
-                          return 'Only you can see this post.';
-                        case Visibility.LIMITED:
-                          return group
-                            ? `Only your followers and members of ${group.name} can see this post.`
-                            : 'Only your followers and groups you choose can see this post.';
-                        case Visibility.SERVER_PUBLIC:
-                          return 'Anyone on this server can see this post.';
-                        case Visibility.GLOBAL_PUBLIC:
-                          return 'Anyone on the internet can see this post.';
-                        default:
-                          return 'Unknown';
-                      }
-                    }} />
+                    visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
                   <ToggleRow
                     // key={`'create-post-shareable-${shareable}`} 
                     name={

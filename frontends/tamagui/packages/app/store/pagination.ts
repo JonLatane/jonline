@@ -1,7 +1,8 @@
 import { Event, EventInstance, EventListingType, Post, PostListingType } from "@jonline/api";
-import { EventsState, GroupsState, PostsState, selectEventById, selectPostById } from "./modules";
+import { EventsState, GroupsState, PostsState, selectEventById, selectPostById, serializeTimeFilter } from "./modules";
 import { RootState } from "./store";
 import { Dictionary } from "@reduxjs/toolkit";
+import { TimeFilter } from '../../api/generated/events';
 
 
 /**
@@ -52,8 +53,8 @@ export function getHasMorePostPages(posts: PostsState, listingType: PostListingT
   return ((posts.postPages[listingType] ?? {})[currentPage]?.length ?? 0) > 0;
 }
 
-function getEventsPage(events: EventsState, listingType: EventListingType, page: number): Event[] {
-  const pageInstaceIds: string[] = (events.eventInstancePages[listingType] ?? {})[page] ?? [];
+function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number): Event[] {
+  const pageInstaceIds: string[] = ((events.eventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
   const pageInstances = pageInstaceIds.map(id => events.instances[id]).filter(p => p) as EventInstance[];
   const pageEvents = pageInstances.map(instance => {
     const event = selectEventById(events, instance.eventId);
@@ -62,21 +63,22 @@ function getEventsPage(events: EventsState, listingType: EventListingType, page:
   return pageEvents;
 }
 
-export function getEventPages(events: EventsState, listingType: EventListingType, throughPage: number): Event[] {
+export function getEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number): Event[] {
   const result: Event[] = [];
   for (let page = 0; page <= throughPage; page++) {
-    const pageEvents = getEventsPage(events, listingType, page);
+    const pageEvents = getEventsPage(events, listingType, timeFilter, page);
+    // debugger;
     result.push(...pageEvents.filter(e => e.post?.author != undefined));
   }
   return result;
 }
 
-export function getHasEventsPage(events: EventsState, listingType: EventListingType, page: number): boolean {
-  return (events.eventInstancePages[listingType] ?? {})[page] != undefined;
+export function getHasEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number): boolean {
+  return ((events.eventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] != undefined;
 }
 
-export function getHasMoreEventPages(events: EventsState, listingType: EventListingType, currentPage: number): boolean {
-  return ((events.eventInstancePages[listingType] ?? {})[currentPage]?.length ?? 0) > 0;
+export function getHasMoreEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, currentPage: number): boolean {
+  return (((events.eventInstancePages[listingType] ?? {})[timeFilter] ?? {})[currentPage]?.length ?? 0) > 0;
 }
 
 
@@ -106,9 +108,9 @@ export function getHasMoreGroupPostPages(groups: GroupsState, groupId: string, c
 }
 
 
-function getGroupEventsPage(state: RootState, groupId: string, page: number): Event[] {
+function getGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): Event[] {
   const { events, groups } = state;
-  const pageInstaceIds: string[] = (groups.groupEventPages[groupId] ?? {})[page] ?? [];
+  const pageInstaceIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
   const pageInstances = pageInstaceIds.map(id => events.instances[id]).filter(p => p) as EventInstance[];
   const pageEvents = pageInstances.map(instance => {
     const event = selectEventById(events, instance.eventId);
@@ -117,20 +119,22 @@ function getGroupEventsPage(state: RootState, groupId: string, page: number): Ev
   return pageEvents;
 }
 
-export function getGroupEventPages(state: RootState, groupId: string, throughPage: number): Event[] {
+export function getGroupEventPages(state: RootState, groupId: string, timeFilter: string, throughPage: number): Event[] {
   const result: Event[] = [];
+
   for (let page = 0; page <= throughPage; page++) {
-    const pageEvents = getGroupEventsPage(state, groupId, page);
+    const pageEvents = getGroupEventsPage(state, groupId, timeFilter, page);
+    // debugger;
     result.push(...pageEvents);
   }
   return result;
 }
 
-export function getHasGroupEventsPage(groups: GroupsState, groupId: string, page: number): boolean {
-  return (groups.groupEventPages[groupId] ?? {})[page] != undefined;
+export function getHasGroupEventsPage(groups: GroupsState, groupId: string, timeFilter: string, page: number): boolean {
+  return ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] != undefined;
 }
 
-export function getHasMoreGroupEventPages(groups: GroupsState, groupId: string, currentPage: number): boolean {
-  return ((groups.groupEventPages[groupId] ?? {})[currentPage]?.length ?? 0) > 0;
+export function getHasMoreGroupEventPages(groups: GroupsState, groupId: string, timeFilter: string, currentPage: number): boolean {
+  return (((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[currentPage]?.length ?? 0) > 0;
 }
 

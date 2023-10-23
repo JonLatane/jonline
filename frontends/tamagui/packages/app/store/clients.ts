@@ -11,34 +11,49 @@ const loadingClients = new Set<string>();
 // Creates a client and upserts the server into the store.
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {
   const serverId = serverID(server);
-  let retries = 5;
+  // TODO: Why does this fail miserable if using port 443?
+  const ports = [27707, 443];
+  const totalRetries = 5 * ports.length;
+  let remainingRetries = totalRetries;
   while (!clients.has(serverId)) {
     if (loadingClients.has(serverId)) {
       await new Promise((res) => setTimeout(res, 200));
     } else {
       loadingClients.add(serverId);
       try {
-        // Resolve the actual backend server from its backend_host endpoint
-        const backendHost = await window.fetch(
-          `${server.secure ? 'https' : 'http'}://${server.host}/backend_host`
-        ).then(async (r) => {
-          const domain = await r.text();
-          if (domain == '') return undefined;
-          return domain;
-        }).catch((e) => {
-          console.error(e);
-          return undefined;
-        }) ?? server.host;
+        const portIndex = (totalRetries - remainingRetries) % ports.length;
+        const port = ports[portIndex]!;
+        console.log(`Creating client for ${serverId} on port ${port} (${portIndex})`);
+        const client = await clientForServer(
+          server,
+          port
+        );
+        if (client) {
 
-        // Get the gRPC client
-        const host = `${serverID({ ...server, host: backendHost }).replace(":", "://")}:27707`;
-        const client = await createClient(host, server);
-        return client;
+          return client;
+        }
+        throw "Failed to load client";
+        // Resolve the actual backend server from its backend_host endpoint
+        // const backendHost = await window.fetch(
+        //   `${server.secure ? 'https' : 'http'}://${server.host}/backend_host`
+        // ).then(async (r) => {
+        //   const domain = await r.text();
+        //   if (domain == '') return undefined;
+        //   return domain;
+        // }).catch((e) => {
+        //   console.error(e);
+        //   return undefined;
+        // }) ?? server.host;
+
+        // // Get the gRPC client
+        // const host = `${serverID({ ...server, host: backendHost }).replace(":", "://")}:27707`;
+        // const client = await createClient(host, server);
+        // return client;
       } catch (e) {
-        if (retries-- == 0) {
+        if (remainingRetries-- == 0) {
           throw e;
         } else {
-          console.warn(`Failed to load Jonline client for ${serverId}, retrying ${retries} more times...`, e);
+          console.warn(`Failed to load Jonline client for ${serverId}, retrying ${remainingRetries} more times...`, e);
         }
       } finally {
         loadingClients.delete(serverId);
@@ -47,6 +62,25 @@ export async function getServerClient(server: JonlineServer): Promise<Jonline> {
   }
 
   return clients.get(serverId)!;
+}
+
+async function clientForServer(server: JonlineServer, port: number): Promise<JonlineClientImpl | undefined> {
+  // Resolve the actual backend server from its backend_host endpoint
+  const backendHost = await window.fetch(
+    `${server.secure ? 'https' : 'http'}://${server.host}/backend_host`
+  ).then(async (r) => {
+    const domain = await r.text();
+    if (domain == '') return undefined;
+    return domain;
+  }).catch((e) => {
+    console.error(e);
+    return undefined;
+  }) ?? server.host;
+
+  // Get the gRPC client
+  const host = `${serverID({ ...server, host: backendHost }).replace(":", "://")}:${port}`;
+  const client = await createClient(host, server);
+  return client;
 }
 
 async function createClient(host: string, server: JonlineServer) {

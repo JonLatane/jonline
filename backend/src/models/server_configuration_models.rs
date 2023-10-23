@@ -87,7 +87,13 @@ If you're interested in me running an instance for you, get in touch with me at 
 If this is an instance you're running, feel free to replace this text with your own by logging in as an admin 🙃
             ".to_string()),
             privacy_policy: Some("
-This is a demo server. Please create an account and post! But your account will be deleted at some point.
+***This is a demo server.*** Please create an account and post! But your account will be deleted at some point.
+The point of Jonline is transparency, including transparency in how privacy is offered. As such...
+*do not consider anything you post or upload to jonline.io to be private*.
+I will, however, not sell your data to advertisers nor deliberately expose any vulnerabilities.
+            ".to_string()),
+            media_policy: Some("
+***This is a demo server.*** No effort will be made to track your rights to uploaded media, so it is effectively public domain.
 The point of Jonline is transparency, including transparency in how privacy is offered. As such...
 *do not consider anything you post or upload to jonline.io to be private*.
 I will, however, not sell your data to advertisers nor deliberately expose any vulnerabilities.

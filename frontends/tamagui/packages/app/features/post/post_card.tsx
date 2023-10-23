@@ -2,7 +2,7 @@ import { colorMeta, deletePost, loadPostReplies, loadUser, RootState, selectUser
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, Platform, View } from "react-native";
 
-import { Group, Post } from "@jonline/api";
+import { Group, Post, Visibility } from "@jonline/api";
 import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack, TextArea, Dialog, Paragraph } from '@jonline/ui';
 import { ChevronRight, Delete, Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { useIsVisible } from 'app/hooks/use_is_visible';
@@ -17,6 +17,8 @@ import { FadeInView } from './fade_in_view';
 import { GroupPostManager } from './group_post_manager';
 import { PostMediaRenderer } from "./post_media_renderer";
 import { PostMediaManager } from "./post_media_manager";
+import { VisibilityPicker } from "./visibility_picker";
+import { postVisibilityDescription } from "./base_create_post_sheet";
 
 interface PostCardProps {
   post: Post;
@@ -73,9 +75,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [editedContent, setEditedContent] = useState(post.content);
   const [editedMedia, setEditedMedia] = useState(post.media);
   const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
+  const [editedVisibility, setEditedVisibility] = useState(post.visibility);
   const content = editing ? editedContent : post.content;
   const media = editing ? editedMedia : post.media;
   const embedLink = editing ? editedEmbedLink : post.embedLink;
+  const visibility = editing ? editedVisibility : post.visibility;
 
   function saveEdits() {
     setSavingEdits(true);
@@ -84,6 +88,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       content: editedContent,
       media: editedMedia,
       embedLink: editedEmbedLink,
+      visibility: editedVisibility,
     })).then(() => {
       setEditing(false);
       setSavingEdits(false);
@@ -109,16 +114,6 @@ export const PostCard: React.FC<PostCardProps> = ({
       setHasBeenVisible(true);
     }
   }, [isVisible]);
-
-  // Call the hook passing in ref and root margin
-  // In this case it would only be considered isVisible if more ...
-  // ... than 300px of element is visible.
-  // const isVisible = useOnScreen(ref, "-1px");
-  // useEffect(() => {
-  //   if (isVisible) {
-  //     onOnScreen?.();
-  //   }
-  // }, [isVisible]);
 
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
@@ -317,7 +312,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                     }} />}
 
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                    <YStack maxHeight={isPreview ? (singleMediaPreview || showScrollableMediaPreviews) ? 150 : 300 : undefined} overflow='hidden' {...contentProps}>
+                    <YStack maxHeight={isPreview
+                      ? (singleMediaPreview || showScrollableMediaPreviews) ? 150 : 300
+                      : editing && !previewingEdits ? backgroundSize * (media.length > 0 ? 0.6 : 0.8) : undefined} overflow='hidden' {...contentProps}>
                       {
                         editing && !previewingEdits
                           ? <TextArea f={1} pt='$2' value={editedContent}
@@ -412,6 +409,20 @@ export const PostCard: React.FC<PostCardProps> = ({
                           </Dialog>
                         </>
                       : undefined}
+                    {editing && !previewingEdits
+                      ? <XStack mt='$2' ml='$2'>
+                        <VisibilityPicker
+                          id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
+                          label='Post Visibility'
+                          visibility={visibility}
+                          onChange={setEditedVisibility}
+                          visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')} />
+                      </XStack>
+                      : visibility != Visibility.GLOBAL_PUBLIC
+                        ? <Paragraph size='$1' my='auto' ml='$2'>
+                          {postVisibilityDescription(visibility, groupContext, server, 'Event')}
+                        </Paragraph>
+                        : undefined}
                     {post?.replyToPostId
                       ? undefined
                       : <XStack pt={10} ml='auto' px='$2' maw='100%'>

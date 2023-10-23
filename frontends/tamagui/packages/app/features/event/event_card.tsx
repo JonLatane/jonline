@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
-import { Event, EventInstance, Group, Media } from "@jonline/api";
+import { Event, EventInstance, Group, Media, Visibility } from "@jonline/api";
 import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions, Select, getFontSize, Sheet, Adapt } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
@@ -23,6 +23,8 @@ import { defaultEventInstance, supportDateInput, toProtoISOString } from "./crea
 import { LinearGradient } from '@tamagui/linear-gradient';
 import { PostMediaManager } from "../post/post_media_manager";
 import { PostMediaRenderer } from "../post/post_media_renderer";
+import { VisibilityPicker } from "../post/visibility_picker";
+import { postVisibilityDescription } from "../post/base_create_post_sheet";
 
 interface Props {
   event: Event;
@@ -65,6 +67,9 @@ export const EventCard: React.FC<Props> = ({
   const [editedContent, setEditedContent] = useState(post.content);
   const [editedMedia, setEditedMedia] = useState(post.media);
   const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
+  const [editedVisibility, setEditedVisibility] = useState(post.visibility);
+  const visibility = editing ? editedVisibility : post.visibility;
+
   const content = editing ? editedContent : post.content;
   const media = editing ? editedMedia : post.media;
   const embedLink = editing ? editedEmbedLink : post.embedLink;
@@ -85,7 +90,13 @@ export const EventCard: React.FC<Props> = ({
     dispatch(updateEvent({
       ...accountOrServer,
       ...event,
-      post: { ...post, title: editedTitle, content: editedContent, media: editedMedia },
+      post: {
+        ...post,
+        title: editedTitle,
+        content: editedContent,
+        media: editedMedia,
+        visibility: editedVisibility
+      },
       instances: editedInstances,
     })).then(result => {
       setEditing(false);
@@ -752,7 +763,22 @@ export const EventCard: React.FC<Props> = ({
                         </Dialog>
                       </>
                     : undefined}
-                  <XStack pt={10} ml='auto' px='$2' maw='100%'>
+
+                  {editing && !previewingEdits
+                    ? <XStack mt='$2' ml='$2'>
+                      <VisibilityPicker
+                        id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
+                        label='Post Visibility'
+                        visibility={visibility}
+                        onChange={setEditedVisibility}
+                        visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')} />
+                    </XStack>
+                    : visibility != Visibility.GLOBAL_PUBLIC
+                      ? <Paragraph size='$1' my='auto' ml='$2'>
+                        {postVisibilityDescription(visibility, groupContext, server, 'Event')}
+                      </Paragraph>
+                      : undefined}
+                  <XStack pt={10} ml='auto' my='auto' px='$2' maw='100%'>
                     <GroupPostManager post={post} isVisible={isVisible}
                       createViewHref={createGroupEventViewHref} />
                   </XStack>

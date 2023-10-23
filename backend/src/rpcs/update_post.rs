@@ -75,6 +75,7 @@ pub fn update_post(
                 existing_post.embed_link = request.embed_link;
                 existing_post.shareable = request.shareable;
                 existing_post.updated_at = SystemTime::now().into();
+                existing_post.visibility = request.visibility.to_string_visibility();
                 // existing_post.username = request.username.to_owned();
                 // existing_post.bio = request.bio.to_owned();
                 // existing_post.avatar_media_id = request.avatar.as_ref().map(|a| &a.id).to_db_opt_id().unwrap();

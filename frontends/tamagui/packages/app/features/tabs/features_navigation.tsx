@@ -108,11 +108,16 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const inlineNavigation = useInlineFeatureNavigation();
   const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
 
-  const postsEventsRow = <>
-    {navButton(isLatest, latestLink, sectionTitle(AppSection.HOME))}
-    {navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS))}
-    {navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS))}
-  </>;
+  const [latest, posts, events] = [
+    navButton(isLatest, latestLink, sectionTitle(AppSection.HOME)),
+    navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS)),
+    navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS)),
+  ];
+  const postsEventsRow = appSection == AppSection.EVENT
+    ? <>{events}{latest}{posts}</>
+    : AppSection.POST
+      ? <>{posts}{latest}{events}</>
+      : <>{latest}{posts}{events}</>;
 
   const peopleRow = <>
     {navButton(isPeople, peopleLink, 'People')}

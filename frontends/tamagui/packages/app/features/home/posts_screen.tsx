@@ -1,6 +1,6 @@
 import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { useGroupPostPages, usePostPages } from 'app/hooks/pagination_hooks';
+import { useGroupPostPages, usePostPages } from 'app/hooks/post_pagination_hooks';
 import { RootState, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";

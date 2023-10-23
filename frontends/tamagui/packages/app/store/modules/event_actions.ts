@@ -1,4 +1,4 @@
-import { Event, EventListingType, GetEventsRequest, GetEventsResponse } from "@jonline/api";
+import { Event, EventListingType, GetEventsRequest, GetEventsResponse, TimeFilter } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -34,13 +34,18 @@ export const deleteEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk
 export type LoadEventsRequest = AccountOrServer & {
   listingType?: EventListingType,
   page?: number
+  filter?: TimeFilter
 };
 export const defaultEventListingType = EventListingType.PUBLIC_EVENTS;
 export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, any> = createAsyncThunk<GetEventsResponse, LoadEventsRequest>(
   "events/loadPage",
   async (request) => {
     let client = await getCredentialClient(request);
-    let result = await client.getEvents({ listingType: defaultEventListingType, ...request }, client.credential);
+    let result = await client.getEvents({ 
+      listingType: defaultEventListingType, 
+      ...request,
+      timeFilter: request.filter
+     }, client.credential);
     return {
       ...result,
       events: result.events.map(e => { return { ...e, post: { ...e.post!, previewImage: undefined } } })

@@ -23,7 +23,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   post,
   isPreview,
   groupContext,
-  hasBeenVisible,
+  hasBeenVisible = true,
   horizontalPreview
 }) => {
   const mediaQuery = useMedia();

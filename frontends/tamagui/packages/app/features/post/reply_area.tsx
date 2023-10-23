@@ -1,26 +1,33 @@
 import { Permission, Post } from '@jonline/api'
 import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack, isClient, isWeb, useWindowDimensions } from '@jonline/ui'
-import { Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
+import { ChevronRight, Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { RootState, confirmReplySent, replyToPost, selectPostById, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
 import StickyBox from 'react-sticky-box'
 import { AddAccountSheet } from '../accounts/add_account_sheet'
 import { TamaguiMarkdown } from './tamagui_markdown'
+import { MediaRef } from '../media/media_chooser'
+import { PostMediaManager } from './post_media_manager'
+import { PostMediaRenderer } from './post_media_renderer'
 
 interface ReplyAreaProps {
   replyingToPath: string[];
   editingPost?: Post;
   onCancelEditing?: () => void;
+  hidden?: boolean;
 }
 
-let _replyTextFocused = false;
+// let _replyTextFocused = false;
 
-export const isReplyTextFocused = () => _replyTextFocused;
+// export const isReplyTextFocused = () => _replyTextFocused;
 
-export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPost }) => {
+export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPost, hidden }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const [media, setMedia] = useState([] as MediaRef[]);
+  const [embedLink, setEmbedLink] = useState(false);
+
   const [replyText, setReplyText] = useState('');
   const [previewReply, setPreviewReply] = useState(false);
   const maxPreviewHeight = useWindowDimensions().height * 0.5;
@@ -28,13 +35,33 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPos
   const [isSendingReply, setIsSendingReply] = useState(false);
   const textAreaRef = React.createRef<TextInput>();// as React.MutableRefObject<HTMLElement | View>;
   const chatUI = useTypedSelector((state: RootState) => state.app.discussionChatUI);
+  const [showMedia, setShowMedia] = useState(true);
+
+  const [replyTextFocused, _setReplyTextFocused] = useState(false);
+  const [hasReplyTextFocused, setHasReplyTextFocused] = useState(false);
+  function setReplyTextFocused(focused: boolean) {
+    _setReplyTextFocused(focused);
+    if (focused && !hasReplyTextFocused) {
+      setHasReplyTextFocused(true);
+    }
+  }
+  useEffect(() => {
+    if (!hasReplyTextFocused && showMedia) {
+      setShowMedia(false);
+    }
+  }, [hasReplyTextFocused]);
   function sendReply() {
     setIsSendingReply(true);
     dispatch(replyToPost({
       ...accountOrServer,
       postIdPath: replyingToPath,
-      content: replyText
-    }));
+      content: replyText,
+      media: media
+    })).then(() => {
+      // setIsReplying(false);
+      setHasReplyTextFocused(false);
+      setMedia([]);
+    });
   }
   // const replyingToPost = 
   let pathIndex = 0;
@@ -58,16 +85,42 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPos
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }
     }
-    if (!isSendingReply && previewReply && replyText == '') {
+    if (!isSendingReply && previewReply && replyText == '' && media.length == 0) {
       setPreviewReply(false);
     }
   });
-  const canSend = replyText.length > 0;
+  const canSend = replyText.length > 0 || media.length > 0;
   const canComment = (accountOrServer.account?.user?.permissions?.includes(Permission.REPLY_TO_POSTS)
     || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
-  return isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
+  return hidden ? <></> : isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
     {canComment
       ? <YStack w='100%' pl='$2' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+        {hasReplyTextFocused || media.length > 0
+          ? <>
+            {showMedia
+              ? previewReply
+                ? <PostMediaRenderer {...{
+                  post: Post.create({
+                    // ...post,
+                    id: '',
+                    media,
+                    embedLink
+                  })
+                }} />
+                : <PostMediaManager
+                  link={''}
+                  {...{ media, setMedia, embedLink, setEmbedLink }}
+                  disableInputs={sendReplyStatus == 'sending'}
+                />
+              : undefined}
+            <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
+              <XStack animation='quick' rotate={showMedia ? '-90deg' : '0deg'}>
+                <ChevronRight size='$1' />
+              </XStack>
+              <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})`: undefined}</Heading>
+            </Button>
+          </>
+          : undefined}
         {replyingToPath.length > 1
           ? <Heading size='$1'>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
           : undefined}
@@ -76,8 +129,8 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPos
             <TextArea f={1} value={replyText} ref={textAreaRef}
               disabled={isSendingReply} opacity={isSendingReply || !canSend ? 0.5 : 1}
               onChangeText={t => setReplyText(t)}
-              onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
-              onBlur={() => _replyTextFocused = false}
+              onFocus={() => setReplyTextFocused(true)}
+              onBlur={() => setReplyTextFocused(false)}
               placeholder={`Reply to this post. Markdown is supported.`} />
             {previewReply
               ? <YStack p='$3' f={1} backgroundColor='$background'>

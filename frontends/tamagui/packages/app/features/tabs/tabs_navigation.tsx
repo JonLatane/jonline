@@ -24,9 +24,10 @@ export type TabsNavigationProps = {
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
   groupPageForwarder?: (group: Group) => string;
+  groupPageExiter?: () => void;
 };
 
-export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, appSubsection, selectedGroup, customHomeAction, groupPageForwarder }: TabsNavigationProps) {
+export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, appSubsection, selectedGroup, customHomeAction, groupPageForwarder, groupPageExiter }: TabsNavigationProps) {
   const mediaQuery = useMedia()
   const server = useTypedSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;

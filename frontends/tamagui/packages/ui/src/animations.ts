@@ -1,4 +1,5 @@
 import { createAnimations } from '@tamagui/animations-react-native';
+// import { AnimationDriver } from '@tamagui/use-presence';
 // import { createAnimations } from '@tamagui/animations-css';
 
 
@@ -9,12 +10,6 @@ import { createAnimations } from '@tamagui/animations-react-native';
 // });
 
 export const animations = createAnimations({
-  bouncy: {
-    type: 'spring',
-    damping: 10,
-    mass: 0.9,
-    stiffness: 100,
-  },
 
   // TODO: Maybe standard for web, bouncy for native/iOS?
   // Only worth any effort if we wanted to ship the iOS version of the Tamagui app...
@@ -22,18 +17,38 @@ export const animations = createAnimations({
     type: 'timing',
     duration: 300,
   },
-
+  '100ms': {
+    type: 'timing',
+    duration: 100,
+  },
+  bouncy: {
+    damping: 9,
+    mass: 0.9,
+    stiffness: 150,
+  },
   lazy: {
-    type: 'spring',
-    damping: 20,
-    stiffness: 60,
+    damping: 18,
+    stiffness: 50,
+  },
+  medium: {
+    damping: 15,
+    stiffness: 120,
+    mass: 1,
+  },
+  slow: {
+    damping: 15,
+    stiffness: 40,
   },
   quick: {
-    type: 'spring',
     damping: 20,
     mass: 1.2,
     stiffness: 250,
-  }
+  },
+  tooltip: {
+    damping: 10,
+    mass: 0.9,
+    stiffness: 100,
+  },
 });
 
 export const standardAnimation = {

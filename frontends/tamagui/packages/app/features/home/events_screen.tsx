@@ -1,10 +1,12 @@
-import { EventListingType } from '@jonline/api';
-import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { EventListingType, TimeFilter } from '@jonline/api';
+import { Heading, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { RootState, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../evepont/create_event_sheet';
-import { useEventPages, useGroupEventPages } from 'app/hooks/pagination_hooks';
+import { useEventPages, useGroupEventPages } from 'app/hooks';
+import moment from 'moment';
+import { supportDateInput, toProtoISOString } from '../event/create_event_sheet';
 import EventCard from '../event/event_card';
 import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
@@ -22,7 +24,11 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();
+  const [pageLoadTime, _setPageLoadTime] = useState<string>(supportDateInput(moment(Date.now())));
+  const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
 
+  const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+  console.log('timeFilter', timeFilter);
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
@@ -31,8 +37,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const [currentPage, setCurrentPage] = useState(0);
   const { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
-    ? useGroupEventPages(selectedGroup.id, currentPage)
-    : useEventPages(EventListingType.PUBLIC_EVENTS, currentPage);
+    ? useGroupEventPages(selectedGroup.id, currentPage, { filter: timeFilter })
+    : useEventPages(EventListingType.PUBLIC_EVENTS, currentPage, { filter: timeFilter });
 
   useEffect(() => {
     if (firstPageLoaded) {
@@ -54,6 +60,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
+        <XStack w='100%' px='$2' flexWrap='wrap'>
+          <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
+          <Text ml='auto' my='auto' fontSize='$2' fontFamily='$body'>
+            <input type='datetime-local' value={endsAfter} onChange={(v) => setEndsAfter(v.target.value)} style={{ padding: 10 }} />
+          </Text>
+        </XStack>
         {firstPageLoaded
           ? events.length == 0
             ? <YStack width='100%' maw={600} jc="center" ai="center">

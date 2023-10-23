@@ -1,4 +1,4 @@
-import { Empty, EventListingType, GetEventsResponse, GetGroupPostsRequest, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, Membership, Moderation, PostListingType } from "@jonline/api";
+import { Empty, EventListingType, GetEventsResponse, GetGroupPostsRequest, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@jonline/api";
 
 import {
   AsyncThunk,
@@ -46,13 +46,13 @@ export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage
   }
 );
 
-export type LoadGroupEventsPage = AccountOrServer & { groupId: string, page?: number };
+export type LoadGroupEventsPage = AccountOrServer & { groupId: string, page?: number, filter?: TimeFilter };
 export const loadGroupEventsPage: AsyncThunk<GetEventsResponse, LoadGroupEventsPage, any> = createAsyncThunk<GetEventsResponse, LoadGroupEventsPage>(
-  "groups/loadEventsPage",
+  "groups/loadGroupEventsPage",
   async (request) => {
-    const { groupId } = request;
+    const { groupId, filter } = request;
     const client = await getCredentialClient(request);
-    const result = await client.getEvents({ groupId, listingType: EventListingType.GROUP_EVENTS }, client.credential);
+    const result = await client.getEvents({ groupId, listingType: EventListingType.GROUP_EVENTS, timeFilter: filter }, client.credential);
     return result;
   }
 );

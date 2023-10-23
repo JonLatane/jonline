@@ -48,6 +48,18 @@ pub fn get_events(
     })
 }
 
+macro_rules! visible_to_current_user {
+    ($user:expr) => {{
+        posts::visibility.eq_any(public_string_visibilities($user))
+            .or(posts::visibility
+                .eq(Visibility::Limited.to_string_visibility())
+                .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
+            .or(posts::visibility
+                .eq(Visibility::Private.to_string_visibility())
+                .and(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
+    }};
+}
+
 fn get_public_and_following_events(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
@@ -57,15 +69,11 @@ fn get_public_and_following_events(
         .map(|f| f.ends_after.map(|t| t.to_db()))
         .flatten()
         .unwrap_or(SystemTime::now());
-    let public_visibilities = public_string_visibilities(user);
+    println!("ends_after={:?}", ends_after);
 
     let _instance_posts = alias!(posts as instance_posts);
     let _instance_users = alias!(users as instance_users);
 
-    let public = posts::visibility.eq_any(public_visibilities);
-    let limited_to_followers = posts::visibility
-        .eq(Visibility::Limited.to_string_visibility())
-        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
     let binding = event_instances::table
         .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
         .inner_join(posts::table.on(posts::id.eq(events::post_id)))
@@ -93,7 +101,7 @@ fn get_public_and_following_events(
             // instance_users.fields(AUTHOR_COLUMNS).nullable(),
             // instance_posts.field(posts::preview).is_not_null(),
         ))
-        .filter(public.or(limited_to_followers))
+        .filter(visible_to_current_user!(user))
         .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
         .filter(event_instances::ends_at.gt(ends_after))
         .order(event_instances::starts_at)
@@ -170,15 +178,9 @@ fn get_user_events(
         .map(|f| f.ends_after.map(|t| t.to_db()))
         .flatten()
         .unwrap_or(SystemTime::now());
-    let public_visibilities = public_string_visibilities(user);
-
     let _instance_posts = alias!(posts as instance_posts);
     let _instance_users = alias!(users as instance_users);
 
-    let public = posts::visibility.eq_any(public_visibilities);
-    let limited_to_followers = posts::visibility
-        .eq(Visibility::Limited.to_string_visibility())
-        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
     let binding = event_instances::table
         .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
         .inner_join(posts::table.on(posts::id.eq(events::post_id)))
@@ -196,7 +198,7 @@ fn get_user_events(
             posts::all_columns,
             AUTHOR_COLUMNS.nullable(),
         ))
-        .filter(public.or(limited_to_followers))
+        .filter(visible_to_current_user!(user))
         .filter(posts::user_id.eq(user_id))
         .filter(event_instances::ends_at.gt(ends_after))
         .order(event_instances::starts_at)
@@ -266,11 +268,6 @@ fn get_event_by_id(
         Ok(db_id) => db_id,
         Err(_) => return Err(Status::new(Code::InvalidArgument, "post_id_invalid")),
     };
-    let public_visibilities = public_string_visibilities(user);
-    let public = posts::visibility.eq_any(public_visibilities);
-    let limited_to_followers = posts::visibility
-        .eq(Visibility::Limited.to_string_visibility())
-        .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
     let event = events::table
         .inner_join(posts::table.on(events::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
@@ -287,7 +284,7 @@ fn get_event_by_id(
             AUTHOR_COLUMNS.nullable(),
         ))
         .filter(events::id.eq(event_db_id))
-        .filter(public.or(limited_to_followers))
+        .filter(visible_to_current_user!(user))
         .get_result::<(models::Event, models::Post, Option<models::Author>)>(conn)
         .map(|(event, event_post, author)| {
             let instances = models::get_event_instances(event_db_id, user, conn).unwrap_or(vec![]);
@@ -331,6 +328,10 @@ fn get_group_events(
     //     .eq(Visibility::Limited.to_string_visibility())
     //     .and(follows::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
 
+    let private_to_current_user = posts::visibility
+        .eq(Visibility::Private.to_string_visibility())
+        .and(posts::user_id.eq(user.as_ref().map(|u| u.id).unwrap_or(0)));
+
     let result = match (group.visibility.to_proto_visibility().unwrap(), user) {
         (Visibility::GlobalPublic, _) | (_, Some(_)) => event_instances::table
             .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
@@ -364,7 +365,9 @@ fn get_group_events(
                 // instance_users.fields(users::all_columns).nullable(),
                 // instance_posts.field(posts::preview).is_not_null(),
             ))
-            .filter(public) //.or(limited_to_followers))
+            // .filter(visible_to_current_user!(user))
+            .filter(public.or(private_to_current_user))
+            //.or(limited_to_followers))
             .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
             .filter(group_posts::group_id.eq(group_id))
             .filter(event_instances::ends_at.gt(ends_after))
@@ -416,6 +419,7 @@ fn get_group_events(
     };
     Ok(result)
 }
+
 //TODO Update below copypasta
 
 // fn _get_top_posts(user: &Option<&models::User>, conn: &mut PgPooledConnection) -> Vec<Post> {
