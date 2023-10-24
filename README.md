@@ -6,9 +6,9 @@ Jonline is an open-source, community-scale social network designed to be capable
 These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
 | Name                                                                                | Purpose                          | Links                                                                     |
 | ----------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------- |
-| [Jonline.io <br> ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io/about) | Flagship demo/informational site | [React UI](https://jonline.io), [Flutter UI](https://jonline.io/flutter/) |
-| [BullCity.Social <br> ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/about) | Durham, NC Community Page | [React UI](https://BullCity.Social), [Flutter UI](https://BullCity.Social/flutter/) |
-| [OakCity.Social <br> ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/about) | Raleigh, NC Community Page | [React UI](https://OakCity.Social), [Flutter UI](https://OakCity.Social/flutter/) |
+| [Jonline <br> ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io) | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/) |
+| [Bull City Social <br> ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/) |
+| [Oak City Social <br> ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/) | Raleigh, NC Community Page | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/) |
 
 ### Native App Releases
 | Workflow Status                                                                                                                                                                        | Stable Release | Beta Release                                             | Notes                                                                           |
