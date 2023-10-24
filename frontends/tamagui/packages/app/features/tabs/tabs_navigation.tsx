@@ -126,12 +126,12 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                             {serverNameEmoji && serverNameEmoji != ''
                               ? <Heading my='auto' whiteSpace="nowrap" mr='$2'>{serverNameEmoji}</Heading>
                               : undefined}
-                            <YStack>
+                            <YStack f={1} my='auto' mr='$1'>
                               {largeServername
                                 ? <Heading my='auto' whiteSpace="nowrap">{serverNameBeforeEmoji}</Heading>
-                                : <Paragraph size='$1' fontWeight='bold' lineHeight='$1' my='auto'>{serverNameBeforeEmoji}</Paragraph>}
+                                : <Paragraph size='$1' fontWeight='bold' lineHeight={12} >{serverNameBeforeEmoji}</Paragraph>}
                               {serverNameAfterEmoji && serverNameAfterEmoji != ''
-                                ? <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameAfterEmoji}</Paragraph>
+                                ? <Paragraph size='$1' lineHeight={12}>{serverNameAfterEmoji}</Paragraph>
                                 : undefined}
                             </YStack>
                           </>}
