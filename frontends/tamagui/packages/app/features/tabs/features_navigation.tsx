@@ -113,11 +113,13 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS)),
     navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS)),
   ];
-  const postsEventsRow = appSection == AppSection.EVENT
-    ? <>{events}{latest}{posts}</>
-    : AppSection.POST
-      ? <>{posts}{latest}{events}</>
-      : <>{latest}{posts}{events}</>;
+  const postsEventsRow = inlineNavigation
+    ? (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
+      ? <>{events}{posts}</>
+      : (appSection == AppSection.POST || appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
+        ? <>{posts}{events}</>
+        : <>{latest}{posts}{events}</>
+    : <>{latest}{posts}{events}</>;
 
   const peopleRow = <>
     {navButton(isPeople, peopleLink, 'People')}
@@ -128,7 +130,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
   </>
 
-  const triggerButton = <Button scale={0.95} ml={selectedGroup ? -4 : -3}
+  const triggerButton = <Button scale={0.95} ml={selectedGroup ? -4 : -3} my='auto'
     disabled={inlineNavigation}
     icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
     {...themedButtonBackground(navColor)}>

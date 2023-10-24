@@ -11,24 +11,16 @@ use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use crate::schema::users::dsl as users;
 use crate::web::headers::{AuthHeader, ContentTypeHeader, FilenameHeader};
 use crate::web::RocketState;
-// use futures::StreamExt;
-use rocket::http::ContentType;
-// use crate::tokio_stream::StreamExt;
-// use crate::bytes::Bytes;
 use log::info;
 use rocket::fs::NamedFile;
-// use rocket::Response;
-// use s3::request::ResponseDataStream;
+use rocket::http::ContentType;
 
 use diesel::*;
 use rocket::http::MediaType;
-// use rocket::response::stream::ByteStream;
 use rocket::{data::ToByteUnit, http::CookieJar, routes, Data, Route, State};
 
 use rocket::http::Status;
 use rocket_cache_response::CacheResponse;
-// use s3::request::ResponseDataStream;
-// use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
 lazy_static! {
@@ -90,8 +82,9 @@ pub async fn create_media(
 }
 
 /// Used to manage CORS for the media download endpoint(s).
-#[rocket::options("/media/<_id>")]
-pub async fn media_file_options(_id: &str) -> &'static str {
+#[rocket::options("/media/<id>")]
+pub async fn media_file_options(id: &str) -> &'static str {
+    let _id = id;
     return "";
 }
 
@@ -105,6 +98,16 @@ pub async fn media_file<'a>(
 ) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
     log::info!("media_file: {:?}", id);
     let _user = get_media_user(authorization, auth_header, cookies, state).ok();
+
+    load_media_file_data(id, state).await
+}
+
+// #[rocket::get("/media/<id>?<authorization>")]
+pub async fn load_media_file_data<'a>(
+    id: &str,
+    state: &State<RocketState>,
+) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
+    log::info!("media_file: {:?}", id);
 
     let media = schema::media::table
         .filter(

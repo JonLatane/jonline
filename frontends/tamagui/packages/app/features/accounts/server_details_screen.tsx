@@ -259,6 +259,17 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   ? <>
                     <Heading size='$3' mt='$2'>Server Logo</Heading>
                     {isAdmin || logo?.wideMediaId
+                      ? <Heading size='$2' mt='$2'>Square/Icon</Heading>
+                      : undefined}
+                    {logo?.squareMediaId ?
+                      <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} />
+                      : undefined}
+                    {isAdmin
+                      ? <SingleMediaChooser mediaUseName='Square Logo/Icon'
+                        selectedMedia={logo ? { id: logo.squareMediaId } as MediaRef : undefined}
+                        setSelectedMedia={v => setLogo({ ...(logo ?? {}), squareMediaId: v?.id })} />
+                      : undefined}
+                    {isAdmin || logo?.wideMediaId
                       ? <Heading size='$2' mt='$2'>Wide</Heading>
                       : undefined}
                     {logo?.wideMediaId ?
@@ -268,17 +279,6 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       ? <SingleMediaChooser mediaUseName='Wide Logo'
                         selectedMedia={logo ? { id: logo.wideMediaId } as MediaRef : undefined}
                         setSelectedMedia={v => setLogo({ ...(logo ?? {}), wideMediaId: v?.id })} />
-                      : undefined}
-                    {isAdmin || logo?.wideMediaId
-                      ? <Heading size='$2' mt='$2'>Square</Heading>
-                      : undefined}
-                    {logo?.squareMediaId ?
-                      <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} />
-                      : undefined}
-                    {isAdmin
-                      ? <SingleMediaChooser mediaUseName='Square Logo'
-                        selectedMedia={logo ? { id: logo.squareMediaId } as MediaRef : undefined}
-                        setSelectedMedia={v => setLogo({ ...(logo ?? {}), squareMediaId: v?.id })} />
                       : undefined}
                   </>
                   : undefined}

@@ -1,8 +1,12 @@
-use rocket::{fs::*, routes, Route};
+use rocket::{fs::*, routes, Route, State, http::{ContentType, MediaType}};
 use rocket_cache_response::CacheResponse;
-use std::path::*;
+use std::{path::*, str::FromStr};
 
 use rocket::http::Status;
+
+use crate::{protos::{ServerInfo, ServerLogo}, rpcs::get_server_configuration, web::RocketState};
+
+use super::load_media_file_data;
 
 lazy_static! {
     pub static ref TAMAGUI_PAGES: Vec<Route> = routes![
@@ -25,6 +29,7 @@ lazy_static! {
         tamagui_group_post,
         tamagui_group_event,
         tamagui_group_event_instance,
+        tamagui_favicon,
         tamagui_file_or_username
     ];
 }
@@ -39,14 +44,59 @@ async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<NamedFi
             {
                 Ok(file) => Ok(file),
                 Err(_) => return tamagui_path("[username].html").await,
-}
-}
+            }
+        }
     };
     CacheResponse::Public {
         responder: result,
         max_age: 60,
         must_revalidate: false,
+    }
 }
+
+#[rocket::get("/favicon.ico")]
+pub async fn tamagui_favicon<'a>(
+    state: &State<RocketState>,
+) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
+    let mut conn = state.pool.get().unwrap();
+    let configuration = get_server_configuration(&mut conn).unwrap();
+    let logo = configuration
+        .server_info
+        .unwrap_or(ServerInfo {
+            ..Default::default()
+        })
+        .logo
+        .unwrap_or(ServerLogo {
+            ..Default::default()
+        })
+        .square_media_id;
+    // MediaType::from_str(&media.content_type).map_err(|_| Status::ExpectationFailed)?
+    match logo {
+        None => {
+            let media_type = ContentType(
+                MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
+            );
+            let favicon_file = match NamedFile::open("opt/tamagui_web/favicon.ico").await {
+                Ok(file) => file,
+                Err(_) => {
+                    match NamedFile::open("../frontends/tamagui/apps/next/out/favicon.ico").await {
+                        Ok(file) => file,
+                        Err(_) => return Err(Status::ExpectationFailed),
+                    }
+                }
+            };
+            Ok(CacheResponse::Public {
+                responder: (media_type, favicon_file),
+                max_age: 3600 * 12,
+                must_revalidate: true,
+            })
+        }
+        Some(square_media_id) => {
+            // let logo_media_id = square_media_id.to_db_id_or_err("logo").map_err(|_| Status::BadRequest)?;
+            load_media_file_data(&square_media_id, state).await
+            // Err(Status::NotImplemented)
+        },
+    }
 }
 
 #[rocket::get("/tamagui")]

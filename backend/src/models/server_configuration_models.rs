@@ -74,7 +74,7 @@ pub fn default_server_configuration() -> NewServerConfiguration {
     .to_json_permissions();
     return NewServerConfiguration {
         server_info: serde_json::to_value(ServerInfo {
-            name: None,
+            name: Some("New Jonline Server 🛠️ An administrator should update the server name.".to_string()),
             short_name: None,
             description: Some("
 Jonline is a new, DIY federated social network. It's designed to be run by local businesses,
