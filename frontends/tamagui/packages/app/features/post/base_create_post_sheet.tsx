@@ -44,7 +44,7 @@ export const postVisibilityDescription = (
     case Visibility.LIMITED:
       return group
         ? `Only your followers and members of ${group.name} can see this ${entity}.`
-        : 'Only your followers and groups you choose can see this ${entity}.';
+        : `Only your followers and groups you choose can see this ${entity}.`;
     case Visibility.SERVER_PUBLIC:
       return `Anyone on ${server?.serverConfiguration?.serverInfo?.name ?? 'this server'} can see this ${entity}.`;
     case Visibility.GLOBAL_PUBLIC:

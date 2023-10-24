@@ -773,7 +773,7 @@ export const EventCard: React.FC<Props> = ({
                         onChange={setEditedVisibility}
                         visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')} />
                     </XStack>
-                    : visibility != Visibility.GLOBAL_PUBLIC
+                    : visibility != Visibility.GLOBAL_PUBLIC && !horizontal
                       ? <Paragraph size='$1' my='auto' ml='$2'>
                         {postVisibilityDescription(visibility, groupContext, server, 'Event')}
                       </Paragraph>

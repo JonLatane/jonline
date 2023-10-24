@@ -39,6 +39,8 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
         <meta name="description" content="Jonline is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends." />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+        {/* <link rel="mask-icon" href="/favicon.ico" color="#000000" /> */}
+
       </Head>
       <ThemeProvider>
         <SolitoComponentShim {...pageProps} />
