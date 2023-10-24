@@ -150,7 +150,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
             </XStack>
             : <Heading size='$10' ml='$5'>Add Account</Heading>}
           <Sheet.ScrollView>
-            <YStack space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
+            <YStack space="$2" maw={600} w='100%' pb='$2' als='center' paddingHorizontal="$5">
               {addingAccount
                 ? <YStack space="$2" w='100%'>
                   <Heading size="$6">{server?.host}/</Heading>
@@ -169,6 +169,16 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                         value={newAccountPass}
                         onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
                     : undefined}
+
+                  {loginMethod === LoginMethod.CreateAccount && (server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                    ? <>
+                      {newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
+                      <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
+                      <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                    </> : undefined}
+
+                  {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
+                  {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
 
                   {loginMethod
                     ? <XStack>
@@ -196,16 +206,6 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                         Login
                       </Button>
                     </XStack>}
-
-                  {loginMethod === LoginMethod.CreateAccount && (server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
-                    ? <>
-                      {newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
-                      <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
-                      <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
-                    </> : undefined}
-
-                  {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
-                  {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
                 </YStack>
                 : accountsOnServer.length > 0 ? <>
                   {/* <Heading size="$7" paddingVertical='$2'>Choose Account</Heading> */}

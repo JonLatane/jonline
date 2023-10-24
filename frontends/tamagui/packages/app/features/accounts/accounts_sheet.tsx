@@ -383,72 +383,75 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       <Sheet.Handle />
                       <Button
                         alignSelf='center'
-                        size="$6"
+                        size="$3"
                         circular
                         icon={ChevronDown}
                         onPress={() => {
                           setAddingAccount(false)
                         }}
                       />
-                      <YStack space="$2" maw={600} w='100%' als='center'>
-                        <Heading size="$10">Add Account</Heading>
-                        <Heading size="$6">{primaryServer?.host}/</Heading>
-                        <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
-                          editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
-                          autoCapitalize='none'
-                          value={newAccountUser}
-                          onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
+                      <Heading size="$9">Add Account</Heading>
+                      <Heading size="$4">{primaryServer?.host}/</Heading>
+                      <Sheet.ScrollView>
+                        <YStack space="$2" pb='$2' maw={600} w='100%' als='center'>
+                          {/* <Heading size="$10">Add Account</Heading> */}
+                          <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
+                            editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
+                            autoCapitalize='none'
+                            value={newAccountUser}
+                            onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
 
-                        {loginMethod
-                          ? <XStack w='100%' animation="quick" {...standardAnimation}>
-                            <Input secureTextEntry w='100%'
-                              textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
-                              placeholder="Password"
-                              editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
+                          {loginMethod
+                            ? <XStack w='100%' animation="quick" {...standardAnimation}>
+                              <Input secureTextEntry w='100%'
+                                textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
+                                placeholder="Password"
+                                editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
 
-                              value={newAccountPass}
-                              onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
-                          </XStack>
-                          : undefined}
+                                value={newAccountPass}
+                                onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
+                            </XStack>
+                            : undefined}
 
-                        {loginMethod && newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
+                          {loginMethod && newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
 
-                        {loginMethod === LoginMethod.CreateAccount && (server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
-                          ? <>
-                            <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
-                            <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
-                          </> : undefined}
+                          {loginMethod === LoginMethod.CreateAccount && (server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                            ? <>
+                              <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
+                              <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                            </> : undefined}
 
-                        {loginMethod
-                          ? <XStack>
-                            <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
-                              disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
-                              Back
-                            </Button>
-                            <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => {
-                              if (loginMethod == LoginMethod.Login) {
-                                loginToServer();
-                              } else {
-                                createServerAccount();
-                              }
-                            }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                              {loginMethod == LoginMethod.Login ? 'Login' : 'Create Account'}
-                            </Button>
-                          </XStack>
-                          : <XStack>
-                            <Button flex={2} marginRight='$1' onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
-                              disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
-                              Create Account
-                            </Button>
-                            <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => setLoginMethod(LoginMethod.Login)}
-                              disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
-                              Login
-                            </Button>
-                          </XStack>}
+                          {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
+                          {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
 
-                        {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
-                        {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
-                      </YStack>
+                          {loginMethod
+                            ? <XStack>
+                              <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                                disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
+                                Back
+                              </Button>
+                              <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => {
+                                if (loginMethod == LoginMethod.Login) {
+                                  loginToServer();
+                                } else {
+                                  createServerAccount();
+                                }
+                              }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
+                                {loginMethod == LoginMethod.Login ? 'Login' : 'Create Account'}
+                              </Button>
+                            </XStack>
+                            : <XStack>
+                              <Button flex={2} marginRight='$1' onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
+                                disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
+                                Create Account
+                              </Button>
+                              <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => setLoginMethod(LoginMethod.Login)}
+                                disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
+                                Login
+                              </Button>
+                            </XStack>}
+                        </YStack>
+                      </Sheet.ScrollView>
                     </Sheet.Frame>
                   </Sheet>
                 </XStack>
