@@ -6,9 +6,9 @@ Jonline is an open-source, community-scale social network designed to be capable
 These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
 | Name                                                                                | Purpose                          | Links                                                                     |
 | ----------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------- |
-| [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io/about) | Flagship demo/informational site | [React UI](https://jonline.io), [Flutter UI](https://jonline.io/flutter/) |
-| [![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/about) | Durham, NC Community Page | [React UI](https://BullCity.Social), [Flutter UI](https://BullCity.Social/flutter/) |
-| [![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/about) | Raleigh, NC Community Page | [React UI](https://OakCity.Social), [Flutter UI](https://OakCity.Social/flutter/) |
+| [Jonline.io ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io/about) | Flagship demo/informational site | [React UI](https://jonline.io), [Flutter UI](https://jonline.io/flutter/) |
+| [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/about) | Durham, NC Community Page | [React UI](https://BullCity.Social), [Flutter UI](https://BullCity.Social/flutter/) |
+| [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/about) | Raleigh, NC Community Page | [React UI](https://OakCity.Social), [Flutter UI](https://OakCity.Social/flutter/) |
 
 ### Native App Releases
 | Workflow Status                                                                                                                                                                        | Stable Release | Beta Release                                             | Notes                                                                           |
