@@ -157,6 +157,14 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/CreateEvent',
       ($8.Event value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $8.Event.fromBuffer(value));
+  static final _$updateEvent = $grpc.ClientMethod<$8.Event, $8.Event>(
+      '/jonline.Jonline/UpdateEvent',
+      ($8.Event value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $8.Event.fromBuffer(value));
+  static final _$deleteEvent = $grpc.ClientMethod<$8.Event, $8.Event>(
+      '/jonline.Jonline/DeleteEvent',
+      ($8.Event value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $8.Event.fromBuffer(value));
   static final _$getEvents = $grpc.ClientMethod<$8.GetEventsRequest, $8.GetEventsResponse>(
       '/jonline.Jonline/GetEvents',
       ($8.GetEventsRequest value) => value.writeToBuffer(),
@@ -302,6 +310,14 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$8.Event> createEvent($8.Event request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createEvent, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$8.Event> updateEvent($8.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateEvent, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$8.Event> deleteEvent($8.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteEvent, request, options: options);
   }
 
   $grpc.ResponseFuture<$8.GetEventsResponse> getEvents($8.GetEventsRequest request, {$grpc.CallOptions? options}) {
@@ -546,6 +562,20 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $8.Event.fromBuffer(value),
         ($8.Event value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$8.Event, $8.Event>(
+        'UpdateEvent',
+        updateEvent_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $8.Event.fromBuffer(value),
+        ($8.Event value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$8.Event, $8.Event>(
+        'DeleteEvent',
+        deleteEvent_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $8.Event.fromBuffer(value),
+        ($8.Event value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$8.GetEventsRequest, $8.GetEventsResponse>(
         'GetEvents',
         getEvents_Pre,
@@ -697,6 +727,14 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return createEvent(call, await request);
   }
 
+  $async.Future<$8.Event> updateEvent_Pre($grpc.ServiceCall call, $async.Future<$8.Event> request) async {
+    return updateEvent(call, await request);
+  }
+
+  $async.Future<$8.Event> deleteEvent_Pre($grpc.ServiceCall call, $async.Future<$8.Event> request) async {
+    return deleteEvent(call, await request);
+  }
+
   $async.Future<$8.GetEventsResponse> getEvents_Pre($grpc.ServiceCall call, $async.Future<$8.GetEventsRequest> request) async {
     return getEvents(call, await request);
   }
@@ -741,6 +779,8 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$7.GetGroupPostsResponse> getGroupPosts($grpc.ServiceCall call, $7.GetGroupPostsRequest request);
   $async.Stream<$7.Post> streamReplies($grpc.ServiceCall call, $7.Post request);
   $async.Future<$8.Event> createEvent($grpc.ServiceCall call, $8.Event request);
+  $async.Future<$8.Event> updateEvent($grpc.ServiceCall call, $8.Event request);
+  $async.Future<$8.Event> deleteEvent($grpc.ServiceCall call, $8.Event request);
   $async.Future<$8.GetEventsResponse> getEvents($grpc.ServiceCall call, $8.GetEventsRequest request);
   $async.Future<$2.ServerConfiguration> configureServer($grpc.ServiceCall call, $2.ServerConfiguration request);
   $async.Future<$0.Empty> resetData($grpc.ServiceCall call, $0.Empty request);

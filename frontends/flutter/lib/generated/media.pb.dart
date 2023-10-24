@@ -249,6 +249,7 @@ class MediaReference extends $pb.GeneratedMessage {
     $core.String? contentType,
     $core.String? id,
     $core.String? name,
+    $core.bool? generated,
   }) {
     final $result = create();
     if (contentType != null) {
@@ -260,6 +261,9 @@ class MediaReference extends $pb.GeneratedMessage {
     if (name != null) {
       $result.name = name;
     }
+    if (generated != null) {
+      $result.generated = generated;
+    }
     return $result;
   }
   MediaReference._() : super();
@@ -270,6 +274,7 @@ class MediaReference extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'contentType')
     ..aOS(2, _omitFieldNames ? '' : 'id')
     ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOB(4, _omitFieldNames ? '' : 'generated')
     ..hasRequiredFields = false
   ;
 
@@ -320,6 +325,15 @@ class MediaReference extends $pb.GeneratedMessage {
   $core.bool hasName() => $_has(2);
   @$pb.TagNumber(3)
   void clearName() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.bool get generated => $_getBF(3);
+  @$pb.TagNumber(4)
+  set generated($core.bool v) { $_setBool(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasGenerated() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearGenerated() => clearField(4);
 }
 
 /// Valid GetMediaRequest formats:

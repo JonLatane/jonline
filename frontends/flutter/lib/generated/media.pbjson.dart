@@ -55,6 +55,7 @@ const MediaReference$json = {
     {'1': 'content_type', '3': 1, '4': 1, '5': 9, '10': 'contentType'},
     {'1': 'id', '3': 2, '4': 1, '5': 9, '10': 'id'},
     {'1': 'name', '3': 3, '4': 1, '5': 9, '9': 0, '10': 'name', '17': true},
+    {'1': 'generated', '3': 4, '4': 1, '5': 8, '10': 'generated'},
   ],
   '8': [
     {'1': '_name'},
@@ -64,7 +65,8 @@ const MediaReference$json = {
 /// Descriptor for `MediaReference`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List mediaReferenceDescriptor = $convert.base64Decode(
     'Cg5NZWRpYVJlZmVyZW5jZRIhCgxjb250ZW50X3R5cGUYASABKAlSC2NvbnRlbnRUeXBlEg4KAm'
-    'lkGAIgASgJUgJpZBIXCgRuYW1lGAMgASgJSABSBG5hbWWIAQFCBwoFX25hbWU=');
+    'lkGAIgASgJUgJpZBIXCgRuYW1lGAMgASgJSABSBG5hbWWIAQESHAoJZ2VuZXJhdGVkGAQgASgI'
+    'UglnZW5lcmF0ZWRCBwoFX25hbWU=');
 
 @$core.Deprecated('Use getMediaRequestDescriptor instead')
 const GetMediaRequest$json = {

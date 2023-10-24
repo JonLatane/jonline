@@ -1,9 +1,10 @@
 import { Anchor, Button, H2, H4, Heading, isClient, ListItem, needsScrollPreservers, Paragraph, Text, useWindowDimensions, XStack, YStack } from '@jonline/ui';
 import { RootState, selectAllPosts, useCredentialDispatch, useTypedSelector } from 'app/store';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { Container, Github } from '@tamagui/lucide-icons';
+import { AppSection } from '../tabs/features_navigation';
 
 const quotes = [
   'I read about it Jonline',
@@ -27,9 +28,12 @@ export function AboutJonlineScreen() {
   const [quote] = useState(quotes[Math.floor(Math.random() * quotes.length)]);
   // const quote= quotes[Math.floor(Math.random()*quotes.length)];
 
+  useEffect(() => {
+    document.title = `About Jonline`;
+  });
 
   return (
-    <TabsNavigation>
+    <TabsNavigation appSection={AppSection.INFO}>
       {/* <ZStack f={1} w='100%' jc="center" ai="center" p="$0"> */}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
         <YStack space="$4" maw={600}>

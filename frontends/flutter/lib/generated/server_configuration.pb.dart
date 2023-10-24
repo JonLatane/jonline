@@ -621,6 +621,7 @@ class ServerInfo extends $pb.GeneratedMessage {
     ServerLogo? logo,
     WebUserInterface? webUserInterface,
     ServerColors? colors,
+    $core.String? mediaPolicy,
   }) {
     final $result = create();
     if (name != null) {
@@ -644,6 +645,9 @@ class ServerInfo extends $pb.GeneratedMessage {
     if (colors != null) {
       $result.colors = colors;
     }
+    if (mediaPolicy != null) {
+      $result.mediaPolicy = mediaPolicy;
+    }
     return $result;
   }
   ServerInfo._() : super();
@@ -658,6 +662,7 @@ class ServerInfo extends $pb.GeneratedMessage {
     ..aOM<ServerLogo>(5, _omitFieldNames ? '' : 'logo', subBuilder: ServerLogo.create)
     ..e<WebUserInterface>(6, _omitFieldNames ? '' : 'webUserInterface', $pb.PbFieldType.OE, defaultOrMaker: WebUserInterface.FLUTTER_WEB, valueOf: WebUserInterface.valueOf, enumValues: WebUserInterface.values)
     ..aOM<ServerColors>(7, _omitFieldNames ? '' : 'colors', subBuilder: ServerColors.create)
+    ..aOS(8, _omitFieldNames ? '' : 'mediaPolicy')
     ..hasRequiredFields = false
   ;
 
@@ -749,6 +754,15 @@ class ServerInfo extends $pb.GeneratedMessage {
   void clearColors() => clearField(7);
   @$pb.TagNumber(7)
   ServerColors ensureColors() => $_ensure(6);
+
+  @$pb.TagNumber(8)
+  $core.String get mediaPolicy => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set mediaPolicy($core.String v) { $_setString(7, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasMediaPolicy() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearMediaPolicy() => clearField(8);
 }
 
 class ServerLogo extends $pb.GeneratedMessage {

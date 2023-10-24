@@ -1,5 +1,5 @@
 import { Group, Media, WebUserInterface } from "@jonline/api";
-import { Button, Heading, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
+import { Button, Heading, Paragraph, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useTheme } from "@react-navigation/native";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, markGroupVisit, useServerTheme, useTypedDispatch, useTypedSelector } from "app/store";
@@ -44,13 +44,26 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || 'Jonline';
   const app = useTypedSelector((state: RootState) => state.app);
   const serverNameEmoji = serverName.match(/\p{Emoji}/u)?.at(0);
+  const [serverNameBeforeEmoji, serverNameAfterEmoji] = serverName.split(serverNameEmoji ?? '|', 2);
+  const largeServername = (!serverNameAfterEmoji || serverNameAfterEmoji === '') && serverNameBeforeEmoji!.length < 10;
+  // const serverNameWithoutEmoji = serverNameEmoji
+  //   ? serverName.split(serverNameEmoji, 1) //serverName.replace(serverNameEmoji, '')
+  //   : serverName;
   const account = useTypedSelector((state: RootState) => state.accounts.account);
   const backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
   const backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}A6`;
   const navColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.navigation;
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const wrapTitle = serverName.length > 20;
-  const maxWidth = mediaQuery.gtXs ? 350 : 250;
+  const maxWidth = mediaQuery.gtSm
+    ? 250
+    : mediaQuery.gtXs
+      ? 250
+      : 170; mediaQuery.xxs
+        ? 170
+        : mediaQuery.xxxs
+          ? 150
+          : 120;
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
   // const app = useLocalApp();
@@ -89,23 +102,39 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                 <XStack w={5} />
                 <Button size="$4"
                   py={0}
-                  px={shrinkHomeButton && canUseLogo ? 0 : undefined}
-                  maw={maxWidth}
+                  px='$2'
+                  // maw={maxWidth}
                   overflow='hidden' //ac='flex-start'
                   iconAfter={showHomeIcon && !shrinkHomeButton ? HomeIcon : undefined}
                   icon={showHomeIcon && shrinkHomeButton ? HomeIcon : undefined}
-                  {...homeProps}>
+                  {...homeProps}
+                >
                   {renderButtonChildren
                     ? shrinkHomeButton
                       ? <XStack h={'100%'} maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
                         {canUseLogo
                           ? <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
-                          : <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>}
+                          : <>
+                            <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+                            {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
+                          </>}
                       </XStack>
-                      : <XStack h={'100%'} maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
+                      : <XStack h={'100%'} space='$5' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
                         {canUseLogo
                           ? <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} failQuietly />
-                          : <Heading my='auto' whiteSpace="nowrap">{serverName}</Heading>}
+                          : <>
+                            {serverNameEmoji && serverNameEmoji != ''
+                              ? <Heading my='auto' whiteSpace="nowrap" mr='$2'>{serverNameEmoji}</Heading>
+                              : undefined}
+                            <YStack>
+                              {largeServername
+                                ? <Heading my='auto' whiteSpace="nowrap">{serverNameBeforeEmoji}</Heading>
+                                : <Paragraph size='$1' fontWeight='bold' lineHeight='$1' my='auto'>{serverNameBeforeEmoji}</Paragraph>}
+                              {serverNameAfterEmoji && serverNameAfterEmoji != ''
+                                ? <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameAfterEmoji}</Paragraph>
+                                : undefined}
+                            </YStack>
+                          </>}
                       </XStack>
                     : undefined}
                 </Button>

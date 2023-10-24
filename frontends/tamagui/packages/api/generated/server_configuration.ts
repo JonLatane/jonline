@@ -344,6 +344,7 @@ export interface ServerInfo {
   logo?: ServerLogo | undefined;
   webUserInterface?: WebUserInterface | undefined;
   colors?: ServerColors | undefined;
+  mediaPolicy?: string | undefined;
 }
 
 export interface ServerLogo {
@@ -910,6 +911,7 @@ function createBaseServerInfo(): ServerInfo {
     logo: undefined,
     webUserInterface: undefined,
     colors: undefined,
+    mediaPolicy: undefined,
   };
 }
 
@@ -935,6 +937,9 @@ export const ServerInfo = {
     }
     if (message.colors !== undefined) {
       ServerColors.encode(message.colors, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.mediaPolicy !== undefined) {
+      writer.uint32(66).string(message.mediaPolicy);
     }
     return writer;
   },
@@ -967,6 +972,9 @@ export const ServerInfo = {
         case 7:
           message.colors = ServerColors.decode(reader, reader.uint32());
           break;
+        case 8:
+          message.mediaPolicy = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -984,6 +992,7 @@ export const ServerInfo = {
       logo: isSet(object.logo) ? ServerLogo.fromJSON(object.logo) : undefined,
       webUserInterface: isSet(object.webUserInterface) ? webUserInterfaceFromJSON(object.webUserInterface) : undefined,
       colors: isSet(object.colors) ? ServerColors.fromJSON(object.colors) : undefined,
+      mediaPolicy: isSet(object.mediaPolicy) ? String(object.mediaPolicy) : undefined,
     };
   },
 
@@ -998,6 +1007,7 @@ export const ServerInfo = {
       ? webUserInterfaceToJSON(message.webUserInterface)
       : undefined);
     message.colors !== undefined && (obj.colors = message.colors ? ServerColors.toJSON(message.colors) : undefined);
+    message.mediaPolicy !== undefined && (obj.mediaPolicy = message.mediaPolicy);
     return obj;
   },
 
@@ -1018,6 +1028,7 @@ export const ServerInfo = {
     message.colors = (object.colors !== undefined && object.colors !== null)
       ? ServerColors.fromPartial(object.colors)
       : undefined;
+    message.mediaPolicy = object.mediaPolicy ?? undefined;
     return message;
   },
 };

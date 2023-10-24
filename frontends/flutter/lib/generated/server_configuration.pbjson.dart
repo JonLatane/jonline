@@ -187,6 +187,7 @@ const ServerInfo$json = {
     {'1': 'logo', '3': 5, '4': 1, '5': 11, '6': '.jonline.ServerLogo', '9': 4, '10': 'logo', '17': true},
     {'1': 'web_user_interface', '3': 6, '4': 1, '5': 14, '6': '.jonline.WebUserInterface', '9': 5, '10': 'webUserInterface', '17': true},
     {'1': 'colors', '3': 7, '4': 1, '5': 11, '6': '.jonline.ServerColors', '9': 6, '10': 'colors', '17': true},
+    {'1': 'media_policy', '3': 8, '4': 1, '5': 9, '9': 7, '10': 'mediaPolicy', '17': true},
   ],
   '8': [
     {'1': '_name'},
@@ -196,6 +197,7 @@ const ServerInfo$json = {
     {'1': '_logo'},
     {'1': '_web_user_interface'},
     {'1': '_colors'},
+    {'1': '_media_policy'},
   ],
 };
 
@@ -206,9 +208,10 @@ final $typed_data.Uint8List serverInfoDescriptor = $convert.base64Decode(
     'ARIqCg5wcml2YWN5X3BvbGljeRgEIAEoCUgDUg1wcml2YWN5UG9saWN5iAEBEiwKBGxvZ28YBS'
     'ABKAsyEy5qb25saW5lLlNlcnZlckxvZ29IBFIEbG9nb4gBARJMChJ3ZWJfdXNlcl9pbnRlcmZh'
     'Y2UYBiABKA4yGS5qb25saW5lLldlYlVzZXJJbnRlcmZhY2VIBVIQd2ViVXNlckludGVyZmFjZY'
-    'gBARIyCgZjb2xvcnMYByABKAsyFS5qb25saW5lLlNlcnZlckNvbG9yc0gGUgZjb2xvcnOIAQFC'
-    'BwoFX25hbWVCDQoLX3Nob3J0X25hbWVCDgoMX2Rlc2NyaXB0aW9uQhEKD19wcml2YWN5X3BvbG'
-    'ljeUIHCgVfbG9nb0IVChNfd2ViX3VzZXJfaW50ZXJmYWNlQgkKB19jb2xvcnM=');
+    'gBARIyCgZjb2xvcnMYByABKAsyFS5qb25saW5lLlNlcnZlckNvbG9yc0gGUgZjb2xvcnOIAQES'
+    'JgoMbWVkaWFfcG9saWN5GAggASgJSAdSC21lZGlhUG9saWN5iAEBQgcKBV9uYW1lQg0KC19zaG'
+    '9ydF9uYW1lQg4KDF9kZXNjcmlwdGlvbkIRCg9fcHJpdmFjeV9wb2xpY3lCBwoFX2xvZ29CFQoT'
+    'X3dlYl91c2VyX2ludGVyZmFjZUIJCgdfY29sb3JzQg8KDV9tZWRpYV9wb2xpY3k=');
 
 @$core.Deprecated('Use serverLogoDescriptor instead')
 const ServerLogo$json = {
