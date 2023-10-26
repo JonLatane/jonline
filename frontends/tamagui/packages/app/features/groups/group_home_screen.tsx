@@ -1,6 +1,6 @@
 import { GetGroupsRequest, Group } from '@jonline/api'
 import { Spinner, YStack, useWindowDimensions } from '@jonline/ui'
-import { RootState, selectGroupById, updateGroups, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
+import { RootState, selectGroupById, loadGroupsPage, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { BaseHomeScreen } from '../home/home_screen'
@@ -38,7 +38,7 @@ export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComp
     if (!accountOrServer.server) return;
 
     setTimeout(() =>
-      dispatch(updateGroups({ ...accountOrServer, ...GetGroupsRequest.create() }))
+      dispatch(loadGroupsPage({ ...accountOrServer, ...GetGroupsRequest.create() }))
         .then(() => setLoadingGroups(false)), 1);
   }
 

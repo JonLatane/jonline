@@ -14,16 +14,16 @@ import { InstanceTime } from "./instance_time";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import { Repeat, Delete, Edit, Eye, History, Save, CalendarPlus, X as XIcon, Link, Check, ChevronDown, ChevronUp } from "@tamagui/lucide-icons";
 import icons from "@tamagui/lucide-icons";
-import { GroupPostManager } from "../post/group_post_manager";
+import { GroupPostManager } from "../groups/group_post_manager";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
 import { MediaRenderer } from "../media/media_renderer";
-import { FadeInView } from "../post/fade_in_view";
+import { FadeInView } from "../../components/fade_in_view";
 import { postBackgroundSize } from "../post/post_card";
 import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
 import { LinearGradient } from '@tamagui/linear-gradient';
 import { PostMediaManager } from "../post/post_media_manager";
 import { PostMediaRenderer } from "../post/post_media_renderer";
-import { VisibilityPicker } from "../post/visibility_picker";
+import { VisibilityPicker } from "../../components/visibility_picker";
 import { postVisibilityDescription } from "../post/base_create_post_sheet";
 
 interface Props {

@@ -6,9 +6,9 @@ import { Group, GroupPost, Permission, Post, PostContext } from "@jonline/api";
 import { Button, Separator, Spinner, Text, XStack, YStack } from '@jonline/ui';
 
 
-import { useGroupContext } from "../groups/group_context";
-import { GroupsSheet } from '../groups/groups_sheet';
-import { AuthorInfo } from "./author_info";
+import { useGroupContext } from "./group_context";
+import { GroupsSheet } from './groups_sheet';
+import { AuthorInfo } from "../post/author_info";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useLink } from "solito/link";
@@ -36,7 +36,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
   const maxErrors = 3;
   const [errorCount, setErrorCount] = useState(0);
   useEffect(() => {
-    console.log('errorCount', errorCount);
+    // console.log('errorCount', errorCount);
     if (isVisible && !groupPostData && !loading && errorCount < maxErrors) {
       dispatch(loadPostGroupPosts({ ...accountOrServer, postId: post.id }))
         .then(() => setLoading(false))

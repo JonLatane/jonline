@@ -51,6 +51,7 @@ jobs:
     - name: Rename Rust binaries for Dockerfiles
       run: >-
            mv backend/target/release/jonline backend/target/release/jonline__server_release &&
+           mv backend/target/release/disable_cdn_grpc backend/target/release/disable_cdn_grpc__server_release &&
            mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
            mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
            mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release &&

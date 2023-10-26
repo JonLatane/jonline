@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AnyAction, Store, ThunkDispatch, combineReducers, configureStore } from "@reduxjs/toolkit";
+import { AnyAction, PayloadAction, Store, ThunkDispatch, combineReducers, configureStore } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
 import { createSelectorHook, useDispatch } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from 'redux-persist';
@@ -81,6 +81,11 @@ export const store: AppStore = configureStore({
 });
 
 export const persistor = persistStore(store);
+
+export const actionSucceeded = (action: PayloadAction<any, string, any, any> | undefined | unknown) => !actionFailed(action);
+export const actionFailed = (action: PayloadAction<any, string, any, any> | undefined | unknown) => 
+  action && Object.keys(action).includes('type') && (action as PayloadAction<any, string, any, any>).type.endsWith('rejected');
+  // !!(action?.type.endsWith('rejected'));
 
 // Reset store data that depends on selected server/account.
 export function resetAllData() {

@@ -84,7 +84,7 @@ export const loadUserPosts: AsyncThunk<GetPostsResponse, LoadUserPosts, any> = c
 );
 export type LoadUserEvents = AccountOrServer & { userId: string };
 export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEvents, any> = createAsyncThunk<GetEventsResponse, LoadUserEvents>(
-  "users/loadPosts",
+  "users/loadEvents",
   async (request) => {
     let client = await getCredentialClient(request);
     const result = await client.getEvents({ authorUserId: request.userId }, client.credential);

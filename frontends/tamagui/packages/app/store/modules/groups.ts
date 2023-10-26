@@ -12,7 +12,7 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events";
-import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroups } from "./group_actions";
+import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, respondToMembershipRequest, loadGroupsPage, updateGroup, deleteGroup } from "./group_actions";
 import { store } from "../store";
 import { passes } from "app/utils/moderation_utils";
 import { usersAdapter } from "./users";
@@ -101,17 +101,26 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
-    builder.addCase(updateGroups.pending, (state) => {
+    builder.addCase(updateGroup.fulfilled, (state, action) => {
+      const group = action.payload;
+      groupsAdapter.upsertOne(state, group);
+      state.shortnameIds[action.meta.arg.shortname] = undefined;
+      state.shortnameIds[group.shortname] = group.id;
+    });
+    builder.addCase(deleteGroup.fulfilled, (state, action) => {
+      groupsAdapter.removeOne(state, action.meta.arg.id);
+    });
+    builder.addCase(loadGroupsPage.pending, (state) => {
       state.status = "loading";
       state.error = undefined;
     });
-    builder.addCase(updateGroups.fulfilled, (state, action) => {
+    builder.addCase(loadGroupsPage.fulfilled, (state, action) => {
       state.status = "loaded";
       groupsAdapter.upsertMany(state, action.payload.groups);
       action.payload.groups.forEach(g => state.shortnameIds[g.shortname] = g.id);
       state.successMessage = `Groups loaded.`;
     });
-    builder.addCase(updateGroups.rejected, (state, action) => {
+    builder.addCase(loadGroupsPage.rejected, (state, action) => {
       state.status = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);

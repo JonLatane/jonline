@@ -7,7 +7,7 @@ import { Platform, View } from 'react-native';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
 import moment from 'moment';
-import { VisibilityPicker } from '../post/visibility_picker';
+import { VisibilityPicker } from '../../components/visibility_picker';
 import EventCard from './event_card';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
 

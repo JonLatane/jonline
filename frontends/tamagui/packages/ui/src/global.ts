@@ -9,11 +9,14 @@ declare module 'tamagui' {
 
 export default config
 
+export function isSafari() {
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+}
+
 export function needsScrollPreservers(): boolean {
   if (!isClient) return false;
 
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  if (!isSafari) return false;
+  if (!isSafari()) return false;
 
   const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
   const result = ['back_forward', 'reload'].includes(nav.type);

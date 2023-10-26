@@ -8,6 +8,7 @@ import { Provider } from 'app/provider'
 import Head from 'next/head'
 import React, { startTransition } from 'react'
 import type { SolitoAppProps } from 'solito'
+import { isSafari } from '@jonline/ui'
 
 if (process.env.NODE_ENV === 'production') {
   require('../public/tamagui.css')
@@ -18,8 +19,8 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
   // usePreserveScroll();
   React.useEffect(() => {
     // Taken from StackOverflow. Trying to detect both Safari desktop and mobile.
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (isSafari) {
+    // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari()) {
       // This is kind of a lie.
       // We still rely on the manual Next.js scrollRestoration logic.
       // However, we *also* don't want Safari grey screen during the back swipe gesture.
@@ -39,6 +40,13 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
         <meta name="description" content="Jonline is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends." />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/favicon.ico"/>
+
+        {/* <link rel="icon" href="/favicon.ico" sizes="any" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/favicon.ico"/>
+        <link rel="manifest" href="/site.webmanifest" /> */}
+
+        {/* <link rel="icon" href="/favicon.ico" /> */}
         {/* <link rel="mask-icon" href="/favicon.ico" color="#000000" /> */}
 
       </Head>

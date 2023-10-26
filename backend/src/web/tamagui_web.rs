@@ -1,12 +1,20 @@
-use rocket::{fs::*, routes, Route, State, http::{ContentType, MediaType}};
+use ico;
+use rocket::{
+    fs::*,
+    http::{ContentType, MediaType},
+    routes, Route, State,
+};
 use rocket_cache_response::CacheResponse;
 use std::{path::*, str::FromStr};
 
+use crate::{
+    protos::{ServerInfo, ServerLogo},
+    rpcs::get_server_configuration,
+    web::RocketState,
+};
 use rocket::http::Status;
 
-use crate::{protos::{ServerInfo, ServerLogo}, rpcs::get_server_configuration, web::RocketState};
-
-use super::load_media_file_data;
+use super::{load_media_file_data, open_named_file};
 
 lazy_static! {
     pub static ref TAMAGUI_PAGES: Vec<Route> = routes![
@@ -70,7 +78,6 @@ pub async fn tamagui_favicon<'a>(
             ..Default::default()
         })
         .square_media_id;
-    // MediaType::from_str(&media.content_type).map_err(|_| Status::ExpectationFailed)?
     match logo {
         None => {
             let media_type = ContentType(
@@ -92,10 +99,42 @@ pub async fn tamagui_favicon<'a>(
             })
         }
         Some(square_media_id) => {
-            // let logo_media_id = square_media_id.to_db_id_or_err("logo").map_err(|_| Status::BadRequest)?;
-            load_media_file_data(&square_media_id, state).await
-            // Err(Status::NotImplemented)
-        },
+            let data = load_media_file_data(&square_media_id, state).await?;
+            let mut content_type = &data.0;
+            let mut named_filename = &data.1.path().as_os_str().to_str().unwrap().to_string();
+            let ico_filename = format!(
+                "{}/png-converted-favicon.ico",
+                state.tempdir.path().display()
+            );
+            let ico_content_type = &ContentType(
+                MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
+            );
+            // Convert PNG icons to ICO
+            if content_type.to_string().ends_with("png") {
+                let mut icon_dir = ico::IconDir::new(ico::ResourceType::Icon);
+                // Read PNG file from disk and add it to the collection:
+                let file = std::fs::File::open(named_filename).unwrap();
+                let image = ico::IconImage::read_png(file).unwrap();
+                icon_dir.add_entry(ico::IconDirEntry::encode(&image).unwrap());
+                // Alternatively, you can create an IconImage from raw RGBA pixel data
+                // (e.g. from another image library):
+                let rgba = vec![std::u8::MAX; 4 * 16 * 16];
+                let image = ico::IconImage::from_rgba_data(16, 16, rgba);
+                icon_dir.add_entry(ico::IconDirEntry::encode(&image).unwrap());
+                // Finally, write the ICO file to disk:
+                let file = std::fs::File::create(&ico_filename).unwrap();
+                icon_dir.write(file).unwrap();
+
+                named_filename = &ico_filename;
+                content_type = ico_content_type
+            }
+
+            Ok(CacheResponse::Public {
+                responder: (content_type.to_owned(), open_named_file(named_filename).await?),
+                max_age: 3600 * 12,
+                must_revalidate: true,
+            })
+        }
     }
 }
 

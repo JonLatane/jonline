@@ -6,9 +6,9 @@ import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { GroupsSheet } from '../groups/groups_sheet';
-import { ToggleRow } from '../settings_sheet';
+import { ToggleRow } from '../../components/toggle_row';
 import { PostMediaManager } from './post_media_manager';
-import { VisibilityPicker } from './visibility_picker';
+import { VisibilityPicker } from '../../components/visibility_picker';
 
 export type BaseCreatePostSheetProps = {
   selectedGroup?: Group;

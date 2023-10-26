@@ -1,8 +1,9 @@
-import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
+import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, setShowUserIds, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
 import { useInlineFeatureNavigation } from './tabs/features_navigation';
+import { ToggleRow } from '../components/toggle_row';
 
 
 export type SettingsSheetProps = {
@@ -174,24 +175,3 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   )
 }
 
-export interface ToggleRowProps {
-  name: string;
-  value: boolean;
-  setter: (value: boolean) => any;
-  disabled?: boolean;
-  autoDispatch?: boolean;
-}
-export function ToggleRow({ name, value, setter, disabled = false, autoDispatch = false }: ToggleRowProps) {
-  const dispatch = useTypedDispatch();
-  return <XStack space='$3' o={disabled ? 0.5 : 1} my='$1'>
-    <Label marginVertical='auto' f={1}>{name}</Label>
-    <Switch size="$5" margin='auto'
-      defaultChecked={value}
-      checked={value}
-      value={value.toString()}
-      disabled={disabled}
-      onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
-      <Switch.Thumb animation="quick" backgroundColor='black' />
-    </Switch>
-  </XStack>;
-}

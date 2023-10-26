@@ -12,7 +12,6 @@ export type ModerationPickerProps = {
   moderationDescription?: (moderation: Moderation) => string | undefined;
 };
 
-
 export function ModerationPicker({
   id,
   values = [Moderation.APPROVED, Moderation.PENDING, Moderation.REJECTED, Moderation.UNMODERATED],
@@ -26,7 +25,7 @@ export function ModerationPicker({
     const selectedModeration = parseInt(v) as Moderation;
     onChange(selectedModeration)
   }
-  const description = defaultModerationDescription?.(moderation);
+  const description = moderationDescription(moderation);
 
   return <YStack w='100%' maw={350}>
     <Select native id={id ?? 'moderation-picker'} onValueChange={onValueSelected} value={moderation.toString()}>
@@ -38,7 +37,7 @@ export function ModerationPicker({
           <XStack w='100%'>
             <Select.Group space="$0" w='100%'>
               <Select.Label w='100%'>{label ?? 'Moderation'}</Select.Label>
-              {[Moderation.APPROVED, Moderation.PENDING, Moderation.REJECTED, Moderation.UNMODERATED,].map((item, i) => {
+              {values.map((item, i) => {
                 return (
                   <Select.Item w='100%' index={i} key={`${item}`} value={item.toString()}>
                     <Select.ItemText w='100%'>

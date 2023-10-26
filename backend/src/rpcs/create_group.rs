@@ -55,20 +55,24 @@ pub fn create_group(
             vec![Permission::ViewPosts, Permission::ViewEvents].to_json_permissions();
     }
     let mut membership: Option<models::Membership> = None;
+    let name = (&request.name).clone();
+    let description = (&request.description).clone();
+
+    let derived_shortname = derive_shortname(&request);
 
     let group: Result<models::Group, diesel::result::Error> = conn
         .transaction::<models::Group, diesel::result::Error, _>(|conn| {
             let group = insert_into(groups::table)
                 .values(&models::NewGroup {
-                    name: request.name.to_owned(),
-                    shortname: derive_shortname(&request),
-                    description: request.description,
-                    avatar_media_id: avatar_media_id,
-                    visibility: visibility,
-                    default_membership_permissions: default_membership_permissions,
-                    default_membership_moderation: default_membership_moderation,
-                    default_post_moderation: default_post_moderation,
-                    default_event_moderation: default_event_moderation,
+                    name,
+                    shortname: (&derived_shortname).clone(),
+                    description,
+                    avatar_media_id,
+                    visibility,
+                    default_membership_permissions,
+                    default_membership_moderation,
+                    default_post_moderation,
+                    default_event_moderation,
                     member_count: 1,
                 })
                 .get_result::<models::Group>(conn)?;
@@ -101,7 +105,8 @@ pub fn create_group(
                 Some(&media_lookup(avatar.map(|a| vec![a]).unwrap_or(vec![]))),
             ))
         }
-        Err(DatabaseError(UniqueViolation, _)) => {
+        Err(DatabaseError(UniqueViolation, details)) => {
+            log::error!("Error creating group! {:?}, {} {:?}", details, derived_shortname, request);
             Err(Status::new(Code::NotFound, "duplicate_group_name"))
         }
         Err(e) => {

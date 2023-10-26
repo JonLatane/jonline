@@ -12,53 +12,28 @@ pub fn get_server_configuration(
 ) -> Result<protos::ServerConfiguration, Status> {
     log::info!("GetServerConfiguration called");
     let result = get_server_configuration_model(conn)?.to_proto();
-    log::info!("GetServerConfiguration called, returning {:?}", result);
+    // log::info!("GetServerConfiguration called, returning {:?}", result);
     Ok(result)
-    // let server_configuration = server_configurations
-    //     .filter(active.eq(true))
-    //     .first::<models::ServerConfiguration>(conn);
-    // log::info!(
-    //     "GetServerConfiguration called, found {:?}",
-    //     server_configuration
-    // );
-    // match server_configuration {
-    //     Ok(server_configuration) => {
-    //         let result = server_configuration.to_proto();
-    //         log::info!("GetServerConfiguration called, returning {:?}", result);
-    //         Ok(result)
-    //     }
-    //     Err(diesel::NotFound) => {
-    //         let result = create_default_server_configuration(conn);
-    //         log::info!("GetServerConfiguration called, generated {:?}", result);
-    //         result
-    //     }
-    //     Err(e) => {
-    //         log::error!("GetServerConfiguration error: {:?}", e);
-    //         Err(Status::new(Code::Unauthenticated, "data_error"))
-    //     }
-    // }
 }
 
 pub fn get_server_configuration_model(
     conn: &mut PgPooledConnection,
 ) -> Result<models::ServerConfiguration, Status> {
-    // log::info!("GetServerConfiguration called");
     let server_configuration = server_configurations
         .filter(active.eq(true))
         .first::<models::ServerConfiguration>(conn);
-    log::info!(
-        "GetServerConfiguration called, found {:?}",
-        server_configuration
-    );
+    // log::info!(
+    //     "GetServerConfiguration called, found {:?}",
+    //     server_configuration
+    // );
     match server_configuration {
-        Ok(server_configuration) => {
-            let result = server_configuration;
-            log::info!("get_server_configuration_model called, returning {:?}", result);
-            Ok(result)
-        }
+        Ok(sc) => Ok(sc),
         Err(diesel::NotFound) => {
             let result = create_default_server_configuration(conn);
-            log::info!("get_server_configuration_model called, generated {:?}", result);
+            log::warn!(
+                "get_server_configuration_model diesel::NotFound error {:?}",
+                result
+            );
             result
         }
         Err(e) => {
@@ -84,6 +59,5 @@ pub fn create_default_server_configuration(
             ));
         }
     };
-    log::info!("Generated new default server configuration: {:?}", result);
     Ok(result)
 }

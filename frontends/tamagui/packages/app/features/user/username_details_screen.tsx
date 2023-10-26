@@ -3,19 +3,19 @@ import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, TextArea, T
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
 import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation_utils';
+import { hasAdminPermission } from 'app/utils/permission_utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
-import { AsyncPostCard } from '../post/async_post_card';
+import { ToggleRow } from '../../components/toggle_row';
+import { VisibilityPicker } from '../../components/visibility_picker';
+import PostCard from '../post/post_card';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
-import { VisibilityPicker } from '../post/visibility_picker';
-import { ToggleRow } from '../settings_sheet';
 import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PermissionsEditor, PermissionsEditorProps } from './permissions_editor';
 import { UserCard, useFullAvatarHeight } from './user_card';
-import { hasAdminPermission } from 'app/utils/permission_utils';
 
 const { useParam } = createParam<{ username: string }>()
 
@@ -67,7 +67,10 @@ export function UsernameDetailsScreen() {
     || permissionsModified;
 
   const userPosts = useTypedSelector((state: RootState) => {
-    return userId ? (state.users.idPosts ?? {})[userId] : undefined
+    return userId
+      ? (state.users.idPosts ?? {})[userId]
+        ?.map(postId => state.posts.entities[postId]!)
+      : undefined
   });
   const [loadingUserPosts, setLoadingUserPosts] = useState(false);
   const [loadingUserEvents, setLoadingUserEvents] = useState(false);
@@ -139,7 +142,7 @@ export function UsernameDetailsScreen() {
     }
     if (user && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
-    } 
+    }
   });
   const windowHeight = useWindowDimensions().height;
   function saveUser() {
@@ -195,8 +198,9 @@ export function UsernameDetailsScreen() {
                   <Heading size='$4' ta='center' mt='$2'>Latest Activity</Heading>
                   <>
                     <YStack>
-                      {userPosts?.map((postId) => {
-                        return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
+                      {userPosts?.map((post) => {
+                        return <PostCard key={`userpost-${post.id}`} post={post} isPreview />;
+                        // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
                       })}
                       {showScrollPreserver ? <YStack h={100000} /> : undefined}
                     </YStack>

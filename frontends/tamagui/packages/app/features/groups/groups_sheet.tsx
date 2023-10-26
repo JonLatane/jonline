@@ -1,15 +1,12 @@
-import { GetGroupsRequest, Group, Permission, Post } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text, standardAnimation, Separator, ZStack, Dialog, ListItemText, YGroup, ListItem } from '@jonline/ui';
-import { Boxes, Calendar, ChevronDown, Cloud, Delete, Edit, Eye, Info, MessageSquare, Moon, Save, Search, Star, Sun, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, isGroupLocked, joinLeaveGroup, selectAllGroups, serverID, updateGroups, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
-import React, { createRef, useEffect, useState } from 'react';
-import { FlatList, GestureResponderEvent, TextInput, View } from 'react-native';
-import { useLink } from 'solito/link';
-import { } from '../post/post_card';
-import { TamaguiMarkdown } from '../post/tamagui_markdown';
-import { passes, pending } from '../../utils/moderation_utils';
+import { GetGroupsRequest, Group } from '@jonline/api';
+import { Button, Heading, Input, Paragraph, Sheet, Theme, XStack, YStack } from '@jonline/ui';
+import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
+import { RootState, loadGroupsPage, selectAllGroups, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import React, { useEffect, useState } from 'react';
+import { TextInput } from 'react-native';
 import { CreateGroupSheet } from './create_group_sheet';
-import { GroupButton, GroupJoinLeaveButton } from './group_buttons';
+import { GroupButton } from './group_buttons';
+import { GroupDetailsSheet } from './group_details_sheet';
 
 export type GroupsSheetProps = {
   selectedGroup?: Group;
@@ -37,29 +34,20 @@ export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSel
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroupId, setInfoGroupId] = useState<string | undefined>(undefined);
-  const infoGroup = useTypedSelector((state: RootState) =>
-    infoGroupId ? state.groups.entities[infoGroupId] : undefined);
+
   const [position, setPosition] = useState(0);
   const [searchText, setSearchText] = useState('');
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const account = accountOrServer.account;
+  const { server } = accountOrServer;
   const [hasRenderedSheet, setHasRenderedSheet] = useState(false);
-  const [editing, setEditing] = useState(false);
-  // function setEditing(value: boolean) {
-  //   _setEditing(value);
-  //   // onEditingChange?.(value);
-  // }
-  const [previewingEdits, setPreviewingEdits] = useState(false);
-  const [savingEdits, setSavingEdits] = useState(false);
 
-  // const app = useTypedSelector((state: RootState) => state.app);
-  // const serversState = useTypedSelector((state: RootState) => state.servers);
-  // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
-  const searchInputRef = React.createRef<TextInput>();// = React.createRef() as React.MutableRefObject<HTMLElement | View>;
+
+  const { navAnchorColor } = useServerTheme();
+  const searchInputRef = React.createRef<TextInput>();
 
   const groupsState = useTypedSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
+
   useEffect(() => {
     if (!loadingGroups && groupsState.status == 'unloaded' && !extraListItemChrome) {
       setLoadingGroups(true);
@@ -78,14 +66,12 @@ export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSel
     if (!accountOrServer.server) return;
 
     setTimeout(() =>
-      dispatch(updateGroups({ ...accountOrServer, ...GetGroupsRequest.create() })), 1);
+      dispatch(loadGroupsPage({ ...accountOrServer, ...GetGroupsRequest.create() })), 1);
   }
 
   const recentGroupIds = useTypedSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
-  // const renderedTopGroupIds = topGroupIds ?? recentGroupIds;
-
 
   const allGroups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
 
@@ -118,67 +104,8 @@ export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSel
         (!(recentGroupIds || []).includes(g.id))),
   ];
 
-  // console.log('topGroupIds', topGroupIds);
-  // console.log('topGroups', topGroups);
-  // console.log('sortedGroups', sortedGroups);
-
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
-
-  useEffect(() => {
-    if (!infoOpen && infoGroup) {
-      setInfoGroupId(undefined);
-    }
-  }, [infoOpen]);
-
-  function updateGroup() {
-    setSavingEdits(true);
-    // dispatch(updatePost({
-    //   ...accountOrServer, ...post,
-    //   content: editedContent,
-    //   media: editedMedia,
-    //   embedLink: editedEmbedLink,
-    //   visibility: editedVisibility,
-    // })).then(() => {
-    //   setEditing(false);
-    //   setSavingEdits(false);
-    //   setPreviewingEdits(false);
-    // });
-    setTimeout(() => setSavingEdits(false), 3000);
-  }
-  function deleteGroup() {
-    setDeleting(true);
-    // dispatch(deleteGroup({ ...accountOrServer, ...post })).then(() => {
-    //   setDeleted(true);
-    //   setDeleting(false);
-    // });
-  }
-
-  const infoRenderingGroup = infoGroup ?? selectedGroup;
-  const canEditGroup = account?.user?.permissions?.includes(Permission.ADMIN)
-    || infoRenderingGroup?.currentUserMembership?.permissions?.includes(Permission.ADMIN);
-  const [editingGroup, setEditingGroup] = useState<boolean>(false);
-  const [editedName, setEditedName] = useState<string>(infoRenderingGroup?.name ?? '');
-  const [editedDescription, setEditedDescription] = useState<string>(infoRenderingGroup?.name ?? '');
-  const [editedAvatar, setEditedAvatar] = useState(infoRenderingGroup?.avatar);
-  const [deleted, setDeleted] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  useEffect(() => {
-    if (infoRenderingGroup) {
-      setEditingGroup(false);
-      setEditedName(infoRenderingGroup.name);
-      setEditedDescription(infoRenderingGroup.description ?? '');
-      setEditedAvatar(infoRenderingGroup.avatar);
-    }
-  }, [infoRenderingGroup?.id, server ? serverID(server) : 'no server']);
-
-
-  //TODO: Simplify/abstract this into its own component? But then, with this design, will there ever be a need
-  // for a *third* "Join" button in this app?
-  const joined = passes(infoRenderingGroup?.currentUserMembership?.userModeration)
-    && passes(infoRenderingGroup?.currentUserMembership?.groupModeration);
-  const membershipRequested = infoRenderingGroup?.currentUserMembership && !joined && passes(infoRenderingGroup?.currentUserMembership?.userModeration);
-  const invited = infoRenderingGroup?.currentUserMembership && !joined && passes(infoRenderingGroup?.currentUserMembership?.groupModeration);
 
   return (
 
@@ -214,28 +141,17 @@ export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSel
           <Sheet.Overlay />
           <Sheet.Frame>
             <Sheet.Handle />
-            {/* <ZStack h={60}>
-              <XStack space='$4' paddingHorizontal='$3' mb='$2'>
-                <XStack f={1} />
-                <CreateGroupSheet />
-              </XStack> */}
             <XStack space='$4' paddingHorizontal='$3' mb='$2'>
               <XStack f={1} />
               <Button
                 alignSelf='center'
                 size="$3"
                 mt='$1'
-                // transform={[{translateY: 20}]}
-                // mb='$3'
-                // my='auto'
                 circular
                 icon={ChevronDown}
                 onPress={() => setOpen(false)} />
               <XStack f={1} />
-              {/* <CreateGroupSheet /> */}
             </XStack>
-
-            {/* </ZStack> */}
 
             <YStack space="$3" mb='$2' maw={800} als='center' width='100%'>
               {title ? <Heading size={itemTitle ? '$2' : "$7"} paddingHorizontal='$3' mb={itemTitle ? -15 : '$3'}>{title}</Heading> : undefined}
@@ -260,7 +176,6 @@ export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSel
                 {/* </Input> */}
               </XStack>
             </YStack>
-
             <Sheet.ScrollView p="$4" space>
               <YStack maw={600} als='center' width='100%'>
                 {topGroups.length > 0
@@ -355,148 +270,7 @@ export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSel
         </>
         : undefined}
       {!hideInfoButtons ?
-        <Sheet
-          modal
-          open={infoOpen}
-          onOpenChange={setInfoOpen}
-          snapPoints={[81]}
-          position={position}
-          onPositionChange={setPosition}
-          dismissOnSnapToBottom
-        >
-          <Sheet.Overlay />
-          <Sheet.Frame>
-            <Sheet.Handle />
-            <XStack space='$4' paddingHorizontal='$3'>
-              <XStack f={1} />
-              <Button
-                alignSelf='center'
-                size="$4"
-                mb='$3'
-                circular
-                icon={ChevronDown}
-                onPress={() => setInfoOpen(false)} />
-              <XStack f={1} />
-            </XStack>
-
-            <YStack space="$3" mb='$2' p='$4' maw={800} als='center' width='100%'>
-              <XStack>
-                <Heading my='auto' f={1}>{infoRenderingGroup?.name}</Heading>
-                {infoRenderingGroup
-                  ? <GroupJoinLeaveButton group={infoRenderingGroup} hideLeaveButton={hideLeaveButtons} />
-                  : undefined}
-              </XStack>
-              <XStack>
-                <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
-                <XStack f={1} />
-                <Heading size='$1' marginVertical='auto'>
-                  {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
-                </Heading>
-              </XStack>
-              <XStack>
-                {canEditGroup
-                  ? editing
-                    ? <>
-                      <Button my='auto' size='$2' icon={Save} onPress={updateGroup} color={primaryAnchorColor} disabled={savingEdits} transparent>
-                        Save
-                      </Button>
-                      <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
-                        Cancel
-                      </Button>
-                      {previewingEdits
-                        ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
-                          Edit
-                        </Button>
-                        :
-                        <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
-                          Preview
-                        </Button>}
-                    </>
-                    : <>
-                      <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
-                        Edit
-                      </Button>
-
-                      <Dialog>
-                        <Dialog.Trigger asChild>
-                          <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
-                            Delete
-                          </Button>
-                        </Dialog.Trigger>
-                        <Dialog.Portal zi={1000011}>
-                          <Dialog.Overlay
-                            key="overlay"
-                            animation="quick"
-                            o={0.5}
-                            enterStyle={{ o: 0 }}
-                            exitStyle={{ o: 0 }}
-                          />
-                          <Dialog.Content
-                            bordered
-                            elevate
-                            key="content"
-                            animation={[
-                              'quick',
-                              {
-                                opacity: {
-                                  overshootClamping: true,
-                                },
-                              },
-                            ]}
-                            m='$3'
-                            enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                            exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                            x={0}
-                            scale={1}
-                            opacity={1}
-                            y={0}
-                          >
-                            <YStack space>
-                              <Dialog.Title>Delete Group</Dialog.Title>
-                              <Dialog.Description>
-                                <YStack space='$3'>
-                                  <Paragraph>
-                                    Really delete the group "{infoRenderingGroup?.name ?? 'group'}"?
-                                  </Paragraph>
-                                  <Paragraph>
-                                    The group will be deleted along with any group post/event associations.
-                                    Posts/events themselves belong to the users who posted them, not {infoRenderingGroup?.name ?? 'this group'}.
-                                  </Paragraph>
-                                </YStack>
-                              </Dialog.Description>
-
-                              <XStack space="$3" jc="flex-end">
-                                <Dialog.Close asChild>
-                                  <Button>Cancel</Button>
-                                </Dialog.Close>
-                                {/* <Dialog.Action asChild> */}
-                                <Theme inverse>
-                                  <Button onPress={deleteGroup}>Delete</Button>
-                                </Theme>
-                                {/* </Dialog.Action> */}
-                              </XStack>
-                            </YStack>
-                          </Dialog.Content>
-                        </Dialog.Portal>
-                      </Dialog>
-                    </>
-                  : undefined}
-              </XStack>
-            </YStack>
-
-            <Sheet.ScrollView p="$4" space>
-              <YStack maw={600} als='center' width='100%'>
-                {/* <ReactMarkdown children={infoRenderingGroup?.description ?? ''}
-                    components={{
-                      // li: ({ node, ordered, ...props }) => <li }} {...props} />,
-                      p: ({ node, ...props }) => <Paragraph children={props.children} size='$1' />,
-                      a: ({ node, ...props }) => <Anchor color={navColor} target='_blank' href={props.href} children={props.children} />,
-                    }} /> */}
-                <TamaguiMarkdown text={infoRenderingGroup?.description ?? ''} />
-              </YStack>
-            </Sheet.ScrollView>
-          </Sheet.Frame>
-        </Sheet>
+        <GroupDetailsSheet {...{ selectedGroup, infoGroupId, infoOpen, setInfoOpen }} />
         : undefined}
     </>
   )

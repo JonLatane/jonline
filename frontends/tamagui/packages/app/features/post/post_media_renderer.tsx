@@ -8,7 +8,7 @@ import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmb
 import { useLink } from "solito/link";
 
 import { MediaRenderer } from "../media/media_renderer";
-import { FadeInView } from './fade_in_view';
+import { FadeInView } from '../../components/fade_in_view';
 import { postBackgroundSize } from "./post_card";
 
 interface PostMediaRendererProps {

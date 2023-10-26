@@ -1,5 +1,5 @@
 import { Group, Media, User, UserListingType, WebUserInterface } from "@jonline/api";
-import { Button, Heading, Paragraph, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
+import { Button, Heading, isSafari, Paragraph, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useTheme } from "@react-navigation/native";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, getUsersPage, loadUsersPage, markGroupVisit, useAccountOrServer, useServerTheme, useTypedDispatch, useTypedSelector } from "app/store";
@@ -124,7 +124,11 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   {renderButtonChildren
                     ? shrinkHomeButton
                       ? useSquareLogo
-                        ? <XStack h='100%' scale={1.1} transform={[{ translateY: 1.5 }, { translateX: 1.0 }]}>
+                        ? <XStack h='100%' scale={1.1}
+                          transform={[
+                            { translateY: 1.5 },
+                            { translateX: isSafari() ? 8.0 : 2.0 }]
+                          } >
                           <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
                         </XStack>
                         : <XStack h={'100%'} maw={maxWidth - (serverNameEmoji ? 50 : 0)}>

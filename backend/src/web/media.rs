@@ -99,14 +99,20 @@ pub async fn media_file<'a>(
     log::info!("media_file: {:?}", id);
     let _user = get_media_user(authorization, auth_header, cookies, state).ok();
 
-    load_media_file_data(id, state).await
+    let data = load_media_file_data(id, state).await?;
+    
+    Ok(CacheResponse::Public {
+        responder: data,
+        max_age: 3600 * 12,
+        must_revalidate: true,
+    })
 }
 
 // #[rocket::get("/media/<id>?<authorization>")]
 pub async fn load_media_file_data<'a>(
     id: &str,
     state: &State<RocketState>,
-) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
+) -> Result<(ContentType, NamedFile), Status> {
     log::info!("media_file: {:?}", id);
 
     let media = schema::media::table
@@ -153,14 +159,11 @@ pub async fn load_media_file_data<'a>(
         MediaType::from_str(&media.content_type).map_err(|_| Status::ExpectationFailed)?,
     );
     info!("media_type: {:?}", media_type);
-    let result = NamedFile::open(local_filename)
-        .await
-        .map_err(|_| Status::ImATeapot)?;
-    Ok(CacheResponse::Public {
-        responder: (media_type, result),
-        max_age: 3600 * 12,
-        must_revalidate: true,
-    })
+    let result = open_named_file(&local_filename).await?;
+    // let result = NamedFile::open(local_filename)
+    //     .await
+    //     .map_err(|_| Status::ImATeapot)?;
+    Ok((media_type, result))
 
     // let mut _stream = state
     //     .bucket
@@ -195,6 +198,12 @@ pub async fn load_media_file_data<'a>(
 
     // So far all I can get to work is this...
     // Ok(ByteStream! { yield bytes::Bytes::from("test")})
+}
+
+pub async fn open_named_file(local_filename: &str) -> Result<NamedFile, Status> {
+    Ok(NamedFile::open(local_filename)
+        .await
+        .map_err(|_| Status::ImATeapot)?)
 }
 
 /// Gets the user from a manual jonline_access_token, auth header, or cookies (in that priority order).

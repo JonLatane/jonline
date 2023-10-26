@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Delete } from '@tamagui/lucide-icons';
 import React from 'react';
 import { MediaChooser } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
-import { ToggleRow } from '../settings_sheet';
+import { ToggleRow } from '../../components/toggle_row';
 
 export type PostMediaManagerProps = {
   entityName?: string;

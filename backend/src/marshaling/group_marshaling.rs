@@ -43,13 +43,18 @@ impl ToProtoGroup for models::Group {
         user_membership: Option<Membership>,
         media_lookup: Option<&MediaLookup>,
     ) -> Group {
+        let avatar = match (media_lookup, &self.avatar_media_id) {
+            (Some(media_lookup), Some(media_id)) => {
+                media_lookup.get(media_id).map(|media| media.to_proto())
+            }
+            _ => None,
+        };
         let group = Group {
             id: self.id.to_proto_id().to_string(),
             name: self.name.to_owned(),
             shortname: self.shortname.to_owned(),
             description: self.description.to_owned(),
-            avatar: media_lookup
-                .map(|ml| ml.get(&self.avatar_media_id.unwrap()).unwrap().to_proto()),
+            avatar,
             // avatar_media_id: self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
             default_membership_permissions: self
                 .default_membership_permissions

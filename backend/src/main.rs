@@ -29,6 +29,7 @@ extern crate percent_encoding;
 extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
+extern crate ico;
 
 pub mod auth;
 pub mod db_connection;
@@ -122,7 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             return Ok(());
         }
-        log::info!("Secure gRPC configuration successful. HTTP servers.");
+        log::info!("Secure gRPC configuration successful. Starting only insecure HTTP servers...");
     }
 
     let mut rocket_handles: Vec<JoinHandle<()>> = vec![];

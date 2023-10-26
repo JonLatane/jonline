@@ -55,6 +55,7 @@ aws-region = "0.25.1"
 bytes = "1.4.0"
 tempfile = "3.5.0"
 percent-encoding = "2.3.0"
+ico = "0.3.0"
 
 [build-dependencies]
 tonic-build = "0.10.2"

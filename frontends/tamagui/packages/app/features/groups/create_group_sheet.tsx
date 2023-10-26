@@ -8,8 +8,9 @@ import { TextInput } from 'react-native';
 import { useMediaUrl } from 'app/hooks';
 import { pending } from 'app/utils/moderation_utils';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
-import { VisibilityPicker } from '../post/visibility_picker';
-import { ToggleRow } from '../settings_sheet';
+import { VisibilityPicker } from '../../components/visibility_picker';
+import { ToggleRow } from '../../components/toggle_row';
+import { actionFailed } from '../../store/store';
 
 export type CreateGroupSheetProps = {
   // selectedGroup?: Group;
@@ -138,7 +139,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
         action?.type
         // console.log('result', action)
         // debugger;
-        if (action?.type?.endsWith('rejected')) {
+        if (actionFailed(action)) {
           setError('Error creating group.');
         } else {
           resetGroup();
@@ -280,7 +281,12 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                         </XStack>}
                     </Button>
                   </XStack>
-                  <ZStack mt='$1' h={showMedia ? 95 : showSettings ? 215 : 0}>
+                  <ZStack mt='$1' h={
+                    showMedia
+                      ? 95
+                      : showSettings
+                        ? mediaQuery.gtXs ? 215 : 230
+                        : 0}>
                     <AnimatePresence>
                       {showSettings
                         ? <YStack key='create-group-settings'
@@ -322,32 +328,6 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                       </AnimatePresence>
                       : undefined}
                   </ZStack>
-                  {/* <XStack space='$2'>
-                      <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
-                        disabled={disableInputs} opacity={disableInputs || link == '' ? 0.5 : 1}
-                        onFocus={() => setShowSettings(false)}
-                        // autoCapitalize='words'
-                        value={link}
-                        onChange={(data) => { setLink(data.nativeEvent.text) }} /> */}
-
-                  {/* <ZStack w='$4' ml='$2'>
-                        <Paragraph zi={1000} pointerEvents='none' size='$1' mt='auto' ml='auto' px={5} o={media.length > 0 ? 0.93 : 0.5}
-                          borderRadius={5}
-                          backgroundColor={media.length > 0 ? primaryColor : navColor} color={media.length > 0 ? primaryTextColor : navTextColor}>
-                          {media.length}
-                        </Paragraph>
-                        <Button backgroundColor={showMedia ? navColor : undefined}
-                          onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
-                          <ImageIcon color={showMedia ? navTextColor : textColor} />
-                        </Button>
-                      </ZStack> */}
-                  {/* </XStack> */}
-
-                  {/* <AnimatePresence> */}
-                  {/* {showMedia
-                      ? <PostMediaManager 
-                      {...{link, media, setMedia, embedLink, setEmbedLink}} /> : undefined} */}
-                  {/* </AnimatePresence> */}
                   <TextArea f={1} pt='$2' value={description} ref={textAreaRef}
                     disabled={posting} opacity={posting || description == '' ? 0.5 : 1}
                     onChangeText={t => setDescription(t)}

@@ -1,11 +1,12 @@
 import { Group } from '@jonline/api';
-import { Button, Text, Heading, Paragraph, Separator, XStack, YStack, useMedia } from '@jonline/ui';
+import { Button, Text, Image, Heading, Paragraph, Separator, XStack, YStack, useMedia } from '@jonline/ui';
 import { RootState, isGroupLocked, joinLeaveGroup, useAccountOrServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React from 'react';
 import { useLink } from 'solito/link';
 import { passes, pending } from '../../utils/moderation_utils';
 import { } from '../post/post_card';
 import { Info, Users2 } from '@tamagui/lucide-icons';
+import { useMediaUrl } from 'app/hooks';
 
 export type GroupButtonProps = {
   group: Group;
@@ -50,6 +51,10 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
     dispatch(joinLeaveGroup({ groupId: group.id, join, ...accountOrServer }));
   };
 
+  const avatarUrl = useMediaUrl(group.avatar?.id);
+  const hasAvatarUrl = avatarUrl && avatarUrl != '';
+  const fullAvatarHeight = 48;
+
   return <YStack>
     <XStack>
       <Button
@@ -64,49 +69,65 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
         disabled={disabled}
         {...link}
       >
-        <YStack w='100%' marginVertical='auto'>
-          <XStack>
-            <Paragraph f={1}
-              my='auto'
-              size="$5"
+        <XStack w='100%'>
+          <YStack w='100%' f={1} marginVertical='auto'>
+            <XStack>
+              <Paragraph f={1}
+                my='auto'
+                size="$5"
+                color={selected ? navTextColor : undefined}
+                whiteSpace='nowrap'
+                overflow='hidden'
+                numberOfLines={1}
+                ta='left'
+              >
+                {group.name}
+              </Paragraph>
+              <XStack o={0.6} my='auto'>
+                <XStack my='auto'>
+                  <Users2 size='$1'color={selected ? navTextColor : undefined} />
+                </XStack>
+                <Text mx='$1' my='auto' fontFamily='$body' fontSize='$1'
+                  color={selected ? navTextColor : undefined}
+                  whiteSpace='nowrap'
+                  overflow='hidden'
+                  numberOfLines={1}
+                  ta='left'>
+                  {group.memberCount}
+                </Text>
+
+
+                {/* <MessageSquare /> {group.postCount}
+              <Calendar /> {group.eventCount} */}
+              </XStack>
+            </XStack>
+            <Paragraph
+              size="$2"
               color={selected ? navTextColor : undefined}
               whiteSpace='nowrap'
               overflow='hidden'
               numberOfLines={1}
               ta='left'
+              o={0.8}
             >
-              {group.name}
+              {group.description}
             </Paragraph>
-            <XStack o={0.6} my='auto'>
-              <XStack my='auto'>
-                <Users2 size='$1' />
-              </XStack>
-              <Text mx='$1' my='auto' fontFamily='$body' fontSize='$1'
-                color={selected ? navTextColor : undefined}
-                whiteSpace='nowrap'
-                overflow='hidden'
-                numberOfLines={1}
-                ta='left'>
-                {group.memberCount}
-              </Text>
-
-
-              {/* <MessageSquare /> {group.postCount}
-              <Calendar /> {group.eventCount} */}
-            </XStack>
-          </XStack>
-          <Paragraph
-            size="$2"
-            color={selected ? navTextColor : undefined}
-            whiteSpace='nowrap'
-            overflow='hidden'
-            numberOfLines={1}
-            ta='left'
-            o={0.8}
-          >
-            {group.description}
-          </Paragraph>
-        </YStack>
+          </YStack>
+          {hasAvatarUrl
+            ? <Image
+              // mb='$3'
+              // ml='$2'
+              ml='$2'
+              mr={-10}
+              my='auto'
+              width={fullAvatarHeight}
+              height={fullAvatarHeight}
+              resizeMode="contain"
+              als="center"
+              source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
+              borderRadius={10} />
+            : undefined}
+        </XStack>
       </Button>
       {hideInfoButton ? undefined :
         <Button

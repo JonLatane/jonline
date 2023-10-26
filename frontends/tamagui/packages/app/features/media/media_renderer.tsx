@@ -28,7 +28,6 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly
   }, [reduxMedia]);
   const media = reduxMedia ?? sourceMedia;
 
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const mediaUrl = useMediaUrl(media.id);
   const [type, subType] = media.contentType.split('/');
 

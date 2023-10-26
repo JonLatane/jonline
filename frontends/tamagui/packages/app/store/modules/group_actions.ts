@@ -15,9 +15,26 @@ export const createGroup: AsyncThunk<Group, CreateGroup, any> = createAsyncThunk
   }
 );
 
-export type UpdateGroups = AccountOrServer & GetGroupsRequest;
-export const updateGroups: AsyncThunk<GetGroupsResponse, UpdateGroups, any> = createAsyncThunk<GetGroupsResponse, UpdateGroups>(
+export type UpdateGroup = AccountOrServer & Group;
+export const updateGroup: AsyncThunk<Group, UpdateGroup, any> = createAsyncThunk<Group, UpdateGroup>(
   "groups/update",
+  async (updateGroupRequest) => {
+    const client = await getCredentialClient(updateGroupRequest);
+    return client.updateGroup(updateGroupRequest, client.credential);
+  }
+);
+export type DeleteGroup = AccountOrServer & Group;
+export const deleteGroup: AsyncThunk<Empty, DeleteGroup, any> = createAsyncThunk<Empty, DeleteGroup>(
+  "groups/delete",
+  async (deleteGroupRequest) => {
+    const client = await getCredentialClient(deleteGroupRequest);
+    return client.deleteGroup(deleteGroupRequest, client.credential);
+  }
+);
+
+export type LoadGroupsPage = AccountOrServer & GetGroupsRequest;
+export const loadGroupsPage: AsyncThunk<GetGroupsResponse, LoadGroupsPage, any> = createAsyncThunk<GetGroupsResponse, LoadGroupsPage>(
+  "groups/loadPage",
   async (getGroupsRequest) => {
     const client = await getCredentialClient(getGroupsRequest);
     return await client.getGroups(getGroupsRequest, client.credential);

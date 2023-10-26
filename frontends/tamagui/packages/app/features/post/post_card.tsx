@@ -13,11 +13,11 @@ import { AuthorInfo } from "./author_info";
 import { TamaguiMarkdown } from "./tamagui_markdown";
 
 import { MediaRenderer } from "../media/media_renderer";
-import { FadeInView } from './fade_in_view';
-import { GroupPostManager } from './group_post_manager';
+import { FadeInView } from '../../components/fade_in_view';
+import { GroupPostManager } from '../groups/group_post_manager';
 import { PostMediaRenderer } from "./post_media_renderer";
 import { PostMediaManager } from "./post_media_manager";
-import { VisibilityPicker } from "./visibility_picker";
+import { VisibilityPicker } from "../../components/visibility_picker";
 import { postVisibilityDescription } from "./base_create_post_sheet";
 
 interface PostCardProps {
