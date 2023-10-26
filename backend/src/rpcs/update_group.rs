@@ -6,9 +6,10 @@ use diesel::*;
 
 use tonic::{Code, Status};
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
+use crate::models::get_media_reference;
 use crate::protos::*;
 use crate::schema::groups;
 use crate::schema::memberships;
@@ -41,9 +42,14 @@ pub fn update_group(
         .first::<models::Group>(conn)
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))?;
 
+    let avatar = match &request.avatar.map(|a| a.id) {
+        Some(id) => get_media_reference(id.to_db_id_or_err("avatar")?, conn).ok(),
+        None => None,
+    };
     group.name = request.name;
     group.description = request.description;
-    group.avatar_media_id = request.avatar_media_id.map(|id| id.to_db_id().unwrap());
+    group.avatar_media_id = avatar.map(|m| m.id);
+    // group.avatar_media_id = request.avatar_media_id.map(|id| id.to_db_id().unwrap());
     group.visibility = request.visibility.to_string_visibility();
     group.default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();

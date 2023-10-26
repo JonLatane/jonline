@@ -87,6 +87,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.error = undefined;
     });
     builder.addCase(createGroup.fulfilled, (state, action) => {
+      console.log("createGroup.fulfilled");
       state.status = "loaded";
       const group = action.payload;
       groupsAdapter.upsertOne(state, group);
@@ -94,6 +95,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       state.successMessage = `Group created.`;
     });
     builder.addCase(createGroup.rejected, (state, action) => {
+      console.log("createGroup.rejected");
       state.status = "errored";
       state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);

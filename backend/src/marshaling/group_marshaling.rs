@@ -2,8 +2,8 @@ use diesel::*;
 use tonic::Code;
 use tonic::Status;
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 
@@ -13,7 +13,11 @@ use crate::schema::memberships;
 use crate::schema::users;
 
 pub trait ToProtoGroup {
-    fn to_proto_with(&self, user_membership: Option<Membership>) -> Group;
+    fn to_proto_with(
+        &self,
+        user_membership: Option<Membership>,
+        media_lookup: Option<&MediaLookup>,
+    ) -> Group;
     fn to_proto(&self, conn: &mut PgPooledConnection, user: &Option<&models::User>) -> Group;
 }
 impl ToProtoGroup for models::Group {
@@ -27,15 +31,26 @@ impl ToProtoGroup for models::Group {
                 .ok(),
             None => None,
         };
-        self.to_proto_with(user_membership.map(|m| m.to_proto()))
+        let media_reference = match self.avatar_media_id {
+            Some(media_id) => models::get_media_reference(media_id, conn).ok(),
+            None => None,
+        };
+        let media_lookup = media_reference.map(|mr| media_lookup(vec![mr]));
+        self.to_proto_with(user_membership.map(|m| m.to_proto()), media_lookup.as_ref())
     }
-    fn to_proto_with(&self, user_membership: Option<Membership>) -> Group {
+    fn to_proto_with(
+        &self,
+        user_membership: Option<Membership>,
+        media_lookup: Option<&MediaLookup>,
+    ) -> Group {
         let group = Group {
             id: self.id.to_proto_id().to_string(),
             name: self.name.to_owned(),
             shortname: self.shortname.to_owned(),
             description: self.description.to_owned(),
-            avatar_media_id: self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
+            avatar: media_lookup
+                .map(|ml| ml.get(&self.avatar_media_id.unwrap()).unwrap().to_proto()),
+            // avatar_media_id: self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
             default_membership_permissions: self
                 .default_membership_permissions
                 .to_i32_permissions(),

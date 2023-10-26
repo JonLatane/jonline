@@ -15,7 +15,7 @@ use ::log::{info, warn};
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
-pub fn start_tonic_server(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>) -> Result<bool, Box<dyn std::error::Error>> {
+pub fn start_tonic_server(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>, port: u16) -> Result<bool, Box<dyn std::error::Error>> {
     let jonline = JonLineImpl { pool, bucket };
 
     let reflection_service = tonic_reflection::server::Builder::configure()
@@ -51,12 +51,12 @@ pub fn start_tonic_server(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>) -> Result<
         .add_service(JonlineServer::new(jonline))
         .add_service(reflection_service);
 
-    tokio::spawn(async {
-        let tonic_addr = SocketAddr::from(([0, 0, 0, 0], 27707));
+    tokio::spawn(async move {
+        let tonic_addr = SocketAddr::from(([0, 0, 0, 0], port));
         match tonic_router.serve(tonic_addr).await {
             Ok(_) => ::log::info!("Tonic server started on {}", tonic_addr),
             Err(e) => {
-                ::log::warn!("Unable to start Tonic server on port 27707");
+                ::log::warn!("Unable to start Tonic server on port {}", port);
                 report_error(e);
             }
         };

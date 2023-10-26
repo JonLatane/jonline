@@ -11,6 +11,38 @@ pub fn get_server_configuration(
     conn: &mut PgPooledConnection,
 ) -> Result<protos::ServerConfiguration, Status> {
     log::info!("GetServerConfiguration called");
+    let result = get_server_configuration_model(conn)?.to_proto();
+    log::info!("GetServerConfiguration called, returning {:?}", result);
+    Ok(result)
+    // let server_configuration = server_configurations
+    //     .filter(active.eq(true))
+    //     .first::<models::ServerConfiguration>(conn);
+    // log::info!(
+    //     "GetServerConfiguration called, found {:?}",
+    //     server_configuration
+    // );
+    // match server_configuration {
+    //     Ok(server_configuration) => {
+    //         let result = server_configuration.to_proto();
+    //         log::info!("GetServerConfiguration called, returning {:?}", result);
+    //         Ok(result)
+    //     }
+    //     Err(diesel::NotFound) => {
+    //         let result = create_default_server_configuration(conn);
+    //         log::info!("GetServerConfiguration called, generated {:?}", result);
+    //         result
+    //     }
+    //     Err(e) => {
+    //         log::error!("GetServerConfiguration error: {:?}", e);
+    //         Err(Status::new(Code::Unauthenticated, "data_error"))
+    //     }
+    // }
+}
+
+pub fn get_server_configuration_model(
+    conn: &mut PgPooledConnection,
+) -> Result<models::ServerConfiguration, Status> {
+    // log::info!("GetServerConfiguration called");
     let server_configuration = server_configurations
         .filter(active.eq(true))
         .first::<models::ServerConfiguration>(conn);
@@ -20,17 +52,17 @@ pub fn get_server_configuration(
     );
     match server_configuration {
         Ok(server_configuration) => {
-            let result = server_configuration.to_proto();
-            log::info!("GetServerConfiguration called, returning {:?}", result);
+            let result = server_configuration;
+            log::info!("get_server_configuration_model called, returning {:?}", result);
             Ok(result)
         }
         Err(diesel::NotFound) => {
             let result = create_default_server_configuration(conn);
-            log::info!("GetServerConfiguration called, generated {:?}", result);
+            log::info!("get_server_configuration_model called, generated {:?}", result);
             result
         }
         Err(e) => {
-            log::error!("GetServerConfiguration error: {:?}", e);
+            log::error!("get_server_configuration_model error: {:?}", e);
             Err(Status::new(Code::Unauthenticated, "data_error"))
         }
     }
@@ -38,12 +70,12 @@ pub fn get_server_configuration(
 
 pub fn create_default_server_configuration(
     conn: &mut PgPooledConnection,
-) -> Result<protos::ServerConfiguration, Status> {
+) -> Result<models::ServerConfiguration, Status> {
     let result = match insert_into(server_configurations)
         .values(default_server_configuration())
         .get_result::<models::ServerConfiguration>(conn)
     {
-        Ok(server_configuration) => server_configuration.to_proto(),
+        Ok(server_configuration) => server_configuration,
         Err(e) => {
             log::error!("Error inserting default server configuration: {:?}", e);
             return Err(Status::new(

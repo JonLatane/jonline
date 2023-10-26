@@ -111,37 +111,43 @@ export const GetServiceVersionResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetServiceVersionResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetServiceVersionResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.version = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetServiceVersionResponse {
-    return { version: isSet(object.version) ? String(object.version) : "" };
+    return { version: isSet(object.version) ? globalThis.String(object.version) : "" };
   },
 
   toJSON(message: GetServiceVersionResponse): unknown {
     const obj: any = {};
-    message.version !== undefined && (obj.version = message.version);
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetServiceVersionResponse>, I>>(base?: I): GetServiceVersionResponse {
-    return GetServiceVersionResponse.fromPartial(base ?? {});
+    return GetServiceVersionResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetServiceVersionResponse>, I>>(object: I): GetServiceVersionResponse {
     const message = createBaseGetServiceVersionResponse();
     message.version = object.version ?? "";
@@ -188,48 +194,77 @@ export const FederateRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): FederateRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFederateRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.server = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.preexistingAccount = reader.bool();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.refreshToken = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag !== 48) {
+            break;
+          }
+
           message.storedCredentials = reader.int32() as any;
-          break;
+          continue;
         case 7:
+          if (tag !== 56) {
+            break;
+          }
+
           message.returnedCredentials = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): FederateRequest {
     return {
-      server: isSet(object.server) ? String(object.server) : "",
-      preexistingAccount: isSet(object.preexistingAccount) ? Boolean(object.preexistingAccount) : false,
-      username: isSet(object.username) ? String(object.username) : "",
-      password: isSet(object.password) ? String(object.password) : undefined,
-      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : undefined,
+      server: isSet(object.server) ? globalThis.String(object.server) : "",
+      preexistingAccount: isSet(object.preexistingAccount) ? globalThis.Boolean(object.preexistingAccount) : false,
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
+      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : undefined,
       storedCredentials: isSet(object.storedCredentials) ? federationCredentialsFromJSON(object.storedCredentials) : 0,
       returnedCredentials: isSet(object.returnedCredentials)
         ? federationCredentialsFromJSON(object.returnedCredentials)
@@ -239,23 +274,33 @@ export const FederateRequest = {
 
   toJSON(message: FederateRequest): unknown {
     const obj: any = {};
-    message.server !== undefined && (obj.server = message.server);
-    message.preexistingAccount !== undefined && (obj.preexistingAccount = message.preexistingAccount);
-    message.username !== undefined && (obj.username = message.username);
-    message.password !== undefined && (obj.password = message.password);
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
-    message.storedCredentials !== undefined &&
-      (obj.storedCredentials = federationCredentialsToJSON(message.storedCredentials));
-    message.returnedCredentials !== undefined && (obj.returnedCredentials = message.returnedCredentials !== undefined
-      ? federationCredentialsToJSON(message.returnedCredentials)
-      : undefined);
+    if (message.server !== "") {
+      obj.server = message.server;
+    }
+    if (message.preexistingAccount === true) {
+      obj.preexistingAccount = message.preexistingAccount;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== undefined) {
+      obj.password = message.password;
+    }
+    if (message.refreshToken !== undefined) {
+      obj.refreshToken = message.refreshToken;
+    }
+    if (message.storedCredentials !== 0) {
+      obj.storedCredentials = federationCredentialsToJSON(message.storedCredentials);
+    }
+    if (message.returnedCredentials !== undefined) {
+      obj.returnedCredentials = federationCredentialsToJSON(message.returnedCredentials);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<FederateRequest>, I>>(base?: I): FederateRequest {
-    return FederateRequest.fromPartial(base ?? {});
+    return FederateRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<FederateRequest>, I>>(object: I): FederateRequest {
     const message = createBaseFederateRequest();
     message.server = object.server ?? "";
@@ -285,44 +330,56 @@ export const FederateResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): FederateResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFederateResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.refreshToken = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): FederateResponse {
     return {
-      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : undefined,
-      password: isSet(object.password) ? String(object.password) : undefined,
+      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : undefined,
+      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
     };
   },
 
   toJSON(message: FederateResponse): unknown {
     const obj: any = {};
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
-    message.password !== undefined && (obj.password = message.password);
+    if (message.refreshToken !== undefined) {
+      obj.refreshToken = message.refreshToken;
+    }
+    if (message.password !== undefined) {
+      obj.password = message.password;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<FederateResponse>, I>>(base?: I): FederateResponse {
-    return FederateResponse.fromPartial(base ?? {});
+    return FederateResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<FederateResponse>, I>>(object: I): FederateResponse {
     const message = createBaseFederateResponse();
     message.refreshToken = object.refreshToken ?? undefined;
@@ -344,19 +401,24 @@ export const GetFederatedAccountsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetFederatedAccountsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetFederatedAccountsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 8) {
+            break;
+          }
+
           message.returnedCredentials = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -371,16 +433,15 @@ export const GetFederatedAccountsRequest = {
 
   toJSON(message: GetFederatedAccountsRequest): unknown {
     const obj: any = {};
-    message.returnedCredentials !== undefined && (obj.returnedCredentials = message.returnedCredentials !== undefined
-      ? federationCredentialsToJSON(message.returnedCredentials)
-      : undefined);
+    if (message.returnedCredentials !== undefined) {
+      obj.returnedCredentials = federationCredentialsToJSON(message.returnedCredentials);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetFederatedAccountsRequest>, I>>(base?: I): GetFederatedAccountsRequest {
-    return GetFederatedAccountsRequest.fromPartial(base ?? {});
+    return GetFederatedAccountsRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetFederatedAccountsRequest>, I>>(object: I): GetFederatedAccountsRequest {
     const message = createBaseGetFederatedAccountsRequest();
     message.returnedCredentials = object.returnedCredentials ?? undefined;
@@ -401,26 +462,31 @@ export const GetFederatedAccountsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetFederatedAccountsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetFederatedAccountsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.federatedAccounts.push(FederatedAccount.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetFederatedAccountsResponse {
     return {
-      federatedAccounts: Array.isArray(object?.federatedAccounts)
+      federatedAccounts: globalThis.Array.isArray(object?.federatedAccounts)
         ? object.federatedAccounts.map((e: any) => FederatedAccount.fromJSON(e))
         : [],
     };
@@ -428,18 +494,15 @@ export const GetFederatedAccountsResponse = {
 
   toJSON(message: GetFederatedAccountsResponse): unknown {
     const obj: any = {};
-    if (message.federatedAccounts) {
-      obj.federatedAccounts = message.federatedAccounts.map((e) => e ? FederatedAccount.toJSON(e) : undefined);
-    } else {
-      obj.federatedAccounts = [];
+    if (message.federatedAccounts?.length) {
+      obj.federatedAccounts = message.federatedAccounts.map((e) => FederatedAccount.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetFederatedAccountsResponse>, I>>(base?: I): GetFederatedAccountsResponse {
-    return GetFederatedAccountsResponse.fromPartial(base ?? {});
+    return GetFederatedAccountsResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetFederatedAccountsResponse>, I>>(object: I): GetFederatedAccountsResponse {
     const message = createBaseGetFederatedAccountsResponse();
     message.federatedAccounts = object.federatedAccounts?.map((e) => FederatedAccount.fromPartial(e)) || [];
@@ -472,59 +535,89 @@ export const FederatedAccount = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): FederatedAccount {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFederatedAccount();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.server = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.refreshToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): FederatedAccount {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      server: isSet(object.server) ? String(object.server) : "",
-      username: isSet(object.username) ? String(object.username) : "",
-      password: isSet(object.password) ? String(object.password) : undefined,
-      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : undefined,
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      server: isSet(object.server) ? globalThis.String(object.server) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : undefined,
+      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : undefined,
     };
   },
 
   toJSON(message: FederatedAccount): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.server !== undefined && (obj.server = message.server);
-    message.username !== undefined && (obj.username = message.username);
-    message.password !== undefined && (obj.password = message.password);
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.server !== "") {
+      obj.server = message.server;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== undefined) {
+      obj.password = message.password;
+    }
+    if (message.refreshToken !== undefined) {
+      obj.refreshToken = message.refreshToken;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<FederatedAccount>, I>>(base?: I): FederatedAccount {
-    return FederatedAccount.fromPartial(base ?? {});
+    return FederatedAccount.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<FederatedAccount>, I>>(object: I): FederatedAccount {
     const message = createBaseFederatedAccount();
     message.id = object.id ?? "";
@@ -539,7 +632,8 @@ export const FederatedAccount = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

@@ -443,80 +443,141 @@ export const ServerConfiguration = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ServerConfiguration {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseServerConfiguration();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.serverInfo = ServerInfo.decode(reader, reader.uint32());
-          break;
+          continue;
         case 10:
-          if ((tag & 7) === 2) {
+          if (tag === 80) {
+            message.anonymousUserPermissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 82) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.anonymousUserPermissions.push(reader.int32() as any);
             }
-          } else {
-            message.anonymousUserPermissions.push(reader.int32() as any);
+
+            continue;
           }
+
           break;
         case 11:
-          if ((tag & 7) === 2) {
+          if (tag === 88) {
+            message.defaultUserPermissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 90) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.defaultUserPermissions.push(reader.int32() as any);
             }
-          } else {
-            message.defaultUserPermissions.push(reader.int32() as any);
+
+            continue;
           }
+
           break;
         case 12:
-          if ((tag & 7) === 2) {
+          if (tag === 96) {
+            message.basicUserPermissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 98) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.basicUserPermissions.push(reader.int32() as any);
             }
-          } else {
-            message.basicUserPermissions.push(reader.int32() as any);
+
+            continue;
           }
+
           break;
         case 20:
+          if (tag !== 162) {
+            break;
+          }
+
           message.peopleSettings = FeatureSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 21:
+          if (tag !== 170) {
+            break;
+          }
+
           message.groupSettings = FeatureSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 22:
+          if (tag !== 178) {
+            break;
+          }
+
           message.postSettings = PostSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 23:
+          if (tag !== 186) {
+            break;
+          }
+
           message.eventSettings = FeatureSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 24:
+          if (tag !== 194) {
+            break;
+          }
+
           message.mediaSettings = FeatureSettings.decode(reader, reader.uint32());
-          break;
+          continue;
         case 90:
+          if (tag !== 722) {
+            break;
+          }
+
           message.externalCdnConfig = ExternalCDNConfig.decode(reader, reader.uint32());
-          break;
+          continue;
         case 100:
+          if (tag !== 800) {
+            break;
+          }
+
           message.privateUserStrategy = reader.int32() as any;
-          break;
+          continue;
         case 101:
-          if ((tag & 7) === 2) {
+          if (tag === 808) {
+            message.authenticationFeatures.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 810) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.authenticationFeatures.push(reader.int32() as any);
             }
-          } else {
-            message.authenticationFeatures.push(reader.int32() as any);
+
+            continue;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
+
           break;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -524,13 +585,13 @@ export const ServerConfiguration = {
   fromJSON(object: any): ServerConfiguration {
     return {
       serverInfo: isSet(object.serverInfo) ? ServerInfo.fromJSON(object.serverInfo) : undefined,
-      anonymousUserPermissions: Array.isArray(object?.anonymousUserPermissions)
+      anonymousUserPermissions: globalThis.Array.isArray(object?.anonymousUserPermissions)
         ? object.anonymousUserPermissions.map((e: any) => permissionFromJSON(e))
         : [],
-      defaultUserPermissions: Array.isArray(object?.defaultUserPermissions)
+      defaultUserPermissions: globalThis.Array.isArray(object?.defaultUserPermissions)
         ? object.defaultUserPermissions.map((e: any) => permissionFromJSON(e))
         : [],
-      basicUserPermissions: Array.isArray(object?.basicUserPermissions)
+      basicUserPermissions: globalThis.Array.isArray(object?.basicUserPermissions)
         ? object.basicUserPermissions.map((e: any) => permissionFromJSON(e))
         : [],
       peopleSettings: isSet(object.peopleSettings) ? FeatureSettings.fromJSON(object.peopleSettings) : undefined,
@@ -544,7 +605,7 @@ export const ServerConfiguration = {
       privateUserStrategy: isSet(object.privateUserStrategy)
         ? privateUserStrategyFromJSON(object.privateUserStrategy)
         : 0,
-      authenticationFeatures: Array.isArray(object?.authenticationFeatures)
+      authenticationFeatures: globalThis.Array.isArray(object?.authenticationFeatures)
         ? object.authenticationFeatures.map((e: any) => authenticationFeatureFromJSON(e))
         : [],
     };
@@ -552,50 +613,48 @@ export const ServerConfiguration = {
 
   toJSON(message: ServerConfiguration): unknown {
     const obj: any = {};
-    message.serverInfo !== undefined &&
-      (obj.serverInfo = message.serverInfo ? ServerInfo.toJSON(message.serverInfo) : undefined);
-    if (message.anonymousUserPermissions) {
+    if (message.serverInfo !== undefined) {
+      obj.serverInfo = ServerInfo.toJSON(message.serverInfo);
+    }
+    if (message.anonymousUserPermissions?.length) {
       obj.anonymousUserPermissions = message.anonymousUserPermissions.map((e) => permissionToJSON(e));
-    } else {
-      obj.anonymousUserPermissions = [];
     }
-    if (message.defaultUserPermissions) {
+    if (message.defaultUserPermissions?.length) {
       obj.defaultUserPermissions = message.defaultUserPermissions.map((e) => permissionToJSON(e));
-    } else {
-      obj.defaultUserPermissions = [];
     }
-    if (message.basicUserPermissions) {
+    if (message.basicUserPermissions?.length) {
       obj.basicUserPermissions = message.basicUserPermissions.map((e) => permissionToJSON(e));
-    } else {
-      obj.basicUserPermissions = [];
     }
-    message.peopleSettings !== undefined &&
-      (obj.peopleSettings = message.peopleSettings ? FeatureSettings.toJSON(message.peopleSettings) : undefined);
-    message.groupSettings !== undefined &&
-      (obj.groupSettings = message.groupSettings ? FeatureSettings.toJSON(message.groupSettings) : undefined);
-    message.postSettings !== undefined &&
-      (obj.postSettings = message.postSettings ? PostSettings.toJSON(message.postSettings) : undefined);
-    message.eventSettings !== undefined &&
-      (obj.eventSettings = message.eventSettings ? FeatureSettings.toJSON(message.eventSettings) : undefined);
-    message.mediaSettings !== undefined &&
-      (obj.mediaSettings = message.mediaSettings ? FeatureSettings.toJSON(message.mediaSettings) : undefined);
-    message.externalCdnConfig !== undefined && (obj.externalCdnConfig = message.externalCdnConfig
-      ? ExternalCDNConfig.toJSON(message.externalCdnConfig)
-      : undefined);
-    message.privateUserStrategy !== undefined &&
-      (obj.privateUserStrategy = privateUserStrategyToJSON(message.privateUserStrategy));
-    if (message.authenticationFeatures) {
+    if (message.peopleSettings !== undefined) {
+      obj.peopleSettings = FeatureSettings.toJSON(message.peopleSettings);
+    }
+    if (message.groupSettings !== undefined) {
+      obj.groupSettings = FeatureSettings.toJSON(message.groupSettings);
+    }
+    if (message.postSettings !== undefined) {
+      obj.postSettings = PostSettings.toJSON(message.postSettings);
+    }
+    if (message.eventSettings !== undefined) {
+      obj.eventSettings = FeatureSettings.toJSON(message.eventSettings);
+    }
+    if (message.mediaSettings !== undefined) {
+      obj.mediaSettings = FeatureSettings.toJSON(message.mediaSettings);
+    }
+    if (message.externalCdnConfig !== undefined) {
+      obj.externalCdnConfig = ExternalCDNConfig.toJSON(message.externalCdnConfig);
+    }
+    if (message.privateUserStrategy !== 0) {
+      obj.privateUserStrategy = privateUserStrategyToJSON(message.privateUserStrategy);
+    }
+    if (message.authenticationFeatures?.length) {
       obj.authenticationFeatures = message.authenticationFeatures.map((e) => authenticationFeatureToJSON(e));
-    } else {
-      obj.authenticationFeatures = [];
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<ServerConfiguration>, I>>(base?: I): ServerConfiguration {
-    return ServerConfiguration.fromPartial(base ?? {});
+    return ServerConfiguration.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<ServerConfiguration>, I>>(object: I): ServerConfiguration {
     const message = createBaseServerConfiguration();
     message.serverInfo = (object.serverInfo !== undefined && object.serverInfo !== null)
@@ -663,64 +722,100 @@ export const ExternalCDNConfig = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ExternalCDNConfig {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExternalCDNConfig();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.frontendHost = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.backendHost = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 24) {
+            break;
+          }
+
           message.secureMedia = reader.bool();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.mediaIpv4Allowlist = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.mediaIpv6Allowlist = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag !== 48) {
+            break;
+          }
+
           message.cdnGrpc = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): ExternalCDNConfig {
     return {
-      frontendHost: isSet(object.frontendHost) ? String(object.frontendHost) : "",
-      backendHost: isSet(object.backendHost) ? String(object.backendHost) : "",
-      secureMedia: isSet(object.secureMedia) ? Boolean(object.secureMedia) : false,
-      mediaIpv4Allowlist: isSet(object.mediaIpv4Allowlist) ? String(object.mediaIpv4Allowlist) : undefined,
-      mediaIpv6Allowlist: isSet(object.mediaIpv6Allowlist) ? String(object.mediaIpv6Allowlist) : undefined,
-      cdnGrpc: isSet(object.cdnGrpc) ? Boolean(object.cdnGrpc) : false,
+      frontendHost: isSet(object.frontendHost) ? globalThis.String(object.frontendHost) : "",
+      backendHost: isSet(object.backendHost) ? globalThis.String(object.backendHost) : "",
+      secureMedia: isSet(object.secureMedia) ? globalThis.Boolean(object.secureMedia) : false,
+      mediaIpv4Allowlist: isSet(object.mediaIpv4Allowlist) ? globalThis.String(object.mediaIpv4Allowlist) : undefined,
+      mediaIpv6Allowlist: isSet(object.mediaIpv6Allowlist) ? globalThis.String(object.mediaIpv6Allowlist) : undefined,
+      cdnGrpc: isSet(object.cdnGrpc) ? globalThis.Boolean(object.cdnGrpc) : false,
     };
   },
 
   toJSON(message: ExternalCDNConfig): unknown {
     const obj: any = {};
-    message.frontendHost !== undefined && (obj.frontendHost = message.frontendHost);
-    message.backendHost !== undefined && (obj.backendHost = message.backendHost);
-    message.secureMedia !== undefined && (obj.secureMedia = message.secureMedia);
-    message.mediaIpv4Allowlist !== undefined && (obj.mediaIpv4Allowlist = message.mediaIpv4Allowlist);
-    message.mediaIpv6Allowlist !== undefined && (obj.mediaIpv6Allowlist = message.mediaIpv6Allowlist);
-    message.cdnGrpc !== undefined && (obj.cdnGrpc = message.cdnGrpc);
+    if (message.frontendHost !== "") {
+      obj.frontendHost = message.frontendHost;
+    }
+    if (message.backendHost !== "") {
+      obj.backendHost = message.backendHost;
+    }
+    if (message.secureMedia === true) {
+      obj.secureMedia = message.secureMedia;
+    }
+    if (message.mediaIpv4Allowlist !== undefined) {
+      obj.mediaIpv4Allowlist = message.mediaIpv4Allowlist;
+    }
+    if (message.mediaIpv6Allowlist !== undefined) {
+      obj.mediaIpv6Allowlist = message.mediaIpv6Allowlist;
+    }
+    if (message.cdnGrpc === true) {
+      obj.cdnGrpc = message.cdnGrpc;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<ExternalCDNConfig>, I>>(base?: I): ExternalCDNConfig {
-    return ExternalCDNConfig.fromPartial(base ?? {});
+    return ExternalCDNConfig.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<ExternalCDNConfig>, I>>(object: I): ExternalCDNConfig {
     const message = createBaseExternalCDNConfig();
     message.frontendHost = object.frontendHost ?? "";
@@ -755,54 +850,78 @@ export const FeatureSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): FeatureSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFeatureSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 8) {
+            break;
+          }
+
           message.visible = reader.bool();
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.defaultModeration = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag !== 24) {
+            break;
+          }
+
           message.defaultVisibility = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.customTitle = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): FeatureSettings {
     return {
-      visible: isSet(object.visible) ? Boolean(object.visible) : false,
+      visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
       defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
       defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
-      customTitle: isSet(object.customTitle) ? String(object.customTitle) : undefined,
+      customTitle: isSet(object.customTitle) ? globalThis.String(object.customTitle) : undefined,
     };
   },
 
   toJSON(message: FeatureSettings): unknown {
     const obj: any = {};
-    message.visible !== undefined && (obj.visible = message.visible);
-    message.defaultModeration !== undefined && (obj.defaultModeration = moderationToJSON(message.defaultModeration));
-    message.defaultVisibility !== undefined && (obj.defaultVisibility = visibilityToJSON(message.defaultVisibility));
-    message.customTitle !== undefined && (obj.customTitle = message.customTitle);
+    if (message.visible === true) {
+      obj.visible = message.visible;
+    }
+    if (message.defaultModeration !== 0) {
+      obj.defaultModeration = moderationToJSON(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      obj.defaultVisibility = visibilityToJSON(message.defaultVisibility);
+    }
+    if (message.customTitle !== undefined) {
+      obj.customTitle = message.customTitle;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<FeatureSettings>, I>>(base?: I): FeatureSettings {
-    return FeatureSettings.fromPartial(base ?? {});
+    return FeatureSettings.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<FeatureSettings>, I>>(object: I): FeatureSettings {
     const message = createBaseFeatureSettings();
     message.visible = object.visible ?? false;
@@ -838,59 +957,89 @@ export const PostSettings = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PostSettings {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePostSettings();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 8) {
+            break;
+          }
+
           message.visible = reader.bool();
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.defaultModeration = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag !== 24) {
+            break;
+          }
+
           message.defaultVisibility = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.customTitle = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 40) {
+            break;
+          }
+
           message.enableReplies = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): PostSettings {
     return {
-      visible: isSet(object.visible) ? Boolean(object.visible) : false,
+      visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
       defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
       defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
-      customTitle: isSet(object.customTitle) ? String(object.customTitle) : undefined,
-      enableReplies: isSet(object.enableReplies) ? Boolean(object.enableReplies) : false,
+      customTitle: isSet(object.customTitle) ? globalThis.String(object.customTitle) : undefined,
+      enableReplies: isSet(object.enableReplies) ? globalThis.Boolean(object.enableReplies) : false,
     };
   },
 
   toJSON(message: PostSettings): unknown {
     const obj: any = {};
-    message.visible !== undefined && (obj.visible = message.visible);
-    message.defaultModeration !== undefined && (obj.defaultModeration = moderationToJSON(message.defaultModeration));
-    message.defaultVisibility !== undefined && (obj.defaultVisibility = visibilityToJSON(message.defaultVisibility));
-    message.customTitle !== undefined && (obj.customTitle = message.customTitle);
-    message.enableReplies !== undefined && (obj.enableReplies = message.enableReplies);
+    if (message.visible === true) {
+      obj.visible = message.visible;
+    }
+    if (message.defaultModeration !== 0) {
+      obj.defaultModeration = moderationToJSON(message.defaultModeration);
+    }
+    if (message.defaultVisibility !== 0) {
+      obj.defaultVisibility = visibilityToJSON(message.defaultVisibility);
+    }
+    if (message.customTitle !== undefined) {
+      obj.customTitle = message.customTitle;
+    }
+    if (message.enableReplies === true) {
+      obj.enableReplies = message.enableReplies;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<PostSettings>, I>>(base?: I): PostSettings {
-    return PostSettings.fromPartial(base ?? {});
+    return PostSettings.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<PostSettings>, I>>(object: I): PostSettings {
     const message = createBasePostSettings();
     message.visible = object.visible ?? false;
@@ -945,76 +1094,122 @@ export const ServerInfo = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ServerInfo {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseServerInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.shortName = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.description = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.privacyPolicy = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.logo = ServerLogo.decode(reader, reader.uint32());
-          break;
+          continue;
         case 6:
+          if (tag !== 48) {
+            break;
+          }
+
           message.webUserInterface = reader.int32() as any;
-          break;
+          continue;
         case 7:
+          if (tag !== 58) {
+            break;
+          }
+
           message.colors = ServerColors.decode(reader, reader.uint32());
-          break;
+          continue;
         case 8:
+          if (tag !== 66) {
+            break;
+          }
+
           message.mediaPolicy = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): ServerInfo {
     return {
-      name: isSet(object.name) ? String(object.name) : undefined,
-      shortName: isSet(object.shortName) ? String(object.shortName) : undefined,
-      description: isSet(object.description) ? String(object.description) : undefined,
-      privacyPolicy: isSet(object.privacyPolicy) ? String(object.privacyPolicy) : undefined,
+      name: isSet(object.name) ? globalThis.String(object.name) : undefined,
+      shortName: isSet(object.shortName) ? globalThis.String(object.shortName) : undefined,
+      description: isSet(object.description) ? globalThis.String(object.description) : undefined,
+      privacyPolicy: isSet(object.privacyPolicy) ? globalThis.String(object.privacyPolicy) : undefined,
       logo: isSet(object.logo) ? ServerLogo.fromJSON(object.logo) : undefined,
       webUserInterface: isSet(object.webUserInterface) ? webUserInterfaceFromJSON(object.webUserInterface) : undefined,
       colors: isSet(object.colors) ? ServerColors.fromJSON(object.colors) : undefined,
-      mediaPolicy: isSet(object.mediaPolicy) ? String(object.mediaPolicy) : undefined,
+      mediaPolicy: isSet(object.mediaPolicy) ? globalThis.String(object.mediaPolicy) : undefined,
     };
   },
 
   toJSON(message: ServerInfo): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.shortName !== undefined && (obj.shortName = message.shortName);
-    message.description !== undefined && (obj.description = message.description);
-    message.privacyPolicy !== undefined && (obj.privacyPolicy = message.privacyPolicy);
-    message.logo !== undefined && (obj.logo = message.logo ? ServerLogo.toJSON(message.logo) : undefined);
-    message.webUserInterface !== undefined && (obj.webUserInterface = message.webUserInterface !== undefined
-      ? webUserInterfaceToJSON(message.webUserInterface)
-      : undefined);
-    message.colors !== undefined && (obj.colors = message.colors ? ServerColors.toJSON(message.colors) : undefined);
-    message.mediaPolicy !== undefined && (obj.mediaPolicy = message.mediaPolicy);
+    if (message.name !== undefined) {
+      obj.name = message.name;
+    }
+    if (message.shortName !== undefined) {
+      obj.shortName = message.shortName;
+    }
+    if (message.description !== undefined) {
+      obj.description = message.description;
+    }
+    if (message.privacyPolicy !== undefined) {
+      obj.privacyPolicy = message.privacyPolicy;
+    }
+    if (message.logo !== undefined) {
+      obj.logo = ServerLogo.toJSON(message.logo);
+    }
+    if (message.webUserInterface !== undefined) {
+      obj.webUserInterface = webUserInterfaceToJSON(message.webUserInterface);
+    }
+    if (message.colors !== undefined) {
+      obj.colors = ServerColors.toJSON(message.colors);
+    }
+    if (message.mediaPolicy !== undefined) {
+      obj.mediaPolicy = message.mediaPolicy;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<ServerInfo>, I>>(base?: I): ServerInfo {
-    return ServerInfo.fromPartial(base ?? {});
+    return ServerInfo.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<ServerInfo>, I>>(object: I): ServerInfo {
     const message = createBaseServerInfo();
     message.name = object.name ?? undefined;
@@ -1055,54 +1250,78 @@ export const ServerLogo = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ServerLogo {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseServerLogo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.squareMediaId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.squareMediaIdDark = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.wideMediaId = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.wideMediaIdDark = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): ServerLogo {
     return {
-      squareMediaId: isSet(object.squareMediaId) ? String(object.squareMediaId) : undefined,
-      squareMediaIdDark: isSet(object.squareMediaIdDark) ? String(object.squareMediaIdDark) : undefined,
-      wideMediaId: isSet(object.wideMediaId) ? String(object.wideMediaId) : undefined,
-      wideMediaIdDark: isSet(object.wideMediaIdDark) ? String(object.wideMediaIdDark) : undefined,
+      squareMediaId: isSet(object.squareMediaId) ? globalThis.String(object.squareMediaId) : undefined,
+      squareMediaIdDark: isSet(object.squareMediaIdDark) ? globalThis.String(object.squareMediaIdDark) : undefined,
+      wideMediaId: isSet(object.wideMediaId) ? globalThis.String(object.wideMediaId) : undefined,
+      wideMediaIdDark: isSet(object.wideMediaIdDark) ? globalThis.String(object.wideMediaIdDark) : undefined,
     };
   },
 
   toJSON(message: ServerLogo): unknown {
     const obj: any = {};
-    message.squareMediaId !== undefined && (obj.squareMediaId = message.squareMediaId);
-    message.squareMediaIdDark !== undefined && (obj.squareMediaIdDark = message.squareMediaIdDark);
-    message.wideMediaId !== undefined && (obj.wideMediaId = message.wideMediaId);
-    message.wideMediaIdDark !== undefined && (obj.wideMediaIdDark = message.wideMediaIdDark);
+    if (message.squareMediaId !== undefined) {
+      obj.squareMediaId = message.squareMediaId;
+    }
+    if (message.squareMediaIdDark !== undefined) {
+      obj.squareMediaIdDark = message.squareMediaIdDark;
+    }
+    if (message.wideMediaId !== undefined) {
+      obj.wideMediaId = message.wideMediaId;
+    }
+    if (message.wideMediaIdDark !== undefined) {
+      obj.wideMediaIdDark = message.wideMediaIdDark;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<ServerLogo>, I>>(base?: I): ServerLogo {
-    return ServerLogo.fromPartial(base ?? {});
+    return ServerLogo.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<ServerLogo>, I>>(object: I): ServerLogo {
     const message = createBaseServerLogo();
     message.squareMediaId = object.squareMediaId ?? undefined;
@@ -1138,59 +1357,89 @@ export const ServerColors = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ServerColors {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseServerColors();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 8) {
+            break;
+          }
+
           message.primary = reader.uint32();
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.navigation = reader.uint32();
-          break;
+          continue;
         case 3:
+          if (tag !== 24) {
+            break;
+          }
+
           message.author = reader.uint32();
-          break;
+          continue;
         case 4:
+          if (tag !== 32) {
+            break;
+          }
+
           message.admin = reader.uint32();
-          break;
+          continue;
         case 5:
+          if (tag !== 40) {
+            break;
+          }
+
           message.moderator = reader.uint32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): ServerColors {
     return {
-      primary: isSet(object.primary) ? Number(object.primary) : undefined,
-      navigation: isSet(object.navigation) ? Number(object.navigation) : undefined,
-      author: isSet(object.author) ? Number(object.author) : undefined,
-      admin: isSet(object.admin) ? Number(object.admin) : undefined,
-      moderator: isSet(object.moderator) ? Number(object.moderator) : undefined,
+      primary: isSet(object.primary) ? globalThis.Number(object.primary) : undefined,
+      navigation: isSet(object.navigation) ? globalThis.Number(object.navigation) : undefined,
+      author: isSet(object.author) ? globalThis.Number(object.author) : undefined,
+      admin: isSet(object.admin) ? globalThis.Number(object.admin) : undefined,
+      moderator: isSet(object.moderator) ? globalThis.Number(object.moderator) : undefined,
     };
   },
 
   toJSON(message: ServerColors): unknown {
     const obj: any = {};
-    message.primary !== undefined && (obj.primary = Math.round(message.primary));
-    message.navigation !== undefined && (obj.navigation = Math.round(message.navigation));
-    message.author !== undefined && (obj.author = Math.round(message.author));
-    message.admin !== undefined && (obj.admin = Math.round(message.admin));
-    message.moderator !== undefined && (obj.moderator = Math.round(message.moderator));
+    if (message.primary !== undefined) {
+      obj.primary = Math.round(message.primary);
+    }
+    if (message.navigation !== undefined) {
+      obj.navigation = Math.round(message.navigation);
+    }
+    if (message.author !== undefined) {
+      obj.author = Math.round(message.author);
+    }
+    if (message.admin !== undefined) {
+      obj.admin = Math.round(message.admin);
+    }
+    if (message.moderator !== undefined) {
+      obj.moderator = Math.round(message.moderator);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<ServerColors>, I>>(base?: I): ServerColors {
-    return ServerColors.fromPartial(base ?? {});
+    return ServerColors.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<ServerColors>, I>>(object: I): ServerColors {
     const message = createBaseServerColors();
     message.primary = object.primary ?? undefined;
@@ -1205,7 +1454,8 @@ export const ServerColors = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

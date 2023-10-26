@@ -310,7 +310,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   {...defaultPermissionsEditorProps} />}
 
                 <XStack mt='$3'>
-                  <Heading size='$3' my='auto' f={1}>External CDN Support</Heading>
+                  <Heading size='$3' my='auto' f={1}>External CDN HTTP Support</Heading>
                   <Switch size="$5" margin='auto'
                     defaultChecked={externalCdnConfig != undefined}
                     checked={externalCdnConfig != undefined}
@@ -319,6 +319,23 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     opacity={isAdmin ? 1 : 0.5}
                     onCheckedChange={(checked) => setExternalCdnConfig(
                       checked ? ExternalCDNConfig.fromPartial({ backendHost: '', frontendHost: '' }) : undefined
+                    )}>
+                    <Switch.Thumb animation="quick" backgroundColor='black' />
+                  </Switch>
+                </XStack>
+                <XStack mt='$3'>
+                  <Heading size='$3' my='auto' f={1}
+                    opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>External CDN gRPC Support</Heading>
+                  <Switch size="$5" margin='auto'
+                    defaultChecked={externalCdnConfig?.cdnGrpc}
+                    checked={externalCdnConfig?.cdnGrpc}
+                    value={(!!externalCdnConfig?.cdnGrpc).toString()}
+                    disabled={!isAdmin || !externalCdnConfig}
+                    opacity={isAdmin && externalCdnConfig ? 1 : 0.5}
+                    onCheckedChange={(checked) => setExternalCdnConfig(
+                      externalCdnConfig
+                        ? { ...externalCdnConfig, cdnGrpc: checked }
+                        : undefined
                     )}>
                     <Switch.Thumb animation="quick" backgroundColor='black' />
                   </Switch>

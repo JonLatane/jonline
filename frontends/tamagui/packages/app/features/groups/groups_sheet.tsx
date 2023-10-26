@@ -1,6 +1,6 @@
-import { GetGroupsRequest, Group } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text, standardAnimation, Separator } from '@jonline/ui';
-import { Boxes, Calendar, ChevronDown, Info, MessageSquare, Search, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
+import { GetGroupsRequest, Group, Permission, Post } from '@jonline/api';
+import { Button, Heading, Input, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text, standardAnimation, Separator, ZStack, Dialog, ListItemText, YGroup, ListItem } from '@jonline/ui';
+import { Boxes, Calendar, ChevronDown, Cloud, Delete, Edit, Eye, Info, MessageSquare, Moon, Save, Search, Star, Sun, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
 import { RootState, isGroupLocked, joinLeaveGroup, selectAllGroups, serverID, updateGroups, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { createRef, useEffect, useState } from 'react';
 import { FlatList, GestureResponderEvent, TextInput, View } from 'react-native';
@@ -8,6 +8,8 @@ import { useLink } from 'solito/link';
 import { } from '../post/post_card';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import { passes, pending } from '../../utils/moderation_utils';
+import { CreateGroupSheet } from './create_group_sheet';
+import { GroupButton, GroupJoinLeaveButton } from './group_buttons';
 
 export type GroupsSheetProps = {
   selectedGroup?: Group;
@@ -28,21 +30,32 @@ export type GroupsSheetProps = {
   delayRenderingSheet?: boolean;
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
+  key?: string;
 }
 
-export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups, hideLeaveButtons }: GroupsSheetProps) {
+export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups, hideLeaveButtons }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [infoGroup, setInfoGroup] = useState<Group | undefined>(undefined);
+  const [infoGroupId, setInfoGroupId] = useState<string | undefined>(undefined);
+  const infoGroup = useTypedSelector((state: RootState) =>
+    infoGroupId ? state.groups.entities[infoGroupId] : undefined);
   const [position, setPosition] = useState(0);
   const [searchText, setSearchText] = useState('');
   const { dispatch, accountOrServer } = useCredentialDispatch();
+  const account = accountOrServer.account;
   const [hasRenderedSheet, setHasRenderedSheet] = useState(false);
+  const [editing, setEditing] = useState(false);
+  // function setEditing(value: boolean) {
+  //   _setEditing(value);
+  //   // onEditingChange?.(value);
+  // }
+  const [previewingEdits, setPreviewingEdits] = useState(false);
+  const [savingEdits, setSavingEdits] = useState(false);
 
   // const app = useTypedSelector((state: RootState) => state.app);
   // const serversState = useTypedSelector((state: RootState) => state.servers);
   // const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
-  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
   const searchInputRef = React.createRef<TextInput>();// = React.createRef() as React.MutableRefObject<HTMLElement | View>;
 
   const groupsState = useTypedSelector((state: RootState) => state.groups);
@@ -114,11 +127,50 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
 
   useEffect(() => {
     if (!infoOpen && infoGroup) {
-      setInfoGroup(undefined);
+      setInfoGroupId(undefined);
     }
   }, [infoOpen]);
 
+  function updateGroup() {
+    setSavingEdits(true);
+    // dispatch(updatePost({
+    //   ...accountOrServer, ...post,
+    //   content: editedContent,
+    //   media: editedMedia,
+    //   embedLink: editedEmbedLink,
+    //   visibility: editedVisibility,
+    // })).then(() => {
+    //   setEditing(false);
+    //   setSavingEdits(false);
+    //   setPreviewingEdits(false);
+    // });
+    setTimeout(() => setSavingEdits(false), 3000);
+  }
+  function deleteGroup() {
+    setDeleting(true);
+    // dispatch(deleteGroup({ ...accountOrServer, ...post })).then(() => {
+    //   setDeleted(true);
+    //   setDeleting(false);
+    // });
+  }
+
   const infoRenderingGroup = infoGroup ?? selectedGroup;
+  const canEditGroup = account?.user?.permissions?.includes(Permission.ADMIN)
+    || infoRenderingGroup?.currentUserMembership?.permissions?.includes(Permission.ADMIN);
+  const [editingGroup, setEditingGroup] = useState<boolean>(false);
+  const [editedName, setEditedName] = useState<string>(infoRenderingGroup?.name ?? '');
+  const [editedDescription, setEditedDescription] = useState<string>(infoRenderingGroup?.name ?? '');
+  const [editedAvatar, setEditedAvatar] = useState(infoRenderingGroup?.avatar);
+  const [deleted, setDeleted] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  useEffect(() => {
+    if (infoRenderingGroup) {
+      setEditingGroup(false);
+      setEditedName(infoRenderingGroup.name);
+      setEditedDescription(infoRenderingGroup.description ?? '');
+      setEditedAvatar(infoRenderingGroup.avatar);
+    }
+  }, [infoRenderingGroup?.id, server ? serverID(server) : 'no server']);
 
 
   //TODO: Simplify/abstract this into its own component? But then, with this design, will there ever be a need
@@ -126,27 +178,18 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   const joined = passes(infoRenderingGroup?.currentUserMembership?.userModeration)
     && passes(infoRenderingGroup?.currentUserMembership?.groupModeration);
   const membershipRequested = infoRenderingGroup?.currentUserMembership && !joined && passes(infoRenderingGroup?.currentUserMembership?.userModeration);
-  const invited = infoRenderingGroup?.currentUserMembership && !joined && passes(infoRenderingGroup?.currentUserMembership?.groupModeration)
-  const requiresPermissionToJoin = pending(infoRenderingGroup?.defaultMembershipModeration);
-  const isLocked = useTypedSelector((state: RootState) => !infoRenderingGroup || isGroupLocked(state.groups, infoRenderingGroup.id));
-
-  const onJoinPressed = () => {
-    if (!infoRenderingGroup) {
-      console.warn("onJoinPressed with no infoRenderingGroup");
-      return;
-    }
-    // e.stopPropagation();
-    const join = !(joined || membershipRequested || invited);
-    dispatch(joinLeaveGroup({ groupId: infoRenderingGroup.id, join, ...accountOrServer }));
-  };
+  const invited = infoRenderingGroup?.currentUserMembership && !joined && passes(infoRenderingGroup?.currentUserMembership?.groupModeration);
 
   return (
 
     <>
-      <Button icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup && !noGroupSelectedText}
+      <Button
+        key={key ? `groups-sheet-button-${key}` : undefined}
+        icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup && !noGroupSelectedText}
         paddingRight={selectedGroup && !hideInfoButtons ? infoPaddingRight : undefined}
         paddingLeft={selectedGroup && !hideInfoButtons ? '$2' : undefined}
         disabled={disabled}
+        my='auto'
         o={disabled ? 0.5 : 1}
         onPress={() => setOpen((x) => !x)}
         w={noGroupSelectedText ? '100%' : undefined}>
@@ -159,6 +202,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
       {delayRenderingSheet && !hasRenderedSheet && !open
         ? undefined
         : <Sheet
+          key={key ? `groups-sheet-${key}` : undefined}
           modal
           open={open}
           onOpenChange={setOpen}
@@ -170,17 +214,28 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
           <Sheet.Overlay />
           <Sheet.Frame>
             <Sheet.Handle />
-            <XStack space='$4' paddingHorizontal='$3'>
+            {/* <ZStack h={60}>
+              <XStack space='$4' paddingHorizontal='$3' mb='$2'>
+                <XStack f={1} />
+                <CreateGroupSheet />
+              </XStack> */}
+            <XStack space='$4' paddingHorizontal='$3' mb='$2'>
               <XStack f={1} />
               <Button
                 alignSelf='center'
                 size="$3"
-                mb='$3'
+                mt='$1'
+                // transform={[{translateY: 20}]}
+                // mb='$3'
+                // my='auto'
                 circular
                 icon={ChevronDown}
                 onPress={() => setOpen(false)} />
               <XStack f={1} />
+              {/* <CreateGroupSheet /> */}
             </XStack>
+
+            {/* </ZStack> */}
 
             <YStack space="$3" mb='$2' maw={800} als='center' width='100%'>
               {title ? <Heading size={itemTitle ? '$2' : "$7"} paddingHorizontal='$3' mb={itemTitle ? -15 : '$3'}>{title}</Heading> : undefined}
@@ -190,16 +245,18 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                 <XStack marginVertical='auto' ml='$3' mr={-44}>
                   <Search />
                 </XStack>
-                <Input size="$3" f={1} placeholder='Search for Groups' textContentType='name'
-                  paddingHorizontal={40} ref={searchInputRef}
-                  onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} />
-                <Button icon={XIcon} ml={-44} mr='$3'
-                  onPress={() => {
-                    setSearchText('');
-                    searchInputRef.current?.focus();
-                  }}
-                  size='$2' circular marginVertical='auto'
-                  disabled={searchText == ''} opacity={searchText == '' ? 0.5 : 1} />
+                <XStack w='100%' pr='$0'>
+                  <Input size="$3" f={1} placeholder='Search for Groups' textContentType='name'
+                    paddingHorizontal={40} ref={searchInputRef}
+                    onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} />
+                  <Button icon={XIcon} ml={-44} mr='$3'
+                    onPress={() => {
+                      setSearchText('');
+                      searchInputRef.current?.focus();
+                    }}
+                    size='$2' circular marginVertical='auto'
+                    disabled={searchText == ''} opacity={searchText == '' ? 0.5 : 1} />
+                </XStack>
                 {/* </Input> */}
               </XStack>
             </YStack>
@@ -218,7 +275,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                           onGroupSelected={onGroupSelected}
                           selected={group.id == selectedGroup?.id}
                           onShowInfo={() => {
-                            setInfoGroup(group);
+                            setInfoGroupId(group.id);
                             setInfoOpen(true);
                           }}
                           setOpen={setOpen}
@@ -243,7 +300,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                           onGroupSelected={onGroupSelected}
                           selected={group.id == selectedGroup?.id}
                           onShowInfo={() => {
-                            setInfoGroup(group);
+                            setInfoGroupId(group.id);
                             setInfoOpen(true);
                           }}
                           setOpen={setOpen}
@@ -270,7 +327,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                             onGroupSelected={onGroupSelected}
                             selected={group.id == selectedGroup?.id}
                             onShowInfo={() => {
-                              setInfoGroup(group);
+                              setInfoGroupId(group.id);
                               setInfoOpen(true);
                             }}
                             setOpen={setOpen}
@@ -285,6 +342,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                     : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
               </YStack>
             </Sheet.ScrollView>
+            <CreateGroupSheet />
           </Sheet.Frame>
         </Sheet>
       }
@@ -324,26 +382,9 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
             <YStack space="$3" mb='$2' p='$4' maw={800} als='center' width='100%'>
               <XStack>
                 <Heading my='auto' f={1}>{infoRenderingGroup?.name}</Heading>
-                {accountOrServer.account
-                  ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
-                    <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
-                      animation='quick' {...standardAnimation}
-                      mb='$2'
-                      p='$3'
-                      disabled={isLocked} opacity={isLocked ? 0.5 : 1}
-                      onPress={onJoinPressed}>
-                      <YStack jc='center' ac='center'>
-                        <Heading jc='center' ta='center' size='$2' color={!joined && !membershipRequested ? primaryTextColor : textColor}>
-                          {!joined && !membershipRequested ? requiresPermissionToJoin ? 'Join Request' : 'Join'
-                            : joined ? 'Leave' : 'Cancel Request'}
-                        </Heading>
-                        {requiresPermissionToJoin && joined ? <Paragraph size='$1'>
-                          Permission required to re-join
-                        </Paragraph>
-                          : undefined}
-                      </YStack>
-                    </Button>
-                  </XStack> : undefined}
+                {infoRenderingGroup
+                  ? <GroupJoinLeaveButton group={infoRenderingGroup} hideLeaveButton={hideLeaveButtons} />
+                  : undefined}
               </XStack>
               <XStack>
                 <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
@@ -351,6 +392,95 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                 <Heading size='$1' marginVertical='auto'>
                   {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
                 </Heading>
+              </XStack>
+              <XStack>
+                {canEditGroup
+                  ? editing
+                    ? <>
+                      <Button my='auto' size='$2' icon={Save} onPress={updateGroup} color={primaryAnchorColor} disabled={savingEdits} transparent>
+                        Save
+                      </Button>
+                      <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+                        Cancel
+                      </Button>
+                      {previewingEdits
+                        ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                          Edit
+                        </Button>
+                        :
+                        <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
+                          Preview
+                        </Button>}
+                    </>
+                    : <>
+                      <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
+                        Edit
+                      </Button>
+
+                      <Dialog>
+                        <Dialog.Trigger asChild>
+                          <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
+                            Delete
+                          </Button>
+                        </Dialog.Trigger>
+                        <Dialog.Portal zi={1000011}>
+                          <Dialog.Overlay
+                            key="overlay"
+                            animation="quick"
+                            o={0.5}
+                            enterStyle={{ o: 0 }}
+                            exitStyle={{ o: 0 }}
+                          />
+                          <Dialog.Content
+                            bordered
+                            elevate
+                            key="content"
+                            animation={[
+                              'quick',
+                              {
+                                opacity: {
+                                  overshootClamping: true,
+                                },
+                              },
+                            ]}
+                            m='$3'
+                            enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                            exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                            x={0}
+                            scale={1}
+                            opacity={1}
+                            y={0}
+                          >
+                            <YStack space>
+                              <Dialog.Title>Delete Group</Dialog.Title>
+                              <Dialog.Description>
+                                <YStack space='$3'>
+                                  <Paragraph>
+                                    Really delete the group "{infoRenderingGroup?.name ?? 'group'}"?
+                                  </Paragraph>
+                                  <Paragraph>
+                                    The group will be deleted along with any group post/event associations.
+                                    Posts/events themselves belong to the users who posted them, not {infoRenderingGroup?.name ?? 'this group'}.
+                                  </Paragraph>
+                                </YStack>
+                              </Dialog.Description>
+
+                              <XStack space="$3" jc="flex-end">
+                                <Dialog.Close asChild>
+                                  <Button>Cancel</Button>
+                                </Dialog.Close>
+                                {/* <Dialog.Action asChild> */}
+                                <Theme inverse>
+                                  <Button onPress={deleteGroup}>Delete</Button>
+                                </Theme>
+                                {/* </Dialog.Action> */}
+                              </XStack>
+                            </YStack>
+                          </Dialog.Content>
+                        </Dialog.Portal>
+                      </Dialog>
+                    </>
+                  : undefined}
               </XStack>
             </YStack>
 
@@ -372,141 +502,3 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   )
 }
 
-
-type GroupButtonProps = {
-  group: Group;
-  selected: boolean;
-  setOpen: (open: boolean) => void;
-  onShowInfo: () => void;
-  // Forwarder to link to a group page. Defaults to /g/:shortname.
-  // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (group: Group) => string;
-  onGroupSelected?: (group: Group) => void;
-  disabled?: boolean;
-  hideInfoButton?: boolean;
-  extraListItemChrome?: (group: Group) => JSX.Element | undefined;
-
-  hideLeaveButton?: boolean;
-}
-
-function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome, hideLeaveButton }: GroupButtonProps) {
-  const accountOrServer = useAccountOrServer();
-  const { account } = accountOrServer;
-  const dispatch = useTypedDispatch();
-  const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
-    useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
-  const media = useMedia();
-  const onPress = link.onPress;
-  link.onPress = (e) => {
-    setOpen(false);
-    onPress?.(e);
-  }
-  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-
-  const joined = passes(group.currentUserMembership?.userModeration)
-    && passes(group.currentUserMembership?.groupModeration);
-  const membershipRequested = group.currentUserMembership && !joined && passes(group.currentUserMembership?.userModeration);
-  const invited = group.currentUserMembership && !joined && passes(group.currentUserMembership?.groupModeration)
-  const requiresPermissionToJoin = pending(group.defaultMembershipModeration);
-  const isLocked = useTypedSelector((state: RootState) => isGroupLocked(state.groups, group.id));
-
-  const onJoinPressed = () => {
-    // e.stopPropagation();
-    const join = !(joined || membershipRequested || invited);
-    dispatch(joinLeaveGroup({ groupId: group.id, join, ...accountOrServer }));
-  };
-
-  return <YStack>
-    <XStack>
-      <Button
-        f={1}
-        h={75}
-        // bordered={false}
-        // href={`/g/${group.shortname}`}
-        transparent={!selected}
-        backgroundColor={selected ? navColor : undefined}
-        // size="$8"
-        // disabled={appSection == AppSection.HOME}
-        disabled={disabled}
-        {...link}
-      >
-        <YStack w='100%' marginVertical='auto'>
-          <XStack>
-            <Paragraph f={1}
-              my='auto'
-              size="$5"
-              color={selected ? navTextColor : undefined}
-              whiteSpace='nowrap'
-              overflow='hidden'
-              numberOfLines={1}
-              ta='left'
-            >
-              {group.name}
-            </Paragraph>
-            <XStack o={0.6} my='auto'>
-              <XStack my='auto'>
-                <Users2 size='$1' />
-              </XStack>
-              <Text mx='$1' my='auto' fontFamily='$body' fontSize='$1'
-                color={selected ? navTextColor : undefined}
-                whiteSpace='nowrap'
-                overflow='hidden'
-                numberOfLines={1}
-                ta='left'>
-                {group.memberCount}
-              </Text>
-
-
-              {/* <MessageSquare /> {group.postCount}
-              <Calendar /> {group.eventCount} */}
-            </XStack>
-          </XStack>
-          <Paragraph
-            size="$2"
-            color={selected ? navTextColor : undefined}
-            whiteSpace='nowrap'
-            overflow='hidden'
-            numberOfLines={1}
-            ta='left'
-            o={0.8}
-          >
-            {group.description}
-          </Paragraph>
-        </YStack>
-      </Button>
-      {hideInfoButton ? undefined :
-        <Button
-          size='$2'
-          my='auto'
-          ml='$2'
-          circular
-          icon={Info} onPress={() => onShowInfo()} />}
-    </XStack>
-    <XStack flexWrap='wrap' w='100%'>
-      {accountOrServer.account && (!hideLeaveButton || !joined)
-        ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
-          <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
-            // {...standardAnimation} animation='quick'
-            mb='$2'
-            p='$3'
-            disabled={isLocked} opacity={isLocked ? 0.5 : 1}
-            onPress={onJoinPressed}>
-            <YStack jc='center' ac='center'>
-              <Heading jc='center' ta='center' size='$2' color={!joined && !membershipRequested ? primaryTextColor : textColor}>
-                {!joined && !membershipRequested ? requiresPermissionToJoin ? 'Join Request' : 'Join'
-                  : joined ? 'Leave' : 'Cancel Request'}
-              </Heading>
-              {requiresPermissionToJoin && joined ? <Paragraph size='$1'>
-                Permission required to re-join
-              </Paragraph>
-                : undefined}
-            </YStack>
-          </Button>
-        </XStack> : undefined}
-      {extraListItemChrome?.(group)}
-    </XStack>
-    {accountOrServer.account || extraListItemChrome
-      ? <Separator mt='$1' />
-      : undefined}
-  </YStack>;
-}

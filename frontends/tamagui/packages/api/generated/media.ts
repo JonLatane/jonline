@@ -158,89 +158,155 @@ export const Media = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Media {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMedia();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.contentType = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.description = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag !== 48) {
+            break;
+          }
+
           message.visibility = reader.int32() as any;
-          break;
+          continue;
         case 7:
+          if (tag !== 56) {
+            break;
+          }
+
           message.moderation = reader.int32() as any;
-          break;
+          continue;
         case 8:
+          if (tag !== 64) {
+            break;
+          }
+
           message.generated = reader.bool();
-          break;
+          continue;
         case 9:
+          if (tag !== 72) {
+            break;
+          }
+
           message.processed = reader.bool();
-          break;
+          continue;
         case 15:
+          if (tag !== 122) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 16:
+          if (tag !== 130) {
+            break;
+          }
+
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Media {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      userId: isSet(object.userId) ? String(object.userId) : undefined,
-      contentType: isSet(object.contentType) ? String(object.contentType) : "",
-      name: isSet(object.name) ? String(object.name) : undefined,
-      description: isSet(object.description) ? String(object.description) : undefined,
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
+      contentType: isSet(object.contentType) ? globalThis.String(object.contentType) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : undefined,
+      description: isSet(object.description) ? globalThis.String(object.description) : undefined,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
-      generated: isSet(object.generated) ? Boolean(object.generated) : false,
-      processed: isSet(object.processed) ? Boolean(object.processed) : false,
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+      generated: isSet(object.generated) ? globalThis.Boolean(object.generated) : false,
+      processed: isSet(object.processed) ? globalThis.Boolean(object.processed) : false,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
   },
 
   toJSON(message: Media): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.contentType !== undefined && (obj.contentType = message.contentType);
-    message.name !== undefined && (obj.name = message.name);
-    message.description !== undefined && (obj.description = message.description);
-    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
-    message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
-    message.generated !== undefined && (obj.generated = message.generated);
-    message.processed !== undefined && (obj.processed = message.processed);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.userId !== undefined) {
+      obj.userId = message.userId;
+    }
+    if (message.contentType !== "") {
+      obj.contentType = message.contentType;
+    }
+    if (message.name !== undefined) {
+      obj.name = message.name;
+    }
+    if (message.description !== undefined) {
+      obj.description = message.description;
+    }
+    if (message.visibility !== 0) {
+      obj.visibility = visibilityToJSON(message.visibility);
+    }
+    if (message.moderation !== 0) {
+      obj.moderation = moderationToJSON(message.moderation);
+    }
+    if (message.generated === true) {
+      obj.generated = message.generated;
+    }
+    if (message.processed === true) {
+      obj.processed = message.processed;
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Media>, I>>(base?: I): Media {
-    return Media.fromPartial(base ?? {});
+    return Media.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Media>, I>>(object: I): Media {
     const message = createBaseMedia();
     message.id = object.id ?? "";
@@ -280,54 +346,78 @@ export const MediaReference = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): MediaReference {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMediaReference();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.contentType = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 32) {
+            break;
+          }
+
           message.generated = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): MediaReference {
     return {
-      contentType: isSet(object.contentType) ? String(object.contentType) : "",
-      id: isSet(object.id) ? String(object.id) : "",
-      name: isSet(object.name) ? String(object.name) : undefined,
-      generated: isSet(object.generated) ? Boolean(object.generated) : false,
+      contentType: isSet(object.contentType) ? globalThis.String(object.contentType) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : undefined,
+      generated: isSet(object.generated) ? globalThis.Boolean(object.generated) : false,
     };
   },
 
   toJSON(message: MediaReference): unknown {
     const obj: any = {};
-    message.contentType !== undefined && (obj.contentType = message.contentType);
-    message.id !== undefined && (obj.id = message.id);
-    message.name !== undefined && (obj.name = message.name);
-    message.generated !== undefined && (obj.generated = message.generated);
+    if (message.contentType !== "") {
+      obj.contentType = message.contentType;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.name !== undefined) {
+      obj.name = message.name;
+    }
+    if (message.generated === true) {
+      obj.generated = message.generated;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<MediaReference>, I>>(base?: I): MediaReference {
-    return MediaReference.fromPartial(base ?? {});
+    return MediaReference.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<MediaReference>, I>>(object: I): MediaReference {
     const message = createBaseMediaReference();
     message.contentType = object.contentType ?? "";
@@ -357,49 +447,67 @@ export const GetMediaRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetMediaRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetMediaRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.mediaId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 11:
+          if (tag !== 88) {
+            break;
+          }
+
           message.page = reader.uint32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetMediaRequest {
     return {
-      mediaId: isSet(object.mediaId) ? String(object.mediaId) : undefined,
-      userId: isSet(object.userId) ? String(object.userId) : undefined,
-      page: isSet(object.page) ? Number(object.page) : 0,
+      mediaId: isSet(object.mediaId) ? globalThis.String(object.mediaId) : undefined,
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
+      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
     };
   },
 
   toJSON(message: GetMediaRequest): unknown {
     const obj: any = {};
-    message.mediaId !== undefined && (obj.mediaId = message.mediaId);
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.page !== undefined && (obj.page = Math.round(message.page));
+    if (message.mediaId !== undefined) {
+      obj.mediaId = message.mediaId;
+    }
+    if (message.userId !== undefined) {
+      obj.userId = message.userId;
+    }
+    if (message.page !== 0) {
+      obj.page = Math.round(message.page);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetMediaRequest>, I>>(base?: I): GetMediaRequest {
-    return GetMediaRequest.fromPartial(base ?? {});
+    return GetMediaRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetMediaRequest>, I>>(object: I): GetMediaRequest {
     const message = createBaseGetMediaRequest();
     message.mediaId = object.mediaId ?? undefined;
@@ -425,48 +533,56 @@ export const GetMediaResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetMediaResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetMediaResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.media.push(Media.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.hasNextPage = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetMediaResponse {
     return {
-      media: Array.isArray(object?.media) ? object.media.map((e: any) => Media.fromJSON(e)) : [],
-      hasNextPage: isSet(object.hasNextPage) ? Boolean(object.hasNextPage) : false,
+      media: globalThis.Array.isArray(object?.media) ? object.media.map((e: any) => Media.fromJSON(e)) : [],
+      hasNextPage: isSet(object.hasNextPage) ? globalThis.Boolean(object.hasNextPage) : false,
     };
   },
 
   toJSON(message: GetMediaResponse): unknown {
     const obj: any = {};
-    if (message.media) {
-      obj.media = message.media.map((e) => e ? Media.toJSON(e) : undefined);
-    } else {
-      obj.media = [];
+    if (message.media?.length) {
+      obj.media = message.media.map((e) => Media.toJSON(e));
     }
-    message.hasNextPage !== undefined && (obj.hasNextPage = message.hasNextPage);
+    if (message.hasNextPage === true) {
+      obj.hasNextPage = message.hasNextPage;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetMediaResponse>, I>>(base?: I): GetMediaResponse {
-    return GetMediaResponse.fromPartial(base ?? {});
+    return GetMediaResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetMediaResponse>, I>>(object: I): GetMediaResponse {
     const message = createBaseGetMediaResponse();
     message.media = object.media?.map((e) => Media.fromPartial(e)) || [];
@@ -478,7 +594,8 @@ export const GetMediaResponse = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
@@ -487,16 +604,16 @@ export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function toTimestamp(dateStr: string): Timestamp {
-  const date = new Date(dateStr);
+  const date = new globalThis.Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): string {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
-  return new Date(millis).toISOString();
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {

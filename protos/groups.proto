@@ -4,6 +4,7 @@ package jonline;
 
 import "google/protobuf/timestamp.proto";
 import "users.proto";
+import "media.proto";
 import "permissions.proto";
 import "visibility_moderation.proto";
 
@@ -12,7 +13,7 @@ message Group {
   string name = 2;
   string shortname = 3;
   string description = 4;
-  optional string avatar_media_id = 5;
+  optional MediaReference avatar = 5;
   repeated Permission default_membership_permissions = 6;
   // Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
   Moderation default_membership_moderation = 7;

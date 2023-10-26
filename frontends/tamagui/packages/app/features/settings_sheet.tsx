@@ -183,7 +183,7 @@ export interface ToggleRowProps {
 }
 export function ToggleRow({ name, value, setter, disabled = false, autoDispatch = false }: ToggleRowProps) {
   const dispatch = useTypedDispatch();
-  return <XStack space='$3' o={disabled ? 0.5 : 1}>
+  return <XStack space='$3' o={disabled ? 0.5 : 1} my='$1'>
     <Label marginVertical='auto' f={1}>{name}</Label>
     <Switch size="$5" margin='auto'
       defaultChecked={value}

@@ -1,8 +1,8 @@
-import { Group, Media, WebUserInterface } from "@jonline/api";
+import { Group, Media, User, UserListingType, WebUserInterface } from "@jonline/api";
 import { Button, Heading, Paragraph, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
 import { useTheme } from "@react-navigation/native";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, markGroupVisit, useServerTheme, useTypedDispatch, useTypedSelector } from "app/store";
+import { JonlineServer, RootState, getUsersPage, loadUsersPage, markGroupVisit, useAccountOrServer, useServerTheme, useTypedDispatch, useTypedSelector } from "app/store";
 import { Platform, TranslateXTransform } from 'react-native';
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
@@ -11,8 +11,8 @@ import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, sectionTitle, useInlineFeatureNavigation } from "./features_navigation";
 import { GroupContextProvider } from "../groups/group_context";
 import { MediaRenderer } from "../media/media_renderer";
-import { useEffect } from "react";
-import { serverID } from '../../store/modules/servers';
+import { useEffect, useState } from "react";
+import { serverID } from '../../store';
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -68,7 +68,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
   // const app = useLocalApp();
-  const theme = useTheme();
+  // const theme = useTheme();
   // const targetTheme = app.darkModeAuto ? undefined : app.darkMode ? 'dark' : 'light';
   const { darkMode: systemDark } = useServerTheme();
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
@@ -94,10 +94,11 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
       dispatch(markGroupVisit({ group: selectedGroup, server }));
     }
   }, [selectedGroup?.id]);
-  console.log(`serverNameEmoji="${serverNameEmoji}", serverNameBeforeEmoji="${serverNameBeforeEmoji}", serverNameAfterEmoji="${serverNameAfterEmoji}"`)
+  // console.log(`serverNameEmoji="${serverNameEmoji}", serverNameBeforeEmoji="${serverNameBeforeEmoji}", serverNameAfterEmoji="${serverNameAfterEmoji}"`)
   const useSquareLogo = canUseLogo && logo?.squareMediaId != undefined;
   const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrinkHomeButton;
   const useEmoji = serverNameEmoji && serverNameEmoji !== '';
+
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <GroupContextProvider value={selectedGroup}>
       {Platform.select({
@@ -111,7 +112,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   py={0}
                   px={
                     shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
-                    !shrinkHomeButton && !useWideLogo && !useSquareLogo && !useEmoji ? '$2' : 0}
+                      !shrinkHomeButton && !useWideLogo && !useSquareLogo && !useEmoji ? '$2' : 0}
                   height={48}
                   width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
                   // maw={maxWidth}
@@ -123,7 +124,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   {renderButtonChildren
                     ? shrinkHomeButton
                       ? useSquareLogo
-                        ? <XStack h='100%' scale={1.1} transform={[{translateY: 1.5}, {translateX: 1.0}]}>
+                        ? <XStack h='100%' scale={1.1} transform={[{ translateY: 1.5 }, { translateX: 1.0 }]}>
                           <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
                         </XStack>
                         : <XStack h={'100%'} maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
@@ -132,7 +133,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                         </XStack>
                       : <XStack h={'100%'} space='$5' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
                         {useWideLogo
-                          ? <XStack h='100%' scale={1.05} transform={[{translateY: 1.0}, {translateX: 2.0}]}>
+                          ? <XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
                             <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} failQuietly />
                           </XStack>
                           : <>
@@ -157,7 +158,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                 </Button>
                 {inlineFeatureNavigation
                   ? <XStack space='$2' ml='$1' my='auto'>
-                    <GroupsSheet selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                    <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
                   </XStack>
                   : undefined}
                 <ScrollView horizontal>
@@ -167,7 +168,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                     </>
                     : <>
                       <XStack w={1} />
-                      <GroupsSheet selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                      <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
                       <XStack w={3} />
                     </>
                   }

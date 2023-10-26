@@ -1,10 +1,11 @@
-import { Group } from "@jonline/api";
-import { JonlineServer, setInlineFeatureNavigation } from 'app/store';
+import { Group, User, UserListingType } from "@jonline/api";
+import { JonlineServer, RootState, getUsersPage, loadUsersPage, setInlineFeatureNavigation, useAccountOrServer, useCredentialDispatch, useTypedSelector } from 'app/store';
 import { Button, Heading, Popover, ScrollView, XStack, YStack, useMedia } from '@jonline/ui';
 import { useAccount, useLocalApp, useServerTheme } from 'app/store';
 import { useLink } from "solito/link";
 import { AlertTriangle, Menu, Circle, SeparatorVertical } from "@tamagui/lucide-icons";
 import { themedButtonBackground } from 'app/utils/themed_button_background';
+import { useEffect, useState } from "react";
 
 export enum AppSection {
   HOME = 'home',
@@ -108,6 +109,26 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const inlineNavigation = useInlineFeatureNavigation();
   const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
 
+  const followRequests: User[] | undefined = useTypedSelector((state: RootState) =>
+    getUsersPage(state.users, UserListingType.FOLLOW_REQUESTS, 0));
+  const followRequestCount = followRequests?.length ?? 0;
+  const followPageStatus = useTypedSelector((state: RootState) => state.users.pagesStatus);
+
+  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  useEffect(() => {
+    if (loadingUsers == undefined && !loadingUsers) {
+      if (!accountOrServer.server) return;
+
+      console.log("Loading users...");
+      setLoadingUsers(true);
+      dispatch(loadUsersPage({ listingType: UserListingType.FOLLOW_REQUESTS, ...accountOrServer }));
+    } else if (followPageStatus == 'loaded' && loadingUsers) {
+      setLoadingUsers(false);
+      // dismissScrollPreserver(setShowScrollPreserver);
+    }
+  });
+
   const [latest, posts, events] = [
     navButton(isLatest, latestLink, sectionTitle(AppSection.HOME)),
     navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS)),
@@ -123,8 +144,11 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
   const peopleRow = <>
     {navButton(isPeople, peopleLink, 'People')}
-    {account ? navButton(isFollowRequests, followRequestsLink, 'Follow Requests') : undefined}
+    {account && (!inlineNavigation || followRequestCount > 0 || isPeople) ? navButton(isFollowRequests, followRequestsLink,
+      `Follow Requests${followRequestCount > 0 ? ` (${followRequestCount})` : ''}`
+    ) : undefined}
   </>;
+  const isPeopleRow = isPeople || isFollowRequests;
 
   const myDataRow = <>
     {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
@@ -163,15 +187,17 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       <SeparatorVertical color={primaryTextColor} size='$1' />
     </XStack>
     : undefined;
+
+
   return inlineNavigation
     ? <>
       <XStack w={selectedGroup ? 11 : 3.5} />
       {triggerButton}
       <XStack space='$2' ml='$1' my='auto'>
-        {postsEventsRow}
+        {isPeopleRow ? peopleRow : postsEventsRow}
         {inlineSeparator}
-        {peopleRow}
-        {inlineSeparator}
+        {isPeopleRow ? postsEventsRow : peopleRow}
+        {isMedia ? undefined : inlineSeparator}
         {myDataRow}
       </XStack>
     </>

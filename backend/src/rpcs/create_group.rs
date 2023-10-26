@@ -3,9 +3,10 @@ use diesel::result::Error::DatabaseError;
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
+use crate::models::get_media_reference;
 use crate::protos::*;
 use crate::schema::groups;
 use crate::schema::memberships;
@@ -42,6 +43,11 @@ pub fn create_group(
         _ => Moderation::Unmoderated,
     }
     .to_string_moderation();
+    let avatar = match request.avatar.as_ref().map(|a| &a.id) {
+        Some(id) => get_media_reference(id.to_db_id_or_err("avatar")?, conn).ok(),
+        None => None,
+    };
+    let avatar_media_id = avatar.clone().map(|m| m.id);
     let mut default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();
     if request.default_membership_permissions.is_empty() {
@@ -57,7 +63,7 @@ pub fn create_group(
                     name: request.name.to_owned(),
                     shortname: derive_shortname(&request),
                     description: request.description,
-                    avatar_media_id: request.avatar_media_id.map(|id| id.to_db_id().unwrap()),
+                    avatar_media_id: avatar_media_id,
                     visibility: visibility,
                     default_membership_permissions: default_membership_permissions,
                     default_membership_moderation: default_membership_moderation,
@@ -90,7 +96,10 @@ pub fn create_group(
     match group {
         Ok(group) => {
             log::info!("Group created! Result: {:?}", group);
-            Ok(group.to_proto_with(membership.map(|m| m.to_proto())))
+            Ok(group.to_proto_with(
+                membership.map(|m| m.to_proto()),
+                Some(&media_lookup(avatar.map(|a| vec![a]).unwrap_or(vec![]))),
+            ))
         }
         Err(DatabaseError(UniqueViolation, _)) => {
             Err(Status::new(Code::NotFound, "duplicate_group_name"))

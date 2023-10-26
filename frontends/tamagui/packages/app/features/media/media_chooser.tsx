@@ -19,9 +19,10 @@ interface MediaChooserProps {
   selectedMedia: MediaRef[];
   onMediaSelected?: (media: MediaRef[]) => void;
   multiselect?: boolean;
+  disabled?: boolean;
 }
 
-export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMedia, onMediaSelected, multiselect = false }) => {
+export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMedia, onMediaSelected, multiselect = false, disabled }) => {
   const mediaQuery = useMedia();
   const [open, _setOpen] = useState(false);
   const [position, setPosition] = useState(0);
@@ -88,6 +89,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   return (
     <>
       <Button backgroundColor={navColor} o={0.95} hoverStyle={{ backgroundColor: navColor, opacity: 1 }} color={navTextColor}
+        disabled={disabled}
         onPress={() => setOpen(!open)}>
         {children ?? <XStack>
           <ImageIcon size={24} color={navTextColor} />

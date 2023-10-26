@@ -15,6 +15,7 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
 import 'groups.pbenum.dart';
+import 'media.pb.dart' as $5;
 import 'permissions.pbenum.dart' as $11;
 import 'users.pb.dart' as $4;
 import 'visibility_moderation.pbenum.dart' as $10;
@@ -27,7 +28,7 @@ class Group extends $pb.GeneratedMessage {
     $core.String? name,
     $core.String? shortname,
     $core.String? description,
-    $core.String? avatarMediaId,
+    $5.MediaReference? avatar,
     $core.Iterable<$11.Permission>? defaultMembershipPermissions,
     $10.Moderation? defaultMembershipModeration,
     $10.Moderation? defaultPostModeration,
@@ -53,8 +54,8 @@ class Group extends $pb.GeneratedMessage {
     if (description != null) {
       $result.description = description;
     }
-    if (avatarMediaId != null) {
-      $result.avatarMediaId = avatarMediaId;
+    if (avatar != null) {
+      $result.avatar = avatar;
     }
     if (defaultMembershipPermissions != null) {
       $result.defaultMembershipPermissions.addAll(defaultMembershipPermissions);
@@ -100,7 +101,7 @@ class Group extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'shortname')
     ..aOS(4, _omitFieldNames ? '' : 'description')
-    ..aOS(5, _omitFieldNames ? '' : 'avatarMediaId')
+    ..aOM<$5.MediaReference>(5, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..pc<$11.Permission>(6, _omitFieldNames ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
     ..e<$10.Moderation>(7, _omitFieldNames ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..e<$10.Moderation>(8, _omitFieldNames ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
@@ -173,13 +174,15 @@ class Group extends $pb.GeneratedMessage {
   void clearDescription() => clearField(4);
 
   @$pb.TagNumber(5)
-  $core.String get avatarMediaId => $_getSZ(4);
+  $5.MediaReference get avatar => $_getN(4);
   @$pb.TagNumber(5)
-  set avatarMediaId($core.String v) { $_setString(4, v); }
+  set avatar($5.MediaReference v) { setField(5, v); }
   @$pb.TagNumber(5)
-  $core.bool hasAvatarMediaId() => $_has(4);
+  $core.bool hasAvatar() => $_has(4);
   @$pb.TagNumber(5)
-  void clearAvatarMediaId() => clearField(5);
+  void clearAvatar() => clearField(5);
+  @$pb.TagNumber(5)
+  $5.MediaReference ensureAvatar() => $_ensure(4);
 
   @$pb.TagNumber(6)
   $core.List<$11.Permission> get defaultMembershipPermissions => $_getList(5);

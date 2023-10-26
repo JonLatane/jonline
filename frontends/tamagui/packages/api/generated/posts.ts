@@ -320,64 +320,100 @@ export const GetPostsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetPostsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetPostsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.postId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.authorUserId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.groupId = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 32) {
+            break;
+          }
+
           message.replyDepth = reader.uint32();
-          break;
+          continue;
         case 10:
+          if (tag !== 80) {
+            break;
+          }
+
           message.listingType = reader.int32() as any;
-          break;
+          continue;
         case 15:
+          if (tag !== 120) {
+            break;
+          }
+
           message.page = reader.uint32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetPostsRequest {
     return {
-      postId: isSet(object.postId) ? String(object.postId) : undefined,
-      authorUserId: isSet(object.authorUserId) ? String(object.authorUserId) : undefined,
-      groupId: isSet(object.groupId) ? String(object.groupId) : undefined,
-      replyDepth: isSet(object.replyDepth) ? Number(object.replyDepth) : undefined,
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
+      authorUserId: isSet(object.authorUserId) ? globalThis.String(object.authorUserId) : undefined,
+      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
+      replyDepth: isSet(object.replyDepth) ? globalThis.Number(object.replyDepth) : undefined,
       listingType: isSet(object.listingType) ? postListingTypeFromJSON(object.listingType) : 0,
-      page: isSet(object.page) ? Number(object.page) : 0,
+      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
     };
   },
 
   toJSON(message: GetPostsRequest): unknown {
     const obj: any = {};
-    message.postId !== undefined && (obj.postId = message.postId);
-    message.authorUserId !== undefined && (obj.authorUserId = message.authorUserId);
-    message.groupId !== undefined && (obj.groupId = message.groupId);
-    message.replyDepth !== undefined && (obj.replyDepth = Math.round(message.replyDepth));
-    message.listingType !== undefined && (obj.listingType = postListingTypeToJSON(message.listingType));
-    message.page !== undefined && (obj.page = Math.round(message.page));
+    if (message.postId !== undefined) {
+      obj.postId = message.postId;
+    }
+    if (message.authorUserId !== undefined) {
+      obj.authorUserId = message.authorUserId;
+    }
+    if (message.groupId !== undefined) {
+      obj.groupId = message.groupId;
+    }
+    if (message.replyDepth !== undefined) {
+      obj.replyDepth = Math.round(message.replyDepth);
+    }
+    if (message.listingType !== 0) {
+      obj.listingType = postListingTypeToJSON(message.listingType);
+    }
+    if (message.page !== 0) {
+      obj.page = Math.round(message.page);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetPostsRequest>, I>>(base?: I): GetPostsRequest {
-    return GetPostsRequest.fromPartial(base ?? {});
+    return GetPostsRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetPostsRequest>, I>>(object: I): GetPostsRequest {
     const message = createBaseGetPostsRequest();
     message.postId = object.postId ?? undefined;
@@ -403,41 +439,43 @@ export const GetPostsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetPostsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetPostsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.posts.push(Post.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetPostsResponse {
-    return { posts: Array.isArray(object?.posts) ? object.posts.map((e: any) => Post.fromJSON(e)) : [] };
+    return { posts: globalThis.Array.isArray(object?.posts) ? object.posts.map((e: any) => Post.fromJSON(e)) : [] };
   },
 
   toJSON(message: GetPostsResponse): unknown {
     const obj: any = {};
-    if (message.posts) {
-      obj.posts = message.posts.map((e) => e ? Post.toJSON(e) : undefined);
-    } else {
-      obj.posts = [];
+    if (message.posts?.length) {
+      obj.posts = message.posts.map((e) => Post.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetPostsResponse>, I>>(base?: I): GetPostsResponse {
-    return GetPostsResponse.fromPartial(base ?? {});
+    return GetPostsResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetPostsResponse>, I>>(object: I): GetPostsResponse {
     const message = createBaseGetPostsResponse();
     message.posts = object.posts?.map((e) => Post.fromPartial(e)) || [];
@@ -544,153 +582,276 @@ export const Post = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Post {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePost();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.author = Author.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.replyToPostId = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.title = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.link = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag !== 50) {
+            break;
+          }
+
           message.content = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag !== 56) {
+            break;
+          }
+
           message.responseCount = reader.int32();
-          break;
+          continue;
         case 8:
+          if (tag !== 64) {
+            break;
+          }
+
           message.replyCount = reader.int32();
-          break;
+          continue;
         case 9:
+          if (tag !== 72) {
+            break;
+          }
+
           message.groupCount = reader.int32();
-          break;
+          continue;
         case 10:
+          if (tag !== 82) {
+            break;
+          }
+
           message.media.push(MediaReference.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 11:
+          if (tag !== 88) {
+            break;
+          }
+
           message.mediaGenerated = reader.bool();
-          break;
+          continue;
         case 12:
+          if (tag !== 96) {
+            break;
+          }
+
           message.embedLink = reader.bool();
-          break;
+          continue;
         case 13:
+          if (tag !== 104) {
+            break;
+          }
+
           message.shareable = reader.bool();
-          break;
+          continue;
         case 14:
+          if (tag !== 112) {
+            break;
+          }
+
           message.context = reader.int32() as any;
-          break;
+          continue;
         case 15:
+          if (tag !== 120) {
+            break;
+          }
+
           message.visibility = reader.int32() as any;
-          break;
+          continue;
         case 16:
+          if (tag !== 128) {
+            break;
+          }
+
           message.moderation = reader.int32() as any;
-          break;
+          continue;
         case 18:
+          if (tag !== 146) {
+            break;
+          }
+
           message.currentGroupPost = GroupPost.decode(reader, reader.uint32());
-          break;
+          continue;
         case 19:
+          if (tag !== 154) {
+            break;
+          }
+
           message.replies.push(Post.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 20:
+          if (tag !== 162) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 21:
+          if (tag !== 170) {
+            break;
+          }
+
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 22:
+          if (tag !== 178) {
+            break;
+          }
+
           message.publishedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 23:
+          if (tag !== 186) {
+            break;
+          }
+
           message.lastActivityAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Post {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       author: isSet(object.author) ? Author.fromJSON(object.author) : undefined,
-      replyToPostId: isSet(object.replyToPostId) ? String(object.replyToPostId) : undefined,
-      title: isSet(object.title) ? String(object.title) : undefined,
-      link: isSet(object.link) ? String(object.link) : undefined,
-      content: isSet(object.content) ? String(object.content) : undefined,
-      responseCount: isSet(object.responseCount) ? Number(object.responseCount) : 0,
-      replyCount: isSet(object.replyCount) ? Number(object.replyCount) : 0,
-      groupCount: isSet(object.groupCount) ? Number(object.groupCount) : 0,
-      media: Array.isArray(object?.media) ? object.media.map((e: any) => MediaReference.fromJSON(e)) : [],
-      mediaGenerated: isSet(object.mediaGenerated) ? Boolean(object.mediaGenerated) : false,
-      embedLink: isSet(object.embedLink) ? Boolean(object.embedLink) : false,
-      shareable: isSet(object.shareable) ? Boolean(object.shareable) : false,
+      replyToPostId: isSet(object.replyToPostId) ? globalThis.String(object.replyToPostId) : undefined,
+      title: isSet(object.title) ? globalThis.String(object.title) : undefined,
+      link: isSet(object.link) ? globalThis.String(object.link) : undefined,
+      content: isSet(object.content) ? globalThis.String(object.content) : undefined,
+      responseCount: isSet(object.responseCount) ? globalThis.Number(object.responseCount) : 0,
+      replyCount: isSet(object.replyCount) ? globalThis.Number(object.replyCount) : 0,
+      groupCount: isSet(object.groupCount) ? globalThis.Number(object.groupCount) : 0,
+      media: globalThis.Array.isArray(object?.media) ? object.media.map((e: any) => MediaReference.fromJSON(e)) : [],
+      mediaGenerated: isSet(object.mediaGenerated) ? globalThis.Boolean(object.mediaGenerated) : false,
+      embedLink: isSet(object.embedLink) ? globalThis.Boolean(object.embedLink) : false,
+      shareable: isSet(object.shareable) ? globalThis.Boolean(object.shareable) : false,
       context: isSet(object.context) ? postContextFromJSON(object.context) : 0,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
       currentGroupPost: isSet(object.currentGroupPost) ? GroupPost.fromJSON(object.currentGroupPost) : undefined,
-      replies: Array.isArray(object?.replies) ? object.replies.map((e: any) => Post.fromJSON(e)) : [],
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
-      publishedAt: isSet(object.publishedAt) ? String(object.publishedAt) : undefined,
-      lastActivityAt: isSet(object.lastActivityAt) ? String(object.lastActivityAt) : undefined,
+      replies: globalThis.Array.isArray(object?.replies) ? object.replies.map((e: any) => Post.fromJSON(e)) : [],
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
+      publishedAt: isSet(object.publishedAt) ? globalThis.String(object.publishedAt) : undefined,
+      lastActivityAt: isSet(object.lastActivityAt) ? globalThis.String(object.lastActivityAt) : undefined,
     };
   },
 
   toJSON(message: Post): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.author !== undefined && (obj.author = message.author ? Author.toJSON(message.author) : undefined);
-    message.replyToPostId !== undefined && (obj.replyToPostId = message.replyToPostId);
-    message.title !== undefined && (obj.title = message.title);
-    message.link !== undefined && (obj.link = message.link);
-    message.content !== undefined && (obj.content = message.content);
-    message.responseCount !== undefined && (obj.responseCount = Math.round(message.responseCount));
-    message.replyCount !== undefined && (obj.replyCount = Math.round(message.replyCount));
-    message.groupCount !== undefined && (obj.groupCount = Math.round(message.groupCount));
-    if (message.media) {
-      obj.media = message.media.map((e) => e ? MediaReference.toJSON(e) : undefined);
-    } else {
-      obj.media = [];
+    if (message.id !== "") {
+      obj.id = message.id;
     }
-    message.mediaGenerated !== undefined && (obj.mediaGenerated = message.mediaGenerated);
-    message.embedLink !== undefined && (obj.embedLink = message.embedLink);
-    message.shareable !== undefined && (obj.shareable = message.shareable);
-    message.context !== undefined && (obj.context = postContextToJSON(message.context));
-    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
-    message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
-    message.currentGroupPost !== undefined &&
-      (obj.currentGroupPost = message.currentGroupPost ? GroupPost.toJSON(message.currentGroupPost) : undefined);
-    if (message.replies) {
-      obj.replies = message.replies.map((e) => e ? Post.toJSON(e) : undefined);
-    } else {
-      obj.replies = [];
+    if (message.author !== undefined) {
+      obj.author = Author.toJSON(message.author);
     }
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
-    message.publishedAt !== undefined && (obj.publishedAt = message.publishedAt);
-    message.lastActivityAt !== undefined && (obj.lastActivityAt = message.lastActivityAt);
+    if (message.replyToPostId !== undefined) {
+      obj.replyToPostId = message.replyToPostId;
+    }
+    if (message.title !== undefined) {
+      obj.title = message.title;
+    }
+    if (message.link !== undefined) {
+      obj.link = message.link;
+    }
+    if (message.content !== undefined) {
+      obj.content = message.content;
+    }
+    if (message.responseCount !== 0) {
+      obj.responseCount = Math.round(message.responseCount);
+    }
+    if (message.replyCount !== 0) {
+      obj.replyCount = Math.round(message.replyCount);
+    }
+    if (message.groupCount !== 0) {
+      obj.groupCount = Math.round(message.groupCount);
+    }
+    if (message.media?.length) {
+      obj.media = message.media.map((e) => MediaReference.toJSON(e));
+    }
+    if (message.mediaGenerated === true) {
+      obj.mediaGenerated = message.mediaGenerated;
+    }
+    if (message.embedLink === true) {
+      obj.embedLink = message.embedLink;
+    }
+    if (message.shareable === true) {
+      obj.shareable = message.shareable;
+    }
+    if (message.context !== 0) {
+      obj.context = postContextToJSON(message.context);
+    }
+    if (message.visibility !== 0) {
+      obj.visibility = visibilityToJSON(message.visibility);
+    }
+    if (message.moderation !== 0) {
+      obj.moderation = moderationToJSON(message.moderation);
+    }
+    if (message.currentGroupPost !== undefined) {
+      obj.currentGroupPost = GroupPost.toJSON(message.currentGroupPost);
+    }
+    if (message.replies?.length) {
+      obj.replies = message.replies.map((e) => Post.toJSON(e));
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
+    if (message.publishedAt !== undefined) {
+      obj.publishedAt = message.publishedAt;
+    }
+    if (message.lastActivityAt !== undefined) {
+      obj.lastActivityAt = message.lastActivityAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Post>, I>>(base?: I): Post {
-    return Post.fromPartial(base ?? {});
+    return Post.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Post>, I>>(object: I): Post {
     const message = createBasePost();
     message.id = object.id ?? "";
@@ -748,59 +909,89 @@ export const GroupPost = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GroupPost {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGroupPost();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.groupId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.postId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 32) {
+            break;
+          }
+
           message.groupModeration = reader.int32() as any;
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GroupPost {
     return {
-      groupId: isSet(object.groupId) ? String(object.groupId) : "",
-      postId: isSet(object.postId) ? String(object.postId) : "",
-      userId: isSet(object.userId) ? String(object.userId) : "",
+      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : "",
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : "",
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
       groupModeration: isSet(object.groupModeration) ? moderationFromJSON(object.groupModeration) : 0,
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
     };
   },
 
   toJSON(message: GroupPost): unknown {
     const obj: any = {};
-    message.groupId !== undefined && (obj.groupId = message.groupId);
-    message.postId !== undefined && (obj.postId = message.postId);
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.groupModeration !== undefined && (obj.groupModeration = moderationToJSON(message.groupModeration));
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    if (message.groupId !== "") {
+      obj.groupId = message.groupId;
+    }
+    if (message.postId !== "") {
+      obj.postId = message.postId;
+    }
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.groupModeration !== 0) {
+      obj.groupModeration = moderationToJSON(message.groupModeration);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GroupPost>, I>>(base?: I): GroupPost {
-    return GroupPost.fromPartial(base ?? {});
+    return GroupPost.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GroupPost>, I>>(object: I): GroupPost {
     const message = createBaseGroupPost();
     message.groupId = object.groupId ?? "";
@@ -831,49 +1022,67 @@ export const UserPost = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): UserPost {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUserPost();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.groupId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): UserPost {
     return {
-      groupId: isSet(object.groupId) ? String(object.groupId) : "",
-      userId: isSet(object.userId) ? String(object.userId) : "",
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
+      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : "",
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
     };
   },
 
   toJSON(message: UserPost): unknown {
     const obj: any = {};
-    message.groupId !== undefined && (obj.groupId = message.groupId);
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
+    if (message.groupId !== "") {
+      obj.groupId = message.groupId;
+    }
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<UserPost>, I>>(base?: I): UserPost {
-    return UserPost.fromPartial(base ?? {});
+    return UserPost.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<UserPost>, I>>(object: I): UserPost {
     const message = createBaseUserPost();
     message.groupId = object.groupId ?? "";
@@ -899,44 +1108,56 @@ export const GetGroupPostsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetGroupPostsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetGroupPostsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.postId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.groupId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetGroupPostsRequest {
     return {
-      postId: isSet(object.postId) ? String(object.postId) : "",
-      groupId: isSet(object.groupId) ? String(object.groupId) : undefined,
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : "",
+      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
     };
   },
 
   toJSON(message: GetGroupPostsRequest): unknown {
     const obj: any = {};
-    message.postId !== undefined && (obj.postId = message.postId);
-    message.groupId !== undefined && (obj.groupId = message.groupId);
+    if (message.postId !== "") {
+      obj.postId = message.postId;
+    }
+    if (message.groupId !== undefined) {
+      obj.groupId = message.groupId;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetGroupPostsRequest>, I>>(base?: I): GetGroupPostsRequest {
-    return GetGroupPostsRequest.fromPartial(base ?? {});
+    return GetGroupPostsRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetGroupPostsRequest>, I>>(object: I): GetGroupPostsRequest {
     const message = createBaseGetGroupPostsRequest();
     message.postId = object.postId ?? "";
@@ -958,43 +1179,47 @@ export const GetGroupPostsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetGroupPostsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetGroupPostsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.groupPosts.push(GroupPost.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetGroupPostsResponse {
     return {
-      groupPosts: Array.isArray(object?.groupPosts) ? object.groupPosts.map((e: any) => GroupPost.fromJSON(e)) : [],
+      groupPosts: globalThis.Array.isArray(object?.groupPosts)
+        ? object.groupPosts.map((e: any) => GroupPost.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: GetGroupPostsResponse): unknown {
     const obj: any = {};
-    if (message.groupPosts) {
-      obj.groupPosts = message.groupPosts.map((e) => e ? GroupPost.toJSON(e) : undefined);
-    } else {
-      obj.groupPosts = [];
+    if (message.groupPosts?.length) {
+      obj.groupPosts = message.groupPosts.map((e) => GroupPost.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetGroupPostsResponse>, I>>(base?: I): GetGroupPostsResponse {
-    return GetGroupPostsResponse.fromPartial(base ?? {});
+    return GetGroupPostsResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetGroupPostsResponse>, I>>(object: I): GetGroupPostsResponse {
     const message = createBaseGetGroupPostsResponse();
     message.groupPosts = object.groupPosts?.map((e) => GroupPost.fromPartial(e)) || [];
@@ -1005,7 +1230,8 @@ export const GetGroupPostsResponse = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
@@ -1014,16 +1240,16 @@ export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function toTimestamp(dateStr: string): Timestamp {
-  const date = new Date(dateStr);
+  const date = new globalThis.Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): string {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
-  return new Date(millis).toISOString();
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {

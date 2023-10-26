@@ -1,6 +1,6 @@
 import { Group, MediaReference, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
-import { ChevronDown, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
+import { ChevronDown, Cog, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
@@ -33,7 +33,7 @@ export type BaseCreatePostSheetProps = {
 }
 
 export const postVisibilityDescription = (
-  v: Visibility, 
+  v: Visibility,
   group: Group | undefined,
   server: JonlineServer | undefined,
   entity: string = 'post'
@@ -213,8 +213,10 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
               />
               <XStack als='center' w='100%' px='$5' mb='$2' maw={800}>
                 <Heading marginVertical='auto' f={1} size='$7'>Create {entityName}</Heading>
-                <Button backgroundColor={showSettings ? navColor : undefined} onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
-                  <Unlock color={showSettings ? navTextColor : textColor} />
+                <Button backgroundColor={showSettings ? navColor : undefined}
+                  hoverStyle={{ backgroundColor: showSettings ? navColor : undefined }}
+                  onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
+                  <Cog color={showSettings ? navTextColor : textColor} />
                 </Button>
                 <Button backgroundColor={primaryColor} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
                   onPress={() => doCreate(previewPost, group, resetPost, () => setPosting(false))}>
@@ -251,37 +253,6 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
               </XStack>
 
               {/* <AnimatePresence> */}
-              {showSettings
-                ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' p='$3'
-                  animation='standard' {...standardAnimation}
-                >
-                  {visibility != Visibility.PRIVATE
-                    ? <XStack w='100%' mb='$2'>
-                      <GroupsSheet
-                        noGroupSelectedText={publicVisibility(visibility)
-                          ? 'Share Everywhere' : 'Share To A Group'}
-                        selectedGroup={group}
-                        onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
-                      />
-                    </XStack>
-                    : undefined}
-                  {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
-                  <VisibilityPicker id={`visibility-picker-create-${entityName?.toLowerCase() ?? 'post'}`}
-                    label='Post Visibility'
-                    visibility={visibility}
-                    onChange={setVisibility}
-                    visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
-                  <ToggleRow
-                    // key={`'create-post-shareable-${shareable}`} 
-                    name={
-                      publicVisibility(visibility) || visibility == Visibility.LIMITED ?
-                        `Allow sharing to ${group ? 'other ' : ''}Groups`
-                        : 'Allow sharing to other users'
-                    }
-                    value={shareable}
-                    setter={(v) => setShareable(v)}
-                    disabled={disableInputs || visibility == Visibility.PRIVATE} />
-                </YStack> : undefined}
               {/* </AnimatePresence> */}
               {/* <Sheet.ScrollView> */}
               <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
@@ -315,11 +286,41 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                         </Button>
                       </ZStack>
                     </XStack>
-
+                    {showSettings
+                      ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' p='$3'
+                        animation='standard' {...standardAnimation}
+                      >
+                        {visibility != Visibility.PRIVATE
+                          ? <XStack w='100%' mb='$2'>
+                            <GroupsSheet
+                              noGroupSelectedText={publicVisibility(visibility)
+                                ? 'Share Everywhere' : 'Share To A Group'}
+                              selectedGroup={group}
+                              onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+                            />
+                          </XStack>
+                          : undefined}
+                        {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
+                        <VisibilityPicker id={`visibility-picker-create-${entityName?.toLowerCase() ?? 'post'}`}
+                          label='Post Visibility'
+                          visibility={visibility}
+                          onChange={setVisibility}
+                          visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
+                        <ToggleRow
+                          // key={`'create-post-shareable-${shareable}`} 
+                          name={
+                            publicVisibility(visibility) || visibility == Visibility.LIMITED ?
+                              `Allow sharing to ${group ? 'other ' : ''}Groups`
+                              : 'Allow sharing to other users'
+                          }
+                          value={shareable}
+                          setter={(v) => setShareable(v)}
+                          disabled={disableInputs || visibility == Visibility.PRIVATE} />
+                      </YStack> : undefined}
                     {/* <AnimatePresence> */}
                     {showMedia
-                      ? <PostMediaManager 
-                      {...{link, media, setMedia, embedLink, setEmbedLink}} /> : undefined}
+                      ? <PostMediaManager
+                        {...{ link, media, setMedia, embedLink, setEmbedLink }} /> : undefined}
                     {/* </AnimatePresence> */}
 
                     <TextArea f={1} pt='$2' value={content} ref={textAreaRef}

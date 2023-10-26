@@ -293,44 +293,69 @@ export const GetEventsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetEventsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetEventsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.eventId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.authorUserId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.groupId = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.eventInstanceId = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.timeFilter = TimeFilter.decode(reader, reader.uint32());
-          break;
+          continue;
         case 10:
+          if (tag !== 80) {
+            break;
+          }
+
           message.listingType = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetEventsRequest {
     return {
-      eventId: isSet(object.eventId) ? String(object.eventId) : undefined,
-      authorUserId: isSet(object.authorUserId) ? String(object.authorUserId) : undefined,
-      groupId: isSet(object.groupId) ? String(object.groupId) : undefined,
-      eventInstanceId: isSet(object.eventInstanceId) ? String(object.eventInstanceId) : undefined,
+      eventId: isSet(object.eventId) ? globalThis.String(object.eventId) : undefined,
+      authorUserId: isSet(object.authorUserId) ? globalThis.String(object.authorUserId) : undefined,
+      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
+      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : undefined,
       timeFilter: isSet(object.timeFilter) ? TimeFilter.fromJSON(object.timeFilter) : undefined,
       listingType: isSet(object.listingType) ? eventListingTypeFromJSON(object.listingType) : 0,
     };
@@ -338,20 +363,30 @@ export const GetEventsRequest = {
 
   toJSON(message: GetEventsRequest): unknown {
     const obj: any = {};
-    message.eventId !== undefined && (obj.eventId = message.eventId);
-    message.authorUserId !== undefined && (obj.authorUserId = message.authorUserId);
-    message.groupId !== undefined && (obj.groupId = message.groupId);
-    message.eventInstanceId !== undefined && (obj.eventInstanceId = message.eventInstanceId);
-    message.timeFilter !== undefined &&
-      (obj.timeFilter = message.timeFilter ? TimeFilter.toJSON(message.timeFilter) : undefined);
-    message.listingType !== undefined && (obj.listingType = eventListingTypeToJSON(message.listingType));
+    if (message.eventId !== undefined) {
+      obj.eventId = message.eventId;
+    }
+    if (message.authorUserId !== undefined) {
+      obj.authorUserId = message.authorUserId;
+    }
+    if (message.groupId !== undefined) {
+      obj.groupId = message.groupId;
+    }
+    if (message.eventInstanceId !== undefined) {
+      obj.eventInstanceId = message.eventInstanceId;
+    }
+    if (message.timeFilter !== undefined) {
+      obj.timeFilter = TimeFilter.toJSON(message.timeFilter);
+    }
+    if (message.listingType !== 0) {
+      obj.listingType = eventListingTypeToJSON(message.listingType);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetEventsRequest>, I>>(base?: I): GetEventsRequest {
-    return GetEventsRequest.fromPartial(base ?? {});
+    return GetEventsRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetEventsRequest>, I>>(object: I): GetEventsRequest {
     const message = createBaseGetEventsRequest();
     message.eventId = object.eventId ?? undefined;
@@ -388,54 +423,78 @@ export const TimeFilter = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): TimeFilter {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTimeFilter();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.startsAfter = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.endsAfter = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.startsBefore = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.endsBefore = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): TimeFilter {
     return {
-      startsAfter: isSet(object.startsAfter) ? String(object.startsAfter) : undefined,
-      endsAfter: isSet(object.endsAfter) ? String(object.endsAfter) : undefined,
-      startsBefore: isSet(object.startsBefore) ? String(object.startsBefore) : undefined,
-      endsBefore: isSet(object.endsBefore) ? String(object.endsBefore) : undefined,
+      startsAfter: isSet(object.startsAfter) ? globalThis.String(object.startsAfter) : undefined,
+      endsAfter: isSet(object.endsAfter) ? globalThis.String(object.endsAfter) : undefined,
+      startsBefore: isSet(object.startsBefore) ? globalThis.String(object.startsBefore) : undefined,
+      endsBefore: isSet(object.endsBefore) ? globalThis.String(object.endsBefore) : undefined,
     };
   },
 
   toJSON(message: TimeFilter): unknown {
     const obj: any = {};
-    message.startsAfter !== undefined && (obj.startsAfter = message.startsAfter);
-    message.endsAfter !== undefined && (obj.endsAfter = message.endsAfter);
-    message.startsBefore !== undefined && (obj.startsBefore = message.startsBefore);
-    message.endsBefore !== undefined && (obj.endsBefore = message.endsBefore);
+    if (message.startsAfter !== undefined) {
+      obj.startsAfter = message.startsAfter;
+    }
+    if (message.endsAfter !== undefined) {
+      obj.endsAfter = message.endsAfter;
+    }
+    if (message.startsBefore !== undefined) {
+      obj.startsBefore = message.startsBefore;
+    }
+    if (message.endsBefore !== undefined) {
+      obj.endsBefore = message.endsBefore;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<TimeFilter>, I>>(base?: I): TimeFilter {
-    return TimeFilter.fromPartial(base ?? {});
+    return TimeFilter.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<TimeFilter>, I>>(object: I): TimeFilter {
     const message = createBaseTimeFilter();
     message.startsAfter = object.startsAfter ?? undefined;
@@ -459,41 +518,43 @@ export const GetEventsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetEventsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetEventsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.events.push(Event.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetEventsResponse {
-    return { events: Array.isArray(object?.events) ? object.events.map((e: any) => Event.fromJSON(e)) : [] };
+    return { events: globalThis.Array.isArray(object?.events) ? object.events.map((e: any) => Event.fromJSON(e)) : [] };
   },
 
   toJSON(message: GetEventsResponse): unknown {
     const obj: any = {};
-    if (message.events) {
-      obj.events = message.events.map((e) => e ? Event.toJSON(e) : undefined);
-    } else {
-      obj.events = [];
+    if (message.events?.length) {
+      obj.events = message.events.map((e) => Event.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetEventsResponse>, I>>(base?: I): GetEventsResponse {
-    return GetEventsResponse.fromPartial(base ?? {});
+    return GetEventsResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetEventsResponse>, I>>(object: I): GetEventsResponse {
     const message = createBaseGetEventsResponse();
     message.events = object.events?.map((e) => Event.fromPartial(e)) || [];
@@ -523,58 +584,80 @@ export const Event = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Event {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEvent();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.post = Post.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.info = EventInfo.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.instances.push(EventInstance.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Event {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       post: isSet(object.post) ? Post.fromJSON(object.post) : undefined,
       info: isSet(object.info) ? EventInfo.fromJSON(object.info) : undefined,
-      instances: Array.isArray(object?.instances) ? object.instances.map((e: any) => EventInstance.fromJSON(e)) : [],
+      instances: globalThis.Array.isArray(object?.instances)
+        ? object.instances.map((e: any) => EventInstance.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: Event): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.post !== undefined && (obj.post = message.post ? Post.toJSON(message.post) : undefined);
-    message.info !== undefined && (obj.info = message.info ? EventInfo.toJSON(message.info) : undefined);
-    if (message.instances) {
-      obj.instances = message.instances.map((e) => e ? EventInstance.toJSON(e) : undefined);
-    } else {
-      obj.instances = [];
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.post !== undefined) {
+      obj.post = Post.toJSON(message.post);
+    }
+    if (message.info !== undefined) {
+      obj.info = EventInfo.toJSON(message.info);
+    }
+    if (message.instances?.length) {
+      obj.instances = message.instances.map((e) => EventInstance.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Event>, I>>(base?: I): Event {
-    return Event.fromPartial(base ?? {});
+    return Event.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Event>, I>>(object: I): Event {
     const message = createBaseEvent();
     message.id = object.id ?? "";
@@ -595,16 +678,17 @@ export const EventInfo = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): EventInfo {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEventInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -619,9 +703,8 @@ export const EventInfo = {
   },
 
   create<I extends Exact<DeepPartial<EventInfo>, I>>(base?: I): EventInfo {
-    return EventInfo.fromPartial(base ?? {});
+    return EventInfo.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<EventInfo>, I>>(_: I): EventInfo {
     const message = createBaseEventInfo();
     return message;
@@ -667,69 +750,111 @@ export const EventInstance = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): EventInstance {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEventInstance();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.eventId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.post = Post.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.info = EventInstanceInfo.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.startsAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 6:
+          if (tag !== 50) {
+            break;
+          }
+
           message.endsAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 7:
+          if (tag !== 58) {
+            break;
+          }
+
           message.location = Location.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): EventInstance {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      eventId: isSet(object.eventId) ? String(object.eventId) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      eventId: isSet(object.eventId) ? globalThis.String(object.eventId) : "",
       post: isSet(object.post) ? Post.fromJSON(object.post) : undefined,
       info: isSet(object.info) ? EventInstanceInfo.fromJSON(object.info) : undefined,
-      startsAt: isSet(object.startsAt) ? String(object.startsAt) : undefined,
-      endsAt: isSet(object.endsAt) ? String(object.endsAt) : undefined,
+      startsAt: isSet(object.startsAt) ? globalThis.String(object.startsAt) : undefined,
+      endsAt: isSet(object.endsAt) ? globalThis.String(object.endsAt) : undefined,
       location: isSet(object.location) ? Location.fromJSON(object.location) : undefined,
     };
   },
 
   toJSON(message: EventInstance): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.eventId !== undefined && (obj.eventId = message.eventId);
-    message.post !== undefined && (obj.post = message.post ? Post.toJSON(message.post) : undefined);
-    message.info !== undefined && (obj.info = message.info ? EventInstanceInfo.toJSON(message.info) : undefined);
-    message.startsAt !== undefined && (obj.startsAt = message.startsAt);
-    message.endsAt !== undefined && (obj.endsAt = message.endsAt);
-    message.location !== undefined && (obj.location = message.location ? Location.toJSON(message.location) : undefined);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.eventId !== "") {
+      obj.eventId = message.eventId;
+    }
+    if (message.post !== undefined) {
+      obj.post = Post.toJSON(message.post);
+    }
+    if (message.info !== undefined) {
+      obj.info = EventInstanceInfo.toJSON(message.info);
+    }
+    if (message.startsAt !== undefined) {
+      obj.startsAt = message.startsAt;
+    }
+    if (message.endsAt !== undefined) {
+      obj.endsAt = message.endsAt;
+    }
+    if (message.location !== undefined) {
+      obj.location = Location.toJSON(message.location);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<EventInstance>, I>>(base?: I): EventInstance {
-    return EventInstance.fromPartial(base ?? {});
+    return EventInstance.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<EventInstance>, I>>(object: I): EventInstance {
     const message = createBaseEventInstance();
     message.id = object.id ?? "";
@@ -757,16 +882,17 @@ export const EventInstanceInfo = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): EventInstanceInfo {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEventInstanceInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -781,9 +907,8 @@ export const EventInstanceInfo = {
   },
 
   create<I extends Exact<DeepPartial<EventInstanceInfo>, I>>(base?: I): EventInstanceInfo {
-    return EventInstanceInfo.fromPartial(base ?? {});
+    return EventInstanceInfo.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<EventInstanceInfo>, I>>(_: I): EventInstanceInfo {
     const message = createBaseEventInstanceInfo();
     return message;
@@ -845,93 +970,157 @@ export const EventAttendance = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): EventAttendance {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEventAttendance();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.eventInstanceId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.anonymousAttendee = AnonymousAttendee.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag !== 32) {
+            break;
+          }
+
           message.numberOfGuests = reader.uint32();
-          break;
+          continue;
         case 5:
+          if (tag !== 40) {
+            break;
+          }
+
           message.status = reader.int32() as any;
-          break;
+          continue;
         case 6:
+          if (tag !== 50) {
+            break;
+          }
+
           message.invitingUserId = reader.string();
-          break;
+          continue;
         case 7:
+          if (tag !== 58) {
+            break;
+          }
+
           message.privateNote = reader.string();
-          break;
+          continue;
         case 8:
+          if (tag !== 66) {
+            break;
+          }
+
           message.publicNote = reader.string();
-          break;
+          continue;
         case 9:
+          if (tag !== 72) {
+            break;
+          }
+
           message.moderation = reader.int32() as any;
-          break;
+          continue;
         case 10:
+          if (tag !== 82) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 11:
+          if (tag !== 90) {
+            break;
+          }
+
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): EventAttendance {
     return {
-      eventInstanceId: isSet(object.eventInstanceId) ? String(object.eventInstanceId) : "",
-      userId: isSet(object.userId) ? String(object.userId) : undefined,
+      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
       anonymousAttendee: isSet(object.anonymousAttendee)
         ? AnonymousAttendee.fromJSON(object.anonymousAttendee)
         : undefined,
-      numberOfGuests: isSet(object.numberOfGuests) ? Number(object.numberOfGuests) : 0,
+      numberOfGuests: isSet(object.numberOfGuests) ? globalThis.Number(object.numberOfGuests) : 0,
       status: isSet(object.status) ? attendanceStatusFromJSON(object.status) : 0,
-      invitingUserId: isSet(object.invitingUserId) ? String(object.invitingUserId) : undefined,
-      privateNote: isSet(object.privateNote) ? String(object.privateNote) : "",
-      publicNote: isSet(object.publicNote) ? String(object.publicNote) : "",
+      invitingUserId: isSet(object.invitingUserId) ? globalThis.String(object.invitingUserId) : undefined,
+      privateNote: isSet(object.privateNote) ? globalThis.String(object.privateNote) : "",
+      publicNote: isSet(object.publicNote) ? globalThis.String(object.publicNote) : "",
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
   },
 
   toJSON(message: EventAttendance): unknown {
     const obj: any = {};
-    message.eventInstanceId !== undefined && (obj.eventInstanceId = message.eventInstanceId);
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.anonymousAttendee !== undefined && (obj.anonymousAttendee = message.anonymousAttendee
-      ? AnonymousAttendee.toJSON(message.anonymousAttendee)
-      : undefined);
-    message.numberOfGuests !== undefined && (obj.numberOfGuests = Math.round(message.numberOfGuests));
-    message.status !== undefined && (obj.status = attendanceStatusToJSON(message.status));
-    message.invitingUserId !== undefined && (obj.invitingUserId = message.invitingUserId);
-    message.privateNote !== undefined && (obj.privateNote = message.privateNote);
-    message.publicNote !== undefined && (obj.publicNote = message.publicNote);
-    message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    if (message.eventInstanceId !== "") {
+      obj.eventInstanceId = message.eventInstanceId;
+    }
+    if (message.userId !== undefined) {
+      obj.userId = message.userId;
+    }
+    if (message.anonymousAttendee !== undefined) {
+      obj.anonymousAttendee = AnonymousAttendee.toJSON(message.anonymousAttendee);
+    }
+    if (message.numberOfGuests !== 0) {
+      obj.numberOfGuests = Math.round(message.numberOfGuests);
+    }
+    if (message.status !== 0) {
+      obj.status = attendanceStatusToJSON(message.status);
+    }
+    if (message.invitingUserId !== undefined) {
+      obj.invitingUserId = message.invitingUserId;
+    }
+    if (message.privateNote !== "") {
+      obj.privateNote = message.privateNote;
+    }
+    if (message.publicNote !== "") {
+      obj.publicNote = message.publicNote;
+    }
+    if (message.moderation !== 0) {
+      obj.moderation = moderationToJSON(message.moderation);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<EventAttendance>, I>>(base?: I): EventAttendance {
-    return EventAttendance.fromPartial(base ?? {});
+    return EventAttendance.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<EventAttendance>, I>>(object: I): EventAttendance {
     const message = createBaseEventAttendance();
     message.eventInstanceId = object.eventInstanceId ?? "";
@@ -967,30 +1156,39 @@ export const AnonymousAttendee = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): AnonymousAttendee {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAnonymousAttendee();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.contactMethods.push(ContactMethod.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): AnonymousAttendee {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      contactMethods: Array.isArray(object?.contactMethods)
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      contactMethods: globalThis.Array.isArray(object?.contactMethods)
         ? object.contactMethods.map((e: any) => ContactMethod.fromJSON(e))
         : [],
     };
@@ -998,19 +1196,18 @@ export const AnonymousAttendee = {
 
   toJSON(message: AnonymousAttendee): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    if (message.contactMethods) {
-      obj.contactMethods = message.contactMethods.map((e) => e ? ContactMethod.toJSON(e) : undefined);
-    } else {
-      obj.contactMethods = [];
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.contactMethods?.length) {
+      obj.contactMethods = message.contactMethods.map((e) => ContactMethod.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<AnonymousAttendee>, I>>(base?: I): AnonymousAttendee {
-    return AnonymousAttendee.fromPartial(base ?? {});
+    return AnonymousAttendee.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<AnonymousAttendee>, I>>(object: I): AnonymousAttendee {
     const message = createBaseAnonymousAttendee();
     message.name = object.name ?? "";
@@ -1022,7 +1219,8 @@ export const AnonymousAttendee = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
@@ -1031,16 +1229,16 @@ export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function toTimestamp(dateStr: string): Timestamp {
-  const date = new Date(dateStr);
+  const date = new globalThis.Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): string {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
-  return new Date(millis).toISOString();
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {

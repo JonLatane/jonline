@@ -54,13 +54,12 @@ pub fn start_rocket_unsecured(
     bucket: Arc<s3::Bucket>,
     tempdir: Arc<tempfile::TempDir>,
 
-    secure_server_available: bool,
-    uses_external_cdn: bool,
+    as_redirect: bool,
 ) -> JoinHandle<()> {
     let figment = rocket::Config::figment()
         .merge(("port", port))
         .merge(("address", "0.0.0.0"));
-    let server_build = if secure_server_available && !uses_external_cdn {
+    let server_build = if as_redirect {
         create_rocket_https_redirect(figment, pool, bucket, tempdir)
     } else {
         create_rocket(figment, pool, bucket, tempdir)

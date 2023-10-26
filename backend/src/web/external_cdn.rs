@@ -22,16 +22,22 @@ async fn frontend_host(state: &State<RocketState>, host: &Host<'_>) -> CacheResp
 }
 
 pub fn configured_backend_domain(state: &State<RocketState>, host: &Host<'_>) -> String {
-    match external_cdn_config(state).map(|c| c.backend_host) {
-        Some(domain) if domain != "" => domain,
-        _ => host.domain().to_string(),
+    match external_cdn_config(state) {
+        Some(cdn_config) => match (cdn_config.backend_host, cdn_config.cdn_grpc) {
+            (backend_host, false) if backend_host != "" => backend_host,
+            _ => host.domain().to_string(),
+        },
+        None => host.domain().to_string(),
     }
 }
 
 pub fn configured_frontend_domain(state: &State<RocketState>, host: &Host<'_>) -> String {
-    match external_cdn_config(state).map(|c| c.frontend_host) {
-        Some(domain) if domain != "" => domain,
-        _ => host.domain().to_string(),
+    match external_cdn_config(state) {
+        Some(cdn_config) => match (cdn_config.frontend_host, cdn_config.cdn_grpc) {
+            (frontend_host, false) if frontend_host != "" => frontend_host,
+            _ => host.domain().to_string(),
+        },
+        None => host.domain().to_string(),
     }
 }
 

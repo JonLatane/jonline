@@ -287,110 +287,200 @@ export const User = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): User {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseUser();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.realName = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.email = ContactMethod.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.phone = ContactMethod.decode(reader, reader.uint32());
-          break;
+          continue;
         case 6:
-          if ((tag & 7) === 2) {
+          if (tag === 48) {
+            message.permissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 50) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.permissions.push(reader.int32() as any);
             }
-          } else {
-            message.permissions.push(reader.int32() as any);
+
+            continue;
           }
+
           break;
         case 7:
+          if (tag !== 58) {
+            break;
+          }
+
           message.avatar = MediaReference.decode(reader, reader.uint32());
-          break;
+          continue;
         case 8:
+          if (tag !== 66) {
+            break;
+          }
+
           message.bio = reader.string();
-          break;
+          continue;
         case 20:
+          if (tag !== 160) {
+            break;
+          }
+
           message.visibility = reader.int32() as any;
-          break;
+          continue;
         case 21:
+          if (tag !== 168) {
+            break;
+          }
+
           message.moderation = reader.int32() as any;
-          break;
+          continue;
         case 30:
+          if (tag !== 240) {
+            break;
+          }
+
           message.defaultFollowModeration = reader.int32() as any;
-          break;
+          continue;
         case 31:
+          if (tag !== 248) {
+            break;
+          }
+
           message.followerCount = reader.int32();
-          break;
+          continue;
         case 32:
+          if (tag !== 256) {
+            break;
+          }
+
           message.followingCount = reader.int32();
-          break;
+          continue;
         case 33:
+          if (tag !== 264) {
+            break;
+          }
+
           message.groupCount = reader.int32();
-          break;
+          continue;
         case 34:
+          if (tag !== 272) {
+            break;
+          }
+
           message.postCount = reader.int32();
-          break;
+          continue;
         case 35:
+          if (tag !== 280) {
+            break;
+          }
+
           message.responseCount = reader.int32();
-          break;
+          continue;
         case 50:
+          if (tag !== 402) {
+            break;
+          }
+
           message.currentUserFollow = Follow.decode(reader, reader.uint32());
-          break;
+          continue;
         case 51:
+          if (tag !== 410) {
+            break;
+          }
+
           message.targetCurrentUserFollow = Follow.decode(reader, reader.uint32());
-          break;
+          continue;
         case 52:
+          if (tag !== 418) {
+            break;
+          }
+
           message.currentGroupMembership = Membership.decode(reader, reader.uint32());
-          break;
+          continue;
         case 100:
+          if (tag !== 802) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 101:
+          if (tag !== 810) {
+            break;
+          }
+
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): User {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      username: isSet(object.username) ? String(object.username) : "",
-      realName: isSet(object.realName) ? String(object.realName) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      realName: isSet(object.realName) ? globalThis.String(object.realName) : "",
       email: isSet(object.email) ? ContactMethod.fromJSON(object.email) : undefined,
       phone: isSet(object.phone) ? ContactMethod.fromJSON(object.phone) : undefined,
-      permissions: Array.isArray(object?.permissions) ? object.permissions.map((e: any) => permissionFromJSON(e)) : [],
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => permissionFromJSON(e))
+        : [],
       avatar: isSet(object.avatar) ? MediaReference.fromJSON(object.avatar) : undefined,
-      bio: isSet(object.bio) ? String(object.bio) : "",
+      bio: isSet(object.bio) ? globalThis.String(object.bio) : "",
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       moderation: isSet(object.moderation) ? moderationFromJSON(object.moderation) : 0,
       defaultFollowModeration: isSet(object.defaultFollowModeration)
         ? moderationFromJSON(object.defaultFollowModeration)
         : 0,
-      followerCount: isSet(object.followerCount) ? Number(object.followerCount) : undefined,
-      followingCount: isSet(object.followingCount) ? Number(object.followingCount) : undefined,
-      groupCount: isSet(object.groupCount) ? Number(object.groupCount) : undefined,
-      postCount: isSet(object.postCount) ? Number(object.postCount) : undefined,
-      responseCount: isSet(object.responseCount) ? Number(object.responseCount) : undefined,
+      followerCount: isSet(object.followerCount) ? globalThis.Number(object.followerCount) : undefined,
+      followingCount: isSet(object.followingCount) ? globalThis.Number(object.followingCount) : undefined,
+      groupCount: isSet(object.groupCount) ? globalThis.Number(object.groupCount) : undefined,
+      postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : undefined,
+      responseCount: isSet(object.responseCount) ? globalThis.Number(object.responseCount) : undefined,
       currentUserFollow: isSet(object.currentUserFollow) ? Follow.fromJSON(object.currentUserFollow) : undefined,
       targetCurrentUserFollow: isSet(object.targetCurrentUserFollow)
         ? Follow.fromJSON(object.targetCurrentUserFollow)
@@ -398,51 +488,82 @@ export const User = {
       currentGroupMembership: isSet(object.currentGroupMembership)
         ? Membership.fromJSON(object.currentGroupMembership)
         : undefined,
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
   },
 
   toJSON(message: User): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.username !== undefined && (obj.username = message.username);
-    message.realName !== undefined && (obj.realName = message.realName);
-    message.email !== undefined && (obj.email = message.email ? ContactMethod.toJSON(message.email) : undefined);
-    message.phone !== undefined && (obj.phone = message.phone ? ContactMethod.toJSON(message.phone) : undefined);
-    if (message.permissions) {
-      obj.permissions = message.permissions.map((e) => permissionToJSON(e));
-    } else {
-      obj.permissions = [];
+    if (message.id !== "") {
+      obj.id = message.id;
     }
-    message.avatar !== undefined && (obj.avatar = message.avatar ? MediaReference.toJSON(message.avatar) : undefined);
-    message.bio !== undefined && (obj.bio = message.bio);
-    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
-    message.moderation !== undefined && (obj.moderation = moderationToJSON(message.moderation));
-    message.defaultFollowModeration !== undefined &&
-      (obj.defaultFollowModeration = moderationToJSON(message.defaultFollowModeration));
-    message.followerCount !== undefined && (obj.followerCount = Math.round(message.followerCount));
-    message.followingCount !== undefined && (obj.followingCount = Math.round(message.followingCount));
-    message.groupCount !== undefined && (obj.groupCount = Math.round(message.groupCount));
-    message.postCount !== undefined && (obj.postCount = Math.round(message.postCount));
-    message.responseCount !== undefined && (obj.responseCount = Math.round(message.responseCount));
-    message.currentUserFollow !== undefined &&
-      (obj.currentUserFollow = message.currentUserFollow ? Follow.toJSON(message.currentUserFollow) : undefined);
-    message.targetCurrentUserFollow !== undefined && (obj.targetCurrentUserFollow = message.targetCurrentUserFollow
-      ? Follow.toJSON(message.targetCurrentUserFollow)
-      : undefined);
-    message.currentGroupMembership !== undefined && (obj.currentGroupMembership = message.currentGroupMembership
-      ? Membership.toJSON(message.currentGroupMembership)
-      : undefined);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.realName !== "") {
+      obj.realName = message.realName;
+    }
+    if (message.email !== undefined) {
+      obj.email = ContactMethod.toJSON(message.email);
+    }
+    if (message.phone !== undefined) {
+      obj.phone = ContactMethod.toJSON(message.phone);
+    }
+    if (message.permissions?.length) {
+      obj.permissions = message.permissions.map((e) => permissionToJSON(e));
+    }
+    if (message.avatar !== undefined) {
+      obj.avatar = MediaReference.toJSON(message.avatar);
+    }
+    if (message.bio !== "") {
+      obj.bio = message.bio;
+    }
+    if (message.visibility !== 0) {
+      obj.visibility = visibilityToJSON(message.visibility);
+    }
+    if (message.moderation !== 0) {
+      obj.moderation = moderationToJSON(message.moderation);
+    }
+    if (message.defaultFollowModeration !== 0) {
+      obj.defaultFollowModeration = moderationToJSON(message.defaultFollowModeration);
+    }
+    if (message.followerCount !== undefined) {
+      obj.followerCount = Math.round(message.followerCount);
+    }
+    if (message.followingCount !== undefined) {
+      obj.followingCount = Math.round(message.followingCount);
+    }
+    if (message.groupCount !== undefined) {
+      obj.groupCount = Math.round(message.groupCount);
+    }
+    if (message.postCount !== undefined) {
+      obj.postCount = Math.round(message.postCount);
+    }
+    if (message.responseCount !== undefined) {
+      obj.responseCount = Math.round(message.responseCount);
+    }
+    if (message.currentUserFollow !== undefined) {
+      obj.currentUserFollow = Follow.toJSON(message.currentUserFollow);
+    }
+    if (message.targetCurrentUserFollow !== undefined) {
+      obj.targetCurrentUserFollow = Follow.toJSON(message.targetCurrentUserFollow);
+    }
+    if (message.currentGroupMembership !== undefined) {
+      obj.currentGroupMembership = Membership.toJSON(message.currentGroupMembership);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<User>, I>>(base?: I): User {
-    return User.fromPartial(base ?? {});
+    return User.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<User>, I>>(object: I): User {
     const message = createBaseUser();
     message.id = object.id ?? "";
@@ -503,49 +624,67 @@ export const Author = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Author {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAuthor();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.avatar = MediaReference.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Author {
     return {
-      userId: isSet(object.userId) ? String(object.userId) : "",
-      username: isSet(object.username) ? String(object.username) : undefined,
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : undefined,
       avatar: isSet(object.avatar) ? MediaReference.fromJSON(object.avatar) : undefined,
     };
   },
 
   toJSON(message: Author): unknown {
     const obj: any = {};
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.username !== undefined && (obj.username = message.username);
-    message.avatar !== undefined && (obj.avatar = message.avatar ? MediaReference.toJSON(message.avatar) : undefined);
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.username !== undefined) {
+      obj.username = message.username;
+    }
+    if (message.avatar !== undefined) {
+      obj.avatar = MediaReference.toJSON(message.avatar);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Author>, I>>(base?: I): Author {
-    return Author.fromPartial(base ?? {});
+    return Author.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Author>, I>>(object: I): Author {
     const message = createBaseAuthor();
     message.userId = object.userId ?? "";
@@ -582,60 +721,89 @@ export const Follow = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Follow {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFollow();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.targetUserId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 24) {
+            break;
+          }
+
           message.targetUserModeration = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Follow {
     return {
-      userId: isSet(object.userId) ? String(object.userId) : "",
-      targetUserId: isSet(object.targetUserId) ? String(object.targetUserId) : "",
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      targetUserId: isSet(object.targetUserId) ? globalThis.String(object.targetUserId) : "",
       targetUserModeration: isSet(object.targetUserModeration) ? moderationFromJSON(object.targetUserModeration) : 0,
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
   },
 
   toJSON(message: Follow): unknown {
     const obj: any = {};
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.targetUserId !== undefined && (obj.targetUserId = message.targetUserId);
-    message.targetUserModeration !== undefined &&
-      (obj.targetUserModeration = moderationToJSON(message.targetUserModeration));
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.targetUserId !== "") {
+      obj.targetUserId = message.targetUserId;
+    }
+    if (message.targetUserModeration !== 0) {
+      obj.targetUserModeration = moderationToJSON(message.targetUserModeration);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Follow>, I>>(base?: I): Follow {
-    return Follow.fromPartial(base ?? {});
+    return Follow.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Follow>, I>>(object: I): Follow {
     const message = createBaseFollow();
     message.userId = object.userId ?? "";
@@ -688,80 +856,123 @@ export const Membership = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Membership {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMembership();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.groupId = reader.string();
-          break;
+          continue;
         case 3:
-          if ((tag & 7) === 2) {
+          if (tag === 24) {
+            message.permissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 26) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.permissions.push(reader.int32() as any);
             }
-          } else {
-            message.permissions.push(reader.int32() as any);
+
+            continue;
           }
+
           break;
         case 4:
+          if (tag !== 32) {
+            break;
+          }
+
           message.groupModeration = reader.int32() as any;
-          break;
+          continue;
         case 5:
+          if (tag !== 40) {
+            break;
+          }
+
           message.userModeration = reader.int32() as any;
-          break;
+          continue;
         case 6:
+          if (tag !== 50) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 7:
+          if (tag !== 58) {
+            break;
+          }
+
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Membership {
     return {
-      userId: isSet(object.userId) ? String(object.userId) : "",
-      groupId: isSet(object.groupId) ? String(object.groupId) : "",
-      permissions: Array.isArray(object?.permissions) ? object.permissions.map((e: any) => permissionFromJSON(e)) : [],
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : "",
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => permissionFromJSON(e))
+        : [],
       groupModeration: isSet(object.groupModeration) ? moderationFromJSON(object.groupModeration) : 0,
       userModeration: isSet(object.userModeration) ? moderationFromJSON(object.userModeration) : 0,
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
   },
 
   toJSON(message: Membership): unknown {
     const obj: any = {};
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.groupId !== undefined && (obj.groupId = message.groupId);
-    if (message.permissions) {
-      obj.permissions = message.permissions.map((e) => permissionToJSON(e));
-    } else {
-      obj.permissions = [];
+    if (message.userId !== "") {
+      obj.userId = message.userId;
     }
-    message.groupModeration !== undefined && (obj.groupModeration = moderationToJSON(message.groupModeration));
-    message.userModeration !== undefined && (obj.userModeration = moderationToJSON(message.userModeration));
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    if (message.groupId !== "") {
+      obj.groupId = message.groupId;
+    }
+    if (message.permissions?.length) {
+      obj.permissions = message.permissions.map((e) => permissionToJSON(e));
+    }
+    if (message.groupModeration !== 0) {
+      obj.groupModeration = moderationToJSON(message.groupModeration);
+    }
+    if (message.userModeration !== 0) {
+      obj.userModeration = moderationToJSON(message.userModeration);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Membership>, I>>(base?: I): Membership {
-    return Membership.fromPartial(base ?? {});
+    return Membership.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Membership>, I>>(object: I): Membership {
     const message = createBaseMembership();
     message.userId = object.userId ?? "";
@@ -797,54 +1008,78 @@ export const ContactMethod = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ContactMethod {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseContactMethod();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.visibility = reader.int32() as any;
-          break;
+          continue;
         case 3:
+          if (tag !== 24) {
+            break;
+          }
+
           message.supportedByServer = reader.bool();
-          break;
+          continue;
         case 4:
+          if (tag !== 32) {
+            break;
+          }
+
           message.verified = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): ContactMethod {
     return {
-      value: isSet(object.value) ? String(object.value) : undefined,
+      value: isSet(object.value) ? globalThis.String(object.value) : undefined,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
-      supportedByServer: isSet(object.supportedByServer) ? Boolean(object.supportedByServer) : false,
-      verified: isSet(object.verified) ? Boolean(object.verified) : false,
+      supportedByServer: isSet(object.supportedByServer) ? globalThis.Boolean(object.supportedByServer) : false,
+      verified: isSet(object.verified) ? globalThis.Boolean(object.verified) : false,
     };
   },
 
   toJSON(message: ContactMethod): unknown {
     const obj: any = {};
-    message.value !== undefined && (obj.value = message.value);
-    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
-    message.supportedByServer !== undefined && (obj.supportedByServer = message.supportedByServer);
-    message.verified !== undefined && (obj.verified = message.verified);
+    if (message.value !== undefined) {
+      obj.value = message.value;
+    }
+    if (message.visibility !== 0) {
+      obj.visibility = visibilityToJSON(message.visibility);
+    }
+    if (message.supportedByServer === true) {
+      obj.supportedByServer = message.supportedByServer;
+    }
+    if (message.verified === true) {
+      obj.verified = message.verified;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<ContactMethod>, I>>(base?: I): ContactMethod {
-    return ContactMethod.fromPartial(base ?? {});
+    return ContactMethod.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<ContactMethod>, I>>(object: I): ContactMethod {
     const message = createBaseContactMethod();
     message.value = object.value ?? undefined;
@@ -877,54 +1112,78 @@ export const GetUsersRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetUsersRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetUsersRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
+          continue;
         case 99:
+          if (tag !== 792) {
+            break;
+          }
+
           message.page = reader.int32();
-          break;
+          continue;
         case 100:
+          if (tag !== 800) {
+            break;
+          }
+
           message.listingType = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetUsersRequest {
     return {
-      username: isSet(object.username) ? String(object.username) : undefined,
-      userId: isSet(object.userId) ? String(object.userId) : undefined,
-      page: isSet(object.page) ? Number(object.page) : undefined,
+      username: isSet(object.username) ? globalThis.String(object.username) : undefined,
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
+      page: isSet(object.page) ? globalThis.Number(object.page) : undefined,
       listingType: isSet(object.listingType) ? userListingTypeFromJSON(object.listingType) : 0,
     };
   },
 
   toJSON(message: GetUsersRequest): unknown {
     const obj: any = {};
-    message.username !== undefined && (obj.username = message.username);
-    message.userId !== undefined && (obj.userId = message.userId);
-    message.page !== undefined && (obj.page = Math.round(message.page));
-    message.listingType !== undefined && (obj.listingType = userListingTypeToJSON(message.listingType));
+    if (message.username !== undefined) {
+      obj.username = message.username;
+    }
+    if (message.userId !== undefined) {
+      obj.userId = message.userId;
+    }
+    if (message.page !== undefined) {
+      obj.page = Math.round(message.page);
+    }
+    if (message.listingType !== 0) {
+      obj.listingType = userListingTypeToJSON(message.listingType);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetUsersRequest>, I>>(base?: I): GetUsersRequest {
-    return GetUsersRequest.fromPartial(base ?? {});
+    return GetUsersRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetUsersRequest>, I>>(object: I): GetUsersRequest {
     const message = createBaseGetUsersRequest();
     message.username = object.username ?? undefined;
@@ -951,48 +1210,56 @@ export const GetUsersResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetUsersResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetUsersResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.users.push(User.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.hasNextPage = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetUsersResponse {
     return {
-      users: Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
-      hasNextPage: isSet(object.hasNextPage) ? Boolean(object.hasNextPage) : false,
+      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
+      hasNextPage: isSet(object.hasNextPage) ? globalThis.Boolean(object.hasNextPage) : false,
     };
   },
 
   toJSON(message: GetUsersResponse): unknown {
     const obj: any = {};
-    if (message.users) {
-      obj.users = message.users.map((e) => e ? User.toJSON(e) : undefined);
-    } else {
-      obj.users = [];
+    if (message.users?.length) {
+      obj.users = message.users.map((e) => User.toJSON(e));
     }
-    message.hasNextPage !== undefined && (obj.hasNextPage = message.hasNextPage);
+    if (message.hasNextPage === true) {
+      obj.hasNextPage = message.hasNextPage;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetUsersResponse>, I>>(base?: I): GetUsersResponse {
-    return GetUsersResponse.fromPartial(base ?? {});
+    return GetUsersResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetUsersResponse>, I>>(object: I): GetUsersResponse {
     const message = createBaseGetUsersResponse();
     message.users = object.users?.map((e) => User.fromPartial(e)) || [];
@@ -1004,7 +1271,8 @@ export const GetUsersResponse = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
@@ -1013,16 +1281,16 @@ export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function toTimestamp(dateStr: string): Timestamp {
-  const date = new Date(dateStr);
+  const date = new globalThis.Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): string {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
-  return new Date(millis).toISOString();
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {

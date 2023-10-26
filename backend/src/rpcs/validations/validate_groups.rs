@@ -9,10 +9,10 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
     validate_length(&group.name, "name", 1, 128)?;
     validate_max_length(Some(group.description.to_owned()), "description", 10000)?;
 
-    match group.avatar_media_id {
+    match group.avatar.as_ref() {
         None => {}
-        Some(ref avatar_media_id) => {
-            avatar_media_id.to_db_id_or_err("avatar_media_id")?;
+        Some(ref avatar) => {
+            avatar.id.to_db_id_or_err("avatar.id")?;
         }
     };    match group.visibility.to_proto_visibility().unwrap() {
         Visibility::Unknown => return Err(Status::new(Code::InvalidArgument, "invalid_visibility")),

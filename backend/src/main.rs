@@ -44,9 +44,12 @@ pub mod servers;
 pub mod web;
 
 use ::jonline::{env_var, init_service_logging, report_error};
+use diesel::*;
 use futures::future::join_all;
+use marshaling::ToProtoServerConfiguration;
 use servers::{start_rocket_secure, start_rocket_unsecured, start_tonic_server};
 use std::sync::Arc;
+use tokio::task::JoinHandle;
 
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -69,42 +72,83 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = pool
         .get()
         .expect("Failed to get connection trying to load server configuration");
-    let server_configuration = rpcs::get_server_configuration(&mut conn)
-        .or_else(|_| {
-            log::warn!("Failed to load server configuration, regenerating...");
-            rpcs::create_default_server_configuration(&mut conn)
-        })
-        .expect("Failed to load or regenerate server configuration");
+    let mut server_configuration_model: models::ServerConfiguration =
+        rpcs::get_server_configuration_model(&mut conn)
+            .or_else(|_| {
+                log::warn!("Failed to load server configuration, regenerating...");
+                rpcs::create_default_server_configuration(&mut conn)
+            })
+            .expect("Failed to load or regenerate server configuration");
+    let server_configuration: protos::ServerConfiguration = server_configuration_model.to_proto();
 
     let external_cdn_config = server_configuration.external_cdn_config;
+    let cdn_grpc = match external_cdn_config {
+        None => {
+            log::info!("No external CDN configuration found.");
+            false
+        }
+        Some(ref external_cdn_config) => {
+            log::info!(
+                "Using external CDN configuration: {:?}",
+                &external_cdn_config
+            );
+            external_cdn_config.cdn_grpc
+        }
+    };
 
-    let tls_configuration_successful = start_tonic_server(pool.clone(), bucket.clone())?;
+    let tonic_port = if cdn_grpc {
+        log::info!("Using CDN for gRPC communication. Server will *disable this setting* and terminate if secure gRPC is not properly configured.");
+        443
+    } else {
+        27707
+    };
 
-    let rocket_secure = start_rocket_secure(pool.clone(), bucket.clone(), tempdir.clone());
-    let rocket_unsecure_80 = start_rocket_unsecured(
+    let tls_configuration_successful =
+        start_tonic_server(pool.clone(), bucket.clone(), tonic_port)?;
+
+    if cdn_grpc {
+        if !tls_configuration_successful {
+            log::error!("Secure gRPC configuration failed. Cannot use CDN for gRPC communication. Reverting server configuration and terminating server.");
+            let mut external_cdn_config = external_cdn_config.unwrap();
+            external_cdn_config.cdn_grpc = false;
+            server_configuration_model.external_cdn_config =
+                serde_json::to_value(external_cdn_config).ok();
+            // server_configuration.external_cdn_config = Some(external_cdn_config);
+
+            diesel::update(schema::server_configurations::table)
+                .set(&server_configuration_model)
+                .execute(&mut conn)
+                .expect("Failed to update server configuration. Bootloops likely.");
+
+            return Ok(());
+        }
+        log::info!("Secure gRPC configuration successful. HTTP servers.");
+    }
+
+    let mut rocket_handles: Vec<JoinHandle<()>> = vec![];
+    if tls_configuration_successful && !cdn_grpc {
+        rocket_handles.push(start_rocket_secure(
+            pool.clone(),
+            bucket.clone(),
+            tempdir.clone(),
+        ));
+    };
+    rocket_handles.push(start_rocket_unsecured(
         80,
         pool.clone(),
         bucket.clone(),
         tempdir.clone(),
-        tls_configuration_successful,
-        external_cdn_config.is_some(),
-    );
-    let rocket_unsecure_8000 = start_rocket_unsecured(
+        tls_configuration_successful && external_cdn_config.is_none(),
+    ));
+    rocket_handles.push(start_rocket_unsecured(
         8000,
         pool.clone(),
         bucket.clone(),
         tempdir.clone(),
-        tls_configuration_successful,
-        external_cdn_config.is_some(),
-    );
+        false,
+    ));
 
-    join_all::<_>([
-        // tonic_server,
-        rocket_secure,
-        rocket_unsecure_80,
-        rocket_unsecure_8000,
-    ])
-    .await;
+    join_all::<_>(rocket_handles).await;
 
     Ok(())
 }

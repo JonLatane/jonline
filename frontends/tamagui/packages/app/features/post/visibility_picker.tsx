@@ -15,7 +15,7 @@ export type VisibilityPickerProps = {
 };
 
 
-export function VisibilityPicker({ id, visibility, onChange, disabled, label, visibilityDescription = visiblityDescription }: VisibilityPickerProps) {
+export function VisibilityPicker({ id, visibility, onChange, disabled, label, visibilityDescription = defaultVisibilityDescription }: VisibilityPickerProps) {
   function onValueSelected(v: string) {
     const selectedVisibility = parseInt(v) as Visibility;
     onChange(selectedVisibility)
@@ -130,7 +130,7 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
   // </Select>
 }
 
-export function visiblityDescription(v: Visibility) {
+export function defaultVisibilityDescription(v: Visibility) {
   switch (v) {
     case Visibility.GLOBAL_PUBLIC: return 'Visible to anyone on the internet.';
     case Visibility.SERVER_PUBLIC: return 'Visible to anyone on this server.';

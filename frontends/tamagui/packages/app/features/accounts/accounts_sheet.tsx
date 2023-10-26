@@ -1,5 +1,5 @@
 import { Button, Heading, Image, Input, Label, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, Info, Menu, Plus, RefreshCw, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { ChevronDown, ChevronLeft, Info, LogIn, Menu, Plus, RefreshCw, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks/use_media_url';
 import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
@@ -139,11 +139,15 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const account = accountsState.account;
   const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
 
+  const userIcon = account ? UserIcon : LogIn;
   return (
     <>
       <Button
+      my='auto'
         size={size}
-        icon={circular ? UserIcon : open ? XIcon : avatarUrl && avatarUrl != '' ? undefined : ChevronDown}
+        icon={
+          circular ? userIcon : open ? XIcon : avatarUrl && avatarUrl != '' ? undefined : ChevronDown
+        }
         circular={circular}
         color={serversDiffer || browsingOnDiffers ? warningAnchorColor : undefined}
         onPress={() => setOpen((x) => !x)}
@@ -208,106 +212,120 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
           </XStack>
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center'>
+              <XStack>
+                {app.allowServerSelection && (browsingServers || mediaQuery.gtXs)
+                  ? <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
+                  : undefined}
+
+                {browsingServers ? <Button
+                  size="$3"
+                  icon={Plus}
+                  marginLeft='auto'
+                  // circular
+                  onPress={() => setAddingServer((x) => !x)}
+                >
+                  Add
+                </Button> : undefined}
+                <Sheet
+                  modal
+                  open={addingServer}
+                  onOpenChange={setAddingServer}
+                  // snapPoints={[80]}
+                  snapPoints={[81]} dismissOnSnapToBottom
+                  position={position}
+                  onPositionChange={setPosition}
+                // dismissOnSnapToBottom
+                >
+                  <Sheet.Overlay />
+                  <Sheet.Frame padding="$5">
+                    <Sheet.Handle />
+                    <Button
+                      alignSelf='center'
+                      size="$6"
+                      circular
+                      icon={ChevronDown}
+                      onPress={() => {
+                        setAddingServer(false)
+                      }}
+                    />
+                    <YStack space="$2" maxWidth={600} width='100%' alignSelf='center'>
+                      <Heading size="$10" f={1}>Add Server</Heading>
+                      <YStack>
+                        <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
+                          editable={!serversLoading}
+                          opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
+                          value={newServerHost}
+                          onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
+                      </YStack>
+                      {(newServerHostNotBlank && newServerExists && !serversState.successMessage) ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading> : undefined}
+                      <XStack>
+                        <YStack f={1} mx='auto' opacity={disableSecureSelection ? 0.5 : 1}>
+                          <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
+                            defaultChecked
+                            onCheckedChange={(checked) => setNewServerSecure(checked)}
+                            disabled={disableSecureSelection} >
+                            <Switch.Thumb animation="quick" disabled={disableSecureSelection} />
+                          </Switch>
+
+                          <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
+                            <Heading size="$2">Secure</Heading>
+                          </Label>
+                        </YStack>
+                        <Button f={2} backgroundColor={primaryColor} color={primaryTextColor}
+                          onPress={addServer} disabled={serversLoading || !newServerValid} opacity={serversLoading || !newServerValid ? 0.5 : 1}>
+                          Add Server
+                        </Button>
+                      </XStack>
+                      {serversState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading> : undefined}
+                      {serversState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading> : undefined}
+                    </YStack>
+                  </Sheet.Frame>
+                </Sheet>
+                {app.allowServerSelection
+                  ? <Button
+                    size="$3"
+                    ml={browsingServers ? '$2' : 'auto'}
+                    icon={browsingServers ? ChevronLeft : Server}
+                    // circular
+                    opacity={onlyShowServer != undefined ? 0.5 : 1}
+                    disabled={onlyShowServer != undefined}
+                    // maw={100}
+                    onPress={() => setBrowsingServers((x) => !x)} >
+                    {browsingServers ? 'Back' : `More Servers (${servers.length})`}
+                  </Button>
+                  : undefined}
+              </XStack>
               {onlyShowServer && serversDiffer ? undefined : <YStack space="$2">
                 <XStack>
-                  {app.allowServerSelection && (browsingServers || mediaQuery.gtXs)
-                    ? <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
-                    : undefined}
 
                   <XStack f={1} />
 
                   {!browsingServers ?
-                    <XStack animation="quick" {...reverseStandardAnimation}>
-                      {currentServerInfoLink && !onlyShowServer
+                    <XStack animation="quick" mt={app.allowServerSelection ? '$3' : undefined} {...reverseStandardAnimation}>
+                      {/* {currentServerInfoLink && !onlyShowServer
                         ? <Button size='$3' mr='$2' disabled icon={<Info />} circular opacity={0} />
-                        : undefined}
-                      <YStack maw={mediaQuery.gtXs ? 350 : 250}>
-                        <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading>
-                        <Heading size='$3' als='center' marginTop='$2'>
+                        : undefined} */}
+                      <YStack
+                        w='100%'
+                        maw={mediaQuery.gtXs ? 350 : 250}
+                        f={1}>
+                        <Heading
+                          // whiteSpace="nowrap" 
+                          w='100%'
+                          // maw={200}
+                          // overflow='hidden'
+                          ta='center'
+                          als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading>
+                        <Heading size='$3' als='center' textAlign='center' marginTop='$2'>
                           {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
                         </Heading>
                       </YStack>
                       {currentServerInfoLink && !onlyShowServer
-                        ? <Button size='$3' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
+                        ? <Button size='$3' my='auto' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
                         : undefined}
                     </XStack>
                     : undefined}
                   <XStack f={1} />
-                  {app.allowServerSelection ? <Button
-                    size="$3"
-                    icon={browsingServers ? ChevronLeft : Menu}
-                    // circular
-                    opacity={onlyShowServer != undefined ? 0.5 : 1}
-                    disabled={onlyShowServer != undefined}
-                    maw={100}
-                    onPress={() => setBrowsingServers((x) => !x)}
-                  >
-                    {browsingServers ? 'Back' : 'Select'}
-                  </Button> : undefined}
-                  {browsingServers ? <Button
-                    size="$3"
-                    icon={Plus}
-                    marginLeft='$2'
-                    // circular
-                    onPress={() => setAddingServer((x) => !x)}
-                  >
-                    Add
-                  </Button> : undefined}
-                  <Sheet
-                    modal
-                    open={addingServer}
-                    onOpenChange={setAddingServer}
-                    // snapPoints={[80]}
-                    snapPoints={[81]} dismissOnSnapToBottom
-                    position={position}
-                    onPositionChange={setPosition}
-                  // dismissOnSnapToBottom
-                  >
-                    <Sheet.Overlay />
-                    <Sheet.Frame padding="$5">
-                      <Sheet.Handle />
-                      <Button
-                        alignSelf='center'
-                        size="$6"
-                        circular
-                        icon={ChevronDown}
-                        onPress={() => {
-                          setAddingServer(false)
-                        }}
-                      />
-                      <YStack space="$2" maxWidth={600} width='100%' alignSelf='center'>
-                        <Heading size="$10" f={1}>Add Server</Heading>
-                        <YStack>
-                          <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
-                            editable={!serversLoading}
-                            opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
-                            value={newServerHost}
-                            onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
-                        </YStack>
-                        {(newServerHostNotBlank && newServerExists && !serversState.successMessage) ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading> : undefined}
-                        <XStack>
-                          <YStack f={1} mx='auto' opacity={disableSecureSelection ? 0.5 : 1}>
-                            <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
-                              defaultChecked
-                              onCheckedChange={(checked) => setNewServerSecure(checked)}
-                              disabled={disableSecureSelection} >
-                              <Switch.Thumb animation="quick" disabled={disableSecureSelection} />
-                            </Switch>
-
-                            <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
-                              <Heading size="$2">Secure</Heading>
-                            </Label>
-                          </YStack>
-                          <Button f={2} backgroundColor={primaryColor} color={primaryTextColor}
-                            onPress={addServer} disabled={serversLoading || !newServerValid} opacity={serversLoading || !newServerValid ? 0.5 : 1}>
-                            Add Server
-                          </Button>
-                        </XStack>
-                        {serversState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading> : undefined}
-                        {serversState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading> : undefined}
-                      </YStack>
-                    </Sheet.Frame>
-                  </Sheet>
                 </XStack>
               </YStack>}
               {serversDiffer
@@ -334,10 +352,10 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
 
               {browsingServers
-                ? <XStack animation="quick" {...standardAnimation}>
+                ? <XStack animation="quick" mb='$2' {...standardAnimation}>
                   <>
                     <ScrollView horizontal>
-                      <XStack>
+                      <XStack space='$3'>
                         {servers.map((server, index) => {
                           return <ServerCard server={server} key={`serverCard-${serverID(server)}`} isPreview />;
                         })}

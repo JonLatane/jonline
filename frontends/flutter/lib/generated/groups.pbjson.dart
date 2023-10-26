@@ -37,7 +37,7 @@ const Group$json = {
     {'1': 'name', '3': 2, '4': 1, '5': 9, '10': 'name'},
     {'1': 'shortname', '3': 3, '4': 1, '5': 9, '10': 'shortname'},
     {'1': 'description', '3': 4, '4': 1, '5': 9, '10': 'description'},
-    {'1': 'avatar_media_id', '3': 5, '4': 1, '5': 9, '9': 0, '10': 'avatarMediaId', '17': true},
+    {'1': 'avatar', '3': 5, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 0, '10': 'avatar', '17': true},
     {'1': 'default_membership_permissions', '3': 6, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'defaultMembershipPermissions'},
     {'1': 'default_membership_moderation', '3': 7, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultMembershipModeration'},
     {'1': 'default_post_moderation', '3': 8, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultPostModeration'},
@@ -51,7 +51,7 @@ const Group$json = {
     {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'updatedAt', '17': true},
   ],
   '8': [
-    {'1': '_avatar_media_id'},
+    {'1': '_avatar'},
     {'1': '_current_user_membership'},
     {'1': '_updated_at'},
   ],
@@ -60,21 +60,21 @@ const Group$json = {
 /// Descriptor for `Group`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List groupDescriptor = $convert.base64Decode(
     'CgVHcm91cBIOCgJpZBgBIAEoCVICaWQSEgoEbmFtZRgCIAEoCVIEbmFtZRIcCglzaG9ydG5hbW'
-    'UYAyABKAlSCXNob3J0bmFtZRIgCgtkZXNjcmlwdGlvbhgEIAEoCVILZGVzY3JpcHRpb24SKwoP'
-    'YXZhdGFyX21lZGlhX2lkGAUgASgJSABSDWF2YXRhck1lZGlhSWSIAQESWQoeZGVmYXVsdF9tZW'
-    '1iZXJzaGlwX3Blcm1pc3Npb25zGAYgAygOMhMuam9ubGluZS5QZXJtaXNzaW9uUhxkZWZhdWx0'
-    'TWVtYmVyc2hpcFBlcm1pc3Npb25zElcKHWRlZmF1bHRfbWVtYmVyc2hpcF9tb2RlcmF0aW9uGA'
-    'cgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUhtkZWZhdWx0TWVtYmVyc2hpcE1vZGVyYXRpb24S'
-    'SwoXZGVmYXVsdF9wb3N0X21vZGVyYXRpb24YCCABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SFW'
-    'RlZmF1bHRQb3N0TW9kZXJhdGlvbhJNChhkZWZhdWx0X2V2ZW50X21vZGVyYXRpb24YCSABKA4y'
-    'Ey5qb25saW5lLk1vZGVyYXRpb25SFmRlZmF1bHRFdmVudE1vZGVyYXRpb24SMwoKdmlzaWJpbG'
-    'l0eRgKIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIhCgxtZW1iZXJfY291'
-    'bnQYCyABKA1SC21lbWJlckNvdW50Eh0KCnBvc3RfY291bnQYDCABKA1SCXBvc3RDb3VudBIfCg'
-    'tldmVudF9jb3VudBgNIAEoDVIKZXZlbnRDb3VudBJQChdjdXJyZW50X3VzZXJfbWVtYmVyc2hp'
-    'cBgTIAEoCzITLmpvbmxpbmUuTWVtYmVyc2hpcEgBUhVjdXJyZW50VXNlck1lbWJlcnNoaXCIAQ'
-    'ESOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0'
-    'ZWRBdBI+Cgp1cGRhdGVkX2F0GBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgCUg'
-    'l1cGRhdGVkQXSIAQFCEgoQX2F2YXRhcl9tZWRpYV9pZEIaChhfY3VycmVudF91c2VyX21lbWJl'
+    'UYAyABKAlSCXNob3J0bmFtZRIgCgtkZXNjcmlwdGlvbhgEIAEoCVILZGVzY3JpcHRpb24SNAoG'
+    'YXZhdGFyGAUgASgLMhcuam9ubGluZS5NZWRpYVJlZmVyZW5jZUgAUgZhdmF0YXKIAQESWQoeZG'
+    'VmYXVsdF9tZW1iZXJzaGlwX3Blcm1pc3Npb25zGAYgAygOMhMuam9ubGluZS5QZXJtaXNzaW9u'
+    'UhxkZWZhdWx0TWVtYmVyc2hpcFBlcm1pc3Npb25zElcKHWRlZmF1bHRfbWVtYmVyc2hpcF9tb2'
+    'RlcmF0aW9uGAcgASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUhtkZWZhdWx0TWVtYmVyc2hpcE1v'
+    'ZGVyYXRpb24SSwoXZGVmYXVsdF9wb3N0X21vZGVyYXRpb24YCCABKA4yEy5qb25saW5lLk1vZG'
+    'VyYXRpb25SFWRlZmF1bHRQb3N0TW9kZXJhdGlvbhJNChhkZWZhdWx0X2V2ZW50X21vZGVyYXRp'
+    'b24YCSABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SFmRlZmF1bHRFdmVudE1vZGVyYXRpb24SMw'
+    'oKdmlzaWJpbGl0eRgKIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIhCgxt'
+    'ZW1iZXJfY291bnQYCyABKA1SC21lbWJlckNvdW50Eh0KCnBvc3RfY291bnQYDCABKA1SCXBvc3'
+    'RDb3VudBIfCgtldmVudF9jb3VudBgNIAEoDVIKZXZlbnRDb3VudBJQChdjdXJyZW50X3VzZXJf'
+    'bWVtYmVyc2hpcBgTIAEoCzITLmpvbmxpbmUuTWVtYmVyc2hpcEgBUhVjdXJyZW50VXNlck1lbW'
+    'JlcnNoaXCIAQESOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3Rh'
+    'bXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbW'
+    'VzdGFtcEgCUgl1cGRhdGVkQXSIAQFCCQoHX2F2YXRhckIaChhfY3VycmVudF91c2VyX21lbWJl'
     'cnNoaXBCDQoLX3VwZGF0ZWRfYXQ=');
 
 @$core.Deprecated('Use getGroupsRequestDescriptor instead')

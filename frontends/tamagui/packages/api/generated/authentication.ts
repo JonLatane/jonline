@@ -120,64 +120,100 @@ export const CreateAccountRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateAccountRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateAccountRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.email = ContactMethod.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.phone = ContactMethod.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 6:
+          if (tag !== 50) {
+            break;
+          }
+
           message.deviceName = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): CreateAccountRequest {
     return {
-      username: isSet(object.username) ? String(object.username) : "",
-      password: isSet(object.password) ? String(object.password) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
       email: isSet(object.email) ? ContactMethod.fromJSON(object.email) : undefined,
       phone: isSet(object.phone) ? ContactMethod.fromJSON(object.phone) : undefined,
-      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
-      deviceName: isSet(object.deviceName) ? String(object.deviceName) : undefined,
+      expiresAt: isSet(object.expiresAt) ? globalThis.String(object.expiresAt) : undefined,
+      deviceName: isSet(object.deviceName) ? globalThis.String(object.deviceName) : undefined,
     };
   },
 
   toJSON(message: CreateAccountRequest): unknown {
     const obj: any = {};
-    message.username !== undefined && (obj.username = message.username);
-    message.password !== undefined && (obj.password = message.password);
-    message.email !== undefined && (obj.email = message.email ? ContactMethod.toJSON(message.email) : undefined);
-    message.phone !== undefined && (obj.phone = message.phone ? ContactMethod.toJSON(message.phone) : undefined);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
-    message.deviceName !== undefined && (obj.deviceName = message.deviceName);
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.email !== undefined) {
+      obj.email = ContactMethod.toJSON(message.email);
+    }
+    if (message.phone !== undefined) {
+      obj.phone = ContactMethod.toJSON(message.phone);
+    }
+    if (message.expiresAt !== undefined) {
+      obj.expiresAt = message.expiresAt;
+    }
+    if (message.deviceName !== undefined) {
+      obj.deviceName = message.deviceName;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<CreateAccountRequest>, I>>(base?: I): CreateAccountRequest {
-    return CreateAccountRequest.fromPartial(base ?? {});
+    return CreateAccountRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<CreateAccountRequest>, I>>(object: I): CreateAccountRequest {
     const message = createBaseCreateAccountRequest();
     message.username = object.username ?? "";
@@ -219,59 +255,89 @@ export const LoginRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): LoginRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLoginRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.password = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.deviceName = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.userId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): LoginRequest {
     return {
-      username: isSet(object.username) ? String(object.username) : "",
-      password: isSet(object.password) ? String(object.password) : "",
-      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
-      deviceName: isSet(object.deviceName) ? String(object.deviceName) : undefined,
-      userId: isSet(object.userId) ? String(object.userId) : undefined,
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+      expiresAt: isSet(object.expiresAt) ? globalThis.String(object.expiresAt) : undefined,
+      deviceName: isSet(object.deviceName) ? globalThis.String(object.deviceName) : undefined,
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
     };
   },
 
   toJSON(message: LoginRequest): unknown {
     const obj: any = {};
-    message.username !== undefined && (obj.username = message.username);
-    message.password !== undefined && (obj.password = message.password);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
-    message.deviceName !== undefined && (obj.deviceName = message.deviceName);
-    message.userId !== undefined && (obj.userId = message.userId);
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.expiresAt !== undefined) {
+      obj.expiresAt = message.expiresAt;
+    }
+    if (message.deviceName !== undefined) {
+      obj.deviceName = message.deviceName;
+    }
+    if (message.userId !== undefined) {
+      obj.userId = message.userId;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<LoginRequest>, I>>(base?: I): LoginRequest {
-    return LoginRequest.fromPartial(base ?? {});
+    return LoginRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<LoginRequest>, I>>(object: I): LoginRequest {
     const message = createBaseLoginRequest();
     message.username = object.username ?? "";
@@ -302,25 +368,38 @@ export const RefreshTokenResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): RefreshTokenResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRefreshTokenResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.refreshToken = ExpirableToken.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.accessToken = ExpirableToken.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.user = User.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -335,18 +414,21 @@ export const RefreshTokenResponse = {
 
   toJSON(message: RefreshTokenResponse): unknown {
     const obj: any = {};
-    message.refreshToken !== undefined &&
-      (obj.refreshToken = message.refreshToken ? ExpirableToken.toJSON(message.refreshToken) : undefined);
-    message.accessToken !== undefined &&
-      (obj.accessToken = message.accessToken ? ExpirableToken.toJSON(message.accessToken) : undefined);
-    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
+    if (message.refreshToken !== undefined) {
+      obj.refreshToken = ExpirableToken.toJSON(message.refreshToken);
+    }
+    if (message.accessToken !== undefined) {
+      obj.accessToken = ExpirableToken.toJSON(message.accessToken);
+    }
+    if (message.user !== undefined) {
+      obj.user = User.toJSON(message.user);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<RefreshTokenResponse>, I>>(base?: I): RefreshTokenResponse {
-    return RefreshTokenResponse.fromPartial(base ?? {});
+    return RefreshTokenResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<RefreshTokenResponse>, I>>(object: I): RefreshTokenResponse {
     const message = createBaseRefreshTokenResponse();
     message.refreshToken = (object.refreshToken !== undefined && object.refreshToken !== null)
@@ -376,44 +458,56 @@ export const ExpirableToken = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ExpirableToken {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseExpirableToken();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.token = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): ExpirableToken {
     return {
-      token: isSet(object.token) ? String(object.token) : "",
-      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
+      token: isSet(object.token) ? globalThis.String(object.token) : "",
+      expiresAt: isSet(object.expiresAt) ? globalThis.String(object.expiresAt) : undefined,
     };
   },
 
   toJSON(message: ExpirableToken): unknown {
     const obj: any = {};
-    message.token !== undefined && (obj.token = message.token);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    if (message.expiresAt !== undefined) {
+      obj.expiresAt = message.expiresAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<ExpirableToken>, I>>(base?: I): ExpirableToken {
-    return ExpirableToken.fromPartial(base ?? {});
+    return ExpirableToken.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<ExpirableToken>, I>>(object: I): ExpirableToken {
     const message = createBaseExpirableToken();
     message.token = object.token ?? "";
@@ -438,44 +532,56 @@ export const AccessTokenRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): AccessTokenRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAccessTokenRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.refreshToken = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): AccessTokenRequest {
     return {
-      refreshToken: isSet(object.refreshToken) ? String(object.refreshToken) : "",
-      expiresAt: isSet(object.expiresAt) ? String(object.expiresAt) : undefined,
+      refreshToken: isSet(object.refreshToken) ? globalThis.String(object.refreshToken) : "",
+      expiresAt: isSet(object.expiresAt) ? globalThis.String(object.expiresAt) : undefined,
     };
   },
 
   toJSON(message: AccessTokenRequest): unknown {
     const obj: any = {};
-    message.refreshToken !== undefined && (obj.refreshToken = message.refreshToken);
-    message.expiresAt !== undefined && (obj.expiresAt = message.expiresAt);
+    if (message.refreshToken !== "") {
+      obj.refreshToken = message.refreshToken;
+    }
+    if (message.expiresAt !== undefined) {
+      obj.expiresAt = message.expiresAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<AccessTokenRequest>, I>>(base?: I): AccessTokenRequest {
-    return AccessTokenRequest.fromPartial(base ?? {});
+    return AccessTokenRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<AccessTokenRequest>, I>>(object: I): AccessTokenRequest {
     const message = createBaseAccessTokenRequest();
     message.refreshToken = object.refreshToken ?? "";
@@ -500,22 +606,31 @@ export const AccessTokenResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): AccessTokenResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAccessTokenResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.refreshToken = ExpirableToken.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.accessToken = ExpirableToken.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -529,17 +644,18 @@ export const AccessTokenResponse = {
 
   toJSON(message: AccessTokenResponse): unknown {
     const obj: any = {};
-    message.refreshToken !== undefined &&
-      (obj.refreshToken = message.refreshToken ? ExpirableToken.toJSON(message.refreshToken) : undefined);
-    message.accessToken !== undefined &&
-      (obj.accessToken = message.accessToken ? ExpirableToken.toJSON(message.accessToken) : undefined);
+    if (message.refreshToken !== undefined) {
+      obj.refreshToken = ExpirableToken.toJSON(message.refreshToken);
+    }
+    if (message.accessToken !== undefined) {
+      obj.accessToken = ExpirableToken.toJSON(message.accessToken);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<AccessTokenResponse>, I>>(base?: I): AccessTokenResponse {
-    return AccessTokenResponse.fromPartial(base ?? {});
+    return AccessTokenResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<AccessTokenResponse>, I>>(object: I): AccessTokenResponse {
     const message = createBaseAccessTokenResponse();
     message.refreshToken = (object.refreshToken !== undefined && object.refreshToken !== null)
@@ -555,7 +671,8 @@ export const AccessTokenResponse = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
@@ -564,16 +681,16 @@ export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function toTimestamp(dateStr: string): Timestamp {
-  const date = new Date(dateStr);
+  const date = new globalThis.Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): string {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
-  return new Date(millis).toISOString();
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {

@@ -40,52 +40,69 @@ export const Location = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Location {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLocation();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.creatorId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.uniformlyFormattedAddress = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Location {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      creatorId: isSet(object.creatorId) ? String(object.creatorId) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      creatorId: isSet(object.creatorId) ? globalThis.String(object.creatorId) : "",
       uniformlyFormattedAddress: isSet(object.uniformlyFormattedAddress)
-        ? String(object.uniformlyFormattedAddress)
+        ? globalThis.String(object.uniformlyFormattedAddress)
         : "",
     };
   },
 
   toJSON(message: Location): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.creatorId !== undefined && (obj.creatorId = message.creatorId);
-    message.uniformlyFormattedAddress !== undefined &&
-      (obj.uniformlyFormattedAddress = message.uniformlyFormattedAddress);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.creatorId !== "") {
+      obj.creatorId = message.creatorId;
+    }
+    if (message.uniformlyFormattedAddress !== "") {
+      obj.uniformlyFormattedAddress = message.uniformlyFormattedAddress;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Location>, I>>(base?: I): Location {
-    return Location.fromPartial(base ?? {});
+    return Location.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Location>, I>>(object: I): Location {
     const message = createBaseLocation();
     message.id = object.id ?? "";
@@ -114,49 +131,67 @@ export const LocationAlias = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): LocationAlias {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseLocationAlias();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.alias = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.creatorId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): LocationAlias {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      alias: isSet(object.alias) ? String(object.alias) : "",
-      creatorId: isSet(object.creatorId) ? String(object.creatorId) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      alias: isSet(object.alias) ? globalThis.String(object.alias) : "",
+      creatorId: isSet(object.creatorId) ? globalThis.String(object.creatorId) : "",
     };
   },
 
   toJSON(message: LocationAlias): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.alias !== undefined && (obj.alias = message.alias);
-    message.creatorId !== undefined && (obj.creatorId = message.creatorId);
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.alias !== "") {
+      obj.alias = message.alias;
+    }
+    if (message.creatorId !== "") {
+      obj.creatorId = message.creatorId;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<LocationAlias>, I>>(base?: I): LocationAlias {
-    return LocationAlias.fromPartial(base ?? {});
+    return LocationAlias.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<LocationAlias>, I>>(object: I): LocationAlias {
     const message = createBaseLocationAlias();
     message.id = object.id ?? "";
@@ -169,7 +204,8 @@ export const LocationAlias = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

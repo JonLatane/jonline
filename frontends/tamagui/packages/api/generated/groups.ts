@@ -1,6 +1,7 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
+import { MediaReference } from "./media";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
 import { Membership, User } from "./users";
 import {
@@ -64,7 +65,7 @@ export interface Group {
   name: string;
   shortname: string;
   description: string;
-  avatarMediaId?: string | undefined;
+  avatar?: MediaReference | undefined;
   defaultMembershipPermissions: Permission[];
   /** Valid values are PENDING (requires a moderator to let you join) and UNMODERATED. */
   defaultMembershipModeration: Moderation;
@@ -126,7 +127,7 @@ function createBaseGroup(): Group {
     name: "",
     shortname: "",
     description: "",
-    avatarMediaId: undefined,
+    avatar: undefined,
     defaultMembershipPermissions: [],
     defaultMembershipModeration: 0,
     defaultPostModeration: 0,
@@ -155,8 +156,8 @@ export const Group = {
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
     }
-    if (message.avatarMediaId !== undefined) {
-      writer.uint32(42).string(message.avatarMediaId);
+    if (message.avatar !== undefined) {
+      MediaReference.encode(message.avatar, writer.uint32(42).fork()).ldelim();
     }
     writer.uint32(50).fork();
     for (const v of message.defaultMembershipPermissions) {
@@ -197,83 +198,151 @@ export const Group = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Group {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGroup();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.id = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.shortname = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.description = reader.string();
-          break;
+          continue;
         case 5:
-          message.avatarMediaId = reader.string();
-          break;
+          if (tag !== 42) {
+            break;
+          }
+
+          message.avatar = MediaReference.decode(reader, reader.uint32());
+          continue;
         case 6:
-          if ((tag & 7) === 2) {
+          if (tag === 48) {
+            message.defaultMembershipPermissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 50) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.defaultMembershipPermissions.push(reader.int32() as any);
             }
-          } else {
-            message.defaultMembershipPermissions.push(reader.int32() as any);
+
+            continue;
           }
+
           break;
         case 7:
+          if (tag !== 56) {
+            break;
+          }
+
           message.defaultMembershipModeration = reader.int32() as any;
-          break;
+          continue;
         case 8:
+          if (tag !== 64) {
+            break;
+          }
+
           message.defaultPostModeration = reader.int32() as any;
-          break;
+          continue;
         case 9:
+          if (tag !== 72) {
+            break;
+          }
+
           message.defaultEventModeration = reader.int32() as any;
-          break;
+          continue;
         case 10:
+          if (tag !== 80) {
+            break;
+          }
+
           message.visibility = reader.int32() as any;
-          break;
+          continue;
         case 11:
+          if (tag !== 88) {
+            break;
+          }
+
           message.memberCount = reader.uint32();
-          break;
+          continue;
         case 12:
+          if (tag !== 96) {
+            break;
+          }
+
           message.postCount = reader.uint32();
-          break;
+          continue;
         case 13:
+          if (tag !== 104) {
+            break;
+          }
+
           message.eventCount = reader.uint32();
-          break;
+          continue;
         case 19:
+          if (tag !== 154) {
+            break;
+          }
+
           message.currentUserMembership = Membership.decode(reader, reader.uint32());
-          break;
+          continue;
         case 20:
+          if (tag !== 162) {
+            break;
+          }
+
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 21:
+          if (tag !== 170) {
+            break;
+          }
+
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Group {
     return {
-      id: isSet(object.id) ? String(object.id) : "",
-      name: isSet(object.name) ? String(object.name) : "",
-      shortname: isSet(object.shortname) ? String(object.shortname) : "",
-      description: isSet(object.description) ? String(object.description) : "",
-      avatarMediaId: isSet(object.avatarMediaId) ? String(object.avatarMediaId) : undefined,
-      defaultMembershipPermissions: Array.isArray(object?.defaultMembershipPermissions)
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      shortname: isSet(object.shortname) ? globalThis.String(object.shortname) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      avatar: isSet(object.avatar) ? MediaReference.fromJSON(object.avatar) : undefined,
+      defaultMembershipPermissions: globalThis.Array.isArray(object?.defaultMembershipPermissions)
         ? object.defaultMembershipPermissions.map((e: any) => permissionFromJSON(e))
         : [],
       defaultMembershipModeration: isSet(object.defaultMembershipModeration)
@@ -284,58 +353,82 @@ export const Group = {
         ? moderationFromJSON(object.defaultEventModeration)
         : 0,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
-      memberCount: isSet(object.memberCount) ? Number(object.memberCount) : 0,
-      postCount: isSet(object.postCount) ? Number(object.postCount) : 0,
-      eventCount: isSet(object.eventCount) ? Number(object.eventCount) : 0,
+      memberCount: isSet(object.memberCount) ? globalThis.Number(object.memberCount) : 0,
+      postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : 0,
+      eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : 0,
       currentUserMembership: isSet(object.currentUserMembership)
         ? Membership.fromJSON(object.currentUserMembership)
         : undefined,
-      createdAt: isSet(object.createdAt) ? String(object.createdAt) : undefined,
-      updatedAt: isSet(object.updatedAt) ? String(object.updatedAt) : undefined,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
   },
 
   toJSON(message: Group): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
-    message.name !== undefined && (obj.name = message.name);
-    message.shortname !== undefined && (obj.shortname = message.shortname);
-    message.description !== undefined && (obj.description = message.description);
-    message.avatarMediaId !== undefined && (obj.avatarMediaId = message.avatarMediaId);
-    if (message.defaultMembershipPermissions) {
-      obj.defaultMembershipPermissions = message.defaultMembershipPermissions.map((e) => permissionToJSON(e));
-    } else {
-      obj.defaultMembershipPermissions = [];
+    if (message.id !== "") {
+      obj.id = message.id;
     }
-    message.defaultMembershipModeration !== undefined &&
-      (obj.defaultMembershipModeration = moderationToJSON(message.defaultMembershipModeration));
-    message.defaultPostModeration !== undefined &&
-      (obj.defaultPostModeration = moderationToJSON(message.defaultPostModeration));
-    message.defaultEventModeration !== undefined &&
-      (obj.defaultEventModeration = moderationToJSON(message.defaultEventModeration));
-    message.visibility !== undefined && (obj.visibility = visibilityToJSON(message.visibility));
-    message.memberCount !== undefined && (obj.memberCount = Math.round(message.memberCount));
-    message.postCount !== undefined && (obj.postCount = Math.round(message.postCount));
-    message.eventCount !== undefined && (obj.eventCount = Math.round(message.eventCount));
-    message.currentUserMembership !== undefined && (obj.currentUserMembership = message.currentUserMembership
-      ? Membership.toJSON(message.currentUserMembership)
-      : undefined);
-    message.createdAt !== undefined && (obj.createdAt = message.createdAt);
-    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.shortname !== "") {
+      obj.shortname = message.shortname;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.avatar !== undefined) {
+      obj.avatar = MediaReference.toJSON(message.avatar);
+    }
+    if (message.defaultMembershipPermissions?.length) {
+      obj.defaultMembershipPermissions = message.defaultMembershipPermissions.map((e) => permissionToJSON(e));
+    }
+    if (message.defaultMembershipModeration !== 0) {
+      obj.defaultMembershipModeration = moderationToJSON(message.defaultMembershipModeration);
+    }
+    if (message.defaultPostModeration !== 0) {
+      obj.defaultPostModeration = moderationToJSON(message.defaultPostModeration);
+    }
+    if (message.defaultEventModeration !== 0) {
+      obj.defaultEventModeration = moderationToJSON(message.defaultEventModeration);
+    }
+    if (message.visibility !== 0) {
+      obj.visibility = visibilityToJSON(message.visibility);
+    }
+    if (message.memberCount !== 0) {
+      obj.memberCount = Math.round(message.memberCount);
+    }
+    if (message.postCount !== 0) {
+      obj.postCount = Math.round(message.postCount);
+    }
+    if (message.eventCount !== 0) {
+      obj.eventCount = Math.round(message.eventCount);
+    }
+    if (message.currentUserMembership !== undefined) {
+      obj.currentUserMembership = Membership.toJSON(message.currentUserMembership);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Group>, I>>(base?: I): Group {
-    return Group.fromPartial(base ?? {});
+    return Group.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Group>, I>>(object: I): Group {
     const message = createBaseGroup();
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.shortname = object.shortname ?? "";
     message.description = object.description ?? "";
-    message.avatarMediaId = object.avatarMediaId ?? undefined;
+    message.avatar = (object.avatar !== undefined && object.avatar !== null)
+      ? MediaReference.fromPartial(object.avatar)
+      : undefined;
     message.defaultMembershipPermissions = object.defaultMembershipPermissions?.map((e) => e) || [];
     message.defaultMembershipModeration = object.defaultMembershipModeration ?? 0;
     message.defaultPostModeration = object.defaultPostModeration ?? 0;
@@ -379,59 +472,89 @@ export const GetGroupsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetGroupsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetGroupsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.groupId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.groupName = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.groupShortname = reader.string();
-          break;
+          continue;
         case 10:
+          if (tag !== 80) {
+            break;
+          }
+
           message.listingType = reader.int32() as any;
-          break;
+          continue;
         case 11:
+          if (tag !== 88) {
+            break;
+          }
+
           message.page = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetGroupsRequest {
     return {
-      groupId: isSet(object.groupId) ? String(object.groupId) : undefined,
-      groupName: isSet(object.groupName) ? String(object.groupName) : undefined,
-      groupShortname: isSet(object.groupShortname) ? String(object.groupShortname) : undefined,
+      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
+      groupName: isSet(object.groupName) ? globalThis.String(object.groupName) : undefined,
+      groupShortname: isSet(object.groupShortname) ? globalThis.String(object.groupShortname) : undefined,
       listingType: isSet(object.listingType) ? groupListingTypeFromJSON(object.listingType) : 0,
-      page: isSet(object.page) ? Number(object.page) : undefined,
+      page: isSet(object.page) ? globalThis.Number(object.page) : undefined,
     };
   },
 
   toJSON(message: GetGroupsRequest): unknown {
     const obj: any = {};
-    message.groupId !== undefined && (obj.groupId = message.groupId);
-    message.groupName !== undefined && (obj.groupName = message.groupName);
-    message.groupShortname !== undefined && (obj.groupShortname = message.groupShortname);
-    message.listingType !== undefined && (obj.listingType = groupListingTypeToJSON(message.listingType));
-    message.page !== undefined && (obj.page = Math.round(message.page));
+    if (message.groupId !== undefined) {
+      obj.groupId = message.groupId;
+    }
+    if (message.groupName !== undefined) {
+      obj.groupName = message.groupName;
+    }
+    if (message.groupShortname !== undefined) {
+      obj.groupShortname = message.groupShortname;
+    }
+    if (message.listingType !== 0) {
+      obj.listingType = groupListingTypeToJSON(message.listingType);
+    }
+    if (message.page !== undefined) {
+      obj.page = Math.round(message.page);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetGroupsRequest>, I>>(base?: I): GetGroupsRequest {
-    return GetGroupsRequest.fromPartial(base ?? {});
+    return GetGroupsRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetGroupsRequest>, I>>(object: I): GetGroupsRequest {
     const message = createBaseGetGroupsRequest();
     message.groupId = object.groupId ?? undefined;
@@ -459,48 +582,56 @@ export const GetGroupsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetGroupsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetGroupsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.groups.push(Group.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.hasNextPage = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetGroupsResponse {
     return {
-      groups: Array.isArray(object?.groups) ? object.groups.map((e: any) => Group.fromJSON(e)) : [],
-      hasNextPage: isSet(object.hasNextPage) ? Boolean(object.hasNextPage) : false,
+      groups: globalThis.Array.isArray(object?.groups) ? object.groups.map((e: any) => Group.fromJSON(e)) : [],
+      hasNextPage: isSet(object.hasNextPage) ? globalThis.Boolean(object.hasNextPage) : false,
     };
   },
 
   toJSON(message: GetGroupsResponse): unknown {
     const obj: any = {};
-    if (message.groups) {
-      obj.groups = message.groups.map((e) => e ? Group.toJSON(e) : undefined);
-    } else {
-      obj.groups = [];
+    if (message.groups?.length) {
+      obj.groups = message.groups.map((e) => Group.toJSON(e));
     }
-    message.hasNextPage !== undefined && (obj.hasNextPage = message.hasNextPage);
+    if (message.hasNextPage === true) {
+      obj.hasNextPage = message.hasNextPage;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetGroupsResponse>, I>>(base?: I): GetGroupsResponse {
-    return GetGroupsResponse.fromPartial(base ?? {});
+    return GetGroupsResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetGroupsResponse>, I>>(object: I): GetGroupsResponse {
     const message = createBaseGetGroupsResponse();
     message.groups = object.groups?.map((e) => Group.fromPartial(e)) || [];
@@ -525,22 +656,31 @@ export const Member = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Member {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseMember();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.user = User.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.membership = Membership.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -554,16 +694,18 @@ export const Member = {
 
   toJSON(message: Member): unknown {
     const obj: any = {};
-    message.user !== undefined && (obj.user = message.user ? User.toJSON(message.user) : undefined);
-    message.membership !== undefined &&
-      (obj.membership = message.membership ? Membership.toJSON(message.membership) : undefined);
+    if (message.user !== undefined) {
+      obj.user = User.toJSON(message.user);
+    }
+    if (message.membership !== undefined) {
+      obj.membership = Membership.toJSON(message.membership);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Member>, I>>(base?: I): Member {
-    return Member.fromPartial(base ?? {});
+    return Member.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Member>, I>>(object: I): Member {
     const message = createBaseMember();
     message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
@@ -596,56 +738,78 @@ export const GetMembersRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetMembersRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetMembersRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.groupId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.username = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 24) {
+            break;
+          }
+
           message.groupModeration = reader.int32() as any;
-          break;
+          continue;
         case 10:
+          if (tag !== 80) {
+            break;
+          }
+
           message.page = reader.int32();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetMembersRequest {
     return {
-      groupId: isSet(object.groupId) ? String(object.groupId) : "",
-      username: isSet(object.username) ? String(object.username) : undefined,
+      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : undefined,
       groupModeration: isSet(object.groupModeration) ? moderationFromJSON(object.groupModeration) : undefined,
-      page: isSet(object.page) ? Number(object.page) : undefined,
+      page: isSet(object.page) ? globalThis.Number(object.page) : undefined,
     };
   },
 
   toJSON(message: GetMembersRequest): unknown {
     const obj: any = {};
-    message.groupId !== undefined && (obj.groupId = message.groupId);
-    message.username !== undefined && (obj.username = message.username);
-    message.groupModeration !== undefined && (obj.groupModeration = message.groupModeration !== undefined
-      ? moderationToJSON(message.groupModeration)
-      : undefined);
-    message.page !== undefined && (obj.page = Math.round(message.page));
+    if (message.groupId !== "") {
+      obj.groupId = message.groupId;
+    }
+    if (message.username !== undefined) {
+      obj.username = message.username;
+    }
+    if (message.groupModeration !== undefined) {
+      obj.groupModeration = moderationToJSON(message.groupModeration);
+    }
+    if (message.page !== undefined) {
+      obj.page = Math.round(message.page);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetMembersRequest>, I>>(base?: I): GetMembersRequest {
-    return GetMembersRequest.fromPartial(base ?? {});
+    return GetMembersRequest.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetMembersRequest>, I>>(object: I): GetMembersRequest {
     const message = createBaseGetMembersRequest();
     message.groupId = object.groupId ?? "";
@@ -672,48 +836,56 @@ export const GetMembersResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetMembersResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetMembersResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.members.push(Member.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag !== 16) {
+            break;
+          }
+
           message.hasNextPage = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): GetMembersResponse {
     return {
-      members: Array.isArray(object?.members) ? object.members.map((e: any) => Member.fromJSON(e)) : [],
-      hasNextPage: isSet(object.hasNextPage) ? Boolean(object.hasNextPage) : false,
+      members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => Member.fromJSON(e)) : [],
+      hasNextPage: isSet(object.hasNextPage) ? globalThis.Boolean(object.hasNextPage) : false,
     };
   },
 
   toJSON(message: GetMembersResponse): unknown {
     const obj: any = {};
-    if (message.members) {
-      obj.members = message.members.map((e) => e ? Member.toJSON(e) : undefined);
-    } else {
-      obj.members = [];
+    if (message.members?.length) {
+      obj.members = message.members.map((e) => Member.toJSON(e));
     }
-    message.hasNextPage !== undefined && (obj.hasNextPage = message.hasNextPage);
+    if (message.hasNextPage === true) {
+      obj.hasNextPage = message.hasNextPage;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<GetMembersResponse>, I>>(base?: I): GetMembersResponse {
-    return GetMembersResponse.fromPartial(base ?? {});
+    return GetMembersResponse.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<GetMembersResponse>, I>>(object: I): GetMembersResponse {
     const message = createBaseGetMembersResponse();
     message.members = object.members?.map((e) => Member.fromPartial(e)) || [];
@@ -725,7 +897,8 @@ export const GetMembersResponse = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
@@ -734,16 +907,16 @@ export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function toTimestamp(dateStr: string): Timestamp {
-  const date = new Date(dateStr);
+  const date = new globalThis.Date(dateStr);
   const seconds = date.getTime() / 1_000;
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }
 
 function fromTimestamp(t: Timestamp): string {
-  let millis = t.seconds * 1_000;
-  millis += t.nanos / 1_000_000;
-  return new Date(millis).toISOString();
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis).toISOString();
 }
 
 function isSet(value: any): boolean {
