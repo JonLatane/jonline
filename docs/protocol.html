@@ -1,0 +1,3674 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Jonline Protocol Documentation</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <style>markdown-style { padding-top: 40px!important; }</style>
+  </head>
+  <body><script type="module">const GITHUB_CORNERS_TEMPLATE = document.createElement("template");
+GITHUB_CORNERS_TEMPLATE.innerHTML = `
+<style>
+:host a:hover .octo-arm { animation: octocat-wave 560ms ease-in-out; }
+@keyframes octocat-wave {
+  0%, 100% { transform: rotate(0); }
+  20%, 60% { transform: rotate(-25deg); }
+  40%, 80% { transform: rotate(10deg); }
+}
+@media (max-width:500px) {
+  :host a:hover .octo-arm { animation: none; }
+  :host .octo-arm { animation: octocat-wave 560ms ease-in-out; }
+}
+:host svg { z-index: 99; position: fixed; border: 0px; top: 0px; }
+</style>
+<svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true">
+  <a xlink:href="https://github.com/uiwjs/react-github-corners" target="_blank" rel="nofollow sponsored" style="fill: rgb(21, 21, 19); color: rgb(255, 255, 255);">
+    <g>
+      <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+      <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" class="octo-arm" style="transform-origin: 130px 106px;"></path>
+      <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
+    </g>
+  </a>
+</svg>
+`;
+export class GithubCorners extends HTMLElement {
+    constructor() {
+        super();
+        this.right = '0';
+        this.shadow = this.attachShadow({ mode: 'open' });
+        this.shadow.appendChild(this.ownerDocument.importNode(GITHUB_CORNERS_TEMPLATE.content, true));
+        this.update();
+    }
+    static get observedAttributes() {
+        return ['style', 'z-index', 'target', 'height', 'width', 'href', 'color', 'fill', 'position', 'top', 'left', 'right', 'bottom', 'transform'];
+    }
+    setAttr(name, value) {
+        const svg = this.shadow.querySelector('svg');
+        if (/(href)/.test(name.toLocaleLowerCase())) {
+            svg.lastElementChild.setAttribute('xlink:href', value);
+        }
+        else if (/(color|fill)/.test(name.toLocaleLowerCase())) {
+            svg.firstElementChild.style[name] = value;
+        }
+        else if (/(z-index|position|top|left|right|bottom|transform)/.test(name.toLocaleLowerCase())) {
+            svg.style[name] = value;
+        }
+        else {
+            svg.setAttribute(name, value);
+        }
+    }
+    update() {
+        ;
+        [...this.getAttributeNames(), 'right'].forEach((name) => {
+            const value = this.getAttribute(name) || this[name] || '';
+            this.setAttr(name, value);
+        });
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (oldValue !== newValue) {
+            this.setAttr(name, newValue);
+        }
+    }
+}
+customElements.define('github-corners', GithubCorners);</script><github-corners target="__blank" position="fixed" z-index="999" href="https://github.com/JonLatane/jonline"></github-corners><dark-mode style="position: fixed; top: 8px; left: 10px; z-index: 999;" dark="Dark" light="Light" permanent="true"></dark-mode><script>const t=document;const e="_dark_mode_theme_";const s="permanent";const o="colorschemechange";const i="permanentcolorscheme";const h="light";const r="dark";const n=(t,e,s=e)=>{Object.defineProperty(t,s,{enumerable:true,get(){const t=this.getAttribute(e);return t===null?"":t},set(t){this.setAttribute(e,t)}})};const c=(t,e,s=e)=>{Object.defineProperty(t,s,{enumerable:true,get(){return this.hasAttribute(e)},set(t){if(t){this.setAttribute(e,"")}else{this.removeAttribute(e)}}})};class a extends HTMLElement{static get observedAttributes(){return["mode",h,r,s]}LOCAL_NANE=e;constructor(){super();this.t()}connectedCallback(){n(this,"mode");n(this,r);n(this,h);c(this,s);const a=localStorage.getItem(e);if(a&&[h,r].includes(a)){this.mode=a;this.permanent=true}if(this.permanent&&!a){localStorage.setItem(e,this.mode)}const l=[h,r].includes(a);if(this.permanent&&a){this.o()}else{if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches){this.mode=r;this.o()}if(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches){this.mode=h;this.o()}}if(!this.permanent&&!l){window.matchMedia("(prefers-color-scheme: light)").onchange=t=>{this.mode=t.matches?h:r;this.o()};window.matchMedia("(prefers-color-scheme: dark)").onchange=t=>{this.mode=t.matches?r:h;this.o()}}const d=new MutationObserver(((s,h)=>{this.mode=t.documentElement.dataset.colorMode;if(this.permanent&&l){localStorage.setItem(e,this.mode);this.i(i,{permanent:this.permanent})}this.h();this.i(o,{colorScheme:this.mode})}));d.observe(t.documentElement,{attributes:true});this.i(o,{colorScheme:this.mode});this.h()}attributeChangedCallback(t,s,o){if(t==="mode"&&s!==o&&[h,r].includes(o)){const t=localStorage.getItem(e);if(this.mode===t){this.mode=o;this.h();this.o()}else if(this.mode&&this.mode!==t){this.h();this.o()}}else if((t===h||t===r)&&s!==o){this.h()}if(t==="permanent"&&typeof this.permanent==="boolean"){this.permanent?localStorage.setItem(e,this.mode):localStorage.removeItem(e)}}o(){t.documentElement.setAttribute("data-color-mode",this.mode)}h(){this.icon.textContent=this.mode===h?"🌒":"🌞";this.text.textContent=this.mode===h?this.getAttribute(r):this.getAttribute(h)}t(){var s=this.attachShadow({mode:"open"});this.label=t.createElement("span");this.label.setAttribute("class","wrapper");this.label.onclick=()=>{this.mode=this.mode===h?r:h;if(this.permanent){localStorage.setItem(e,this.mode)}this.o();this.h()};s.appendChild(this.label);this.icon=t.createElement("span");this.label.appendChild(this.icon);this.text=t.createElement("span");this.label.appendChild(this.text);const o=`
+[data-color-mode*='dark'], [data-color-mode*='dark'] body {
+  color-scheme: dark;
+  --color-theme-bg: #0d1117;
+  --color-theme-text: #c9d1d9;
+  background-color: var(--color-theme-bg);
+  color: var(--color-theme-text);
+}
+
+[data-color-mode*='light'], [data-color-mode*='light'] body {
+  color-scheme: light;
+  --color-theme-bg: #fff;
+  --color-theme-text: #24292f;
+  background-color: var(--color-theme-bg);
+  color: var(--color-theme-text);
+}`;const i="_dark_mode_style_";const n=t.getElementById(i);if(!n){var c=t.createElement("style");c.id=i;c.textContent=o;t.head.appendChild(c)}var a=t.createElement("style");a.textContent=`
+    .wrapper { cursor: pointer; user-select: none; position: relative; }
+    .wrapper > span + span { margin-left: .4rem; }
+    `;s.appendChild(a)}i(t,e){this.dispatchEvent(new CustomEvent(t,{bubbles:true,composed:true,detail:e}))}}customElements.define("dark-mode",a);</script><script>const __TEMPLATE__ = document.createElement('template');
+__TEMPLATE__.innerHTML = `
+<style>
+
+markdown-style h1:hover a.anchor .octicon-link:before,
+markdown-style h2:hover a.anchor .octicon-link:before,
+markdown-style h3:hover a.anchor .octicon-link:before,
+markdown-style h4:hover a.anchor .octicon-link:before,
+markdown-style h5:hover a.anchor .octicon-link:before,
+markdown-style h6:hover a.anchor .octicon-link:before {
+  width: 16px;
+  height: 16px;
+  content: ' ';
+  display: inline-block;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>");
+  mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>");
+}
+[data-color-mode*='light'], [data-color-mode*='light'] body, markdown-style[theme*='light'] { --color-prettylights-syntax-comment: #6e7781; --color-prettylights-syntax-constant: #0550ae; --color-prettylights-syntax-entity: #8250df; --color-prettylights-syntax-storage-modifier-import: #24292f; --color-prettylights-syntax-entity-tag: #116329; --color-prettylights-syntax-keyword: #cf222e; --color-prettylights-syntax-string: #0a3069; --color-prettylights-syntax-variable: #953800; --color-prettylights-syntax-brackethighlighter-unmatched: #82071e; --color-prettylights-syntax-invalid-illegal-text: #f6f8fa; --color-prettylights-syntax-invalid-illegal-bg: #82071e; --color-prettylights-syntax-carriage-return-text: #f6f8fa; --color-prettylights-syntax-carriage-return-bg: #cf222e; --color-prettylights-syntax-string-regexp: #116329; --color-prettylights-syntax-markup-list: #3b2300; --color-prettylights-syntax-markup-heading: #0550ae; --color-prettylights-syntax-markup-italic: #24292f; --color-prettylights-syntax-markup-bold: #24292f; --color-prettylights-syntax-markup-deleted-text: #82071e; --color-prettylights-syntax-markup-deleted-bg: #FFEBE9; --color-prettylights-syntax-markup-inserted-text: #116329; --color-prettylights-syntax-markup-inserted-bg: #dafbe1; --color-prettylights-syntax-markup-changed-text: #953800; --color-prettylights-syntax-markup-changed-bg: #ffd8b5; --color-prettylights-syntax-markup-ignored-text: #eaeef2; --color-prettylights-syntax-markup-ignored-bg: #0550ae; --color-prettylights-syntax-meta-diff-range: #8250df; --color-prettylights-syntax-brackethighlighter-angle: #57606a; --color-prettylights-syntax-sublimelinter-gutter-mark: #8c959f; --color-prettylights-syntax-constant-other-reference-link: #0a3069; --color-fg-default: #24292f; --color-fg-muted: #57606a; --color-fg-subtle: #6e7781; --color-canvas-default: #ffffff; --color-canvas-subtle: #f6f8fa; --color-border-default: #d0d7de; --color-border-muted: hsla(210,18%,87%,1); --color-neutral-muted: rgba(175,184,193,0.2); --color-accent-fg: #0969da; --color-accent-emphasis: #0969da; --color-attention-subtle: #fff8c5; --color-danger-fg: #cf222e; } [data-color-mode*='dark'], [data-color-mode*='dark'] body, markdown-style[theme*='dark'] { --color-prettylights-syntax-comment: #8b949e; --color-prettylights-syntax-constant: #79c0ff; --color-prettylights-syntax-entity: #d2a8ff; --color-prettylights-syntax-storage-modifier-import: #c9d1d9; --color-prettylights-syntax-entity-tag: #7ee787; --color-prettylights-syntax-keyword: #ff7b72; --color-prettylights-syntax-string: #a5d6ff; --color-prettylights-syntax-variable: #ffa657; --color-prettylights-syntax-brackethighlighter-unmatched: #f85149; --color-prettylights-syntax-invalid-illegal-text: #f0f6fc; --color-prettylights-syntax-invalid-illegal-bg: #8e1519; --color-prettylights-syntax-carriage-return-text: #f0f6fc; --color-prettylights-syntax-carriage-return-bg: #b62324; --color-prettylights-syntax-string-regexp: #7ee787; --color-prettylights-syntax-markup-list: #f2cc60; --color-prettylights-syntax-markup-heading: #1f6feb; --color-prettylights-syntax-markup-italic: #c9d1d9; --color-prettylights-syntax-markup-bold: #c9d1d9; --color-prettylights-syntax-markup-deleted-text: #ffdcd7; --color-prettylights-syntax-markup-deleted-bg: #67060c; --color-prettylights-syntax-markup-inserted-text: #aff5b4; --color-prettylights-syntax-markup-inserted-bg: #033a16; --color-prettylights-syntax-markup-changed-text: #ffdfb6; --color-prettylights-syntax-markup-changed-bg: #5a1e02; --color-prettylights-syntax-markup-ignored-text: #c9d1d9; --color-prettylights-syntax-markup-ignored-bg: #1158c7; --color-prettylights-syntax-meta-diff-range: #d2a8ff; --color-prettylights-syntax-brackethighlighter-angle: #8b949e; --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58; --color-prettylights-syntax-constant-other-reference-link: #a5d6ff; --color-fg-default: #c9d1d9; --color-fg-muted: #8b949e; --color-fg-subtle: #484f58; --color-canvas-default: #0d1117; --color-canvas-subtle: #161b22; --color-border-default: #30363d; --color-border-muted: #21262d; --color-neutral-muted: rgba(110,118,129,0.4); --color-accent-fg: #58a6ff; --color-accent-emphasis: #1f6feb; --color-attention-subtle: rgba(187,128,9,0.15); --color-danger-fg: #f85149; } markdown-style { display: block; -webkit-text-size-adjust: 100%; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji"; font-size: 16px; line-height: 1.5; word-wrap: break-word; color: var(--color-fg-default); background-color: var(--color-canvas-default); } markdown-style details, markdown-style figcaption, markdown-style figure { display: block; } markdown-style summary { display: list-item; } markdown-style [hidden] { display: none !important; } markdown-style a { background-color: transparent; color: var(--color-accent-fg); text-decoration: none; } markdown-style a:active, markdown-style a:hover { outline-width: 0; } markdown-style abbr[title] { border-bottom: none; text-decoration: underline dotted; } markdown-style b, markdown-style strong { font-weight: 600; } markdown-style dfn { font-style: italic; } markdown-style h1 { margin: .67em 0; font-weight: 600; padding-bottom: .3em; font-size: 2em; border-bottom: 1px solid var(--color-border-muted); } markdown-style mark { background-color: var(--color-attention-subtle); color: var(--color-text-primary); } markdown-style small { font-size: 90%; } markdown-style sub, markdown-style sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; } markdown-style sub { bottom: -0.25em; } markdown-style sup { top: -0.5em; } markdown-style img { border-style: none; max-width: 100%; box-sizing: content-box; background-color: var(--color-canvas-default); } markdown-style code, markdown-style kbd, markdown-style pre, markdown-style samp { font-family: monospace,monospace; font-size: 1em; } markdown-style figure { margin: 1em 40px; } markdown-style hr { box-sizing: content-box; overflow: hidden; background: transparent; border-bottom: 1px solid var(--color-border-muted); height: .25em; padding: 0; margin: 24px 0; background-color: var(--color-border-default); border: 0; } markdown-style input { font: inherit; margin: 0; overflow: visible; font-family: inherit; font-size: inherit; line-height: inherit; } markdown-style [type=button], markdown-style [type=reset], markdown-style [type=submit] { -webkit-appearance: button; } markdown-style [type=button]::-moz-focus-inner, markdown-style [type=reset]::-moz-focus-inner, markdown-style [type=submit]::-moz-focus-inner { border-style: none; padding: 0; } markdown-style [type=button]:-moz-focusring, markdown-style [type=reset]:-moz-focusring, markdown-style [type=submit]:-moz-focusring { outline: 1px dotted ButtonText; } markdown-style [type=checkbox], markdown-style [type=radio] { box-sizing: border-box; padding: 0; } markdown-style [type=number]::-webkit-inner-spin-button, markdown-style [type=number]::-webkit-outer-spin-button { height: auto; } markdown-style [type=search] { -webkit-appearance: textfield; outline-offset: -2px; } markdown-style [type=search]::-webkit-search-cancel-button, markdown-style [type=search]::-webkit-search-decoration { -webkit-appearance: none; } markdown-style ::-webkit-input-placeholder { color: inherit; opacity: .54; } markdown-style ::-webkit-file-upload-button { -webkit-appearance: button; font: inherit; } markdown-style a:hover { text-decoration: underline; } markdown-style hr::before { display: table; content: ""; } markdown-style hr::after { display: table; clear: both; content: ""; } markdown-style table { border-spacing: 0; border-collapse: collapse; display: block; width: max-content; max-width: 100%; overflow: auto; } markdown-style td, markdown-style th { padding: 0; } markdown-style details summary { cursor: pointer; } markdown-style details:not([open])>*:not(summary) { display: none !important; } markdown-style kbd { display: inline-block; padding: 3px 5px; font: 11px ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace; line-height: 10px; color: var(--color-fg-default); vertical-align: middle; background-color: var(--color-canvas-subtle); border: solid 1px var(--color-neutral-muted); border-bottom-color: var(--color-neutral-muted); border-radius: 6px; box-shadow: inset 0 -1px 0 var(--color-neutral-muted); } markdown-style h1, markdown-style h2, markdown-style h3, markdown-style h4, markdown-style h5, markdown-style h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; } markdown-style h2 { font-weight: 600; padding-bottom: .3em; font-size: 1.5em; border-bottom: 1px solid var(--color-border-muted); } markdown-style h3 { font-weight: 600; font-size: 1.25em; } markdown-style h4 { font-weight: 600; font-size: 1em; } markdown-style h5 { font-weight: 600; font-size: .875em; } markdown-style h6 { font-weight: 600; font-size: .85em; color: var(--color-fg-muted); } markdown-style p { margin-top: 0; margin-bottom: 10px; } markdown-style blockquote { margin: 0; padding: 0 1em; color: var(--color-fg-muted); border-left: .25em solid var(--color-border-default); } markdown-style ul, markdown-style ol { margin-top: 0; margin-bottom: 0; padding-left: 2em; } markdown-style ol ol, markdown-style ul ol { list-style-type: lower-roman; } markdown-style ul ul ol, markdown-style ul ol ol, markdown-style ol ul ol, markdown-style ol ol ol { list-style-type: lower-alpha; } markdown-style dd { margin-left: 0; } markdown-style tt, markdown-style code { font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace; font-size: 12px; } markdown-style pre { margin-top: 0; margin-bottom: 0; font-family: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace; font-size: 12px; word-wrap: normal; } markdown-style .octicon { display: inline-block; overflow: visible !important; vertical-align: text-bottom; fill: currentColor; } markdown-style ::placeholder { color: var(--color-fg-subtle); opacity: 1; } markdown-style input::-webkit-outer-spin-button, markdown-style input::-webkit-inner-spin-button { margin: 0; -webkit-appearance: none; appearance: none; }
+markdown-style .token.comment, markdown-style .token.prolog, markdown-style .token.doctype, markdown-style .token.cdata { color: var(--color-prettylights-syntax-comment); } markdown-style .token.namespace { opacity: 0.7; } markdown-style .token.tag, markdown-style .token.selector, markdown-style .token.constant, markdown-style .token.symbol, markdown-style .token.deleted { color: var(--color-prettylights-syntax-entity-tag); } markdown-style .token.maybe-class-name { color: var(--color-prettylights-syntax-variable); } markdown-style .token.property-access, markdown-style .token.operator, markdown-style .token.boolean, markdown-style .token.number, markdown-style .token.selector markdown-style .token.class, markdown-style .token.attr-name, markdown-style .token.string, markdown-style .token.char, markdown-style .token.builtin { color: var(--color-prettylights-syntax-constant); } markdown-style .token.deleted { color: var(--color-prettylights-syntax-markup-deleted-text); } markdown-style .token.property { color: var(--color-prettylights-syntax-constant); } markdown-style .token.punctuation { color: var(--color-prettylights-syntax-markup-bold); } markdown-style .token.function { color: var(--color-prettylights-syntax-entity); } markdown-style .code-line .token.deleted { background-color: var(--color-prettylights-syntax-markup-deleted-bg); } markdown-style .token.inserted { color: var(--color-prettylights-syntax-markup-inserted-text); } markdown-style .code-line .token.inserted { background-color: var(--color-prettylights-syntax-markup-inserted-bg); } markdown-style .token.variable { color: var(--color-prettylights-syntax-constant); } markdown-style .token.entity, markdown-style .token.url, .language-css markdown-style .token.string, .style markdown-style .token.string { color: var(--color-prettylights-syntax-string); } markdown-style .token.color, markdown-style .token.atrule, markdown-style .token.attr-value, markdown-style .token.function, markdown-style .token.class-name { color: var(--color-prettylights-syntax-string); } markdown-style .token.rule, markdown-style .token.regex, markdown-style .token.important, markdown-style .token.keyword { color: var(--color-prettylights-syntax-keyword); } markdown-style .token.coord { color: var(--color-prettylights-syntax-meta-diff-range); } markdown-style .token.important, markdown-style .token.bold { font-weight: bold; } markdown-style .token.italic { font-style: italic; } markdown-style .token.entity { cursor: help; }
+markdown-style [data-catalyst] { display: block; } markdown-style g-emoji { font-family: "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol"; font-size: 1em; font-style: normal !important; font-weight: 400; line-height: 1; vertical-align: -0.075em; } markdown-style g-emoji img { width: 1em; height: 1em; } markdown-style::before { display: table; content: ""; } markdown-style::after { display: table; clear: both; content: ""; } markdown-style>*:first-child { margin-top: 0 !important; } markdown-style>*:last-child { margin-bottom: 0 !important; } markdown-style a:not([href]) { color: inherit; text-decoration: none; } markdown-style .absent { color: var(--color-danger-fg); } markdown-style a.anchor { float: left; padding-right: 4px; margin-left: -20px; line-height: 1; } markdown-style a.anchor:focus { outline: none; } markdown-style p, markdown-style blockquote, markdown-style ul, markdown-style ol, markdown-style dl, markdown-style table, markdown-style pre, markdown-style details { margin-top: 0; margin-bottom: 16px; } markdown-style blockquote>:first-child { margin-top: 0; } markdown-style blockquote>:last-child { margin-bottom: 0; } markdown-style sup>a::before { content: "["; } markdown-style sup>a::after { content: "]"; }
+markdown-style .octicon-video { border: 1px solid #d0d7de !important; border-radius: 6px !important; display: block; } markdown-style .octicon-video summary { border-bottom: 1px solid #d0d7de !important; padding: 8px 16px !important; cursor: pointer; } markdown-style .octicon-video > video { display: block !important; max-width: 100% !important; padding: 2px; box-sizing: border-box; border-bottom-right-radius: 6px !important; border-bottom-left-radius: 6px !important; } markdown-style details.octicon-video:not([open])>*:not(summary) { display: none !important; } markdown-style details.octicon-video:not([open]) > summary { border-bottom: 0 !important; } markdown-style h1 .octicon-link, markdown-style h2 .octicon-link, markdown-style h3 .octicon-link, markdown-style h4 .octicon-link, markdown-style h5 .octicon-link, markdown-style h6 .octicon-link { color: var(--color-fg-default); vertical-align: middle; visibility: hidden; } markdown-style h1:hover .anchor, markdown-style h2:hover .anchor, markdown-style h3:hover .anchor, markdown-style h4:hover .anchor, markdown-style h5:hover .anchor, markdown-style h6:hover .anchor { text-decoration: none; } markdown-style h1:hover .anchor .octicon-link, markdown-style h2:hover .anchor .octicon-link, markdown-style h3:hover .anchor .octicon-link, markdown-style h4:hover .anchor .octicon-link, markdown-style h5:hover .anchor .octicon-link, markdown-style h6:hover .anchor .octicon-link { visibility: visible; } markdown-style h1 tt, markdown-style h1 code, markdown-style h2 tt, markdown-style h2 code, markdown-style h3 tt, markdown-style h3 code, markdown-style h4 tt, markdown-style h4 code, markdown-style h5 tt, markdown-style h5 code, markdown-style h6 tt, markdown-style h6 code { padding: 0 .2em; font-size: inherit; } markdown-style ul.no-list, markdown-style ol.no-list { padding: 0; list-style-type: none; } markdown-style ol[type="1"] { list-style-type: decimal; } markdown-style ol[type=a] { list-style-type: lower-alpha; } markdown-style ol[type=i] { list-style-type: lower-roman; } markdown-style div>ol:not([type]) { list-style-type: decimal; } markdown-style ul ul, markdown-style ul ol, markdown-style ol ol, markdown-style ol ul { margin-top: 0; margin-bottom: 0; } markdown-style li>p { margin-top: 16px; } markdown-style li+li { margin-top: .25em; } markdown-style dl { padding: 0; } markdown-style dl dt { padding: 0; margin-top: 16px; font-size: 1em; font-style: italic; font-weight: 600; } markdown-style dl dd { padding: 0 16px; margin-bottom: 16px; } markdown-style table th { font-weight: 600; } markdown-style table th, markdown-style table td { padding: 6px 13px; border: 1px solid var(--color-border-default); } markdown-style table tr { background-color: var(--color-canvas-default); border-top: 1px solid var(--color-border-muted); } markdown-style table tr:nth-child(2n) { background-color: var(--color-canvas-subtle); } markdown-style table img { background-color: transparent; vertical-align: middle; } markdown-style img[align=right] { padding-left: 20px; } markdown-style img[align=left] { padding-right: 20px; } markdown-style .emoji { max-width: none; vertical-align: text-top; background-color: transparent; } markdown-style span.frame { display: block; overflow: hidden; } markdown-style span.frame>span { display: block; float: left; width: auto; padding: 7px; margin: 13px 0 0; overflow: hidden; border: 1px solid var(--color-border-default); } markdown-style span.frame span img { display: block; float: left; } markdown-style span.frame span span { display: block; padding: 5px 0 0; clear: both; color: var(--color-fg-default); } markdown-style span.align-center { display: block; overflow: hidden; clear: both; } markdown-style span.align-center>span { display: block; margin: 13px auto 0; overflow: hidden; text-align: center; } markdown-style span.align-center span img { margin: 0 auto; text-align: center; } markdown-style span.align-right { display: block; overflow: hidden; clear: both; } markdown-style span.align-right>span { display: block; margin: 13px 0 0; overflow: hidden; text-align: right; } markdown-style span.align-right span img { margin: 0; text-align: right; } markdown-style span.float-left { display: block; float: left; margin-right: 13px; overflow: hidden; } markdown-style span.float-left span { margin: 13px 0 0; } markdown-style span.float-right { display: block; float: right; margin-left: 13px; overflow: hidden; } markdown-style span.float-right>span { display: block; margin: 13px auto 0; overflow: hidden; text-align: right; } markdown-style code, markdown-style tt { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--color-neutral-muted); border-radius: 6px; } markdown-style code br, markdown-style tt br { display: none; } markdown-style del code { text-decoration: inherit; } markdown-style pre code { font-size: 100%; } markdown-style pre>code { padding: 0; margin: 0; word-break: normal; white-space: pre; background: transparent; border: 0; } markdown-style pre { position: relative; font-size: 85%; line-height: 1.45; background-color: var(--color-canvas-subtle); border-radius: 6px; } markdown-style pre code, markdown-style pre tt { display: inline; max-width: auto; padding: 0; margin: 0; overflow: visible; line-height: inherit; word-wrap: normal; background-color: transparent; border: 0; } markdown-style pre > code { padding: 16px; overflow: auto; display: block; } markdown-style .csv-data td, markdown-style .csv-data th { padding: 5px; overflow: hidden; font-size: 12px; line-height: 1; text-align: left; white-space: nowrap; } markdown-style .csv-data .blob-num { padding: 10px 8px 9px; text-align: right; background: var(--color-canvas-default); border: 0; } markdown-style .csv-data tr { border-top: 0; } markdown-style .csv-data th { font-weight: 600; background: var(--color-canvas-subtle); border-top: 0; } markdown-style .footnotes { font-size: 12px; color: var(--color-fg-muted); border-top: 1px solid var(--color-border-default); } markdown-style .footnotes ol { padding-left: 16px; } markdown-style .footnotes li { position: relative; } markdown-style .footnotes li:target::before { position: absolute; top: -8px; right: -8px; bottom: -8px; left: -24px; pointer-events: none; content: ""; border: 2px solid var(--color-accent-emphasis); border-radius: 6px; } markdown-style .footnotes li:target { color: var(--color-fg-default); } markdown-style .footnotes .data-footnote-backref g-emoji { font-family: monospace; } markdown-style .task-list-item { list-style-type: none; } markdown-style .task-list-item label { font-weight: 400; } markdown-style .task-list-item.enabled label { cursor: pointer; } markdown-style .task-list-item+.task-list-item { margin-top: 3px; } markdown-style .task-list-item .handle { display: none; } markdown-style .task-list-item-checkbox, markdown-style input[type="checkbox"] { margin: 0 .2em .25em -1.6em; vertical-align: middle; } markdown-style .contains-task-list:dir(rtl) .task-list-item-checkbox, markdown-style .contains-task-list:dir(rtl) input[type="checkbox"] { margin: 0 -1.6em .25em .2em; } markdown-style ::-webkit-calendar-picker-indicator { filter: invert(50%); }
+</style>
+<slot></slot>
+`;
+class MarkdownStyle extends HTMLElement {
+    constructor() {
+        super();
+        this.shadow = this.attachShadow({ mode: 'open' });
+        this.shadow.appendChild(__TEMPLATE__.content.cloneNode(true));
+        const style = Array.prototype.slice
+            .call(this.shadow.children)
+            .find((item) => item.tagName === 'STYLE');
+        if (style) {
+            const id = '__MARKDOWN_STYLE__';
+            const findStyle = document.getElementById(id);
+            if (!findStyle) {
+                style.id = id;
+                document.head.append(style);
+            }
+        }
+    }
+    get theme() {
+        const value = this.getAttribute('theme');
+        return value === null ? '' : value;
+    }
+    set theme(name) {
+        this.setAttribute('theme', name);
+    }
+    connectedCallback() {
+        if (!this.theme) {
+            const { colorMode } = document.documentElement.dataset;
+            this.theme = colorMode;
+            const observer = new MutationObserver((mutationsList, observer) => {
+                this.theme = document.documentElement.dataset.colorMode;
+            });
+            observer.observe(document.documentElement, { attributes: true });
+            window.matchMedia('(prefers-color-scheme: light)').onchange = (event) => {
+                this.theme = event.matches ? 'light' : 'dark';
+            };
+            window.matchMedia('(prefers-color-scheme: dark)').onchange = (event) => {
+                this.theme = event.matches ? 'dark' : 'light';
+            };
+        }
+    }
+}
+customElements.define('markdown-style', MarkdownStyle);</script><markdown-style style="max-width: 960px; margin: 0 auto 60px auto; padding: 8px;max-width: 960px;" class="markdown-style">
+    <h1 id="protocol-documentation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#protocol-documentation"><span class="octicon octicon-link"></span></a>Protocol Documentation</h1>
+    <p><a name="top"></a></p>
+    <h2 id="table-of-contents"><a class="anchor" aria-hidden="true" tabindex="-1" href="#table-of-contents"><span class="octicon octicon-link"></span></a>Table of Contents</h2>
+    <ul>
+      <li><a href="#jonline-proto">jonline.proto</a>
+        <ul>
+          <li><a href="#jonline-Jonline">Jonline</a></li>
+        </ul>
+      </li>
+      <li><a href="#authentication-proto">authentication.proto</a>
+        <ul>
+          <li><a href="#jonline-AccessTokenRequest">AccessTokenRequest</a></li>
+          <li><a href="#jonline-AccessTokenResponse">AccessTokenResponse</a></li>
+          <li><a href="#jonline-CreateAccountRequest">CreateAccountRequest</a></li>
+          <li><a href="#jonline-ExpirableToken">ExpirableToken</a></li>
+          <li><a href="#jonline-LoginRequest">LoginRequest</a></li>
+          <li><a href="#jonline-RefreshTokenResponse">RefreshTokenResponse</a></li>
+        </ul>
+      </li>
+      <li><a href="#visibility_moderation-proto">visibility_moderation.proto</a>
+        <ul>
+          <li><a href="#jonline-Moderation">Moderation</a></li>
+          <li><a href="#jonline-Visibility">Visibility</a></li>
+        </ul>
+      </li>
+      <li><a href="#permissions-proto">permissions.proto</a>
+        <ul>
+          <li><a href="#jonline-Permission">Permission</a></li>
+        </ul>
+      </li>
+      <li><a href="#users-proto">users.proto</a>
+        <ul>
+          <li>
+            <p><a href="#jonline-Author">Author</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-ContactMethod">ContactMethod</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-Follow">Follow</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetUsersRequest">GetUsersRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetUsersResponse">GetUsersResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-Membership">Membership</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-User">User</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-UserListingType">UserListingType</a></p>
+          </li>
+        </ul>
+      </li>
+      <li><a href="#media-proto">media.proto</a>
+        <ul>
+          <li><a href="#jonline-GetMediaRequest">GetMediaRequest</a></li>
+          <li><a href="#jonline-GetMediaResponse">GetMediaResponse</a></li>
+          <li><a href="#jonline-Media">Media</a></li>
+          <li><a href="#jonline-MediaReference">MediaReference</a></li>
+        </ul>
+      </li>
+      <li><a href="#groups-proto">groups.proto</a>
+        <ul>
+          <li>
+            <p><a href="#jonline-GetGroupsRequest">GetGroupsRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetGroupsResponse">GetGroupsResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetMembersRequest">GetMembersRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetMembersResponse">GetMembersResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-Group">Group</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-Member">Member</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GroupListingType">GroupListingType</a></p>
+          </li>
+        </ul>
+      </li>
+      <li><a href="#posts-proto">posts.proto</a>
+        <ul>
+          <li>
+            <p><a href="#jonline-GetGroupPostsRequest">GetGroupPostsRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetGroupPostsResponse">GetGroupPostsResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetPostsRequest">GetPostsRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetPostsResponse">GetPostsResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GroupPost">GroupPost</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-Post">Post</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-UserPost">UserPost</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-PostContext">PostContext</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-PostListingType">PostListingType</a></p>
+          </li>
+        </ul>
+      </li>
+      <li><a href="#events-proto">events.proto</a>
+        <ul>
+          <li>
+            <p><a href="#jonline-AnonymousAttendee">AnonymousAttendee</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-Event">Event</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-EventAttendance">EventAttendance</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-EventInfo">EventInfo</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-EventInstance">EventInstance</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-EventInstanceInfo">EventInstanceInfo</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetEventsRequest">GetEventsRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetEventsResponse">GetEventsResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-TimeFilter">TimeFilter</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-AttendanceStatus">AttendanceStatus</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-EventListingType">EventListingType</a></p>
+          </li>
+        </ul>
+      </li>
+      <li><a href="#server_configuration-proto">server_configuration.proto</a>
+        <ul>
+          <li>
+            <p><a href="#jonline-ExternalCDNConfig">ExternalCDNConfig</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-FeatureSettings">FeatureSettings</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-PostSettings">PostSettings</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-ServerColors">ServerColors</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-ServerConfiguration">ServerConfiguration</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-ServerInfo">ServerInfo</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-ServerLogo">ServerLogo</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-AuthenticationFeature">AuthenticationFeature</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-PrivateUserStrategy">PrivateUserStrategy</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-WebUserInterface">WebUserInterface</a></p>
+          </li>
+        </ul>
+      </li>
+      <li><a href="#scalar-value-types">Scalar Value Types</a></li>
+    </ul>
+    <p><a name="jonline-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="jonlineproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#jonlineproto"><span class="octicon octicon-link"></span></a>jonline.proto</h2>
+    <p><a name="jonline-Jonline"></a></p>
+    <h3 id="jonline"><a class="anchor" aria-hidden="true" tabindex="-1" href="#jonline"><span class="octicon octicon-link"></span></a>Jonline</h3>
+    <p>
+      The internet-facing service implementing the Jonline protocol,
+      generally exposed on port 27707 (unless using
+      <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a>).
+      A Jonline server is generally also expected to serve up web apps on ports 80/443, where
+      select APIs are exposed with HTTP interfaces instead of gRPC.
+      (Specifically, <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a> again
+      and <a href="#jonline-Media">Media</a>.)
+    </p>
+    <h5 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h5>
+    <p>
+      Jonline uses a standard OAuth2 flow for authentication, with rotating <code>access_token</code>s
+      and <code>refresh_token</code>s.
+      Authenticated calls require an <code>access_token</code> in request metadata to be included
+      directly as the value of the <code>authorization</code> header (with no <code>Bearer </code>prefix).
+    </p>
+    <p>
+      First, use the <code>CreateAccount</code> or <code>Login</code> RPCs to fetch (and store) an initial
+      <code>refresh_token</code> and <code>access_token</code>. Clients should use the <code>access_token</code> until it expires,
+      then use the <code>refresh_token</code> to call the <code>AccessToken</code> RPC for a new one. (The <code>AccessToken</code> RPC
+      may also return a new <code>refresh_token</code>, which should replace the old one in client storage.)
+    </p>
+    <h5 id="http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs)</h5>
+    <p>
+      When negotiating the gRPC connection to a host, say, <code>jonline.io</code>, before attempting
+      to connect to <code>jonline.io</code> via gRPC on 27707, the client
+      is expected to first attempt to <code>GET jonline.io/backend_host</code> over HTTP (port 80) or HTTPS (port 443)
+      (depending upon whether the gRPC server is expected to have TLS). If the <code>backend_host</code> string resource
+      is a valid domain, say, <code>jonline.io.itsj.online</code>, the client is expected to connect
+      to <code>jonline.io.itsj.online</code> on port 27707 instead. To users, the server should still <em>generally</em> appear to
+      be <code>jonline.io</code>.
+    </p>
+    <p>
+      This negotiation enables support for external CDNs as frontends. See <a href="https://jonline.io/about">https://jonline.io/about</a> for
+      more information about external CDN setup. Developers may wish to review the <a href="https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts">React/Tamagui</a>
+      and <a href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart">Flutter</a>
+      client implementations of this negotiation.
+    </p>
+    <h4 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Method Name</th>
+          <th>Request Type</th>
+          <th>Response Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>GetServiceVersion</td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td><a href="#jonline-GetServiceVersionResponse">GetServiceVersionResponse</a></td>
+          <td>Get the version (from Cargo) of the Jonline service. <em>Publicly accessible.</em></td>
+        </tr>
+        <tr>
+          <td>GetServerConfiguration</td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td><a href="#jonline-ServerConfiguration">ServerConfiguration</a></td>
+          <td>Gets the Jonline server's configuration. <em>Publicly accessible.</em></td>
+        </tr>
+        <tr>
+          <td>CreateAccount</td>
+          <td><a href="#jonline-CreateAccountRequest">CreateAccountRequest</a></td>
+          <td><a href="#jonline-RefreshTokenResponse">RefreshTokenResponse</a></td>
+          <td>Creates a user account and provides a <code>refresh_token</code> (along with an <code>access_token</code>). <em>Publicly accessible.</em></td>
+        </tr>
+        <tr>
+          <td>Login</td>
+          <td><a href="#jonline-LoginRequest">LoginRequest</a></td>
+          <td><a href="#jonline-RefreshTokenResponse">RefreshTokenResponse</a></td>
+          <td>Logs in a user and provides a <code>refresh_token</code> (along with an <code>access_token</code>). <em>Publicly accessible.</em></td>
+        </tr>
+        <tr>
+          <td>AccessToken</td>
+          <td><a href="#jonline-AccessTokenRequest">AccessTokenRequest</a></td>
+          <td><a href="#jonline-AccessTokenResponse">AccessTokenResponse</a></td>
+          <td>Gets a new <code>access_token</code> (and possibly a new <code>refresh_token</code>, which should replace the old one in client storage), given a <code>refresh_token</code>. <em>Publicly accessible.</em></td>
+        </tr>
+        <tr>
+          <td>GetCurrentUser</td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td><a href="#jonline-User">User</a></td>
+          <td>Gets the current user. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>GetUsers</td>
+          <td><a href="#jonline-GetUsersRequest">GetUsersRequest</a></td>
+          <td><a href="#jonline-GetUsersResponse">GetUsersResponse</a></td>
+          <td>Gets Users. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Users of <code>GLOBAL_PUBLIC</code> visibility.</td>
+        </tr>
+        <tr>
+          <td>UpdateUser</td>
+          <td><a href="#jonline-User">User</a></td>
+          <td><a href="#jonline-User">User</a></td>
+          <td>Update a user by ID. <em>Authenticated.</em> Updating other users requires <code>ADMIN</code> permissions.</td>
+        </tr>
+        <tr>
+          <td>DeleteUser</td>
+          <td><a href="#jonline-User">User</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Deletes a user by ID. <em>Authenticated.</em> Deleting other users requires <code>ADMIN</code> permissions.</td>
+        </tr>
+        <tr>
+          <td>CreateFollow</td>
+          <td><a href="#jonline-Follow">Follow</a></td>
+          <td><a href="#jonline-Follow">Follow</a></td>
+          <td>Follow (or request to follow) a user. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>UpdateFollow</td>
+          <td><a href="#jonline-Follow">Follow</a></td>
+          <td><a href="#jonline-Follow">Follow</a></td>
+          <td>Used to approve follow requests. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>DeleteFollow</td>
+          <td><a href="#jonline-Follow">Follow</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Unfollow (or unrequest) a user. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>GetMedia</td>
+          <td><a href="#jonline-GetMediaRequest">GetMediaRequest</a></td>
+          <td><a href="#jonline-GetMediaResponse">GetMediaResponse</a></td>
+          <td>Gets Media (Images, Videos, etc) uploaded/owned by the current user. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>DeleteMedia</td>
+          <td><a href="#jonline-Media">Media</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Deletes a media item by ID. <em>Authenticated.</em> Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users' media requires <code>ADMIN</code> permissions.</td>
+        </tr>
+        <tr>
+          <td>GetGroups</td>
+          <td><a href="#jonline-GetGroupsRequest">GetGroupsRequest</a></td>
+          <td><a href="#jonline-GetGroupsResponse">GetGroupsResponse</a></td>
+          <td>Gets Groups. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Groups of <code>GLOBAL_PUBLIC</code> visibility.</td>
+        </tr>
+        <tr>
+          <td>CreateGroup</td>
+          <td><a href="#jonline-Group">Group</a></td>
+          <td><a href="#jonline-Group">Group</a></td>
+          <td>Creates a group with the current user as its admin. <em>Authenticated.</em> Requires the <code>CREATE_GROUPS</code> permission.</td>
+        </tr>
+        <tr>
+          <td>UpdateGroup</td>
+          <td><a href="#jonline-Group">Group</a></td>
+          <td><a href="#jonline-Group">Group</a></td>
+          <td>Update a Groups's information, default membership permissions or moderation. <em>Authenticated.</em> Requires <code>ADMIN</code> permissions within the group, or <code>ADMIN</code> permissions for the user.</td>
+        </tr>
+        <tr>
+          <td>DeleteGroup</td>
+          <td><a href="#jonline-Group">Group</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Delete a Group. <em>Authenticated.</em> Requires <code>ADMIN</code> permissions within the group, or <code>ADMIN</code> permissions for the user.</td>
+        </tr>
+        <tr>
+          <td>CreateMembership</td>
+          <td><a href="#jonline-Membership">Membership</a></td>
+          <td><a href="#jonline-Membership">Membership</a></td>
+          <td>Requests to join a group (or joins it), or sends an invite to the user. <em>Authenticated.</em> Memberships and moderations are set to their defaults.</td>
+        </tr>
+        <tr>
+          <td>UpdateMembership</td>
+          <td><a href="#jonline-Membership">Membership</a></td>
+          <td><a href="#jonline-Membership">Membership</a></td>
+          <td>Update aspects of a user's membership. <em>Authenticated.</em> Updating permissions requires <code>ADMIN</code> permissions within the group, or <code>ADMIN</code> permissions for the user. Updating moderation (approving/denying/banning) requires the same, or <code>MODERATE_USERS</code> permissions within the group.</td>
+        </tr>
+        <tr>
+          <td>DeleteMembership</td>
+          <td><a href="#jonline-Membership">Membership</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Leave a group (or cancel membership request). <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>GetMembers</td>
+          <td><a href="#jonline-GetMembersRequest">GetMembersRequest</a></td>
+          <td><a href="#jonline-GetMembersResponse">GetMembersResponse</a></td>
+          <td>Get Members (User+Membership) of a Group. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>GetPosts</td>
+          <td><a href="#jonline-GetPostsRequest">GetPostsRequest</a></td>
+          <td><a href="#jonline-GetPostsResponse">GetPostsResponse</a></td>
+          <td>Gets Posts. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Posts of <code>GLOBAL_PUBLIC</code> visibility.</td>
+        </tr>
+        <tr>
+          <td>CreatePost</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td>Creates a Post. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>UpdatePost</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td>Updates a Post. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>DeletePost</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td>(TODO) (Soft) deletes a Post. Returns the deleted version of the Post. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>CreateGroupPost</td>
+          <td><a href="#jonline-GroupPost">GroupPost</a></td>
+          <td><a href="#jonline-GroupPost">GroupPost</a></td>
+          <td>Cross-post a Post to a Group. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>UpdateGroupPost</td>
+          <td><a href="#jonline-GroupPost">GroupPost</a></td>
+          <td><a href="#jonline-GroupPost">GroupPost</a></td>
+          <td>Group Moderators: Approve/Reject a GroupPost. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>DeleteGroupPost</td>
+          <td><a href="#jonline-GroupPost">GroupPost</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Delete a GroupPost. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>GetGroupPosts</td>
+          <td><a href="#jonline-GetGroupPostsRequest">GetGroupPostsRequest</a></td>
+          <td><a href="#jonline-GetGroupPostsResponse">GetGroupPostsResponse</a></td>
+          <td>Get GroupPosts for a Post (and optional group). <em>Publicly accessible <strong>or</strong> Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>StreamReplies</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td><a href="#jonline-Post">Post</a> stream</td>
+          <td>(TODO) Reply streaming interface</td>
+        </tr>
+        <tr>
+          <td>CreateEvent</td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td>Creates an Event. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>UpdateEvent</td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td>Updates an Event. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>DeleteEvent</td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td>(TODO) (Soft) deletes a Event. Returns the deleted version of the Event. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>GetEvents</td>
+          <td><a href="#jonline-GetEventsRequest">GetEventsRequest</a></td>
+          <td><a href="#jonline-GetEventsResponse">GetEventsResponse</a></td>
+          <td>Gets Events. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Events of <code>GLOBAL_PUBLIC</code> visibility.</td>
+        </tr>
+        <tr>
+          <td>ConfigureServer</td>
+          <td><a href="#jonline-ServerConfiguration">ServerConfiguration</a></td>
+          <td><a href="#jonline-ServerConfiguration">ServerConfiguration</a></td>
+          <td>Configure the server (i.e. the response to GetServerConfiguration). <em>Authenticated.</em> Requires <code>ADMIN</code> permissions.</td>
+        </tr>
+        <tr>
+          <td>ResetData</td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. <em>Authenticated.</em> Requires <code>ADMIN</code> permissions. Note: Server Configuration is not deleted.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="authentication-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="authenticationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authenticationproto"><span class="octicon octicon-link"></span></a>authentication.proto</h2>
+    <p><a name="jonline-AccessTokenRequest"></a></p>
+    <h3 id="accesstokenrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#accesstokenrequest"><span class="octicon octicon-link"></span></a>AccessTokenRequest</h3>
+    <p>Request for a new access token using a refresh token.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>refresh_token</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>expires_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>Optional <em>requested</em> expiration time for the token. Server may ignore this.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-AccessTokenResponse"></a></p>
+    <h3 id="accesstokenresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#accesstokenresponse"><span class="octicon octicon-link"></span></a>AccessTokenResponse</h3>
+    <p>Returned when requesting access tokens.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>refresh_token</td>
+          <td><a href="#jonline-ExpirableToken">ExpirableToken</a></td>
+          <td>optional</td>
+          <td>If a refresh token is returned, it should be stored. Old refresh tokens may expire <em>before</em> their indicated expiration. See: <a href="https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation">https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation</a></td>
+        </tr>
+        <tr>
+          <td>access_token</td>
+          <td><a href="#jonline-ExpirableToken">ExpirableToken</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-CreateAccountRequest"></a></p>
+    <h3 id="createaccountrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#createaccountrequest"><span class="octicon octicon-link"></span></a>CreateAccountRequest</h3>
+    <p>Request to create a new account.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Username for the account to be created. Must not exist.</td>
+        </tr>
+        <tr>
+          <td>password</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Password for the account to be created. Must be at least 8 characters.</td>
+        </tr>
+        <tr>
+          <td>email</td>
+          <td><a href="#jonline-ContactMethod">ContactMethod</a></td>
+          <td>optional</td>
+          <td>Email to be used as a contact method.</td>
+        </tr>
+        <tr>
+          <td>phone</td>
+          <td><a href="#jonline-ContactMethod">ContactMethod</a></td>
+          <td>optional</td>
+          <td>Phone number to be used as a contact method.</td>
+        </tr>
+        <tr>
+          <td>expires_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>Request an expiration time for the Auth Token returned. By default it will not expire.</td>
+        </tr>
+        <tr>
+          <td>device_name</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-ExpirableToken"></a></p>
+    <h3 id="expirabletoken"><a class="anchor" aria-hidden="true" tabindex="-1" href="#expirabletoken"><span class="octicon octicon-link"></span></a>ExpirableToken</h3>
+    <p>Generic type for refresh and access tokens.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>token</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The secure token value.</td>
+        </tr>
+        <tr>
+          <td>expires_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>Optional expiration time for the token. If not set, the token will not expire.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-LoginRequest"></a></p>
+    <h3 id="loginrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#loginrequest"><span class="octicon octicon-link"></span></a>LoginRequest</h3>
+    <p>Request to login to an existing account.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Username for the account to be logged into. Must exist.</td>
+        </tr>
+        <tr>
+          <td>password</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Password for the account to be logged into.</td>
+        </tr>
+        <tr>
+          <td>expires_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>Request an expiration time for the Auth Token returned. By default it will not expire.</td>
+        </tr>
+        <tr>
+          <td>device_name</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>(Not yet implemented.)</td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>(TODO) If provided, username is ignored and login is initiated via user_id instead.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-RefreshTokenResponse"></a></p>
+    <h3 id="refreshtokenresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#refreshtokenresponse"><span class="octicon octicon-link"></span></a>RefreshTokenResponse</h3>
+    <p>Returned when creating an account or logging in.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>refresh_token</td>
+          <td><a href="#jonline-ExpirableToken">ExpirableToken</a></td>
+          <td></td>
+          <td>The persisted token the device should store and associate with the account. Used to request new access tokens.</td>
+        </tr>
+        <tr>
+          <td>access_token</td>
+          <td><a href="#jonline-ExpirableToken">ExpirableToken</a></td>
+          <td></td>
+          <td>An initial access token provided for convenience.</td>
+        </tr>
+        <tr>
+          <td>user</td>
+          <td><a href="#jonline-User">User</a></td>
+          <td></td>
+          <td>The user associated with the account that was created/logged into.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="visibility_moderation-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="visibility_moderationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#visibility_moderationproto"><span class="octicon octicon-link"></span></a>visibility_moderation.proto</h2>
+    <p><a name="jonline-Moderation"></a></p>
+    <h3 id="moderation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation"><span class="octicon octicon-link"></span></a>Moderation</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>MODERATION_UNKNOWN</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>UNMODERATED</td>
+          <td>1</td>
+          <td>Subject has not been moderated and is visible to all users.</td>
+        </tr>
+        <tr>
+          <td>PENDING</td>
+          <td>2</td>
+          <td>Subject is awaiting moderation and not visible to any users.</td>
+        </tr>
+        <tr>
+          <td>APPROVED</td>
+          <td>3</td>
+          <td>Subject has been approved by moderators and is visible to all users.</td>
+        </tr>
+        <tr>
+          <td>REJECTED</td>
+          <td>4</td>
+          <td>Subject has been rejected by moderators and is not visible to any users.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Visibility"></a></p>
+    <h3 id="visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#visibility"><span class="octicon octicon-link"></span></a>Visibility</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>VISIBILITY_UNKNOWN</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>PRIVATE</td>
+          <td>1</td>
+          <td>Subject is only visible to the user who owns it.</td>
+        </tr>
+        <tr>
+          <td>LIMITED</td>
+          <td>2</td>
+          <td>Subject is only visible to explictly associated Groups and Users. See: <a href="#jonline-GroupPost"><code>GroupPost</code></a> and <a href="#jonline-UserPost"><code>UserPost</code></a>.</td>
+        </tr>
+        <tr>
+          <td>SERVER_PUBLIC</td>
+          <td>3</td>
+          <td>Subject is visible to all authenticated users.</td>
+        </tr>
+        <tr>
+          <td>GLOBAL_PUBLIC</td>
+          <td>4</td>
+          <td>Subject is visible to all users on the internet.</td>
+        </tr>
+        <tr>
+          <td>DIRECT</td>
+          <td>5</td>
+          <td>[TODO] Subject is visible to explicitly-associated Users. Only applicable to Posts and Events. For Users, this is the same as LIMITED. See: <a href="#jonline-UserPost"><code>UserPost</code></a>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="permissions-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="permissionsproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#permissionsproto"><span class="octicon octicon-link"></span></a>permissions.proto</h2>
+    <p><a name="jonline-Permission"></a></p>
+    <h3 id="permission"><a class="anchor" aria-hidden="true" tabindex="-1" href="#permission"><span class="octicon octicon-link"></span></a>Permission</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PERMISSION_UNKNOWN</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>VIEW_USERS</td>
+          <td>1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>PUBLISH_USERS_LOCALLY</td>
+          <td>2</td>
+          <td>Allow the user to publish profiles with <code>SERVER_PUBLIC</code> Visbility. This generally only applies to the user's own profile, except for Admins.</td>
+        </tr>
+        <tr>
+          <td>PUBLISH_USERS_GLOBALLY</td>
+          <td>3</td>
+          <td>Allow the user to publish profiles with <code>GLOBAL_PUBLIC</code> Visbility. This generally only applies to the user's own profile, except for Admins.</td>
+        </tr>
+        <tr>
+          <td>MODERATE_USERS</td>
+          <td>4</td>
+          <td>Allow the user to grant <code>VIEW_POSTS</code>, <code>CREATE_POSTS</code>, <code>VIEW_EVENTS</code> and <code>CREATE_EVENTS</code> permissions to users.</td>
+        </tr>
+        <tr>
+          <td>FOLLOW_USERS</td>
+          <td>5</td>
+          <td>Allow the user to follow other users.</td>
+        </tr>
+        <tr>
+          <td>GRANT_BASIC_PERMISSIONS</td>
+          <td>6</td>
+          <td>Allow the user to grant Basic Permissions to other users. "Basic Permissions" are defined by your <code>ServerConfiguration</code>'s <code>basic_user_permissions</code>.</td>
+        </tr>
+        <tr>
+          <td>VIEW_GROUPS</td>
+          <td>10</td>
+          <td>Allow the user to view groups with <code>SERVER_PUBLIC</code> visibility.</td>
+        </tr>
+        <tr>
+          <td>CREATE_GROUPS</td>
+          <td>11</td>
+          <td>Allow the user to create groups.</td>
+        </tr>
+        <tr>
+          <td>PUBLISH_GROUPS_LOCALLY</td>
+          <td>12</td>
+          <td>Allow the user to give groups <code>SERVER_PUBLIC</code> visibility.</td>
+        </tr>
+        <tr>
+          <td>PUBLISH_GROUPS_GLOBALLY</td>
+          <td>13</td>
+          <td>Allow the user to give groups <code>GLOBAL_PUBLIC</code> visibility.</td>
+        </tr>
+        <tr>
+          <td>MODERATE_GROUPS</td>
+          <td>14</td>
+          <td>The Moderate Groups permission makes a user effectively an admin of <em>any</em> group.</td>
+        </tr>
+        <tr>
+          <td>JOIN_GROUPS</td>
+          <td>15</td>
+          <td>Allow the user to (potentially request to) join groups of <code>SERVER_PUBLIC</code> or higher visibility.</td>
+        </tr>
+        <tr>
+          <td>VIEW_POSTS</td>
+          <td>20</td>
+          <td>In the context of user permissions, allow the user to view posts with <code>SERVER_PUBLIC</code> or higher visibility. In the context of group permissions, allow the user to view <code>GroupPost</code>s whose <code>Post</code>s have <code>LIMITED</code> or higher visibility.</td>
+        </tr>
+        <tr>
+          <td>CREATE_POSTS</td>
+          <td>21</td>
+          <td>In the context of user permissions, allow the user to view posts with <code>SERVER_PUBLIC</code> or higher visibility. In the context of group permissions, allow the user to create <code>GroupPost</code>s whose <code>Post</code>s have <code>LIMITED</code> or higher visibility.</td>
+        </tr>
+        <tr>
+          <td>PUBLISH_POSTS_LOCALLY</td>
+          <td>22</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>PUBLISH_POSTS_GLOBALLY</td>
+          <td>23</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>MODERATE_POSTS</td>
+          <td>24</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>REPLY_TO_POSTS</td>
+          <td>25</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>VIEW_EVENTS</td>
+          <td>30</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>CREATE_EVENTS</td>
+          <td>31</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>PUBLISH_EVENTS_LOCALLY</td>
+          <td>32</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>PUBLISH_EVENTS_GLOBALLY</td>
+          <td>33</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>MODERATE_EVENTS</td>
+          <td>34</td>
+          <td>Allow the user to moderate events.</td>
+        </tr>
+        <tr>
+          <td>VIEW_MEDIA</td>
+          <td>40</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>CREATE_MEDIA</td>
+          <td>41</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>PUBLISH_MEDIA_LOCALLY</td>
+          <td>42</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>PUBLISH_MEDIA_GLOBALLY</td>
+          <td>43</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>MODERATE_MEDIA</td>
+          <td>44</td>
+          <td>Allow the user to moderate events.</td>
+        </tr>
+        <tr>
+          <td>RUN_BOTS</td>
+          <td>9999</td>
+          <td>Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots.</td>
+        </tr>
+        <tr>
+          <td>ADMIN</td>
+          <td>10000</td>
+          <td>Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any <code>User</code>, <code>Group</code>, <code>Post</code> or <code>Event</code>. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate <code>GroupPost</code>s and <code>GroupEvent</code>s.</td>
+        </tr>
+        <tr>
+          <td>VIEW_PRIVATE_CONTACT_METHODS</td>
+          <td>10001</td>
+          <td>Allow the user to view the private contact methods of other users. Kept separate from <code>ADMIN</code> to allow for more fine-grained privacy control.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="users-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="usersproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usersproto"><span class="octicon octicon-link"></span></a>users.proto</h2>
+    <p><a name="jonline-Author"></a></p>
+    <h3 id="author"><a class="anchor" aria-hidden="true" tabindex="-1" href="#author"><span class="octicon octicon-link"></span></a>Author</h3>
+    <p>
+      Post/authorship-centric version of User. UI can cross-reference user details
+      from its own cache (for things like admin/bot icons).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>avatar</td>
+          <td><a href="#jonline-MediaReference">MediaReference</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-ContactMethod"></a></p>
+    <h3 id="contactmethod"><a class="anchor" aria-hidden="true" tabindex="-1" href="#contactmethod"><span class="octicon octicon-link"></span></a>ContactMethod</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>value</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td><code>mailto:</code> or <code>tel:</code> URL.</td>
+        </tr>
+        <tr>
+          <td>visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>supported_by_server</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method.</td>
+        </tr>
+        <tr>
+          <td>verified</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Indicates the user has completed verification of the contact method. Verification requires <code>supported_by_server</code> to be <code>true</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Follow"></a></p>
+    <h3 id="follow"><a class="anchor" aria-hidden="true" tabindex="-1" href="#follow"><span class="octicon octicon-link"></span></a>Follow</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>target_user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>target_user_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetUsersRequest"></a></p>
+    <h3 id="getusersrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getusersrequest"><span class="octicon octicon-link"></span></a>GetUsersRequest</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>page</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td>optional string group_id = 3; optional string email = 2; optional string phone = 3;</td>
+        </tr>
+        <tr>
+          <td>listing_type</td>
+          <td><a href="#jonline-UserListingType">UserListingType</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetUsersResponse"></a></p>
+    <h3 id="getusersresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getusersresponse"><span class="octicon octicon-link"></span></a>GetUsersResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>users</td>
+          <td><a href="#jonline-User">User</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>has_next_page</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Membership"></a></p>
+    <h3 id="membership"><a class="anchor" aria-hidden="true" tabindex="-1" href="#membership"><span class="octicon octicon-link"></span></a>Membership</h3>
+    <p>
+      Model for a user's membership in a group. Memberships are generically
+      included as part of User models when relevant in Jonline, but UIs should use the group_id
+      to reconcile memberships with groups.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>group_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>permissions</td>
+          <td><a href="#jonline-Permission">Permission</a></td>
+          <td>repeated</td>
+          <td>Valid Membership Permissions are: * <code>VIEW_POSTS</code>, <code>CREATE_POSTS</code>, <code>MODERATE_POSTS</code> * <code>VIEW_EVENTS</code>, CREATE_EVENTS, <code>MODERATE_EVENTS</code> * <code>ADMIN</code> and <code>MODERATE_USERS</code></td>
+        </tr>
+        <tr>
+          <td>group_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Tracks whether group moderators need to approve the membership.</td>
+        </tr>
+        <tr>
+          <td>user_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Tracks whether the user needs to approve the membership.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-User"></a></p>
+    <h3 id="user"><a class="anchor" aria-hidden="true" tabindex="-1" href="#user"><span class="octicon octicon-link"></span></a>User</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>real_name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>email</td>
+          <td><a href="#jonline-ContactMethod">ContactMethod</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>phone</td>
+          <td><a href="#jonline-ContactMethod">ContactMethod</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>permissions</td>
+          <td><a href="#jonline-Permission">Permission</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>avatar</td>
+          <td><a href="#jonline-MediaReference">MediaReference</a></td>
+          <td>optional</td>
+          <td>Media ID for the user's avatar. Note that its visibility is managed by the User and thus it may not be accessible to the current user.</td>
+        </tr>
+        <tr>
+          <td>bio</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>User visibility is a bit different from Post visibility. LIMITED means the user can only be seen by users they follow (as opposed to Posts' individualized visibilities). PRIVATE visibility means no one can see the user. See server_configuration.proto for details about PRIVATE users' ability to creep.</td>
+        </tr>
+        <tr>
+          <td>moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>default_follow_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Only PENDING or UNMODERATED are valid.</td>
+        </tr>
+        <tr>
+          <td>follower_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>following_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>group_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>post_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>response_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>current_user_follow</td>
+          <td><a href="#jonline-Follow">Follow</a></td>
+          <td>optional</td>
+          <td>Presence indicates the current user is following or has a pending follow request for this user.</td>
+        </tr>
+        <tr>
+          <td>target_current_user_follow</td>
+          <td><a href="#jonline-Follow">Follow</a></td>
+          <td>optional</td>
+          <td>Presence indicates this user is following or has a pending follow request for the current user.</td>
+        </tr>
+        <tr>
+          <td>current_group_membership</td>
+          <td><a href="#jonline-Membership">Membership</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-UserListingType"></a></p>
+    <h3 id="userlistingtype"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userlistingtype"><span class="octicon octicon-link"></span></a>UserListingType</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>EVERYONE</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>FOLLOWING</td>
+          <td>1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>FRIENDS</td>
+          <td>2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>FOLLOWERS</td>
+          <td>3</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>FOLLOW_REQUESTS</td>
+          <td>4</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="media-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="mediaproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mediaproto"><span class="octicon octicon-link"></span></a>media.proto</h2>
+    <p><a name="jonline-GetMediaRequest"></a></p>
+    <h3 id="getmediarequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmediarequest"><span class="octicon octicon-link"></span></a>GetMediaRequest</h3>
+    <p>Valid GetMediaRequest formats:</p>
+    <ul>
+      <li><code>{user_id: &#x26;#34;123&#x26;#34;}</code> - Gets the media of the given user that the current user can see. IE:
+        <ul>
+          <li><em>all</em> of the current user's own media</li>
+          <li><code>GLOBAL_PUBLIC</code> media for the user if the current user is not logged in.</li>
+          <li><code>SERVER_PUBLIC</code> media for the user if the current user is logged in.</li>
+          <li><code>LIMITED</code> media for the user if the current user is following the user.</li>
+        </ul>
+      </li>
+      <li><code>{media_id: &#x26;#34;123&#x26;#34;}</code> - Gets the media with the given ID, if visible to the current user.</li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>media_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Returns the single media item with the given ID.</td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Returns all media items for the given user.</td>
+        </tr>
+        <tr>
+          <td>page</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetMediaResponse"></a></p>
+    <h3 id="getmediaresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmediaresponse"><span class="octicon octicon-link"></span></a>GetMediaResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>media</td>
+          <td><a href="#jonline-Media">Media</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>has_next_page</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Media"></a></p>
+    <h3 id="media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media"><span class="octicon octicon-link"></span></a>Media</h3>
+    <p>
+      A Jonline <code>Media</code> message represents a single media item, such as a photo or video.
+      Media data is deliberately <em>not returnable from the gRPC API</em>. Instead, the client
+      should fetch media from <code>http[s]://my.jonline.instance/media/{id}</code>.
+    </p>
+    <p>
+      Media items may be created with a HTTP POST to <code>http[s]://my.jonline.instance/media</code>
+      along with an "Authorization" header (your access token) and a "Content-Type" header.
+      On success, the endpoint will return the media ID in plaintext.
+    </p>
+    <p><code>POST /media</code> supports the following headers:</p>
+    <ul>
+      <li><code>Content-Type</code> - The MIME content type of the media item.</li>
+      <li><code>Filename</code> - An optional title for the media item.</li>
+      <li><code>Authorization</code> - Jonline Access Token for the user. Required, but may be supplied in <code>Cookies</code>.</li>
+      <li><code>Cookies</code> - Standard web cookies. The <code>jonline_access_token</code> cookie may be used for authentication.</li>
+    </ul>
+    <p><code>GET /media</code> supports the following:</p>
+    <ul>
+      <li><strong>Headers</strong>:
+        <ul>
+          <li><code>Authorization</code> - Jonline Access Token for the user. May also be supplied in <code>Cookies</code> or via query parameter.</li>
+          <li><code>Cookies</code> - Standard web cookies. The <code>jonline_access_token</code> cookie may be used for authentication.</li>
+        </ul>
+      </li>
+      <li><strong>Query Parameters</strong>:
+        <ul>
+          <li><code>authorization</code> - Jonline Access Token for the user. May also be supplied in the <code>Cookies</code> or <code>Authorization</code> headers.</li>
+        </ul>
+      </li>
+      <li>Fetching media without authentication requires that it has <code>GLOBAL_PUBLIC</code> visibility.</li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The ID of the media item.</td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The ID of the user who created the media item.</td>
+        </tr>
+        <tr>
+          <td>content_type</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The MIME content type of the media item.</td>
+        </tr>
+        <tr>
+          <td>name</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>An optional title for the media item.</td>
+        </tr>
+        <tr>
+          <td>description</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>An optional description for the media item.</td>
+        </tr>
+        <tr>
+          <td>visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>Visibility of the media item.</td>
+        </tr>
+        <tr>
+          <td>moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Moderation of the media item.</td>
+        </tr>
+        <tr>
+          <td>generated</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Indicates the media was generated by the server rather than uploaded manually by a user.</td>
+        </tr>
+        <tr>
+          <td>processed</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Media is generally stored as-is on upload. When background jobs process and compress the media, this flag is set to true.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-MediaReference"></a></p>
+    <h3 id="mediareference"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mediareference"><span class="octicon octicon-link"></span></a>MediaReference</h3>
+    <p>
+      A reference to a media item, designed to be included in other messages as a reference.
+      Contains the bare minimum data needed to fetch media via the HTTP API and render it,
+      and the media item's name (for alt text usage).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>content_type</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>name</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>generated</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="groups-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="groupsproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#groupsproto"><span class="octicon octicon-link"></span></a>groups.proto</h2>
+    <p><a name="jonline-GetGroupsRequest"></a></p>
+    <h3 id="getgroupsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgroupsrequest"><span class="octicon octicon-link"></span></a>GetGroupsRequest</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>group_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>group_name</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>group_shortname</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Group shortname search is case-insensitive.</td>
+        </tr>
+        <tr>
+          <td>listing_type</td>
+          <td><a href="#jonline-GroupListingType">GroupListingType</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>page</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetGroupsResponse"></a></p>
+    <h3 id="getgroupsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgroupsresponse"><span class="octicon octicon-link"></span></a>GetGroupsResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>groups</td>
+          <td><a href="#jonline-Group">Group</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>has_next_page</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetMembersRequest"></a></p>
+    <h3 id="getmembersrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmembersrequest"><span class="octicon octicon-link"></span></a>GetMembersRequest</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>group_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>group_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>page</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetMembersResponse"></a></p>
+    <h3 id="getmembersresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmembersresponse"><span class="octicon octicon-link"></span></a>GetMembersResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>members</td>
+          <td><a href="#jonline-Member">Member</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>has_next_page</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Group"></a></p>
+    <h3 id="group"><a class="anchor" aria-hidden="true" tabindex="-1" href="#group"><span class="octicon octicon-link"></span></a>Group</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>shortname</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>description</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>avatar</td>
+          <td><a href="#jonline-MediaReference">MediaReference</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>default_membership_permissions</td>
+          <td><a href="#jonline-Permission">Permission</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>default_membership_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.</td>
+        </tr>
+        <tr>
+          <td>default_post_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>default_event_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>LIMITED visibility groups are only visible to members. PRIVATE groups are only visibile to users with the ADMIN group permission.</td>
+        </tr>
+        <tr>
+          <td>member_count</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>post_count</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>event_count</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>current_user_membership</td>
+          <td><a href="#jonline-Membership">Membership</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Member"></a></p>
+    <h3 id="member"><a class="anchor" aria-hidden="true" tabindex="-1" href="#member"><span class="octicon octicon-link"></span></a>Member</h3>
+    <p>
+      Used by group MODERATE_USERS mods to manage group requests from the People tab.
+      See also: UserListingType.MEMBERSHIP_REQUESTS.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>user</td>
+          <td><a href="#jonline-User">User</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>membership</td>
+          <td><a href="#jonline-Membership">Membership</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GroupListingType"></a></p>
+    <h3 id="grouplistingtype"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grouplistingtype"><span class="octicon octicon-link"></span></a>GroupListingType</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ALL_GROUPS</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>MY_GROUPS</td>
+          <td>1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>REQUESTED_GROUPS</td>
+          <td>2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>INVITED_GROUPS</td>
+          <td>3</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="posts-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="postsproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postsproto"><span class="octicon octicon-link"></span></a>posts.proto</h2>
+    <p><a name="jonline-GetGroupPostsRequest"></a></p>
+    <h3 id="getgrouppostsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgrouppostsrequest"><span class="octicon octicon-link"></span></a>GetGroupPostsRequest</h3>
+    <p>Used for getting context about GroupPosts of an existing Post.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>post_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>group_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetGroupPostsResponse"></a></p>
+    <h3 id="getgrouppostsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgrouppostsresponse"><span class="octicon octicon-link"></span></a>GetGroupPostsResponse</h3>
+    <p>Used for getting context about GroupPosts of an existing Post.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>group_posts</td>
+          <td><a href="#jonline-GroupPost">GroupPost</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetPostsRequest"></a></p>
+    <h3 id="getpostsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getpostsrequest"><span class="octicon octicon-link"></span></a>GetPostsRequest</h3>
+    <p>Valid GetPostsRequest formats:</p>
+    <ul>
+      <li><code>{[listing_type: PublicPosts]}</code>
+        <ul>
+          <li>Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).</li>
+        </ul>
+      </li>
+      <li><code>{listing_type:MyGroupsPosts|FollowingPosts}</code>
+        <ul>
+          <li>Get posts from groups you're a member of or from users you're following. Authorization required.</li>
+        </ul>
+      </li>
+      <li><code>{post_id:}</code>
+        <ul>
+          <li>Get one post ,including preview data/</li>
+        </ul>
+      </li>
+      <li><code>{post_id:, reply_depth: 1}</code>
+        <ul>
+          <li>Get replies to a post - only support for replyDepth=1 is done for now though.</li>
+        </ul>
+      </li>
+      <li><code>{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}</code>
+        <ul>
+          <li>Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.</li>
+        </ul>
+      </li>
+      <li><code>{author_user_id:, group_id:}</code>
+        <ul>
+          <li>Get posts by a user for a group. (TODO)</li>
+        </ul>
+      </li>
+      <li><code>{listing_type: AuthorPosts, author_user_id:}</code>
+        <ul>
+          <li>Get posts by a user. (TODO)</li>
+        </ul>
+      </li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>post_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Returns the single post with the given ID.</td>
+        </tr>
+        <tr>
+          <td>author_user_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Limits results to replies to the given post. optional string replies_to_post_id = 2; Limits results to those by the given author user ID.</td>
+        </tr>
+        <tr>
+          <td>group_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>reply_depth</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td>optional</td>
+          <td>TODO: Implement support for this</td>
+        </tr>
+        <tr>
+          <td>listing_type</td>
+          <td><a href="#jonline-PostListingType">PostListingType</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>page</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetPostsResponse"></a></p>
+    <h3 id="getpostsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getpostsresponse"><span class="octicon octicon-link"></span></a>GetPostsResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>posts</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GroupPost"></a></p>
+    <h3 id="grouppost"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grouppost"><span class="octicon octicon-link"></span></a>GroupPost</h3>
+    <p>
+      A <code>GroupPost</code> is a cross-post of a <code>Post</code> to a <code>Group</code>. It contains
+      information about the moderation of the post in the group, as well as
+      the time it was cross-posted and the user who did the cross-posting.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>group_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>post_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>group_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Post"></a></p>
+    <h3 id="post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#post"><span class="octicon octicon-link"></span></a>Post</h3>
+    <p>
+      A <code>Post</code> is a message that can be posted to the server. Its <code>visibility</code>
+      as well as any associated <code>GroupPost</code>s and <code>UserPost</code>s determine what users
+      see it and where.
+    </p>
+    <p>
+      <code>Post</code>s are also a fundamental unit of the system. They provide a building block
+      of Visibility and Moderation management that is used throughout Posts, Replies, Events,
+      and Event Instances.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID of the post.</td>
+        </tr>
+        <tr>
+          <td>author</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td>optional</td>
+          <td>The author of the post. This is a smaller version of User.</td>
+        </tr>
+        <tr>
+          <td>reply_to_post_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>If this is a reply, this is the ID of the post it's replying to.</td>
+        </tr>
+        <tr>
+          <td>title</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The title of the post. This is invalid for replies.</td>
+        </tr>
+        <tr>
+          <td>link</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The link of the post. This is invalid for replies.</td>
+        </tr>
+        <tr>
+          <td>content</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The content of the post. This is required for replies.</td>
+        </tr>
+        <tr>
+          <td>response_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td></td>
+          <td>The number of responses (replies <em>and</em> replies to replies, etc.) to this post.</td>
+        </tr>
+        <tr>
+          <td>reply_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td></td>
+          <td>The number of <em>direct</em> replies to this post.</td>
+        </tr>
+        <tr>
+          <td>group_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td></td>
+          <td>The number of groups this post is in.</td>
+        </tr>
+        <tr>
+          <td>media</td>
+          <td><a href="#jonline-MediaReference">MediaReference</a></td>
+          <td>repeated</td>
+          <td>List of Media IDs associated with this post. Order is preserved.</td>
+        </tr>
+        <tr>
+          <td>media_generated</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Flag indicating whether Media has been generated for this Post. Currently previews are generated for any Link post.</td>
+        </tr>
+        <tr>
+          <td>embed_link</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Flag indicating</td>
+        </tr>
+        <tr>
+          <td>shareable</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Flag indicating a <code>LIMITED</code> or <code>SERVER_PUBLIC</code> post can be shared with groups and individuals, and a <code>DIRECT</code> post can be shared with individuals.</td>
+        </tr>
+        <tr>
+          <td>context</td>
+          <td><a href="#jonline-PostContext">PostContext</a></td>
+          <td></td>
+          <td>Context of the Post (<code>POST</code>, <code>REPLY</code>, <code>EVENT</code>, or <code>EVENT_INSTANCE</code>.)</td>
+        </tr>
+        <tr>
+          <td>visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>The visibility of the Post.</td>
+        </tr>
+        <tr>
+          <td>moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>The moderation of the Post.</td>
+        </tr>
+        <tr>
+          <td>current_group_post</td>
+          <td><a href="#jonline-GroupPost">GroupPost</a></td>
+          <td>optional</td>
+          <td>If the Post was retrieved from GetPosts with a group_id, the GroupPost metadata may be returned along with the Post.</td>
+        </tr>
+        <tr>
+          <td>replies</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td>repeated</td>
+          <td>Hierarchical replies to this post.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      There will never be more than <code>reply_count</code> replies. However, there may be fewer than <code>reply_count</code> replies if some replies are hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts in the frontend. |
+      | created_at | <a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a> | | |
+      | updated_at | <a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a> | optional | |
+      | published_at | <a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a> | optional | |
+      | last_activity_at | <a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a> | | |
+    </p>
+    <p><a name="jonline-UserPost"></a></p>
+    <h3 id="userpost"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userpost"><span class="octicon octicon-link"></span></a>UserPost</h3>
+    <p>A <code>UserPost</code> is a "direct share" of a <code>Post</code> to a <code>User</code>. Currently unused.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>group_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-PostContext"></a></p>
+    <h3 id="postcontext"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postcontext"><span class="octicon octicon-link"></span></a>PostContext</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>POST</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>REPLY</td>
+          <td>1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>EVENT</td>
+          <td>2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>EVENT_INSTANCE</td>
+          <td>3</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-PostListingType"></a></p>
+    <h3 id="postlistingtype"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postlistingtype"><span class="octicon octicon-link"></span></a>PostListingType</h3>
+    <p>A high-level enumeration of general ways of requesting posts.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PUBLIC_POSTS</td>
+          <td>0</td>
+          <td>Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible. Also usable for getting replies anywhere.</td>
+        </tr>
+        <tr>
+          <td>FOLLOWING_POSTS</td>
+          <td>1</td>
+          <td>Returns posts from users the user is following.</td>
+        </tr>
+        <tr>
+          <td>MY_GROUPS_POSTS</td>
+          <td>2</td>
+          <td>Returns posts from any group the user is a member of.</td>
+        </tr>
+        <tr>
+          <td>DIRECT_POSTS</td>
+          <td>3</td>
+          <td>Returns <code>DIRECT</code> posts that are directly addressed to the user.</td>
+        </tr>
+        <tr>
+          <td>POSTS_PENDING_MODERATION</td>
+          <td>4</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>GROUP_POSTS</td>
+          <td>10</td>
+          <td>group_id parameter is required for these.</td>
+        </tr>
+        <tr>
+          <td>GROUP_POSTS_PENDING_MODERATION</td>
+          <td>11</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="events-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="eventsproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsproto"><span class="octicon octicon-link"></span></a>events.proto</h2>
+    <p><a name="jonline-AnonymousAttendee"></a></p>
+    <h3 id="anonymousattendee"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anonymousattendee"><span class="octicon octicon-link"></span></a>AnonymousAttendee</h3>
+    <p>
+      The visibility on <code>AnonymousAttendee</code> <code>ContactMethod</code>s support the <code>LIMITED</code> visibility, which will
+      make them visible to the event creator.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>contact_methods</td>
+          <td><a href="#jonline-ContactMethod">ContactMethod</a></td>
+          <td>repeated</td>
+          <td>The visibility on <code>AnonymousAttendee</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-Event"></a></p>
+    <h3 id="event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event"><span class="octicon octicon-link"></span></a>Event</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>post</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>info</td>
+          <td><a href="#jonline-EventInfo">EventInfo</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>instances</td>
+          <td><a href="#jonline-EventInstance">EventInstance</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-EventAttendance"></a></p>
+    <h3 id="eventattendance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventattendance"><span class="octicon octicon-link"></span></a>EventAttendance</h3>
+    <p>Describes the attendance of a user at an <code>EventInstance</code>. Such as:</p>
+    <ul>
+      <li>A user's RSVP to an <code>EventInstance</code>.</li>
+      <li>Invitation status of a user to an <code>EventInstance</code>.</li>
+      <li><code>ContactMethod</code>-driven management for anonymous RSVPs to an <code>EventInstance</code>.</li>
+    </ul>
+    <p>
+      <code>EventAttendance.status</code> works like a state machine, but state transitions are governed only
+      by the current time and the start/end times of <code>EventInstance</code>s:
+    </p>
+    <ul>
+      <li>Before an event starts, EventAttendance essentially only describes RSVPs and invitations.</li>
+      <li>
+        After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate
+        they <code>WENT</code> or <code>DID_NOT_GO</code>. Invitations can no longer be created.
+      </li>
+      <li>During an event, invites, can be sent, RSVPs can be made, <em>and</em> users can indicate they <code>WENT</code> or <code>DID_NOT_GO</code>.</li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>event_instance_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>anonymous_attendee</td>
+          <td><a href="#jonline-AnonymousAttendee">AnonymousAttendee</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>number_of_guests</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>status</td>
+          <td><a href="#jonline-AttendanceStatus">AttendanceStatus</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>inviting_user_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>private_note</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>public_note</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-EventInfo"></a></p>
+    <h3 id="eventinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinfo"><span class="octicon octicon-link"></span></a>EventInfo</h3>
+    <p>
+      To be used for ticketing, RSVPs, etc.
+      Stored as JSON in the database.
+    </p>
+    <p><a name="jonline-EventInstance"></a></p>
+    <h3 id="eventinstance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstance"><span class="octicon octicon-link"></span></a>EventInstance</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>event_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>post</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>info</td>
+          <td><a href="#jonline-EventInstanceInfo">EventInstanceInfo</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>starts_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ends_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>location</td>
+          <td><a href="#jonline-Location">Location</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-EventInstanceInfo"></a></p>
+    <h3 id="eventinstanceinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstanceinfo"><span class="octicon octicon-link"></span></a>EventInstanceInfo</h3>
+    <p>
+      To be used for ticketing, RSVPs, etc.
+      Stored as JSON in the database.
+    </p>
+    <p><a name="jonline-GetEventsRequest"></a></p>
+    <h3 id="geteventsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsrequest"><span class="octicon octicon-link"></span></a>GetEventsRequest</h3>
+    <p>Valid GetEventsRequest formats:</p>
+    <ul>
+      <li>{[listing_type: PublicEvents]} (TODO: get ServerPublic/GlobalPublic events you can see)</li>
+      <li>{listing_type:MyGroupsEvents|FollowingEvents} (TODO: get events for groups joined or user followed; auth required)</li>
+      <li>{event_id:} (TODO: get single event including preview data)</li>
+      <li>
+        {listing_type: GroupEvents|
+        GroupEventsPendingModeration,
+        group_id:} (TODO: get events/events needing moderation for a group)
+      </li>
+      <li>{author_user_id:, group_id:} (TODO: get events by a user for a group)</li>
+      <li>{listing_type: AuthorEvents, author_user_id:} (TODO: get events by a user)</li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>event_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Returns the single event with the given ID.</td>
+        </tr>
+        <tr>
+          <td>author_user_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Limits results to replies to the given event. optional string replies_to_event_id = 2; Limits results to those by the given author user ID.</td>
+        </tr>
+        <tr>
+          <td>group_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>event_instance_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>time_filter</td>
+          <td><a href="#jonline-TimeFilter">TimeFilter</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>listing_type</td>
+          <td><a href="#jonline-EventListingType">EventListingType</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetEventsResponse"></a></p>
+    <h3 id="geteventsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsresponse"><span class="octicon octicon-link"></span></a>GetEventsResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>events</td>
+          <td><a href="#jonline-Event">Event</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-TimeFilter"></a></p>
+    <h3 id="timefilter"><a class="anchor" aria-hidden="true" tabindex="-1" href="#timefilter"><span class="octicon octicon-link"></span></a>TimeFilter</h3>
+    <p>Time filter that simply works on the starts_at and ends_at fields.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>starts_after</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ends_after</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>starts_before</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ends_before</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-AttendanceStatus"></a></p>
+    <h3 id="attendancestatus"><a class="anchor" aria-hidden="true" tabindex="-1" href="#attendancestatus"><span class="octicon octicon-link"></span></a>AttendanceStatus</h3>
+    <p>
+      EventInstance attendance statuses. State transitions may generally happen
+      in any direction, but:
+    </p>
+    <ul>
+      <li><code>REQUESTED</code> can only be selected if another user invited the user whose attendance is being described.</li>
+      <li><code>GOING</code> and <code>NOT_GOING</code> cannot be selected if the EventInstance has ended (end time is in the past).</li>
+      <li>
+        <code>WENT</code> and <code>DID_NOT_GO</code> cannot be selected if the EventInstance has not started (start time is in the future).
+        <code>INTERESTED</code> and <code>REQUESTED</code> can apply regardless of whether an event has started or ended.
+      </li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>INTERESTED</td>
+          <td>0</td>
+          <td>The user is interested in attending. This is the default status.</td>
+        </tr>
+        <tr>
+          <td>REQUESTED</td>
+          <td>1</td>
+          <td>Another user has invited the user to the event.</td>
+        </tr>
+        <tr>
+          <td>GOING</td>
+          <td>2</td>
+          <td>The user plans to go to the event.</td>
+        </tr>
+        <tr>
+          <td>NOT_GOING</td>
+          <td>3</td>
+          <td>The user does not plan to go to the event.</td>
+        </tr>
+        <tr>
+          <td>WENT</td>
+          <td>10</td>
+          <td>The user went to the event.</td>
+        </tr>
+        <tr>
+          <td>DID_NOT_GO</td>
+          <td>11</td>
+          <td>The user did not go to the event.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-EventListingType"></a></p>
+    <h3 id="eventlistingtype"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventlistingtype"><span class="octicon octicon-link"></span></a>EventListingType</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PUBLIC_EVENTS</td>
+          <td>0</td>
+          <td>Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible. Also usable for getting replies anywhere.</td>
+        </tr>
+        <tr>
+          <td>FOLLOWING_EVENTS</td>
+          <td>1</td>
+          <td>Returns events from users the user is following.</td>
+        </tr>
+        <tr>
+          <td>MY_GROUPS_EVENTS</td>
+          <td>2</td>
+          <td>Returns events from any group the user is a member of.</td>
+        </tr>
+        <tr>
+          <td>DIRECT_EVENTS</td>
+          <td>3</td>
+          <td>Returns <code>DIRECT</code> events that are directly addressed to the user.</td>
+        </tr>
+        <tr>
+          <td>EVENTS_PENDING_MODERATION</td>
+          <td>4</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>GROUP_EVENTS</td>
+          <td>10</td>
+          <td>group_id parameter is required for these.</td>
+        </tr>
+        <tr>
+          <td>GROUP_EVENTS_PENDING_MODERATION</td>
+          <td>11</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="server_configuration-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="server_configurationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#server_configurationproto"><span class="octicon octicon-link"></span></a>server_configuration.proto</h2>
+    <p><a name="jonline-ExternalCDNConfig"></a></p>
+    <h3 id="externalcdnconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#externalcdnconfig"><span class="octicon octicon-link"></span></a>ExternalCDNConfig</h3>
+    <p>
+      Useful for setting your Jonline instance up to run underneath a CDN.
+      By default, the web client uses <code>window.location.hostname</code> to determine the backend server.
+      If set, the web client will use this value instead. NOTE: Only applies to Tamagui web client for now.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>frontend_host</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The domain where the frontend is hosted. For example, jonline.io. Typically your CDN (like Cloudflare) should own the DNS for this domain.</td>
+        </tr>
+        <tr>
+          <td>backend_host</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The domain where the backend is hosted. For example, jonline.io.itsj.online. Typically your Kubernetes provider should own DNS for this domain.</td>
+        </tr>
+        <tr>
+          <td>secure_media</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>(TODO) When set, the HTTP <code>GET /media/&#x26;lt;id&#x26;gt;?&#x26;lt;authorization&#x26;gt;</code> endpoint will be disabled by default on the HTTP (non-secure) server that sends data to the CDN. Only requests from IPs in <code>media_ipv4_allowlist</code> and <code>media_ipv6_allowlist</code> will be allowed.</td>
+        </tr>
+        <tr>
+          <td>media_ipv4_allowlist</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Whitespace- and/or comma- separated list of IPv4 addresses/ranges to whom media data may be served. Only applicable if <code>secure_media</code> is <code>true</code>. For reference, Cloudflare's are at <a href="https://www.cloudflare.com/ips-v4">https://www.cloudflare.com/ips-v4</a>.</td>
+        </tr>
+        <tr>
+          <td>media_ipv6_allowlist</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Whitespace- and/or comma- separated list of IPv6 addresses/ranges to whom media data may be served. Only applicable if <code>secure_media</code> is <code>true</code>. For reference, Cloudflare's are at <a href="https://www.cloudflare.com/ips-v6">https://www.cloudflare.com/ips-v6</a>.</td>
+        </tr>
+        <tr>
+          <td>cdn_grpc</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>(TODO) When implemented, this actually changes the whole Jonline protocol (in terms of ports). When enabled, Jonline should <em>not</em> server a secure site on HTTPS, and instead serve the Tonic gRPC server there (on port 443). Jonine clients will need to be updated to always seek out a secure client on port 443 when this feature is enabled. This would let Jonline leverage Cloudflare's DDOS protection and performance on gRPC as well as HTTP. (This is a Cloudflare-specific feature requirement.)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-FeatureSettings"></a></p>
+    <h3 id="featuresettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#featuresettings"><span class="octicon octicon-link"></span></a>FeatureSettings</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>visible</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Hide the Posts or Events tab from the user with this flag.</td>
+        </tr>
+        <tr>
+          <td>default_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Only <code>UNMODERATED</code> and <code>PENDING</code> are valid. When <code>UNMODERATED</code>, user reports may transition status to <code>PENDING</code>. When <code>PENDING</code>, users' SERVER_PUBLIC or <code>GLOBAL_PUBLIC</code> posts will not be visible until a moderator approves them. <code>LIMITED</code> visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation.</td>
+        </tr>
+        <tr>
+          <td>default_visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>Only <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> are valid. <code>GLOBAL_PUBLIC</code> is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS</td>
+        </tr>
+        <tr>
+          <td>custom_title</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-PostSettings"></a></p>
+    <h3 id="postsettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postsettings"><span class="octicon octicon-link"></span></a>PostSettings</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>visible</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Hide the Posts or Events tab from the user with this flag.</td>
+        </tr>
+        <tr>
+          <td>default_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td></td>
+          <td>Only <code>UNMODERATED</code> and <code>PENDING</code> are valid. When <code>UNMODERATED</code>, user reports may transition status to <code>PENDING</code>. When <code>PENDING</code>, users' SERVER_PUBLIC or <code>GLOBAL_PUBLIC</code> posts will not be visible until a moderator approves them. <code>LIMITED</code> visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation.</td>
+        </tr>
+        <tr>
+          <td>default_visibility</td>
+          <td><a href="#jonline-Visibility">Visibility</a></td>
+          <td></td>
+          <td>Only <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> are valid. <code>GLOBAL_PUBLIC</code> is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS</td>
+        </tr>
+        <tr>
+          <td>custom_title</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>enable_replies</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Controls whether replies are shown in the UI. Note that users' ability to reply is controlled by the <code>REPLY_TO_POSTS</code> permission.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-ServerColors"></a></p>
+    <h3 id="servercolors"><a class="anchor" aria-hidden="true" tabindex="-1" href="#servercolors"><span class="octicon octicon-link"></span></a>ServerColors</h3>
+    <p>Color in ARGB hex format (i.e <code>0xAARRGGBB</code>).</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>primary</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td>optional</td>
+          <td>App Bar/primary accent color.</td>
+        </tr>
+        <tr>
+          <td>navigation</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td>optional</td>
+          <td>Nav/secondary accent color.</td>
+        </tr>
+        <tr>
+          <td>author</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td>optional</td>
+          <td>Color used on author of a post in discussion threads for it.</td>
+        </tr>
+        <tr>
+          <td>admin</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td>optional</td>
+          <td>Color used on author for admin posts.</td>
+        </tr>
+        <tr>
+          <td>moderator</td>
+          <td><a href="#uint32">uint32</a></td>
+          <td>optional</td>
+          <td>Color used on author for moderator posts.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-ServerConfiguration"></a></p>
+    <h3 id="serverconfiguration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverconfiguration"><span class="octicon octicon-link"></span></a>ServerConfiguration</h3>
+    <p>Configuration for a Jonline server instance.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>server_info</td>
+          <td><a href="#jonline-ServerInfo">ServerInfo</a></td>
+          <td>optional</td>
+          <td>The name, description, logo, color scheme, etc. of the server.</td>
+        </tr>
+        <tr>
+          <td>anonymous_user_permissions</td>
+          <td><a href="#jonline-Permission">Permission</a></td>
+          <td>repeated</td>
+          <td>Permissions for a user who isn't logged in to the server. Allows admins to disable certain features for anonymous users. Valid values are <code>VIEW_USERS</code>, <code>VIEW_GROUPS</code>, <code>VIEW_POSTS</code>, and <code>VIEW_EVENTS</code>.</td>
+        </tr>
+        <tr>
+          <td>default_user_permissions</td>
+          <td><a href="#jonline-Permission">Permission</a></td>
+          <td>repeated</td>
+          <td>Default user permissions given to a new user. Users with <code>MODERATE_USERS</code> permission can also grant/revoke these permissions for others. Valid values are <code>VIEW_USERS</code>, <code>PUBLISH_USERS_LOCALLY</code>, <code>PUBLISH_USERS_GLOBALLY</code>, <code>VIEW_GROUPS</code>, <code>CREATE_GROUPS</code>, <code>PUBLISH_GROUPS_LOCALLY</code>, <code>PUBLISH_GROUPS_GLOBALLY</code>, <code>JOIN_GROUPS</code>, <code>VIEW_POSTS</code>, <code>CREATE_POSTS</code>, <code>PUBLISH_POSTS_LOCALLY</code>, <code>PUBLISH_POSTS_GLOBALLY</code>, <code>VIEW_EVENTS</code>, <code>CREATE_EVENTS</code>, <code>PUBLISH_EVENTS_LOCALLY</code>, and <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
+        </tr>
+        <tr>
+          <td>basic_user_permissions</td>
+          <td><a href="#jonline-Permission">Permission</a></td>
+          <td>repeated</td>
+          <td>Permissions grantable by a user with the <code>GRANT_BASIC_PERMISSIONS</code> permission. Valid values are <code>VIEW_USERS</code>, <code>PUBLISH_USERS_LOCALLY</code>, <code>PUBLISH_USERS_GLOBALLY</code>, <code>VIEW_GROUPS</code>, <code>CREATE_GROUPS</code>, <code>PUBLISH_GROUPS_LOCALLY</code>, <code>PUBLISH_GROUPS_GLOBALLY</code>, <code>JOIN_GROUPS</code>, <code>VIEW_POSTS</code>, <code>CREATE_POSTS</code>, <code>PUBLISH_POSTS_LOCALLY</code>, <code>PUBLISH_POSTS_GLOBALLY</code>, <code>VIEW_EVENTS</code>, <code>CREATE_EVENTS</code>, <code>PUBLISH_EVENTS_LOCALLY</code>, and <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
+        </tr>
+        <tr>
+          <td>people_settings</td>
+          <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
+          <td></td>
+          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_USERS_GLOBALLY</code>.</td>
+        </tr>
+        <tr>
+          <td>group_settings</td>
+          <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
+          <td></td>
+          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_GROUPS_GLOBALLY</code>.</td>
+        </tr>
+        <tr>
+          <td>post_settings</td>
+          <td><a href="#jonline-PostSettings">PostSettings</a></td>
+          <td></td>
+          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_POSTS_GLOBALLY</code>.</td>
+        </tr>
+        <tr>
+          <td>event_settings</td>
+          <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
+          <td></td>
+          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
+        </tr>
+        <tr>
+          <td>media_settings</td>
+          <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
+          <td></td>
+          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
+        </tr>
+        <tr>
+          <td>external_cdn_config</td>
+          <td><a href="#jonline-ExternalCDNConfig">ExternalCDNConfig</a></td>
+          <td>optional</td>
+          <td>If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will <em>not</em> redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve up HTML/CS/JS and Media files with caching from Cloudflare's CDN.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      See ExternalCDNConfig for more details on securing this setup. |
+      | private_user_strategy | <a href="#jonline-PrivateUserStrategy">PrivateUserStrategy</a> | | Strategy when a user sets their visibility to <code>PRIVATE</code>. Defaults to <code>ACCOUNT_IS_FROZEN</code>. |
+      | authentication_features | <a href="#jonline-AuthenticationFeature">AuthenticationFeature</a> | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
+    </p>
+    <p><a name="jonline-ServerInfo"></a></p>
+    <h3 id="serverinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverinfo"><span class="octicon octicon-link"></span></a>ServerInfo</h3>
+    <p>User-facing information about the server displayed on the "about" page.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>name</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Name of the server.</td>
+        </tr>
+        <tr>
+          <td>short_name</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>description</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>privacy_policy</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>logo</td>
+          <td><a href="#jonline-ServerLogo">ServerLogo</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>web_user_interface</td>
+          <td><a href="#jonline-WebUserInterface">WebUserInterface</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>colors</td>
+          <td><a href="#jonline-ServerColors">ServerColors</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>media_policy</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-ServerLogo"></a></p>
+    <h3 id="serverlogo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverlogo"><span class="octicon octicon-link"></span></a>ServerLogo</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>squareMediaId</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>squareMediaIdDark</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>wideMediaId</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>wideMediaIdDark</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-AuthenticationFeature"></a></p>
+    <h3 id="authenticationfeature"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authenticationfeature"><span class="octicon octicon-link"></span></a>AuthenticationFeature</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AUTHENTICATION_FEATURE_UNKNOWN</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>CREATE_ACCOUNT</td>
+          <td>1</td>
+          <td>Users can sign up for an account.</td>
+        </tr>
+        <tr>
+          <td>LOGIN</td>
+          <td>2</td>
+          <td>Users can sign in with an existing account.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-PrivateUserStrategy"></a></p>
+    <h3 id="privateuserstrategy"><a class="anchor" aria-hidden="true" tabindex="-1" href="#privateuserstrategy"><span class="octicon octicon-link"></span></a>PrivateUserStrategy</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ACCOUNT_IS_FROZEN</td>
+          <td>0</td>
+          <td><code>PRIVATE</code> Users can't see other Users (only <code>PUBLIC_GLOBAL</code> Visilibity Users/Posts/Events). Other users can't see them.</td>
+        </tr>
+        <tr>
+          <td>LIMITED_CREEPINESS</td>
+          <td>1</td>
+          <td>Users can see other users they follow, but only <code>PUBLIC_GLOBAL</code> Visilibity Posts/Events. Other users can't see them.</td>
+        </tr>
+        <tr>
+          <td>LET_ME_CREEP_ON_PPL</td>
+          <td>2</td>
+          <td>Users can see other users they follow, including their <code>PUBLIC_SERVER</code> Posts/Events. Other users can't see them.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-WebUserInterface"></a></p>
+    <h3 id="webuserinterface"><a class="anchor" aria-hidden="true" tabindex="-1" href="#webuserinterface"><span class="octicon octicon-link"></span></a>WebUserInterface</h3>
+    <p>Offers a choice of web UIs. All</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FLUTTER_WEB</td>
+          <td>0</td>
+          <td>Uses Flutter Web. Loaded from /app.</td>
+        </tr>
+        <tr>
+          <td>HANDLEBARS_TEMPLATES</td>
+          <td>1</td>
+          <td>Uses Handlebars templates. Deprecated; will revert to Tamagui UI if chosen.</td>
+        </tr>
+        <tr>
+          <td>REACT_TAMAGUI</td>
+          <td>2</td>
+          <td>React UI using Tamagui (a React Native UI library).</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2 id="scalar-value-types"><a class="anchor" aria-hidden="true" tabindex="-1" href="#scalar-value-types"><span class="octicon octicon-link"></span></a>Scalar Value Types</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>.proto Type</th>
+          <th>Notes</th>
+          <th>C++</th>
+          <th>Java</th>
+          <th>Python</th>
+          <th>Go</th>
+          <th>C#</th>
+          <th>PHP</th>
+          <th>Ruby</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a name="double">double</a></td>
+          <td></td>
+          <td>double</td>
+          <td>double</td>
+          <td>float</td>
+          <td>float64</td>
+          <td>double</td>
+          <td>float</td>
+          <td>Float</td>
+        </tr>
+        <tr>
+          <td><a name="float">float</a></td>
+          <td></td>
+          <td>float</td>
+          <td>float</td>
+          <td>float</td>
+          <td>float32</td>
+          <td>float</td>
+          <td>float</td>
+          <td>Float</td>
+        </tr>
+        <tr>
+          <td><a name="int32">int32</a></td>
+          <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint32 instead.</td>
+          <td>int32</td>
+          <td>int</td>
+          <td>int</td>
+          <td>int32</td>
+          <td>int</td>
+          <td>integer</td>
+          <td>Bignum or Fixnum (as required)</td>
+        </tr>
+        <tr>
+          <td><a name="int64">int64</a></td>
+          <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint64 instead.</td>
+          <td>int64</td>
+          <td>long</td>
+          <td>int/long</td>
+          <td>int64</td>
+          <td>long</td>
+          <td>integer/string</td>
+          <td>Bignum</td>
+        </tr>
+        <tr>
+          <td><a name="uint32">uint32</a></td>
+          <td>Uses variable-length encoding.</td>
+          <td>uint32</td>
+          <td>int</td>
+          <td>int/long</td>
+          <td>uint32</td>
+          <td>uint</td>
+          <td>integer</td>
+          <td>Bignum or Fixnum (as required)</td>
+        </tr>
+        <tr>
+          <td><a name="uint64">uint64</a></td>
+          <td>Uses variable-length encoding.</td>
+          <td>uint64</td>
+          <td>long</td>
+          <td>int/long</td>
+          <td>uint64</td>
+          <td>ulong</td>
+          <td>integer/string</td>
+          <td>Bignum or Fixnum (as required)</td>
+        </tr>
+        <tr>
+          <td><a name="sint32">sint32</a></td>
+          <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int32s.</td>
+          <td>int32</td>
+          <td>int</td>
+          <td>int</td>
+          <td>int32</td>
+          <td>int</td>
+          <td>integer</td>
+          <td>Bignum or Fixnum (as required)</td>
+        </tr>
+        <tr>
+          <td><a name="sint64">sint64</a></td>
+          <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int64s.</td>
+          <td>int64</td>
+          <td>long</td>
+          <td>int/long</td>
+          <td>int64</td>
+          <td>long</td>
+          <td>integer/string</td>
+          <td>Bignum</td>
+        </tr>
+        <tr>
+          <td><a name="fixed32">fixed32</a></td>
+          <td>Always four bytes. More efficient than uint32 if values are often greater than 2^28.</td>
+          <td>uint32</td>
+          <td>int</td>
+          <td>int</td>
+          <td>uint32</td>
+          <td>uint</td>
+          <td>integer</td>
+          <td>Bignum or Fixnum (as required)</td>
+        </tr>
+        <tr>
+          <td><a name="fixed64">fixed64</a></td>
+          <td>Always eight bytes. More efficient than uint64 if values are often greater than 2^56.</td>
+          <td>uint64</td>
+          <td>long</td>
+          <td>int/long</td>
+          <td>uint64</td>
+          <td>ulong</td>
+          <td>integer/string</td>
+          <td>Bignum</td>
+        </tr>
+        <tr>
+          <td><a name="sfixed32">sfixed32</a></td>
+          <td>Always four bytes.</td>
+          <td>int32</td>
+          <td>int</td>
+          <td>int</td>
+          <td>int32</td>
+          <td>int</td>
+          <td>integer</td>
+          <td>Bignum or Fixnum (as required)</td>
+        </tr>
+        <tr>
+          <td><a name="sfixed64">sfixed64</a></td>
+          <td>Always eight bytes.</td>
+          <td>int64</td>
+          <td>long</td>
+          <td>int/long</td>
+          <td>int64</td>
+          <td>long</td>
+          <td>integer/string</td>
+          <td>Bignum</td>
+        </tr>
+        <tr>
+          <td><a name="bool">bool</a></td>
+          <td></td>
+          <td>bool</td>
+          <td>boolean</td>
+          <td>boolean</td>
+          <td>bool</td>
+          <td>bool</td>
+          <td>boolean</td>
+          <td>TrueClass/FalseClass</td>
+        </tr>
+        <tr>
+          <td><a name="string">string</a></td>
+          <td>A string must always contain UTF-8 encoded or 7-bit ASCII text.</td>
+          <td>string</td>
+          <td>String</td>
+          <td>str/unicode</td>
+          <td>string</td>
+          <td>string</td>
+          <td>string</td>
+          <td>String (UTF-8)</td>
+        </tr>
+        <tr>
+          <td><a name="bytes">bytes</a></td>
+          <td>May contain any arbitrary sequence of bytes.</td>
+          <td>string</td>
+          <td>ByteString</td>
+          <td>str</td>
+          <td>[]byte</td>
+          <td>ByteString</td>
+          <td>string</td>
+          <td>String (ASCII-8BIT)</td>
+        </tr>
+      </tbody>
+    </table>
+  <style>markdown-style pre .copied {
+  display: flex;
+  position: absolute;
+  cursor: pointer;
+  color: #a5afbb;
+  top: 6px;
+  right: 6px;
+  border-radius: 5px;
+  background: #82828226;
+  padding: 6px;
+  font-size: 12px;
+  transition: all .3s;
+}
+markdown-style pre .copied:not(.active) {
+  visibility: hidden;
+}
+markdown-style pre:hover .copied {
+  visibility: visible;
+}
+markdown-style pre:hover .copied:hover {
+  background: #4caf50;
+  color: #fff;
+}
+markdown-style pre:hover .copied:active,
+markdown-style pre .copied.active {
+  background: #2e9b33;
+  color: #fff;
+}
+markdown-style pre .copied .octicon-copy {
+  display: block;
+}
+markdown-style pre .copied .octicon-check {
+  display: none;
+}
+markdown-style pre .active .octicon-copy {
+  display: none;
+}
+markdown-style pre .active .octicon-check {
+  display: block;
+}</style><script>/*! @uiw/copy-to-clipboard v1.0.12 | MIT (c) 2021 Kenny Wang | https://github.com/uiwjs/copy-to-clipboard.git */
+!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?module.exports=t():"function"==typeof define&&define.amd?define(t):(e="undefined"!=typeof globalThis?globalThis:e||self).copyTextToClipboard=t()}(this,(function(){"use strict";return function(e,t){const o=document.createElement("textarea");o.value=e,o.setAttribute("readonly",""),o.style={position:"absolute",left:"-9999px"},document.body.appendChild(o);const n=document.getSelection().rangeCount>0&&document.getSelection().getRangeAt(0);o.select();let c=!1;try{c=!!document.execCommand("copy")}catch(e){c=!1}document.body.removeChild(o),n&&document.getSelection&&(document.getSelection().removeAllRanges(),document.getSelection().addRange(n)),t&&t(c)}}));
+
+function copied(target, str) {
+  target.classList.add('active');
+  copyTextToClipboard(target.dataset.code, function() {
+    setTimeout(() => {
+      target.classList.remove('active');
+    }, 2000);
+  });
+}</script></markdown-style></body>
+</html>

@@ -22,6 +22,7 @@
     - [Permission](#jonline-Permission)
   
 - [users.proto](#users-proto)
+    - [Author](#jonline-Author)
     - [ContactMethod](#jonline-ContactMethod)
     - [Follow](#jonline-Follow)
     - [GetUsersRequest](#jonline-GetUsersRequest)
@@ -35,6 +36,7 @@
     - [GetMediaRequest](#jonline-GetMediaRequest)
     - [GetMediaResponse](#jonline-GetMediaResponse)
     - [Media](#jonline-Media)
+    - [MediaReference](#jonline-MediaReference)
   
 - [groups.proto](#groups-proto)
     - [GetGroupsRequest](#jonline-GetGroupsRequest)
@@ -47,7 +49,6 @@
     - [GroupListingType](#jonline-GroupListingType)
   
 - [posts.proto](#posts-proto)
-    - [Author](#jonline-Author)
     - [GetGroupPostsRequest](#jonline-GetGroupPostsRequest)
     - [GetGroupPostsResponse](#jonline-GetGroupPostsResponse)
     - [GetPostsRequest](#jonline-GetPostsRequest)
@@ -175,6 +176,8 @@ client implementations of this negotiation.
 | GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
 | StreamReplies | [Post](#jonline-Post) | [Post](#jonline-Post) stream | (TODO) Reply streaming interface |
 | CreateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates an Event. *Authenticated.* |
+| UpdateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates an Event. *Authenticated.* |
+| DeleteEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* |
 | GetEvents | [GetEventsRequest](#jonline-GetEventsRequest) | [GetEventsResponse](#jonline-GetEventsResponse) | Gets Events. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility. |
 | ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. |
 | ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
@@ -415,6 +418,24 @@ Returned when creating an account or logging in.
 
 
 
+<a name="jonline-Author"></a>
+
+### Author
+Post/authorship-centric version of User. UI can cross-reference user details
+from its own cache (for things like admin/bot icons).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_id | [string](#string) |  |  |
+| username | [string](#string) | optional |  |
+| avatar | [MediaReference](#jonline-MediaReference) | optional |  |
+
+
+
+
+
+
 <a name="jonline-ContactMethod"></a>
 
 ### ContactMethod
@@ -523,7 +544,7 @@ to reconcile memberships with groups.
 | email | [ContactMethod](#jonline-ContactMethod) | optional |  |
 | phone | [ContactMethod](#jonline-ContactMethod) | optional |  |
 | permissions | [Permission](#jonline-Permission) | repeated |  |
-| avatar_media_id | [string](#string) | optional | Media ID for the user&#39;s avatar. Note that its visibility is managed by the User and thus it may not be accessible to the current user. |
+| avatar | [MediaReference](#jonline-MediaReference) | optional | Media ID for the user&#39;s avatar. Note that its visibility is managed by the User and thus it may not be accessible to the current user. |
 | bio | [string](#string) |  |  |
 | visibility | [Visibility](#jonline-Visibility) |  | User visibility is a bit different from Post visibility. LIMITED means the user can only be seen by users they follow (as opposed to Posts&#39; individualized visibilities). PRIVATE visibility means no one can see the user. See server_configuration.proto for details about PRIVATE users&#39; ability to creep. |
 | moderation | [Moderation](#jonline-Moderation) |  |  |
@@ -658,6 +679,26 @@ On success, the endpoint will return the media ID in plaintext.
 
 
 
+
+<a name="jonline-MediaReference"></a>
+
+### MediaReference
+A reference to a media item, designed to be included in other messages as a reference.
+Contains the bare minimum data needed to fetch media via the HTTP API and render it,
+and the media item&#39;s name (for alt text usage).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content_type | [string](#string) |  |  |
+| id | [string](#string) |  |  |
+| name | [string](#string) | optional |  |
+| generated | [bool](#bool) |  |  |
+
+
+
+
+
  
 
  
@@ -756,7 +797,7 @@ On success, the endpoint will return the media ID in plaintext.
 | name | [string](#string) |  |  |
 | shortname | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| avatar_media_id | [string](#string) | optional |  |
+| avatar | [MediaReference](#jonline-MediaReference) | optional |  |
 | default_membership_permissions | [Permission](#jonline-Permission) | repeated |  |
 | default_membership_moderation | [Moderation](#jonline-Moderation) |  | Valid values are PENDING (requires a moderator to let you join) and UNMODERATED. |
 | default_post_moderation | [Moderation](#jonline-Moderation) |  |  |
@@ -818,23 +859,6 @@ See also: UserListingType.MEMBERSHIP_REQUESTS.
 <p align="right"><a href="#top">Top</a></p>
 
 ## posts.proto
-
-
-
-<a name="jonline-Author"></a>
-
-### Author
-Post-centric version of User. UI can cross-reference user details
-from its own cache (for things like admin/bot icons).
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| user_id | [string](#string) |  |  |
-| username | [string](#string) | optional |  |
-
-
-
 
 
 
@@ -963,7 +987,7 @@ and Event Instances.
 | response_count | [int32](#int32) |  | The number of responses (replies *and* replies to replies, etc.) to this post. |
 | reply_count | [int32](#int32) |  | The number of *direct* replies to this post. |
 | group_count | [int32](#int32) |  | The number of groups this post is in. |
-| media | [string](#string) | repeated | List of Media IDs associated with this post. Order is preserved. |
+| media | [MediaReference](#jonline-MediaReference) | repeated | List of Media IDs associated with this post. Order is preserved. |
 | media_generated | [bool](#bool) |  | Flag indicating whether Media has been generated for this Post. Currently previews are generated for any Link post. |
 | embed_link | [bool](#bool) |  | Flag indicating |
 | shareable | [bool](#bool) |  | Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals, and a `DIRECT` post can be shared with individuals. |
@@ -1397,6 +1421,7 @@ User-facing information about the server displayed on the &#34;about&#34; page.
 | logo | [ServerLogo](#jonline-ServerLogo) | optional |  |
 | web_user_interface | [WebUserInterface](#jonline-WebUserInterface) | optional |  |
 | colors | [ServerColors](#jonline-ServerColors) | optional |  |
+| media_policy | [string](#string) | optional |  |
 
 
 
