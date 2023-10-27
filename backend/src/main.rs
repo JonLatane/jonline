@@ -25,11 +25,11 @@ extern crate lazy_static;
 extern crate awscreds;
 extern crate awsregion;
 extern crate bytes;
+extern crate ico;
 extern crate percent_encoding;
 extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
-extern crate ico;
 
 pub mod auth;
 pub mod db_connection;
@@ -97,9 +97,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let tonic_port = if cdn_grpc {
+    let tonic_port: u16 = if cdn_grpc {
         log::info!("Using CDN for gRPC communication. Server will *disable this setting* and terminate if secure gRPC is not properly configured.");
         443
+        // 27707
     } else {
         27707
     };
@@ -127,19 +128,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut rocket_handles: Vec<JoinHandle<()>> = vec![];
-    if tls_configuration_successful && !cdn_grpc {
-        rocket_handles.push(start_rocket_secure(
-            pool.clone(),
-            bucket.clone(),
-            tempdir.clone(),
-        ));
-    };
+
+    let launch_http_as_redirect =
+        !cdn_grpc && external_cdn_config.is_none() && tls_configuration_successful;
+
+    log::info!(
+        "Insecure HTTP port 80 server is in {} mode.",
+        if launch_http_as_redirect {
+            "redirect-only"
+        } else {
+            "standard files and media"
+        }
+    );
+
+    rocket_handles.push(start_rocket_secure(
+        pool.clone(),
+        bucket.clone(),
+        tempdir.clone(),
+    ));
     rocket_handles.push(start_rocket_unsecured(
         80,
         pool.clone(),
         bucket.clone(),
         tempdir.clone(),
-        tls_configuration_successful && external_cdn_config.is_none(),
+        launch_http_as_redirect,
     ));
     rocket_handles.push(start_rocket_unsecured(
         8000,

@@ -64,7 +64,7 @@ export function useEditingContext() {
 export function useEditableState<T>(uneditedValue: T, editingContext?: EditableContext): [T, T, (newValue: T) => void] {
   const { editing } = editingContext ?? useEditingContext();
   const [editedValue, setEditedValue] = useState(uneditedValue);
-  console.log('editing', editing, 'editedValue', editedValue, 'uneditedValue', uneditedValue)
+  // console.log('editing', editing, 'editedValue', editedValue, 'uneditedValue', uneditedValue)
   const value = editing ? editedValue : uneditedValue;
   return [value, editedValue, setEditedValue];
 }

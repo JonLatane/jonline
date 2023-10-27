@@ -27,10 +27,9 @@ export type GroupsSheetProps = {
   delayRenderingSheet?: boolean;
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
-  key?: string;
 }
 
-export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups, hideLeaveButtons }: GroupsSheetProps) {
+export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups, hideLeaveButtons }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroupId, setInfoGroupId] = useState<string | undefined>(undefined);
@@ -111,7 +110,6 @@ export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSel
 
     <>
       <Button
-        key={key ? `groups-sheet-button-${key}` : undefined}
         icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup && !noGroupSelectedText}
         paddingRight={selectedGroup && !hideInfoButtons ? infoPaddingRight : undefined}
         paddingLeft={selectedGroup && !hideInfoButtons ? '$2' : undefined}
@@ -129,7 +127,6 @@ export function GroupsSheet({ key, selectedGroup, groupPageForwarder, noGroupSel
       {delayRenderingSheet && !hasRenderedSheet && !open
         ? undefined
         : <Sheet
-          key={key ? `groups-sheet-${key}` : undefined}
           modal
           open={open}
           onOpenChange={setOpen}
