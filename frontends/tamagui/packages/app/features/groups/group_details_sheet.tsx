@@ -1,19 +1,21 @@
-import { Empty, GetGroupsRequest, Group, Permission, Post } from '@jonline/api';
+import { Empty, GetGroupsRequest, Group, Moderation, Permission, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Image, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text, standardAnimation, Separator, ZStack, Dialog, ListItemText, YGroup, ListItem, TextArea, Anchor, AnimatePresence } from '@jonline/ui';
-import { Boxes, Calendar, ChevronDown, Cloud, Delete, Edit, Eye, FileImage, Info, MessageSquare, Moon, Save, Search, Star, Sun, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
+import { Boxes, Calendar, ChevronDown, Cloud, Cog, Delete, Edit, Eye, FileImage, Info, MessageSquare, Moon, Save, Search, Star, Sun, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
 import { RootState, isGroupLocked, deleteGroup, updateGroup, joinLeaveGroup, selectAllGroups, serverID, loadGroupsPage, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useTypedDispatch, useTypedSelector, DeleteGroup, actionFailed } from 'app/store';
 import React, { createRef, useEffect, useState } from 'react';
-import { FlatList, GestureResponderEvent, TextInput, View } from 'react-native';
+import { FlatList, GestureResponderEvent, Settings, TextInput, View } from 'react-native';
 import { useLink } from 'solito/link';
 import { } from '../post/post_card';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import { passes, pending } from '../../utils/moderation_utils';
-import { CreateGroupSheet } from './create_group_sheet';
+import { CreateGroupSheet, groupVisibilityDescription } from './create_group_sheet';
 import { GroupButton, GroupJoinLeaveButton } from './group_buttons';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { useMediaUrl } from 'app/hooks';
 import { EditingContextProvider, SaveButtonGroup, useEditableState, useStatefulEditingContext } from '../../components/save_button_group';
 import { PayloadAction } from '@reduxjs/toolkit';
+import { VisibilityPicker } from 'app/components/visibility_picker';
+import { ToggleRow } from 'app/components/toggle_row';
 
 export type GroupDetailsSheetProps = {
   selectedGroup?: Group;
@@ -36,7 +38,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   const editingContext = useStatefulEditingContext(canEditGroup);
   const { editing, setEditing, previewingEdits, setPreviewingEdits, savingEdits, setSavingEdits, deleting, setDeleting } = editingContext;
 
-  const { navAnchorColor } = useServerTheme();
+  const { textColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
 
   // const groupsState = useTypedSelector((state: RootState) => state.groups);
   // const [loadingGroups, setLoadingGroups] = useState(false);
@@ -87,15 +89,28 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   const [name, editedName, setEditedName] = useEditableState<string>(infoRenderingGroup?.name ?? '', editingContext);
   const [description, editedDescription, setEditedDescription] = useEditableState<string>(infoRenderingGroup?.description ?? '', editingContext);
   const [avatar, editedAvatar, setEditedAvatar] = useEditableState(infoRenderingGroup?.avatar, editingContext);
-  const [visibility, editedVisibility, setEditedVisibility] = useEditableState(infoRenderingGroup?.visibility, editingContext);
+  const [visibility, editedVisibility, setEditedVisibility] = useEditableState(infoRenderingGroup?.visibility ?? Visibility.VISIBILITY_UNKNOWN, editingContext);
   const [defaultMembershipModeration, editedDefaultMembershipModeration, setEditedDefaultMembershipModeration] = useEditableState(infoRenderingGroup?.defaultMembershipModeration, editingContext);
   const [defaultPostModeration, editedDefaultPostModeration, setEditedDefaultPostModeration] = useEditableState(infoRenderingGroup?.defaultPostModeration, editingContext);
   const [defaultEventModeration, editedDefaultEventModeration, setEditedDefaultEventModeration] = useEditableState(infoRenderingGroup?.defaultEventModeration, editingContext);
 
   const [deleted, setDeleted] = useState(false);
 
-  const [showMedia, setShowMedia] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showMedia, _setShowMedia] = useState(false);
+  const [showSettings, _setShowSettings] = useState(false);
+  const disableInputs = !editing || previewingEdits || savingEdits || deleting;
+  function setShowMedia(v: boolean) {
+    _setShowMedia(v);
+    if (v && showSettings) {
+      _setShowSettings(false);
+    }
+  }
+  function setShowSettings(v: boolean) {
+    _setShowSettings(v);
+    if (v && showMedia) {
+      _setShowMedia(false);
+    }
+  }
 
   useEffect(() => {
     if (infoGroup) {
@@ -132,6 +147,15 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
       <Sheet.Frame>
         <Sheet.Handle />
         <XStack space='$4' paddingHorizontal='$3'>
+          <Button
+            disabled o={0}
+            alignSelf='center'
+            size="$3"
+            mb='$3'
+            circular
+          // icon={ChevronDown}
+          // onPress={() => setInfoOpen(false)} 
+          />
           <XStack f={1} />
           <Button
             alignSelf='center'
@@ -141,11 +165,16 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
             icon={ChevronDown}
             onPress={() => setInfoOpen(false)} />
           <XStack f={1} />
+          <Button size='$3' backgroundColor={showSettings ? navColor : undefined}
+            hoverStyle={{ backgroundColor: showSettings ? navColor : undefined }}
+            onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
+            <Cog color={showSettings ? navTextColor : textColor} />
+          </Button>
         </XStack>
 
-        <YStack space="$3" p='$4' maw={800} als='center' width='100%'>
+        <YStack space="$0" px='$4' maw={800} als='center' width='100%'>
           <XStack>
-            {editing && !previewingEdits
+            {editing && !previewingEdits && infoRenderingGroup?.id != selectedGroup?.id
               ? <Input textContentType="name" f={1}
                 my='auto'
                 mr='$2'
@@ -199,16 +228,48 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
               : undefined}
           </XStack>
 
-          <AnimatePresence>
-            <YStack mx='$3'>
-              {editing && !previewingEdits && showMedia
-                ? <SingleMediaChooser key='create-group-avatar-chooser'
-                  disabled={!showMedia}
-                  selectedMedia={avatar} setSelectedMedia={setEditedAvatar} />
-                : undefined}
-            </YStack>
-          </AnimatePresence>
+          {/* <AnimatePresence> */}
+          <YStack mx='$3'>
+            {editing && !previewingEdits && showMedia
+              ? <SingleMediaChooser key='create-group-avatar-chooser'
+                disabled={!showMedia}
+                selectedMedia={avatar} setSelectedMedia={setEditedAvatar} />
+              : undefined}
+          </YStack>
+          {/* </AnimatePresence> */}
 
+          {/* <AnimatePresence> */}
+          {showSettings
+            ? <YStack key='edit-group-settings'
+              animation='standard'
+              mb='$2'
+              // touch={showSettings}
+
+              {...standardAnimation}
+            >
+              <XStack mx='auto'>
+                <VisibilityPicker id={'visibility-picker-edit-group'}
+                  label='Group Visibility'
+                  visibility={visibility}
+                  disabled={disableInputs}
+                  onChange={setEditedVisibility}
+                  visibilityDescription={v => groupVisibilityDescription(v, server)} />
+              </XStack>
+              <ToggleRow name='Require Permission to Join'
+                value={pending(defaultMembershipModeration)}
+                setter={(v) => setEditedDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                disabled={disableInputs} />
+              <ToggleRow name='Require Permission to Post'
+                value={pending(defaultPostModeration)}
+                setter={(v) => setEditedDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                disabled={disableInputs} />
+              <ToggleRow name='Require Permission to Create Events'
+                value={pending(defaultEventModeration)}
+                setter={(v) => setEditedDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                disabled={disableInputs} />
+            </YStack>
+            : undefined}
+          {/* </AnimatePresence> */}
           <XStack>
             <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
             <XStack f={1} />
@@ -244,10 +305,10 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
               </Paragraph>
             </YStack>
           }
-          deleteInstructions={infoRenderingGroup != selectedGroup
+          deleteInstructions={infoRenderingGroup?.id != selectedGroup?.id
             ? undefined
             : <Paragraph size='$1' ml='auto' my='auto'>
-              To delete, view this group's info from the <Anchor size='$1' color={navAnchorColor} {...homeLink}>home page</Anchor>.
+              To delete or edit group name, view this group's info from the <Anchor size='$1' color={navAnchorColor} {...homeLink}>home page</Anchor>.
             </Paragraph>
           } />
       </Sheet.Frame >

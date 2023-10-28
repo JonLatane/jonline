@@ -1,4 +1,4 @@
-import { Button, Heading, Image, Input, Label, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
+import { Anchor, Button, Heading, Image, Input, Label, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, Info, LogIn, Menu, Plus, RefreshCw, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks/use_media_url';
 import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
@@ -142,45 +142,70 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const userIcon = account ? UserIcon : LogIn;
   return (
     <>
-      <Button
-      my='auto'
-        size={size}
-        icon={
-          circular ? userIcon : open ? XIcon : avatarUrl && avatarUrl != '' ? undefined : ChevronDown
-        }
-        circular={circular}
-        color={serversDiffer || browsingOnDiffers ? warningAnchorColor : undefined}
-        onPress={() => setOpen((x) => !x)}
+      {circular && avatarUrl && avatarUrl != ''
+        ? <Anchor
+          my='auto'
+          mr={-10}
+          ml='$1'
+          onPress={() => setOpen((x) => !x)}>
+          <XStack w={48} h={48}
+            ml={-5}
+            mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
+            <Image
+              pos="absolute"
+              width={48}
+              // opacity={0.25}
+              height={48}
+              borderRadius={24}
+              // mr={-5}
+              resizeMode="cover"
+              als="flex-start"
+              source={{ uri: avatarUrl, width: 48, height: 48 }}
+            // blurRadius={1.5}
+            // borderRadius={5}
+            />
+          </XStack>
+        </Anchor>
+        : <Button
+          my='auto'
+          size={size}
+          icon={
+            circular ? userIcon : open ? XIcon : avatarUrl && avatarUrl != '' ? undefined : ChevronDown
+          }
+          circular={circular}
+          color={serversDiffer || browsingOnDiffers ? warningAnchorColor : undefined}
+          onPress={() => setOpen((x) => !x)}
 
-      >
-        {circular ? undefined :
-          <>
-            {(avatarUrl && avatarUrl != '') ?
+        >
+          {circular ? undefined :
+            <>
+              {(avatarUrl && avatarUrl != '') ?
 
-              <XStack w={26} h={26}
-                ml={-5}
-                mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
-                <Image
-                  pos="absolute"
-                  width={26}
-                  // opacity={0.25}
-                  height={26}
-                  borderRadius={13}
-                  resizeMode="cover"
-                  als="flex-start"
-                  source={{ uri: avatarUrl, width: 26, height: 26 }}
-                // blurRadius={1.5}
-                // borderRadius={5}
-                />
-              </XStack>
-              : undefined}
-            <YStack>
-              {serversState.server ? <Heading transform={[{ translateY: serversState.server ? 2 : 0 }]} size='$1'>{serversState.server.host}/</Heading> : undefined}
-              {accountsState.account ? <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{accountsState.account.user.username}</Heading> : undefined}
-            </YStack>
-          </>
-        }
-      </Button>
+                <XStack w={26} h={26}
+                  ml={-5}
+                  mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
+                  <Image
+                    pos="absolute"
+                    width={26}
+                    // opacity={0.25}
+                    height={26}
+                    borderRadius={13}
+                    resizeMode="cover"
+                    als="flex-start"
+                    source={{ uri: avatarUrl, width: 26, height: 26 }}
+                  // blurRadius={1.5}
+                  // borderRadius={5}
+                  />
+                </XStack>
+                : undefined}
+              <YStack>
+                {serversState.server ? <Heading transform={[{ translateY: serversState.server ? 2 : 0 }]} size='$1'>{serversState.server.host}/</Heading> : undefined}
+                {accountsState.account ? <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{accountsState.account.user.username}</Heading> : undefined}
+              </YStack>
+            </>
+          }
+        </Button>
+      }
       <Sheet
         modal
         open={open}

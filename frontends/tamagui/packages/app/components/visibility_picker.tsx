@@ -30,77 +30,61 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
         width: 100%;
       }
     </style> */}
-    <Select native id={id ?? 'visibility-picker'} onValueChange={onValueSelected} value={visibility.toString()}>
-      <Select.Trigger w='100%' f={1} opacity={disabled ? 0.5 : 1} iconAfter={ChevronDown} {...{ disabled }}>
-        <Select.Value w='100%' placeholder="Choose Visibility" />
-      </Select.Trigger>
 
-      {/* <Adapt when="xs" platform="touch">
-      <Sheet modal dismissOnSnapToBottom>
-        <Sheet.Frame>
-          <Sheet.ScrollView>
-            <Adapt.Contents />
-          </Sheet.ScrollView>
-        </Sheet.Frame>
-        <Sheet.Overlay />
-      </Sheet>
-    </Adapt> */}
+    {disabled
+      ? <XStack mx='auto'>
 
-      <Select.Content zIndex={200000}>
-        {/* <Select.ScrollUpButton ai="center" jc="center" pos="relative" w="100%" h="$3">
-          <YStack zi={10}>
-            <ChevronUp size={20} />
-          </YStack>
-          <LinearGradient
-            start={[0, 0]}
-            end={[0, 1]}
-            fullscreen
-            colors={['$background', '$backgroundTransparent']}
-            br="$4"
-          />
-        </Select.ScrollUpButton> */}
+        <Heading size='$1' mr='$2' opacity={0.5}>Visibility:</Heading>
+        <Heading size='$2' opacity={0.5}>{visibilityName(visibility)}</Heading>
+      </XStack>
+      : <Select native id={id ?? 'visibility-picker'} onValueChange={onValueSelected}  {...{ disabled }} value={visibility.toString()}>
+        <Select.Trigger w='100%' f={1} opacity={disabled ? 0.5 : 1} iconAfter={ChevronDown} {...{ disabled }}>
+          <Select.Value w='100%' placeholder="Choose Visibility" />
+        </Select.Trigger>
 
-        <Select.Viewport minWidth={200} w='100%'
-        // animation='quick' {...standardAnimation}
-        >
-          <XStack w='100%'>
-            <Select.Group space="$0" w='100%'>
-              <Select.Label w='100%'>{label ?? 'Visibility'}</Select.Label>
-              {[Visibility.PRIVATE, Visibility.LIMITED, Visibility.SERVER_PUBLIC, Visibility.GLOBAL_PUBLIC,].map((item, i) => {
-                // const description = visibilityDescription?.(item);
-                return (
-                  <Select.Item w='100%' index={i} key={`${item}`} value={item.toString()}>
-                    <Select.ItemText w='100%'>
-                      {/* <YStack> */}
-                      {/* <Heading size='$2'> */}
-                      {visibilityName(item)}
-                      {/* </Heading> */}
-                      {/* {description ? <Paragraph size='$1'>{description}</Paragraph> : undefined} */}
-                      {/* </YStack> */}
-                    </Select.ItemText>
-                    <Select.ItemIndicator ml="auto">
-                      <Check size={16} />
-                    </Select.ItemIndicator>
-                  </Select.Item>
-                )
-              })}
-            </Select.Group>
-            <YStack
-              position="absolute"
-              right={0}
-              top={0}
-              bottom={0}
-              alignItems="center"
-              justifyContent="center"
-              width={'$4'}
-              pointerEvents="none"
-            >
-              <ChevronDown size='$2' />
-            </YStack>
-          </XStack>
-        </Select.Viewport>
 
-        {/* <Select.ScrollDownButton ai="center" jc="center" pos="relative" w="100%" h="$3">
+        <Select.Content zIndex={200000}>
+
+
+          <Select.Viewport minWidth={200} w='100%'>
+            <XStack w='100%'>
+              <Select.Group space="$0" w='100%'>
+                <Select.Label w='100%'>{label ?? 'Visibility'}</Select.Label>
+                {[Visibility.PRIVATE, Visibility.LIMITED, Visibility.SERVER_PUBLIC, Visibility.GLOBAL_PUBLIC,].map((item, i) => {
+                  // const description = visibilityDescription?.(item);
+                  return (
+                    <Select.Item w='100%' index={i} key={`${item}`} value={item.toString()}>
+                      <Select.ItemText w='100%'>
+                        {/* <YStack> */}
+                        {/* <Heading size='$2'> */}
+                        {visibilityName(item)}
+                        {/* </Heading> */}
+                        {/* {description ? <Paragraph size='$1'>{description}</Paragraph> : undefined} */}
+                        {/* </YStack> */}
+                      </Select.ItemText>
+                      <Select.ItemIndicator ml="auto">
+                        <Check size={16} />
+                      </Select.ItemIndicator>
+                    </Select.Item>
+                  )
+                })}
+              </Select.Group>
+              <YStack
+                position="absolute"
+                right={0}
+                top={0}
+                bottom={0}
+                alignItems="center"
+                justifyContent="center"
+                width={'$4'}
+                pointerEvents="none"
+              >
+                <ChevronDown size='$2' />
+              </YStack>
+            </XStack>
+          </Select.Viewport>
+
+          {/* <Select.ScrollDownButton ai="center" jc="center" pos="relative" w="100%" h="$3">
         <YStack zi={10}>
           <ChevronDown size={20} />
         </YStack>
@@ -112,8 +96,8 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
           br="$4"
         />
       </Select.ScrollDownButton> */}
-      </Select.Content>
-    </Select>
+        </Select.Content>
+      </Select>}
     {description ? <Paragraph size='$1' mx='$2' my='$1'>{description}</Paragraph> : undefined}
   </YStack>;
   // return <Select onValueChange={v => onChange(Visibility[v])} value={visibility.toString()}>

@@ -299,6 +299,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                             <VisibilityPicker id={'visibility-picker-create-group'}
                               label='Group Visibility'
                               visibility={visibility}
+                              disabled={disableInputs}
                               onChange={setVisibility}
                               visibilityDescription={v => groupVisibilityDescription(v, server)} />
                           </XStack>

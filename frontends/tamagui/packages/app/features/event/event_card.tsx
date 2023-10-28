@@ -282,7 +282,7 @@ export const EventCard: React.FC<Props> = ({
   // sortedFilteredInstances
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const postLinkView = postLink
-    ? <Anchor textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
+    ? <Anchor key='post-link' textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
       <XStack>
         <YStack my='auto' mr='$1'>
           <Link size='$1' color={navColor} />
@@ -293,19 +293,21 @@ export const EventCard: React.FC<Props> = ({
       </XStack>
     </Anchor>
     : undefined;
-  const headerLinksView = <YStack>
+  const headerLinksView = <YStack key='header-links-view'>
     {isPreview
-      ? <Anchor textDecorationLine='none' {...detailsLink}>
-        <YStack>
+      ? <YStack>
+        <Anchor textDecorationLine='none' {...detailsLink}>
           <XStack>
             <YStack f={1}>
               <Heading size="$7" marginRight='auto'>{title}</Heading>
             </YStack>
           </XStack>
-          {postLinkView}
+        </Anchor>
+        {postLinkView}
+        <Anchor textDecorationLine='none' {...detailsLink}>
           {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight /> : undefined}
-        </YStack>
-      </Anchor>
+        </Anchor>
+      </YStack>
       : <YStack>
         <XStack>
           <YStack f={1}>
@@ -320,7 +322,7 @@ export const EventCard: React.FC<Props> = ({
             : undefined}
       </YStack>}
   </YStack>;
-  const headerLinksEdit = <YStack space='$2'>
+  const headerLinksEdit = <YStack space='$2' key='header-links-edit'>
     <Input textContentType="name" placeholder={`Event Title (required)`}
       disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
       autoCapitalize='words'
@@ -331,66 +333,20 @@ export const EventCard: React.FC<Props> = ({
 
   const headerLinks = editing && !previewingEdits ? headerLinksEdit : headerLinksView;
 
-  const headerLinksOld = (post.link?.length ?? 0) > 0
-    ? <>
-      <YStack>
-        <Anchor textDecorationLine='none' {...(editing ? {} : postLink)}>
-          <XStack>
-            <YStack f={1}>
-              {editing && !previewingEdits
-                ?
-                <Input textContentType="name" placeholder={`Event Title (required)`}
-                  disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
-                  autoCapitalize='words'
-                  value={editedTitle}
-                  onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
-                : <Heading size="$7" color={navColor} marginRight='auto'>{title}</Heading>}
-            </YStack>
-          </XStack>
-        </Anchor>
-        {editing
-          ? undefined
-          : isPreview
-            ? <Anchor textDecorationLine='none' {...detailsLink}>
-              {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight={editing} /> : undefined}
-            </Anchor>
-            : primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight={editing} /> : undefined}
-      </YStack>
-    </>
-    : isPreview
-      ? <Anchor textDecorationLine='none' {...detailsLink}>
-        <YStack>
-          <XStack>
-            <YStack f={1}>
-              <Heading size="$7" marginRight='auto'>{title}</Heading>
-            </YStack>
-          </XStack>
-          {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} /> : undefined}
-        </YStack>
-      </Anchor>
-      : <YStack>
-        <XStack>
-          <YStack f={1}>
-            <Heading size="$7" marginRight='auto'>{title}</Heading>
-          </YStack>
-        </XStack>
-        {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} /> : undefined}
-      </YStack>;
-
   const contentView = editing || (post.content && post.content) != ''
     ? isPreview
-      ? <Anchor textDecorationLine='none' {...detailsLink}>
+      ? <Anchor key='content-link' textDecorationLine='none' {...detailsLink}>
         <TamaguiMarkdown text={post.content} disableLinks={isPreview} />
       </Anchor>
       : editing && !previewingEdits
-        ? <TextArea f={1} pt='$2' value={content}
+        ? <TextArea key='content-editor' f={1} pt='$2' value={content}
           disabled={savingEdits} opacity={savingEdits || content == '' ? 0.5 : 1}
           h={(editedContent?.length ?? 0) > 300 ? Math.max(120, window.height - 100) : undefined}
 
           onChangeText={t => setEditedContent(t)}
           placeholder={`Text content (optional). Markdown is supported.`} />
         : content && content != ''
-          ? <TamaguiMarkdown text={content} disableLinks={isPreview} />
+          ? <TamaguiMarkdown key='content' text={content} disableLinks={isPreview} />
           : undefined
     : undefined;
 
@@ -414,6 +370,7 @@ export const EventCard: React.FC<Props> = ({
     <>
       <YStack w='100%' key={`event-card-${event.id}-${primaryInstance?.id}-${isPreview ? '-preview' : ''}`}>
         <Card theme="dark" elevate size="$4" bordered
+          key='event-card'
           margin='$0'
           marginBottom='$3'
           marginTop='$3'
@@ -428,8 +385,8 @@ export const EventCard: React.FC<Props> = ({
               <YStack>
                 {headerLinks}
                 {!isPreview && (instances.length > 1 || editing)
-                  ? <XStack w='100%' mt='$2' ml='$4' space>
-                    <YStack my='auto' space="$3">
+                  ? <XStack key='instances' w='100%' mt='$2' ml='$4' space>
+                    <YStack key='instances-buttons' my='auto' space="$3">
                       {hasPastInstances
                         ? <Theme inverse={showPastInstances}>
                           <Button mr={-7} size='$3' circular={(displayedInstances?.length ?? 0) > 0} icon={History}
@@ -442,7 +399,7 @@ export const EventCard: React.FC<Props> = ({
                         ? <Button my='auto' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
                         : undefined}
                     </YStack>
-                    <ScrollView f={1} horizontal pb='$3'>
+                    <ScrollView key='instance-scroller' f={1} horizontal pb='$3'>
                       <XStack mt='$1'>
                         {/* {displayedInstances?.length == 0 && hasPastInstances
                         ? <Heading size="$1" mt='$2' color={primaryColor} mr='$2'>⬅️ Press "show past instances" to show past instances.</Heading>
@@ -629,10 +586,11 @@ export const EventCard: React.FC<Props> = ({
             : undefined}
           <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} >
             {deleted
-              ? <Paragraph size='$1'>This event has been deleted.</Paragraph>
-              : <YStack zi={1000} width='100%' {...footerProps}>
+              ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
+              : <YStack key='footer-base' zi={1000} width='100%' {...footerProps}>
                 {editing && !previewingEdits
                   ? <PostMediaManager
+                  key='media-edit'
                     link={post.link}
                     media={editedMedia}
                     setMedia={setEditedMedia}
@@ -641,6 +599,7 @@ export const EventCard: React.FC<Props> = ({
                     disableInputs={savingEdits}
                   />
                   : <PostMediaRenderer
+                  key='media-view'
                     horizontalPreview={horizontal && isPreview}
                     {...{
                       post: {
@@ -663,7 +622,7 @@ export const EventCard: React.FC<Props> = ({
                       </XStack>
                     </ScrollView>
                   </XStack> : undefined} */}
-                <YStack maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
+                <YStack key='content' maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
                   {/* {singleMediaPreview
                     // (!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) 
                     ? <Image
@@ -677,25 +636,25 @@ export const EventCard: React.FC<Props> = ({
                     /> : undefined} */}
                   {contentView}
                 </YStack>
-                <XStack space='$2' flexWrap="wrap">
+                <XStack space='$2' flexWrap="wrap" key='save-buttons'>
                   {showEdit
                     ? editing
                       ? <>
-                        <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
+                        <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
                           disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                           Save
                         </Button>
-                        <Button my='auto' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
+                        <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
                           disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                           Cancel
                         </Button>
-                        <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
+                        <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
                           disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                           {previewingEdits ? 'Edit' : 'Preview'}
                         </Button>
                       </>
                       : <>
-                        <Button my='auto' size='$2' icon={Edit}
+                        <Button my='auto' key='edit-button' size='$2' icon={Edit}
                           onPress={() => {
                             setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
                               setEditingInstance(selectedInstance)
@@ -705,7 +664,7 @@ export const EventCard: React.FC<Props> = ({
                           Edit
                         </Button>
 
-                        <Dialog>
+                        <Dialog key='delete-button'>
                           <Dialog.Trigger asChild>
                             <Button my='auto' size='$2' icon={Delete} transparent
                               disabled={deleting} o={deleting ? 0.5 : 1}>
@@ -765,7 +724,7 @@ export const EventCard: React.FC<Props> = ({
                     : undefined}
 
                   {editing && !previewingEdits
-                    ? <XStack mt='$2' ml='$2'>
+                    ? <XStack key='visibility-edit' mt='$2' ml='$2'>
                       <VisibilityPicker
                         id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
                         label='Post Visibility'
@@ -774,7 +733,7 @@ export const EventCard: React.FC<Props> = ({
                         visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')} />
                     </XStack>
                     : visibility != Visibility.GLOBAL_PUBLIC && !horizontal
-                      ? <Paragraph size='$1' my='auto' ml='$2'>
+                      ? <Paragraph key='visibility-info' size='$1' my='auto' ml='$2'>
                         {postVisibilityDescription(visibility, groupContext, server, 'Event')}
                       </Paragraph>
                       : undefined}
@@ -783,8 +742,8 @@ export const EventCard: React.FC<Props> = ({
                       createViewHref={createGroupEventViewHref} />
                   </XStack>
                 </XStack>
-                <XStack {...detailsProps}>
-                  <AuthorInfo {...{ post, detailsMargins, isVisible }} />
+                <XStack {...detailsProps} key='details'>
+                  <AuthorInfo key='author-details' {...{ post, detailsMargins, isVisible }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$3'>
                       <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
