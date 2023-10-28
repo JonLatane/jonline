@@ -388,12 +388,15 @@ export const EventCard: React.FC<Props> = ({
                   ? <XStack key='instances' w='100%' mt='$2' ml='$4' space>
                     <YStack key='instances-buttons' my='auto' space="$3">
                       {hasPastInstances
-                        ? <Theme inverse={showPastInstances}>
-                          <Button mr={-7} size='$3' circular={(displayedInstances?.length ?? 0) > 0} icon={History}
+                        ? 
+                        // <Theme inverse={showPastInstances}>
+                          <Button mr={-7} size='$3' 
+                          color={showPastInstances ? navAnchorColor : undefined}
+                          circular={(displayedInstances?.length ?? 0) > 0} icon={History}
                             onPress={() => setShowPastInstances(!showPastInstances)} >
                             {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
                           </Button>
-                        </Theme>
+                        // </Theme>
                         : undefined}
                       {editing
                         ? <Button my='auto' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
