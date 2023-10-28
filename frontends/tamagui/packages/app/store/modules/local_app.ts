@@ -27,7 +27,7 @@ const initialState: LocalAppConfiguration = {
   darkModeAuto: true,
   darkMode: false,
   allowServerSelection: Platform.OS != 'web',
-  separateAccountsByServer: false,
+  separateAccountsByServer: true,
   showBetaNavigation: false,
   discussionChatUI: true,
   autoRefreshDiscussions: true,

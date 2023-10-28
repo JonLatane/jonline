@@ -1,4 +1,4 @@
-import { RootState, loadMedia, selectMediaById, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { JonlineServer, RootState, loadMedia, selectMediaById, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useState, useEffect } from 'react';
 
 import { Media, MediaReference } from "@jonline/api";
@@ -10,10 +10,13 @@ import { MediaRef } from "./media_chooser";
 interface Props {
   media: MediaRef;
   failQuietly?: boolean;
+  server?: JonlineServer;
+  forceImage?: boolean;
 }
 
-export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly = false }) => {
-  const { server, navAnchorColor } = useServerTheme();
+export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly = false, server: selectedServer, forceImage }) => {
+  const { server: primaryServer, navAnchorColor } = useServerTheme();
+  const server = selectedServer ?? primaryServer;
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   if (!server) return <></>;
@@ -28,8 +31,12 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly
   }, [reduxMedia]);
   const media = reduxMedia ?? sourceMedia;
 
-  const mediaUrl = useMediaUrl(media.id);
-  const [type, subType] = media.contentType.split('/');
+  const mediaUrl = useMediaUrl(media.id, { server });
+  console.log(`mediaUrl for ${server.host} is ${mediaUrl}`)
+  let [type, subType] = media.contentType.split('/');
+  if (forceImage) {
+    type = 'image';
+  }
 
   switch (type) {
     case 'image':

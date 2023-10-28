@@ -13,6 +13,7 @@ import { GroupContextProvider } from "../groups/group_context";
 import { MediaRenderer } from "../media/media_renderer";
 import { useEffect, useState } from "react";
 import { serverID } from '../../store';
+import { ServerNameAndLogo } from "./server_name_and_logo";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -87,7 +88,9 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const recentGroupIds = useTypedSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
-  const inlineFeatureNavigation = useInlineFeatureNavigation();
+    const inlineFeatureNavigation = useInlineFeatureNavigation();
+    const scrollGroupsSheet = !inlineFeatureNavigation
+     || !mediaQuery.gtXs;
 
   useEffect(() => {
     if (selectedGroup && server && recentGroupIds[0] != selectedGroup.id) {
@@ -122,51 +125,16 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   {...homeProps}
                 >
                   {renderButtonChildren
-                    ? shrinkHomeButton
-                      ? useSquareLogo
-                        ? <XStack h='100%' scale={1.1}
-                          transform={[
-                            { translateY: 1.5 },
-                            { translateX: isSafari() ? 8.0 : 2.0 }]
-                          } >
-                          <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
-                        </XStack>
-                        : <XStack h={'100%'} maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                          <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
-                          {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
-                        </XStack>
-                      : <XStack h={'100%'} space='$5' maw={maxWidth - (serverNameEmoji ? 50 : 0)}>
-                        {useWideLogo
-                          ? <XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
-                            <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} failQuietly />
-                          </XStack>
-                          : <>
-                            {useSquareLogo
-                              ? <XStack w='$3' h='$3' ml='$2' mr='$1' my='auto'>
-                                <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} failQuietly />
-                              </XStack>
-                              : serverNameEmoji && serverNameEmoji != ''
-                                ? <Heading my='auto' ml='$2' mr='$2' whiteSpace="nowrap">{serverNameEmoji}</Heading>
-                                : undefined}
-                            <YStack f={1} my='auto' mr='$2'>
-                              {largeServername
-                                ? <Heading my='auto' whiteSpace="nowrap">{serverNameBeforeEmoji}</Heading>
-                                : <Paragraph size='$1' fontWeight='bold' lineHeight={12} >{serverNameBeforeEmoji}{useSquareLogo && serverNameEmoji && serverNameEmoji != '' ? ` ${serverNameEmoji}` : undefined}</Paragraph>}
-                              {serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername)
-                                ? <Paragraph size='$1' lineHeight={12}>{serverNameAfterEmoji}</Paragraph>
-                                : undefined}
-                            </YStack>
-                          </>}
-                      </XStack>
+                    ? <ServerNameAndLogo shrink={shrinkHomeButton} server={primaryServer} />
                     : undefined}
                 </Button>
-                {inlineFeatureNavigation
+                {!scrollGroupsSheet
                   ? <XStack space='$2' ml='$1' my='auto'>
                     <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
                   </XStack>
                   : undefined}
                 <ScrollView horizontal>
-                  {inlineFeatureNavigation
+                  {!scrollGroupsSheet
                     ? <>
                       <XStack w={2} />
                     </>
@@ -200,16 +168,4 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
       })}
     </GroupContextProvider>
   </Theme>;
-}
-function hexToRgb(hex) {
-  var c;
-  if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
-    c = hex.substring(1).split('');
-    if (c.length == 3) {
-      c = [c[0], c[0], c[1], c[1], c[2], c[2]];
-    }
-    c = '0x' + c.join('');
-    return [(c >> 16) & 255, (c >> 8) & 255, c & 255];
-  }
-  throw new Error('Bad Hex');
 }

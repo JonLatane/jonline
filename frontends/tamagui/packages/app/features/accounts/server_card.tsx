@@ -3,6 +3,7 @@ import { Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useTypedDispatch, useTypedSelector, accountId } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
+import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
 
 interface Props {
   server: JonlineServer;
@@ -49,8 +50,12 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
         <Card.Header>
           <XStack>
             <YStack f={1}>
-              <Heading marginRight='auto' whiteSpace="nowrap" opacity={server.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>{server.serverConfiguration?.serverInfo?.name || 'Unnamed'}</Heading>
-              <Heading size="$5" marginRight='auto'>{server.host}</Heading>
+              {/* <Heading marginRight='auto' whiteSpace="nowrap" width='100%' overflow="hidden" textOverflow="ellipsis"
+              opacity={server.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>{server.serverConfiguration?.serverInfo?.name || 'Unnamed'}</Heading> */}
+              <XStack h={48}>
+                <ServerNameAndLogo server={server} />
+              </XStack>
+              <Heading size="$1" marginRight='auto'>{server.host}</Heading>
             </YStack>
             {isPreview ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined}
           </XStack>

@@ -46,15 +46,17 @@ pub fn update_group(
         Some(id) => get_media_reference(id.to_db_id_or_err("avatar")?, conn).ok(),
         None => None,
     };
+
     group.name = request.name;
     group.description = request.description;
     group.avatar_media_id = avatar.map(|m| m.id);
-    // group.avatar_media_id = request.avatar_media_id.map(|id| id.to_db_id().unwrap());
+
     group.visibility = request.visibility.to_string_visibility();
     group.default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();
     group.default_membership_moderation =
         request.default_membership_moderation.to_string_moderation();
+
     group.updated_at = SystemTime::now().into();
 
     match diesel::update(groups::table)
