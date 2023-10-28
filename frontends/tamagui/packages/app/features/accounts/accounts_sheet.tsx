@@ -12,6 +12,7 @@ import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
 import ServerCard from './server_card';
+import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -320,39 +321,48 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   </Button>
                   : undefined}
               </XStack>
-              {onlyShowServer && serversDiffer ? undefined : <YStack space="$2">
-                <XStack>
+              {onlyShowServer && serversDiffer
+                ? undefined
+                : <YStack space="$2" mb='$1'>
+                  {/* <XStack> */}
 
-                  <XStack f={1} />
+                  {/* <XStack f={1} /> */}
 
                   {!browsingServers ?
-                    <XStack animation="quick" mt={app.allowServerSelection ? '$3' : undefined} {...reverseStandardAnimation}>
+                    <XStack mx='auto' animation="quick" mt={app.allowServerSelection ? '$3' : undefined} {...reverseStandardAnimation}>
                       {/* {currentServerInfoLink && !onlyShowServer
                         ? <Button size='$3' mr='$2' disabled icon={<Info />} circular opacity={0} />
                         : undefined} */}
                       <YStack
                         w='100%'
-                        maw={mediaQuery.gtXs ? 350 : 250}
+                        // maw={mediaQuery.gtXs ? 350 : 250}
+                        pl='$1'
+                        pr='$10'
                         f={1}>
-                        <Heading
+                        {/* <XStack h={48}> */}
+                        <ServerNameAndLogo enlargeSmallText />
+                        {/* </XStack> */}
+                        {/* <Heading
                           // whiteSpace="nowrap" 
                           w='100%'
                           // maw={200}
                           // overflow='hidden'
                           ta='center'
-                          als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading>
-                        <Heading size='$3' als='center' textAlign='center' marginTop='$2'>
-                          {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
-                        </Heading>
+                          als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading> */}
                       </YStack>
                       {currentServerInfoLink && !onlyShowServer
                         ? <Button size='$3' my='auto' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
                         : undefined}
                     </XStack>
                     : undefined}
-                  <XStack f={1} />
-                </XStack>
-              </YStack>}
+                  {/* <XStack f={1} /> */}
+                  {/* </XStack> */}
+                </YStack>}
+              {!browsingServers
+                ? <Heading size='$3' als='center' textAlign='center' mt='$1'>
+                  {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
+                </Heading>
+                : undefined}
               {serversDiffer
                 ? <>
                   <Heading color={warningAnchorColor} whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>{primaryServer?.serverConfiguration?.serverInfo?.name}</Heading>
@@ -370,14 +380,14 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   Browsing via {browsingOn}
                 </Heading>
                 </>
-                : browsingServers && Platform.OS == 'web'
-                  ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
+                // : browsingServers && Platform.OS == 'web'
+                //   ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
                   : undefined}
 
               {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
 
               {browsingServers
-                ? <XStack animation="quick" mb='$2' {...standardAnimation}>
+                ? <XStack animation="quick" mt='$2' mb='$2' {...standardAnimation}>
                   <>
                     <ScrollView horizontal>
                       <XStack space='$3'>

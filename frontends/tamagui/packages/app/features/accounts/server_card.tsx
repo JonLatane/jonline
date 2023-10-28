@@ -52,9 +52,9 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
             <YStack f={1}>
               {/* <Heading marginRight='auto' whiteSpace="nowrap" width='100%' overflow="hidden" textOverflow="ellipsis"
               opacity={server.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>{server.serverConfiguration?.serverInfo?.name || 'Unnamed'}</Heading> */}
-              <XStack h={48}>
+              {/* <XStack h={48}> */}
                 <ServerNameAndLogo server={server} />
-              </XStack>
+              {/* </XStack> */}
               <Heading size="$1" marginRight='auto'>{server.host}</Heading>
             </YStack>
             {isPreview ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined}
