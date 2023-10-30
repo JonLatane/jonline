@@ -11,9 +11,8 @@
     "vercel:install": "yarn set version 3.5 && yarn install",
     "web": "yarn build && cd apps/next && TAMAGUI_TARGET=web yarn next",
     "web:extract": "DISABLE_EXTRACTION=false yarn workspace next-app dev",
-    "web:prod": "yarn workspace next-app build",
+    "web:prod:build": "yarn workspace next-app build",
     "web:prod:serve": "yarn workspace next-app serve",
-    "web:prod:export": "yarn workspace next-app build",
     "fix": "manypkg fix",
     "postinstall": "yarn check-deps && yarn build",
     "build": "yarn workspaces foreach --exclude next-app run build",
@@ -28,7 +27,7 @@
     "react-dom": "^18.2.0",
     "react-refresh": "^0.14.0",
     "react-native-svg": "13.4.0",
-    "react-native-web": "^0.18.12"
+    "react-native-web": "~0.19.6"
   },
   "dependencies": {
     "@babel/runtime": "^7.18.9",

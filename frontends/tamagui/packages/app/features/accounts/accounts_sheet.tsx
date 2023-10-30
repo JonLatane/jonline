@@ -17,6 +17,9 @@ import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 export type AccountsSheetProps = {
   size?: SizeTokens;
   circular?: boolean;
+  // Indicate to the AccountsSheet that we're
+  // viewing server configuration for a server,
+  // and should only show accounts for that server.
   onlyShowServer?: JonlineServer;
 }
 
@@ -63,6 +66,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const primaryServer = onlyShowServer || serversState.server;
   const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverID(a.server) == serverID(primaryServer!)) : [];
   const accountsElsewhere = accounts.filter(a => !accountsOnPrimaryServer.includes(a));
+  const displayedAccounts = onlyShowServer ? accountsOnPrimaryServer : accounts;
+
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
@@ -321,6 +326,19 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   </Button>
                   : undefined}
               </XStack>
+
+              {serversDiffer
+                ? <>
+                  <Heading color={warningAnchorColor} whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>{primaryServer?.serverConfiguration?.serverInfo?.name}</Heading>
+                  <Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
+                    Viewing server configuration for {onlyShowServer.host}
+                  </Heading>
+                </>
+                : onlyShowServer
+                  ? <Heading size='$3' marginTop='$2' color={warningAnchorColor} textAlign='center'>
+                    Viewing server configuration
+                  </Heading>
+                  : undefined}
               {onlyShowServer && serversDiffer
                 ? undefined
                 : <YStack space="$2" mb='$1'>
@@ -337,7 +355,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                         w='100%'
                         // maw={mediaQuery.gtXs ? 350 : 250}
                         pl='$1'
-                        pr='$10'
+                        pr='$2'
                         f={1}>
                         {/* <XStack h={48}> */}
                         <ServerNameAndLogo enlargeSmallText />
@@ -363,18 +381,6 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
                 </Heading>
                 : undefined}
-              {serversDiffer
-                ? <>
-                  <Heading color={warningAnchorColor} whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>{primaryServer?.serverConfiguration?.serverInfo?.name}</Heading>
-                  <Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
-                    Viewing server configuration for {onlyShowServer.host}
-                  </Heading>
-                </>
-                : onlyShowServer
-                  ? <Heading size='$3' marginTop='$2' color={warningAnchorColor} textAlign='center'>
-                    Viewing server configuration
-                  </Heading>
-                  : undefined}
               {browsingOnDiffers
                 ? <><Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
                   Browsing via {browsingOn}
@@ -524,8 +530,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   }
                 </>
                 : <>
-                  {accounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
-                  {accounts.map((account) => <AccountCard account={account} key={accountId(account)} />)}
+                  {displayedAccounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
+                  {displayedAccounts.map((account) => <AccountCard account={account} key={accountId(account)} />)}
                 </>}
 
               {/* <FlatList

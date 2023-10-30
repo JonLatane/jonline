@@ -51,7 +51,7 @@ release_web_builds: release_flutter_web_build release_tamagui_build
 release_flutter_web_build:
 	cd ../../frontends/flutter && ./build-release web
 release_tamagui_build:
-	cd ../../frontends/tamagui && yarn web:prod:export
+	cd ../../frontends/tamagui && yarn web:prod:build
 
 # Build Environment (jonline-be-build) image targets.
 release_builder_push_local: local_registry_create

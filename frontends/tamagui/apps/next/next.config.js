@@ -98,7 +98,7 @@ module.exports = function () {
       // May cause issues
       // optimizeCss: true,
       scrollRestoration: true,
-      legacyBrowsers: false,
+      // legacyBrowsers: false,
     },
   }
 

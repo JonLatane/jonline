@@ -53,7 +53,7 @@ jobs:
     - working-directory: frontends/tamagui
       run: yarn tsc
     - working-directory: frontends/tamagui
-      run: yarn web:prod:export
+      run: yarn web:prod:build
 
     - working-directory: frontends/flutter
       run: flutter pub get

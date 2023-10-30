@@ -1,18 +1,7 @@
-import { Group, Media, User, UserListingType, WebUserInterface } from "@jonline/api";
-import { Button, Heading, isSafari, Paragraph, Popover, ScrollView, Theme, useMedia, XStack, YStack } from "@jonline/ui";
-import { useTheme } from "@react-navigation/native";
-import { Home as HomeIcon } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, getUsersPage, loadUsersPage, markGroupVisit, useAccountOrServer, useServer, useServerTheme, useTypedDispatch, useTypedSelector } from "app/store";
-import { Platform, TranslateXTransform } from 'react-native';
-import StickyBox from "react-sticky-box";
-import { useLink } from "solito/link";
-import { AccountsSheet } from "../accounts/accounts_sheet";
-import { GroupsSheet } from "../groups/groups_sheet";
-import { AppSection, AppSubsection, FeaturesNavigation, sectionTitle, useInlineFeatureNavigation } from "./features_navigation";
-import { GroupContextProvider } from "../groups/group_context";
+import { Media } from "@jonline/api";
+import { Heading, Paragraph, XStack, YStack, isSafari, useMedia } from "@jonline/ui";
+import { JonlineServer, useServer } from "app/store";
 import { MediaRenderer } from "../media/media_renderer";
-import { useEffect, useState } from "react";
-import { serverID } from '../../store';
 
 export type ServerNameAndLogoProps = {
   shrink?: boolean;
@@ -25,7 +14,7 @@ export function ServerNameAndLogo({ shrink, server: selectedServer, enlargeSmall
 
   const currentServer = useServer();
   const server = selectedServer ?? currentServer;
-  console.log('ServerNameAndLogo', server?.host)
+  // console.log('ServerNameAndLogo', server?.host)
 
   const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
   const serverNameEmoji = serverName.match(/\p{Emoji}/u)?.at(0);
@@ -52,7 +41,8 @@ export function ServerNameAndLogo({ shrink, server: selectedServer, enlargeSmall
 
   return shrink
     ? useSquareLogo
-      ? <XStack h='100%' scale={1.1}
+      ? <XStack h='100%'
+        scale={1.1}
         transform={[
           { translateY: 1.5 },
           { translateX: isSafari() ? 8.0 : 2.0 }]
@@ -74,13 +64,14 @@ export function ServerNameAndLogo({ shrink, server: selectedServer, enlargeSmall
               <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
             </XStack>
             : serverNameEmoji && serverNameEmoji != ''
-              ? <Heading size={enlargeSmallText ? '$7' : undefined}
+              ? <Heading size={enlargeSmallText ? '$10' : undefined}
                 my='auto' ml='$2' mr='$2' whiteSpace="nowrap">{serverNameEmoji}</Heading>
               : undefined}
-          <YStack f={1} my='auto' mr='$2' space={enlargeSmallText ? '$2' : undefined}>
+          <YStack f={1} my='auto' mr='$2' space={enlargeSmallText ? '$2' : '$0'}>
             {largeServername
               ? <Heading my='auto' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{serverNameBeforeEmoji}</Heading>
-              : <Paragraph size={enlargeSmallText ? '$7' : '$1'} fontWeight='bold' lineHeight={12} >{serverNameBeforeEmoji}{useSquareLogo && serverNameEmoji && serverNameEmoji != '' ? ` ${serverNameEmoji}` : undefined}</Paragraph>}
+              : <Paragraph size={enlargeSmallText ? '$7' : '$1'}
+                fontWeight='700' lineHeight={12} >{serverNameBeforeEmoji}{useSquareLogo && serverNameEmoji && serverNameEmoji != '' ? ` ${serverNameEmoji}` : undefined}</Paragraph>}
             {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername)
               ? <Paragraph
                 size={enlargeSmallText
