@@ -7425,7 +7425,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"app@*, app@0.0.0, app@workspace:packages/app":
+"app@0.0.0, app@workspace:packages/app":
   version: 0.0.0-use.local
   resolution: "app@workspace:packages/app"
   dependencies:
@@ -10991,7 +10991,7 @@ __metadata:
     "@react-navigation/native": ^6.1.6
     "@tamagui/babel-plugin": latest
     "@types/react-native": ^0.71.3
-    app: "*"
+    app: 0.0.0
     babel-plugin-module-resolver: ^4.1.0
     babel-plugin-transform-inline-environment-variables: ^0.4.4
     burnt: ^0.10.0
