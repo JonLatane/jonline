@@ -2,17 +2,21 @@ import { Media } from "@jonline/api";
 import { Heading, Paragraph, XStack, YStack, isSafari, useMedia } from "@jonline/ui";
 import { JonlineServer, useServer } from "app/store";
 import { MediaRenderer } from "../media/media_renderer";
+import { Home } from "@tamagui/lucide-icons";
 
 export type ServerNameAndLogoProps = {
   shrink?: boolean;
   server?: JonlineServer;
   enlargeSmallText?: boolean;
+  fallbackToHomeIcon?: boolean;
 };
 
 export function ServerNameAndLogo({
   shrink,
   server: selectedServer,
-  enlargeSmallText = false
+  enlargeSmallText = false,
+  fallbackToHomeIcon = false,
+
 }: ServerNameAndLogoProps) {
   const mediaQuery = useMedia()
 
@@ -34,7 +38,7 @@ export function ServerNameAndLogo({
     ? undefined
     : mediaQuery.gtXs
       ? 270
-      : 200;
+      : 170;
   const maxWidthAfterServerName = maxWidth ? maxWidth - (serverNameEmoji ? 50 : 0) : undefined;
   const logo = server?.serverConfiguration?.serverInfo?.logo;
 
@@ -42,6 +46,9 @@ export function ServerNameAndLogo({
   const useSquareLogo = canUseLogo && logo?.squareMediaId != undefined;
   const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrink;
   const useEmoji = serverNameEmoji && serverNameEmoji !== '';
+
+  const imageLogoSize = enlargeSmallText ? '$6' : '$3';
+  const serverEmojiFontSize = enlargeSmallText ? '$10' : '$8';
 
   return shrink
     ? useSquareLogo
@@ -57,26 +64,46 @@ export function ServerNameAndLogo({
         <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
         {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
       </XStack>
-    : <XStack h={'100%'} w='100%' space='$5' maw={maxWidthAfterServerName}>
+    : <XStack
+      mr={'$2'}
+      h={'100%'} w='100%'
+      space='$5'
+      pl={useSquareLogo ? '$1' : undefined}
+      maw={maxWidth}
+    >
       {useWideLogo
         ? <XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
           <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.wideMediaId })} failQuietly />
         </XStack>
         : <>
           {useSquareLogo
-            ? <XStack w={enlargeSmallText ? '$6' : '$3'} h={enlargeSmallText ? '$6' : '$3'} ml='$2' mr='$1' my='auto'>
+            ? <XStack
+              w={imageLogoSize}
+              h={imageLogoSize} ml='$2' mr='$1' my='auto'>
               <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
             </XStack>
             : serverNameEmoji && serverNameEmoji != ''
-              ? <Heading size={enlargeSmallText ? '$10' : undefined}
+              ? <Heading size={serverEmojiFontSize}
                 my='auto' ml='$2' mr='$2' whiteSpace="nowrap">{serverNameEmoji}</Heading>
-              : undefined}
-          <YStack f={1} my='auto' mr='$2' space={enlargeSmallText ? '$2' : '$0'}>
-            {largeServername
-              ? <Heading my='auto' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{serverNameBeforeEmoji}</Heading>
-              : <Paragraph size={enlargeSmallText ? '$7' : '$1'}
-                fontWeight='700' lineHeight={12} >{serverNameBeforeEmoji}{useSquareLogo && serverNameEmoji && serverNameEmoji != '' ? ` ${serverNameEmoji}` : undefined}</Paragraph>}
-            {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername)
+              : fallbackToHomeIcon
+                ? <XStack my='auto' mr='$1'><Home size={enlargeSmallText ? '$5' : '$2'} /> </XStack>
+                : undefined}
+          <YStack my='auto' f={1}
+              ml='$1'
+          // space={enlargeSmallText ? '$2' : '$0'}
+          >
+            <Heading my='auto'
+              fontSize={largeServername
+                ? enlargeSmallText ? '$9' : '$8'
+                : enlargeSmallText ? '$8' : '$3'}
+              m={0}
+              p={0}
+              lineHeight={largeServername || enlargeSmallText ? '$1' : 12}
+            // whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis"
+            >
+              {serverNameBeforeEmoji}{useSquareLogo && serverNameEmoji && serverNameEmoji != '' ? ` ${serverNameEmoji}` : undefined}
+            </Heading>
+            {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername || true)
               ? <Paragraph
                 size={enlargeSmallText
                   ? serverNameAfterEmoji.length > 10 ? '$3' : '$7'

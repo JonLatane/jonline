@@ -84,20 +84,27 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   {/* <Heading size='$1'>seconds</Heading> */}
                 </YStack>
               </XStack>
-              <Heading size='$3' mt='$3'>Multi-Server</Heading>
-              <ToggleRow name='Allow Server Selection' value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
-              <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
-              <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
-              <Heading size='$3' mt='$3'>Testing</Heading>
-              <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />
-              <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch />
-              <Heading size='$3' mt='$3'>Development</Heading>
-              <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
-              <ToggleRow name='Auto Feature Navigation' value={app.inlineFeatureNavigation === undefined}
+
+              <Heading size='$4' mt='$3'>Feature Navigation</Heading>
+              <Paragraph o={0.5} size='$1'>Posts, Events, People, Latest, etc.</Paragraph>
+              <ToggleRow name='Auto Feature Navigation' 
+              description = 'Automatically show/hide feature navigation based on screen size.'
+              value={app.inlineFeatureNavigation === undefined}
                 setter={(v) => setInlineFeatureNavigation(v ? undefined : false)} autoDispatch />
               <ToggleRow name='Inline Feature Navigation' value={inlineNavigation}
                 disabled={app.inlineFeatureNavigation === undefined}
                 setter={setInlineFeatureNavigation} autoDispatch />
+
+              <Heading size='$3' mt='$3'>Multi-Server</Heading>
+              <ToggleRow name='Allow Server Selection' value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
+              <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
+              <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
+
+              <Heading size='$3' mt='$3'>Colors (Testing)</Heading>
+              <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />
+              <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch />
+              <Heading size='$3' mt='$3'>Development</Heading>
+              <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
 
               {/* <ToggleRow name='Show (WIP) Extended Navigation' value={app.showBetaNavigation} setter={setShowBetaNavigation} autoDispatch /> */}
 

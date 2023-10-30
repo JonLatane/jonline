@@ -258,22 +258,28 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 {isAdmin || logo?.squareMediaId || logo?.wideMediaId
                   ? <>
                     <Heading size='$3' mt='$2'>Server Logo</Heading>
+
                     {isAdmin || logo?.wideMediaId
-                      ? <Heading size='$2' mt='$2'>Square/Icon</Heading>
+                      ? <Heading size='$2' mt='$2'>Square Logo/Favicon</Heading>
                       : undefined}
-                    {logo?.squareMediaId ?
-                      <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} />
+                    {logo?.squareMediaId
+                      ? <XStack mb='$2'>
+                        <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} />
+                      </XStack>
                       : undefined}
                     {isAdmin
                       ? <SingleMediaChooser mediaUseName='Square Logo/Icon'
                         selectedMedia={logo ? { id: logo.squareMediaId } as MediaRef : undefined}
                         setSelectedMedia={v => setLogo({ ...(logo ?? {}), squareMediaId: v?.id })} />
                       : undefined}
+
                     {isAdmin || logo?.wideMediaId
-                      ? <Heading size='$2' mt='$2'>Wide</Heading>
+                      ? <Heading size='$2' mt='$2'>Wide Logo</Heading>
                       : undefined}
                     {logo?.wideMediaId ?
+                      <XStack mb='$2'>
                       <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} />
+                    </XStack>
                       : undefined}
                     {isAdmin
                       ? <SingleMediaChooser mediaUseName='Wide Logo'
