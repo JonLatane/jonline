@@ -8,11 +8,14 @@ import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
 interface Props {
   server: JonlineServer;
   isPreview?: boolean;
+  linkToServerInfo?: boolean;
+  disableHeightLimit?: boolean;
 }
 
-const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
+const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerInfo = false, disableHeightLimit }) => {
   const dispatch = useTypedDispatch();
   const selected = store.getState().servers.server?.host == server.host;
+  const serversState = useTypedSelector((state: RootState) => state.servers);
   const accountsState = useTypedSelector((state: RootState) => state.accounts);
   const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts))
     .filter(account => account.server.host == server.host);
@@ -25,6 +28,9 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
       dispatch(selectAccount(undefined));
     } else if (accountsState.account && serverID(accountsState.account.server) != serverID(server)) {
       dispatch(selectAccount(undefined));
+    }
+    if (linkToServerInfo) {
+      infoLink.onPress();
     }
     dispatch(selectServer(server));
   }
@@ -49,15 +55,15 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
         onPress={doSelectServer}>
         <Card.Header>
           <XStack>
-            <YStack f={1}>
+            <YStack f={1} maxHeight={disableHeightLimit ? undefined : 128} overflow="hidden">
               {/* <Heading marginRight='auto' whiteSpace="nowrap" width='100%' overflow="hidden" textOverflow="ellipsis"
               opacity={server.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>{server.serverConfiguration?.serverInfo?.name || 'Unnamed'}</Heading> */}
               {/* <XStack h={48}> */}
-                <ServerNameAndLogo server={server} />
+              <ServerNameAndLogo server={server} disableWidthLimits />
               {/* </XStack> */}
               <Heading size="$1" marginRight='auto'>{server.host}</Heading>
             </YStack>
-            {isPreview ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined}
+            {isPreview && !linkToServerInfo ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined}
           </XStack>
         </Card.Header>
         <Card.Footer p='$3'>
@@ -69,7 +75,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false }) => {
               <Heading size="$1" mr='auto'>{accounts.length > 0 ? accounts.length : "No "} account{accounts.length == 1 ? '' : 's'}</Heading>
               {server.serviceVersion ? <Heading size="$1" mr='auto'>{server.serviceVersion?.version}</Heading> : undefined}
             </YStack>
-            {isPreview
+            {isPreview && serversState.ids.length > 1
               ? <Dialog>
                 <Dialog.Trigger asChild>
                   <Button onPress={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular />

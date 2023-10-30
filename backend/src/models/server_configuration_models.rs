@@ -74,7 +74,7 @@ pub fn default_server_configuration() -> NewServerConfiguration {
     .to_json_permissions();
     return NewServerConfiguration {
         server_info: serde_json::to_value(ServerInfo {
-            name: Some("New Jonline Server 🛠️ An administrator should update the server name.".to_string()),
+            name: Some("Jonline 🛠️ Unconfigured server".to_string()),
             short_name: None,
             description: Some("
 Jonline is a new, DIY federated social network. It's designed to be run by local businesses,
@@ -105,6 +105,11 @@ I will, however, not sell your data to advertisers nor deliberately expose any v
                 navigation: Some(0xFFA23B72),
                 ..Default::default()
             }),
+            recommended_server_hosts: vec![
+                "jonline.io".to_string(),
+                "bullcity.social".to_string(),
+                "oakcity.social".to_string(),
+            ],
         })
         .unwrap(),
         anonymous_user_permissions: vec![

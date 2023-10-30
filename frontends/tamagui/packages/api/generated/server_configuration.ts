@@ -345,6 +345,7 @@ export interface ServerInfo {
   webUserInterface?: WebUserInterface | undefined;
   colors?: ServerColors | undefined;
   mediaPolicy?: string | undefined;
+  recommendedServerHosts: string[];
 }
 
 export interface ServerLogo {
@@ -1061,6 +1062,7 @@ function createBaseServerInfo(): ServerInfo {
     webUserInterface: undefined,
     colors: undefined,
     mediaPolicy: undefined,
+    recommendedServerHosts: [],
   };
 }
 
@@ -1089,6 +1091,9 @@ export const ServerInfo = {
     }
     if (message.mediaPolicy !== undefined) {
       writer.uint32(66).string(message.mediaPolicy);
+    }
+    for (const v of message.recommendedServerHosts) {
+      writer.uint32(74).string(v!);
     }
     return writer;
   },
@@ -1156,6 +1161,13 @@ export const ServerInfo = {
 
           message.mediaPolicy = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.recommendedServerHosts.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1175,6 +1187,9 @@ export const ServerInfo = {
       webUserInterface: isSet(object.webUserInterface) ? webUserInterfaceFromJSON(object.webUserInterface) : undefined,
       colors: isSet(object.colors) ? ServerColors.fromJSON(object.colors) : undefined,
       mediaPolicy: isSet(object.mediaPolicy) ? globalThis.String(object.mediaPolicy) : undefined,
+      recommendedServerHosts: globalThis.Array.isArray(object?.recommendedServerHosts)
+        ? object.recommendedServerHosts.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -1204,6 +1219,9 @@ export const ServerInfo = {
     if (message.mediaPolicy !== undefined) {
       obj.mediaPolicy = message.mediaPolicy;
     }
+    if (message.recommendedServerHosts?.length) {
+      obj.recommendedServerHosts = message.recommendedServerHosts;
+    }
     return obj;
   },
 
@@ -1224,6 +1242,7 @@ export const ServerInfo = {
       ? ServerColors.fromPartial(object.colors)
       : undefined;
     message.mediaPolicy = object.mediaPolicy ?? undefined;
+    message.recommendedServerHosts = object.recommendedServerHosts?.map((e) => e) || [];
     return message;
   },
 };

@@ -29,6 +29,8 @@ export interface GroupsState {
   draftGroup: Group;
   ids: EntityId[];
   entities: Dictionary<Group>;
+  // By GroupListingType -> page (as a number) -> groupIds
+  pages: GroupedPages;
   shortnameIds: Dictionary<string>;
   groupPostPages: GroupedPages;
   groupEventPages: GroupedEventInstancePages;
@@ -51,6 +53,7 @@ const initialState: GroupsState = {
   draftGroup: Group.create(),
   shortnameIds: {},
   failedShortnames: [],
+  pages: {},
   groupPostPages: {},
   groupEventPages: {},
   postIdGroupPosts: {},

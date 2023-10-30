@@ -295,8 +295,8 @@ export const EventCard: React.FC<Props> = ({
     : undefined;
   const headerLinksView = <YStack key='header-links-view'>
     {isPreview
-      ? <YStack>
-        <Anchor textDecorationLine='none' {...detailsLink}>
+      ? <>
+        <Anchor key='details-link' textDecorationLine='none' {...detailsLink}>
           <XStack>
             <YStack f={1}>
               <Heading size="$7" marginRight='auto'>{title}</Heading>
@@ -304,23 +304,23 @@ export const EventCard: React.FC<Props> = ({
           </XStack>
         </Anchor>
         {postLinkView}
-        <Anchor textDecorationLine='none' {...detailsLink}>
+        <Anchor key='instance-link' textDecorationLine='none' {...detailsLink}>
           {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight /> : undefined}
         </Anchor>
-      </YStack>
-      : <YStack>
-        <XStack>
+      </>
+      : <>
+        <XStack key='title'>
           <YStack f={1}>
             <Heading size="$7" marginRight='auto'>{title}</Heading>
           </YStack>
         </XStack>
         {postLinkView}
         {primaryInstance
-          ? <InstanceTime event={event} instance={primaryInstance} highlight />
+          ? <InstanceTime key='instance-time' event={event} instance={primaryInstance} highlight />
           : editing && previewingEdits
-            ? <Paragraph size='$1'>This instance no longer exists.</Paragraph>
+            ? <Paragraph key='missing-instance' size='$1'>This instance no longer exists.</Paragraph>
             : undefined}
-      </YStack>}
+      </>}
   </YStack>;
   const headerLinksEdit = <YStack space='$2' key='header-links-edit'>
     <Input textContentType="name" placeholder={`Event Title (required)`}

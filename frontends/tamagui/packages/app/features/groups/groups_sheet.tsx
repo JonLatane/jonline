@@ -1,4 +1,4 @@
-import { GetGroupsRequest, Group } from '@jonline/api';
+import { GetGroupsRequest, Group, Permission } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Theme, XStack, YStack } from '@jonline/ui';
 import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
 import { RootState, loadGroupsPage, selectAllGroups, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
@@ -7,6 +7,7 @@ import { TextInput } from 'react-native';
 import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
 import { GroupDetailsSheet } from './group_details_sheet';
+import { hasPermission } from 'app/utils/permission_utils';
 
 export type GroupsSheetProps = {
   selectedGroup?: Group;
@@ -28,7 +29,7 @@ export type GroupsSheetProps = {
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
 }
-
+let isReloadingGroups = false;
 export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups, hideLeaveButtons }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -37,7 +38,7 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   const [position, setPosition] = useState(0);
   const [searchText, setSearchText] = useState('');
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { server } = accountOrServer;
+  const { account, server } = accountOrServer;
   const [hasRenderedSheet, setHasRenderedSheet] = useState(false);
 
 
@@ -62,10 +63,16 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
   }, [open]);
 
   function reloadGroups() {
+    if (isReloadingGroups) return;
     if (!accountOrServer.server) return;
 
-    setTimeout(() =>
-      dispatch(loadGroupsPage({ ...accountOrServer, ...GetGroupsRequest.create() })), 1);
+    isReloadingGroups = true;
+    setTimeout(
+      () => dispatch(
+        loadGroupsPage({ ...accountOrServer, ...GetGroupsRequest.create() })
+      ).then(() => isReloadingGroups = false),
+      1
+    );
   }
 
   const recentGroupIds = useTypedSelector((state: RootState) => server
@@ -254,7 +261,9 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
                     : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
               </YStack>
             </Sheet.ScrollView>
-            <CreateGroupSheet />
+            {hasPermission(account?.user, Permission.CREATE_GROUPS)
+              ? <CreateGroupSheet />
+              : undefined}
           </Sheet.Frame>
         </Sheet>
       }

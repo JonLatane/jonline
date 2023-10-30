@@ -151,7 +151,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
       {circular && avatarUrl && avatarUrl != ''
         ? <Anchor
           my='auto'
-          mr={-10}
+          px={0}
+          // mr={-10}
+          transform={[{ translateX: 5 }]}
           ml='$1'
           onPress={() => setOpen((x) => !x)}>
           <XStack w={48} h={48}
@@ -318,8 +320,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     ml={browsingServers ? '$2' : 'auto'}
                     icon={browsingServers ? ChevronLeft : Server}
                     // circular
-                    opacity={onlyShowServer != undefined ? 0.5 : 1}
-                    disabled={onlyShowServer != undefined}
+                    // opacity={onlyShowServer != undefined ? 0.5 : 1}
+                    // disabled={onlyShowServer != undefined}
                     // maw={100}
                     onPress={() => setBrowsingServers((x) => !x)} >
                     {browsingServers ? 'Back' : `More Servers (${servers.length})`}
@@ -327,14 +329,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   : undefined}
               </XStack>
 
-              {serversDiffer
-                ? <>
-                  <Heading color={warningAnchorColor} whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>{primaryServer?.serverConfiguration?.serverInfo?.name}</Heading>
-                  <Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
-                    Viewing server configuration for {onlyShowServer.host}
-                  </Heading>
-                </>
-                : onlyShowServer
+              {onlyShowServer
                   ? <Heading size='$3' marginTop='$2' color={warningAnchorColor} textAlign='center'>
                     Viewing server configuration
                   </Heading>
@@ -376,19 +371,6 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   {/* <XStack f={1} /> */}
                   {/* </XStack> */}
                 </YStack>}
-              {!browsingServers
-                ? <Heading size='$3' als='center' textAlign='center' mt='$1'>
-                  {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
-                </Heading>
-                : undefined}
-              {browsingOnDiffers
-                ? <><Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
-                  Browsing via {browsingOn}
-                </Heading>
-                </>
-                // : browsingServers && Platform.OS == 'web'
-                //   ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
-                : undefined}
 
               {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
 
@@ -398,7 +380,11 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     <ScrollView horizontal>
                       <XStack space='$3'>
                         {servers.map((server, index) => {
-                          return <ServerCard server={server} key={`serverCard-${serverID(server)}`} isPreview />;
+                          return <ServerCard
+                            linkToServerInfo={onlyShowServer !== undefined}
+                            server={server}
+                            key={`serverCard-${serverID(server)}`}
+                            isPreview />;
                         })}
                       </XStack>
                     </ScrollView>
@@ -414,6 +400,30 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   /> */}
                   </>
                 </XStack> : undefined}
+
+              {serversDiffer
+                ? <>
+                  <Heading color={warningAnchorColor} whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>
+                    {primaryServer?.serverConfiguration?.serverInfo?.name}
+                  </Heading>
+                  <Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
+                    Viewing server configuration for {onlyShowServer.host}
+                  </Heading>
+                </>
+                : undefined}
+              {!browsingServers
+                ? <Heading size='$3' als='center' textAlign='center' mt='$1'>
+                  {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
+                </Heading>
+                : undefined}
+              {browsingOnDiffers
+                ? <><Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
+                  Browsing via {browsingOn}
+                </Heading>
+                </>
+                // : browsingServers && Platform.OS == 'web'
+                //   ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
+                : undefined}
               {!browsingServers ? <YStack h="$2" /> : undefined}
               <YStack space="$2">
                 <XStack>

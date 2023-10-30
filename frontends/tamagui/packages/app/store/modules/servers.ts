@@ -55,7 +55,7 @@ const serversAdapter = createEntityAdapter<JonlineServer>({
 
 export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
   "servers/create",
-  async (server) => {
+  async (server, state) => {
     // getServerClient will update/upsert the server as a side effect.
     let client = await getServerClient(server);
     // let serviceVersion: GetServiceVersionResponse = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
@@ -128,7 +128,9 @@ export const serversSlice = createSlice({
     upsertServer: serversAdapter.upsertOne,
     removeServer: (state, action: PayloadAction<JonlineServer>) => {
       if (state.server && serverID(state.server) == serverID(action.payload)) {
-        state.server = undefined;
+        state.server = serversAdapter.getSelectors().selectAll(state)
+          .filter(s => serverID(s) != serverID(action.payload))[0];
+        //[serverID(action.payload)];//serversAdapter(state, serverID(action.payload));
       }
       serversAdapter.removeOne(state, serverID(action.payload));
     },
@@ -153,13 +155,13 @@ export const serversSlice = createSlice({
     });
     builder.addCase(upsertServer.fulfilled, (state, action) => {
       state.status = "loaded";
-      let server = action.payload
+      let server = action.payload;
       serversAdapter.upsertOne(state, action.payload);
       if (!state.server || serverID(server) == serverID(state.server!)) {
         state.server = server;
       }
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`);
-      state.successMessage = `Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`;
+      state.successMessage = `Server added.`;
     });
     builder.addCase(upsertServer.rejected, (state, action) => {
       state.status = "errored";

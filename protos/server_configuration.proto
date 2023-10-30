@@ -162,6 +162,7 @@ message ServerInfo {
   optional WebUserInterface web_user_interface = 6;
   optional ServerColors colors = 7;
   optional string media_policy = 8;
+  repeated string recommended_server_hosts = 9;
 }
 
 

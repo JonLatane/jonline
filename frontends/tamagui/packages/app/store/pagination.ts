@@ -1,5 +1,5 @@
-import { Event, EventInstance, EventListingType, Post, PostListingType } from "@jonline/api";
-import { EventsState, GroupsState, PostsState, selectEventById, selectPostById, serializeTimeFilter } from "./modules";
+import { Event, EventInstance, EventListingType, Group, GroupListingType, Post, PostListingType } from "@jonline/api";
+import { EventsState, GroupsState, PostsState, selectEventById, selectGroupById, selectPostById, serializeTimeFilter } from "./modules";
 import { RootState } from "./store";
 import { Dictionary } from "@reduxjs/toolkit";
 import { TimeFilter } from '../../api/generated/events';
@@ -27,6 +27,31 @@ export type GroupedPages = Dictionary<PaginatedIds>;
  * is a reasonable fallback.
  */
 export type PaginatedIds = Dictionary<string[]>;
+
+function getGroupsPage(groups: GroupsState, listingType: GroupListingType, page: number): Group[] {
+  const pageGroupIds: string[] = (groups.pages[listingType] ?? {})[page] ?? [];
+  const pageGroups = pageGroupIds.map(id => selectGroupById(groups, id))
+    .filter(p => p) as Group[];
+  return pageGroups;
+}
+
+export function getGroupPages(groups: GroupsState, listingType: GroupListingType, throughPage: number): Group[] {
+  const result: Group[] = [];
+  for (let page = 0; page <= throughPage; page++) {
+    const pageGroups = getGroupsPage(groups, listingType, page);
+    result.push(...pageGroups
+      // .filter(p => p.author != undefined)
+    );
+  }
+  return result;
+}
+
+export function getHasGroupsPage(groups: GroupsState, listingType: GroupListingType, page: number): boolean {
+  return (groups.pages[listingType] ?? {})[page] != undefined;
+}
+export function getHasMoreGroupPages(groups: GroupsState, listingType: GroupListingType, currentPage: number): boolean {
+  return ((groups.pages[listingType] ?? {})[currentPage]?.length ?? 0) > 0;
+}
 
 function getPostsPage(posts: PostsState, listingType: PostListingType, page: number): Post[] {
   const pagePostIds: string[] = (posts.postPages[listingType] ?? {})[page] ?? [];

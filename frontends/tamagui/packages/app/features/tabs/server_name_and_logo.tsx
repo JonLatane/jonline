@@ -9,6 +9,7 @@ export type ServerNameAndLogoProps = {
   server?: JonlineServer;
   enlargeSmallText?: boolean;
   fallbackToHomeIcon?: boolean;
+  disableWidthLimits?: boolean;
 };
 
 export function ServerNameAndLogo({
@@ -16,7 +17,7 @@ export function ServerNameAndLogo({
   server: selectedServer,
   enlargeSmallText = false,
   fallbackToHomeIcon = false,
-
+  disableWidthLimits = false,
 }: ServerNameAndLogoProps) {
   const mediaQuery = useMedia()
 
@@ -34,7 +35,7 @@ export function ServerNameAndLogo({
   const shortServername = serverNameBeforeEmoji!.length < 12;
   const largeServername = veryShortServername && (['', undefined].includes(serverNameAfterEmoji));
 
-  const maxWidth = enlargeSmallText
+  const maxWidth = enlargeSmallText || disableWidthLimits
     ? undefined
     : mediaQuery.gtXs
       ? 270

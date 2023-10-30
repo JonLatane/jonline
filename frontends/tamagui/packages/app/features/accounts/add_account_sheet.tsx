@@ -209,7 +209,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                 </YStack>
                 : accountsOnServer.length > 0 ? <>
                   {/* <Heading size="$7" paddingVertical='$2'>Choose Account</Heading> */}
-                  {accountsOnServer.map((account) => <AccountCard account={account} key={accountId(account)} />)}
+                  {accountsOnServer.map((account) => <AccountCard account={account} key={accountId(account)} totalAccounts={accountsOnServer.length} />)}
                 </>
                   : undefined}
             </YStack>

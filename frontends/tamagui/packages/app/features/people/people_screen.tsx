@@ -102,7 +102,7 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
               return <YStack w='100%' mb='$3'><UserCard user={user} isPreview /></YStack>;
             }} /> */}
             {users?.map((user) => {
-              return <YStack w='100%' mb='$3'><UserCard user={user} isPreview /></YStack>;
+              return <YStack w='100%' mb='$3' key={`user-${user.id}`}><UserCard user={user} isPreview /></YStack>;
             })}
             {showScrollPreserver ? <YStack h={100000} /> : undefined}
           </>}

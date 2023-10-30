@@ -15,11 +15,11 @@ export function ToggleRow({ name, description, value, setter, disabled = false, 
   const dispatch = useTypedDispatch();
   const nameKey = name.toLowerCase().replace(/[^\w]/g, '_');
   return <XStack space='$3' o={disabled ? 0.5 : 1} my='$1'>
-    <Label htmlFor={nameKey} marginVertical='auto' f={1}>
+    <Label htmlFor={nameKey} my='auto' f={1}>
       <YStack w='100%'>
-        <Heading fontSize='$5'>
+        <Paragraph size='$5' my='auto'>
           {name}
-        </Heading>
+        </Paragraph>
         {description
           ? <Paragraph lineHeight='$1' size='$1' o={value ? 1 : 0.5}>
             {description}

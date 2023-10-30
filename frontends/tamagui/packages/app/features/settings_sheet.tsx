@@ -92,6 +92,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               value={app.inlineFeatureNavigation === undefined}
                 setter={(v) => setInlineFeatureNavigation(v ? undefined : false)} autoDispatch />
               <ToggleRow name='Inline Feature Navigation' value={inlineNavigation}
+              description = 'Show features in a horizontal row at the top of the screen.'
                 disabled={app.inlineFeatureNavigation === undefined}
                 setter={setInlineFeatureNavigation} autoDispatch />
 

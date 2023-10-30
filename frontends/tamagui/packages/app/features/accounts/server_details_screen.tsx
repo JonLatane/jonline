@@ -1,6 +1,6 @@
-import { ExternalCDNConfig, Media, Permission, ServerConfiguration } from '@jonline/api'
-import { Button, Heading, Input, Paragraph, ScrollView, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
-import { Github, Info } from '@tamagui/lucide-icons'
+import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api'
+import { Anchor, Button, Heading, Input, Paragraph, ScrollView, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
+import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { HexColorPicker } from "react-colorful"
@@ -18,8 +18,9 @@ import { MediaRenderer } from '../media/media_renderer'
 import { themedButtonBackground } from '../../utils/themed_button_background';
 import { hasAdminPermission } from 'app/utils/permission_utils'
 import { MediaRef } from '../media/media_chooser'
+import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 
-const { useParam } = createParam<{ id: string }>()
+const { useParam } = createParam<{ id: string, section?: string }>()
 
 export function ServerDetailsScreen() {
   return BaseServerDetailsScreen();
@@ -65,12 +66,18 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   //   setDescription(serverDescription);
   // }
   const serverPrivacyPolicy = serverConfiguration?.serverInfo?.privacyPolicy;
-  const [privacyPolicy, setPrivacyPolicy] = useState(serverPrivacyPolicy || undefined);
+  const [privacyPolicy, setPrivacyPolicy] = useState(serverPrivacyPolicy);
   const serverLogo = serverConfiguration?.serverInfo?.logo;
   const [logo, setLogo] = useState(serverLogo || undefined);
 
   const serverExternalCdnConfig = serverConfiguration?.externalCdnConfig;
-  const [externalCdnConfig, setExternalCdnConfig] = useState(serverExternalCdnConfig || undefined);
+  const [externalCdnConfig, setExternalCdnConfig] = useState(serverExternalCdnConfig);
+
+  const serverRecommendedHosts = serverConfiguration?.serverInfo?.recommendedServerHosts;
+  const [recommendedHosts, setRecommendedHosts] = useState(serverRecommendedHosts);
+  const [newRecommendedHostName, setNewRecommendedHostName] = useState('');
+  const isNewRecommendedHostNameValid = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/.test(newRecommendedHostName)
+    && !recommendedHosts?.includes(newRecommendedHostName);
   // if (defaultClientDomain && name != serverName && name == undefined) {
   //   setName(serverName);
   // }
@@ -94,7 +101,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   // }
   const { textColor: primaryTextColor } = colorMeta(primaryColor);
   const { textColor: navTextColor } = colorMeta(navColor);
-  const { warningAnchorColor } = useServerTheme();
+  const { primaryAnchorColor, navAnchorColor, warningAnchorColor } = useServerTheme();
 
   const serverDefaultPermissions = serverConfiguration?.defaultUserPermissions;
   const [_defaultPermissions, setDefaultPermissions] = useState(serverDefaultPermissions);
@@ -114,6 +121,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     setDefaultPermissions(serverDefaultPermissions);
     setPrimaryColorHex(primaryColor);
     setNavColorHex(navColor);
+    setRecommendedHosts(serverRecommendedHosts);
 
   }, [serverConfiguration]);
 
@@ -158,6 +166,25 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     editMode: isAdmin ?? false
   };
 
+  let newPrimaryColorInt = parseInt(primaryColorHex.slice(1), 16) + 0xFF000000;
+  let newNavColorInt = parseInt(navColorHex.slice(1), 16) + 0xFF000000;
+  let updatedConfiguration: ServerConfiguration = {
+    ...serverConfiguration!,
+    serverInfo: {
+      ...ServerInfo.create(serverConfiguration?.serverInfo ?? {}),
+      name,
+      description,
+      privacyPolicy,
+      logo,
+      colors: {
+        ...serverConfiguration?.serverInfo?.colors,
+        primary: newPrimaryColorInt, navigation: newNavColorInt
+      },
+      recommendedServerHosts: recommendedHosts ?? [],
+    },
+    externalCdnConfig: externalCdnConfig
+  };
+
   async function updateServer() {
     setUpdating(true);
     setUpdateError('');
@@ -165,22 +192,6 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
     let newPrimaryColorInt = parseInt(primaryColorHex.slice(1), 16) + 0xFF000000;
     let newNavColorInt = parseInt(navColorHex.slice(1), 16) + 0xFF000000;
-
-    let updatedConfiguration: ServerConfiguration = {
-      ...serverConfiguration!,
-      serverInfo: {
-        ...serverConfiguration!.serverInfo,
-        name,
-        description,
-        privacyPolicy,
-        logo,
-        colors: {
-          ...serverConfiguration!.serverInfo!.colors,
-          primary: newPrimaryColorInt, navigation: newNavColorInt
-        }
-      },
-      externalCdnConfig: externalCdnConfig
-    };
 
     let client = await getCredentialClient({ account });
     try {
@@ -193,10 +204,35 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       setUpdating(false);
     }
   }
-
   const windowHeight = useWindowDimensions().height;
+  const [querySection, setQuerySection] = useParam('section');
+  type AboutSection = 'about' | 'theme' | 'settings' | 'cdn';
+  const section = (querySection ?? 'about') as AboutSection;
+  function sectionButton(sectionName: AboutSection, title: string, icon) {
+    return <Button f={1} h={56}
+      onPress={() => setQuerySection(sectionName === 'about' ? undefined : sectionName)}
+    >
+      <YStack alignItems='center'>
+        {icon}
+        <Paragraph size='$1' color={section === sectionName ? navAnchorColor : undefined}>
+          {title}
+        </Paragraph>
+      </YStack>
+    </Button>
+  }
+  const cloudflareLink = useLink({ href: 'https://cloudflare.com' });
+  // const recommendedHostServers = useTypedSelector((state: RootState) => state.servers!.enti);// recommendedHosts?.map(host => ({ host }));
   return (
     <TabsNavigation appSection={AppSection.INFO} onlyShowServer={server}>
+      <StickyBox offsetTop={56} className='blur' style={{ width: '100%', zIndex: 10 }}>
+        <XStack w='100%'>
+          {sectionButton('about', 'About', <BadgeInfo color={section === 'about' ? navAnchorColor : undefined} />)}
+          {sectionButton('theme', 'Theme', <Palette color={section === 'theme' ? navAnchorColor : undefined} />)}
+          {sectionButton('settings', 'Settings', <Cog color={section === 'settings' ? navAnchorColor : undefined} />)}
+          {/* {sectionButton('servers', 'Servers', <Server color={section === 'servers' ? primaryAnchorColor : undefined} />)} */}
+          {sectionButton('cdn', 'CDN', <Code color={section === 'cdn' ? navAnchorColor : undefined} />)}
+        </XStack>
+      </StickyBox>
       <YStack f={1} jc="center" ai="center" space w='100%'>
         {server ?
           <YStack mb='$2' w='100%' jc="center" ai="center" >
@@ -215,202 +251,265 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
                   </Button>
                 </>}
-                <Heading size='$10' als='center' mt='$3'>About {specificServer ? 'Community' : 'Server'}</Heading>
-                <ServerCard server={server!} />
-                <XStack mt='$4'>
-                  <Heading size='$3' f={1}>Service Version</Heading>
-                  <Paragraph>{serviceVersion?.version}</Paragraph>
-                </XStack>
-                {githubVersion
-                  ? <Button {...githubLink} mt='$2' {...themedButtonBackground(navColor, navTextColor)} size='$3' iconAfter={Github}>
-                    <Heading size='$2' color={navTextColor}>View {githubVersion} on GitHub</Heading>
+                {section === 'about' ? <>
+                  <Heading size='$9' als='center' mt='$3'>About {specificServer ? 'Community' : 'Server'}</Heading>
+                  <ServerCard server={{...server, serverConfiguration: updatedConfiguration}} disableHeightLimit />
+                  <Button {...aboutJonlineLink} size='$4' my='$2' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} iconAfter={
+                    <>
+                      <Github color={navTextColor} />
+                      <Container color={navTextColor} />
+                      {/* <Server  color={navTextColor}/> */}
+                      <Heart color={navTextColor} />
+                    </>
+                  }>
+                    <XStack space='$3' my='auto'>
+                      <Info size='$3' color={navTextColor} />
+                      <Heading size='$2' my='auto' color={navTextColor}>Powered by <Text fontSize='$6' color={navTextColor}>Jonline</Text></Heading>
+                    </XStack>
                   </Button>
+                  <XStack mt='$1'>
+                    <Heading size='$3' f={1}>Service Version</Heading>
+                    <Paragraph>{serviceVersion?.version}</Paragraph>
+                  </XStack>
+                  {githubVersion
+                    ? <Button {...githubLink} target='_blank' size='$2' ml='auto' my='$2' {...themedButtonBackground(navColor, navTextColor)} iconAfter={Github}>
+                      <Heading size='$1' color={navTextColor}>View #{githubVersion} on GitHub</Heading>
+                    </Button>
+                    : undefined}
+                  <Heading size='$3'>Name</Heading>
+                  {isAdmin
+                    ? <>
+                      <Input value={name ?? ''} opacity={name && name != '' ? 1 : 0.5}
+                        placeholder='The name of your community.' onChangeText={t => setName(t)} />
+                      {/* <ScrollView horizontal> */}
+                      <Heading size='$1' my='$2'>Name and Logo Previews</Heading>
+                      <XStack mx='auto' space='$3' my='$2'>
+                        <XStack h={48} overflow='hidden'>
+                        <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} />
+                        </XStack>
+                        <XStack h={72} w={72} my='auto'>
+                          <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} shrink />
+                        </XStack>
+                      </XStack>
+                      {/* </ScrollView> */}
+                      <XStack mx='auto' mb='$5'>
+                        <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} enlargeSmallText />
+                      </XStack>
+                    </>
+                    : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
+
+                  <Heading size='$3'>Description</Heading>
+                  {isAdmin ?
+                    <TextArea value={description ?? ''} opacity={description && description != '' ? 1 : 0.5}
+                      onChangeText={t => setDescription(t)} h='$14'
+                      placeholder='A description of the purpose of your community, any general guidelines, etc.' />
+                    : description && description != ''
+                      ? <TamaguiMarkdown text={description} />
+                      : <Paragraph opacity={0.5}>No description set.</Paragraph>}
+
+                  <Heading size='$3'>Privacy Policy</Heading>
+                  {isAdmin ?
+                    <TextArea value={privacyPolicy ?? ''} opacity={privacyPolicy && privacyPolicy != '' ? 1 : 0.5}
+                      onChangeText={t => setPrivacyPolicy(t)} h='$14'
+                      placeholder='A privacy policy stating how you plan to use user data.' />
+                    : privacyPolicy && privacyPolicy != ''
+                      ? <TamaguiMarkdown text={privacyPolicy} />
+                      : <Paragraph opacity={0.5}>No privacy policy set.</Paragraph>}
+
+                </>
                   : undefined}
-                <Button {...aboutJonlineLink} mt='$2' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} size='$3' iconAfter={Info}>
-                  <Heading size='$2' color={navTextColor}>About Jonline...</Heading>
-                </Button>
-                <Heading size='$3'>Name</Heading>
-                {isAdmin
-                  ? <Input value={name ?? ''} opacity={name && name != '' ? 1 : 0.5}
-                    placeholder='The name of your community.' onChangeText={t => setName(t)} />
-                  : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
-
-                <Heading size='$3'>Description</Heading>
-                {isAdmin ?
-                  <TextArea value={description ?? ''} opacity={description && description != '' ? 1 : 0.5}
-                    onChangeText={t => setDescription(t)} h='$14'
-                    placeholder='A description of the purpose of your community, any general guidelines, etc.' />
-                  : description && description != ''
-                    ? <TamaguiMarkdown text={description} />
-                    : <Paragraph opacity={0.5}>No description set.</Paragraph>}
-
-                <Heading size='$3'>Privacy Policy</Heading>
-                {isAdmin ?
-                  <TextArea value={privacyPolicy ?? ''} opacity={privacyPolicy && privacyPolicy != '' ? 1 : 0.5}
-                    onChangeText={t => setPrivacyPolicy(t)} h='$14'
-                    placeholder='A privacy policy stating how you plan to use user data.' />
-                  : privacyPolicy && privacyPolicy != ''
-                    ? <TamaguiMarkdown text={privacyPolicy} />
-                    : <Paragraph opacity={0.5}>No privacy policy set.</Paragraph>}
-
                 {/* <AnimatePresence> */}
 
-                {isAdmin || logo?.squareMediaId || logo?.wideMediaId
-                  ? <>
-                    <Heading size='$3' mt='$2'>Server Logo</Heading>
+                {section === 'theme' ? <>
+                  <Heading size='$9' als='center' mt='$3'>Server Theme</Heading>
+                  {isAdmin || logo?.squareMediaId || logo?.wideMediaId
+                    ? <>
+                      <Heading size='$7' mt='$2'>Server Logo</Heading>
 
-                    {isAdmin || logo?.wideMediaId
-                      ? <Heading size='$2' mt='$2'>Square Logo/Favicon</Heading>
-                      : undefined}
-                    {logo?.squareMediaId
-                      ? <XStack mb='$2'>
-                        <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} />
-                      </XStack>
-                      : undefined}
-                    {isAdmin
-                      ? <SingleMediaChooser mediaUseName='Square Logo/Icon'
-                        selectedMedia={logo ? { id: logo.squareMediaId } as MediaRef : undefined}
-                        setSelectedMedia={v => setLogo({ ...(logo ?? {}), squareMediaId: v?.id })} />
-                      : undefined}
+                      {isAdmin || logo?.wideMediaId
+                        ? <Heading size='$2' mt='$2'>Square Logo/Favicon</Heading>
+                        : undefined}
+                      {logo?.squareMediaId
+                        ? <XStack mb='$2'>
+                          <MediaRenderer media={Media.create({ id: logo?.squareMediaId })} />
+                        </XStack>
+                        : undefined}
+                      {isAdmin
+                        ? <SingleMediaChooser mediaUseName='Square Logo/Icon'
+                          selectedMedia={logo ? { id: logo.squareMediaId } as MediaRef : undefined}
+                          setSelectedMedia={v => setLogo({ ...(logo ?? {}), squareMediaId: v?.id })} />
+                        : undefined}
 
-                    {isAdmin || logo?.wideMediaId
-                      ? <Heading size='$2' mt='$2'>Wide Logo</Heading>
-                      : undefined}
-                    {logo?.wideMediaId ?
-                      <XStack mb='$2'>
-                      <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} />
-                    </XStack>
-                      : undefined}
+                      {isAdmin || logo?.wideMediaId
+                        ? <Heading size='$2' mt='$2'>Wide Logo</Heading>
+                        : undefined}
+                      {logo?.wideMediaId ?
+                        <XStack mb='$2'>
+                          <MediaRenderer media={Media.create({ id: logo?.wideMediaId })} />
+                        </XStack>
+                        : undefined}
+                      {isAdmin
+                        ? <SingleMediaChooser mediaUseName='Wide Logo'
+                          selectedMedia={logo ? { id: logo.wideMediaId } as MediaRef : undefined}
+                          setSelectedMedia={v => setLogo({ ...(logo ?? {}), wideMediaId: v?.id })} />
+                        : undefined}
+                    </>
+                    : undefined}
+                  <Heading size='$7' mt='$2'>Colors</Heading>
+                  {/* </AnimatePresence> */}
+                  <XStack mt='$2'>
+                    <Heading my='auto' size='$3' f={1}>Primary Color</Heading>
                     {isAdmin
-                      ? <SingleMediaChooser mediaUseName='Wide Logo'
-                        selectedMedia={logo ? { id: logo.wideMediaId } as MediaRef : undefined}
-                        setSelectedMedia={v => setLogo({ ...(logo ?? {}), wideMediaId: v?.id })} />
-                      : undefined}
-                  </>
+                      ? <Input mr='$2' my='auto' w={100} value={primaryColorHex} color={primaryColorValid ? undefined : 'red'} onChange={(e) => setPrimaryColorHex(e.nativeEvent.text)} />
+                      : <Paragraph mr='$2' my='auto'>{primaryColorHex}</Paragraph>}
+                    <XStack my='auto' w={50} h={30} backgroundColor={primaryColorHex} />
+                  </XStack>
+                  {isAdmin ? <XStack als='center'>
+                    <HexColorPicker color={primaryColorHex} onChange={setPrimaryColorHex} />
+                  </XStack> : undefined}
+
+                  <XStack mt='$2'>
+                    <Heading my='auto' size='$3' f={1}>Navigation Color</Heading>
+                    {isAdmin
+                      ? <Input mr='$2' my='auto' w={100} value={navColorHex} color={navColorValid ? undefined : 'red'} onChange={(e) => setNavColorHex(e.nativeEvent.text)} />
+                      : <Paragraph mr='$2' my='auto' >{navColorHex}</Paragraph>}
+                    <XStack my='auto' w={50} h={30} backgroundColor={navColorHex} />
+                  </XStack>
+                  {isAdmin ? <XStack als='center'>
+                    <HexColorPicker color={navColorHex} onChange={setNavColorHex} />
+                  </XStack> : undefined}
+                  <XStack mt='$3' />
+                </>
                   : undefined}
-                {/* </AnimatePresence> */}
-                <XStack mt='$2'>
-                  <Heading my='auto' size='$3' f={1}>Primary Color</Heading>
-                  {isAdmin
-                    ? <Input mr='$2' my='auto' w={100} value={primaryColorHex} color={primaryColorValid ? undefined : 'red'} onChange={(e) => setPrimaryColorHex(e.nativeEvent.text)} />
-                    : <Paragraph mr='$2' my='auto'>{primaryColorHex}</Paragraph>}
-                  <XStack my='auto' w={50} h={30} backgroundColor={primaryColorHex} />
-                </XStack>
-                {isAdmin ? <XStack als='center'>
-                  <HexColorPicker color={primaryColorHex} onChange={setPrimaryColorHex} />
-                </XStack> : undefined}
 
-                <XStack mt='$2'>
-                  <Heading my='auto' size='$3' f={1}>Navigation Color</Heading>
-                  {isAdmin
-                    ? <Input mr='$2' my='auto' w={100} value={navColorHex} color={navColorValid ? undefined : 'red'} onChange={(e) => setNavColorHex(e.nativeEvent.text)} />
-                    : <Paragraph mr='$2' my='auto' >{navColorHex}</Paragraph>}
-                  <XStack my='auto' w={50} h={30} backgroundColor={navColorHex} />
-                </XStack>
-                {isAdmin ? <XStack als='center'>
-                  <HexColorPicker color={navColorHex} onChange={setNavColorHex} />
-                </XStack> : undefined}
-                <XStack mt='$3' />
+                {section === 'settings' ? <>
+                  <Heading size='$9' als='center' mt='$3'>Server Settings</Heading>
+                  <Heading size='$4' mt='$3'>Federated Servers</Heading>
+                  <Paragraph size='$1'>
+                    Jonline servers can federate with each other, which for now simply recommends
+                    users to other servers.
+                  </Paragraph>
+                  {recommendedHosts?.map((host, index) => <YStack>
+                    <XStack ml='$3' mb='$2'>
+                      <Text my='auto' fontFamily='$body' fontSize='$3' mr='$2'>{`${index + 1}.`}</Text>
+                      <Heading my='auto' f={1} fontFamily='$body' size='$1' >{host}</Heading>
+                      <Button my='auto' icon={Delete} size='$2' onPress={() => setRecommendedHosts(recommendedHosts?.filter(h => h != host))} />
+                    </XStack>
+                    {/* <ServerCard server={Ser{ host: recommendedHosts }} /> */}
+                  </YStack>)}
+                  <Input value={newRecommendedHostName ?? ''} opacity={newRecommendedHostName && newRecommendedHostName != '' ? 1 : 0.5}
+                    placeholder='Recommend a Jonline host' onChangeText={t => setNewRecommendedHostName(t)} />
+                  <Button mt='$2' mb='$5'
+                    disabled={!isNewRecommendedHostNameValid}
+                    o={isNewRecommendedHostNameValid ? 1 : 0.5}
+                    onPress={(() => setRecommendedHosts([...(recommendedHosts ?? []), newRecommendedHostName]))}
+                  >
+                    Recommend Host
+                  </Button>
 
-                {<PermissionsEditor label='Default Permissions'
-                  {...defaultPermissionsEditorProps} />}
+                  {<PermissionsEditor label='Default User Permissions'
+                    {...defaultPermissionsEditorProps} />}
 
-                <XStack mt='$3'>
-                  <Heading size='$3' my='auto' f={1}>External CDN HTTP Support</Heading>
-                  <Switch size="$5" margin='auto'
-                    defaultChecked={externalCdnConfig != undefined}
-                    checked={externalCdnConfig != undefined}
-                    value={(externalCdnConfig != undefined).toString()}
-                    disabled={!isAdmin}
-                    opacity={isAdmin ? 1 : 0.5}
-                    onCheckedChange={(checked) => setExternalCdnConfig(
-                      checked ? ExternalCDNConfig.fromPartial({ backendHost: '', frontendHost: '' }) : undefined
-                    )}>
-                    <Switch.Thumb animation="quick" backgroundColor='black' />
-                  </Switch>
-                </XStack>
-                <XStack mt='$3'>
-                  <Heading size='$3' my='auto' f={1}
-                    opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>External CDN gRPC Support</Heading>
-                  <Switch size="$5" margin='auto'
-                    defaultChecked={externalCdnConfig?.cdnGrpc}
-                    checked={externalCdnConfig?.cdnGrpc}
-                    value={(!!externalCdnConfig?.cdnGrpc).toString()}
-                    disabled={!isAdmin || !externalCdnConfig}
-                    opacity={isAdmin && externalCdnConfig ? 1 : 0.5}
-                    onCheckedChange={(checked) => setExternalCdnConfig(
-                      externalCdnConfig
-                        ? { ...externalCdnConfig, cdnGrpc: checked }
-                        : undefined
-                    )}>
-                    <Switch.Thumb animation="quick" backgroundColor='black' />
-                  </Switch>
-                </XStack>
-                {/* {isAdmin ? <> */}
-                <Paragraph size='$1'>
-                  To improve performance, administrators can put their Jonline server's HTML
-                  and Media behind Cloudflare, using a separate host as the gRPC backend.
-                </Paragraph>
-                <Paragraph size='$1'>
-                  For instance, to use Cloudflare to point jonline.io to a backend
-                  at jonline.io.itsj.online, you would:
-                </Paragraph>
-                {[
-                  'Setup and secure your instance on jonline.io.itsj.online, whose DNS is probably managed by your Kubernetes provider (I use DigitalOcean), so you can secure it with Cert-Manager.',
-                  'For extra security: apply a firewall with your Kubernetes provider on the jonline.io.itsj.online host that allows all traffic on port 27707, and only traffic from Cloudflare IPs otherwise.',
-                  'Turn on External CDN Support, set the Backend Domain below to jonline.io.itsj.online, Frontend Domain to jonline.io, and press Update Server.',
-                  'Restart your deployment in Kubernetes. (Maybe we can remove this step one day!)',
-                  'For jonline.io, whose DNS is managed by Cloudflare, create a CNAME record in Cloudflare for jonline.io pointing to notj.online. Turn on Cloudflare\'s HTTPS "proxy" feature, and add a Page Rule for "Cache Level: Cache Everything" for jonline.io/*.'
-                ].map((text, index) => <XStack ml='$3' mb='$2'>
-                  <Text fontFamily='$body' fontSize='$1' mr='$2'>{`${index + 1}.`}</Text>
-                  <Text fontFamily='$body' fontSize='$1' >{text}</Text>
-                </XStack>)}
-                {/* </> : undefined} */}
-                {isAdmin || externalCdnConfig
-                  ? <YStack>
-                    <Heading size='$2' f={1}>Frontend Host</Heading>
-                    <Paragraph size='$1'></Paragraph>
-                    {isAdmin
-                      ? <Input editable={externalCdnConfig != undefined}
-                        opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}
-                        value={externalCdnConfig?.frontendHost ?? ''}
-                        placeholder='e.g.: jonline.io'
-                        onChangeText={t => externalCdnConfig && setExternalCdnConfig({ ...(externalCdnConfig!), frontendHost: t })} />
-                      : <Paragraph opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}>
-                        {externalCdnConfig?.frontendHost || ''}
-                      </Paragraph>}
-                    <Heading mt='$2' size='$2' f={1}>Backend Host</Heading>
-                    <Paragraph size='$1'></Paragraph>
-                    {isAdmin
-                      ? <Input editable={externalCdnConfig != undefined}
-                        opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}
-                        value={externalCdnConfig?.backendHost ?? ''}
-                        placeholder='e.g.: jonline.io.itsj.online'
-                        onChangeText={t => externalCdnConfig && setExternalCdnConfig({ ...(externalCdnConfig!), backendHost: t })} />
-                      : <Paragraph opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}>
-                        {externalCdnConfig?.backendHost || ''}
-                      </Paragraph>}
-                  </YStack>
+                </>
+                  : undefined}
+
+                {section === 'cdn' ? <>
+                  <Heading size='$9' als='center' mt='$3'>External CDN Settings</Heading>
+                  <Heading size='$1' als='center' mt='$3'>
+                    (Mostly for use with <Anchor size='$1' {...cloudflareLink}>Cloudflare</Anchor>.)
+                  </Heading>
+                  {/* {isAdmin ? <> */}
+                  <Paragraph size='$1'>
+                    To improve performance, administrators can put their Jonline server's HTML
+                    and Media behind Cloudflare, using a separate host as the gRPC backend.
+                  </Paragraph>
+                  <Paragraph size='$1'>
+                    For instance, to use Cloudflare to point jonline.io to a backend
+                    at jonline.io.itsj.online, you would:
+                  </Paragraph>
+                  {[
+                    'Setup and secure your instance on jonline.io.itsj.online, whose DNS is probably managed by your Kubernetes provider (I use DigitalOcean), so you can secure it with Cert-Manager.',
+                    'For extra security: apply a firewall with your Kubernetes provider on the jonline.io.itsj.online host that allows all traffic on port 27707, and only traffic from Cloudflare IPs otherwise.',
+                    'Turn on External CDN Support, set the Backend Domain below to jonline.io.itsj.online, Frontend Domain to jonline.io, and press Update Server.',
+                    'Restart your deployment in Kubernetes. (Maybe we can remove this step one day!)',
+                    'For jonline.io, whose DNS is managed by Cloudflare, create a CNAME record in Cloudflare for jonline.io pointing to notj.online. Turn on Cloudflare\'s HTTPS "proxy" feature, and add a Page Rule for "Cache Level: Cache Everything" for jonline.io/*.'
+                  ].map((text, index) => <XStack ml='$3' mb='$2'>
+                    <Text fontFamily='$body' fontSize='$1' mr='$2'>{`${index + 1}.`}</Text>
+                    <Text fontFamily='$body' fontSize='$1' >{text}</Text>
+                  </XStack>)}
+                  {/* </> : undefined} */}
+                  <XStack mt='$3' mb='$2'>
+                    <YStack f={1}>
+                      <Heading size='$3' my='auto'>External CDN HTTP Support</Heading>
+                      <Paragraph size='$1'>Service restart required after setting.</Paragraph>
+                    </YStack>
+                    <Switch size="$5" margin='auto'
+                      defaultChecked={externalCdnConfig != undefined}
+                      checked={externalCdnConfig != undefined}
+                      value={(externalCdnConfig != undefined).toString()}
+                      disabled={!isAdmin}
+                      opacity={isAdmin ? 1 : 0.5}
+                      onCheckedChange={(checked) => setExternalCdnConfig(
+                        checked ? ExternalCDNConfig.fromPartial({ backendHost: '', frontendHost: '' }) : undefined
+                      )}>
+                      <Switch.Thumb animation="quick" backgroundColor='black' />
+                    </Switch>
+                  </XStack>
+                  {isAdmin || externalCdnConfig
+                    ? <YStack>
+                      <Heading size='$2' f={1}
+                        opacity={externalCdnConfig ? 1 : 0.5}>Frontend Host</Heading>
+                      <Paragraph size='$1'></Paragraph>
+                      {isAdmin
+                        ? <Input editable={externalCdnConfig != undefined}
+                          opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}
+                          value={externalCdnConfig?.frontendHost ?? ''}
+                          placeholder='e.g.: jonline.io'
+                          onChangeText={t => externalCdnConfig && setExternalCdnConfig({ ...(externalCdnConfig!), frontendHost: t })} />
+                        : <Paragraph opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}>
+                          {externalCdnConfig?.frontendHost || ''}
+                        </Paragraph>}
+                      <Heading mt='$2' size='$2' f={1}
+                        opacity={externalCdnConfig ? 1 : 0.5}>Backend Host</Heading>
+                      <Paragraph size='$1'></Paragraph>
+                      {isAdmin
+                        ? <Input editable={externalCdnConfig != undefined}
+                          opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}
+                          value={externalCdnConfig?.backendHost ?? ''}
+                          placeholder='e.g.: jonline.io.itsj.online'
+                          onChangeText={t => externalCdnConfig && setExternalCdnConfig({ ...(externalCdnConfig!), backendHost: t })} />
+                        : <Paragraph opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}>
+                          {externalCdnConfig?.backendHost || ''}
+                        </Paragraph>}
+                    </YStack>
+                    : undefined}
+                  <XStack mt='$3'>
+                    <YStack f={1}>
+                      <Heading size='$3' my='auto'
+                        opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>External CDN gRPC Support</Heading>
+                      <Paragraph size='$1'
+                        opacity={isAdmin && externalCdnConfig ? 1 : 0.5}>Additional service restart required. Ensure CDN HTTP support is working before enabling CDN gRPC support. <Text fontStyle='italic' fontWeight='900'>In case enabling makes this UI inaccessible, make sure you can shell in</Text> (<Text fontFamily='$mono'>make deploy_be_shell</Text>, using Jonline Makefiles) and run <Text fontFamily='$mono'>./opt/disable_cdn_grpc</Text> to revert this setting.</Paragraph>
+                    </YStack>
+                    <Switch size="$5" margin='auto'
+                      defaultChecked={externalCdnConfig?.cdnGrpc}
+                      checked={externalCdnConfig?.cdnGrpc}
+                      value={(!!externalCdnConfig?.cdnGrpc).toString()}
+                      disabled={!isAdmin || !externalCdnConfig}
+                      opacity={isAdmin && externalCdnConfig ? 1 : 0.5}
+                      onCheckedChange={(checked) => setExternalCdnConfig(
+                        externalCdnConfig
+                          ? { ...externalCdnConfig, cdnGrpc: checked }
+                          : undefined
+                      )}>
+                      <Switch.Thumb animation="quick" backgroundColor='black' />
+                    </Switch>
+                  </XStack>
+                </>
                   : undefined}
 
                 {isWeb && isAdmin ? <YStack h={50} /> : undefined}
               </YStack>
             </ScrollView>
-
-            {isAdmin ?
-              isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
-                <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-                  <Button maw={600} als='center'
-                    disabled={updating || !inputsValid}
-                    {...themedButtonBackground(primaryColor)}
-                    opacity={updating || !inputsValid ? 0.5 : 1}
-                    onPress={updateServer}  >
-                    <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
-                  </Button>
-                </YStack>
-              </StickyBox>
-                : <Button maw={600} mt='$3' als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
-              : undefined}
 
           </YStack>
           : app.allowServerSelection || serverIsSelected ? <>
@@ -442,6 +541,20 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           Go Home
         </Button> */}
       </YStack>
+      {server && isAdmin ?
+        isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
+          <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+            <Button maw={600} als='center'
+              disabled={updating || !inputsValid}
+              {...themedButtonBackground(primaryColor)}
+              opacity={updating || !inputsValid ? 0.5 : 1}
+              onPress={updateServer}  >
+              <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
+            </Button>
+          </YStack>
+        </StickyBox>
+          : <Button maw={600} mt='$3' als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
+        : undefined}
     </TabsNavigation>
   )
 }
