@@ -16,8 +16,10 @@
     "fix": "manypkg fix",
     "postinstall": "yarn check-deps && yarn build",
     "build": "yarn workspaces foreach --exclude next-app run build",
-    "upgrade:tamagui": "yarn up '*tamagui*'@latest '@tamagui/*'@latest react-native-web-lite@latest",
-    "upgrade:tamagui:canary": "yarn up '*tamagui*'@canary '@tamagui/*'@canary react-native-web-lite@canary",
+    "upgrade:tamagui": "yarn up '*tamagui*'@latest '@tamagui/*'@latest",
+    "upgrade:tamagui:canary": "yarn up '*tamagui*'@canary '@tamagui/*'@canary",
+    "upgrade:tamagui:old": "yarn up '*tamagui*'@canary '@tamagui/*'@canary react-native-web-lite@latest",
+    "upgrade:tamagui:canary:old": "yarn up '*tamagui*'@canary '@tamagui/*'@canary react-native-web-lite@canary",
     "check-deps": "check-dependency-version-consistency .",
     "protos": "protoc --plugin=\"./node_modules/.bin/protoc-gen-ts_proto\" -I ../../protos/ --ts_proto_opt=esModuleInterop=true --ts_proto_opt=useDate=string --ts_proto_opt=addGrpcMetadata=true --ts_proto_opt=outputClientImpl=grpc-web --ts_proto_opt=lowerCaseServiceMethods=true --ts_proto_out=\"./packages/api/generated\" ../../protos/jonline.proto"
   },

@@ -9,7 +9,11 @@ export type ServerNameAndLogoProps = {
   enlargeSmallText?: boolean;
 };
 
-export function ServerNameAndLogo({ shrink, server: selectedServer, enlargeSmallText }: ServerNameAndLogoProps) {
+export function ServerNameAndLogo({
+  shrink,
+  server: selectedServer,
+  enlargeSmallText = false
+}: ServerNameAndLogoProps) {
   const mediaQuery = useMedia()
 
   const currentServer = useServer();
@@ -24,7 +28,7 @@ export function ServerNameAndLogo({ shrink, server: selectedServer, enlargeSmall
     ;
   const veryShortServername = serverNameBeforeEmoji!.length < 10;
   const shortServername = serverNameBeforeEmoji!.length < 12;
-  const largeServername = (!serverNameAfterEmoji || serverNameAfterEmoji === '') && veryShortServername;
+  const largeServername = veryShortServername && (['', undefined].includes(serverNameAfterEmoji));
 
   const maxWidth = enlargeSmallText
     ? undefined

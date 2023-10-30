@@ -64,8 +64,9 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const wrapTitle = serverName.length > 20;
   const maxWidth = mediaQuery.gtXs
-    ? 250
-    : 170;
+    ? 270
+    : 200;
+
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
   // const app = useLocalApp();
@@ -88,9 +89,9 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const recentGroupIds = useTypedSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
-    const inlineFeatureNavigation = useInlineFeatureNavigation();
-    const scrollGroupsSheet = !inlineFeatureNavigation
-     || !mediaQuery.gtXs;
+  const inlineFeatureNavigation = useInlineFeatureNavigation();
+  const scrollGroupsSheet = !inlineFeatureNavigation
+    || !mediaQuery.gtXs;
 
   useEffect(() => {
     if (selectedGroup && server && recentGroupIds[0] != selectedGroup.id) {
@@ -101,6 +102,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const useSquareLogo = canUseLogo && logo?.squareMediaId != undefined;
   const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrinkHomeButton;
   const useEmoji = serverNameEmoji && serverNameEmoji !== '';
+  const maxWidthAfterServerName = maxWidth ? maxWidth - (serverNameEmoji ? 50 : 0) : undefined;
 
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <GroupContextProvider value={selectedGroup}>
@@ -125,7 +127,52 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   {...homeProps}
                 >
                   {renderButtonChildren
-                    ? <ServerNameAndLogo shrink={shrinkHomeButton} server={primaryServer} />
+                    // ? <ServerNameAndLogo shrink={shrinkHomeButton} server={primaryServer} />
+                    ? shrinkHomeButton
+                      ? useSquareLogo
+                        ? <XStack h='100%'
+                          scale={1.1}
+                          transform={[
+                            { translateY: 1.5 },
+                            { translateX: isSafari() ? 8.0 : 2.0 }]
+                          } >
+                          <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+                        </XStack>
+                        : <XStack h={'100%'} maw={maxWidthAfterServerName}>
+                          <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+                          {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
+                        </XStack>
+                      : <XStack h={'100%'} w='100%' space='$5' maw={maxWidthAfterServerName}>
+                        {useWideLogo
+                          ? <XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
+                            <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.wideMediaId })} failQuietly />
+                          </XStack>
+                          : <>
+                            {useSquareLogo
+                              ? <XStack w={'$3'} h={'$3'} ml='$2' mr='$1' my='auto'>
+                                <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+                              </XStack>
+                              : serverNameEmoji && serverNameEmoji != ''
+                                ? <Heading size={undefined}
+                                  my='auto' ml='$2' mr='$2' whiteSpace="nowrap">{serverNameEmoji}</Heading>
+                                : undefined}
+                            <YStack f={1} my='auto' mr='$2' space={'$0'}>
+                              {largeServername
+                                ? <Heading my='auto' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{serverNameBeforeEmoji}</Heading>
+                                : <Paragraph size={'$1'}
+                                  fontWeight='700' lineHeight={12} >{serverNameBeforeEmoji}{useSquareLogo && serverNameEmoji && serverNameEmoji != '' ? ` ${serverNameEmoji}` : undefined}</Paragraph>}
+                              {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername)
+                                ? <Paragraph
+                                  size={'$1'
+                                  }
+                                  lineHeight={12}
+                                >
+                                  {serverNameAfterEmoji}
+                                </Paragraph>
+                                : undefined}
+                            </YStack>
+                          </>}
+                      </XStack>
                     : undefined}
                 </Button>
                 {!scrollGroupsSheet
