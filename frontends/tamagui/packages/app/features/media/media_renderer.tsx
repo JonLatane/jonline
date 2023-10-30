@@ -32,7 +32,7 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly
   const media = reduxMedia ?? sourceMedia;
 
   const mediaUrl = useMediaUrl(media.id, { server });
-  console.log(`mediaUrl for ${server.host} is ${mediaUrl}`)
+  // console.log(`mediaUrl for ${server.host} is ${mediaUrl}`)
   let [type, subType] = media.contentType.split('/');
   if (forceImage) {
     type = 'image';

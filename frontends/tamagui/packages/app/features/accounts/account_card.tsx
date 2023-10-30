@@ -10,9 +10,10 @@ import { hasAdminPermission, hasPermission } from '../../utils/permission_utils'
 
 interface Props {
   account: JonlineAccount;
+  totalAccounts: number;
 }
 
-const AccountCard: React.FC<Props> = ({ account }) => {
+const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
   const dispatch = useTypedDispatch();
   let selected = accountId(store.getState().accounts.account) == accountId(account);
 
@@ -30,10 +31,10 @@ const AccountCard: React.FC<Props> = ({ account }) => {
   function doLogout() {
     dispatch(selectAccount(undefined));
   }
-  function  moveUp() {
+  function moveUp() {
     dispatch(moveAccountUp(accountId(account)!));
   }
-  function  moveDown() {
+  function moveDown() {
     dispatch(moveAccountDown(accountId(account)!));
   }
   const avatarUrl = useMediaUrl(account.user.avatar?.id, { account, server: account.server });
@@ -89,10 +90,12 @@ const AccountCard: React.FC<Props> = ({ account }) => {
             <YStack f={1} />
             {selected
               ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button>
-              : <XStack my='auto' space='$2' mr='$3'>
-                <Button size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
-                <Button size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
-              </XStack>}
+              : totalAccounts > 1
+                ? <XStack my='auto' space='$2' mr='$3'>
+                  <Button size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
+                  <Button size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
+                </XStack>
+                : undefined}
 
             <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$3' />
             <Dialog>

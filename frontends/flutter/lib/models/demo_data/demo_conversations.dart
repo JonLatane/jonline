@@ -91,7 +91,7 @@ final List<String> _demoReplies = [
   "Alluring. So cool.",
   "Navigation, avatar, boldness, shot – incredible, friend.",
   "Nice use of turquoise in this design mate",
-  "Green. Mmh wondering if this comment will hit the generateor as well...",
+  "Green. Mmh wondering if this comment will hit the generator as well...",
   "Really simple!",
   "Flat design is going to die.",
   "Outstandingly thought out! I'd love to see a video of how it works.",

@@ -388,7 +388,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 </>
                 // : browsingServers && Platform.OS == 'web'
                 //   ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
-                  : undefined}
+                : undefined}
 
               {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
 
@@ -520,18 +520,20 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               {app.separateAccountsByServer
                 ? <>
                   {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on {primaryServer?.host}.</Heading> : undefined}
-                  {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={accountId(account)} />)}
+                  {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={accountId(account)}
+                    totalAccounts={accountsOnPrimaryServer.length} />)}
                   {accountsElsewhere.length > 0 && !onlyShowServer
                     ? <>
                       <Heading>Accounts Elsewhere</Heading>
-                      {accountsElsewhere.map((account) => <AccountCard account={account} key={accountId(account)} />)}
+                      {accountsElsewhere.map((account) => <AccountCard account={account} key={accountId(account)}
+                        totalAccounts={accountsElsewhere.length} />)}
                     </>
                     : undefined
                   }
                 </>
                 : <>
                   {displayedAccounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
-                  {displayedAccounts.map((account) => <AccountCard account={account} key={accountId(account)} />)}
+                  {displayedAccounts.map((account) => <AccountCard account={account} key={accountId(account)} totalAccounts={displayedAccounts.length} />)}
                 </>}
 
               {/* <FlatList
