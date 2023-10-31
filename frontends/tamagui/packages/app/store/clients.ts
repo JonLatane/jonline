@@ -8,6 +8,12 @@ import { JonlineServer } from "./types";
 const clients = new Map<string, JonlineClientImpl>();
 const loadingClients = new Set<string>();
 
+export function deleteClient(server: JonlineServer) {
+  const serverId = serverID(server);
+  clients.delete(serverId);
+  loadingClients.delete(serverId);
+}
+
 // Creates a client and upserts the server into the store.
 export async function getServerClient(server: JonlineServer): Promise<Jonline> {
   const serverId = serverID(server);

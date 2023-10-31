@@ -107,6 +107,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
 
   const inlineNavigation = useInlineFeatureNavigation();
+  const reorderInlineNavigation = !mediaQuery.gtMd;
   const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
 
   const followRequests: User[] | undefined = useTypedSelector((state: RootState) =>
@@ -134,7 +135,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS)),
     navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS)),
   ];
-  const postsEventsRow = inlineNavigation
+  const postsEventsRow = inlineNavigation && reorderInlineNavigation
     ? (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
       ? <>{events}{posts}</>
       : (appSection == AppSection.POST || appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
@@ -142,9 +143,14 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         : <>{latest}{posts}{events}</>
     : <>{latest}{posts}{events}</>;
 
+  const showFollowRequests = account && (
+    (!inlineNavigation || (!reorderInlineNavigation && appSubsection == AppSubsection.FOLLOW_REQUESTS))
+    || followRequestCount > 0
+    || isPeople
+  );
   const peopleRow = <>
     {navButton(isPeople, peopleLink, 'People')}
-    {account && (!inlineNavigation || followRequestCount > 0 || isPeople) ? navButton(isFollowRequests, followRequestsLink,
+    {showFollowRequests ? navButton(isFollowRequests, followRequestsLink,
       `Follow Requests${followRequestCount > 0 ? ` (${followRequestCount})` : ''}`
     ) : undefined}
   </>;
@@ -154,22 +160,28 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
   </>
 
-  const triggerButton = <Button scale={0.95} ml={selectedGroup ? -4 : -3} my='auto'
-    disabled={inlineNavigation}
-    icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
-    {...themedButtonBackground(navColor)}>
-    <Heading size="$4"
-      // color={primaryTextColor}
-      color={navTextColor}
-    >{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
-  </Button>;
+  function triggerButton() {
+    return <Button scale={0.95} ml={selectedGroup ? -4 : -3} my='auto'
+      disabled={inlineNavigation}
+      icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
+      {...themedButtonBackground(navColor)}>
+      <Heading size="$4"
+        // color={primaryTextColor}
+        color={navTextColor}
+      >{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
+    </Button>;
+  }
 
   function navButton(selected: boolean, link: object, name: string) {
-    return selected && inlineNavigation ? <></>
+    return selected && inlineNavigation ?
+      !reorderInlineNavigation
+        ? <>{triggerButton()}</>
+        : <></>
       : <Popover.Close asChild>
         <Button
           // bordered={false}
           transparent
+          my='auto'
           size="$3"
           disabled={selected}
           o={selected ? 0.5 : 1}
@@ -188,16 +200,31 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     </XStack>
     : undefined;
 
+  const menuItems = [
+    AppSection.HOME,
+    AppSection.POSTS,
+    // AppSection.POST,
+    AppSection.EVENTS,
+    // AppSection.EVENT,
+    AppSection.PEOPLE,
+    // AppSection.PROFILE,
+    // AppSection.GROUPS,
+    // AppSection.GROUP,
+    AppSection.MEDIA,
 
+  ];
+
+
+  console.log('inlineNavigation', inlineNavigation, 'reorderInlineNavigation', reorderInlineNavigation, menuItems.includes(appSection));
   return inlineNavigation
     ? <>
       <XStack w={selectedGroup ? 11 : 3.5} />
-      {triggerButton}
+      {!reorderInlineNavigation && menuItems.includes(appSection) ? undefined : triggerButton()}
       <XStack space='$2' ml='$1' my='auto'>
-        {isPeopleRow ? peopleRow : postsEventsRow}
+        {isPeopleRow && reorderInlineNavigation ? peopleRow : postsEventsRow}
         {inlineSeparator}
-        {isPeopleRow ? postsEventsRow : peopleRow}
-        {isMedia ? undefined : inlineSeparator}
+        {isPeopleRow && reorderInlineNavigation ? postsEventsRow : peopleRow}
+        {isMedia && reorderInlineNavigation ? undefined : inlineSeparator}
         {myDataRow}
       </XStack>
     </>
@@ -205,7 +232,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       <XStack w={selectedGroup ? 11 : 3.5} />
       <Popover size="$5">
         <Popover.Trigger asChild>
-          {triggerButton}
+          {triggerButton()}
         </Popover.Trigger>
         <Popover.Content
           bw={1}

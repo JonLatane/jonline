@@ -76,7 +76,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
-  const shrinkHomeButton = !mediaQuery.gtLg && (selectedGroup != undefined ||
+  const shrinkHomeButton = !mediaQuery.gtMd && (selectedGroup != undefined ||
     appSubsection == AppSubsection.FOLLOW_REQUESTS);
   // console.log(`app.darkModeAuto=${app.darkModeAuto}, systemDark=${systemDark}, app.darkMode=${app.darkMode}, invert=${invert}, dark=${dark}, bgColor=${bgColor}`);
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;

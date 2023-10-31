@@ -324,7 +324,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     // disabled={onlyShowServer != undefined}
                     // maw={100}
                     onPress={() => setBrowsingServers((x) => !x)} >
-                    {browsingServers ? 'Back' : `More Servers (${servers.length})`}
+                    {browsingServers ? 'Back' : `My Servers (${servers.length})`}
                   </Button>
                   : undefined}
               </XStack>

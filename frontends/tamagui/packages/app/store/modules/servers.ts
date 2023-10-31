@@ -6,9 +6,10 @@ import {
   EntityId,
   PayloadAction
 } from "@reduxjs/toolkit";
-import { getServerClient, resetCredentialedData, store } from "..";
+import { deleteClient, getServerClient, resetCredentialedData, store } from "..";
 import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
+import { GetServiceVersionResponse } from "@jonline/api";
 
 export function serverID(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}:${server.host}`;
@@ -49,7 +50,7 @@ export interface ServersState {
   entities: Dictionary<JonlineServer>;
 }
 
-const serversAdapter = createEntityAdapter<JonlineServer>({
+export const serversAdapter = createEntityAdapter<JonlineServer>({
   selectId: serverID,
 });
 
@@ -132,6 +133,7 @@ export const serversSlice = createSlice({
           .filter(s => serverID(s) != serverID(action.payload))[0];
         //[serverID(action.payload)];//serversAdapter(state, serverID(action.payload));
       }
+      deleteClient(action.payload);
       serversAdapter.removeOne(state, serverID(action.payload));
     },
     resetServers: () => initialState,

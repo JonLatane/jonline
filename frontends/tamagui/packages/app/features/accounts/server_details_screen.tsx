@@ -1,6 +1,6 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api'
 import { Anchor, Button, Heading, Input, Paragraph, ScrollView, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
-import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete } from '@tamagui/lucide-icons';
+import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { HexColorPicker } from "react-colorful"
@@ -19,6 +19,7 @@ import { themedButtonBackground } from '../../utils/themed_button_background';
 import { hasAdminPermission } from 'app/utils/permission_utils'
 import { MediaRef } from '../media/media_chooser'
 import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
+import RecommendedServerCard from './recommended_server_card';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 
@@ -226,7 +227,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     <TabsNavigation appSection={AppSection.INFO} onlyShowServer={server}>
       <StickyBox offsetTop={56} className='blur' style={{ width: '100%', zIndex: 10 }}>
         <XStack w='100%'>
-          {sectionButton('about', 'About', <BadgeInfo color={section === 'about' ? navAnchorColor : undefined} />)}
+          {sectionButton('about', 'About', <Info color={section === 'about' ? navAnchorColor : undefined} />)}
           {sectionButton('theme', 'Theme', <Palette color={section === 'theme' ? navAnchorColor : undefined} />)}
           {sectionButton('settings', 'Settings', <Cog color={section === 'settings' ? navAnchorColor : undefined} />)}
           {/* {sectionButton('servers', 'Servers', <Server color={section === 'servers' ? primaryAnchorColor : undefined} />)} */}
@@ -253,7 +254,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 </>}
                 {section === 'about' ? <>
                   <Heading size='$9' als='center' mt='$3'>About {specificServer ? 'Community' : 'Server'}</Heading>
-                  <ServerCard server={{...server, serverConfiguration: updatedConfiguration}} disableHeightLimit />
+                  <ServerCard server={{ ...server, serverConfiguration: updatedConfiguration }} disableHeightLimit />
                   <Button {...aboutJonlineLink} size='$4' my='$2' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} iconAfter={
                     <>
                       <Github color={navTextColor} />
@@ -285,7 +286,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       <Heading size='$1' my='$2'>Name and Logo Previews</Heading>
                       <XStack mx='auto' space='$3' my='$2'>
                         <XStack h={48} overflow='hidden'>
-                        <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} />
+                          <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} />
                         </XStack>
                         <XStack h={72} w={72} my='auto'>
                           <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} shrink />
@@ -386,26 +387,64 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <Heading size='$9' als='center' mt='$3'>Server Settings</Heading>
                   <Heading size='$4' mt='$3'>Federated Servers</Heading>
                   <Paragraph size='$1'>
-                    Jonline servers can federate with each other, which for now simply recommends
-                    users to other servers.
+                    Jonline servers can federate with each other, which surfaces to community users
+                    as "recommended servers" in the account section of their UI. In this way, servers
+                    don't really need to talk to each other much; the federation sits mostly on the client-side
+                    and is backed solely by DNS names and DNS-based security.
                   </Paragraph>
-                  {recommendedHosts?.map((host, index) => <YStack>
-                    <XStack ml='$3' mb='$2'>
+                  {(recommendedHosts?.length ?? 0)=== 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
+                    No recommended servers.
+                  </Paragraph> : undefined}
+                  {recommendedHosts?.map((host, index) => <YStack w='100%' my='$2' alignContent='center' ai='center'>
+                    <XStack ml='$3' mb='$2' w='100%' space='$1'>
                       <Text my='auto' fontFamily='$body' fontSize='$3' mr='$2'>{`${index + 1}.`}</Text>
                       <Heading my='auto' f={1} fontFamily='$body' size='$1' >{host}</Heading>
-                      <Button my='auto' icon={Delete} size='$2' onPress={() => setRecommendedHosts(recommendedHosts?.filter(h => h != host))} />
+                      {isAdmin
+                        ? <>
+                          <Button my='auto' icon={ChevronUp} size='$2'
+                            disabled={index === 0}
+                            o={index === 0 ? 0.5 : 1}
+                            onPress={() => {
+                              const data = [...recommendedHosts];
+                              // const index = data.indexOf(host);
+                              if (index > 0) {
+                                const element = data.splice(index, 1)[0]!;
+                                data.splice(index - 1, 0, element);
+                              }
+                              setRecommendedHosts(data);
+                            }} />
+                          <Button my='auto' icon={ChevronDown} size='$2'
+                            disabled={index === recommendedHosts.length - 1}
+                            o={index === recommendedHosts.length - 1 ? 0.5 : 1}
+                            onPress={() => {
+                              const data = [...recommendedHosts];
+                              // const index = data.indexOf(host);
+                              if (index > 0) {
+                                const element = data.splice(index, 1)[0]!;
+                                data.splice(index + 1, 0, element);
+                              }
+                              setRecommendedHosts(data);
+                            }} />
+                          <Button my='auto' icon={Delete} size='$2' onPress={() => setRecommendedHosts(recommendedHosts?.filter(h => h != host))} />
+                        </>
+                        : undefined}
                     </XStack>
+                    <RecommendedServerCard host={host} />
                     {/* <ServerCard server={Ser{ host: recommendedHosts }} /> */}
                   </YStack>)}
-                  <Input value={newRecommendedHostName ?? ''} opacity={newRecommendedHostName && newRecommendedHostName != '' ? 1 : 0.5}
-                    placeholder='Recommend a Jonline host' onChangeText={t => setNewRecommendedHostName(t)} />
-                  <Button mt='$2' mb='$5'
-                    disabled={!isNewRecommendedHostNameValid}
-                    o={isNewRecommendedHostNameValid ? 1 : 0.5}
-                    onPress={(() => setRecommendedHosts([...(recommendedHosts ?? []), newRecommendedHostName]))}
-                  >
-                    Recommend Host
-                  </Button>
+                  {isAdmin
+                    ? <>
+                      <Input value={newRecommendedHostName ?? ''} opacity={newRecommendedHostName && newRecommendedHostName != '' ? 1 : 0.5}
+                        placeholder='Recommend a Jonline host' onChangeText={t => setNewRecommendedHostName(t)} />
+                      <Button mt='$2' mb='$5'
+                        disabled={!isNewRecommendedHostNameValid}
+                        o={isNewRecommendedHostNameValid ? 1 : 0.5}
+                        onPress={(() => setRecommendedHosts([...(recommendedHosts ?? []), newRecommendedHostName.toLowerCase()]))}
+                      >
+                        Recommend Server
+                      </Button>
+                    </>
+                    : undefined}
 
                   {<PermissionsEditor label='Default User Permissions'
                     {...defaultPermissionsEditorProps} />}

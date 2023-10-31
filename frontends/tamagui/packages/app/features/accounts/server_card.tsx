@@ -54,16 +54,23 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
         pressStyle={{ scale: 0.875 }}
         onPress={doSelectServer}>
         <Card.Header>
-          <XStack>
-            <YStack f={1} maxHeight={disableHeightLimit ? undefined : 128} overflow="hidden">
-              {/* <Heading marginRight='auto' whiteSpace="nowrap" width='100%' overflow="hidden" textOverflow="ellipsis"
+          <XStack w='100%'>
+            <YStack f={1} overflow="hidden">
+              <YStack maxHeight={disableHeightLimit ? undefined : 128} overflow="hidden">
+                {/* <Heading marginRight='auto' whiteSpace="nowrap" width='100%' overflow="hidden" textOverflow="ellipsis"
               opacity={server.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>{server.serverConfiguration?.serverInfo?.name || 'Unnamed'}</Heading> */}
-              {/* <XStack h={48}> */}
-              <ServerNameAndLogo server={server} disableWidthLimits />
-              {/* </XStack> */}
+                {/* <XStack h={48}> */}
+                <ServerNameAndLogo server={server} disableWidthLimits />
+                {/* </XStack> */}
+              </YStack>
               <Heading size="$1" marginRight='auto'>{server.host}</Heading>
             </YStack>
-            {isPreview && !linkToServerInfo ? <Button onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} icon={<Info />} circular /> : undefined}
+            {/* <Button icon={<Info />} circular
+                onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} /> */}
+            {isPreview && !linkToServerInfo
+              ? <Button icon={<Info />} circular
+                onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} />
+              : undefined}
           </XStack>
         </Card.Header>
         <Card.Footer p='$3'>
