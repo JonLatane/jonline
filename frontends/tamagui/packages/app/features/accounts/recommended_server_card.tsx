@@ -1,14 +1,11 @@
-import { Button, Card, Dialog, Heading, Paragraph, Theme, XStack, YStack } from "@jonline/ui";
-import { Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useTypedDispatch, useTypedSelector, accountId, serversAdapter, upsertServer, getServerClient, setAllowServerSelection, useLocalApp } from 'app/store';
+import { Button, Heading, YStack } from "@jonline/ui";
+import { RootState, getServerClient, serversAdapter, setAllowServerSelection, upsertServer, useLocalApp, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect } from "react";
-import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
 import ServerCard from "./server_card";
 
 interface Props {
   host: string;
-  // server: JonlineServer;
   tiny?: boolean;
   isPreview?: boolean;
   linkToServerInfo?: boolean;
@@ -46,12 +43,6 @@ export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false
   const [loadingClient, setLoadingClient] = React.useState(false);
 
   const { allowServerSelection } = useLocalApp();
-
-
-  // const pendingServer = {
-  //   host,
-  //   secure: true,
-  // };
   async function addServer() {
     setLoadingClient(true);
     if (!allowServerSelection) {
@@ -78,7 +69,7 @@ export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false
           disableHeightLimit={disableHeightLimit} disableFooter linkToServerInfo disablePress />
         <Button theme='active' mt='$2' disabled={loadingClient} o={loadingClient ? 0.5 : 1}
           onPress={addServer}>
-          Add Server <Heading size='$3'>{host}</Heading>
+          Add <Heading size='$3'>{host}</Heading>
         </Button>
       </>}
   </YStack>
