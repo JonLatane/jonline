@@ -87,17 +87,20 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
               <Heading size='$4' mt='$3'>Feature Navigation</Heading>
               <Paragraph o={0.5} size='$1'>Posts, Events, People, Latest, etc.</Paragraph>
-              <ToggleRow name='Auto Feature Navigation' 
-              description = 'Automatically show/hide feature navigation based on screen size.'
-              value={app.inlineFeatureNavigation === undefined}
+              <ToggleRow name='Auto Feature Navigation'
+                description='Automatically show/hide feature navigation based on screen size.'
+                value={app.inlineFeatureNavigation === undefined}
                 setter={(v) => setInlineFeatureNavigation(v ? undefined : false)} autoDispatch />
               <ToggleRow name='Inline Feature Navigation' value={inlineNavigation}
-              description = 'Show features in a horizontal row at the top of the screen.'
+                description='Show features in a horizontal row at the top of the screen.'
                 disabled={app.inlineFeatureNavigation === undefined}
                 setter={setInlineFeatureNavigation} autoDispatch />
 
               <Heading size='$3' mt='$3'>Multi-Server</Heading>
-              <ToggleRow name='Allow Server Selection' value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
+              <ToggleRow name='Allow Server Selection'
+                description={serverCount !== 1 ? 'Delete other servers to disable this setting.': undefined}
+                disabled={serverCount !== 1}
+                value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
               <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
 

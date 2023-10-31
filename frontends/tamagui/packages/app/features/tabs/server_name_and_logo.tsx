@@ -5,7 +5,7 @@ import { MediaRenderer } from "../media/media_renderer";
 import { Home } from "@tamagui/lucide-icons";
 
 export type ServerNameAndLogoProps = {
-  shrink?: boolean;
+  shrinkToSquare?: boolean;
   server?: JonlineServer;
   enlargeSmallText?: boolean;
   fallbackToHomeIcon?: boolean;
@@ -13,7 +13,7 @@ export type ServerNameAndLogoProps = {
 };
 
 export function ServerNameAndLogo({
-  shrink,
+  shrinkToSquare,
   server: selectedServer,
   enlargeSmallText = false,
   fallbackToHomeIcon = false,
@@ -45,13 +45,13 @@ export function ServerNameAndLogo({
 
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
   const useSquareLogo = canUseLogo && logo?.squareMediaId != undefined;
-  const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrink;
+  const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrinkToSquare;
   const useEmoji = serverNameEmoji && serverNameEmoji !== '';
 
   const imageLogoSize = enlargeSmallText ? '$6' : '$3';
   const serverEmojiFontSize = enlargeSmallText ? '$10' : '$8';
 
-  return shrink
+  return shrinkToSquare
     ? useSquareLogo
       ? <XStack h='100%'
         scale={1.1}

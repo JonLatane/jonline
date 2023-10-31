@@ -10,9 +10,11 @@ interface Props {
   isPreview?: boolean;
   linkToServerInfo?: boolean;
   disableHeightLimit?: boolean;
+  disableFooter?: boolean;
+  disablePress?: boolean;
 }
 
-const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerInfo = false, disableHeightLimit }) => {
+const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerInfo = false, disableHeightLimit, disableFooter = false, disablePress = false }) => {
   const dispatch = useTypedDispatch();
   const selected = store.getState().servers.server?.host == server.host;
   const serversState = useTypedSelector((state: RootState) => state.servers);
@@ -52,7 +54,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
         width={isPreview ? 260 : '100%'}
         hoverStyle={{ scale: 0.925 }}
         pressStyle={{ scale: 0.875 }}
-        onPress={doSelectServer}>
+        onPress={disablePress ? undefined : doSelectServer}>
         <Card.Header>
           <XStack w='100%'>
             <YStack f={1} overflow="hidden">
@@ -73,74 +75,77 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
               : undefined}
           </XStack>
         </Card.Header>
-        <Card.Footer p='$3'>
-          <XStack width='100%'>
-            <YStack mt='$2' mr='$3'>
-              {server.secure ? <Lock /> : <Unlock />}
-            </YStack>
-            <YStack f={10}>
-              <Heading size="$1" mr='auto'>{accounts.length > 0 ? accounts.length : "No "} account{accounts.length == 1 ? '' : 's'}</Heading>
-              {server.serviceVersion ? <Heading size="$1" mr='auto'>{server.serviceVersion?.version}</Heading> : undefined}
-            </YStack>
-            {isPreview && serversState.ids.length > 1
-              ? <Dialog>
-                <Dialog.Trigger asChild>
-                  <Button onPress={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular />
-                </Dialog.Trigger>
-                <Dialog.Portal zi={1000011}>
-                  <Dialog.Overlay
-                    key="overlay"
-                    animation="quick"
-                    o={0.5}
-                    enterStyle={{ o: 0 }}
-                    exitStyle={{ o: 0 }}
-                  />
-                  <Dialog.Content
-                    bordered
-                    elevate
-                    key="content"
-                    animation={[
-                      'quick',
-                      {
-                        opacity: {
-                          overshootClamping: true,
+        {disableFooter
+          ? undefined
+          : <Card.Footer p='$3'>
+            <XStack width='100%'>
+              <YStack mt='$2' mr='$3'>
+                {server.secure ? <Lock /> : <Unlock />}
+              </YStack>
+              <YStack f={10}>
+                <Heading size="$1" mr='auto'>{accounts.length > 0 ? accounts.length : "No "} account{accounts.length == 1 ? '' : 's'}</Heading>
+                {server.serviceVersion ? <Heading size="$1" mr='auto'>{server.serviceVersion?.version}</Heading> : undefined}
+              </YStack>
+              {isPreview && serversState.ids.length > 1
+                ? <Dialog>
+                  <Dialog.Trigger asChild>
+                    <Button onPress={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular />
+                  </Dialog.Trigger>
+                  <Dialog.Portal zi={1000011}>
+                    <Dialog.Overlay
+                      key="overlay"
+                      animation="quick"
+                      o={0.5}
+                      enterStyle={{ o: 0 }}
+                      exitStyle={{ o: 0 }}
+                    />
+                    <Dialog.Content
+                      bordered
+                      elevate
+                      key="content"
+                      animation={[
+                        'quick',
+                        {
+                          opacity: {
+                            overshootClamping: true,
+                          },
                         },
-                      },
-                    ]}
-                    m='$3'
-                    enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                    exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                    x={0}
-                    scale={1}
-                    opacity={1}
-                    y={0}
-                  >
-                    <YStack space>
-                      <Dialog.Title>Remove Server</Dialog.Title>
-                      <Dialog.Description>
-                        {/* <Paragraph> */}
-                        Really remove {server.host}{accounts.length == 1 ? ' and one account' : accounts.length > 1 ? ` and ${accounts.length} accounts` : ''}?
-                        {/* </Paragraph> */}
-                      </Dialog.Description>
+                      ]}
+                      m='$3'
+                      enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                      exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                      x={0}
+                      scale={1}
+                      opacity={1}
+                      y={0}
+                    >
+                      <YStack space>
+                        <Dialog.Title>Remove Server</Dialog.Title>
+                        <Dialog.Description>
+                          {/* <Paragraph> */}
+                          Really remove {server.host}{accounts.length == 1 ? ' and one account' : accounts.length > 1 ? ` and ${accounts.length} accounts` : ''}?
+                          {/* </Paragraph> */}
+                        </Dialog.Description>
 
-                      <XStack space="$3" jc="flex-end">
-                        <Dialog.Close asChild>
-                          <Button>Cancel</Button>
-                        </Dialog.Close>
-                        {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
-                        <Theme inverse>
-                          <Button onPress={doRemoveServer}>Remove</Button>
-                        </Theme>
-                        {/* </Dialog.Action> */}
-                      </XStack>
-                    </YStack>
-                  </Dialog.Content>
-                </Dialog.Portal>
-              </Dialog>
-              : undefined
-            }
-          </XStack>
-        </Card.Footer>
+                        <XStack space="$3" jc="flex-end">
+                          <Dialog.Close asChild>
+                            <Button>Cancel</Button>
+                          </Dialog.Close>
+                          {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
+                          <Theme inverse>
+                            <Button onPress={doRemoveServer}>Remove</Button>
+                          </Theme>
+                          {/* </Dialog.Action> */}
+                        </XStack>
+                      </YStack>
+                    </Dialog.Content>
+                  </Dialog.Portal>
+                </Dialog>
+                : undefined
+              }
+            </XStack>
+          </Card.Footer>
+        }
         <Card.Background>
           <YStack h='100%' w={5} backgroundColor={primaryColor} />
         </Card.Background>

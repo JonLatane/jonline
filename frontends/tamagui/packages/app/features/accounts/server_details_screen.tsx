@@ -289,7 +289,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                           <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} />
                         </XStack>
                         <XStack h={72} w={72} my='auto'>
-                          <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} shrink />
+                          <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} shrinkToSquare />
                         </XStack>
                       </XStack>
                       {/* </ScrollView> */}
@@ -395,7 +395,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   {(recommendedHosts?.length ?? 0)=== 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
                     No recommended servers.
                   </Paragraph> : undefined}
-                  {recommendedHosts?.map((host, index) => <YStack w='100%' my='$2' alignContent='center' ai='center'>
+                  {recommendedHosts?.map((host, index) => <YStack key={`recommendedServer-${host}`}w='100%' my='$2' alignContent='center' ai='center'>
                     <XStack ml='$3' mb='$2' w='100%' space='$1'>
                       <Text my='auto' fontFamily='$body' fontSize='$3' mr='$2'>{`${index + 1}.`}</Text>
                       <Heading my='auto' f={1} fontFamily='$body' size='$1' >{host}</Heading>

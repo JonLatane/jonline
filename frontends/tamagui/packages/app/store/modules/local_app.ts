@@ -11,6 +11,8 @@ export type LocalAppConfiguration = {
   darkModeAuto: boolean;
   darkMode: boolean;
   allowServerSelection: boolean;
+  browsingServers: boolean;
+  viewingRecommendedServers: boolean;
   separateAccountsByServer: boolean;
   showBetaNavigation: boolean;
   discussionChatUI: boolean;
@@ -27,6 +29,8 @@ const initialState: LocalAppConfiguration = {
   darkModeAuto: true,
   darkMode: false,
   allowServerSelection: Platform.OS != 'web',
+  browsingServers: false,
+  viewingRecommendedServers: true,
   separateAccountsByServer: true,
   showBetaNavigation: false,
   discussionChatUI: true,
@@ -55,6 +59,12 @@ export const localAppSlice = createSlice({
     setAllowServerSelection: (state, action: PayloadAction<boolean>) => {
       state.allowServerSelection = action.payload;
     },
+    setBrowsingServers: (state, action: PayloadAction<boolean>) => {
+      state.browsingServers = action.payload;
+    },
+    setViewingRecommendedServers: (state, action: PayloadAction<boolean>) => {
+      state.viewingRecommendedServers = action.payload;
+    },
     setSeparateAccountsByServer: (state, action: PayloadAction<boolean>) => {
       state.separateAccountsByServer = action.payload;
     },
@@ -76,7 +86,7 @@ export const localAppSlice = createSlice({
     setShowEventsOnLatest: (state, action: PayloadAction<boolean>) => {
       state.showEventsOnLatest = action.payload;
     },
-    markGroupVisit: (state, action: PayloadAction<{server: JonlineServer, group: Group}>) => {
+    markGroupVisit: (state, action: PayloadAction<{ server: JonlineServer, group: Group }>) => {
       // state.showEventsOnLatest = action.payload;
       const serverId = serverID(action.payload.server);
       if (!state.serverRecentGroups) {
@@ -85,7 +95,7 @@ export const localAppSlice = createSlice({
       const currentValue = state.serverRecentGroups[serverId] ?? [];
 
       state.serverRecentGroups[serverId] = [
-        action.payload.group.id, 
+        action.payload.group.id,
         ...currentValue.filter((g) => g != action.payload.group.id)
       ];
     },
@@ -100,7 +110,7 @@ export const localAppSlice = createSlice({
 export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection,
   setSeparateAccountsByServer, setShowBetaNavigation, resetLocalApp, setDiscussionChatUI,
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
-  setInlineFeatureNavigation
+  setInlineFeatureNavigation, setBrowsingServers, setViewingRecommendedServers
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

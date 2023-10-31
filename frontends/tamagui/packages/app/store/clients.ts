@@ -14,8 +14,13 @@ export function deleteClient(server: JonlineServer) {
   loadingClients.delete(serverId);
 }
 
+export type JonlineClientCreationArgs = { 
+  skipUpsert?: boolean; 
+  onServerConfigured?: (server: JonlineServer) => void
+};
+
 // Creates a client and upserts the server into the store.
-export async function getServerClient(server: JonlineServer): Promise<Jonline> {
+export async function getServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<Jonline> {
   const serverId = serverID(server);
   // TODO: Why does this fail miserable if using port 443?
   const ports = [27707, 443];
@@ -32,7 +37,8 @@ export async function getServerClient(server: JonlineServer): Promise<Jonline> {
         console.log(`Creating client for ${serverId} on port ${port} (${portIndex})`);
         const client = await clientForServer(
           server,
-          port
+          port,
+          args
         );
         if (client) {
 
@@ -54,7 +60,7 @@ export async function getServerClient(server: JonlineServer): Promise<Jonline> {
   return clients.get(serverId)!;
 }
 
-async function clientForServer(server: JonlineServer, port: number): Promise<JonlineClientImpl | undefined> {
+async function clientForServer(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClientImpl | undefined> {
   // Resolve the actual backend server from its backend_host endpoint
   const backendHost = await window.fetch(
     `${server.secure ? 'https' : 'http'}://${server.host}/backend_host`
@@ -69,12 +75,12 @@ async function clientForServer(server: JonlineServer, port: number): Promise<Jon
 
   // Get the gRPC client
   const host = `${serverID({ ...server, host: backendHost }).replace(":", "://")}:${port}`;
-  const client = await createClient(host, server);
+  const client = await createClient(host, server, args);
 
   return client;
 }
 
-async function createClient(host: string, server: JonlineServer) {
+async function createClient(host: string, server: JonlineServer, args?: JonlineClientCreationArgs) {
   const serverId = serverID(server);
   const client = new JonlineClientImpl(
     new GrpcWebImpl(host, {
@@ -107,8 +113,13 @@ async function createClient(host: string, server: JonlineServer) {
   if (frontendHost && frontendHost != '' && frontendHost != server.host) {
     console.warn("Created Jonline client with different frontend host than server host. Correcting server host.");
   }
-  clients.set(serverId, client);
-  store.dispatch(upsertServer({ ...server, serviceVersion, serverConfiguration }));
+
+  const updatedServer = { ...server, serviceVersion, serverConfiguration };
+  if (!args?.skipUpsert) {
+    clients.set(serverId, client);
+    store.dispatch(upsertServer(updatedServer));
+  };
+  args?.onServerConfigured?.(updatedServer);
   return client;
 }
 

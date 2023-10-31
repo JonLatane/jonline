@@ -128,7 +128,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   {...homeProps}
                 >
                   {renderButtonChildren
-                    ? <ServerNameAndLogo shrink={shrinkHomeButton}
+                    ? <ServerNameAndLogo shrinkToSquare={shrinkHomeButton}
                       fallbackToHomeIcon
                       server={primaryServer} />
                     // ? shrinkHomeButton

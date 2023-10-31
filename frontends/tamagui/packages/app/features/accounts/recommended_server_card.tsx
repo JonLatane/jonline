@@ -9,67 +9,79 @@ import ServerCard from "./server_card";
 interface Props {
   host: string;
   // server: JonlineServer;
+  tiny?: boolean;
   isPreview?: boolean;
   linkToServerInfo?: boolean;
   disableHeightLimit?: boolean;
 }
 
-export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit }) => {
+export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit, tiny = false }) => {
   const dispatch = useTypedDispatch();
   const existingServer = useTypedSelector(
     (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host
     );
-  const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
+  const prototypeServer = {
+    host,
+    secure: true,
+  };
+  const [pendingServer, setPendingServer] = React.useState(existingServer);
+  const [loadingPendingServer, setLoadingPendingServer] = React.useState(false);
+  const [loadedPendingServer, setLoadedPendingServer] = React.useState(false);
+  useEffect(() => {
+    if (!existingServer && !pendingServer && !loadingPendingServer && !loadedPendingServer) {
+      setLoadingPendingServer(true);
+      getServerClient(
+        prototypeServer,
+        {
+          skipUpsert: true,
+          onServerConfigured: setPendingServer
+        }).then(_client => {
+          console.log("Got pending server", _client);
+          setLoadedPendingServer(true);
+          setLoadingPendingServer(false);
+        });
+    }
+  }, [existingServer === undefined, pendingServer === undefined, loadingPendingServer, loadedPendingServer]);
 
   const [loadingClient, setLoadingClient] = React.useState(false);
 
   const { allowServerSelection } = useLocalApp();
-  const pendingServer = {
-    host,
-    secure: true,
-  };
+
+
+  // const pendingServer = {
+  //   host,
+  //   secure: true,
+  // };
   async function addServer() {
     setLoadingClient(true);
-    dispatch(upsertServer(pendingServer)).then(async () => {
-      await getServerClient(pendingServer).then(_client => {
+    if (!allowServerSelection) {
+      dispatch(setAllowServerSelection(true));
+    }
+    dispatch(upsertServer(prototypeServer)).then(async () => {
+      await getServerClient(prototypeServer).then(_client => {
         console.log("Got server client", _client);
         setLoadingClient(false);
       });
     });
   }
   return <YStack px='$3' space='$2'>
-    <XStack flexWrap="wrap">
-      <Heading size='$1' mr='auto' pr='$3'>Recommended Server:</Heading>
-      <Heading size='$1' ml='auto'>{host}</Heading>
-    </XStack>
     {existingServer
-      ? <>
-        <ServerCard server={existingServer} isPreview={isPreview}
-          disableHeightLimit={disableHeightLimit} linkToServerInfo />
-        {/* <Paragraph size='$1' mt='$1' mb='$1'>
-          This server is already in your server list.
-        </Paragraph> */}
-      </>
-      : allowServerSelection
-        ? <>
-          <Button theme='active' mt='$2' disabled={loadingClient} o={loadingClient ? 0.5 : 1}
-            onPress={addServer}>
-            Add Server <Heading size='$3'>{host}</Heading>
-          </Button>
-          <Paragraph size='$1' mt='$1' mb='$1'>
-            This server is not yet in your server list.
-          </Paragraph>
+      ?
+      tiny
+        ? <ServerNameAndLogo server={existingServer} />
+        : <>
+          <ServerCard server={existingServer} isPreview={isPreview}
+            disableHeightLimit={disableHeightLimit} linkToServerInfo disablePress />
         </>
-        : <><Button theme='active' mt='$2' onPress={() => dispatch(setAllowServerSelection(true))}>
-          Enable "Allow Server Selection"
+      : <>
+        <ServerCard server={pendingServer ?? prototypeServer} isPreview={isPreview}
+          disableHeightLimit={disableHeightLimit} disableFooter linkToServerInfo disablePress />
+        <Button theme='active' mt='$2' disabled={loadingClient} o={loadingClient ? 0.5 : 1}
+          onPress={addServer}>
+          Add Server <Heading size='$3'>{host}</Heading>
         </Button>
-
-          <Paragraph size='$1' mt='$1' mb='$1'>
-            Server selection is not enabled. Enable it to add this server.
-          </Paragraph>
-        </>}
+      </>}
   </YStack>
-  // return <ServerCard server={server} isPreview={isPreview} disableHeightLimit={disableHeightLimit} linkToServerInfo={true} />;
 };
 
 export default RecommendedServerCard;
