@@ -1,5 +1,5 @@
-import { Button, Heading, YStack } from "@jonline/ui";
-import { RootState, getServerClient, serversAdapter, setAllowServerSelection, upsertServer, useLocalApp, useTypedDispatch, useTypedSelector } from 'app/store';
+import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
+import { RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, upsertServer, useLocalApp, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect } from "react";
 import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
 import ServerCard from "./server_card";
@@ -55,8 +55,31 @@ export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false
       });
     });
   }
+
+  const { color: buttonBackgroundColor, textColor: buttonTextColor } = colorIntMeta(pendingServer?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242);
   return <YStack px='$3' space='$2'>
-    {existingServer
+    {tiny
+      ? <XStack overflow='hidden' mx='auto'> <ServerNameAndLogo server={existingServer ?? pendingServer ?? prototypeServer} />
+      </XStack>
+      :
+      <ServerCard server={existingServer ?? pendingServer ?? prototypeServer} isPreview={isPreview}
+        disableHeightLimit={disableHeightLimit} disableFooter disablePress />
+    }
+    {existingServer ? undefined
+      : <Button mt='$2' disabled={loadingClient} o={loadingClient ? 0.5 : 1}
+        backgroundColor={buttonBackgroundColor} color={buttonTextColor}
+        hoverStyle={{ backgroundColor: buttonBackgroundColor }}
+        onPress={addServer}>
+
+        {tiny ? <YStack space='$0' ai='center'>
+          <Paragraph color={buttonTextColor} lineHeight='$1' size='$1' my='auto'>Add</Paragraph>
+          <Heading color={buttonTextColor} lineHeight='$1' size='$2' my='auto'>{host}</Heading>
+        </YStack> : <XStack space='$2' ai='center'>
+          <Paragraph color={buttonTextColor} size='$2' my='auto'>Add</Paragraph>
+          <Heading color={buttonTextColor} size='$3' my='auto'>{host}</Heading>
+        </XStack>}
+      </Button>}
+    {/* {existingServer
       ?
       tiny
         ? <ServerNameAndLogo server={existingServer} />
@@ -65,13 +88,27 @@ export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false
             disableHeightLimit={disableHeightLimit} linkToServerInfo disablePress />
         </>
       : <>
-        <ServerCard server={pendingServer ?? prototypeServer} isPreview={isPreview}
-          disableHeightLimit={disableHeightLimit} disableFooter linkToServerInfo disablePress />
-        <Button theme='active' mt='$2' disabled={loadingClient} o={loadingClient ? 0.5 : 1}
+        {tiny
+          ? <XStack overflow='hidden' mx='auto'> <ServerNameAndLogo server={pendingServer} />
+          </XStack>
+          :
+          <ServerCard server={pendingServer ?? prototypeServer} isPreview={isPreview}
+            disableHeightLimit={disableHeightLimit} disableFooter disablePress />
+        }
+        <Button mt='$2' disabled={loadingClient} o={loadingClient ? 0.5 : 1}
+          backgroundColor={buttonBackgroundColor} color={buttonTextColor}
+          hoverStyle={{ backgroundColor: buttonBackgroundColor }}
           onPress={addServer}>
-          Add <Heading size='$3'>{host}</Heading>
+
+          {tiny ? <YStack space='$0' ai='center'>
+            <Paragraph color={buttonTextColor} lineHeight='$1' size='$1' my='auto'>Add</Paragraph>
+            <Heading color={buttonTextColor} lineHeight='$1' size='$2' my='auto'>{host}</Heading>
+          </YStack> : <XStack space='$2' ai='center'>
+            <Paragraph color={buttonTextColor} size='$2' my='auto'>Add</Paragraph>
+            <Heading color={buttonTextColor} size='$3' my='auto'>{host}</Heading>
+          </XStack>}
         </Button>
-      </>}
+      </>} */}
   </YStack>
 };
 

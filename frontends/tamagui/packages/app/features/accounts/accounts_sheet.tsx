@@ -412,30 +412,26 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 : undefined}
               {recommendedServerHosts.length > 0
                 ? <>
-                  {browsingServers
-                    ? <Heading size='$3' marginTop='$2' textAlign='center'>
-                      All Recommended Servers
-                    </Heading>
-                    : <Button mt='$2' size='$2' mx='auto' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
-                      <XStack>
-                        <Heading size='$1'>Recommended Servers{recommendedServerHosts.length > 0 ? ` (${recommendedServerHosts.length})` : ''}</Heading>
-                        <XStack animation='quick' rotate={viewingRecommendedServers ? '90deg' : '0deg'}>
-                          <ChevronRight size='$1' />
-                        </XStack>
+                  <Button mt='$2' size='$2' mx='auto' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
+                    <XStack>
+                      <Heading size='$1'>{browsingServers ? 'All ' : ''}Recommended Servers{recommendedServerHosts.length > 0 ? ` (${recommendedServerHosts.length})` : ''}</Heading>
+                      <XStack animation='quick' rotate={viewingRecommendedServers ? '90deg' : '0deg'}>
+                        <ChevronRight size='$1' />
                       </XStack>
-                    </Button>}
-                  {viewingRecommendedServers || browsingServers
+                    </XStack>
+                  </Button>
+                  {viewingRecommendedServers
                     ? <YStack animation="quick" mt='$2' mb='$2' {...standardAnimation}>
                       <ScrollView horizontal>
                         <XStack>
                           {recommendedServerHosts.map((host, index) => {
                             const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
-                            console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
+                            // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
                             return <>
                               {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
                                 ? <XStack key='separator' my='auto'>
-                                  <SeparatorHorizontal size='$5'/>
-                                  </XStack>
+                                  <SeparatorHorizontal size='$5' />
+                                </XStack>
                                 : undefined}
                               <XStack my='auto' key={`recommended-server-${host}`}>
                                 <RecommendedServerCard host={host} tiny />

@@ -228,12 +228,14 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
 
               <XStack marginHorizontal='auto' marginVertical='$3'>
                 <Button backgroundColor={showEditor ? navColor : undefined}
+                  hoverStyle={{ backgroundColor: showEditor ? navColor : undefined }}
                   transparent={!showEditor}
                   borderTopRightRadius={0} borderBottomRightRadius={0}
                   onPress={() => setRenderType(RenderType.Edit)}>
                   <Heading size='$4' color={showEditor ? navTextColor : textColor}>Edit</Heading>
                 </Button>
                 <Button backgroundColor={showFullPreview ? navColor : undefined}
+                  hoverStyle={{ backgroundColor: showFullPreview ? navColor : undefined }}
                   transparent={!showFullPreview}
                   borderRadius={0}
                   disabled={disablePreview}
@@ -243,6 +245,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                   <Heading size='$4' color={showFullPreview ? navTextColor : textColor}>Preview</Heading>
                 </Button>
                 <Button backgroundColor={showShortPreview ? navColor : undefined}
+                  hoverStyle={{ backgroundColor: showShortPreview ? navColor : undefined }}
                   transparent={!showShortPreview}
                   borderTopLeftRadius={0} borderBottomLeftRadius={0}
                   disabled={disablePreview}

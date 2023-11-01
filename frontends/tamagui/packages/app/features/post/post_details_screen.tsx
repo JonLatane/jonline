@@ -227,7 +227,10 @@ export function PostDetailsScreen() {
               <XStack f={1} />
               <Tooltip placement="bottom">
                 <Tooltip.Trigger>
-                  <Button backgroundColor={chatUI ? undefined : navColor} transparent={chatUI} onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
+                  <Button backgroundColor={chatUI ? undefined : navColor}
+                    hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
+                    transparent={chatUI}
+                    onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
                     <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
                   </Button>
                 </Tooltip.Trigger>
@@ -240,6 +243,7 @@ export function PostDetailsScreen() {
               <Tooltip placement="bottom">
                 <Tooltip.Trigger>
                   <Button backgroundColor={!chatUI ? undefined : navColor}
+                    hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
                     transparent={!chatUI}
                     borderTopRightRadius={0} borderBottomRightRadius={0}
                     onPress={() => dispatch(setDiscussionChatUI(true))}>
