@@ -1,5 +1,5 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack } from "@jonline/ui";
-import { Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
+import { ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useTypedDispatch, useTypedSelector, accountId } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
@@ -46,14 +46,18 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
     dispatch(removeServer(server));
   }
 
+  const externalLink = useLink({ href: `${server.secure ? 'https' : 'http'}://${server.host}` });
+  const browserHost = window.location.host.split(':')[0];
+  const showExternalLink = server.host != browserHost;
+
   return (
     <Theme inverse={selected}>
       <Card theme="dark" elevate size="$4" bordered
         animation='standard'
         scale={0.9}
         width={isPreview ? 260 : '100%'}
-        hoverStyle={{ scale: 0.925 }}
-        pressStyle={{ scale: 0.875 }}
+        // hoverStyle={{ scale: 0.925 }}
+        pressStyle={{ scale: 0.95 }}
         onPress={disablePress ? undefined : doSelectServer}>
         <Card.Header>
           <XStack w='100%'>
@@ -69,8 +73,13 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
             </YStack>
             {/* <Button icon={<Info />} circular
                 onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} /> */}
+            {showExternalLink ?
+              <Button mx='$1' icon={<ExternalLink />} circular
+                {...externalLink} target='_blank'
+                onPress={(e) => { e.stopPropagation(); }} />
+              : undefined}
             {isPreview && !linkToServerInfo
-              ? <Button icon={<Info />} circular
+              ? <Button ml='$1' icon={<Info />} circular
                 onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} />
               : undefined}
           </XStack>

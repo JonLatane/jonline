@@ -13,7 +13,7 @@ import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
 import ServerCard from './server_card';
 import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
-import RecommendedServerCard from './recommended_server_card';
+import RecommendedServer from './recommended_server';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -421,7 +421,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     </XStack>
                   </Button>
                   {viewingRecommendedServers
-                    ? <YStack animation="quick" mt='$2' mb='$2' {...standardAnimation}>
+                    ? <YStack animation="quick" mt='$2' mb='$2' w='100%' {...standardAnimation}>
                       <ScrollView horizontal>
                         <XStack>
                           {recommendedServerHosts.map((host, index) => {
@@ -434,7 +434,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                                 </XStack>
                                 : undefined}
                               <XStack my='auto' key={`recommended-server-${host}`}>
-                                <RecommendedServerCard host={host} tiny />
+                                <RecommendedServer host={host} tiny />
                               </XStack>
                             </>;
                           })}
@@ -537,7 +537,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                                 disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
                                 Back
                               </Button>
-                              <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => {
+                              <Button flex={1} backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor} onPress={() => {
                                 if (loginMethod == LoginMethod.Login) {
                                   loginToServer();
                                 } else {
@@ -548,11 +548,15 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                               </Button>
                             </XStack>
                             : <XStack>
-                              <Button flex={2} marginRight='$1' onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
+                              <Button flex={2}
+                                marginRight='$1' 
+                                onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
                                 disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                                 Create Account
                               </Button>
-                              <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => setLoginMethod(LoginMethod.Login)}
+                              <Button flex={1}
+                                backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor}
+                                onPress={() => setLoginMethod(LoginMethod.Login)}
                                 disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                                 Login
                               </Button>

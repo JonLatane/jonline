@@ -1,8 +1,9 @@
 import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
-import { RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, upsertServer, useLocalApp, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { ExternalLink } from "@tamagui/lucide-icons";
+import { RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, setBrowsingServers, upsertServer, useLocalApp, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect } from "react";
+import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
-import ServerCard from "./server_card";
 
 interface Props {
   host: string;
@@ -12,7 +13,7 @@ interface Props {
   disableHeightLimit?: boolean;
 }
 
-export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit, tiny = false }) => {
+export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit, tiny = false }) => {
   const dispatch = useTypedDispatch();
   const existingServer = useTypedSelector(
     (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host
@@ -33,7 +34,7 @@ export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false
           skipUpsert: true,
           onServerConfigured: setPendingServer
         }).then(_client => {
-          console.log("Got pending server", _client);
+          // console.log("Got pending server", _client);
           setLoadedPendingServer(true);
           setLoadingPendingServer(false);
         });
@@ -42,11 +43,14 @@ export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false
 
   const [loadingClient, setLoadingClient] = React.useState(false);
 
-  const { allowServerSelection } = useLocalApp();
+  const { allowServerSelection, browsingServers } = useLocalApp();
   async function addServer() {
     setLoadingClient(true);
     if (!allowServerSelection) {
       dispatch(setAllowServerSelection(true));
+    }
+    if (!browsingServers) {
+      dispatch(setBrowsingServers(true));
     }
     dispatch(upsertServer(prototypeServer)).then(async () => {
       await getServerClient(prototypeServer).then(_client => {
@@ -56,15 +60,22 @@ export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false
     });
   }
 
+  const externalLink = useLink({ href: `https://${host}` });
+
   const { color: buttonBackgroundColor, textColor: buttonTextColor } = colorIntMeta(pendingServer?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242);
   return <YStack px='$3' space='$2'>
-    {tiny
-      ? <XStack overflow='hidden' mx='auto'> <ServerNameAndLogo server={existingServer ?? pendingServer ?? prototypeServer} />
+    {/* {tiny
+      ? */}
+    <XStack>
+      <XStack f={1} overflow='hidden' mx='auto' my='auto'>
+        <ServerNameAndLogo server={existingServer ?? pendingServer ?? prototypeServer} />
       </XStack>
-      :
+      <Button icon={ExternalLink} target='_blank' circular my='auto' {...externalLink} />
+    </XStack>
+    {/* :
       <ServerCard server={existingServer ?? pendingServer ?? prototypeServer} isPreview={isPreview}
         disableHeightLimit={disableHeightLimit} disableFooter disablePress />
-    }
+    } */}
     {existingServer ? undefined
       : <Button mt='$2' disabled={loadingClient} o={loadingClient ? 0.5 : 1}
         backgroundColor={buttonBackgroundColor} color={buttonTextColor}
@@ -112,4 +123,4 @@ export const RecommendedServerCard: React.FC<Props> = ({ host, isPreview = false
   </YStack>
 };
 
-export default RecommendedServerCard;
+export default RecommendedServer;

@@ -149,6 +149,20 @@ export const serversSlice = createSlice({
       }
       state.server = action.payload;
     },
+    moveServerUp: (state, action: PayloadAction<string>) => {
+      const index = state.ids.indexOf(action.payload);
+      if (index > 0) {
+        const element = state.ids.splice(index, 1)[0]!;
+        state.ids.splice(index - 1, 0, element);
+      }
+    },
+    moveServerDown: (state, action: PayloadAction<string>) => {
+      const index = state.ids.indexOf(action.payload);
+      if (index < state.ids.length - 1) {
+        const element = state.ids.splice(index, 1)[0]!;
+        state.ids.splice(index + 1, 0, element);
+      }
+    }
   },
   extraReducers: (builder) => {
     builder.addCase(upsertServer.pending, (state) => {
@@ -174,7 +188,7 @@ export const serversSlice = createSlice({
   },
 });
 
-export const { selectServer, removeServer, clearServerAlerts, resetServers } = serversSlice.actions;
+export const { selectServer, removeServer, clearServerAlerts, resetServers, moveServerUp, moveServerDown } = serversSlice.actions;
 
 export const { selectAll: selectAllServers, selectById: selectServerById, selectTotal: selectServerTotal } = serversAdapter.getSelectors();
 

@@ -19,7 +19,7 @@ import { themedButtonBackground } from '../../utils/themed_button_background';
 import { hasAdminPermission } from 'app/utils/permission_utils'
 import { MediaRef } from '../media/media_chooser'
 import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
-import RecommendedServerCard from './recommended_server_card';
+import RecommendedServer from './recommended_server';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 
@@ -222,6 +222,10 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     </Button>
   }
   const cloudflareLink = useLink({ href: 'https://cloudflare.com' });
+  function recommendServer() {
+    setRecommendedHosts([...(recommendedHosts ?? []), newRecommendedHostName.toLowerCase()]);
+    setNewRecommendedHostName('');
+  }
   // const recommendedHostServers = useTypedSelector((state: RootState) => state.servers!.enti);// recommendedHosts?.map(host => ({ host }));
   return (
     <TabsNavigation appSection={AppSection.INFO} onlyShowServer={server}>
@@ -429,7 +433,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         </>
                         : undefined}
                     </XStack>
-                    <RecommendedServerCard host={host} />
+                    <RecommendedServer host={host} />
                     {/* <ServerCard server={Ser{ host: recommendedHosts }} /> */}
                   </YStack>)}
                   {isAdmin
@@ -439,7 +443,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       <Button mt='$2' mb='$5'
                         disabled={!isNewRecommendedHostNameValid}
                         o={isNewRecommendedHostNameValid ? 1 : 0.5}
-                        onPress={(() => setRecommendedHosts([...(recommendedHosts ?? []), newRecommendedHostName.toLowerCase()]))}
+                        onPress={recommendServer}
                       >
                         Recommend Server
                       </Button>
