@@ -145,18 +145,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     });
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {
       state.loadStatus = "loaded";
-      action.payload.events.forEach(event => {
-        const oldEvent = selectEventById(state, event.id);
-        let instances = event.instances;
-        for (let instance of instances) {
-          state.instanceEvents[instance.id] = event.id;
-          state.instances[instance.id] = instance;
-        }
-        if (oldEvent) {
-          instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
-        }
-        eventsAdapter.upsertOne(state, { ...event, instances });
-      });
+      action.payload.events.forEach((e) => mergeEvent(state, e));
 
       const instanceIds = action.payload.events.map(event => event.instances[0]!.id);
       const page = action.meta.arg.page || 0;
@@ -222,6 +211,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       const { events } = action.payload;
       if (!events) return;
 
+      action.payload.events.forEach((e) => mergeEvent(state, e));
       upsertEvents(state, events);
     });
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
@@ -231,6 +221,18 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
   },
 });
 
+const mergeEvent = (state: EventsState, event: Event) => {
+  const oldEvent = selectEventById(state, event.id);
+  let instances = event.instances;
+  for (const instance of instances) {
+    state.instanceEvents[instance.id] = event.id;
+    state.instances[instance.id] = instance;
+  }
+  if (oldEvent) {
+    instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
+  }
+  eventsAdapter.upsertOne(state, { ...event, instances });
+};
 export const { removeEvent, clearEventAlerts, resetEvents } = eventsSlice.actions;
 export const { selectAll: selectAllEvents, selectById: selectEventById } = eventsAdapter.getSelectors();
 export const eventsReducer = eventsSlice.reducer;

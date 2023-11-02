@@ -78,7 +78,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const [recommendedHosts, setRecommendedHosts] = useState(serverRecommendedHosts);
   const [newRecommendedHostName, setNewRecommendedHostName] = useState('');
   const isNewRecommendedHostNameValid = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/.test(newRecommendedHostName)
-    && !recommendedHosts?.includes(newRecommendedHostName);
+    && !recommendedHosts?.includes(newRecommendedHostName)
+    && server?.host !== newRecommendedHostName;
   // if (defaultClientDomain && name != serverName && name == undefined) {
   //   setName(serverName);
   // }

@@ -25,7 +25,7 @@ export function ServerNameAndLogo({
   const server = selectedServer ?? currentServer;
   // console.log('ServerNameAndLogo', server?.host)
 
-  const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+  const serverName = server?.serverConfiguration?.serverInfo?.name ?? '...';
   const serverNameEmoji = serverName.match(/\p{Emoji}/u)?.at(0);
   const [serverNameBeforeEmoji, serverNameAfterEmoji] = serverName
     .split(serverNameEmoji ?? '|', 2)
@@ -46,7 +46,7 @@ export function ServerNameAndLogo({
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
   const useSquareLogo = canUseLogo && logo?.squareMediaId != undefined;
   const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrinkToSquare;
-  const useEmoji = serverNameEmoji && serverNameEmoji !== '';
+  const hasEmoji = serverNameEmoji && serverNameEmoji !== '';
 
   const imageLogoSize = enlargeSmallText ? '$6' : '$3';
   const serverEmojiFontSize = enlargeSmallText ? '$10' : '$8';
@@ -83,7 +83,7 @@ export function ServerNameAndLogo({
               h={imageLogoSize} ml='$2' mr='$1' my='auto'>
               <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
             </XStack>
-            : serverNameEmoji && serverNameEmoji != ''
+            : hasEmoji
               ? <Heading size={serverEmojiFontSize}
                 my='auto' ml='$2' mr='$2' whiteSpace="nowrap">{serverNameEmoji}</Heading>
               : fallbackToHomeIcon
@@ -102,7 +102,7 @@ export function ServerNameAndLogo({
               lineHeight={largeServername || enlargeSmallText ? '$1' : 12}
             // whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis"
             >
-              {serverNameBeforeEmoji}{useSquareLogo && serverNameEmoji && serverNameEmoji != '' ? ` ${serverNameEmoji}` : undefined}
+              {serverNameBeforeEmoji}{useSquareLogo && hasEmoji ? ` ${serverNameEmoji}` : undefined}
             </Heading>
             {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername || true)
               ? <Paragraph

@@ -12,7 +12,7 @@ import {
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
 import { store, upsertUserData } from "..";
-import { LoadUser, LoadUsername, defaultUserListingType, followUnfollowUser, loadUser, loadUserPosts, loadUsername, loadUsersPage, respondToFollowRequest, updateUser, userSaved } from "./user_actions";
+import { LoadUser, LoadUsername, defaultUserListingType, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUsername, loadUsersPage, respondToFollowRequest, updateUser, userSaved } from "./user_actions";
 
 export interface UsersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -26,6 +26,7 @@ export interface UsersState {
   failedUsernames: string[];
   failedUserIds: string[];
   idPosts: Dictionary<string[]>;
+  idEventInstances: Dictionary<string[]>;
   // Stores pages of listed users for listing types used in the UI.
   // i.e.: userPages[PostListingType.PUBLIC_POSTS][1] -> ["userId1", "userId2"].
   // Users should be loaded from the adapter/slice's entities.
@@ -50,6 +51,7 @@ const initialState: UsersState = {
   failedUsernames: [],
   failedUserIds: [],
   idPosts: {},
+  idEventInstances: {},
   userPages: {},
   mutatingUserIds: [],
   ...usersAdapter.getInitialState(),
@@ -152,7 +154,17 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
         || [];
       updatedUserPostIds.push(...posts.map(p => p.id));
       state.idPosts[action.meta.arg.userId] = updatedUserPostIds;
-      state.successMessage = `User Posts for ${action.meta.arg.userId} loaded.`;
+    });
+    builder.addCase(loadUserEvents.fulfilled, (state, action) => {
+      // state.status = "loaded";
+      const { events } = action.payload;
+      const newEventInstanceIds = new Set(events.map(p => p.id));
+      if (!state.idPosts) state.idPosts = {};
+      const updatedUserEventInstanceIds = state.idPosts[action.meta.arg.userId]
+        ?.filter((p) => !newEventInstanceIds.has(p))
+        || [];
+      updatedUserEventInstanceIds.push(...events.map(p => p.id));
+      state.idEventInstances[action.meta.arg.userId] = updatedUserEventInstanceIds;
     });
     builder.addCase(loadUserPosts.rejected, (state, action) => {
       state.status = "errored";

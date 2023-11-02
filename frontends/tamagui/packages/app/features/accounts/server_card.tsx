@@ -1,6 +1,6 @@
-import { Button, Card, Dialog, Heading, Theme, XStack, YStack } from "@jonline/ui";
-import { ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useTypedDispatch, useTypedSelector, accountId } from "app/store";
+import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation } from "@jonline/ui";
+import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
+import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useTypedDispatch, useTypedSelector, accountId, moveServerUp, moveServerDown } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
@@ -25,6 +25,14 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
   const primaryColorInt = server.serverConfiguration?.serverInfo?.colors?.primary;
   const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
 
+  function moveUp() {
+    dispatch(moveServerUp(serverID(server)!));
+  }
+  function moveDown() {
+    dispatch(moveServerDown(serverID(server)!));
+  }
+  const canMoveUp = serversState.ids.indexOf(serverID(server)!) > 0;
+  const canMoveDown = serversState.ids.indexOf(serverID(server)!) < serversState.ids.length - 1;
   function doSelectServer() {
     if (selected) {
       dispatch(selectAccount(undefined));
@@ -48,14 +56,15 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
 
   const externalLink = useLink({ href: `${server.secure ? 'https' : 'http'}://${server.host}` });
   const browserHost = window.location.host.split(':')[0];
-  const showExternalLink = server.host != browserHost;
+  const serverIsExternal = server.host != browserHost;
 
   return (
     <Theme inverse={selected}>
       <Card theme="dark" elevate size="$4" bordered
         animation='standard'
+        {...standardHorizontalAnimation}
         scale={0.9}
-        width={isPreview ? 260 : '100%'}
+        width={isPreview ? 280 : '100%'}
         // hoverStyle={{ scale: 0.925 }}
         pressStyle={{ scale: 0.95 }}
         onPress={disablePress ? undefined : doSelectServer}>
@@ -73,15 +82,26 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
             </YStack>
             {/* <Button icon={<Info />} circular
                 onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} /> */}
-            {showExternalLink ?
-              <Button mx='$1' icon={<ExternalLink />} circular
-                {...externalLink} target='_blank'
-                onPress={(e) => { e.stopPropagation(); }} />
-              : undefined}
-            {isPreview && !linkToServerInfo
-              ? <Button ml='$1' icon={<Info />} circular
-                onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} />
-              : undefined}
+            <YStack ac='flex-end' space='$2' ml='$1'>
+              <XStack jc='flex-end'>
+                {serverIsExternal ?
+                  <Button mx='$1' icon={<ExternalLink />} circular
+                    {...externalLink} target='_blank'
+                    onPress={(e) => { e.stopPropagation(); }} />
+                  : undefined}
+                {isPreview && !linkToServerInfo
+                  ? <Button ml='$1' icon={<Info />} circular {...infoLink}
+                    onPress={(e) => { e.stopPropagation(); }} />
+                  : undefined}
+              </XStack>
+              {serversState.ids.length > 1
+                ?
+                <XStack jc='flex-end' space='$2'>
+                  <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronLeft} circular />
+                  <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronRight} circular />
+                </XStack>
+                : undefined}
+            </YStack>
           </XStack>
         </Card.Header>
         {disableFooter
@@ -95,7 +115,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
                 <Heading size="$1" mr='auto'>{accounts.length > 0 ? accounts.length : "No "} account{accounts.length == 1 ? '' : 's'}</Heading>
                 {server.serviceVersion ? <Heading size="$1" mr='auto'>{server.serviceVersion?.version}</Heading> : undefined}
               </YStack>
-              {isPreview && serversState.ids.length > 1
+              {isPreview && serverIsExternal && serversState.ids.length > 1
                 ? <Dialog>
                   <Dialog.Trigger asChild>
                     <Button onPress={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular />

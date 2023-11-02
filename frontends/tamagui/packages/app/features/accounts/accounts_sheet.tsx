@@ -261,8 +261,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center'>
               <XStack>
-                {allowServerSelection && (browsingServers || mediaQuery.gtXs)
-                  ? <Heading marginRight='$2'>Server{browsingServers ? 's' : ':'}</Heading>
+                {allowServerSelection && browsingServers
+                  ? <Heading marginRight='$2'>Servers</Heading>
                   : undefined}
 
                 {browsingServers ? <Button
@@ -462,8 +462,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 // : browsingServers && Platform.OS == 'web'
                 //   ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
                 : undefined}
-              {!browsingServers ? <YStack h="$2" /> : undefined}
-              <YStack space="$2">
+              {/* {!browsingServers ? <YStack h="$2" /> : undefined} */}
+              <YStack space="$2" mt='$2'>
                 <XStack>
                   <Heading f={1}>Accounts</Heading>
 

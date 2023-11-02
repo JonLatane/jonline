@@ -3,7 +3,7 @@ import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack,
 
 import { Bot, Shield, Delete, User as UserIcon, ChevronUp, ChevronDown } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { JonlineAccount, accountId, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, store, useTypedDispatch } from "app/store";
+import { JonlineAccount, RootState, accountId, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, store, useRootSelector, useTypedDispatch, useTypedSelector } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
@@ -37,6 +37,9 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
   function moveDown() {
     dispatch(moveAccountDown(accountId(account)!));
   }
+  const accountIds = useRootSelector(state => state.accounts.ids);
+  const canMoveUp = accountIds.indexOf(accountId(account)!) > 0;
+  const canMoveDown = accountIds.indexOf(accountId(account)!) < accountIds.length - 1;
   const avatarUrl = useMediaUrl(account.user.avatar?.id, { account, server: account.server });
   const mediaQuery = useMedia();
 
@@ -92,8 +95,8 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
               ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button>
               : totalAccounts > 1
                 ? <XStack my='auto' space='$2' mr='$3'>
-                  <Button size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
-                  <Button size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
+                  <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
+                  <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
                 </XStack>
                 : undefined}
 

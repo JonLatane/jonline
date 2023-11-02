@@ -106,8 +106,21 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const isPeople = appSection == AppSection.PEOPLE && appSubsection == undefined;
   const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
 
+  const menuItems = [
+    AppSection.HOME,
+    AppSection.POSTS,
+    // AppSection.POST,
+    AppSection.EVENTS,
+    // AppSection.EVENT,
+    AppSection.PEOPLE,
+    // AppSection.PROFILE,
+    // AppSection.GROUPS,
+    // AppSection.GROUP,
+    AppSection.MEDIA,
+
+  ];
   const inlineNavigation = useInlineFeatureNavigation();
-  const reorderInlineNavigation = !mediaQuery.gtMd;
+  const reorderInlineNavigation = !mediaQuery.gtMd && account;// && !menuItems.includes(appSection));
   const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
 
   const followRequests: User[] | undefined = useTypedSelector((state: RootState) =>
@@ -200,19 +213,6 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     </XStack>
     : undefined;
 
-  const menuItems = [
-    AppSection.HOME,
-    AppSection.POSTS,
-    // AppSection.POST,
-    AppSection.EVENTS,
-    // AppSection.EVENT,
-    AppSection.PEOPLE,
-    // AppSection.PROFILE,
-    // AppSection.GROUPS,
-    // AppSection.GROUP,
-    AppSection.MEDIA,
-
-  ];
 
 
   console.log('inlineNavigation', inlineNavigation, 'reorderInlineNavigation', reorderInlineNavigation, menuItems.includes(appSection));

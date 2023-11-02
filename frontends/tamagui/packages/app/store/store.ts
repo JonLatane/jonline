@@ -57,6 +57,7 @@ const persistedReducer = persistReducer(rootPersistConfig, rootReducer)
 
 export type RootState = ReturnType<typeof rootReducer>;
 export const useTypedSelector = createSelectorHook();
+export const useRootSelector = (selector: (state: RootState) => any) => useTypedSelector(selector);
 
 export type AppDispatch = ThunkDispatch<RootState, any, AnyAction>;
 export function useTypedDispatch(): AppDispatch {
