@@ -72,6 +72,7 @@ export function UsernameDetailsScreen() {
         ?.map(postId => state.posts.entities[postId]!)
       : undefined
   });
+  const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const [loadingUserPosts, setLoadingUserPosts] = useState(false);
   const [loadingUserEvents, setLoadingUserEvents] = useState(false);
   const fullAvatarHeight = useFullAvatarHeight();
@@ -117,33 +118,32 @@ export function UsernameDetailsScreen() {
   useEffect(() => {
     if (userId && !userPosts && !loadingUserPosts) {
       setLoadingUserPosts(true);
-      reloadPosts();
-    } else if (userPosts) {
+      setTimeout(() => dispatch(loadUserPosts({ ...accountOrServer, userId: userId! })), 1);
+    } else if (loadingUserPosts && userPosts) {
       setLoadingUserPosts(false);
-      dismissScrollPreserver(setShowScrollPreserver);
     }
   }, [userId, userPosts, loadingUserPosts]);
 
-  function reloadPosts() {
-    if (!accountOrServer.server) return;
+  // function reloadPosts() {
+  //   if (!accountOrServer.server) return;
 
-    setTimeout(() =>
-      dispatch(loadUserPosts({ ...accountOrServer, userId: userId! })), 1);
-  }
+  //   setTimeout(() =>
+  //     dispatch(loadUserPosts({ ...accountOrServer, userId: userId! })), 1);
+  // }
 
-  const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   useEffect(() => {
-    // debugger;
     if (inputUsername && !loadingUser && (!user || usersState.status == 'unloaded') && !userLoadFailed) {
       setLoadingUser(true);
       setTimeout(() => dispatch(loadUsername({ ...accountOrServer, username: inputUsername! })));
     } else if (loadingUser && (user || userLoadFailed)) {
       setLoadingUser(false);
     }
-    if (user && showScrollPreserver) {
+  }, [inputUsername, loadingUser, user, usersState.status, userLoadFailed]);
+  useEffect(() => {
+    if (user && userPosts && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
     }
-  });
+  }, [user, userPosts, showScrollPreserver])
   const windowHeight = useWindowDimensions().height;
   function saveUser() {
     if (!canEdit && !user) return;
@@ -204,15 +204,6 @@ export function UsernameDetailsScreen() {
                       })}
                       {showScrollPreserver ? <YStack h={100000} /> : undefined}
                     </YStack>
-                    {/* <FlatList data={userPosts} style={{ width: '100%' }}
-                      // onRefresh={reloadPosts}
-                      // refreshing={postsState.status == 'loading'}
-                      // Allow easy restoring of scroll position
-                      ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-                      keyExtractor={(postId) => postId}
-                      renderItem={({ item: postId }) => {
-                        return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
-                      }} /> */}
                   </>
                 </>
                 : loading ? undefined : <Heading size='$1' ta='center'>No posts yet</Heading>}

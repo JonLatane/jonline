@@ -215,7 +215,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
 
 
-  console.log('inlineNavigation', inlineNavigation, 'reorderInlineNavigation', reorderInlineNavigation, menuItems.includes(appSection));
+  // console.log('inlineNavigation', inlineNavigation, 'reorderInlineNavigation', reorderInlineNavigation, menuItems.includes(appSection));
   return inlineNavigation
     ? <>
       <XStack w={selectedGroup ? 11 : 3.5} />

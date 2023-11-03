@@ -13,7 +13,9 @@ import { TabsNavigation } from '../tabs/tabs_navigation';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
+import { createParam } from 'solito';
 
+const { useParam } = createParam<{ endsAfter: string }>()
 export function EventsScreen() {
   return <BaseEventsScreen />;
 }
@@ -24,8 +26,16 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();
-  const [pageLoadTime, _setPageLoadTime] = useState<string>(supportDateInput(moment(Date.now())));
-  const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
+  const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
+  // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
+  const [queryEndsAfter, setQueryEndsAfter] = useParam('endsAfter');
+  const endsAfter = queryEndsAfter ?? moment(pageLoadTime).toISOString(true);
+  // useEffect(() => {
+  //   if (!queryEndsAfter) {
+  //     setQueryEndsAfter(moment(pageLoadTime).toISOString(true));
+  //   }
+  // }, [endsAfter]);
+
 
   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   console.log('timeFilter', timeFilter);
@@ -63,7 +73,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         <XStack w='100%' px='$2' flexWrap='wrap'>
           <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
           <Text ml='auto' my='auto' fontSize='$2' fontFamily='$body'>
-            <input type='datetime-local' value={endsAfter} onChange={(v) => setEndsAfter(v.target.value)} style={{ padding: 10 }} />
+            <input type='datetime-local' value={supportDateInput(moment(endsAfter))} onChange={(v) => setQueryEndsAfter(moment(v.target.value).toISOString(true))} style={{ padding: 10 }} />
           </Text>
         </XStack>
         {firstPageLoaded

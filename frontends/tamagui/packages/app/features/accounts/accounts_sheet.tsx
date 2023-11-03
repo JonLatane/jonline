@@ -82,7 +82,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     : server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
   const recommendedServerHostList = recommendableServerHosts;//?.filter(host => !currentServerHosts.includes(host)) ?? [];
   const recommendedServerHosts = [...new Set(recommendedServerHostList)];
-  console.log('recommendedServerHosts.length', recommendedServerHosts.length, server?.serverConfiguration?.serverInfo?.recommendedServerHosts, currentServerHosts);
+  // console.log('recommendedServerHosts.length', recommendedServerHosts.length, server?.serverConfiguration?.serverInfo?.recommendedServerHosts, currentServerHosts);
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({

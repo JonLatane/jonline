@@ -17,7 +17,7 @@ export type CreateEventSheetProps = {
   selectedGroup?: Group;
 };
 
-export const supportDateInput = (m: moment.Moment) => m.format('YYYY-MM-DDTHH:mm');
+export const supportDateInput = (m: moment.Moment) => m.local().format('YYYY-MM-DDTHH:mm');
 export const toProtoISOString = (localDateTimeInput: string) =>
   moment(localDateTimeInput).toISOString(true);
 
