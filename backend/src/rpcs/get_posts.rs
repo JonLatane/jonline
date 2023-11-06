@@ -25,11 +25,7 @@ pub fn get_posts(
         request.to_owned().post_id,
         request.to_owned().author_user_id,
     ) {
-        (_, _, Some(user_id)) => get_user_posts(
-            user_id.to_string().to_db_id_or_err("user_id")?,
-            &user.clone(),
-            conn,
-        ),
+        (_, _, Some(_author_user_id)) => get_user_posts(&request, &user.clone(), conn)?,
         (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
             conn,
@@ -90,47 +86,19 @@ macro_rules! filter_visible_posts {
     }};
 }
 
-// #[macro_export]
 macro_rules! visible_to_current_user {
     ($user:expr) => {{
-        posts::visibility.eq_any(public_string_visibilities($user))
+        posts::visibility
+            .eq_any(public_string_visibilities($user))
             .or(posts::visibility
                 .eq(Visibility::Limited.to_string_visibility())
                 .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
             .or(posts::visibility
                 .eq(Visibility::Private.to_string_visibility())
                 .and(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
+            .or(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))
     }};
 }
-// pub(crate) use visible_to_current_user;
-
-// #[macro_export]
-// macro_rules! post_public {
-//     ($user:expr) => {{
-//         posts::visibility.eq_any(public_string_visibilities($user))
-//     }};
-// }
-// pub(crate) use post_public;
-
-// #[macro_export]
-// macro_rules! limited_to_followers {
-//     ($user:expr) => {{
-//         posts::visibility
-//             .eq(Visibility::Limited.to_string_visibility())
-//             .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))
-//     }};
-// }
-// pub(crate) use limited_to_followers;
-
-// #[macro_export]
-// macro_rules! private_to_current_user {
-//     ($user:expr) => {{
-//         posts::visibility
-//             .eq(Visibility::Private.to_string_visibility())
-//             .and(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))
-//     }};
-// }
-// pub(crate) use private_to_current_user;
 
 fn get_by_post_id(
     user: &Option<&models::User>,
@@ -360,29 +328,36 @@ fn load_group_posts(
 }
 
 fn get_user_posts(
-    user_id: i64,
+    request: &GetPostsRequest,
+    // user_id: i64,
     current_user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
-) -> Vec<MarshalablePost> {
+) -> Result<Vec<MarshalablePost>, Status> {
+    let user_id = request
+        .author_user_id
+        .as_ref()
+        .unwrap()
+        .to_string()
+        .to_db_id_or_err("user_id")?;
     let visibilities = match current_user {
         Some(_) => vec![Visibility::GlobalPublic, Visibility::ServerPublic],
         None => vec![Visibility::GlobalPublic],
     }
     .to_string_visibilities();
-    posts::table
+    Ok(posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         .filter(posts::visibility.eq_any(visibilities))
         // .filter(posts::parent_post_id.is_null())
         .filter(posts::user_id.eq(user_id))
-        .filter(posts::context.eq(PostContext::Post.as_str_name()))
+        .filter(posts::context.eq(request.context().as_str_name()))
         .order(posts::last_activity_at.desc())
         .limit(100)
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
         .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
-        .collect()
+        .collect())
 }
 
 fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec<MarshalablePost> {
@@ -444,22 +419,5 @@ fn get_replies_to_post_id(
             }
         })
         .collect();
-    // if reply_depth > 1 {
-    //     let extended_result: Vec<Post> = result
-    //         .iter()
-    //         .map(|post| {
-    //             if post.reply_count == 0 {
-    //                 return post.clone();
-    //             }
-    //             let replies =
-    //                 get_replies_to_post_id(_user, &post.id, min(reply_depth - 1, 1), conn);
-    //             Post {
-    //                 replies: replies.unwrap().into(),
-    //                 ..post.clone()
-    //             }
-    //         })
-    //         .collect();
-    //     return Ok(extended_result);
-    // }
     Ok(result)
 }

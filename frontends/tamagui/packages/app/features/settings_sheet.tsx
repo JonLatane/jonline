@@ -1,8 +1,7 @@
 import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { resetAllData, resetCredentialedData, RootState, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowBetaNavigation, setShowIntro, setShowUserIds, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useState } from 'react';
-import { useInlineFeatureNavigation } from './tabs/features_navigation';
 import { ToggleRow } from '../components/toggle_row';
 
 
@@ -27,8 +26,6 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
     resetAllData();
     setTimeout(forceUpdate, 2000);
   }
-
-  const inlineNavigation = useInlineFeatureNavigation();
 
   return (
     <>
@@ -72,7 +69,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   disabled={!app.autoRefreshDiscussions}
                   defaultValue={[app.discussionRefreshIntervalSeconds]}
                   onValueChange={(value) => dispatch(setDiscussionRefreshIntervalSeconds(value[0]!))}
-                  min={5} max={30} step={1}>
+                  min={3} max={30} step={1}>
                   <Slider.Track>
                     <Slider.TrackActive />
                   </Slider.Track>
@@ -88,17 +85,23 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <Heading size='$4' mt='$3'>Feature Navigation</Heading>
               <Paragraph o={0.5} size='$1'>Posts, Events, People, Latest, etc.</Paragraph>
               <ToggleRow name='Auto Feature Navigation'
-                description='Automatically show/hide feature navigation based on screen size.'
+                description='Automatically enable/disable Inline Feature Navigation based on screen size.'
                 value={app.inlineFeatureNavigation === undefined}
                 setter={(v) => setInlineFeatureNavigation(v ? undefined : false)} autoDispatch />
-              <ToggleRow name='Inline Feature Navigation' value={inlineNavigation}
+              <ToggleRow name='Inline Feature Navigation' value={app.inlineFeatureNavigation}
                 description='Show features in a horizontal row at the top of the screen.'
                 disabled={app.inlineFeatureNavigation === undefined}
                 setter={setInlineFeatureNavigation} autoDispatch />
+              <ToggleRow name='Shrink Inline Feature Navigation'
+                description='Shrink Feature Navigation when Inline Feature Navigation is enabled.'
+                disabled={app.inlineFeatureNavigation === false}
+                value={app.shrinkFeatureNavigation}
+                setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
+
 
               <Heading size='$3' mt='$3'>Multi-Server</Heading>
               <ToggleRow name='Allow Server Selection'
-                description={serverCount !== 1 ? 'Delete other servers to disable this setting.': undefined}
+                description={serverCount !== 1 ? 'Delete other servers to disable this setting.' : undefined}
                 disabled={serverCount !== 1}
                 value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>

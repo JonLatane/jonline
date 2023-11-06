@@ -108,7 +108,12 @@ pub trait ToI32Moderation {
 }
 impl ToI32Moderation for String {
     fn to_i32_moderation(&self) -> i32 {
-        self.to_proto_moderation().unwrap() as i32
+        self.to_proto_moderation().unwrap().to_i32_moderation()//unwrap() as i32
+    }
+}
+impl ToI32Moderation for Moderation {
+    fn to_i32_moderation(&self) -> i32 {
+        *self as i32
     }
 }
 

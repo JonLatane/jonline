@@ -57,6 +57,7 @@ macro_rules! visible_to_current_user {
             .or(posts::visibility
                 .eq(Visibility::Private.to_string_visibility())
                 .and(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
+            .or(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0)))
     }};
 }
 

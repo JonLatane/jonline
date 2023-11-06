@@ -22,6 +22,7 @@ export type LocalAppConfiguration = {
   showEventsOnLatest: boolean;
   serverRecentGroups: { [serverId: string]: string[] };
   inlineFeatureNavigation: boolean | undefined;
+  shrinkFeatureNavigation: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -40,6 +41,7 @@ const initialState: LocalAppConfiguration = {
   showEventsOnLatest: true,
   serverRecentGroups: {},
   inlineFeatureNavigation: undefined,
+  shrinkFeatureNavigation: false,
 };
 
 export const localAppSlice = createSlice({
@@ -102,6 +104,9 @@ export const localAppSlice = createSlice({
     setInlineFeatureNavigation: (state, action: PayloadAction<boolean | undefined>) => {
       state.inlineFeatureNavigation = action.payload;
     },
+    setShrinkFeatureNavigation: (state, action: PayloadAction<boolean>) => {
+      state.shrinkFeatureNavigation = action.payload;
+    },
   },
   extraReducers: (builder) => {
   },
@@ -110,7 +115,7 @@ export const localAppSlice = createSlice({
 export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection,
   setSeparateAccountsByServer, setShowBetaNavigation, resetLocalApp, setDiscussionChatUI,
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
-  setInlineFeatureNavigation, setBrowsingServers, setViewingRecommendedServers
+  setInlineFeatureNavigation,setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

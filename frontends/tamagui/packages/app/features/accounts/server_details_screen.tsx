@@ -20,6 +20,7 @@ import { hasAdminPermission } from 'app/utils/permission_utils'
 import { MediaRef } from '../media/media_chooser'
 import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 import RecommendedServer from './recommended_server';
+import { SubnavButton } from 'app/components/subnav_button';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 
@@ -210,17 +211,11 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const [querySection, setQuerySection] = useParam('section');
   type AboutSection = 'about' | 'theme' | 'settings' | 'cdn';
   const section = (querySection ?? 'about') as AboutSection;
-  function sectionButton(sectionName: AboutSection, title: string, icon) {
-    return <Button f={1} h={56}
-      onPress={() => setQuerySection(sectionName === 'about' ? undefined : sectionName)}
-    >
-      <YStack alignItems='center'>
-        {icon}
-        <Paragraph size='$1' color={section === sectionName ? navAnchorColor : undefined}>
-          {title}
-        </Paragraph>
-      </YStack>
-    </Button>
+  function sectionButton(sectionName: AboutSection, title: string, icon: React.JSX.Element) {
+    return <SubnavButton title={title}
+      icon={icon}
+      selected={section === sectionName}
+      select={() => setQuerySection(sectionName)} />;
   }
   const cloudflareLink = useLink({ href: 'https://cloudflare.com' });
   function recommendServer() {
@@ -397,10 +392,10 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     don't really need to talk to each other much; the federation sits mostly on the client-side
                     and is backed solely by DNS names and DNS-based security.
                   </Paragraph>
-                  {(recommendedHosts?.length ?? 0)=== 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
+                  {(recommendedHosts?.length ?? 0) === 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
                     No recommended servers.
                   </Paragraph> : undefined}
-                  {recommendedHosts?.map((host, index) => <YStack key={`recommendedServer-${host}`}w='100%' my='$2' alignContent='center' ai='center'>
+                  {recommendedHosts?.map((host, index) => <YStack key={`recommendedServer-${host}`} w='100%' my='$2' alignContent='center' ai='center'>
                     <XStack ml='$3' mb='$2' w='100%' space='$1'>
                       <Text my='auto' fontFamily='$body' fontSize='$3' mr='$2'>{`${index + 1}.`}</Text>
                       <Heading my='auto' f={1} fontFamily='$body' size='$1' >{host}</Heading>

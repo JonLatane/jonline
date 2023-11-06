@@ -1,6 +1,9 @@
-use super::{load_media_lookup, MediaLookup, ToProtoId, ToProtoMarshalablePost, ToProtoTime};
+use std::mem::transmute;
+
+use super::{load_media_lookup, MediaLookup, ToProtoId, ToProtoMarshalablePost, ToProtoTime, ToI32Moderation};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
+use crate::protos::event_attendance::Attendee;
 use crate::protos::*;
 
 use super::MarshalablePost;
@@ -90,5 +93,102 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
             location,
             ..Default::default()
         }
+    }
+}
+
+pub trait ToProtoEventAttendance {
+    fn to_proto(&self) -> EventAttendance;
+}
+
+impl ToProtoEventAttendance for models::EventAttendance {
+    fn to_proto(&self) -> EventAttendance {
+        EventAttendance {
+            // id: self.id.to_proto_id(),
+            event_instance_id: self.event_instance_id.to_proto_id(),
+            attendee: match (self.user_id, &self.anonymous_attendee) {
+                (Some(user_id), _) => Some(Attendee::UserId(user_id.to_proto_id())),
+                (_, Some(anonymous_attendee)) => {
+                    Some(Attendee::AnonymousAttendee(AnonymousAttendee {
+                        name: anonymous_attendee
+                            .get("name")
+                            .unwrap()
+                            .as_str()
+                            .unwrap()
+                            .to_string(),
+                        //TODO add contact methods
+                        contact_methods: vec![],
+                    }))
+                }
+                _ => None,
+            },
+            number_of_guests: u32::try_from(self.number_of_guests).unwrap(),
+            status: self.status.to_i32_attendance_status(),
+            inviting_user_id: self.inviting_user_id.map(|id| id.to_proto_id()),
+            public_note: self.public_note.clone(),
+            private_note: self.private_note.clone(),
+            moderation: self.moderation.to_i32_moderation(),
+            created_at: Some(self.created_at.to_proto()),
+            updated_at: self.updated_at.map(|t| t.to_proto()),
+        }
+    }
+}
+
+pub const ALL_ATTENDANCE_STATUSES: [AttendanceStatus; 6] = [
+    AttendanceStatus::Interested,
+    AttendanceStatus::Requested,
+    AttendanceStatus::Going,
+    AttendanceStatus::NotGoing,
+    AttendanceStatus::Went,
+    AttendanceStatus::DidNotGo,
+];
+
+pub trait ToProtoAttendanceStatus {
+    fn to_proto_attendance_status(&self) -> Option<AttendanceStatus>;
+}
+impl ToProtoAttendanceStatus for String {
+    fn to_proto_attendance_status(&self) -> Option<AttendanceStatus> {
+        for attendance_status in ALL_ATTENDANCE_STATUSES {
+            if attendance_status.as_str_name().eq_ignore_ascii_case(self) {
+                return Some(attendance_status);
+            }
+        }
+        return None;
+    }
+}
+impl ToProtoAttendanceStatus for i32 {
+    fn to_proto_attendance_status(&self) -> Option<AttendanceStatus> {
+        Some(unsafe { transmute::<i32, AttendanceStatus>(*self) })
+    }
+}
+
+pub trait ToStringAttendanceStatus {
+    fn to_string_attendance_status(&self) -> String;
+}
+impl ToStringAttendanceStatus for AttendanceStatus {
+    fn to_string_attendance_status(&self) -> String {
+        self.as_str_name().to_string()
+    }
+}
+impl ToStringAttendanceStatus for i32 {
+    fn to_string_attendance_status(&self) -> String {
+        self.to_proto_attendance_status()
+            .unwrap()
+            .to_string_attendance_status()
+    }
+}
+
+pub trait ToI32AttendanceStatus {
+    fn to_i32_attendance_status(&self) -> i32;
+}
+impl ToI32AttendanceStatus for String {
+    fn to_i32_attendance_status(&self) -> i32 {
+        self.to_proto_attendance_status()
+            .unwrap()
+            .to_i32_attendance_status()
+    }
+}
+impl ToI32AttendanceStatus for AttendanceStatus {
+    fn to_i32_attendance_status(&self) -> i32 {
+        *self as i32
     }
 }

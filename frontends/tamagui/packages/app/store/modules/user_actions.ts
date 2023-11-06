@@ -1,4 +1,4 @@
-import { Empty, Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, User, UserListingType } from "@jonline/api";
+import { Empty, Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, User, UserListingType } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -73,8 +73,8 @@ export const loadUsername: AsyncThunk<User, LoadUsername, any> = createAsyncThun
   }
 );
 
-export type LoadUserPosts = AccountOrServer & { userId: string };
-export const loadUserPosts: AsyncThunk<GetPostsResponse, LoadUserPosts, any> = createAsyncThunk<GetPostsResponse, LoadUserPosts>(
+export type LoadUserEntities = AccountOrServer & { userId: string };
+export const loadUserPosts: AsyncThunk<GetPostsResponse, LoadUserEntities, any> = createAsyncThunk<GetPostsResponse, LoadUserEntities>(
   "users/loadPosts",
   async (request) => {
     let client = await getCredentialClient(request);
@@ -82,8 +82,15 @@ export const loadUserPosts: AsyncThunk<GetPostsResponse, LoadUserPosts, any> = c
     return result;
   }
 );
-export type LoadUserEvents = AccountOrServer & { userId: string };
-export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEvents, any> = createAsyncThunk<GetEventsResponse, LoadUserEvents>(
+export const loadUserReplies: AsyncThunk<GetPostsResponse, LoadUserEntities, any> = createAsyncThunk<GetPostsResponse, LoadUserEntities>(
+  "users/loadReplies",
+  async (request) => {
+    let client = await getCredentialClient(request);
+    const result = await client.getPosts({ authorUserId: request.userId, context: PostContext.REPLY }, client.credential);
+    return result;
+  }
+);
+export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEntities, any> = createAsyncThunk<GetEventsResponse, LoadUserEntities>(
   "users/loadEvents",
   async (request) => {
     let client = await getCredentialClient(request);

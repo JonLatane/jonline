@@ -33,8 +33,10 @@ message GetPostsRequest {
   // Limits results to those by the given author user ID.
   optional string author_user_id = 2;
   optional string group_id = 3;
-  // TODO: Implement support for this
+  // Only supported for depth=2 for now.
   optional uint32 reply_depth = 4;
+  // Only POST and REPLY are supported for now.
+  optional PostContext context = 5;
   PostListingType listing_type = 10;
   uint32 page = 15;
 }

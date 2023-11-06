@@ -163,8 +163,12 @@ export interface GetPostsRequest {
   groupId?:
     | string
     | undefined;
-  /** TODO: Implement support for this */
-  replyDepth?: number | undefined;
+  /** Only supported for depth=2 for now. */
+  replyDepth?:
+    | number
+    | undefined;
+  /** Only POST and REPLY are supported for now. */
+  context?: PostContext | undefined;
   listingType: PostListingType;
   page: number;
 }
@@ -291,6 +295,7 @@ function createBaseGetPostsRequest(): GetPostsRequest {
     authorUserId: undefined,
     groupId: undefined,
     replyDepth: undefined,
+    context: undefined,
     listingType: 0,
     page: 0,
   };
@@ -309,6 +314,9 @@ export const GetPostsRequest = {
     }
     if (message.replyDepth !== undefined) {
       writer.uint32(32).uint32(message.replyDepth);
+    }
+    if (message.context !== undefined) {
+      writer.uint32(40).int32(message.context);
     }
     if (message.listingType !== 0) {
       writer.uint32(80).int32(message.listingType);
@@ -354,6 +362,13 @@ export const GetPostsRequest = {
 
           message.replyDepth = reader.uint32();
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.context = reader.int32() as any;
+          continue;
         case 10:
           if (tag !== 80) {
             break;
@@ -383,6 +398,7 @@ export const GetPostsRequest = {
       authorUserId: isSet(object.authorUserId) ? globalThis.String(object.authorUserId) : undefined,
       groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
       replyDepth: isSet(object.replyDepth) ? globalThis.Number(object.replyDepth) : undefined,
+      context: isSet(object.context) ? postContextFromJSON(object.context) : undefined,
       listingType: isSet(object.listingType) ? postListingTypeFromJSON(object.listingType) : 0,
       page: isSet(object.page) ? globalThis.Number(object.page) : 0,
     };
@@ -402,6 +418,9 @@ export const GetPostsRequest = {
     if (message.replyDepth !== undefined) {
       obj.replyDepth = Math.round(message.replyDepth);
     }
+    if (message.context !== undefined) {
+      obj.context = postContextToJSON(message.context);
+    }
     if (message.listingType !== 0) {
       obj.listingType = postListingTypeToJSON(message.listingType);
     }
@@ -420,6 +439,7 @@ export const GetPostsRequest = {
     message.authorUserId = object.authorUserId ?? undefined;
     message.groupId = object.groupId ?? undefined;
     message.replyDepth = object.replyDepth ?? undefined;
+    message.context = object.context ?? undefined;
     message.listingType = object.listingType ?? 0;
     message.page = object.page ?? 0;
     return message;

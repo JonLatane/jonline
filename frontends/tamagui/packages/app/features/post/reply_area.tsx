@@ -97,6 +97,12 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPos
       ? <YStack w='100%' pl='$2' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
         {hasReplyTextFocused || media.length > 0
           ? <>
+            <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
+              <XStack animation='quick' rotate={showMedia ? '90deg' : '0deg'}>
+                <ChevronRight size='$1' />
+              </XStack>
+              <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>
+            </Button>
             {showMedia
               ? previewReply
                 ? <PostMediaRenderer {...{
@@ -113,12 +119,6 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPos
                   disableInputs={sendReplyStatus == 'sending'}
                 />
               : undefined}
-            <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
-              <XStack animation='quick' rotate={showMedia ? '-90deg' : '0deg'}>
-                <ChevronRight size='$1' />
-              </XStack>
-              <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})`: undefined}</Heading>
-            </Button>
           </>
           : undefined}
         {replyingToPath.length > 1

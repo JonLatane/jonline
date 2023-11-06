@@ -90,7 +90,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const recentGroupIds = useTypedSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
-  const inlineFeatureNavigation = useInlineFeatureNavigation();
+  const {inlineNavigation: inlineFeatureNavigation} = useInlineFeatureNavigation();
   const scrollGroupsSheet = !inlineFeatureNavigation
     || !mediaQuery.gtXs;
 

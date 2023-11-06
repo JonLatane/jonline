@@ -3,9 +3,10 @@ import { JonlineServer, RootState, getUsersPage, loadUsersPage, setInlineFeature
 import { Button, Heading, Popover, ScrollView, XStack, YStack, useMedia } from '@jonline/ui';
 import { useAccount, useLocalApp, useServerTheme } from 'app/store';
 import { useLink } from "solito/link";
-import { AlertTriangle, Menu, Circle, SeparatorVertical } from "@tamagui/lucide-icons";
+import { AlertTriangle, Menu, Circle, SeparatorVertical, Video, Users, Calendar, MessageSquare, Clapperboard, Users2 } from "@tamagui/lucide-icons";
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 import { useEffect, useState } from "react";
+import { color } from "@tamagui/themes";
 
 export enum AppSection {
   HOME = 'home',
@@ -19,6 +20,36 @@ export enum AppSection {
   GROUP = 'group',
   MEDIA = 'media',
   INFO = 'info',
+}
+
+const MENU_SECTIONS = [
+  AppSection.HOME,
+  AppSection.POSTS,
+  // AppSection.POST,
+  AppSection.EVENTS,
+  // AppSection.EVENT,
+  AppSection.PEOPLE,
+  // AppSection.PROFILE,
+  // AppSection.GROUPS,
+  // AppSection.GROUP,
+  AppSection.MEDIA,
+];
+
+function menuIcon(section: AppSection, color?: string) {
+  switch (section) {
+    // case AppSection.HOME:
+    //   return <Circle color={color} />;
+    case AppSection.POSTS:
+      return <MessageSquare color={color} />;
+    case AppSection.EVENTS:
+      return <Calendar color={color} />;
+    case AppSection.PEOPLE:
+      return <Users2 color={color} />;
+    case AppSection.MEDIA:
+      return <Clapperboard color={color} />;
+    default:
+      return undefined;
+  }
 }
 
 export enum AppSubsection {
@@ -64,9 +95,12 @@ export function subsectionTitle(subsection?: AppSubsection): string | undefined 
 
 export function useInlineFeatureNavigation() {
   const mediaQuery = useMedia();
-  const { inlineFeatureNavigation } = useLocalApp();
+  const { inlineFeatureNavigation, shrinkFeatureNavigation } = useLocalApp();
 
-  return inlineFeatureNavigation || inlineFeatureNavigation == undefined && mediaQuery.gtXs;
+  return {
+    shrinkNavigation: shrinkFeatureNavigation,
+    inlineNavigation: inlineFeatureNavigation || inlineFeatureNavigation == undefined && mediaQuery.gtXs
+  };
 }
 
 export type FeaturesNavigationProps = {
@@ -106,20 +140,8 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const isPeople = appSection == AppSection.PEOPLE && appSubsection == undefined;
   const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
 
-  const menuItems = [
-    AppSection.HOME,
-    AppSection.POSTS,
-    // AppSection.POST,
-    AppSection.EVENTS,
-    // AppSection.EVENT,
-    AppSection.PEOPLE,
-    // AppSection.PROFILE,
-    // AppSection.GROUPS,
-    // AppSection.GROUP,
-    AppSection.MEDIA,
+  const { inlineNavigation, shrinkNavigation } = useInlineFeatureNavigation();
 
-  ];
-  const inlineNavigation = useInlineFeatureNavigation();
   const reorderInlineNavigation = !mediaQuery.gtMd && account;// && !menuItems.includes(appSection));
   const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
 
@@ -144,9 +166,9 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   });
 
   const [latest, posts, events] = [
-    navButton(isLatest, latestLink, sectionTitle(AppSection.HOME)),
-    navButton(isPosts, postsLink, sectionTitle(AppSection.POSTS)),
-    navButton(isEvents, eventsLink, sectionTitle(AppSection.EVENTS)),
+    navButton(isLatest, latestLink, AppSection.HOME),
+    navButton(isPosts, postsLink, AppSection.POSTS),
+    navButton(isEvents, eventsLink, AppSection.EVENTS),
   ];
   const postsEventsRow = inlineNavigation && reorderInlineNavigation
     ? (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
@@ -154,7 +176,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       : (appSection == AppSection.POST || appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
         ? <>{posts}{events}</>
         : <>{latest}{posts}{events}</>
-    : <>{latest}{posts}{events}</>;
+    : <>{!shrinkNavigation || appSection === AppSection.HOME ? latest : undefined}{posts}{events}</>;
 
   const showFollowRequests = account && (
     (!inlineNavigation || (!reorderInlineNavigation && appSubsection == AppSubsection.FOLLOW_REQUESTS))
@@ -162,30 +184,46 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     || isPeople
   );
   const peopleRow = <>
-    {navButton(isPeople, peopleLink, 'People')}
+    {navButton(isPeople, peopleLink, AppSection.PEOPLE)}
     {showFollowRequests ? navButton(isFollowRequests, followRequestsLink,
-      `Follow Requests${followRequestCount > 0 ? ` (${followRequestCount})` : ''}`
+      AppSection.PEOPLE, AppSubsection.FOLLOW_REQUESTS, followRequestCount
     ) : undefined}
   </>;
   const isPeopleRow = isPeople || isFollowRequests;
 
   const myDataRow = <>
-    {account ? navButton(isMedia, myMediaLink, 'My Media') : undefined}
+    {account ? navButton(isMedia, myMediaLink, AppSection.MEDIA) : undefined}
   </>
 
   function triggerButton() {
+    const icon = shrinkNavigation && !appSubsection
+      ? menuIcon(appSection, navTextColor)
+      : undefined;
     return <Button scale={0.95} ml={selectedGroup ? -4 : -3} my='auto'
       disabled={inlineNavigation}
       icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
       {...themedButtonBackground(navColor)}>
-      <Heading size="$4"
-        // color={primaryTextColor}
-        color={navTextColor}
-      >{subsectionTitle(appSubsection) ?? sectionTitle(appSection)}</Heading>
+      <XStack space='$2'>
+        {icon}
+        <Heading f={1} size="$4" color={navTextColor}>
+          {subsectionTitle(appSubsection) ?? sectionTitle(appSection)}
+        </Heading>
+      </XStack>
     </Button>;
   }
 
-  function navButton(selected: boolean, link: object, name: string) {
+  function navButton(selected: boolean, link: object, section: AppSection, subsection?: AppSubsection, count?: number) {
+    const baseName = (
+      subsection
+        ? subsectionTitle(subsection)
+        : undefined
+    ) ?? sectionTitle(section);
+    const name = count && count > 0
+      ? `${baseName} (${count})`
+      : baseName;
+    const icon = shrinkNavigation && !subsection
+      ? menuIcon(section, selected ? navTextColor : undefined)
+      : undefined;
     return selected && inlineNavigation ?
       !reorderInlineNavigation
         ? <>{triggerButton()}</>
@@ -202,7 +240,10 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           hoverStyle={{ backgroundColor: '$colorTransparent' }}
           {...link}
         >
-          <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>{name}</Heading>
+          {icon ??
+            <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>
+              {name}
+            </Heading>}
         </Button>
       </Popover.Close>;
   }
@@ -219,7 +260,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   return inlineNavigation
     ? <>
       <XStack w={selectedGroup ? 11 : 3.5} />
-      {!reorderInlineNavigation && menuItems.includes(appSection) ? undefined : triggerButton()}
+      {!reorderInlineNavigation && MENU_SECTIONS.includes(appSection) ? undefined : triggerButton()}
       <XStack space='$2' ml='$1' my='auto'>
         {isPeopleRow && reorderInlineNavigation ? peopleRow : postsEventsRow}
         {inlineSeparator}

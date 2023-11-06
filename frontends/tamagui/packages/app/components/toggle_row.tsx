@@ -6,14 +6,15 @@ import React from 'react';
 export interface ToggleRowProps {
   name: string;
   description?: string;
-  value: boolean;
+  value: boolean | undefined;
   setter: (value: boolean) => any;
   disabled?: boolean;
   autoDispatch?: boolean;
 }
-export function ToggleRow({ name, description, value, setter, disabled = false, autoDispatch = false }: ToggleRowProps) {
+export function ToggleRow({ name, description, value: optionalValue, setter, disabled = false, autoDispatch = false }: ToggleRowProps) {
   const dispatch = useTypedDispatch();
   const nameKey = name.toLowerCase().replace(/[^\w]/g, '_');
+  const value = !!optionalValue;
   return <XStack space='$3' o={disabled ? 0.5 : 1} my='$1'>
     <Label htmlFor={nameKey} my='auto' f={1}>
       <YStack w='100%'>
