@@ -3,7 +3,7 @@ use rocket_cache_response::CacheResponse;
 use rocket::http::uri::Host;
 
 use super::RocketState;
-use crate::{protos::ExternalCdnConfig, rpcs::get_server_configuration};
+use crate::{protos::ExternalCdnConfig, rpcs::get_server_configuration_proto};
 
 lazy_static! {
     pub static ref EXTERNAL_CDN_PAGES: Vec<Route> = routes![backend_host, frontend_host];
@@ -43,7 +43,7 @@ pub fn configured_frontend_domain(state: &State<RocketState>, host: &Host<'_>) -
 
 pub fn external_cdn_config(state: &State<RocketState>) -> Option<ExternalCdnConfig> {
     let mut conn = state.pool.get().unwrap();
-    get_server_configuration(&mut conn)
+    get_server_configuration_proto( &mut conn)
         .unwrap()
         .external_cdn_config
 }

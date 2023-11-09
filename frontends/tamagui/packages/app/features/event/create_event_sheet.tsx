@@ -90,7 +90,7 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
       <XStack mx='$2'>
         <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
         <Text fontSize='$2' fontFamily='$body'>
-          <input type='datetime-local' value={startTime} onChange={(v) => setStartTime(v.target.value)} style={{ padding: 10 }} />
+          <input type='datetime-local' min={supportDateInput(moment(0))} value={startTime} onChange={(v) => setStartTime(v.target.value)} style={{ padding: 10 }} />
         </Text>
       </XStack>
       <XStack mx='$2'>

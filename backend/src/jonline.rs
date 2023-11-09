@@ -30,6 +30,35 @@ impl Clone for JonLineImpl {
 type ReplyStreamResult<T> = Result<Response<T>, Status>;
 type ReplyStream = Pin<Box<dyn Stream<Item = Result<Post, Status>> + Send>>;
 
+
+macro_rules! auth_rpc {
+    ($self: expr, $rpc:expr, $request:expr) => {{
+        let mut conn = get_connection(&$self.pool)?;
+        $rpc($request.into_inner(), &mut conn).map(Response::new)
+    }};
+}
+macro_rules! authenticated_rpc {
+    ($self: expr, $rpc:expr, $request:expr) => {{
+        let mut conn = get_connection(&$self.pool)?;
+        let user = auth::get_auth_user(&$request, &mut conn)?;
+        let request_log = format!("{:?}", &$request);
+        let result = $rpc($request.into_inner(), &user, &mut conn);
+        log::info!("Authenticated RPC: {}\nRequest: {:?}\nResult: {:?}", stringify!($rpc), request_log, &result);
+        result.map(Response::new)
+    }};
+}
+
+macro_rules! unauthenticated_rpc {
+    ($self: expr, $rpc:expr, $request:expr) => {{
+        let mut conn = get_connection(&$self.pool)?;
+        let user: Option<models::User> = auth::get_auth_user(&$request, &mut conn).ok();
+        let request_log = format!("{:?}", &$request);
+        let result = $rpc($request.into_inner(), &user.as_ref(), &mut conn);
+        log::info!("Unauthenticated RPC: {}\nRequest: {:?}\nResult: {:?}", stringify!($rpc), request_log, &result);
+        result.map(Response::new)
+    }};
+}
+
 #[tonic::async_trait]
 impl Jonline for JonLineImpl {
     async fn get_service_version(
@@ -39,203 +68,202 @@ impl Jonline for JonLineImpl {
         rpcs::get_service_version().map(Response::new)
     }
 
+    async fn get_server_configuration(
+        &self,
+        request: Request<()>,
+    ) -> Result<Response<ServerConfiguration>, Status> {
+        unauthenticated_rpc!(self, rpcs::get_server_configuration, request)
+    }
+
+    async fn configure_server(
+        &self,
+        request: Request<ServerConfiguration>,
+    ) -> Result<Response<ServerConfiguration>, Status> {
+        authenticated_rpc!(self, rpcs::configure_server, request)
+    }
+
+    async fn reset_data(&self, request: Request<()>) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::reset_data, request)
+    }
+
     async fn create_account(
         &self,
         request: Request<CreateAccountRequest>,
     ) -> Result<Response<RefreshTokenResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        rpcs::create_account(request.into_inner(), &mut conn).map(Response::new)
+        auth_rpc!(self, rpcs::create_account, request)
+        // let mut conn = get_connection(&self.pool)?;
+        // rpcs::create_account(request.into_inner(), &mut conn).map(Response::new)
     }
 
     async fn login(
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<RefreshTokenResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        rpcs::login(request, &mut conn)
+        auth_rpc!(self, rpcs::login, request)
+        // let mut conn = get_connection(&self.pool)?;
+        // rpcs::login(request.into_inner(), &mut conn).map(Response::new)
     }
 
     async fn access_token(
         &self,
         request: Request<AccessTokenRequest>,
     ) -> Result<Response<AccessTokenResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        rpcs::access_token(request, &mut conn)
+        auth_rpc!(self, rpcs::access_token, request)
+        // let mut conn = get_connection(&self.pool)?;
+        // rpcs::access_token(request.into_inner(), &mut conn).map(Response::new)
     }
 
     async fn get_current_user(&self, request: Request<()>) -> Result<Response<User>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::get_current_user(&user, &mut conn)
+        authenticated_rpc!(self, rpcs::get_current_user, request)
     }
 
     async fn update_user(&self, request: Request<User>) -> Result<Response<User>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_user(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::update_user, request)
     }
 
     async fn delete_user(&self, request: Request<User>) -> Result<Response<()>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_user(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::delete_user, request)
     }
     async fn get_users(
         &self,
         request: Request<GetUsersRequest>,
     ) -> Result<Response<GetUsersResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_users(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
+        unauthenticated_rpc!(self, rpcs::get_users, request)
     }
 
     async fn create_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::create_follow(request.into_inner(), user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::create_follow, request)
     }
     async fn update_follow(&self, request: Request<Follow>) -> Result<Response<Follow>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_follow(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::update_follow, request)
     }
     async fn delete_follow(&self, request: Request<Follow>) -> Result<Response<()>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_follow(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::delete_follow, request)
     }
 
     async fn get_media(
         &self,
         request: Request<GetMediaRequest>,
     ) -> Result<Response<GetMediaResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_media(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
+        unauthenticated_rpc!(self, rpcs::get_media, request)
     }
 
     async fn delete_media(&self, request: Request<Media>) -> Result<Response<()>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_media(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::delete_media, request)
     }
 
     async fn get_groups(
         &self,
         request: Request<GetGroupsRequest>,
     ) -> Result<Response<GetGroupsResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_groups(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
+        unauthenticated_rpc!(self, rpcs::get_groups, request)
     }
 
     async fn create_group(&self, request: Request<Group>) -> Result<Response<Group>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::create_group(request.into_inner(), user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::create_group, request)
     }
 
     async fn update_group(&self, request: Request<Group>) -> Result<Response<Group>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_group(request.into_inner(), user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::update_group, request)
     }
     async fn delete_group(&self, request: Request<Group>) -> Result<Response<()>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_group(request.into_inner(), user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::delete_group, request)
     }
 
     async fn create_membership(
         &self,
         request: Request<Membership>,
     ) -> Result<Response<Membership>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::create_membership(request.into_inner(), user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::create_membership, request)
     }
     async fn update_membership(
         &self,
         request: Request<Membership>,
     ) -> Result<Response<Membership>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_membership(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::create_membership, request)
     }
     async fn delete_membership(
         &self,
         request: Request<Membership>,
     ) -> Result<Response<()>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_membership(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::delete_membership, request)
     }
     async fn get_members(
         &self,
         request: Request<GetMembersRequest>,
     ) -> Result<Response<GetMembersResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::get_members(request.into_inner(), user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::get_members, request)
     }
 
     async fn create_post(
         &self,
         request: Request<Post>,
     ) -> Result<Response<Post>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::create_post(request, user, &mut conn)
+        authenticated_rpc!(self, rpcs::create_post, request)
     }
     async fn update_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_post(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::update_post, request)
     }
     async fn delete_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_post(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::delete_post, request)
     }
 
     async fn create_group_post(
         &self,
         request: Request<GroupPost>,
     ) -> Result<Response<GroupPost>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::create_group_post(request.into_inner(), user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::create_group_post, request)
     }
     async fn update_group_post(
         &self,
         request: Request<GroupPost>,
     ) -> Result<Response<GroupPost>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_group_post(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::update_group_post, request)
     }
     async fn delete_group_post(&self, request: Request<GroupPost>) -> Result<Response<()>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_group_post(request.into_inner(), &user, &mut conn).map(Response::new)
+        authenticated_rpc!(self, rpcs::delete_group_post, request)
     }
 
     async fn get_group_posts(
         &self,
         request: Request<GetGroupPostsRequest>,
     ) -> Result<Response<GetGroupPostsResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_group_posts(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
+        unauthenticated_rpc!(self, rpcs::get_group_posts, request)
     }
 
     async fn get_posts(
         &self,
         request: Request<GetPostsRequest>,
     ) -> Result<Response<GetPostsResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_posts(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
+        unauthenticated_rpc!(self, rpcs::get_posts, request)
+    }
+
+    async fn create_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
+        authenticated_rpc!(self, rpcs::create_event, request)
+    }
+    async fn update_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
+        authenticated_rpc!(self, rpcs::update_event, request)
+    }
+    async fn delete_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
+        authenticated_rpc!(self, rpcs::delete_event, request)
+    }
+
+    async fn upsert_event_attendance(&self, request: Request<EventAttendance>) -> Result<Response<EventAttendance>, Status> {
+        unauthenticated_rpc!(self, rpcs::upsert_event_attendance, request)
+    }
+
+    async fn delete_event_attendance(&self, request: Request<EventAttendance>) -> Result<Response<()>, Status> {
+        unauthenticated_rpc!(self, rpcs::delete_event_attendance, request)
+    }
+    async fn get_event_attendances(&self, request: Request<EventInstance>) -> Result<Response<EventAttendances>, Status> {
+        unauthenticated_rpc!(self, rpcs::get_event_attendances, request)
+    }
+
+    async fn get_events(
+        &self,
+        request: Request<GetEventsRequest>,
+    ) -> Result<Response<GetEventsResponse>, Status> {
+        unauthenticated_rpc!(self, rpcs::get_events, request)
     }
 
     type StreamRepliesStream = ReplyStream;
@@ -276,56 +304,6 @@ impl Jonline for JonLineImpl {
             Box::pin(output_stream) as Self::StreamRepliesStream
         ))
     }
-
-    async fn create_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        let result = rpcs::create_event(request, user, &mut conn);
-        println!("create_event result: {:?}", &result);
-        result
-    }
-    async fn update_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::update_event(request.into_inner(), &user, &mut conn).map(Response::new)
-    }
-    async fn delete_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::delete_event(request.into_inner(), &user, &mut conn).map(Response::new)
-    }
-
-    async fn get_events(
-        &self,
-        request: Request<GetEventsRequest>,
-    ) -> Result<Response<GetEventsResponse>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user: Option<models::User> = auth::get_auth_user(&request, &mut conn).ok();
-        rpcs::get_events(request.into_inner(), &user.as_ref(), &mut conn).map(Response::new)
-    }
-
-    async fn get_server_configuration(
-        &self,
-        _request: Request<()>,
-    ) -> Result<Response<ServerConfiguration>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        rpcs::get_server_configuration(&mut conn).map(Response::new)
-    }
-
-    async fn configure_server(
-        &self,
-        request: Request<ServerConfiguration>,
-    ) -> Result<Response<ServerConfiguration>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::configure_server(request.into_inner(), user, &mut conn)
-    }
-
-    async fn reset_data(&self, request: Request<()>) -> Result<Response<()>, Status> {
-        let mut conn = get_connection(&self.pool)?;
-        let user = auth::get_auth_user(&request, &mut conn)?;
-        rpcs::reset_data(user, &mut conn).map(Response::new)
-    }
 }
 
 fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {
@@ -334,3 +312,4 @@ fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {
         Ok(conn) => Ok(conn),
     }
 }
+

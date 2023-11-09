@@ -184,6 +184,19 @@ const EventInstanceInfo$json = {
 final $typed_data.Uint8List eventInstanceInfoDescriptor = $convert.base64Decode(
     'ChFFdmVudEluc3RhbmNlSW5mbw==');
 
+@$core.Deprecated('Use eventAttendancesDescriptor instead')
+const EventAttendances$json = {
+  '1': 'EventAttendances',
+  '2': [
+    {'1': 'attendances', '3': 1, '4': 3, '5': 11, '6': '.jonline.EventAttendance', '10': 'attendances'},
+  ],
+};
+
+/// Descriptor for `EventAttendances`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List eventAttendancesDescriptor = $convert.base64Decode(
+    'ChBFdmVudEF0dGVuZGFuY2VzEjoKC2F0dGVuZGFuY2VzGAEgAygLMhguam9ubGluZS5FdmVudE'
+    'F0dGVuZGFuY2VSC2F0dGVuZGFuY2Vz');
+
 @$core.Deprecated('Use eventAttendanceDescriptor instead')
 const EventAttendance$json = {
   '1': 'EventAttendance',
@@ -227,11 +240,16 @@ const AnonymousAttendee$json = {
   '2': [
     {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
     {'1': 'contact_methods', '3': 2, '4': 3, '5': 11, '6': '.jonline.ContactMethod', '10': 'contactMethods'},
+    {'1': 'auth_token', '3': 3, '4': 1, '5': 9, '9': 0, '10': 'authToken', '17': true},
+  ],
+  '8': [
+    {'1': '_auth_token'},
   ],
 };
 
 /// Descriptor for `AnonymousAttendee`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List anonymousAttendeeDescriptor = $convert.base64Decode(
     'ChFBbm9ueW1vdXNBdHRlbmRlZRISCgRuYW1lGAEgASgJUgRuYW1lEj8KD2NvbnRhY3RfbWV0aG'
-    '9kcxgCIAMoCzIWLmpvbmxpbmUuQ29udGFjdE1ldGhvZFIOY29udGFjdE1ldGhvZHM=');
+    '9kcxgCIAMoCzIWLmpvbmxpbmUuQ29udGFjdE1ldGhvZFIOY29udGFjdE1ldGhvZHMSIgoKYXV0'
+    'aF90b2tlbhgDIAEoCUgAUglhdXRoVG9rZW6IAQFCDQoLX2F1dGhfdG9rZW4=');
 

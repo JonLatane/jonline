@@ -13,7 +13,7 @@ import { GroupContextProvider } from "../groups/group_context";
 import { MediaRenderer } from "../media/media_renderer";
 import { useEffect, useState } from "react";
 import { serverID } from '../../store';
-import { ServerNameAndLogo } from "./server_name_and_logo";
+import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -44,13 +44,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const dispatch = useTypedDispatch();
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || 'Jonline';
   const app = useTypedSelector((state: RootState) => state.app);
-  const serverNameEmoji = serverName.match(/\p{Emoji}/u)?.at(0);
-  // debugger;
-  // debugger;
-  const [serverNameBeforeEmoji, serverNameAfterEmoji] = serverName
-    .split(serverNameEmoji ?? '|', 2)
-    .map(x => x.replace(/[^\x20-\x7E]/g, '').trim())
-    ;
+  const [serverNameBeforeEmoji, serverNameEmoji, serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const veryShortServername = serverNameBeforeEmoji!.length < 10;
   const shortServername = serverNameBeforeEmoji!.length < 12;
   const largeServername = (!serverNameAfterEmoji || serverNameAfterEmoji === '') && veryShortServername;
@@ -90,7 +84,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const recentGroupIds = useTypedSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
-  const {inlineNavigation: inlineFeatureNavigation} = useInlineFeatureNavigation();
+  const { inlineNavigation: inlineFeatureNavigation } = useInlineFeatureNavigation();
   const scrollGroupsSheet = !inlineFeatureNavigation
     || !mediaQuery.gtXs;
 

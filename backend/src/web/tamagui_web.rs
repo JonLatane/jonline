@@ -9,7 +9,7 @@ use std::{path::*, str::FromStr};
 
 use crate::{
     protos::{ServerInfo, ServerLogo},
-    rpcs::get_server_configuration,
+    rpcs::get_server_configuration_proto,
     web::RocketState,
 };
 use rocket::http::Status;
@@ -67,7 +67,7 @@ pub async fn tamagui_favicon<'a>(
     state: &State<RocketState>,
 ) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
     let mut conn = state.pool.get().unwrap();
-    let configuration = get_server_configuration(&mut conn).unwrap();
+    let configuration = get_server_configuration_proto(&mut conn).unwrap();
     let logo = configuration
         .server_info
         .unwrap_or(ServerInfo {

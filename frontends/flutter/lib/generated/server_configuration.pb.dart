@@ -622,6 +622,7 @@ class ServerInfo extends $pb.GeneratedMessage {
     WebUserInterface? webUserInterface,
     ServerColors? colors,
     $core.String? mediaPolicy,
+    $core.Iterable<$core.String>? recommendedServerHosts,
   }) {
     final $result = create();
     if (name != null) {
@@ -648,6 +649,9 @@ class ServerInfo extends $pb.GeneratedMessage {
     if (mediaPolicy != null) {
       $result.mediaPolicy = mediaPolicy;
     }
+    if (recommendedServerHosts != null) {
+      $result.recommendedServerHosts.addAll(recommendedServerHosts);
+    }
     return $result;
   }
   ServerInfo._() : super();
@@ -663,6 +667,7 @@ class ServerInfo extends $pb.GeneratedMessage {
     ..e<WebUserInterface>(6, _omitFieldNames ? '' : 'webUserInterface', $pb.PbFieldType.OE, defaultOrMaker: WebUserInterface.FLUTTER_WEB, valueOf: WebUserInterface.valueOf, enumValues: WebUserInterface.values)
     ..aOM<ServerColors>(7, _omitFieldNames ? '' : 'colors', subBuilder: ServerColors.create)
     ..aOS(8, _omitFieldNames ? '' : 'mediaPolicy')
+    ..pPS(9, _omitFieldNames ? '' : 'recommendedServerHosts')
     ..hasRequiredFields = false
   ;
 
@@ -763,6 +768,9 @@ class ServerInfo extends $pb.GeneratedMessage {
   $core.bool hasMediaPolicy() => $_has(7);
   @$pb.TagNumber(8)
   void clearMediaPolicy() => clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.List<$core.String> get recommendedServerHosts => $_getList(8);
 }
 
 class ServerLogo extends $pb.GeneratedMessage {

@@ -1,6 +1,6 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api'
-import { Anchor, Button, Heading, Input, Paragraph, ScrollView, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, useWindowDimensions } from '@jonline/ui'
-import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown } from '@tamagui/lucide-icons';
+import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, standardAnimation, useWindowDimensions } from '@jonline/ui'
+import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown, Binary, ChevronRight, CheckCircle } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { HexColorPicker } from "react-colorful"
@@ -45,12 +45,14 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const isAdmin = account && server && serverID(account.server) == serverID(server) &&
     hasAdminPermission(account?.user);
   const [updating, setUpdating] = useState(false);
+  const [updated, setUpdated] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const aboutJonlineLink = useLink({ href: '/about_jonline' })
 
   const { serviceVersion, serverConfiguration } = server || {};
   const [_, githubVersion] = serviceVersion?.version?.split('-') ?? [];
   const githubLink = useLink({ href: `https://github.com/JonLatane/jonline/commit/${githubVersion}` });
+  const protocolDocsLink = useLink({ href: `http://${server?.host}/docs/protocol` });
 
   const serverName = serverConfiguration?.serverInfo?.name;
   const [name, setName] = useState(serverName || undefined);
@@ -69,6 +71,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   // }
   const serverPrivacyPolicy = serverConfiguration?.serverInfo?.privacyPolicy;
   const [privacyPolicy, setPrivacyPolicy] = useState(serverPrivacyPolicy);
+  const serverMediaPolicy = serverConfiguration?.serverInfo?.mediaPolicy;
+  const [mediaPolicy, setMediaPolicy] = useState(serverPrivacyPolicy);
   const serverLogo = serverConfiguration?.serverInfo?.logo;
   const [logo, setLogo] = useState(serverLogo || undefined);
 
@@ -85,7 +89,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   //   setName(serverName);
   // }
 
-
+  const [showVersionInfo, setShowVersionInfo] = useState(false);
   const primaryColorInt = serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const primaryColor = `#${primaryColorInt.toString(16).slice(-6)}`;
   const [primaryColorHex, setPrimaryColorHex] = useState(primaryColor);
@@ -190,6 +194,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
   async function updateServer() {
     setUpdating(true);
+    setUpdated(false);
     setUpdateError('');
     //TODO: get the latest config and merge our changes into it?
 
@@ -199,7 +204,9 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     let client = await getCredentialClient({ account });
     try {
       let returnedConfiguration = await client.configureServer(updatedConfiguration, client.credential);
-      dispatch(upsertServer({ ...server!, serverConfiguration: returnedConfiguration }));
+      await dispatch(upsertServer({ ...server!, serverConfiguration: returnedConfiguration }))
+        .then(() => setUpdated(true))
+        .then(() => setTimeout(() => setUpdated(false), 3000));
     } catch (e) {
       console.log(e);
       setUpdateError(formatError(e.message));
@@ -255,33 +262,55 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 {section === 'about' ? <>
                   <Heading size='$9' als='center' mt='$3'>About {specificServer ? 'Community' : 'Server'}</Heading>
                   <ServerCard server={{ ...server, serverConfiguration: updatedConfiguration }} disableHeightLimit />
-                  <Button {...aboutJonlineLink} size='$4' my='$2' backgroundColor={navColor} hoverStyle={{ backgroundColor: navColor }} pressStyle={{ backgroundColor: navColor }} color={navTextColor} iconAfter={
-                    <>
-                      <Github color={navTextColor} />
-                      <Container color={navTextColor} />
-                      {/* <Server  color={navTextColor}/> */}
-                      <Heart color={navTextColor} />
-                    </>
-                  }>
+                  <Button {...aboutJonlineLink} size='$4' my='$2' {...themedButtonBackground(navColor, navTextColor)}
+                    iconAfter={
+                      <>
+                        <Github color={navTextColor} />
+                        <Container color={navTextColor} />
+                        <Heart color={navTextColor} />
+                      </>
+                    }>
                     <XStack space='$3' my='auto'>
                       <Info size='$3' color={navTextColor} />
                       <Heading size='$2' my='auto' color={navTextColor}>Powered by <Text fontSize='$6' color={navTextColor}>Jonline</Text></Heading>
                     </XStack>
                   </Button>
-                  <XStack mt='$1'>
-                    <Heading size='$3' f={1}>Service Version</Heading>
-                    <Paragraph>{serviceVersion?.version}</Paragraph>
-                  </XStack>
-                  {githubVersion
-                    ? <Button {...githubLink} target='_blank' size='$2' ml='auto' my='$2' {...themedButtonBackground(navColor, navTextColor)} iconAfter={Github}>
-                      <Heading size='$1' color={navTextColor}>View #{githubVersion} on GitHub</Heading>
-                    </Button>
-                    : undefined}
+                  <Button mb='$2' onPress={() => setShowVersionInfo(!showVersionInfo)}>
+                    <XStack mt='$1' w='100%'>
+                      <Heading my='auto' size='$3' f={1}>Service Version</Heading>
+                      <Paragraph my='auto'>{serviceVersion?.version}</Paragraph>
+
+                      <XStack animation='quick' my='auto' ml='$2' rotate={showVersionInfo ? '90deg' : '0deg'}>
+                        <ChevronRight />
+                      </XStack>
+                    </XStack>
+                  </Button>
+                  <AnimatePresence>
+                    {showVersionInfo ? <XStack key='version-info' ml='auto' flexWrap='wrap' animation='standard' {...standardAnimation}>
+                      <Button {...protocolDocsLink} target='_blank' size='$2' ml='auto' mb='$2' {...themedButtonBackground(navColor, navTextColor)}
+                        iconAfter={<Binary size='$2' />}>
+                        <Heading size='$1' color={navTextColor}>Protocol Docs</Heading>
+                      </Button>
+                      {githubVersion
+                        ? <XStack ml='auto' mb='$2'>
+                          <Button {...githubLink} target='_blank' size='$2' ml='$2'   {...themedButtonBackground(navColor, navTextColor)}
+                            iconAfter={Github}>
+                            <Heading size='$1' color={navTextColor}>View #{githubVersion} on GitHub</Heading>
+                          </Button>
+                        </XStack>
+                        : undefined}
+
+                    </XStack>
+                      : undefined}
+                  </AnimatePresence>
                   <Heading size='$3'>Name</Heading>
                   {isAdmin
                     ? <>
                       <Input value={name ?? ''} opacity={name && name != '' ? 1 : 0.5}
                         placeholder='The name of your community.' onChangeText={t => setName(t)} />
+                      <Paragraph size='$1' ml='auto'>
+                        Break lines with any emoji or &quot;|&quot;.
+                      </Paragraph>
                       {/* <ScrollView horizontal> */}
                       <Heading size='$1' my='$2'>Name and Logo Previews</Heading>
                       <XStack mx='auto' space='$3' my='$2'>
@@ -299,7 +328,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     </>
                     : <Heading opacity={name && name != '' ? 1 : 0.5}>{name || 'Unnamed'}</Heading>}
 
-                  <Heading size='$3'>Description</Heading>
+                  <Heading size='$3' mt='$2'>Description</Heading>
                   {isAdmin ?
                     <TextArea value={description ?? ''} opacity={description && description != '' ? 1 : 0.5}
                       onChangeText={t => setDescription(t)} h='$14'
@@ -316,6 +345,16 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     : privacyPolicy && privacyPolicy != ''
                       ? <TamaguiMarkdown text={privacyPolicy} />
                       : <Paragraph opacity={0.5}>No privacy policy set.</Paragraph>}
+
+
+                  <Heading size='$3'>Media Policy</Heading>
+                  {isAdmin ?
+                    <TextArea value={mediaPolicy ?? ''} opacity={mediaPolicy && mediaPolicy != '' ? 1 : 0.5}
+                      onChangeText={t => setMediaPolicy(t)} h='$14'
+                      placeholder='A media policy explaining clearly to users who owns rights to uploaded media.' />
+                    : mediaPolicy && mediaPolicy != ''
+                      ? <TamaguiMarkdown text={mediaPolicy} />
+                      : <Paragraph opacity={0.5}>No media policy set.</Paragraph>}
 
                 </>
                   : undefined}
@@ -582,15 +621,27 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       </YStack>
       {server && isAdmin ?
         isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
-          <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+          <XStack w='100%' opacity={.92} paddingVertical='$2'
+            alignContent='center' alignItems='center' alignSelf='center'>
+
+            <XStack f={1} />
+            <YStack animation='quick' o={updating ? 1 : 0} p='$3'>
+              <Spinner size='small' />
+            </YStack>
             <Button maw={600} als='center'
-              disabled={updating || !inputsValid}
-              {...themedButtonBackground(primaryColor)}
-              opacity={updating || !inputsValid ? 0.5 : 1}
+              disabled={updating || updated || !inputsValid}
+              {...themedButtonBackground(primaryColor, primaryTextColor, 
+                updating || updated || !inputsValid ? 0.5 : 1)}
+              // opacity={updating || updated || !inputsValid ? 0.2 : 1}
               onPress={updateServer}  >
               <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
             </Button>
-          </YStack>
+            <YStack animation='quick' o={updated ? 1 : 0} p='$3'>
+              <CheckCircle color='green' />
+            </YStack>
+
+            <XStack f={1} />
+          </XStack>
         </StickyBox>
           : <Button maw={600} mt='$3' als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
         : undefined}

@@ -1,5 +1,9 @@
 use super::{Event, EventAttendance, EventInstance, Post, User};
-use diesel::*;
+use diesel::{
+    dsl::sql,
+    sql_types::{Bool, Text},
+    *,
+};
 use tonic::{Code, Status};
 
 use crate::{
@@ -17,6 +21,18 @@ pub fn get_event(
         .filter(events::id.eq(event_id))
         .first::<Event>(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_not_found"))
+}
+
+pub fn get_event_instance(
+    event_instance_id: i64,
+    _user: &Option<User>,
+    conn: &mut PgPooledConnection,
+) -> Result<EventInstance, Status> {
+    event_instances::table
+        .select(event_instances::all_columns)
+        .filter(event_instances::id.eq(event_instance_id))
+        .first::<EventInstance>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "event_instance_not_found"))
 }
 
 pub fn get_event_instances(
@@ -49,6 +65,32 @@ pub fn get_event_instances(
             );
             Status::new(Code::Internal, "failed_to_load_event_instances")
         })
+}
+
+// Gets an existing event attendance for update/deletion.
+pub fn get_event_attendance(
+    event_instance_id: i64,
+    attendee_user_id: Option<i64>,
+    attendee_auth_token: Option<String>,
+    conn: &mut PgPooledConnection,
+) -> Option<EventAttendance> {
+    match (attendee_user_id, attendee_auth_token) {
+        (Some(user_id), _) => event_attendances::table
+            .select(event_attendances::all_columns)
+            .filter(event_attendances::event_instance_id.eq(event_instance_id))
+            .filter(event_attendances::user_id.eq(Some(user_id)))
+            .get_result::<EventAttendance>(conn)
+            .ok(),
+        (_, Some(auth_token)) => event_attendances::table
+            .select(event_attendances::all_columns)
+            .filter(event_attendances::event_instance_id.eq(event_instance_id))
+            .filter(event_attendances::anonymous_attendee.is_not_null().and(
+                sql::<Bool>("anonymous_attendee->>'auth_token' = ").bind::<Text, _>(auth_token),
+            ))
+            .get_result::<EventAttendance>(conn)
+            .ok(),
+        (_, _) => None,
+    }
 }
 
 pub fn get_event_attendances(

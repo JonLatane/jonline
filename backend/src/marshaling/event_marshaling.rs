@@ -97,11 +97,11 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
 }
 
 pub trait ToProtoEventAttendance {
-    fn to_proto(&self) -> EventAttendance;
+    fn to_proto(&self, include_auth_tokens: bool) -> EventAttendance;
 }
 
 impl ToProtoEventAttendance for models::EventAttendance {
-    fn to_proto(&self) -> EventAttendance {
+    fn to_proto(&self, include_auth_tokens: bool) -> EventAttendance {
         EventAttendance {
             // id: self.id.to_proto_id(),
             event_instance_id: self.event_instance_id.to_proto_id(),
@@ -117,6 +117,16 @@ impl ToProtoEventAttendance for models::EventAttendance {
                             .to_string(),
                         //TODO add contact methods
                         contact_methods: vec![],
+                        auth_token: if include_auth_tokens {
+                            Some(anonymous_attendee
+                                .get("auth_token")
+                                .unwrap()
+                                .as_str()
+                                .unwrap()
+                                .to_string())
+                        } else {
+                            None
+                        },
                     }))
                 }
                 _ => None,

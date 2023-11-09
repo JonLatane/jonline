@@ -6,7 +6,7 @@ use rocket::response::content::{RawText, RawXml};
 
 use rocket_cache_response::CacheResponse;
 
-use crate::rpcs::get_server_configuration;
+use crate::rpcs::get_server_configuration_proto;
 
 lazy_static! {
     pub static ref SEO_PAGES: Vec<Route> = routes![robots, sitemap];
@@ -18,7 +18,7 @@ async fn robots(
 ) -> CacheResponse<RawText<String>> {
     let domain = host.domain();
     let mut conn = state.pool.get().unwrap();
-    let _configuration = get_server_configuration(&mut conn).unwrap();
+    let _configuration = get_server_configuration_proto(&mut conn).unwrap();
     let response = RawText(
         format!(
             "User-agent: *
@@ -45,7 +45,7 @@ async fn sitemap(
 ) -> CacheResponse<RawXml<String>> {
     let domain = host.domain();
     let mut conn = state.pool.get().unwrap();
-    let _configuration = get_server_configuration(&mut conn).unwrap();
+    let _configuration = get_server_configuration_proto(&mut conn).unwrap();
 
     let response = RawXml(
         format!(

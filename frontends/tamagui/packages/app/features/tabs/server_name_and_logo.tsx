@@ -12,6 +12,32 @@ export type ServerNameAndLogoProps = {
   disableWidthLimits?: boolean;
 };
 
+export function splitOnFirstEmoji(
+  text: string, supportPipe?: boolean
+): [string, string | undefined, string | undefined] {
+  let partBeforeEmoji = text;
+  let emoji = undefined as string | undefined;
+  let partAfterEmoji = undefined as string | undefined;
+
+  const regex = /\p{Extended_Pictographic}/u;
+  const emojiMatch = text.match(regex);
+
+
+  if (emojiMatch || supportPipe) {
+    let fullySplitString = [...new Intl.Segmenter().segment(text)].map(x => x.segment)
+    let fullySplitEmojiIndex = fullySplitString.findIndex(
+      x => x.match(regex) || (supportPipe && x === '|')
+    );
+    if (fullySplitEmojiIndex !== -1) {
+      partBeforeEmoji = fullySplitString.slice(0, fullySplitEmojiIndex).join('');
+      emoji = fullySplitString[fullySplitEmojiIndex];
+      partAfterEmoji = fullySplitString.slice(fullySplitEmojiIndex + 1).join('');
+    }
+  }
+
+  return [partBeforeEmoji, emoji, partAfterEmoji];
+}
+
 export function ServerNameAndLogo({
   shrinkToSquare,
   server: selectedServer,
@@ -23,14 +49,9 @@ export function ServerNameAndLogo({
 
   const currentServer = useServer();
   const server = selectedServer ?? currentServer;
-  // console.log('ServerNameAndLogo', server?.host)
 
   const serverName = server?.serverConfiguration?.serverInfo?.name ?? '...';
-  const serverNameEmoji = serverName.match(/\p{Emoji}/u)?.at(0);
-  const [serverNameBeforeEmoji, serverNameAfterEmoji] = serverName
-    .split(serverNameEmoji ?? '|', 2)
-    .map(x => x.replace(/[^\x20-\x7E]/g, '').trim())
-    ;
+  const [serverNameBeforeEmoji, serverNameEmoji, serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true);
   const veryShortServername = serverNameBeforeEmoji!.length < 10;
   const shortServername = serverNameBeforeEmoji!.length < 12;
   const largeServername = veryShortServername && (['', undefined].includes(serverNameAfterEmoji));
@@ -54,11 +75,12 @@ export function ServerNameAndLogo({
   return shrinkToSquare
     ? useSquareLogo
       ? <XStack h='100%'
+        w='100%'
         scale={1.1}
         transform={[
-          { translateY: 1.5 },
-          { translateX: isSafari() ? 8.0 : 2.0 }]
-        } >
+          // { translateY: 1.5 },
+          // { translateX: isSafari() ? 8.0 : 2.0 }
+        ]} >
         <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
       </XStack>
       : <XStack h={'100%'} maw={maxWidthAfterServerName}>
@@ -90,7 +112,7 @@ export function ServerNameAndLogo({
                 ? <XStack my='auto' mr='$1'><Home size={enlargeSmallText ? '$5' : '$2'} /> </XStack>
                 : undefined}
           <YStack my='auto' f={1}
-              ml='$1'
+            ml='$1'
           // space={enlargeSmallText ? '$2' : '$0'}
           >
             <Heading my='auto'
@@ -102,7 +124,7 @@ export function ServerNameAndLogo({
               lineHeight={largeServername || enlargeSmallText ? '$1' : 12}
             // whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis"
             >
-              {serverNameBeforeEmoji}{useSquareLogo && hasEmoji ? ` ${serverNameEmoji}` : undefined}
+              {serverNameBeforeEmoji}{useSquareLogo && hasEmoji && serverNameEmoji != '|' ? ` ${serverNameEmoji}` : undefined}
             </Heading>
             {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername || true)
               ? <Paragraph

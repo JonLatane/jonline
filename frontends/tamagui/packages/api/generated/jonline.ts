@@ -10,7 +10,7 @@ import {
   LoginRequest,
   RefreshTokenResponse,
 } from "./authentication";
-import { Event, GetEventsRequest, GetEventsResponse } from "./events";
+import { Event, EventAttendance, EventAttendances, EventInstance, GetEventsRequest, GetEventsResponse } from "./events";
 import { GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
@@ -173,6 +173,16 @@ export interface Jonline {
    */
   getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse>;
   /**
+   * Upsert an EventAttendance. *Authenticated or anonymous.*
+   * See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee)
+   * for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token`
+   * returned by this RPC (the client should save this for the user, and ideally, offer a link
+   * with the token).
+   */
+  upsertEventAttendance(request: DeepPartial<EventAttendance>, metadata?: grpc.Metadata): Promise<EventAttendance>;
+  deleteEventAttendance(request: DeepPartial<EventAttendance>, metadata?: grpc.Metadata): Promise<Empty>;
+  getEventAttendances(request: DeepPartial<EventInstance>, metadata?: grpc.Metadata): Promise<EventAttendances>;
+  /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
    * Requires `ADMIN` permissions.
    */
@@ -225,6 +235,9 @@ export class JonlineClientImpl implements Jonline {
     this.updateEvent = this.updateEvent.bind(this);
     this.deleteEvent = this.deleteEvent.bind(this);
     this.getEvents = this.getEvents.bind(this);
+    this.upsertEventAttendance = this.upsertEventAttendance.bind(this);
+    this.deleteEventAttendance = this.deleteEventAttendance.bind(this);
+    this.getEventAttendances = this.getEventAttendances.bind(this);
     this.configureServer = this.configureServer.bind(this);
     this.resetData = this.resetData.bind(this);
   }
@@ -367,6 +380,18 @@ export class JonlineClientImpl implements Jonline {
 
   getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse> {
     return this.rpc.unary(JonlineGetEventsDesc, GetEventsRequest.fromPartial(request), metadata);
+  }
+
+  upsertEventAttendance(request: DeepPartial<EventAttendance>, metadata?: grpc.Metadata): Promise<EventAttendance> {
+    return this.rpc.unary(JonlineUpsertEventAttendanceDesc, EventAttendance.fromPartial(request), metadata);
+  }
+
+  deleteEventAttendance(request: DeepPartial<EventAttendance>, metadata?: grpc.Metadata): Promise<Empty> {
+    return this.rpc.unary(JonlineDeleteEventAttendanceDesc, EventAttendance.fromPartial(request), metadata);
+  }
+
+  getEventAttendances(request: DeepPartial<EventInstance>, metadata?: grpc.Metadata): Promise<EventAttendances> {
+    return this.rpc.unary(JonlineGetEventAttendancesDesc, EventInstance.fromPartial(request), metadata);
   }
 
   configureServer(request: DeepPartial<ServerConfiguration>, metadata?: grpc.Metadata): Promise<ServerConfiguration> {
@@ -1175,6 +1200,75 @@ export const JonlineGetEventsDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = GetEventsResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineUpsertEventAttendanceDesc: UnaryMethodDefinitionish = {
+  methodName: "UpsertEventAttendance",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return EventAttendance.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = EventAttendance.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineDeleteEventAttendanceDesc: UnaryMethodDefinitionish = {
+  methodName: "DeleteEventAttendance",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return EventAttendance.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Empty.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const JonlineGetEventAttendancesDesc: UnaryMethodDefinitionish = {
+  methodName: "GetEventAttendances",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return EventInstance.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = EventAttendances.decode(data);
       return {
         ...value,
         toObject() {

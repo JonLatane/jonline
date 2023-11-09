@@ -11,6 +11,7 @@ use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use crate::schema::user_access_tokens::dsl as user_access_tokens;
 
 /// Generate a secure random token of the given length.
+#[macro_export]
 macro_rules! generate_token {
     ($length_u8:expr) => {{
         let mut randoms: [u8; $length_u8] = [0; $length_u8];

@@ -1,9 +1,9 @@
 import { Group, User, UserListingType } from "@jonline/api";
 import { JonlineServer, RootState, getUsersPage, loadUsersPage, setInlineFeatureNavigation, useAccountOrServer, useCredentialDispatch, useTypedSelector } from 'app/store';
-import { Button, Heading, Popover, ScrollView, XStack, YStack, useMedia } from '@jonline/ui';
+import { Button, Heading, Popover, ScrollView, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
 import { useAccount, useLocalApp, useServerTheme } from 'app/store';
 import { useLink } from "solito/link";
-import { AlertTriangle, Menu, Circle, SeparatorVertical, Video, Users, Calendar, MessageSquare, Clapperboard, Users2 } from "@tamagui/lucide-icons";
+import { AlertTriangle, Menu, Circle, SeparatorVertical, Video, Users, Calendar, MessageSquare, Clapperboard, Users2, MenuSquare } from "@tamagui/lucide-icons";
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 import { useEffect, useState } from "react";
 import { color } from "@tamagui/themes";
@@ -176,7 +176,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       : (appSection == AppSection.POST || appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
         ? <>{posts}{events}</>
         : <>{latest}{posts}{events}</>
-    : <>{!shrinkNavigation || appSection === AppSection.HOME ? latest : undefined}{posts}{events}</>;
+    : <>{appSection === AppSection.HOME && inlineNavigation ? latest : undefined}{posts}{events}</>;
 
   const showFollowRequests = account && (
     (!inlineNavigation || (!reorderInlineNavigation && appSubsection == AppSubsection.FOLLOW_REQUESTS))
@@ -196,12 +196,17 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   </>
 
   function triggerButton() {
-    const icon = shrinkNavigation && !appSubsection
-      ? menuIcon(appSection, navTextColor)
-      : undefined;
+    const icon = //shrinkNavigation
+      // ? 
+      menuIcon(appSection, navTextColor) ?? (inlineNavigation ? undefined : <Menu color={navTextColor} />)
+      // : undefined
+      ;
     return <Button scale={0.95} ml={selectedGroup ? -4 : -3} my='auto'
-      disabled={inlineNavigation}
-      icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
+      // disabled={inlineNavigation}
+      onPress={inlineNavigation ? () =>
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        : undefined}
+      // icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
       {...themedButtonBackground(navColor)}>
       <XStack space='$2'>
         {icon}
@@ -221,7 +226,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     const name = count && count > 0
       ? `${baseName} (${count})`
       : baseName;
-    const icon = shrinkNavigation && !subsection
+    const icon = !subsection
       ? menuIcon(section, selected ? navTextColor : undefined)
       : undefined;
     return selected && inlineNavigation ?
@@ -229,22 +234,37 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         ? <>{triggerButton()}</>
         : <></>
       : <Popover.Close asChild>
-        <Button
-          // bordered={false}
-          transparent
-          my='auto'
-          size="$3"
-          disabled={selected}
-          o={selected ? 0.5 : 1}
-          backgroundColor={selected ? navColor : undefined}
-          hoverStyle={{ backgroundColor: '$colorTransparent' }}
-          {...link}
-        >
-          {icon ??
-            <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>
-              {name}
-            </Heading>}
-        </Button>
+        <Tooltip>
+          <Tooltip.Trigger>
+            <Button
+              // bordered={false}
+              transparent
+
+              my='auto'
+              size="$3"
+              disabled={selected}
+              o={selected ? 0.5 : 1}
+              backgroundColor={selected ? navColor : undefined}
+              hoverStyle={{ backgroundColor: '$colorTransparent' }}
+              {...link}
+            >
+              <XStack space='$2'>
+                {icon}
+                {!inlineNavigation || !shrinkNavigation || !icon
+                  ? <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>
+                    {name}
+                  </Heading>
+                  : undefined}
+              </XStack>
+            </Button>
+          </Tooltip.Trigger>
+          {inlineNavigation && shrinkNavigation
+            ? <Tooltip.Content>
+              <Heading size='$2'>{name}</Heading>
+            </Tooltip.Content>
+            : undefined
+          }
+        </Tooltip>
       </Popover.Close>;
   }
 

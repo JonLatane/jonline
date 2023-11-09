@@ -1,5 +1,5 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
 import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation_utils';
@@ -16,6 +16,7 @@ import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PermissionsEditor, PermissionsEditorProps } from './permissions_editor';
 import { UserCard, useFullAvatarHeight } from './user_card';
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 const { useParam } = createParam<{ username: string }>()
 
@@ -60,11 +61,12 @@ export function UsernameDetailsScreen() {
     editMode
   };
 
-  const successSaving = useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
   const permissionsModified = JSON.stringify(permissions) !== JSON.stringify(user?.permissions ?? []);
-  const dirtyData = username != user?.username || bio != user?.bio || avatar?.id != user?.avatar?.id
+  const dirtyData = user !== undefined && (
+    username != user?.username || bio != user?.bio || avatar?.id != user?.avatar?.id
     || defaultFollowModeration != user?.defaultFollowModeration || visibility != user?.visibility
-    || permissionsModified;
+    || permissionsModified
+  );
 
   const userPosts = useTypedSelector((state: RootState) => {
     return userId
@@ -95,6 +97,7 @@ export function UsernameDetailsScreen() {
     setPermissions(user.permissions);
   }
 
+  const [successSaving, setSuccessSaving] = useState(false);
   useEffect(() => {
     if (paramUserId != userId) {
       setUserId(paramUserId);
@@ -145,13 +148,21 @@ export function UsernameDetailsScreen() {
     }
   }, [user, userPosts, showScrollPreserver])
   const windowHeight = useWindowDimensions().height;
-  function saveUser() {
+  const [saving, setSaving] = useState(false);
+  //= useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
+
+  async function saveUser() {
     if (!canEdit && !user) return;
 
-    setTimeout(() => dispatch(updateUser({
+    setSaving(true);
+    dispatch(updateUser({
       ...accountOrServer,
       ...{ ...user!, bio: bio ?? '', avatar, defaultFollowModeration, visibility, permissions },
-    })), 1);
+    })).then((result) => {
+      setSuccessSaving(result.type == updateUser.fulfilled.type);
+      setSaving(false);
+      setTimeout(() => setSuccessSaving(false), 3000);
+    });
   }
   const postsState = useTypedSelector((state: RootState) => state.posts);
   const loading = usersState.status == 'loading' || usersState.status == 'unloaded'
@@ -213,12 +224,14 @@ export function UsernameDetailsScreen() {
           </ScrollView>
           {canEdit ?
             isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
-              <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-                <XStack alignItems='center'>
-                  <XStack f={1} />
+              <YStack w='100%' opacity={.92} paddingVertical='$2' alignContent='center'>
+                <XStack mx='auto' px='$3' w='100%' maw={800}>
+                  {/* <XStack f={1} /> */}
                   <Tooltip placement="top-start">
                     <Tooltip.Trigger>
-                      <Button backgroundColor={editMode ? undefined : navColor} color={editMode ? undefined : navTextColor} als='center' onPress={() => setEditMode(false)} icon={Eye} circular mr='$2' />
+                      <Button icon={Eye} circular mr='$2' als='center'
+                        {...themedButtonBackground(editMode ? undefined : navColor, editMode ? undefined : navTextColor)}
+                        onPress={() => setEditMode(false)} />
                     </Tooltip.Trigger>
                     <Tooltip.Content>
                       <Heading size='$2'>View {isCurrentUser ? 'your' : 'this'} profile</Heading>
@@ -227,7 +240,7 @@ export function UsernameDetailsScreen() {
                   <Tooltip placement="top-start">
                     <Tooltip.Trigger>
                       <Button icon={Edit} circular mr='$5' als='center'
-                        backgroundColor={!editMode ? undefined : navColor} color={!editMode ? undefined : navTextColor}
+                        {...themedButtonBackground(!editMode ? undefined : navColor, !editMode ? undefined : navTextColor)}
                         onPress={() => {
                           setEditMode(true);
                           // setShowPermissionsAndVisibility(true);
@@ -241,16 +254,26 @@ export function UsernameDetailsScreen() {
                       <Heading size='$2'>Edit {isCurrentUser ? 'your' : 'this'} profile</Heading>
                     </Tooltip.Content>
                   </Tooltip>
-                  <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
-                    <AlertTriangle color='yellow' />
-                  </YStack>
-                  <Button backgroundColor={primaryColor} disabled={!dirtyData} opacity={dirtyData ? 1 : 0.5} als='center' onPress={saveUser}>
+
+                  <XStack f={1} />
+                  {/* <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
+                      <AlertTriangle color='yellow' />
+                    </YStack> */}
+                  <ZStack w={48} h={48}>
+                    <YStack animation='quick' o={successSaving ? 1 : 0} p='$3'>
+                      <CheckCircle color='green' />
+                    </YStack>
+                    <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
+                      <AlertTriangle color='yellow' />
+                    </YStack>
+                  </ZStack>
+                  <Button key={`save-color-${primaryColor}`} mr='$3'
+                    {...themedButtonBackground(primaryColor, primaryTextColor, saving ? 0.5 : 1)}
+                    // disabled={!dirtyData} opacity={dirtyData ? 1 : 0.5}
+                    als='center' onPress={saveUser}>
                     <Heading size='$2' color={primaryTextColor}>Save</Heading>
                   </Button>
-                  <YStack animation='quick' o={successSaving ? 1 : 0} p='$3'>
-                    <CheckCircle color='green' />
-                  </YStack>
-                  <XStack f={1} />
+                  {/* <XStack f={1} /> */}
                 </XStack>
               </YStack>
             </StickyBox>

@@ -1,4 +1,4 @@
-import { Anchor, Button, Heading, Image, Input, Label, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
+import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Menu, Plus, RefreshCw, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks/use_media_url';
 import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector, useLocalApp, setBrowsingServers, setViewingRecommendedServers } from 'app/store';
@@ -73,16 +73,17 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const currentServerHosts = servers.map(s => s.host);
 
   const currentServerRecommendedHosts = server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
-  const recommendableServerHosts = browsingServers
-    ? [
-      ...(server ? currentServerRecommendedHosts : []),
-      ...servers.filter(s => s.host != server?.host)
-        .flatMap(s => s.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])
-    ]
-    : server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
-  const recommendedServerHostList = recommendableServerHosts;//?.filter(host => !currentServerHosts.includes(host)) ?? [];
-  const recommendedServerHosts = [...new Set(recommendedServerHostList)];
-  // console.log('recommendedServerHosts.length', recommendedServerHosts.length, server?.serverConfiguration?.serverInfo?.recommendedServerHosts, currentServerHosts);
+  const allRecommendableServerHosts = [...new Set([
+    ...(server ? currentServerRecommendedHosts : []),
+    ...servers.filter(s => s.host != server?.host)
+      .flatMap(s => s.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])
+  ])];
+  const recommendedServerHosts = browsingServers
+    ? allRecommendableServerHosts
+    : [...new Set(server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])];
+  //?.filter(host => !currentServerHosts.includes(host)) ?? [];
+  // const recommendedServerHostList = recommendableServerHosts;//?.filter(host => !currentServerHosts.includes(host)) ?? [];
+  // const recommendedServerHosts = [...new Set(recommendedServerHostList)];
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
@@ -421,8 +422,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     </XStack>
                   </Button>
                   {viewingRecommendedServers
-                    ? <YStack animation="quick" mt='$2' mb='$2' w='100%' {...standardAnimation}>
-                      <ScrollView horizontal>
+                    ? <XStack animation="quick" mt='$2' mb='$2' w='100%' {...standardAnimation}>
+                      <ScrollView f={1} horizontal>
                         <XStack>
                           {recommendedServerHosts.map((host, index) => {
                             const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
@@ -440,7 +441,16 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           })}
                         </XStack>
                       </ScrollView>
-                    </YStack>
+
+                      {allRecommendableServerHosts.length > recommendedServerHosts.length
+                        ? <Button ml='auto' onPress={() => dispatch(setBrowsingServers(true))}>
+                          <YStack ai='center'>
+                            <Paragraph size='$2' lineHeight={15} fontWeight='700'>{allRecommendableServerHosts.length - recommendedServerHosts.length}</Paragraph>
+                            <Paragraph size='$1' lineHeight={15}>more</Paragraph>
+                          </YStack>
+                        </Button>
+                        : undefined}
+                    </XStack>
                     : undefined}
                 </>
                 : undefined}
@@ -465,7 +475,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               {/* {!browsingServers ? <YStack h="$2" /> : undefined} */}
               <YStack space="$2" mt='$2'>
                 <XStack>
-                  <Heading f={1}>Accounts</Heading>
+                  <Heading f={1}>
+                    Accounts
+                  </Heading>
 
                   <Button
                     size="$3"
@@ -522,11 +534,28 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
                           {loginMethod && newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
 
-                          {loginMethod === LoginMethod.CreateAccount && (server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+
+                          {loginMethod === LoginMethod.CreateAccount
                             ? <>
-                              <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
-                              <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
-                            </> : undefined}
+                              <Heading size="$2" alignSelf='center' ta='center'>License</Heading>
+                              <TamaguiMarkdown text={`
+${server?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
+released under the AGPL. As a user, you have a fundamental right to view the source code of this software. If you suspect that the
+operator of this server is not using the official Jonline software, you can contact the [Free Software Foundation](https://www.fsf.org/)
+to evaluate support options.
+                          `} />
+                              {(server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                                ? <>
+                                  <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
+                                  <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                                </> : undefined}
+                              {(server?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
+                                ? <>
+                                  <Heading size="$2" alignSelf='center' ta='center'>Media Policy</Heading>
+                                  <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.mediaPolicy} />
+                                </> : undefined}
+                            </>
+                            : undefined}
 
                           {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
                           {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
@@ -549,7 +578,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                             </XStack>
                             : <XStack>
                               <Button flex={2}
-                                marginRight='$1' 
+                                marginRight='$1'
                                 onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
                                 disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                                 Create Account

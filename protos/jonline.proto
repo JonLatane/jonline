@@ -166,6 +166,15 @@ service Jonline {
   // Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
   rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
 
+  // Upsert an EventAttendance. *Authenticated or anonymous.*
+  // See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee)
+  // for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token`
+  // returned by this RPC (the client should save this for the user, and ideally, offer a link
+  // with the token).
+  rpc UpsertEventAttendance(EventAttendance) returns (EventAttendance) {}
+  rpc DeleteEventAttendance(EventAttendance) returns (google.protobuf.Empty) {}
+  rpc GetEventAttendances(EventInstance) returns (EventAttendances) {}
+
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
   // Requires `ADMIN` permissions.
   rpc ConfigureServer(ServerConfiguration) returns (ServerConfiguration) {}

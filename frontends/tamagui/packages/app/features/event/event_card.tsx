@@ -562,6 +562,7 @@ export const EventCard: React.FC<Props> = ({
                       <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
                       <Text fontSize='$2' fontFamily='$body'>
                         <input type='datetime-local' style={{ padding: 10 }}
+                         min={supportDateInput(moment(0))}
                           value={supportDateInput(moment(editingInstance.startsAt))}
                           onChange={(v) => {
                             const updatedInstance = { ...editingInstance, startsAt: toProtoISOString(v.target.value) };
@@ -574,6 +575,7 @@ export const EventCard: React.FC<Props> = ({
                       <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
                       <Text fontSize='$2' fontFamily='$body' color={textColor}>
                         <input type='datetime-local' style={{ padding: 10 }}
+                         min={editingInstance.startsAt}
                           value={supportDateInput(moment(editingInstance.endsAt))}
                           onChange={(v) => {
                             const updatedInstance = { ...editingInstance, endsAt: toProtoISOString(v.target.value) };

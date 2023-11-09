@@ -7,6 +7,7 @@ import { passes, pending } from '../../utils/moderation_utils';
 import { } from '../post/post_card';
 import { Info, Users2 } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks';
+import { splitOnFirstEmoji } from '../tabs/server_name_and_logo';
 
 export type GroupButtonProps = {
   group: Group;
@@ -53,6 +54,13 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
 
   const avatarUrl = useMediaUrl(group.avatar?.id);
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
+  const [groupNameBeforeEmoji, groupNameEmoji, groupNameAfterEmoji] = splitOnFirstEmoji(group.name);
+  const displayedGroupName = groupNameEmoji && !hasAvatarUrl
+    ? groupNameBeforeEmoji + (
+      groupNameAfterEmoji && groupNameAfterEmoji != ''
+        ? ' | ' + groupNameAfterEmoji
+        : '')
+    : group.name;
   const fullAvatarHeight = 48;
 
   return <YStack>
@@ -60,6 +68,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
       <Button
         f={1}
         h={75}
+        px='$2'
         // bordered={false}
         // href={`/g/${group.shortname}`}
         transparent={!selected}
@@ -70,7 +79,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
         {...link}
       >
         <XStack w='100%'>
-          <YStack w='100%' f={1} marginVertical='auto'>
+          <YStack w='100%' f={1} my='auto'>
             <XStack>
               <Paragraph f={1}
                 my='auto'
@@ -81,25 +90,8 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
                 numberOfLines={1}
                 ta='left'
               >
-                {group.name}
+                {displayedGroupName}
               </Paragraph>
-              <XStack o={0.6} my='auto'>
-                <XStack my='auto'>
-                  <Users2 size='$1'color={selected ? navTextColor : undefined} />
-                </XStack>
-                <Text mx='$1' my='auto' fontFamily='$body' fontSize='$1'
-                  color={selected ? navTextColor : undefined}
-                  whiteSpace='nowrap'
-                  overflow='hidden'
-                  numberOfLines={1}
-                  ta='left'>
-                  {group.memberCount}
-                </Text>
-
-
-                {/* <MessageSquare /> {group.postCount}
-              <Calendar /> {group.eventCount} */}
-              </XStack>
             </XStack>
             <Paragraph
               size="$2"
@@ -117,8 +109,8 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
             ? <Image
               // mb='$3'
               // ml='$2'
-              ml='$2'
-              mr={-10}
+              mx='$2'
+              // mr={-10}
               my='auto'
               width={fullAvatarHeight}
               height={fullAvatarHeight}
@@ -126,14 +118,35 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
               als="center"
               source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
               borderRadius={10} />
-            : undefined}
+            : groupNameEmoji
+              ? <Heading size='$10' my='auto' mx='$2' whiteSpace="nowrap">
+                {groupNameEmoji}
+              </Heading>
+              : undefined}
+          <XStack o={0.6} my='auto'>
+            <XStack my='auto'>
+              <Users2 size='$1' color={selected ? navTextColor : undefined} />
+            </XStack>
+            <Text mx='$1' my='auto' fontFamily='$body' fontSize='$1'
+              color={selected ? navTextColor : undefined}
+              whiteSpace='nowrap'
+              overflow='hidden'
+              numberOfLines={1}
+              ta='left'>
+              {group.memberCount}
+            </Text>
+
+
+            {/* <MessageSquare /> {group.postCount}
+                  <Calendar /> {group.eventCount} */}
+          </XStack>
         </XStack>
       </Button>
       {hideInfoButton ? undefined :
         <Button
           size='$2'
           my='auto'
-          ml='$2'
+          // ml='$2'
           circular
           icon={Info} onPress={() => onShowInfo()} />}
     </XStack>
@@ -213,3 +226,4 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
       </Button>
     </XStack> : <></>;
 }
+

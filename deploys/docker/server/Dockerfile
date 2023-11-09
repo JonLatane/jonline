@@ -36,6 +36,9 @@ COPY frontends/flutter/build/web/ /opt/flutter_web
 # Tamagui web app release (served from the filesystem by Rocket within Jonline)
 COPY frontends/tamagui/apps/next/out/ /opt/tamagui_web
 
+# Generated protocol docs
+COPY docs/protocol.html /opt/docs/protocol.html
+
 EXPOSE 27707 8000 80 443 8001-9000
 
 ENTRYPOINT ["/opt/jonline"]

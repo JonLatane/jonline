@@ -45,7 +45,7 @@ pub struct NewEventInstance {
     pub location: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset)]
+#[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
 #[diesel(belongs_to(EventInstance))]
 pub struct EventAttendance {
     pub id: i64,
@@ -69,6 +69,8 @@ pub struct NewEventAttendance {
     pub user_id: Option<i64>,
     pub anonymous_attendee: Option<serde_json::Value>,
     pub number_of_guests: i32,
+    pub status: String,
+    pub inviting_user_id: Option<i64>,
     pub public_note: String,
     pub private_note: String,
 }

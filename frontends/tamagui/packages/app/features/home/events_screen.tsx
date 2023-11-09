@@ -85,7 +85,10 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     return <SubnavButton title={title}
       // icon={icon}
       selected={displayMode === associatedDisplayMode}
-      select={() => setDisplayMode(associatedDisplayMode)} />;
+      select={() => {
+        setDisplayMode(associatedDisplayMode);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }} />;
   }
   return (
     <TabsNavigation
@@ -112,7 +115,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               <XStack key='endsAfterFilter' w='100%' flexWrap='wrap' maw={800} px='$2' mx='auto' animation='standard' {...standardAnimation}>
                 <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
                 <Text ml='auto' my='auto' fontSize='$2' fontFamily='$body'>
-                  <input type='datetime-local' value={supportDateInput(moment(endsAfter))} onChange={(v) => setQueryEndsAfter(moment(v.target.value).toISOString(true))} style={{ padding: 10 }} />
+                  <input type='datetime-local' min={supportDateInput(moment(0))} value={supportDateInput(moment(endsAfter))} onChange={(v) => setQueryEndsAfter(moment(v.target.value).toISOString(true))} style={{ padding: 10 }} />
                 </Text>
               </XStack>
               : undefined}

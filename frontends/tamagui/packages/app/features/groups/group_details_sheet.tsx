@@ -16,6 +16,7 @@ import { EditingContextProvider, SaveButtonGroup, useEditableState, useStatefulE
 import { PayloadAction } from '@reduxjs/toolkit';
 import { VisibilityPicker } from 'app/components/visibility_picker';
 import { ToggleRow } from 'app/components/toggle_row';
+import { splitOnFirstEmoji } from '../tabs/server_name_and_logo';
 
 export type GroupDetailsSheetProps = {
   selectedGroup?: Group;
@@ -133,6 +134,15 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
   const fullAvatarHeight = 72;
 
+  const [groupNameBeforeEmoji, groupNameEmoji, groupNameAfterEmoji] = splitOnFirstEmoji(name);
+  const displayedGroupName = groupNameEmoji && !hasAvatarUrl
+    ? groupNameBeforeEmoji + (
+      groupNameAfterEmoji && groupNameAfterEmoji != ''
+        ? ' | ' + groupNameAfterEmoji
+        : '')
+    : name;
+
+
   return <EditingContextProvider value={editingContext}>
     <Sheet
       modal
@@ -183,7 +193,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                 autoCapitalize='words'
                 value={editedName}
                 onChange={(data) => { setEditedName(data.nativeEvent.text) }} />
-              : <Heading my='auto' f={1}>{name}</Heading>}
+              : <Heading my='auto' f={1}>{displayedGroupName}</Heading>}
 
 
             {editing && !previewingEdits
@@ -222,7 +232,11 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                   als="center"
                   source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
                   borderRadius={10} />
-                : undefined}
+                : groupNameEmoji
+                  ? <Heading size='$10' my='auto' mx='$3' whiteSpace="nowrap">
+                    {groupNameEmoji}
+                  </Heading>
+                  : undefined}
             {infoRenderingGroup
               ? <GroupJoinLeaveButton group={infoRenderingGroup} hideLeaveButton={hideLeaveButtons} />
               : undefined}
@@ -238,11 +252,19 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
           </YStack>
           {/* </AnimatePresence> */}
 
-          {/* <AnimatePresence> */}
+          <XStack>
+            <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
+            <XStack f={1} />
+            <Heading size='$1' marginVertical='auto'>
+              {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
+            </Heading>
+          </XStack>
+
+          <AnimatePresence>
           {showSettings
             ? <YStack key='edit-group-settings'
               animation='standard'
-              mb='$2'
+              mt='$2'
               // touch={showSettings}
 
               {...standardAnimation}
@@ -269,14 +291,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                 disabled={disableInputs} />
             </YStack>
             : undefined}
-          {/* </AnimatePresence> */}
-          <XStack>
-            <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
-            <XStack f={1} />
-            <Heading size='$1' marginVertical='auto'>
-              {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
-            </Heading>
-          </XStack>
+          </AnimatePresence>
         </YStack>
         {editing && !previewingEdits
           ? <TextArea f={1} pt='$2' mx='$3' value={editedDescription}

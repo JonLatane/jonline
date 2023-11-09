@@ -170,12 +170,27 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                         onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
                     : undefined}
 
-                  {loginMethod === LoginMethod.CreateAccount && (server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                  {loginMethod === LoginMethod.CreateAccount
                     ? <>
-                      {newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
-                      <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
-                      <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
-                    </> : undefined}
+                      <Heading size="$2" alignSelf='center' ta='center'>License</Heading>
+                      <TamaguiMarkdown text={`
+${server?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
+released under the AGPL. As a user, using this server means you have a fundamental right to view the source code of this software and anything
+using its data. If you suspect that the operator of this server is not using the official Jonline software, or doing anything proprietary/non-open
+with your data, please contact the [Free Software Foundation](https://www.fsf.org/) to evaluate support options.
+                          `} />
+                      {(server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                        ? <>
+                          <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
+                          <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                        </> : undefined}
+                      {(server?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
+                        ? <>
+                          <Heading size="$2" alignSelf='center' ta='center'>Media Policy</Heading>
+                          <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.mediaPolicy} />
+                        </> : undefined}
+                    </>
+                    : undefined}
 
                   {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
                   {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
