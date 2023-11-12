@@ -9,6 +9,7 @@ import { GroupsSheet } from '../groups/groups_sheet';
 import { ToggleRow } from '../../components/toggle_row';
 import { PostMediaManager } from './post_media_manager';
 import { VisibilityPicker } from '../../components/visibility_picker';
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export type BaseCreatePostSheetProps = {
   selectedGroup?: Group;
@@ -181,7 +182,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
 
   return (
     <>
-      <Button backgroundColor={primaryColor} o={0.95} hoverStyle={{ backgroundColor: primaryColor, opacity: 1 }} color={primaryTextColor} f={1}
+      <Button {...themedButtonBackground(primaryColor)} f={1}
         disabled={serversState.server === undefined}
         onPress={() => setOpen(!open)}>
         <Heading size='$2' color={primaryTextColor}>Create {entityName}</Heading>
@@ -291,11 +292,12 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                     </XStack>
                     {showSettings
                       ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' p='$3'
-                        animation='standard' {...standardAnimation}
+                        animation='standard' {...standardAnimation} backgroundColor={'$backgroundStrong'} borderRadius='$5'
                       >
                         {visibility != Visibility.PRIVATE
                           ? <XStack w='100%' mb='$2'>
                             <GroupsSheet
+                              groupNamePrefix='Share to '
                               noGroupSelectedText={publicVisibility(visibility)
                                 ? 'Share Everywhere' : 'Share To A Group'}
                               selectedGroup={group}

@@ -69,7 +69,8 @@ message Event {
 // To be used for ticketing, RSVPs, etc.
 // Stored as JSON in the database.
 message EventInfo {
-
+  optional bool allows_rsvps = 1;
+  optional bool allows_anonymous_rsvps = 2;
 }
 
 message EventInstance {
@@ -95,18 +96,19 @@ message EventInstanceInfo {
 // * `WENT` and `DID_NOT_GO` cannot be selected if the EventInstance has not started (start time is in the future).
 // `INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
 enum AttendanceStatus {
-  // The user is interested in attending. This is the default status.
+  // The user is (or was) interested in attending. This is the default status.
   INTERESTED = 0;
   // Another user has invited the user to the event.
   REQUESTED = 1;
-  // The user plans to go to the event.
+  // The user plans to go to the event, or went to the event.
   GOING = 2;
-  // The user does not plan to go to the event.
+  // The user does not plan to go to the event, or did not go to the event.
   NOT_GOING = 3;
-  // The user went to the event.
-  WENT = 10;
-  // The user did not go to the event.
-  DID_NOT_GO = 11;
+}
+
+message GetEventAttendancesRequest {
+  string event_instance_id = 1;
+  optional string anonymous_attendee_auth_token = 2;
 }
 
 message EventAttendances {

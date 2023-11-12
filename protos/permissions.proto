@@ -53,6 +53,7 @@ enum Permission {
   PUBLISH_EVENTS_GLOBALLY = 33;
   // Allow the user to moderate events.
   MODERATE_EVENTS = 34;
+  RSVP_TO_EVENTS = 35;
 
   VIEW_MEDIA = 40;
   CREATE_MEDIA = 41;

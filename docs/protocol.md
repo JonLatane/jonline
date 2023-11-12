@@ -68,6 +68,7 @@
     - [EventInfo](#jonline-EventInfo)
     - [EventInstance](#jonline-EventInstance)
     - [EventInstanceInfo](#jonline-EventInstanceInfo)
+    - [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest)
     - [GetEventsRequest](#jonline-GetEventsRequest)
     - [GetEventsResponse](#jonline-GetEventsResponse)
     - [TimeFilter](#jonline-TimeFilter)
@@ -109,8 +110,8 @@
 
 ### Jonline
 The internet-facing service implementing the Jonline protocol,
-generally exposed on port 27707 (unless using
-[HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)).
+generally exposed on port 27707 or 443 (and, when using
+[HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns), ports 80 and/or 443).
 A Jonline server is generally also expected to serve up web apps on ports 80/443, where
 select APIs are exposed with HTTP interfaces instead of gRPC.
 (Specifically, [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
@@ -129,12 +130,13 @@ may also return a new `refresh_token`, which should replace the old one in clien
 
 ##### HTTP-based client host negotiation (for external CDNs)
 When negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
-to connect to `jonline.io` via gRPC on 27707, the client
+to connect to `jonline.io` via gRPC on 27707/443, the client
 is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
 (depending upon whether the gRPC server is expected to have TLS). If the `backend_host` string resource
 is a valid domain, say, `jonline.io.itsj.online`, the client is expected to connect
-to `jonline.io.itsj.online` on port 27707 instead. To users, the server should still *generally* appear to 
-be `jonline.io`.
+to `jonline.io.itsj.online` on port 27707/443 instead. To users, the server should still *generally* appear to 
+be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
+`jonline.io`.
 
 This negotiation enables support for external CDNs as frontends. See https://jonline.io/about for
 more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts) 
@@ -151,40 +153,40 @@ client implementations of this negotiation.
 | Login | [LoginRequest](#jonline-LoginRequest) | [RefreshTokenResponse](#jonline-RefreshTokenResponse) | Logs in a user and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.* |
 | AccessToken | [AccessTokenRequest](#jonline-AccessTokenRequest) | [AccessTokenResponse](#jonline-AccessTokenResponse) | Gets a new `access_token` (and possibly a new `refresh_token`, which should replace the old one in client storage), given a `refresh_token`. *Publicly accessible.* |
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#jonline-User) | Gets the current user. *Authenticated.* |
-| GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility. |
+| DeleteMedia | [Media](#jonline-Media) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users&#39; media requires `ADMIN` permissions. |
+| GetMedia | [GetMediaRequest](#jonline-GetMediaRequest) | [GetMediaResponse](#jonline-GetMediaResponse) | Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media). |
 | UpdateUser | [User](#jonline-User) | [User](#jonline-User) | Update a user by ID. *Authenticated.* Updating other users requires `ADMIN` permissions. |
 | DeleteUser | [User](#jonline-User) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user by ID. *Authenticated.* Deleting other users requires `ADMIN` permissions. |
+| GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility. |
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
-| GetMedia | [GetMediaRequest](#jonline-GetMediaRequest) | [GetMediaResponse](#jonline-GetMediaResponse) | Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* |
-| DeleteMedia | [Media](#jonline-Media) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users&#39; media requires `ADMIN` permissions. |
-| GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility. |
 | CreateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Creates a group with the current user as its admin. *Authenticated.* Requires the `CREATE_GROUPS` permission. |
 | UpdateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Update a Groups&#39;s information, default membership permissions or moderation. *Authenticated.* Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user. |
 | DeleteGroup | [Group](#jonline-Group) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a Group. *Authenticated.* Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user. |
+| GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility. |
 | CreateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.* Memberships and moderations are set to their defaults. |
 | UpdateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Update aspects of a user&#39;s membership. *Authenticated.* Updating permissions requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user. Updating moderation (approving/denying/banning) requires the same, or `MODERATE_USERS` permissions within the group. |
 | DeleteMembership | [Membership](#jonline-Membership) | [.google.protobuf.Empty](#google-protobuf-Empty) | Leave a group (or cancel membership request). *Authenticated.* |
 | GetMembers | [GetMembersRequest](#jonline-GetMembersRequest) | [GetMembersResponse](#jonline-GetMembersResponse) | Get Members (User&#43;Membership) of a Group. *Authenticated.* |
-| GetPosts | [GetPostsRequest](#jonline-GetPostsRequest) | [GetPostsResponse](#jonline-GetPostsResponse) | Gets Posts. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility. |
 | CreatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Creates a Post. *Authenticated.* |
 | UpdatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Updates a Post. *Authenticated.* |
 | DeletePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* |
+| GetPosts | [GetPostsRequest](#jonline-GetPostsRequest) | [GetPostsResponse](#jonline-GetPostsResponse) | Gets Posts. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility. |
 | CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. *Authenticated.* |
 | UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Group Moderators: Approve/Reject a GroupPost. *Authenticated.* |
 | DeleteGroupPost | [GroupPost](#jonline-GroupPost) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a GroupPost. *Authenticated.* |
 | GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
-| StreamReplies | [Post](#jonline-Post) | [Post](#jonline-Post) stream | (TODO) Reply streaming interface |
 | CreateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates an Event. *Authenticated.* |
 | UpdateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates an Event. *Authenticated.* |
 | DeleteEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* |
 | GetEvents | [GetEventsRequest](#jonline-GetEventsRequest) | [GetEventsResponse](#jonline-GetEventsResponse) | Gets Events. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility. |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Authenticated or anonymous.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
-| DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| GetEventAttendances | [EventInstance](#jonline-EventInstance) | [EventAttendances](#jonline-EventAttendances) |  |
+| DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Authenticated or anonymous.* |
+| GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Authenticated.* |
 | ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. |
 | ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
+| StreamReplies | [Post](#jonline-Post) | [Post](#jonline-Post) stream | (TODO) Reply streaming interface. Currently just streams fake example data. |
 
  
 
@@ -397,6 +399,7 @@ Returned when creating an account or logging in.
 | PUBLISH_EVENTS_LOCALLY | 32 |  |
 | PUBLISH_EVENTS_GLOBALLY | 33 |  |
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
+| RSVP_TO_EVENTS | 35 |  |
 | VIEW_MEDIA | 40 |  |
 | CREATE_MEDIA | 41 |  |
 | PUBLISH_MEDIA_LOCALLY | 42 |  |
@@ -1058,8 +1061,8 @@ A high-level enumeration of general ways of requesting posts.
 | MY_GROUPS_POSTS | 2 | Returns posts from any group the user is a member of. |
 | DIRECT_POSTS | 3 | Returns `DIRECT` posts that are directly addressed to the user. |
 | POSTS_PENDING_MODERATION | 4 |  |
-| GROUP_POSTS | 10 | group_id parameter is required for these. |
-| GROUP_POSTS_PENDING_MODERATION | 11 |  |
+| GROUP_POSTS | 10 | Returns posts from a specific group. group_id parameter is required for these. |
+| GROUP_POSTS_PENDING_MODERATION | 11 | Returns pending_moderation posts from a specific group. Requires group_id parameter and user must have group (or server) admin permissions. |
 
 
  
@@ -1170,6 +1173,12 @@ To be used for ticketing, RSVPs, etc.
 Stored as JSON in the database.
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| allows_rsvps | [bool](#bool) | optional |  |
+| allows_anonymous_rsvps | [bool](#bool) | optional |  |
+
+
 
 
 
@@ -1200,6 +1209,22 @@ Stored as JSON in the database.
 ### EventInstanceInfo
 To be used for ticketing, RSVPs, etc.
 Stored as JSON in the database.
+
+
+
+
+
+
+<a name="jonline-GetEventAttendancesRequest"></a>
+
+### GetEventAttendancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| event_instance_id | [string](#string) |  |  |
+| anonymous_attendee_auth_token | [string](#string) | optional |  |
 
 
 
@@ -1281,12 +1306,10 @@ in any direction, but:
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| INTERESTED | 0 | The user is interested in attending. This is the default status. |
+| INTERESTED | 0 | The user is (or was) interested in attending. This is the default status. |
 | REQUESTED | 1 | Another user has invited the user to the event. |
-| GOING | 2 | The user plans to go to the event. |
-| NOT_GOING | 3 | The user does not plan to go to the event. |
-| WENT | 10 | The user went to the event. |
-| DID_NOT_GO | 11 | The user did not go to the event. |
+| GOING | 2 | The user plans to go to the event, or went to the event. |
+| NOT_GOING | 3 | The user does not plan to go to the event, or did not go to the event. |
 
 
 

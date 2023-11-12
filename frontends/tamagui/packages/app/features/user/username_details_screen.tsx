@@ -1,5 +1,5 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
 import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation_utils';
@@ -265,6 +265,9 @@ export function UsernameDetailsScreen() {
                     </YStack>
                     <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
                       <AlertTriangle color='yellow' />
+                    </YStack>
+                    <YStack animation='quick' o={saving ? 1 : 0} p='$3'>
+                      <Spinner size='small' />
                     </YStack>
                   </ZStack>
                   <Button key={`save-color-${primaryColor}`} mr='$3'

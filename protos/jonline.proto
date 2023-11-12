@@ -14,8 +14,8 @@ import "federation.proto";
 import "server_configuration.proto";
 
 // The internet-facing service implementing the Jonline protocol,
-// generally exposed on port 27707 (unless using
-// [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns)).
+// generally exposed on port 27707 or 443 (and, when using
+// [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns), ports 80 and/or 443).
 // A Jonline server is generally also expected to serve up web apps on ports 80/443, where
 // select APIs are exposed with HTTP interfaces instead of gRPC.
 // (Specifically, [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
@@ -34,12 +34,13 @@ import "server_configuration.proto";
 //
 // ##### HTTP-based client host negotiation (for external CDNs)
 // When negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
-// to connect to `jonline.io` via gRPC on 27707, the client
+// to connect to `jonline.io` via gRPC on 27707/443, the client
 // is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
 // (depending upon whether the gRPC server is expected to have TLS). If the `backend_host` string resource
 // is a valid domain, say, `jonline.io.itsj.online`, the client is expected to connect
-// to `jonline.io.itsj.online` on port 27707 instead. To users, the server should still *generally* appear to 
-// be `jonline.io`.
+// to `jonline.io.itsj.online` on port 27707/443 instead. To users, the server should still *generally* appear to 
+// be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
+// `jonline.io`.
 //
 // This negotiation enables support for external CDNs as frontends. See https://jonline.io/about for
 // more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts) 
@@ -50,118 +51,91 @@ import "server_configuration.proto";
 service Jonline {
   // Get the version (from Cargo) of the Jonline service. *Publicly accessible.*
   rpc GetServiceVersion(google.protobuf.Empty) returns (GetServiceVersionResponse) {}
-
   // Gets the Jonline server's configuration. *Publicly accessible.*
   rpc GetServerConfiguration(google.protobuf.Empty) returns (ServerConfiguration) {}
 
   // Creates a user account and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.*
   rpc CreateAccount(CreateAccountRequest) returns (RefreshTokenResponse) {}
-
   // Logs in a user and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.*
   rpc Login(LoginRequest) returns (RefreshTokenResponse) {}
-
   // Gets a new `access_token` (and possibly a new `refresh_token`, which should replace the old one in client storage), given a `refresh_token`. *Publicly accessible.*
   rpc AccessToken(AccessTokenRequest) returns (AccessTokenResponse) {}
-
   // Gets the current user. *Authenticated.*
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
-
-  // Gets Users. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
-  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
-
-  // Update a user by ID. *Authenticated.*
-  // Updating other users requires `ADMIN` permissions.
-  rpc UpdateUser(User) returns (User) {}
-
-  // Deletes a user by ID. *Authenticated.*
-  // Deleting other users requires `ADMIN` permissions.
-  rpc DeleteUser(User) returns (google.protobuf.Empty) {}
-
-  // Follow (or request to follow) a user. *Authenticated.*
-  rpc CreateFollow(Follow) returns (Follow) {}
-
-  // Used to approve follow requests. *Authenticated.*
-  rpc UpdateFollow(Follow) returns (Follow) {}
-
-  // Unfollow (or unrequest) a user. *Authenticated.*
-  rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
-
-  // Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.*
-  rpc GetMedia(GetMediaRequest) returns (GetMediaResponse) {}
 
   // Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO.
   // Deleting other users' media requires `ADMIN` permissions.
   rpc DeleteMedia(Media) returns (google.protobuf.Empty) {}
-  
-  // Gets Groups. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
-  rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse) {}
+  // Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media).
+  rpc GetMedia(GetMediaRequest) returns (GetMediaResponse) {}
+
+  // Update a user by ID. *Authenticated.*
+  // Updating other users requires `ADMIN` permissions.
+  rpc UpdateUser(User) returns (User) {}
+  // Deletes a user by ID. *Authenticated.*
+  // Deleting other users requires `ADMIN` permissions.
+  rpc DeleteUser(User) returns (google.protobuf.Empty) {}
+  // Gets Users. *Publicly accessible **or** Authenticated.*
+  // Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
+
+  // Follow (or request to follow) a user. *Authenticated.*
+  rpc CreateFollow(Follow) returns (Follow) {}
+  // Used to approve follow requests. *Authenticated.*
+  rpc UpdateFollow(Follow) returns (Follow) {}
+  // Unfollow (or unrequest) a user. *Authenticated.*
+  rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
 
   // Creates a group with the current user as its admin. *Authenticated.*
   // Requires the `CREATE_GROUPS` permission.
   rpc CreateGroup(Group) returns (Group) {}
-
   // Update a Groups's information, default membership permissions or moderation. *Authenticated.*
   // Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   rpc UpdateGroup(Group) returns (Group) {}
-
   // Delete a Group. *Authenticated.*
   // Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   rpc DeleteGroup(Group) returns (google.protobuf.Empty) {}
+  // Gets Groups. *Publicly accessible **or** Authenticated.*
+  // Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
+  rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse) {}
 
   // Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.*
   // Memberships and moderations are set to their defaults.
   rpc CreateMembership(Membership) returns (Membership) {}
-
   // Update aspects of a user's membership. *Authenticated.*
   // Updating permissions requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   // Updating moderation (approving/denying/banning) requires the same, or `MODERATE_USERS` permissions within the group.
   rpc UpdateMembership(Membership) returns (Membership) {}
-
   // Leave a group (or cancel membership request). *Authenticated.*
   rpc DeleteMembership(Membership) returns (google.protobuf.Empty) {}
-
   // Get Members (User+Membership) of a Group. *Authenticated.*
   rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {}
 
+  // Creates a Post. *Authenticated.*
+  rpc CreatePost(Post) returns (Post) {}
+  // Updates a Post. *Authenticated.*
+  rpc UpdatePost(Post) returns (Post) {}
+  // (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.*
+  rpc DeletePost(Post) returns (Post) {}
   // Gets Posts. *Publicly accessible **or** Authenticated.*
   // Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility.
   rpc GetPosts(GetPostsRequest) returns (GetPostsResponse) {}
 
-  // Creates a Post. *Authenticated.*
-  rpc CreatePost(Post) returns (Post) {}
-
-  // Updates a Post. *Authenticated.*
-  rpc UpdatePost(Post) returns (Post) {}
-
-  // (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.*
-  rpc DeletePost(Post) returns (Post) {}
-
   // Cross-post a Post to a Group. *Authenticated.*
   rpc CreateGroupPost(GroupPost) returns (GroupPost) {}
-
   // Group Moderators: Approve/Reject a GroupPost. *Authenticated.*
   rpc UpdateGroupPost(GroupPost) returns (GroupPost) {}
-
   // Delete a GroupPost. *Authenticated.*
   rpc DeleteGroupPost(GroupPost) returns (google.protobuf.Empty) {}
-
   // Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.*
   rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsResponse) {}
 
-  // (TODO) Reply streaming interface
-  rpc StreamReplies(Post) returns (stream Post);
-
   // Creates an Event. *Authenticated.*
   rpc CreateEvent(Event) returns (Event) {}
-
   // Updates an Event. *Authenticated.*
   rpc UpdateEvent(Event) returns (Event) {}
-
   // (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.*
   rpc DeleteEvent(Event) returns (Event) {}
-
   // Gets Events. *Publicly accessible **or** Authenticated.*
   // Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
   rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
@@ -172,8 +146,10 @@ service Jonline {
   // returned by this RPC (the client should save this for the user, and ideally, offer a link
   // with the token).
   rpc UpsertEventAttendance(EventAttendance) returns (EventAttendance) {}
+  // Delete an EventAttendance. *Authenticated or anonymous.*
   rpc DeleteEventAttendance(EventAttendance) returns (google.protobuf.Empty) {}
-  rpc GetEventAttendances(EventInstance) returns (EventAttendances) {}
+  // Gets EventAttendances for an EventInstance. *Authenticated.*
+  rpc GetEventAttendances(GetEventAttendancesRequest) returns (EventAttendances) {}
 
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
   // Requires `ADMIN` permissions.
@@ -183,4 +159,7 @@ service Jonline {
   // Requires `ADMIN` permissions.
   // Note: Server Configuration is not deleted.
   rpc ResetData(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+
+  // (TODO) Reply streaming interface. Currently just streams fake example data.
+  rpc StreamReplies(Post) returns (stream Post);
 }

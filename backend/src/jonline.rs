@@ -34,16 +34,20 @@ type ReplyStream = Pin<Box<dyn Stream<Item = Result<Post, Status>> + Send>>;
 macro_rules! auth_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
+        log::info!("Auth RPC called: {} (request/result hidden)", stringify!($rpc));
         $rpc($request.into_inner(), &mut conn).map(Response::new)
     }};
 }
+
 macro_rules! authenticated_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
         let user = auth::get_auth_user(&$request, &mut conn)?;
-        let request_log = format!("{:?}", &$request);
-        let result = $rpc($request.into_inner(), &user, &mut conn);
-        log::info!("Authenticated RPC: {}\nRequest: {:?}\nResult: {:?}", stringify!($rpc), request_log, &result);
+        let inner = $request.into_inner();
+        let request_log = format!("{:?}", &inner);
+        let result = $rpc(inner, &user, &mut conn);
+        let truncated_result = format!("{:?}", &result).chars().take(1000).collect::<String>();
+        log::info!("Authenticated RPC: {}\tRequest: {:?}\tResult: {:?}", stringify!($rpc), request_log, truncated_result);
         result.map(Response::new)
     }};
 }
@@ -52,9 +56,11 @@ macro_rules! unauthenticated_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
         let user: Option<models::User> = auth::get_auth_user(&$request, &mut conn).ok();
-        let request_log = format!("{:?}", &$request);
-        let result = $rpc($request.into_inner(), &user.as_ref(), &mut conn);
-        log::info!("Unauthenticated RPC: {}\nRequest: {:?}\nResult: {:?}", stringify!($rpc), request_log, &result);
+        let inner = $request.into_inner();
+        let request_log = format!("{:?}", &inner);
+        let result = $rpc(inner, &user.as_ref(), &mut conn);
+        let truncated_result = format!("{:?}", &result).chars().take(1000).collect::<String>();
+        log::info!("Unauthenticated RPC: {}\tRequest: {:?}\tResult: {:?}", stringify!($rpc), request_log, truncated_result);
         result.map(Response::new)
     }};
 }
@@ -91,8 +97,6 @@ impl Jonline for JonLineImpl {
         request: Request<CreateAccountRequest>,
     ) -> Result<Response<RefreshTokenResponse>, Status> {
         auth_rpc!(self, rpcs::create_account, request)
-        // let mut conn = get_connection(&self.pool)?;
-        // rpcs::create_account(request.into_inner(), &mut conn).map(Response::new)
     }
 
     async fn login(
@@ -100,8 +104,6 @@ impl Jonline for JonLineImpl {
         request: Request<LoginRequest>,
     ) -> Result<Response<RefreshTokenResponse>, Status> {
         auth_rpc!(self, rpcs::login, request)
-        // let mut conn = get_connection(&self.pool)?;
-        // rpcs::login(request.into_inner(), &mut conn).map(Response::new)
     }
 
     async fn access_token(
@@ -109,8 +111,6 @@ impl Jonline for JonLineImpl {
         request: Request<AccessTokenRequest>,
     ) -> Result<Response<AccessTokenResponse>, Status> {
         auth_rpc!(self, rpcs::access_token, request)
-        // let mut conn = get_connection(&self.pool)?;
-        // rpcs::access_token(request.into_inner(), &mut conn).map(Response::new)
     }
 
     async fn get_current_user(&self, request: Request<()>) -> Result<Response<User>, Status> {
@@ -247,23 +247,21 @@ impl Jonline for JonLineImpl {
     async fn delete_event(&self, request: Request<Event>) -> Result<Response<Event>, Status> {
         authenticated_rpc!(self, rpcs::delete_event, request)
     }
-
-    async fn upsert_event_attendance(&self, request: Request<EventAttendance>) -> Result<Response<EventAttendance>, Status> {
-        unauthenticated_rpc!(self, rpcs::upsert_event_attendance, request)
-    }
-
-    async fn delete_event_attendance(&self, request: Request<EventAttendance>) -> Result<Response<()>, Status> {
-        unauthenticated_rpc!(self, rpcs::delete_event_attendance, request)
-    }
-    async fn get_event_attendances(&self, request: Request<EventInstance>) -> Result<Response<EventAttendances>, Status> {
-        unauthenticated_rpc!(self, rpcs::get_event_attendances, request)
-    }
-
     async fn get_events(
         &self,
         request: Request<GetEventsRequest>,
     ) -> Result<Response<GetEventsResponse>, Status> {
         unauthenticated_rpc!(self, rpcs::get_events, request)
+    }
+
+    async fn upsert_event_attendance(&self, request: Request<EventAttendance>) -> Result<Response<EventAttendance>, Status> {
+        unauthenticated_rpc!(self, rpcs::upsert_event_attendance, request)
+    }
+    async fn delete_event_attendance(&self, request: Request<EventAttendance>) -> Result<Response<()>, Status> {
+        unauthenticated_rpc!(self, rpcs::delete_event_attendance, request)
+    }
+    async fn get_event_attendances(&self, request: Request<GetEventAttendancesRequest>) -> Result<Response<EventAttendances>, Status> {
+        unauthenticated_rpc!(self, rpcs::get_event_attendances, request)
     }
 
     type StreamRepliesStream = ReplyStream;

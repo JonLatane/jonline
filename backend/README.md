@@ -6,7 +6,7 @@
 
 - [Jonline Backend](#jonline-backend)
   - [Build and release management](#build-and-release-management)
-  - [Architecture](#architecture)
+  - [Architecture \& Data](#architecture--data)
     - [Marshaling Data](#marshaling-data)
       - [Media Data](#media-data)
   - [Building and running locally](#building-and-running-locally)
@@ -50,11 +50,13 @@ or, more succinctly:
 make deploy_data_delete deploy_data_create deploy_be_restart
 ```
 
-## Architecture
+## Architecture & Data
 
 Jonline BE is, fundamentally, mostly a dumb Diesel-DB-model to Prost-gRPC-interface translator that respects permissions¹. The two fundamental modules to understand are [`models`](https://github.com/JonLatane/jonline/tree/main/backend/src/models) (the Diesel ORM models and related access methods) and [`protos`](https://github.com/JonLatane/jonline/tree/main/backend/src/protos) (the generated gRPC models/server trait/client interface [unused in the BE for now]). Most of Jonline's BE code is a matter of transforming between `models::DieselType` (say, `models::Post`) and `protos::GrpcType` (say, `protos::Post`).
 
-Though it's yet to be done, Jonline's API-model mappings are designed to be pretty deeply metaprogrammable with Rust. This could be a great contribution opportunity for other devs!
+In many cases, like server configuration, Jonline BE uses [serde](https://serde.rs) (Rust JSON) along with [prost](https://github.com/tokio-rs/prost) (Rust Protobuf, the core/encoding layer for [Tonic](https://github.com/hyperium/tonic)) and [diesel](https://diesel.rs) (Rust DB) to transform data between Postgres JSONB columns and gRPC models.
+
+Though it's only been started on, Jonline's API-model mappings are designed to be pretty deeply metaprogrammable with Rust. This could be a great contribution opportunity for other devs!
 
 ¹ *(**Mostly** respects permissions, except not on Media at all yet 😬😅. PRs for tests and/or fixes for permissions issues would make wonderful contributions!)*
 

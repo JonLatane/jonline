@@ -1,6 +1,5 @@
 use super::*;
-use crate::models::NewServerConfiguration;
-use crate::models::{self, default_server_configuration};
+use crate::models::{self, NewServerConfiguration};
 use crate::protos::*;
 use std::mem::transmute;
 
@@ -36,40 +35,43 @@ pub trait ToProtoServerConfiguration {
 }
 impl ToProtoServerConfiguration for models::ServerConfiguration {
     fn to_proto(&self) -> ServerConfiguration {
-        let server_info: ServerInfo = serde_json::from_value(self.server_info.to_owned())
-            .unwrap_or(ServerInfo {
-                name: self.server_info["name"].as_str().map(|s| s.to_string()),
-                short_name: self.server_info["short_name"]
-                    .as_str()
-                    .map(|s| s.to_string()),
-                description: self.server_info["description"]
-                    .as_str()
-                    .map(|s| s.to_string()),
-                privacy_policy: self.server_info["privacy_policy"]
-                    .as_str()
-                    .map(|s| s.to_string()),
-                logo: serde_json::from_value(self.server_info["logo"].clone()).ok(),
-                web_user_interface: Some(WebUserInterface::ReactTamagui.into()), //serde_json::from_value(self.server_info["web_user_interface"]).unwrap_or(WebUserInterface::ReactTamagui),
-                // serde_json::from_value(self.server_info["web_user_interface"])
-                //     .map(|v: String| v.to_proto_web_ui())
-                //     ,
-                colors: Some(
-                    serde_json::from_value(self.server_info["web_user_interface"].clone())
-                        .unwrap_or(
-                            serde_json::from_value(
-                                default_server_configuration().server_info["colors"].clone(),
-                            )
-                            .unwrap_or(ServerColors::default()),
-                        ),
-                ),
-                media_policy: self.server_info["media_policy"]
-                    .as_str()
-                    .map(|s| s.to_string()),
-                recommended_server_hosts: serde_json::from_value(
-                    self.server_info["recommended_server_hosts"].clone(),
-                )
-                .unwrap_or(vec![]),
-            });
+        let server_info: ServerInfo = serde_json::from_value(self.server_info.to_owned()).unwrap();
+            // .unwrap_or_else(|_| {
+            //     log::error!("Failed to parse server info: {:?}", self.server_info);
+            //     ServerInfo {
+            //         name: self.server_info["name"].as_str().map(|s| s.to_string()),
+            //         short_name: self.server_info["short_name"]
+            //             .as_str()
+            //             .map(|s| s.to_string()),
+            //         description: self.server_info["description"]
+            //             .as_str()
+            //             .map(|s| s.to_string()),
+            //         privacy_policy: self.server_info["privacy_policy"]
+            //             .as_str()
+            //             .map(|s| s.to_string()),
+            //         logo: serde_json::from_value(self.server_info["logo"].clone()).ok(),
+            //         web_user_interface: Some(WebUserInterface::ReactTamagui.into()), //serde_json::from_value(self.server_info["web_user_interface"]).unwrap_or(WebUserInterface::ReactTamagui),
+            //         // serde_json::from_value(self.server_info["web_user_interface"])
+            //         //     .map(|v: String| v.to_proto_web_ui())
+            //         //     ,
+            //         colors: Some(
+            //             serde_json::from_value(self.server_info["web_user_interface"].clone())
+            //                 .unwrap_or(
+            //                     serde_json::from_value(
+            //                         default_server_configuration().server_info["colors"].clone(),
+            //                     )
+            //                     .unwrap_or(ServerColors::default()),
+            //                 ),
+            //         ),
+            //         media_policy: self.server_info["media_policy"]
+            //             .as_str()
+            //             .map(|s| s.to_string()),
+            //         recommended_server_hosts: serde_json::from_value(
+            //             self.server_info["recommended_server_hosts"].clone(),
+            //         )
+            //         .unwrap_or(vec![]),
+            //     }
+            // });
         //ServerInfo::try_from(self.server_info.to_owned()).unwrap();
         // serde_json::from_value(self.server_info.to_owned()).unwrap();
         let group_settings: FeatureSettings =

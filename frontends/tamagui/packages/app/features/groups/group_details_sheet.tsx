@@ -41,24 +41,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
 
   const { textColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
 
-  // const groupsState = useTypedSelector((state: RootState) => state.groups);
-  // const [loadingGroups, setLoadingGroups] = useState(false);
   const homeLink = useLink({ href: '/' });
-  // useEffect(() => {
-  //   if (!loadingGroups && groupsState.status == 'unloaded' && !extraListItemChrome) {
-  //     setLoadingGroups(true);
-  //     reloadGroups();
-  //   } else if (loadingGroups && !['unloaded', 'loading'].includes(groupsState.status)) {
-  //     setLoadingGroups(false);
-  //   }
-  // });
-
-  // function reloadGroups() {
-  //   if (!accountOrServer.server) return;
-
-  //   setTimeout(() =>
-  //     dispatch(loadGroupsPage({ ...accountOrServer, ...GetGroupsRequest.create() })), 1);
-  // }
 
   function doUpdateGroup() {
     dispatch(updateGroup({
@@ -77,7 +60,6 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
     });
   }
   async function doDeleteGroup() {
-    // setDeleting(true);
     dispatch(deleteGroup({ ...accountOrServer, ...(infoRenderingGroup!) })).then((result) => {
       setDeleted(true);
       setInfoOpen(false);

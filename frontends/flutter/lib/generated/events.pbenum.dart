@@ -49,16 +49,12 @@ class AttendanceStatus extends $pb.ProtobufEnum {
   static const AttendanceStatus REQUESTED = AttendanceStatus._(1, _omitEnumNames ? '' : 'REQUESTED');
   static const AttendanceStatus GOING = AttendanceStatus._(2, _omitEnumNames ? '' : 'GOING');
   static const AttendanceStatus NOT_GOING = AttendanceStatus._(3, _omitEnumNames ? '' : 'NOT_GOING');
-  static const AttendanceStatus WENT = AttendanceStatus._(10, _omitEnumNames ? '' : 'WENT');
-  static const AttendanceStatus DID_NOT_GO = AttendanceStatus._(11, _omitEnumNames ? '' : 'DID_NOT_GO');
 
   static const $core.List<AttendanceStatus> values = <AttendanceStatus> [
     INTERESTED,
     REQUESTED,
     GOING,
     NOT_GOING,
-    WENT,
-    DID_NOT_GO,
   ];
 
   static final $core.Map<$core.int, AttendanceStatus> _byValue = $pb.ProtobufEnum.initByValue(values);

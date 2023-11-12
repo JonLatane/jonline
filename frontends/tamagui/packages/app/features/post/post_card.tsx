@@ -416,11 +416,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                           label='Post Visibility'
                           visibility={visibility}
                           onChange={setEditedVisibility}
-                          visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')} />
+                          visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'post')} />
                       </XStack>
                       : visibility != Visibility.GLOBAL_PUBLIC
                         ? <Paragraph size='$1' my='auto' ml='$2'>
-                          {postVisibilityDescription(visibility, groupContext, server, 'Event')}
+                          {postVisibilityDescription(visibility, groupContext, server, 'post')}
                         </Paragraph>
                         : undefined}
                     {post?.replyToPostId

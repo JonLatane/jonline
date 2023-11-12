@@ -1,5 +1,6 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { ExpirableToken, GetServiceVersionResponse, Jonline, ServerConfiguration, User } from "@jonline/api";
+import { accountId, serverID } from "./modules";
 
 export type JonlineServer = {
   host: string;
@@ -23,6 +24,13 @@ export type AccountOrServer = {
   account?: JonlineAccount;
   server?: JonlineServer;
 };
+
+export function accountOrServerId(accountOrServer: AccountOrServer) {
+  if (accountOrServer.account) {
+    return `account-${accountId(accountOrServer.account)}`;
+  }
+  return `server-${serverID(accountOrServer.server!)}`;
+}
 
 // A Jonline client with an optional credentials field bolted on.
 export type JonlineCredentialClient = Jonline & {

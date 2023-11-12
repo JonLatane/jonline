@@ -28,9 +28,26 @@ export type GroupsSheetProps = {
   delayRenderingSheet?: boolean;
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
+  groupNamePrefix?: string;
 }
 let isReloadingGroups = false;
-export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelectedText, onGroupSelected, disabled, title, itemTitle, disableSelection, hideInfoButtons, topGroupIds, extraListItemChrome, delayRenderingSheet, hideAdditionalGroups, hideLeaveButtons }: GroupsSheetProps) {
+export function GroupsSheet({
+  selectedGroup,
+  groupPageForwarder,
+  noGroupSelectedText,
+  onGroupSelected,
+  disabled,
+  title,
+  itemTitle,
+  disableSelection,
+  hideInfoButtons,
+  topGroupIds,
+  extraListItemChrome,
+  delayRenderingSheet,
+  hideAdditionalGroups,
+  hideLeaveButtons,
+  groupNamePrefix,
+}: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoGroupId, setInfoGroupId] = useState<string | undefined>(undefined);
@@ -126,9 +143,16 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
         onPress={() => setOpen((x) => !x)}
         w={noGroupSelectedText ? '100%' : undefined}>
         {selectedGroup || noGroupSelectedText
-          ? <Paragraph size="$1">
-            {selectedGroup ? selectedGroup.name : noGroupSelectedText}
-          </Paragraph>
+          ? <YStack>
+            {selectedGroup && groupNamePrefix
+              ? <Paragraph size="$1" lineHeight={14}>
+                {groupNamePrefix}
+              </Paragraph>
+              : undefined}
+            <Paragraph size="$2" lineHeight={14}>
+              {selectedGroup ? selectedGroup.name : noGroupSelectedText}
+            </Paragraph>
+          </YStack>
           : undefined}
       </Button>
       {delayRenderingSheet && !hasRenderedSheet && !open
@@ -271,7 +295,11 @@ export function GroupsSheet({ selectedGroup, groupPageForwarder, noGroupSelected
         ? <>
           <Theme inverse>
             <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto'
-              ml={infoMarginLeft} onPress={() => setInfoOpen((x) => !x)} />
+              ml={infoMarginLeft}
+              onPress={() => {
+                setInfoGroupId(selectedGroup.id);
+                setInfoOpen((x) => !x)
+              }} />
           </Theme>
         </>
         : undefined}

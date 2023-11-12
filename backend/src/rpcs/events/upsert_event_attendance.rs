@@ -119,7 +119,7 @@ pub fn upsert_event_attendance(
                 .execute(conn)
                 .map_err(|_e| Status::new(Code::Internal, "failed_to_update_event_attendance"))?;
 
-            Ok(attendance.to_proto(true))
+            Ok(attendance.to_proto(true, true))
         }
         None => {
             let authenticated_user_id = &user.map(|u| u.id);
@@ -150,7 +150,7 @@ pub fn upsert_event_attendance(
                 })
                 .get_result::<models::EventAttendance>(conn)
                 .map_err(|_e| Status::new(Code::Internal, "failed_to_create_event_attendance"))?;
-            Ok(attendance.to_proto(true))
+            Ok(attendance.to_proto(true, true))
         }
     }
 }

@@ -42,15 +42,13 @@ const AttendanceStatus$json = {
     {'1': 'REQUESTED', '2': 1},
     {'1': 'GOING', '2': 2},
     {'1': 'NOT_GOING', '2': 3},
-    {'1': 'WENT', '2': 10},
-    {'1': 'DID_NOT_GO', '2': 11},
   ],
 };
 
 /// Descriptor for `AttendanceStatus`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List attendanceStatusDescriptor = $convert.base64Decode(
     'ChBBdHRlbmRhbmNlU3RhdHVzEg4KCklOVEVSRVNURUQQABINCglSRVFVRVNURUQQARIJCgVHT0'
-    'lORxACEg0KCU5PVF9HT0lORxADEggKBFdFTlQQChIOCgpESURfTk9UX0dPEAs=');
+    'lORxACEg0KCU5PVF9HT0lORxAD');
 
 @$core.Deprecated('Use getEventsRequestDescriptor instead')
 const GetEventsRequest$json = {
@@ -142,11 +140,21 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
 @$core.Deprecated('Use eventInfoDescriptor instead')
 const EventInfo$json = {
   '1': 'EventInfo',
+  '2': [
+    {'1': 'allows_rsvps', '3': 1, '4': 1, '5': 8, '9': 0, '10': 'allowsRsvps', '17': true},
+    {'1': 'allows_anonymous_rsvps', '3': 2, '4': 1, '5': 8, '9': 1, '10': 'allowsAnonymousRsvps', '17': true},
+  ],
+  '8': [
+    {'1': '_allows_rsvps'},
+    {'1': '_allows_anonymous_rsvps'},
+  ],
 };
 
 /// Descriptor for `EventInfo`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventInfoDescriptor = $convert.base64Decode(
-    'CglFdmVudEluZm8=');
+    'CglFdmVudEluZm8SJgoMYWxsb3dzX3JzdnBzGAEgASgISABSC2FsbG93c1JzdnBziAEBEjkKFm'
+    'FsbG93c19hbm9ueW1vdXNfcnN2cHMYAiABKAhIAVIUYWxsb3dzQW5vbnltb3VzUnN2cHOIAQFC'
+    'DwoNX2FsbG93c19yc3Zwc0IZChdfYWxsb3dzX2Fub255bW91c19yc3Zwcw==');
 
 @$core.Deprecated('Use eventInstanceDescriptor instead')
 const EventInstance$json = {

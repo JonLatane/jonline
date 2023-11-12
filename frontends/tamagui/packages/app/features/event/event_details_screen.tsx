@@ -1,6 +1,6 @@
-import { EventInstance, Post } from '@jonline/api'
+import { EventInstance, Permission, Post } from '@jonline/api'
 import { Button, Heading, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui'
-import { ListEnd } from '@tamagui/lucide-icons'
+import { ListEnd, Plus } from '@tamagui/lucide-icons'
 import { RootState, loadEvent, loadPostReplies, selectEventById, selectGroupById, selectPostById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
 import moment, { Moment } from 'moment'
 import React, { useEffect, useReducer, useState } from 'react'
@@ -10,6 +10,9 @@ import PostCard from '../post/post_card'
 import { ReplyArea } from '../post/reply_area'
 import { AppSection } from '../tabs/features_navigation'
 import { TabsNavigation } from '../tabs/tabs_navigation'
+import { hasPermission } from 'app/utils/permission_utils'
+import { EventRsvpManager, RsvpMode } from './event_rsvp_manager'
+import { themedButtonBackground } from 'app/utils/themed_button_background'
 
 const { useParam } = createParam<{ eventId: string, instanceId: string, shortname: string | undefined }>()
 
@@ -30,7 +33,7 @@ export function EventDetailsScreen() {
   const [instanceId] = useParam('instanceId');
   const [shortname] = useParam('shortname');
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
   const app = useLocalApp();
   const groupId = useTypedSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
@@ -52,6 +55,7 @@ export function EventDetailsScreen() {
   }, [subjectInstances, instanceId]);
   // console.log("EventDetailsScreen.subjectInstance=", subjectInstance?.id, 'instanceId=', instanceId);
   // const postId = subjectPost?.id;
+  const [newRsvpMode, setNewRsvpMode] = useState(undefined as RsvpMode);
   const [loadedEvent, setLoadedEvent] = useState(false);
   const [loadingEvent, setLoadingEvent] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(false);
@@ -73,7 +77,8 @@ export function EventDetailsScreen() {
     }
   });
 
-  const showReplyArea = subjectEvent != undefined && editingPosts.length == 0;
+  const showReplyArea = subjectEvent != undefined && editingPosts.length == 0
+   && (newRsvpMode === undefined);
 
   function scrollToBottom() {
     if (!isClient) return;
@@ -235,6 +240,10 @@ export function EventDetailsScreen() {
   }
 
   let replyAboveCurrent: Post | undefined = undefined;
+
+  // const showRsvpSection = subjectEvent?.info?.allowsRsvps &&
+  //   (subjectEvent?.info?.allowsAnonymousRsvps || hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS));
+
   return (
     <TabsNavigation appSection={AppSection.EVENT} selectedGroup={group}>
       {!subjectEvent
@@ -254,11 +263,14 @@ export function EventDetailsScreen() {
                   selectedInstance={subjectInstance} />
                 : undefined}
             </XStack>
+
+            <EventRsvpManager event={subjectEvent!} instance={subjectInstance!} {...{ newRsvpMode, setNewRsvpMode }} />
+
             <XStack>
               <XStack f={1} />
               <Tooltip placement="bottom">
                 <Tooltip.Trigger>
-                  <Button backgroundColor={chatUI ? undefined : navColor} transparent={chatUI} onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
+                  <Button {...themedButtonBackground(chatUI ? undefined : navColor)} transparent={chatUI} onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
                     <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
                   </Button>
                 </Tooltip.Trigger>
@@ -270,7 +282,7 @@ export function EventDetailsScreen() {
 
               <Tooltip placement="bottom">
                 <Tooltip.Trigger>
-                  <Button backgroundColor={!chatUI ? undefined : navColor}
+                  <Button {...themedButtonBackground(!chatUI ? undefined : navColor)}
                     transparent={!chatUI}
                     borderTopRightRadius={0} borderBottomRightRadius={0}
                     onPress={() => dispatch(setDiscussionChatUI(true))}>

@@ -25,6 +25,8 @@ import { PostMediaManager } from "../post/post_media_manager";
 import { PostMediaRenderer } from "../post/post_media_renderer";
 import { VisibilityPicker } from "../../components/visibility_picker";
 import { postVisibilityDescription } from "../post/base_create_post_sheet";
+import { RsvpMode } from "./event_rsvp_manager";
+import { ToggleRow } from "app/components/toggle_row";
 
 interface Props {
   event: Event;
@@ -69,6 +71,8 @@ export const EventCard: React.FC<Props> = ({
   const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
   const [editedVisibility, setEditedVisibility] = useState(post.visibility);
   const visibility = editing ? editedVisibility : post.visibility;
+  const [editedAllowRsvps, setEditedAllowRsvps] = useState(event.info?.allowsRsvps ?? false);
+  const [editedAllowAnonymousRsvps, setEditedAllowAnonymousRsvps] = useState(event.info?.allowsAnonymousRsvps ?? false);
 
   const content = editing ? editedContent : post.content;
   const media = editing ? editedMedia : post.media;
@@ -90,6 +94,11 @@ export const EventCard: React.FC<Props> = ({
     dispatch(updateEvent({
       ...accountOrServer,
       ...event,
+      info: {
+        ...event.info,
+        allowsRsvps: editedAllowRsvps,
+        allowsAnonymousRsvps: editedAllowRsvps && editedAllowAnonymousRsvps,
+      },
       post: {
         ...post,
         title: editedTitle,
@@ -388,14 +397,14 @@ export const EventCard: React.FC<Props> = ({
                   ? <XStack key='instances' w='100%' mt='$2' ml='$4' space>
                     <YStack key='instances-buttons' my='auto' space="$3">
                       {hasPastInstances
-                        ? 
+                        ?
                         // <Theme inverse={showPastInstances}>
-                          <Button mr={-7} size='$3' 
+                        <Button mr={-7} size='$3'
                           color={showPastInstances ? navAnchorColor : undefined}
                           circular={(displayedInstances?.length ?? 0) > 0} icon={History}
-                            onPress={() => setShowPastInstances(!showPastInstances)} >
-                            {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
-                          </Button>
+                          onPress={() => setShowPastInstances(!showPastInstances)} >
+                          {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
+                        </Button>
                         // </Theme>
                         : undefined}
                       {editing
@@ -498,19 +507,6 @@ export const EventCard: React.FC<Props> = ({
                                                       </YStack>
                                                     </XStack>
                                                   </Select.Viewport>
-
-                                                  {/* <Select.ScrollDownButton ai="center" jc="center" pos="relative" w="100%" h="$3">
-        <YStack zi={10}>
-          <ChevronDown size={20} />
-        </YStack>
-        <LinearGradient
-          start={[0, 0]}
-          end={[0, 1]}
-          fullscreen
-          colors={['$backgroundTransparent', '$background']}
-          br="$4"
-        />
-      </Select.ScrollDownButton> */}
                                                 </Select.Content>
                                               </Select>
                                               {/* <Text fontFamily='$body'>weeks</Text> */}
@@ -562,7 +558,7 @@ export const EventCard: React.FC<Props> = ({
                       <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
                       <Text fontSize='$2' fontFamily='$body'>
                         <input type='datetime-local' style={{ padding: 10 }}
-                         min={supportDateInput(moment(0))}
+                          min={supportDateInput(moment(0))}
                           value={supportDateInput(moment(editingInstance.startsAt))}
                           onChange={(v) => {
                             const updatedInstance = { ...editingInstance, startsAt: toProtoISOString(v.target.value) };
@@ -575,7 +571,7 @@ export const EventCard: React.FC<Props> = ({
                       <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
                       <Text fontSize='$2' fontFamily='$body' color={textColor}>
                         <input type='datetime-local' style={{ padding: 10 }}
-                         min={editingInstance.startsAt}
+                          min={editingInstance.startsAt}
                           value={supportDateInput(moment(editingInstance.endsAt))}
                           onChange={(v) => {
                             const updatedInstance = { ...editingInstance, endsAt: toProtoISOString(v.target.value) };
@@ -595,7 +591,7 @@ export const EventCard: React.FC<Props> = ({
               : <YStack key='footer-base' zi={1000} width='100%' {...footerProps}>
                 {editing && !previewingEdits
                   ? <PostMediaManager
-                  key='media-edit'
+                    key='media-edit'
                     link={post.link}
                     media={editedMedia}
                     setMedia={setEditedMedia}
@@ -604,7 +600,7 @@ export const EventCard: React.FC<Props> = ({
                     disableInputs={savingEdits}
                   />
                   : <PostMediaRenderer
-                  key='media-view'
+                    key='media-view'
                     horizontalPreview={horizontal && isPreview}
                     {...{
                       post: {
@@ -641,6 +637,14 @@ export const EventCard: React.FC<Props> = ({
                     /> : undefined} */}
                   {contentView}
                 </YStack>
+                {editing && !previewingEdits
+                  ? <>
+                    <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
+                    <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps} 
+                    disabled={!editedAllowRsvps}
+                    setter={setEditedAllowAnonymousRsvps} />
+                  </>
+                  : undefined}
                 <XStack space='$2' flexWrap="wrap" key='save-buttons'>
                   {showEdit
                     ? editing

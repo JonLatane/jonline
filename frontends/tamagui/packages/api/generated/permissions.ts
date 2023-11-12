@@ -64,6 +64,7 @@ export enum Permission {
   PUBLISH_EVENTS_GLOBALLY = 33,
   /** MODERATE_EVENTS - Allow the user to moderate events. */
   MODERATE_EVENTS = 34,
+  RSVP_TO_EVENTS = 35,
   VIEW_MEDIA = 40,
   CREATE_MEDIA = 41,
   PUBLISH_MEDIA_LOCALLY = 42,
@@ -163,6 +164,9 @@ export function permissionFromJSON(object: any): Permission {
     case 34:
     case "MODERATE_EVENTS":
       return Permission.MODERATE_EVENTS;
+    case 35:
+    case "RSVP_TO_EVENTS":
+      return Permission.RSVP_TO_EVENTS;
     case 40:
     case "VIEW_MEDIA":
       return Permission.VIEW_MEDIA;
@@ -244,6 +248,8 @@ export function permissionToJSON(object: Permission): string {
       return "PUBLISH_EVENTS_GLOBALLY";
     case Permission.MODERATE_EVENTS:
       return "MODERATE_EVENTS";
+    case Permission.RSVP_TO_EVENTS:
+      return "RSVP_TO_EVENTS";
     case Permission.VIEW_MEDIA:
       return "VIEW_MEDIA";
     case Permission.CREATE_MEDIA:

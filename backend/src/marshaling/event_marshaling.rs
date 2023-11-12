@@ -1,6 +1,8 @@
 use std::mem::transmute;
 
-use super::{load_media_lookup, MediaLookup, ToProtoId, ToProtoMarshalablePost, ToProtoTime, ToI32Moderation};
+use super::{
+    load_media_lookup, MediaLookup, ToI32Moderation, ToProtoId, ToProtoMarshalablePost, ToProtoTime,
+};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::event_attendance::Attendee;
@@ -58,12 +60,7 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
             id: event.id.to_proto_id(),
             post: Some(post.to_proto(media_lookup)),
             instances: instances.iter().map(|i| i.to_proto(media_lookup)).collect(),
-            info: Some(EventInfo {
-                // start_time: self.start_time.map(|t| t.to_proto()),
-                // end_time: self.end_time.map(|t| t.to_proto()),
-                // location: self.location.to_owned(),
-                ..Default::default()
-            }),
+            info: serde_json::from_value(self.0.info.to_owned()).ok(),
             ..Default::default()
         }
     }
@@ -97,11 +94,11 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
 }
 
 pub trait ToProtoEventAttendance {
-    fn to_proto(&self, include_auth_tokens: bool) -> EventAttendance;
+    fn to_proto(&self, include_auth_tokens: bool, include_private_note: bool) -> EventAttendance;
 }
 
 impl ToProtoEventAttendance for models::EventAttendance {
-    fn to_proto(&self, include_auth_tokens: bool) -> EventAttendance {
+    fn to_proto(&self, include_auth_tokens: bool, include_private_note: bool) -> EventAttendance {
         EventAttendance {
             // id: self.id.to_proto_id(),
             event_instance_id: self.event_instance_id.to_proto_id(),
@@ -118,12 +115,14 @@ impl ToProtoEventAttendance for models::EventAttendance {
                         //TODO add contact methods
                         contact_methods: vec![],
                         auth_token: if include_auth_tokens {
-                            Some(anonymous_attendee
-                                .get("auth_token")
-                                .unwrap()
-                                .as_str()
-                                .unwrap()
-                                .to_string())
+                            Some(
+                                anonymous_attendee
+                                    .get("auth_token")
+                                    .unwrap()
+                                    .as_str()
+                                    .unwrap()
+                                    .to_string(),
+                            )
                         } else {
                             None
                         },
@@ -135,7 +134,11 @@ impl ToProtoEventAttendance for models::EventAttendance {
             status: self.status.to_i32_attendance_status(),
             inviting_user_id: self.inviting_user_id.map(|id| id.to_proto_id()),
             public_note: self.public_note.clone(),
-            private_note: self.private_note.clone(),
+            private_note: if include_private_note {
+                self.private_note.clone()
+            } else {
+                "".to_string()
+            },
             moderation: self.moderation.to_i32_moderation(),
             created_at: Some(self.created_at.to_proto()),
             updated_at: self.updated_at.map(|t| t.to_proto()),
@@ -143,13 +146,13 @@ impl ToProtoEventAttendance for models::EventAttendance {
     }
 }
 
-pub const ALL_ATTENDANCE_STATUSES: [AttendanceStatus; 6] = [
+pub const ALL_ATTENDANCE_STATUSES: [AttendanceStatus; 4] = [
     AttendanceStatus::Interested,
     AttendanceStatus::Requested,
     AttendanceStatus::Going,
     AttendanceStatus::NotGoing,
-    AttendanceStatus::Went,
-    AttendanceStatus::DidNotGo,
+    // AttendanceStatus::Went,
+    // AttendanceStatus::DidNotGo,
 ];
 
 pub trait ToProtoAttendanceStatus {

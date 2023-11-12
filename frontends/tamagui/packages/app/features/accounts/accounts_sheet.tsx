@@ -14,6 +14,7 @@ import { LoginMethod } from './add_account_sheet';
 import ServerCard from './server_card';
 import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 import RecommendedServer from './recommended_server';
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -443,7 +444,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       </ScrollView>
 
                       {allRecommendableServerHosts.length > recommendedServerHosts.length
-                        ? <Button ml='auto' onPress={() => dispatch(setBrowsingServers(true))}>
+                        ? <Button ml='auto' my='auto' onPress={() => dispatch(setBrowsingServers(true))}>
                           <YStack ai='center'>
                             <Paragraph size='$2' lineHeight={15} fontWeight='700'>{allRecommendableServerHosts.length - recommendedServerHosts.length}</Paragraph>
                             <Paragraph size='$1' lineHeight={15}>more</Paragraph>
@@ -483,6 +484,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     size="$3"
                     icon={Plus}
                     disabled={serversState.server === undefined}
+                    {...themedButtonBackground(primaryColor, primaryTextColor)}
                     onPress={() => setAddingAccount((x) => !x)}
                   >
                     Login/Create

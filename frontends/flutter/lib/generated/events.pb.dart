@@ -395,12 +395,26 @@ class Event extends $pb.GeneratedMessage {
 /// To be used for ticketing, RSVPs, etc.
 /// Stored as JSON in the database.
 class EventInfo extends $pb.GeneratedMessage {
-  factory EventInfo() => create();
+  factory EventInfo({
+    $core.bool? allowsRsvps,
+    $core.bool? allowsAnonymousRsvps,
+  }) {
+    final $result = create();
+    if (allowsRsvps != null) {
+      $result.allowsRsvps = allowsRsvps;
+    }
+    if (allowsAnonymousRsvps != null) {
+      $result.allowsAnonymousRsvps = allowsAnonymousRsvps;
+    }
+    return $result;
+  }
   EventInfo._() : super();
   factory EventInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
+    ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
     ..hasRequiredFields = false
   ;
 
@@ -424,6 +438,24 @@ class EventInfo extends $pb.GeneratedMessage {
   @$core.pragma('dart2js:noInline')
   static EventInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInfo>(create);
   static EventInfo? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get allowsRsvps => $_getBF(0);
+  @$pb.TagNumber(1)
+  set allowsRsvps($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasAllowsRsvps() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearAllowsRsvps() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.bool get allowsAnonymousRsvps => $_getBF(1);
+  @$pb.TagNumber(2)
+  set allowsAnonymousRsvps($core.bool v) { $_setBool(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasAllowsAnonymousRsvps() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAllowsAnonymousRsvps() => clearField(2);
 }
 
 class EventInstance extends $pb.GeneratedMessage {

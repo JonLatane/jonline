@@ -196,11 +196,12 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   </>
 
   function triggerButton() {
-    const icon = //shrinkNavigation
-      // ? 
-      menuIcon(appSection, navTextColor) ?? (inlineNavigation ? undefined : <Menu color={navTextColor} />)
-      // : undefined
-      ;
+    const icon = inlineNavigation && appSubsection
+      ? undefined
+      : (menuIcon(appSection, navTextColor)
+        ?? (inlineNavigation
+          ? undefined
+          : <Menu color={navTextColor} />));
     return <Button scale={0.95} ml={selectedGroup ? -4 : -3} my='auto'
       // disabled={inlineNavigation}
       onPress={inlineNavigation ? () =>
@@ -227,7 +228,11 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       ? `${baseName} (${count})`
       : baseName;
     const icon = !subsection
-      ? menuIcon(section, selected ? navTextColor : undefined)
+      ? menuIcon(section, selected
+        ? navTextColor
+        : inlineNavigation
+          ? primaryTextColor
+          : undefined)
       : undefined;
     return selected && inlineNavigation ?
       !reorderInlineNavigation

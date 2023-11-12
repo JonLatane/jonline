@@ -1,5 +1,5 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api'
-import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, formatError, isWeb, standardAnimation, useWindowDimensions } from '@jonline/ui'
+import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useWindowDimensions } from '@jonline/ui'
 import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown, Binary, ChevronRight, CheckCircle } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
@@ -621,26 +621,29 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       </YStack>
       {server && isAdmin ?
         isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
-          <XStack w='100%' opacity={.92} paddingVertical='$2'
+          <XStack px='$3' w='100%' maw={800} mx='auto' opacity={.92} paddingVertical='$2'
             alignContent='center' alignItems='center' alignSelf='center'>
 
             <XStack f={1} />
-            <YStack animation='quick' o={updating ? 1 : 0} p='$3'>
-              <Spinner size='small' />
-            </YStack>
+
+            <ZStack w={48} h={48}>
+              <YStack animation='quick' o={updated ? 1 : 0} p='$3'>
+                <CheckCircle color='green' />
+              </YStack>
+              <YStack animation='quick' o={updating ? 1 : 0} p='$3'>
+                <Spinner size='small' />
+              </YStack>
+            </ZStack>
             <Button maw={600} als='center'
               disabled={updating || updated || !inputsValid}
-              {...themedButtonBackground(primaryColor, primaryTextColor, 
+              {...themedButtonBackground(primaryColor, primaryTextColor,
                 updating || updated || !inputsValid ? 0.5 : 1)}
               // opacity={updating || updated || !inputsValid ? 0.2 : 1}
               onPress={updateServer}  >
               <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
             </Button>
-            <YStack animation='quick' o={updated ? 1 : 0} p='$3'>
-              <CheckCircle color='green' />
-            </YStack>
 
-            <XStack f={1} />
+            {/* <XStack f={1} /> */}
           </XStack>
         </StickyBox>
           : <Button maw={600} mt='$3' als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>

@@ -117,7 +117,7 @@ pub fn create_event(
         let inserted_event = insert_into(events::table)
             .values(&models::NewEvent {
                 post_id: event_post.id,
-                info: json!({}),
+                info: serde_json::to_value(request.info).unwrap_or(json!({}))
             })
             .get_result::<models::Event>(conn)?;
         let mut inserted_instances: Vec<MarshalableEventInstance> = vec![];

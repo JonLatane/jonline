@@ -127,7 +127,7 @@ All of Jonline's features should be pretty familiar to most social media users. 
 ### Media
 Jonline Media is straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike Posts and Events, Media is generally not shared directly. It is instead associated with Posts and Events (for media listings) as well as Users and Groups (for their avatars).
 
-Media is the *only* part of Jonline's APIs offered over HTTP as well as gRPC/gRPC-over-HTTP. (Hopefully the reasons for this are obvious: easy browser streaming and cache utilization for things like images.) Details on the HTTP Media APIs are in the "Media" section of the [protocol documentation](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
+Media is the *only* part of Jonline's APIs offered over HTTP as well as gRPC/gRPC-over-HTTP. (Hopefully the reasons for this are obvious: easy browser streaming and cache utilization for things like images.) Details on the HTTP Media APIs are in the ["Media" section](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#media) of the [protocol documentation](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md).
 
 All Media also carries `Visibility` and `Moderation` values that can be modified in the APIs, but are not currently enforced. Note that any Media visibility updates and/or deletions may take time to propagate fully, depending upon how a given Jonline instance's CDN setup works.
 

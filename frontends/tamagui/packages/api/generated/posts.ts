@@ -28,8 +28,12 @@ export enum PostListingType {
   /** DIRECT_POSTS - Returns `DIRECT` posts that are directly addressed to the user. */
   DIRECT_POSTS = 3,
   POSTS_PENDING_MODERATION = 4,
-  /** GROUP_POSTS - group_id parameter is required for these. */
+  /** GROUP_POSTS - Returns posts from a specific group. group_id parameter is required for these. */
   GROUP_POSTS = 10,
+  /**
+   * GROUP_POSTS_PENDING_MODERATION - Returns pending_moderation posts from a specific group. Requires group_id
+   * parameter and user must have group (or server) admin permissions.
+   */
   GROUP_POSTS_PENDING_MODERATION = 11,
   UNRECOGNIZED = -1,
 }

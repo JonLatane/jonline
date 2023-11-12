@@ -19,10 +19,19 @@ pub fn update_event(
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
     let event_id = request.id.to_db_id_or_err("id")?;
-    let existing_event = models::get_event(event_id, &Some(current_user.clone()), conn)?;
+    let mut existing_event = models::get_event(event_id, &Some(current_user.clone()), conn)?;
 
     log::info!("Updating event: {:?}", existing_event);
+    existing_event.info = serde_json::to_value(request.info.to_owned()).unwrap();
+    existing_event = diesel::update(&existing_event)
+        .set(&existing_event)
+        .get_result::<models::Event>(conn)
+        .map_err(|e| {
+            log::error!("Failed to update event: {:?}", e);
+            Status::new(Code::Internal, "failed_to_update_event")
+        })?;
 
+    log::info!("Updating event post: {:?}", existing_event);
     // The update_post will handle ownership checks.
     let event_with_updated_post = request.post.map_or_else(
         || {

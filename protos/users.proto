@@ -56,9 +56,13 @@ message Author {
   optional MediaReference avatar = 3;
 }
 
+// Model for a user's follow of another user.
 message Follow {
+  // The follower in the relationship.
   string user_id = 1;
+  // The user being followed.
   string target_user_id = 2;
+  // Tracks whether the target user needs to approve the follow.
   Moderation target_user_moderation = 3;
   google.protobuf.Timestamp created_at = 4;
   optional google.protobuf.Timestamp updated_at = 5;
@@ -68,7 +72,9 @@ message Follow {
 // included as part of User models when relevant in Jonline, but UIs should use the group_id
 // to reconcile memberships with groups.
 message Membership {
+  // The member (or requested/invited member).
   string user_id = 1;
+  // The group the membership pertains to.
   string group_id = 2;
   // Valid Membership Permissions are:
   // * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`
@@ -83,8 +89,10 @@ message Membership {
   optional google.protobuf.Timestamp updated_at = 7;
 }
 
+// A contact method for a user. Models designed to support verification,
+// but verification RPCs are not yet implemented.
 message ContactMethod {
-  // `mailto:` or `tel:` URL.
+  // Either a `mailto:` or `tel:` URL.
   optional string value = 1;
   Visibility visibility = 2;
   // Server-side flag indicating whether the server can verify 
@@ -95,12 +103,12 @@ message ContactMethod {
   bool verified = 4;
 }
 
+// Request to get one or more users by a variety of parameters.
+// Supported parameters depend on `listing_type`.
 message GetUsersRequest {
   optional string username = 1;
   optional string user_id = 2;
-  // optional string group_id = 3;
-  // optional string email = 2;
-  // optional string phone = 3;
+
   optional int32 page = 99;
   UserListingType listing_type = 100;
 }

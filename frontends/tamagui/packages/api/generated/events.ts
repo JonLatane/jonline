@@ -88,18 +88,14 @@ export function eventListingTypeToJSON(object: EventListingType): string {
  * `INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
  */
 export enum AttendanceStatus {
-  /** INTERESTED - The user is interested in attending. This is the default status. */
+  /** INTERESTED - The user is (or was) interested in attending. This is the default status. */
   INTERESTED = 0,
   /** REQUESTED - Another user has invited the user to the event. */
   REQUESTED = 1,
-  /** GOING - The user plans to go to the event. */
+  /** GOING - The user plans to go to the event, or went to the event. */
   GOING = 2,
-  /** NOT_GOING - The user does not plan to go to the event. */
+  /** NOT_GOING - The user does not plan to go to the event, or did not go to the event. */
   NOT_GOING = 3,
-  /** WENT - The user went to the event. */
-  WENT = 10,
-  /** DID_NOT_GO - The user did not go to the event. */
-  DID_NOT_GO = 11,
   UNRECOGNIZED = -1,
 }
 
@@ -117,12 +113,6 @@ export function attendanceStatusFromJSON(object: any): AttendanceStatus {
     case 3:
     case "NOT_GOING":
       return AttendanceStatus.NOT_GOING;
-    case 10:
-    case "WENT":
-      return AttendanceStatus.WENT;
-    case 11:
-    case "DID_NOT_GO":
-      return AttendanceStatus.DID_NOT_GO;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -140,10 +130,6 @@ export function attendanceStatusToJSON(object: AttendanceStatus): string {
       return "GOING";
     case AttendanceStatus.NOT_GOING:
       return "NOT_GOING";
-    case AttendanceStatus.WENT:
-      return "WENT";
-    case AttendanceStatus.DID_NOT_GO:
-      return "DID_NOT_GO";
     case AttendanceStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -202,6 +188,8 @@ export interface Event {
  * Stored as JSON in the database.
  */
 export interface EventInfo {
+  allowsRsvps?: boolean | undefined;
+  allowsAnonymousRsvps?: boolean | undefined;
 }
 
 export interface EventInstance {
@@ -680,11 +668,17 @@ export const Event = {
 };
 
 function createBaseEventInfo(): EventInfo {
-  return {};
+  return { allowsRsvps: undefined, allowsAnonymousRsvps: undefined };
 }
 
 export const EventInfo = {
-  encode(_: EventInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: EventInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.allowsRsvps !== undefined) {
+      writer.uint32(8).bool(message.allowsRsvps);
+    }
+    if (message.allowsAnonymousRsvps !== undefined) {
+      writer.uint32(16).bool(message.allowsAnonymousRsvps);
+    }
     return writer;
   },
 
@@ -695,6 +689,20 @@ export const EventInfo = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.allowsRsvps = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.allowsAnonymousRsvps = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -704,20 +712,33 @@ export const EventInfo = {
     return message;
   },
 
-  fromJSON(_: any): EventInfo {
-    return {};
+  fromJSON(object: any): EventInfo {
+    return {
+      allowsRsvps: isSet(object.allowsRsvps) ? globalThis.Boolean(object.allowsRsvps) : undefined,
+      allowsAnonymousRsvps: isSet(object.allowsAnonymousRsvps)
+        ? globalThis.Boolean(object.allowsAnonymousRsvps)
+        : undefined,
+    };
   },
 
-  toJSON(_: EventInfo): unknown {
+  toJSON(message: EventInfo): unknown {
     const obj: any = {};
+    if (message.allowsRsvps !== undefined) {
+      obj.allowsRsvps = message.allowsRsvps;
+    }
+    if (message.allowsAnonymousRsvps !== undefined) {
+      obj.allowsAnonymousRsvps = message.allowsAnonymousRsvps;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<EventInfo>, I>>(base?: I): EventInfo {
     return EventInfo.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EventInfo>, I>>(_: I): EventInfo {
+  fromPartial<I extends Exact<DeepPartial<EventInfo>, I>>(object: I): EventInfo {
     const message = createBaseEventInfo();
+    message.allowsRsvps = object.allowsRsvps ?? undefined;
+    message.allowsAnonymousRsvps = object.allowsAnonymousRsvps ?? undefined;
     return message;
   },
 };

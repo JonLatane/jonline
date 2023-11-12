@@ -301,6 +301,9 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
             <p><a href="#jonline-EventInstanceInfo">EventInstanceInfo</a></p>
           </li>
           <li>
+            <p><a href="#jonline-GetEventAttendancesRequest">GetEventAttendancesRequest</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-GetEventsRequest">GetEventsRequest</a></p>
           </li>
           <li>
@@ -360,8 +363,8 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h3 id="jonline"><a class="anchor" aria-hidden="true" tabindex="-1" href="#jonline"><span class="octicon octicon-link"></span></a>Jonline</h3>
     <p>
       The internet-facing service implementing the Jonline protocol,
-      generally exposed on port 27707 (unless using
-      <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a>).
+      generally exposed on port 27707 or 443 (and, when using
+      <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a>, ports 80 and/or 443).
       A Jonline server is generally also expected to serve up web apps on ports 80/443, where
       select APIs are exposed with HTTP interfaces instead of gRPC.
       (Specifically, <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a> again
@@ -383,12 +386,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h5 id="http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs)</h5>
     <p>
       When negotiating the gRPC connection to a host, say, <code>jonline.io</code>, before attempting
-      to connect to <code>jonline.io</code> via gRPC on 27707, the client
+      to connect to <code>jonline.io</code> via gRPC on 27707/443, the client
       is expected to first attempt to <code>GET jonline.io/backend_host</code> over HTTP (port 80) or HTTPS (port 443)
       (depending upon whether the gRPC server is expected to have TLS). If the <code>backend_host</code> string resource
       is a valid domain, say, <code>jonline.io.itsj.online</code>, the client is expected to connect
-      to <code>jonline.io.itsj.online</code> on port 27707 instead. To users, the server should still <em>generally</em> appear to
-      be <code>jonline.io</code>.
+      to <code>jonline.io.itsj.online</code> on port 27707/443 instead. To users, the server should still <em>generally</em> appear to
+      be <code>jonline.io</code>. The client can trust <code>jonline.io/backend_host</code> to always point to the correct backend host for
+      <code>jonline.io</code>.
     </p>
     <p>
       This negotiation enables support for external CDNs as frontends. See <a href="https://jonline.io/about">https://jonline.io/about</a> for
@@ -444,10 +448,16 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>Gets the current user. <em>Authenticated.</em></td>
         </tr>
         <tr>
-          <td>GetUsers</td>
-          <td><a href="#jonline-GetUsersRequest">GetUsersRequest</a></td>
-          <td><a href="#jonline-GetUsersResponse">GetUsersResponse</a></td>
-          <td>Gets Users. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Users of <code>GLOBAL_PUBLIC</code> visibility.</td>
+          <td>DeleteMedia</td>
+          <td><a href="#jonline-Media">Media</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Deletes a media item by ID. <em>Authenticated.</em> Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users' media requires <code>ADMIN</code> permissions.</td>
+        </tr>
+        <tr>
+          <td>GetMedia</td>
+          <td><a href="#jonline-GetMediaRequest">GetMediaRequest</a></td>
+          <td><a href="#jonline-GetMediaResponse">GetMediaResponse</a></td>
+          <td>Gets Media (Images, Videos, etc) uploaded/owned by the current user. <em>Authenticated.</em> To upload/download actual Media blob/binary data, use the <a href="#media">HTTP Media APIs</a>.</td>
         </tr>
         <tr>
           <td>UpdateUser</td>
@@ -460,6 +470,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-User">User</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Deletes a user by ID. <em>Authenticated.</em> Deleting other users requires <code>ADMIN</code> permissions.</td>
+        </tr>
+        <tr>
+          <td>GetUsers</td>
+          <td><a href="#jonline-GetUsersRequest">GetUsersRequest</a></td>
+          <td><a href="#jonline-GetUsersResponse">GetUsersResponse</a></td>
+          <td>Gets Users. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Users of <code>GLOBAL_PUBLIC</code> visibility.</td>
         </tr>
         <tr>
           <td>CreateFollow</td>
@@ -480,24 +496,6 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>Unfollow (or unrequest) a user. <em>Authenticated.</em></td>
         </tr>
         <tr>
-          <td>GetMedia</td>
-          <td><a href="#jonline-GetMediaRequest">GetMediaRequest</a></td>
-          <td><a href="#jonline-GetMediaResponse">GetMediaResponse</a></td>
-          <td>Gets Media (Images, Videos, etc) uploaded/owned by the current user. <em>Authenticated.</em></td>
-        </tr>
-        <tr>
-          <td>DeleteMedia</td>
-          <td><a href="#jonline-Media">Media</a></td>
-          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
-          <td>Deletes a media item by ID. <em>Authenticated.</em> Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users' media requires <code>ADMIN</code> permissions.</td>
-        </tr>
-        <tr>
-          <td>GetGroups</td>
-          <td><a href="#jonline-GetGroupsRequest">GetGroupsRequest</a></td>
-          <td><a href="#jonline-GetGroupsResponse">GetGroupsResponse</a></td>
-          <td>Gets Groups. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Groups of <code>GLOBAL_PUBLIC</code> visibility.</td>
-        </tr>
-        <tr>
           <td>CreateGroup</td>
           <td><a href="#jonline-Group">Group</a></td>
           <td><a href="#jonline-Group">Group</a></td>
@@ -514,6 +512,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-Group">Group</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Delete a Group. <em>Authenticated.</em> Requires <code>ADMIN</code> permissions within the group, or <code>ADMIN</code> permissions for the user.</td>
+        </tr>
+        <tr>
+          <td>GetGroups</td>
+          <td><a href="#jonline-GetGroupsRequest">GetGroupsRequest</a></td>
+          <td><a href="#jonline-GetGroupsResponse">GetGroupsResponse</a></td>
+          <td>Gets Groups. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Groups of <code>GLOBAL_PUBLIC</code> visibility.</td>
         </tr>
         <tr>
           <td>CreateMembership</td>
@@ -540,12 +544,6 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>Get Members (User+Membership) of a Group. <em>Authenticated.</em></td>
         </tr>
         <tr>
-          <td>GetPosts</td>
-          <td><a href="#jonline-GetPostsRequest">GetPostsRequest</a></td>
-          <td><a href="#jonline-GetPostsResponse">GetPostsResponse</a></td>
-          <td>Gets Posts. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Posts of <code>GLOBAL_PUBLIC</code> visibility.</td>
-        </tr>
-        <tr>
           <td>CreatePost</td>
           <td><a href="#jonline-Post">Post</a></td>
           <td><a href="#jonline-Post">Post</a></td>
@@ -562,6 +560,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-Post">Post</a></td>
           <td><a href="#jonline-Post">Post</a></td>
           <td>(TODO) (Soft) deletes a Post. Returns the deleted version of the Post. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>GetPosts</td>
+          <td><a href="#jonline-GetPostsRequest">GetPostsRequest</a></td>
+          <td><a href="#jonline-GetPostsResponse">GetPostsResponse</a></td>
+          <td>Gets Posts. <em>Publicly accessible <strong>or</strong> Authenticated.</em> Unauthenticated calls only return Posts of <code>GLOBAL_PUBLIC</code> visibility.</td>
         </tr>
         <tr>
           <td>CreateGroupPost</td>
@@ -586,12 +590,6 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-GetGroupPostsRequest">GetGroupPostsRequest</a></td>
           <td><a href="#jonline-GetGroupPostsResponse">GetGroupPostsResponse</a></td>
           <td>Get GroupPosts for a Post (and optional group). <em>Publicly accessible <strong>or</strong> Authenticated.</em></td>
-        </tr>
-        <tr>
-          <td>StreamReplies</td>
-          <td><a href="#jonline-Post">Post</a></td>
-          <td><a href="#jonline-Post">Post</a> stream</td>
-          <td>(TODO) Reply streaming interface</td>
         </tr>
         <tr>
           <td>CreateEvent</td>
@@ -627,13 +625,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>DeleteEventAttendance</td>
           <td><a href="#jonline-EventAttendance">EventAttendance</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
-          <td></td>
+          <td>Delete an EventAttendance. <em>Authenticated or anonymous.</em></td>
         </tr>
         <tr>
           <td>GetEventAttendances</td>
-          <td><a href="#jonline-EventInstance">EventInstance</a></td>
+          <td><a href="#jonline-GetEventAttendancesRequest">GetEventAttendancesRequest</a></td>
           <td><a href="#jonline-EventAttendances">EventAttendances</a></td>
-          <td></td>
+          <td>Gets EventAttendances for an EventInstance. <em>Authenticated.</em></td>
         </tr>
         <tr>
           <td>ConfigureServer</td>
@@ -646,6 +644,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. <em>Authenticated.</em> Requires <code>ADMIN</code> permissions. Note: Server Configuration is not deleted.</td>
+        </tr>
+        <tr>
+          <td>StreamReplies</td>
+          <td><a href="#jonline-Post">Post</a></td>
+          <td><a href="#jonline-Post">Post</a> stream</td>
+          <td>(TODO) Reply streaming interface. Currently just streams fake example data.</td>
         </tr>
       </tbody>
     </table>
@@ -1079,6 +1083,11 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>MODERATE_EVENTS</td>
           <td>34</td>
           <td>Allow the user to moderate events.</td>
+        </tr>
+        <tr>
+          <td>RSVP_TO_EVENTS</td>
+          <td>35</td>
+          <td></td>
         </tr>
         <tr>
           <td>VIEW_MEDIA</td>
@@ -2543,12 +2552,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>GROUP_POSTS</td>
           <td>10</td>
-          <td>group_id parameter is required for these.</td>
+          <td>Returns posts from a specific group. group_id parameter is required for these.</td>
         </tr>
         <tr>
           <td>GROUP_POSTS_PENDING_MODERATION</td>
           <td>11</td>
-          <td></td>
+          <td>Returns pending_moderation posts from a specific group. Requires group_id parameter and user must have group (or server) admin permissions.</td>
         </tr>
       </tbody>
     </table>
@@ -2753,6 +2762,30 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       To be used for ticketing, RSVPs, etc.
       Stored as JSON in the database.
     </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>allows_rsvps</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>allows_anonymous_rsvps</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-EventInstance"></a></p>
     <h3 id="eventinstance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstance"><span class="octicon octicon-link"></span></a>EventInstance</h3>
     <table>
@@ -2815,6 +2848,32 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       To be used for ticketing, RSVPs, etc.
       Stored as JSON in the database.
     </p>
+    <p><a name="jonline-GetEventAttendancesRequest"></a></p>
+    <h3 id="geteventattendancesrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventattendancesrequest"><span class="octicon octicon-link"></span></a>GetEventAttendancesRequest</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>event_instance_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>anonymous_attendee_auth_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-GetEventsRequest"></a></p>
     <h3 id="geteventsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsrequest"><span class="octicon octicon-link"></span></a>GetEventsRequest</h3>
     <p>Valid GetEventsRequest formats:</p>
@@ -2963,7 +3022,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>INTERESTED</td>
           <td>0</td>
-          <td>The user is interested in attending. This is the default status.</td>
+          <td>The user is (or was) interested in attending. This is the default status.</td>
         </tr>
         <tr>
           <td>REQUESTED</td>
@@ -2973,22 +3032,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>GOING</td>
           <td>2</td>
-          <td>The user plans to go to the event.</td>
+          <td>The user plans to go to the event, or went to the event.</td>
         </tr>
         <tr>
           <td>NOT_GOING</td>
           <td>3</td>
-          <td>The user does not plan to go to the event.</td>
-        </tr>
-        <tr>
-          <td>WENT</td>
-          <td>10</td>
-          <td>The user went to the event.</td>
-        </tr>
-        <tr>
-          <td>DID_NOT_GO</td>
-          <td>11</td>
-          <td>The user did not go to the event.</td>
+          <td>The user does not plan to go to the event, or did not go to the event.</td>
         </tr>
       </tbody>
     </table>

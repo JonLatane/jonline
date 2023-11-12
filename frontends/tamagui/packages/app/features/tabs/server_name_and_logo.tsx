@@ -10,6 +10,7 @@ export type ServerNameAndLogoProps = {
   enlargeSmallText?: boolean;
   fallbackToHomeIcon?: boolean;
   disableWidthLimits?: boolean;
+  textColor?: string;
 };
 
 export function splitOnFirstEmoji(
@@ -44,6 +45,7 @@ export function ServerNameAndLogo({
   enlargeSmallText = false,
   fallbackToHomeIcon = false,
   disableWidthLimits = false,
+  textColor,
 }: ServerNameAndLogoProps) {
   const mediaQuery = useMedia()
 
@@ -107,6 +109,7 @@ export function ServerNameAndLogo({
             </XStack>
             : hasEmoji
               ? <Heading size={serverEmojiFontSize}
+                color={textColor}
                 my='auto' ml='$2' mr='$2' whiteSpace="nowrap">{serverNameEmoji}</Heading>
               : fallbackToHomeIcon
                 ? <XStack my='auto' mr='$1'><Home size={enlargeSmallText ? '$5' : '$2'} /> </XStack>
@@ -121,6 +124,7 @@ export function ServerNameAndLogo({
                 : enlargeSmallText ? '$8' : '$3'}
               m={0}
               p={0}
+              color={textColor}
               lineHeight={largeServername || enlargeSmallText ? '$1' : 12}
             // whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis"
             >
@@ -128,6 +132,7 @@ export function ServerNameAndLogo({
             </Heading>
             {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername || true)
               ? <Paragraph
+                color={textColor}
                 size={enlargeSmallText
                   ? serverNameAfterEmoji.length > 10 ? '$3' : '$7'
                   : '$1'
