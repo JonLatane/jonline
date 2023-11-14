@@ -124,9 +124,13 @@ export interface Author {
   avatar?: MediaReference | undefined;
 }
 
+/** Model for a user's follow of another user. */
 export interface Follow {
+  /** The follower in the relationship. */
   userId: string;
+  /** The user being followed. */
   targetUserId: string;
+  /** Tracks whether the target user needs to approve the follow. */
   targetUserModeration: Moderation;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
@@ -138,7 +142,9 @@ export interface Follow {
  * to reconcile memberships with groups.
  */
 export interface Membership {
+  /** The member (or requested/invited member). */
   userId: string;
+  /** The group the membership pertains to. */
   groupId: string;
   /**
    * Valid Membership Permissions are:
@@ -155,8 +161,12 @@ export interface Membership {
   updatedAt?: string | undefined;
 }
 
+/**
+ * A contact method for a user. Models designed to support verification,
+ * but verification RPCs are not yet implemented.
+ */
 export interface ContactMethod {
-  /** `mailto:` or `tel:` URL. */
+  /** Either a `mailto:` or `tel:` URL. */
   value?: string | undefined;
   visibility: Visibility;
   /**
@@ -171,16 +181,13 @@ export interface ContactMethod {
   verified: boolean;
 }
 
+/**
+ * Request to get one or more users by a variety of parameters.
+ * Supported parameters depend on `listing_type`.
+ */
 export interface GetUsersRequest {
   username?: string | undefined;
-  userId?:
-    | string
-    | undefined;
-  /**
-   * optional string group_id = 3;
-   * optional string email = 2;
-   * optional string phone = 3;
-   */
+  userId?: string | undefined;
   page?: number | undefined;
   listingType: UserListingType;
 }

@@ -127,19 +127,20 @@ message EventAttendances {
 // they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
 // * During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
 message EventAttendance {
-  string event_instance_id = 1;
+  string id = 1;
+  string event_instance_id = 2;
   oneof attendee {
-    string user_id = 2;
-    AnonymousAttendee anonymous_attendee = 3;
+    Author user_attendee = 3;
+    AnonymousAttendee anonymous_attendee = 4;
   }
-  uint32 number_of_guests = 4;
-  AttendanceStatus status = 5;
-  optional string inviting_user_id = 6;
-  string private_note = 7;
-  string public_note = 8;
-  Moderation moderation = 9;
-  google.protobuf.Timestamp created_at = 10;
-  optional google.protobuf.Timestamp updated_at = 11;
+  uint32 number_of_guests = 5;
+  AttendanceStatus status = 6;
+  optional string inviting_user_id = 7;
+  string private_note = 8;
+  string public_note = 9;
+  Moderation moderation = 10;
+  google.protobuf.Timestamp created_at = 11;
+  optional google.protobuf.Timestamp updated_at = 12;
 }
 
 // The visibility on `AnonymousAttendee` `ContactMethod`s support the `LIMITED` visibility, which will

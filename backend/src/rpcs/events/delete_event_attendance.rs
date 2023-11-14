@@ -36,21 +36,29 @@ pub fn delete_event_attendance(
 
     let is_event_owner = user.is_some() && event_post.user_id == user.map(|u| u.id);
     let is_own_attendance = match &request.attendee {
-        Some(event_attendance::Attendee::UserId(user_id)) => {
-            user.is_some() && user.map(|u| u.id) == user_id.to_db_id().ok()
+        Some(event_attendance::Attendee::UserAttendee(author)) => {
+            user.is_some() && user.map(|u| u.id) == author.user_id.to_db_id().ok()
         }
         _ => false,
     };
 
     let attendee_user_id = match &request.attendee {
-        Some(event_attendance::Attendee::UserId(user_id)) => {
-            Some(user_id.to_db_id_or_err("user_id")?)
+        Some(event_attendance::Attendee::UserAttendee(author)) => {
+            Some(author.user_id.to_db_id_or_err("author.user_id")?)
+        }
+        _ => None,
+    };
+    let is_anonymous = attendee_user_id.is_none();
+
+    let attendee_user_id = match &request.attendee {
+        Some(event_attendance::Attendee::UserAttendee(attendee)) => {
+            Some(attendee.user_id.to_db_id_or_err("user_id")?)
         }
         _ => None,
     };
     // let is_anonymous = attendee_user_id.is_none();
 
-    if !is_event_owner && !is_own_attendance {
+    if !is_event_owner && !is_own_attendance && !is_anonymous {
         return Err(Status::new(
             Code::PermissionDenied,
             "not_your_event_or_attendance",
@@ -74,7 +82,7 @@ pub fn delete_event_attendance(
 
     match existing_attendance {
         Some(attendance) => diesel::delete(event_attendances::table)
-            .filter(event_attendances::id.eq(attendance.id))
+            .filter(event_attendances::id.eq(attendance.0.id))
             .execute(conn)
             .map(|_| ())
             .map_err(|_e| Status::new(Code::Internal, "failed_to_delete_event_attendance")),

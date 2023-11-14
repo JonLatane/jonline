@@ -4,7 +4,7 @@ use super::{
     load_media_lookup, MediaLookup, ToI32Moderation, ToProtoId, ToProtoMarshalablePost, ToProtoTime,
 };
 use crate::db_connection::PgPooledConnection;
-use crate::models;
+use crate::{models, marshaling::ToProtoAuthor};
 use crate::protos::event_attendance::Attendee;
 use crate::protos::*;
 
@@ -97,13 +97,13 @@ pub trait ToProtoEventAttendance {
     fn to_proto(&self, include_auth_tokens: bool, include_private_note: bool) -> EventAttendance;
 }
 
-impl ToProtoEventAttendance for models::EventAttendance {
+impl ToProtoEventAttendance for (models::EventAttendance, Option<models::Author>) {
     fn to_proto(&self, include_auth_tokens: bool, include_private_note: bool) -> EventAttendance {
         EventAttendance {
-            // id: self.id.to_proto_id(),
-            event_instance_id: self.event_instance_id.to_proto_id(),
-            attendee: match (self.user_id, &self.anonymous_attendee) {
-                (Some(user_id), _) => Some(Attendee::UserId(user_id.to_proto_id())),
+            id: self.0.id.to_proto_id(),
+            event_instance_id: self.0.event_instance_id.to_proto_id(),
+            attendee: match (&self.1, &self.0.anonymous_attendee) {
+                (Some(author), _) => Some(Attendee::UserAttendee(author.to_proto(None))),
                 (_, Some(anonymous_attendee)) => {
                     Some(Attendee::AnonymousAttendee(AnonymousAttendee {
                         name: anonymous_attendee
@@ -130,18 +130,18 @@ impl ToProtoEventAttendance for models::EventAttendance {
                 }
                 _ => None,
             },
-            number_of_guests: u32::try_from(self.number_of_guests).unwrap(),
-            status: self.status.to_i32_attendance_status(),
-            inviting_user_id: self.inviting_user_id.map(|id| id.to_proto_id()),
-            public_note: self.public_note.clone(),
+            number_of_guests: u32::try_from(self.0.number_of_guests).unwrap(),
+            status: self.0.status.to_i32_attendance_status(),
+            inviting_user_id: self.0.inviting_user_id.map(|id| id.to_proto_id()),
+            public_note: self.0.public_note.clone(),
             private_note: if include_private_note {
-                self.private_note.clone()
+                self.0.private_note.clone()
             } else {
                 "".to_string()
             },
-            moderation: self.moderation.to_i32_moderation(),
-            created_at: Some(self.created_at.to_proto()),
-            updated_at: self.updated_at.map(|t| t.to_proto()),
+            moderation: self.0.moderation.to_i32_moderation(),
+            created_at: Some(self.0.created_at.to_proto()),
+            updated_at: self.0.updated_at.map(|t| t.to_proto()),
         }
     }
 }

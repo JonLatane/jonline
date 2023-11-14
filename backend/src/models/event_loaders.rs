@@ -1,4 +1,4 @@
-use super::{Event, EventAttendance, EventInstance, Post, User};
+use super::{Author, Event, EventAttendance, EventInstance, Post, User, AUTHOR_COLUMNS};
 use diesel::{
     dsl::sql,
     sql_types::{Bool, Text},
@@ -8,6 +8,7 @@ use tonic::{Code, Status};
 
 use crate::{
     db_connection::PgPooledConnection,
+    // protos::Author,
     schema::{event_attendances, event_instances, events, follows, posts, users},
 };
 
@@ -73,21 +74,23 @@ pub fn get_event_attendance(
     attendee_user_id: Option<i64>,
     attendee_auth_token: Option<String>,
     conn: &mut PgPooledConnection,
-) -> Option<EventAttendance> {
+) -> Option<(EventAttendance, Option<Author>)> {
     match (attendee_user_id, attendee_auth_token) {
         (Some(user_id), _) => event_attendances::table
-            .select(event_attendances::all_columns)
+            .left_join(users::table.on(event_attendances::user_id.eq(users::id.nullable())))
+            .select((event_attendances::all_columns, AUTHOR_COLUMNS.nullable()))
             .filter(event_attendances::event_instance_id.eq(event_instance_id))
             .filter(event_attendances::user_id.eq(Some(user_id)))
-            .get_result::<EventAttendance>(conn)
+            .get_result::<(EventAttendance, Option<Author>)>(conn)
             .ok(),
         (_, Some(auth_token)) => event_attendances::table
-            .select(event_attendances::all_columns)
+            .left_join(users::table.on(event_attendances::user_id.eq(users::id.nullable())))
+            .select((event_attendances::all_columns, AUTHOR_COLUMNS.nullable()))
             .filter(event_attendances::event_instance_id.eq(event_instance_id))
             .filter(event_attendances::anonymous_attendee.is_not_null().and(
                 sql::<Bool>("anonymous_attendee->>'auth_token' = ").bind::<Text, _>(auth_token),
             ))
-            .get_result::<EventAttendance>(conn)
+            .get_result::<(EventAttendance, Option<Author>)>(conn)
             .ok(),
         (_, _) => None,
     }

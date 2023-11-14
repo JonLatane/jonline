@@ -3,7 +3,7 @@ import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { Location } from "./location";
 import { Post } from "./posts";
-import { ContactMethod } from "./users";
+import { Author, ContactMethod } from "./users";
 import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_moderation";
 
 export const protobufPackage = "jonline";
@@ -209,6 +209,11 @@ export interface EventInstance {
 export interface EventInstanceInfo {
 }
 
+export interface GetEventAttendancesRequest {
+  eventInstanceId: string;
+  anonymousAttendeeAuthToken?: string | undefined;
+}
+
 export interface EventAttendances {
   attendances: EventAttendance[];
 }
@@ -227,8 +232,9 @@ export interface EventAttendances {
  * * During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
  */
 export interface EventAttendance {
+  id: string;
   eventInstanceId: string;
-  userId?: string | undefined;
+  userAttendee?: Author | undefined;
   anonymousAttendee?: AnonymousAttendee | undefined;
   numberOfGuests: number;
   status: AttendanceStatus;
@@ -947,6 +953,82 @@ export const EventInstanceInfo = {
   },
 };
 
+function createBaseGetEventAttendancesRequest(): GetEventAttendancesRequest {
+  return { eventInstanceId: "", anonymousAttendeeAuthToken: undefined };
+}
+
+export const GetEventAttendancesRequest = {
+  encode(message: GetEventAttendancesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.eventInstanceId !== "") {
+      writer.uint32(10).string(message.eventInstanceId);
+    }
+    if (message.anonymousAttendeeAuthToken !== undefined) {
+      writer.uint32(18).string(message.anonymousAttendeeAuthToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetEventAttendancesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetEventAttendancesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.eventInstanceId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.anonymousAttendeeAuthToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetEventAttendancesRequest {
+    return {
+      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
+      anonymousAttendeeAuthToken: isSet(object.anonymousAttendeeAuthToken)
+        ? globalThis.String(object.anonymousAttendeeAuthToken)
+        : undefined,
+    };
+  },
+
+  toJSON(message: GetEventAttendancesRequest): unknown {
+    const obj: any = {};
+    if (message.eventInstanceId !== "") {
+      obj.eventInstanceId = message.eventInstanceId;
+    }
+    if (message.anonymousAttendeeAuthToken !== undefined) {
+      obj.anonymousAttendeeAuthToken = message.anonymousAttendeeAuthToken;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetEventAttendancesRequest>, I>>(base?: I): GetEventAttendancesRequest {
+    return GetEventAttendancesRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetEventAttendancesRequest>, I>>(object: I): GetEventAttendancesRequest {
+    const message = createBaseGetEventAttendancesRequest();
+    message.eventInstanceId = object.eventInstanceId ?? "";
+    message.anonymousAttendeeAuthToken = object.anonymousAttendeeAuthToken ?? undefined;
+    return message;
+  },
+};
+
 function createBaseEventAttendances(): EventAttendances {
   return { attendances: [] };
 }
@@ -1010,8 +1092,9 @@ export const EventAttendances = {
 
 function createBaseEventAttendance(): EventAttendance {
   return {
+    id: "",
     eventInstanceId: "",
-    userId: undefined,
+    userAttendee: undefined,
     anonymousAttendee: undefined,
     numberOfGuests: 0,
     status: 0,
@@ -1026,38 +1109,41 @@ function createBaseEventAttendance(): EventAttendance {
 
 export const EventAttendance = {
   encode(message: EventAttendance, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.eventInstanceId !== "") {
-      writer.uint32(10).string(message.eventInstanceId);
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
     }
-    if (message.userId !== undefined) {
-      writer.uint32(18).string(message.userId);
+    if (message.eventInstanceId !== "") {
+      writer.uint32(18).string(message.eventInstanceId);
+    }
+    if (message.userAttendee !== undefined) {
+      Author.encode(message.userAttendee, writer.uint32(26).fork()).ldelim();
     }
     if (message.anonymousAttendee !== undefined) {
-      AnonymousAttendee.encode(message.anonymousAttendee, writer.uint32(26).fork()).ldelim();
+      AnonymousAttendee.encode(message.anonymousAttendee, writer.uint32(34).fork()).ldelim();
     }
     if (message.numberOfGuests !== 0) {
-      writer.uint32(32).uint32(message.numberOfGuests);
+      writer.uint32(40).uint32(message.numberOfGuests);
     }
     if (message.status !== 0) {
-      writer.uint32(40).int32(message.status);
+      writer.uint32(48).int32(message.status);
     }
     if (message.invitingUserId !== undefined) {
-      writer.uint32(50).string(message.invitingUserId);
+      writer.uint32(58).string(message.invitingUserId);
     }
     if (message.privateNote !== "") {
-      writer.uint32(58).string(message.privateNote);
+      writer.uint32(66).string(message.privateNote);
     }
     if (message.publicNote !== "") {
-      writer.uint32(66).string(message.publicNote);
+      writer.uint32(74).string(message.publicNote);
     }
     if (message.moderation !== 0) {
-      writer.uint32(72).int32(message.moderation);
+      writer.uint32(80).int32(message.moderation);
     }
     if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(82).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(90).fork()).ldelim();
     }
     if (message.updatedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(90).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -1074,73 +1160,80 @@ export const EventAttendance = {
             break;
           }
 
-          message.eventInstanceId = reader.string();
+          message.id = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.userId = reader.string();
+          message.eventInstanceId = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.anonymousAttendee = AnonymousAttendee.decode(reader, reader.uint32());
+          message.userAttendee = Author.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.numberOfGuests = reader.uint32();
+          message.anonymousAttendee = AnonymousAttendee.decode(reader, reader.uint32());
           continue;
         case 5:
           if (tag !== 40) {
             break;
           }
 
-          message.status = reader.int32() as any;
+          message.numberOfGuests = reader.uint32();
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag !== 48) {
             break;
           }
 
-          message.invitingUserId = reader.string();
+          message.status = reader.int32() as any;
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.privateNote = reader.string();
+          message.invitingUserId = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
             break;
           }
 
-          message.publicNote = reader.string();
+          message.privateNote = reader.string();
           continue;
         case 9:
-          if (tag !== 72) {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.publicNote = reader.string();
+          continue;
+        case 10:
+          if (tag !== 80) {
             break;
           }
 
           message.moderation = reader.int32() as any;
           continue;
-        case 10:
-          if (tag !== 82) {
+        case 11:
+          if (tag !== 90) {
             break;
           }
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
-        case 11:
-          if (tag !== 90) {
+        case 12:
+          if (tag !== 98) {
             break;
           }
 
@@ -1157,8 +1250,9 @@ export const EventAttendance = {
 
   fromJSON(object: any): EventAttendance {
     return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
-      userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
+      userAttendee: isSet(object.userAttendee) ? Author.fromJSON(object.userAttendee) : undefined,
       anonymousAttendee: isSet(object.anonymousAttendee)
         ? AnonymousAttendee.fromJSON(object.anonymousAttendee)
         : undefined,
@@ -1175,11 +1269,14 @@ export const EventAttendance = {
 
   toJSON(message: EventAttendance): unknown {
     const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
     if (message.eventInstanceId !== "") {
       obj.eventInstanceId = message.eventInstanceId;
     }
-    if (message.userId !== undefined) {
-      obj.userId = message.userId;
+    if (message.userAttendee !== undefined) {
+      obj.userAttendee = Author.toJSON(message.userAttendee);
     }
     if (message.anonymousAttendee !== undefined) {
       obj.anonymousAttendee = AnonymousAttendee.toJSON(message.anonymousAttendee);
@@ -1216,8 +1313,11 @@ export const EventAttendance = {
   },
   fromPartial<I extends Exact<DeepPartial<EventAttendance>, I>>(object: I): EventAttendance {
     const message = createBaseEventAttendance();
+    message.id = object.id ?? "";
     message.eventInstanceId = object.eventInstanceId ?? "";
-    message.userId = object.userId ?? undefined;
+    message.userAttendee = (object.userAttendee !== undefined && object.userAttendee !== null)
+      ? Author.fromPartial(object.userAttendee)
+      : undefined;
     message.anonymousAttendee = (object.anonymousAttendee !== undefined && object.anonymousAttendee !== null)
       ? AnonymousAttendee.fromPartial(object.anonymousAttendee)
       : undefined;

@@ -41,7 +41,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
     const startsAtDate = moment.utc(startsAt).local().format('ddd, MMM Do YYYY');
     const endsAtDate = moment.utc(endsAt).local().format('ddd, MMM Do YYYY');
     if (startsAtDate == endsAtDate) {
-      return <YStack
+      return <YStack my='auto'
         backgroundColor={themeBgColor} opacity={0.8} pl='$2' borderRadius='$3'>
         <XStack>
           <Paragraph size="$3" fontWeight='800' color={primaryColor} mr='$2'>
@@ -74,23 +74,24 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
 
   const startsAtDate = moment.utc(startsAt).local().format('ddd, MMM Do YYYY');
   const endsAtDate = moment.utc(endsAt).local().format('ddd, MMM Do YYYY');
+  const color = highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryAnchorColor;
   const mainView = (startsAtDate == endsAtDate)
     ? <YStack
       backgroundColor={linkToInstance ? undefined : themeBgColor}
       opacity={linkToInstance ? undefined : 0.8} pl='$2' borderRadius='$3'>
       <XStack>
-        <Paragraph size="$3" color={highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryColor} fontWeight='800' mr='$2'>
+        <Paragraph size="$3" color={color} fontWeight='800' mr='$2'>
           {startsAtDate}
         </Paragraph>
       </XStack>
-      <XStack space>
-        <Heading size="$3" color={highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryColor}>
+      <XStack space='$2'>
+        <Heading size="$3" color={color}>
           {moment.utc(startsAt).local().format('h:mm a')}
         </Heading>
-        <Heading size="$3" color={highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryColor}>
+        <Heading size="$3" color={color}>
           -
         </Heading>
-        <Heading size="$3" color={highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryColor}>
+        <Heading size="$3" color={color}>
           {moment.utc(endsAt).local().format('h:mm a')}
         </Heading>
       </XStack>
@@ -105,7 +106,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
     </XStack>;
 
   if (linkToInstance) {
-    return <Button {...instanceLink} mx='$2'>
+    return <Button {...instanceLink} mx='$2' px='$2'>
       {mainView}
     </Button>;
   } else {

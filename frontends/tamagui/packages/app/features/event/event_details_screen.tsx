@@ -78,7 +78,7 @@ export function EventDetailsScreen() {
   });
 
   const showReplyArea = subjectEvent != undefined && editingPosts.length == 0
-   && (newRsvpMode === undefined);
+    && (newRsvpMode === undefined);
 
   function scrollToBottom() {
     if (!isClient) return;
@@ -264,7 +264,8 @@ export function EventDetailsScreen() {
                 : undefined}
             </XStack>
 
-            <EventRsvpManager event={subjectEvent!} instance={subjectInstance!} {...{ newRsvpMode, setNewRsvpMode }} />
+            <EventRsvpManager key={`rsvp-manager-${subjectInstance?.id}`}
+              event={subjectEvent!} instance={subjectInstance!} {...{ newRsvpMode, setNewRsvpMode }} />
 
             <XStack>
               <XStack f={1} />

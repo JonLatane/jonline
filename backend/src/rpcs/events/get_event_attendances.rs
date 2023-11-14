@@ -1,11 +1,14 @@
 use diesel::*;
+use serde_json::json;
 // use serde_json::json;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
+use crate::models::AUTHOR_COLUMNS;
 use crate::protos::*;
+use crate::schema::users;
 use crate::schema::{event_attendances, event_instances, events, posts};
 
 use crate::rpcs::validations::*;
@@ -59,36 +62,46 @@ pub fn get_event_attendances(
     }
 
     let mut event_attendances_query = event_attendances::table
+        .left_join(users::table.on(event_attendances::user_id.eq(users::id.nullable())))
+        .select((event_attendances::all_columns, AUTHOR_COLUMNS.nullable()))
         .filter(event_attendances::event_instance_id.eq(event_instance_id))
         .into_boxed();
 
     if !is_event_owner {
-        event_attendances_query = event_attendances_query
-            .filter(event_attendances::moderation.eq_any(PASSING_MODERATIONS));
+        event_attendances_query = event_attendances_query.filter(
+            event_attendances::moderation
+                .eq_any(PASSING_MODERATIONS)
+                .or(event_attendances::user_id
+                    .eq(user.map(|u| u.id).unwrap_or(0))
+                    .or(event_attendances::anonymous_attendee
+                        .contains(json!({"auth_token": request.anonymous_attendee_auth_token})))),
+        );
     }
 
-    let attendances: Vec<models::EventAttendance> = event_attendances_query
-        .load::<models::EventAttendance>(conn)
-        .map_err(|e| {
-            log::error!(
-                "Failed to load event attendances for event_instance_id={}: {:?}",
-                event_instance_id,
-                e
-            );
-            Status::new(Code::Internal, "failed_to_load_event_attendances")
-        })?;
+    let attendances: Vec<(models::EventAttendance, Option<models::Author>)> =
+        event_attendances_query
+            .load::<(models::EventAttendance, Option<models::Author>)>(conn)
+            .map_err(|e| {
+                log::error!(
+                    "Failed to load event attendances for event_instance_id={}: {:?}",
+                    event_instance_id,
+                    e
+                );
+                Status::new(Code::Internal, "failed_to_load_event_attendances")
+            })?;
 
     Ok(EventAttendances {
         attendances: attendances
             .into_iter()
-            .map(|a| {
-                let include_private_note = is_event_owner
-                    || (a.user_id.is_some()
-                        && user.is_some()
-                        && a.user_id.unwrap() == user.unwrap().id)
-                    || (request.anonymous_attendee_auth_token.is_some()
+            .map(|(a, attendee)| {
+                let is_current_anonymous_attendeee =
+                    request.anonymous_attendee_auth_token.is_some()
                         && a.anonymous_attendee.is_some()
-                        && match a.to_proto(true, false).attendee.unwrap() {
+                        && match (a.clone(), attendee.clone())
+                            .to_proto(true, false)
+                            .attendee
+                            .unwrap()
+                        {
                             event_attendance::Attendee::AnonymousAttendee(anonymous_attendee) => {
                                 anonymous_attendee.auth_token.unwrap()
                                     == request
@@ -98,8 +111,14 @@ pub fn get_event_attendances(
                                         .clone()
                             }
                             _ => false,
-                        });
-                a.to_proto(include_private_note, include_private_note)
+                        };
+
+                let is_current_user_attendee =
+                    a.user_id.is_some() && user.is_some() && a.user_id.unwrap() == user.unwrap().id;
+
+                let include_private_note =
+                    is_event_owner || is_current_user_attendee || is_current_anonymous_attendeee;
+                (a, attendee).to_proto(include_private_note, include_private_note)
             })
             .collect(),
     })

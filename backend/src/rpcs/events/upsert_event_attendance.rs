@@ -7,6 +7,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::generate_token;
 use crate::marshaling::*;
 use crate::models;
+use crate::models::get_author;
 use crate::models::{get_event_attendance, NewEventAttendance};
 use crate::protos::*;
 use crate::schema::{event_attendances, event_instances, events, posts};
@@ -16,6 +17,10 @@ pub fn upsert_event_attendance(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<EventAttendance, Status> {
+    if &request.number_of_guests < &1 {
+        return Err(Status::new(Code::InvalidArgument, "invalid_number_of_guests"));
+    }
+
     let event_instance_id = request
         .event_instance_id
         .to_db_id_or_err("event_instance_id")?;
@@ -39,19 +44,29 @@ pub fn upsert_event_attendance(
 
     let is_event_owner = user.is_some() && event_post.user_id == user.map(|u| u.id);
     let is_own_attendance = match &request.attendee {
-        Some(event_attendance::Attendee::UserId(user_id)) => {
-            user.is_some() && user.map(|u| u.id) == user_id.to_db_id().ok()
+        Some(event_attendance::Attendee::UserAttendee(attendee)) => {
+            user.is_some()
+                && user.unwrap().id == attendee.user_id.to_db_id_or_err("user_attendee.user_id")?
         }
         _ => false,
     };
 
     let attendee_user_id = match &request.attendee {
-        Some(event_attendance::Attendee::UserId(user_id)) => {
-            Some(user_id.to_db_id_or_err("user_id")?)
+        Some(event_attendance::Attendee::UserAttendee(author)) => {
+            Some(author.user_id.to_db_id_or_err("author.user_id")?)
         }
         _ => None,
     };
     let is_anonymous = attendee_user_id.is_none();
+
+    log::info!(
+        "is_event_owner: {}, is_own_attendance: {}, is_anonymous: {}, user_id: {:?}, attendee: {:?}",
+        is_event_owner,
+        is_own_attendance,
+        is_anonymous,
+        user.map(|u| u.id),
+        request.attendee
+    );
 
     let attendee_auth_token = request
         .attendee
@@ -74,10 +89,10 @@ pub fn upsert_event_attendance(
                 Some(AnonymousAttendee {
                     name: attendee.name,
                     contact_methods: attendee.contact_methods,
-                    auth_token: Some(generate_token!(128)),
+                    auth_token: Some(generate_token!(42)),
                 })
             }
-            Some(event_attendance::Attendee::UserId(_)) => None,
+            Some(event_attendance::Attendee::UserAttendee(_)) => None,
             None => return Err(Status::new(Code::InvalidArgument, "attendee_required")),
         },
     };
@@ -85,32 +100,43 @@ pub fn upsert_event_attendance(
     //TODO Validate moderation changes, etc.
 
     match existing_attendance {
-        Some(mut attendance) => {
-            if !is_own_attendance && !is_event_owner {
+        Some((mut attendance, author)) => {
+            if !is_own_attendance && !is_event_owner && !is_anonymous {
                 return Err(Status::new(
                     Code::PermissionDenied,
                     "cannot_update_attendance",
                 ));
             }
-            if is_anonymous
-                && anonymous_attendee.is_some()
-                && (&anonymous_attendee.unwrap().name
-                    != &attendance
-                        .anonymous_attendee
-                        .as_ref()
-                        .unwrap()
-                        .get("name")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string()
-                        || &attendance.public_note != &request.public_note)
-            {
-                attendance.moderation = Moderation::Pending.to_string_moderation();
+
+            if is_anonymous {
+                let attendee = anonymous_attendee.as_ref().unwrap();
+
+                if &attendance.public_note != &request.public_note
+                || &attendance.private_note != &request.private_note
+                // || &attendance.status != &request.status
+                    || &attendee.name
+                        != &attendance
+                            .anonymous_attendee
+                            .as_ref()
+                            .unwrap()
+                            .get("name")
+                            .unwrap()
+                            .as_str()
+                            .unwrap()
+                            .to_string()
+                {
+                    attendance.anonymous_attendee = anonymous_attendee
+                        .map(|a| serde_json::to_value(a).unwrap())
+                        .or(attendance.anonymous_attendee);
+                    attendance.moderation = Moderation::Pending.to_string_moderation();
+                }
             }
-            if is_own_attendance {
+            if is_own_attendance || is_anonymous {
                 attendance.number_of_guests = i32::try_from(request.number_of_guests)
                     .map_err(|_e| Status::new(Code::InvalidArgument, "invalid_number_of_guests"))?;
+                attendance.public_note = request.public_note;
+                attendance.private_note = request.private_note;
+                attendance.status = request.status.to_string_attendance_status();
             }
 
             diesel::update(event_attendances::table)
@@ -119,7 +145,7 @@ pub fn upsert_event_attendance(
                 .execute(conn)
                 .map_err(|_e| Status::new(Code::Internal, "failed_to_update_event_attendance"))?;
 
-            Ok(attendance.to_proto(true, true))
+            Ok((attendance, author).to_proto(true, true))
         }
         None => {
             let authenticated_user_id = &user.map(|u| u.id);
@@ -150,7 +176,14 @@ pub fn upsert_event_attendance(
                 })
                 .get_result::<models::EventAttendance>(conn)
                 .map_err(|_e| Status::new(Code::Internal, "failed_to_create_event_attendance"))?;
-            Ok(attendance.to_proto(true, true))
+            let author = match attendee_user_id {
+                Some(user_id) => Some(
+                    get_author(user_id, conn)
+                        .map_err(|_e| Status::new(Code::Internal, "failed_to_load_author"))?,
+                ),
+                _ => None,
+            };
+            Ok((attendance, author).to_proto(true, true))
         }
     }
 }

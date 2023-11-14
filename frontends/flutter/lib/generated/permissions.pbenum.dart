@@ -38,6 +38,7 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission PUBLISH_EVENTS_LOCALLY = Permission._(32, _omitEnumNames ? '' : 'PUBLISH_EVENTS_LOCALLY');
   static const Permission PUBLISH_EVENTS_GLOBALLY = Permission._(33, _omitEnumNames ? '' : 'PUBLISH_EVENTS_GLOBALLY');
   static const Permission MODERATE_EVENTS = Permission._(34, _omitEnumNames ? '' : 'MODERATE_EVENTS');
+  static const Permission RSVP_TO_EVENTS = Permission._(35, _omitEnumNames ? '' : 'RSVP_TO_EVENTS');
   static const Permission VIEW_MEDIA = Permission._(40, _omitEnumNames ? '' : 'VIEW_MEDIA');
   static const Permission CREATE_MEDIA = Permission._(41, _omitEnumNames ? '' : 'CREATE_MEDIA');
   static const Permission PUBLISH_MEDIA_LOCALLY = Permission._(42, _omitEnumNames ? '' : 'PUBLISH_MEDIA_LOCALLY');
@@ -72,6 +73,7 @@ class Permission extends $pb.ProtobufEnum {
     PUBLISH_EVENTS_LOCALLY,
     PUBLISH_EVENTS_GLOBALLY,
     MODERATE_EVENTS,
+    RSVP_TO_EVENTS,
     VIEW_MEDIA,
     CREATE_MEDIA,
     PUBLISH_MEDIA_LOCALLY,

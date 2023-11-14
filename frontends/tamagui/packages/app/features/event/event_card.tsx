@@ -4,7 +4,7 @@ import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { Event, EventInstance, Group, Media, Visibility } from "@jonline/api";
-import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions, Select, getFontSize, Sheet, Adapt } from "@jonline/ui";
+import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions, Select, getFontSize, Sheet, Adapt, ZStack, AnimatePresence, standardAnimation, reverseStandardAnimation } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -12,7 +12,7 @@ import { AuthorInfo } from "../post/author_info";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { InstanceTime } from "./instance_time";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
-import { Repeat, Delete, Edit, Eye, History, Save, CalendarPlus, X as XIcon, Link, Check, ChevronDown, ChevronUp } from "@tamagui/lucide-icons";
+import { Repeat, Delete, Edit, Eye, History, Save, CalendarPlus, X as XIcon, Link, Check, ChevronDown, ChevronUp, ChevronRight, Menu, Scroll } from "@tamagui/lucide-icons";
 import icons from "@tamagui/lucide-icons";
 import { GroupPostManager } from "../groups/group_post_manager";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
@@ -273,12 +273,13 @@ export const EventCard: React.FC<Props> = ({
     }
   }, [authorId, loadingAuthor, author, authorLoadFailed]);
 
+  const [scrollInstancesVertically, setScrollInstancesVertically] = useState(false);
   const [showPastInstances, setShowPastInstances] = useState(false);
   const filteredInstances = showPastInstances
     ? instances
     : instances.filter(isNotPastInstance);
   const sortedFilteredInstances = [...filteredInstances].sort(instanceTimeSort);
-  const displayedInstances = editing
+  const displayedInstances = editing || scrollInstancesVertically
     ? sortedFilteredInstances
     : [
       ...(selectedInstance ? [selectedInstance] : []),
@@ -302,7 +303,7 @@ export const EventCard: React.FC<Props> = ({
       </XStack>
     </Anchor>
     : undefined;
-  const headerLinksView = <YStack key='header-links-view'>
+  const headerLinksView = <YStack f={1} key='header-links-view'>
     {isPreview
       ? <>
         <Anchor key='details-link' textDecorationLine='none' {...detailsLink}>
@@ -331,7 +332,7 @@ export const EventCard: React.FC<Props> = ({
             : undefined}
       </>}
   </YStack>;
-  const headerLinksEdit = <YStack space='$2' key='header-links-edit'>
+  const headerLinksEdit = <YStack f={1} space='$2' key='header-links-edit'>
     <Input textContentType="name" placeholder={`Event Title (required)`}
       disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
       autoCapitalize='words'
@@ -340,7 +341,21 @@ export const EventCard: React.FC<Props> = ({
     {postLinkView}
   </YStack>;
 
-  const headerLinks = editing && !previewingEdits ? headerLinksEdit : headerLinksView;
+  const headerLinks = <XStack w='100%'>
+    {editing && !previewingEdits ? headerLinksEdit : headerLinksView}
+    {displayedInstances.length > 3 || (displayedInstances.length > 2 && !mediaQuery.gtXxs)
+      ? <Button onPress={() => setScrollInstancesVertically(!scrollInstancesVertically)} ml="$1">
+        <ZStack h='$1' w='$1'>
+          <XStack animation='standard' o={scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
+            <ChevronRight />
+          </XStack>
+          <XStack animation='standard' o={!scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
+            <Menu />
+          </XStack>
+        </ZStack>
+      </Button>
+      : undefined}
+  </XStack>;
 
   const contentView = editing || (post.content && post.content) != ''
     ? isPreview
@@ -362,18 +377,182 @@ export const EventCard: React.FC<Props> = ({
   const weeklyRepeatOptions = [...Array(52).keys()];
   const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
 
-  function doRepeatInstance() {
-    const repeatedInstances: EventInstance[] = [];
-    [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
-      const repeatedInstance = EventInstance.create({
-        id: `${newEventId++}`,
-        startsAt: moment(editingInstance!.startsAt).add(weeksAfter, 'weeks').toISOString(),
-        endsAt: moment(editingInstance!.endsAt).add(weeksAfter, 'weeks').toISOString()
+  const repeatedInstances = useMemo(() => {
+    const instances: EventInstance[] = [];
+    if (editingInstance) {
+      [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
+        const repeatedInstance = EventInstance.create({
+          id: `${newEventId++}`,
+          startsAt: moment(editingInstance.startsAt).add(weeksAfter, 'weeks').toISOString(),
+          endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString()
+        });
+        instances.push(repeatedInstance);
       });
-      repeatedInstances.push(repeatedInstance);
-    });
+    }
+    return instances;
+  }, [repeatWeeks, editingInstance?.startsAt, editingInstance?.endsAt]);
+
+  function doRepeatInstance() {
+    // const repeatedInstances: EventInstance[] = [];
+    // [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
+    //   const repeatedInstance = EventInstance.create({
+    //     id: `${newEventId++}`,
+    //     startsAt: moment(editingInstance!.startsAt).add(weeksAfter, 'weeks').toISOString(),
+    //     endsAt: moment(editingInstance!.endsAt).add(weeksAfter, 'weeks').toISOString()
+    //   });
+    //   repeatedInstances.push(repeatedInstance);
+    // });
     setEditedInstances([...editedInstances, ...repeatedInstances]);
     setTimeout(forceUpdate, 1);
+  }
+
+  function renderInstance(i: EventInstance) {
+    const isPrimary = i.id == primaryInstance?.id;
+    const isEditingInstance = i.id == editingInstance?.id;
+    const highlight = editing ? isEditingInstance : isPrimary;
+    let result = <YStack mx={editing ? '$2' : undefined} o={highlight ? 1 : 0.5} mb={scrollInstancesVertically ? '$2' : undefined}>
+      <InstanceTime key={i.id} linkToInstance={!editing}
+        event={event} instance={i}
+        highlight={highlight}
+      />
+      {editing
+        ? <XStack w='100%'>
+          <Theme inverse={editingInstance?.id === i.id}>
+            <Button mx='auto' mt='$2' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
+          </Theme>
+          {i.id == editingInstance?.id
+            ? <Dialog>
+              <Dialog.Trigger asChild>
+                <Button mx='auto' mt='$2' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
+              </Dialog.Trigger>
+              <Dialog.Portal zi={1000011}>
+                <Dialog.Overlay
+                  key="overlay"
+                  animation="quick"
+                  o={0.5}
+                  enterStyle={{ o: 0 }}
+                  exitStyle={{ o: 0 }}
+                />
+                <Dialog.Content
+                  bordered
+                  elevate
+                  key="content"
+                  animation={[
+                    'quick',
+                    {
+                      opacity: {
+                        overshootClamping: true,
+                      },
+                    },
+                  ]}
+                  m='$3'
+                  enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                  exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                  x={0}
+                  scale={1}
+                  opacity={1}
+                  y={0}
+                >
+                  <YStack space>
+                    <Dialog.Title>Repeat Instance</Dialog.Title>
+                    <Dialog.Description>
+                      <Paragraph size="$2">Repeat for:</Paragraph>
+                      <XStack>
+                        <Select native id={'repeat-weeks'} onValueChange={v => setRepeatWeeks(parseInt(v))} value={repeatWeeks.toString()}>
+                          <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
+                            <Select.Value w='100%' placeholder="Choose Visibility" />
+                          </Select.Trigger>
+
+                          <Select.Content zIndex={200000}>
+                            <Select.Viewport minWidth={200} w='100%'>
+                              <XStack w='100%'>
+                                <Select.Group space="$0" w='100%'>
+                                  {weeklyRepeatOptions.map(i => i + 1).map((item, i) => {
+                                    return (
+                                      <Select.Item
+                                        debug="verbose"
+                                        index={i}
+                                        key={item.toString()}
+                                        value={item.toString()}
+                                      >
+                                        <Select.ItemText>{item} {item === 1 ? 'week' : 'weeks'}</Select.ItemText>
+                                        <Select.ItemIndicator marginLeft="auto">
+                                          <Check size={16} />
+                                        </Select.ItemIndicator>
+                                      </Select.Item>
+                                    )
+                                  })}
+                                </Select.Group>
+                                <YStack
+                                  position="absolute"
+                                  right={0}
+                                  top={0}
+                                  bottom={0}
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  width={'$4'}
+                                  pointerEvents="none"
+                                >
+                                  <ChevronDown size='$2' />
+                                </YStack>
+                              </XStack>
+                            </Select.Viewport>
+                          </Select.Content>
+                        </Select>
+                        {/* <Text fontFamily='$body'>weeks</Text> */}
+                      </XStack>
+                      {repeatedInstances.length > 0
+                        ? <YStack>
+                          {/* <XStack>
+                            <Paragraph f={1} my='auto'>First:</Paragraph>
+                            <InstanceTime key={i.id} event={event} instance={repeatedInstances[0]!} />
+                          </XStack> */}
+                          <XStack>
+                            <Paragraph f={1} my='auto'>Last:</Paragraph>
+                            <InstanceTime key={i.id} event={event} instance={repeatedInstances[repeatedInstances.length - 1]!} />
+                          </XStack>
+                        </YStack>
+                        : undefined}
+                      {/* <ScrollView height={'$10'}>
+                        <YStack space='$2'>
+                          {repeatedInstances.map(i => <InstanceTime key={i.id} event={event} instance={i} />)}
+                        </YStack>
+                      </ScrollView> */}
+                    </Dialog.Description>
+
+                    <XStack space="$3" jc="flex-end">
+                      <Dialog.Close asChild>
+                        <Button>Cancel</Button>
+                      </Dialog.Close>
+
+                      <Dialog.Close asChild>
+                        {/* <Dialog.A> */}
+                        {/* <Theme inverse> */}
+                        <Button color={primaryAnchorColor} onPress={doRepeatInstance}>Repeat</Button>
+                        {/* </Theme> */}
+                        {/* </Dialog.Action> */}
+                      </Dialog.Close>
+                      {/* </Dialog.Action> */}
+                    </XStack>
+                  </YStack>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog>
+            : undefined}
+          <Button mx='auto' mt='$2' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
+        </XStack>
+        : undefined}
+    </YStack>;
+
+    if (editing) {
+      result = <YStack ml='$2' h={100}
+        padding='$2'
+        borderRadius='$3' backgroundColor='$backgroundStrong'>
+        {result}
+      </YStack>
+    }
+
+    return result;
   }
   return (
     <>
@@ -391,164 +570,34 @@ export const EventCard: React.FC<Props> = ({
         >
           {post.link || post.title
             ? <Card.Header>
-              <YStack>
+              <YStack w='100%'>
                 {headerLinks}
                 {!isPreview && (instances.length > 1 || editing)
                   ? <XStack key='instances' w='100%' mt='$2' ml='$4' space>
-                    <YStack key='instances-buttons' my='auto' space="$3">
+                    <YStack key='instances-buttons' my='$2' space="$3">
                       {hasPastInstances
-                        ?
-                        // <Theme inverse={showPastInstances}>
-                        <Button mr={-7} size='$3'
+                        ? <Button mr={-7} size='$3'
                           color={showPastInstances ? navAnchorColor : undefined}
                           circular={(displayedInstances?.length ?? 0) > 0} icon={History}
                           onPress={() => setShowPastInstances(!showPastInstances)} >
                           {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
                         </Button>
-                        // </Theme>
                         : undefined}
                       {editing
-                        ? <Button my='auto' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
+                        ? <Button mt='$2' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
                         : undefined}
                     </YStack>
-                    <ScrollView key='instance-scroller' f={1} horizontal pb='$3'>
-                      <XStack mt='$1'>
-                        {/* {displayedInstances?.length == 0 && hasPastInstances
-                        ? <Heading size="$1" mt='$2' color={primaryColor} mr='$2'>⬅️ Press "show past instances" to show past instances.</Heading>
-                          : undefined } */}
-                        {displayedInstances?.map((i) => {
-                          const isPrimary = i.id == primaryInstance?.id;
-                          const isEditingInstance = i.id == editingInstance?.id;
-                          const highlight = editing ? isEditingInstance : isPrimary;
-                          let result = <YStack mx={editing ? '$2' : undefined} o={highlight ? 1 : 0.5}>
-                            <InstanceTime key={i.id} linkToInstance={!editing}
-                              event={event} instance={i}
-                              highlight={highlight}
-                            />
-                            {editing
-                              ? <XStack w='100%'>
-                                <Theme inverse={editingInstance?.id === i.id}>
-                                  <Button mx='auto' mt='$2' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
-                                </Theme>
-                                {i.id == editingInstance?.id
-                                  ? <Dialog>
-                                    <Dialog.Trigger asChild>
-                                      <Button mx='auto' mt='$2' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
-                                    </Dialog.Trigger>
-                                    <Dialog.Portal zi={1000011}>
-                                      <Dialog.Overlay
-                                        key="overlay"
-                                        animation="quick"
-                                        o={0.5}
-                                        enterStyle={{ o: 0 }}
-                                        exitStyle={{ o: 0 }}
-                                      />
-                                      <Dialog.Content
-                                        bordered
-                                        elevate
-                                        key="content"
-                                        animation={[
-                                          'quick',
-                                          {
-                                            opacity: {
-                                              overshootClamping: true,
-                                            },
-                                          },
-                                        ]}
-                                        m='$3'
-                                        enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                                        exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                                        x={0}
-                                        scale={1}
-                                        opacity={1}
-                                        y={0}
-                                      >
-                                        <YStack space>
-                                          <Dialog.Title>Repeat Instance</Dialog.Title>
-                                          <Dialog.Description>
-                                            <Paragraph size="$2">Repeat for:</Paragraph>
-                                            <XStack>
-                                              <Select native id={'repeat-weeks'} onValueChange={v => setRepeatWeeks(parseInt(v))} value={repeatWeeks.toString()}>
-                                                <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
-                                                  <Select.Value w='100%' placeholder="Choose Visibility" />
-                                                </Select.Trigger>
 
-                                                <Select.Content zIndex={200000}>
-                                                  <Select.Viewport minWidth={200} w='100%'>
-                                                    <XStack w='100%'>
-                                                      <Select.Group space="$0" w='100%'>
-                                                        {weeklyRepeatOptions.map(i => i + 1).map((item, i) => {
-                                                          return (
-                                                            <Select.Item
-                                                              debug="verbose"
-                                                              index={i}
-                                                              key={item.toString()}
-                                                              value={item.toString()}
-                                                            >
-                                                              <Select.ItemText>{item} {item === 1 ? 'week' : 'weeks'}</Select.ItemText>
-                                                              <Select.ItemIndicator marginLeft="auto">
-                                                                <Check size={16} />
-                                                              </Select.ItemIndicator>
-                                                            </Select.Item>
-                                                          )
-                                                        })}
-                                                      </Select.Group>
-                                                      <YStack
-                                                        position="absolute"
-                                                        right={0}
-                                                        top={0}
-                                                        bottom={0}
-                                                        alignItems="center"
-                                                        justifyContent="center"
-                                                        width={'$4'}
-                                                        pointerEvents="none"
-                                                      >
-                                                        <ChevronDown size='$2' />
-                                                      </YStack>
-                                                    </XStack>
-                                                  </Select.Viewport>
-                                                </Select.Content>
-                                              </Select>
-                                              {/* <Text fontFamily='$body'>weeks</Text> */}
-                                            </XStack>
-                                          </Dialog.Description>
-
-                                          <XStack space="$3" jc="flex-end">
-                                            <Dialog.Close asChild>
-                                              <Button>Cancel</Button>
-                                            </Dialog.Close>
-
-                                            <Dialog.Close asChild>
-                                              {/* <Dialog.A> */}
-                                              {/* <Theme inverse> */}
-                                              <Button color={primaryAnchorColor} onPress={doRepeatInstance}>Repeat</Button>
-                                              {/* </Theme> */}
-                                              {/* </Dialog.Action> */}
-                                            </Dialog.Close>
-                                            {/* </Dialog.Action> */}
-                                          </XStack>
-                                        </YStack>
-                                      </Dialog.Content>
-                                    </Dialog.Portal>
-                                  </Dialog>
-                                  : undefined}
-                                <Button mx='auto' mt='$2' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
-                              </XStack>
-                              : undefined}
-                          </YStack>;
-
-                          if (editing) {
-                            result = <YStack ml='$2' h={100}
-                              padding='$2'
-                              borderRadius='$3' backgroundColor='$backgroundStrong'>
-                              {result}
-                            </YStack>
-                          }
-
-                          return result;
-                        })}
+                    {scrollInstancesVertically
+                      ? <XStack key='instance-display' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
+                        {displayedInstances?.map((i) => renderInstance(i))}
                       </XStack>
-                    </ScrollView>
+                      : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
+                        <XStack mt='$1'>
+                          {displayedInstances?.map((i) => renderInstance(i))}
+                        </XStack>
+                      </ScrollView>}
+
                   </XStack>
                   : undefined
                 }
@@ -640,9 +689,9 @@ export const EventCard: React.FC<Props> = ({
                 {editing && !previewingEdits
                   ? <>
                     <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
-                    <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps} 
-                    disabled={!editedAllowRsvps}
-                    setter={setEditedAllowAnonymousRsvps} />
+                    <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps}
+                      disabled={!editedAllowRsvps}
+                      setter={setEditedAllowAnonymousRsvps} />
                   </>
                   : undefined}
                 <XStack space='$2' flexWrap="wrap" key='save-buttons'>

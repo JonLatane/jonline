@@ -456,6 +456,7 @@ class Author extends $pb.GeneratedMessage {
   $5.MediaReference ensureAvatar() => $_ensure(2);
 }
 
+/// Model for a user's follow of another user.
 class Follow extends $pb.GeneratedMessage {
   factory Follow({
     $core.String? userId,
@@ -516,6 +517,7 @@ class Follow extends $pb.GeneratedMessage {
   static Follow getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Follow>(create);
   static Follow? _defaultInstance;
 
+  /// The follower in the relationship.
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -525,6 +527,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUserId() => clearField(1);
 
+  /// The user being followed.
   @$pb.TagNumber(2)
   $core.String get targetUserId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -534,6 +537,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearTargetUserId() => clearField(2);
 
+  /// Tracks whether the target user needs to approve the follow.
   @$pb.TagNumber(3)
   $10.Moderation get targetUserModeration => $_getN(2);
   @$pb.TagNumber(3)
@@ -639,6 +643,7 @@ class Membership extends $pb.GeneratedMessage {
   static Membership getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Membership>(create);
   static Membership? _defaultInstance;
 
+  /// The member (or requested/invited member).
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -648,6 +653,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUserId() => clearField(1);
 
+  /// The group the membership pertains to.
   @$pb.TagNumber(2)
   $core.String get groupId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -707,6 +713,8 @@ class Membership extends $pb.GeneratedMessage {
   $9.Timestamp ensureUpdatedAt() => $_ensure(6);
 }
 
+/// A contact method for a user. Models designed to support verification,
+/// but verification RPCs are not yet implemented.
 class ContactMethod extends $pb.GeneratedMessage {
   factory ContactMethod({
     $core.String? value,
@@ -762,7 +770,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   static ContactMethod getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ContactMethod>(create);
   static ContactMethod? _defaultInstance;
 
-  /// `mailto:` or `tel:` URL.
+  /// Either a `mailto:` or `tel:` URL.
   @$pb.TagNumber(1)
   $core.String get value => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -804,6 +812,8 @@ class ContactMethod extends $pb.GeneratedMessage {
   void clearVerified() => clearField(4);
 }
 
+/// Request to get one or more users by a variety of parameters.
+/// Supported parameters depend on `listing_type`.
 class GetUsersRequest extends $pb.GeneratedMessage {
   factory GetUsersRequest({
     $core.String? username,
@@ -877,9 +887,6 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUserId() => clearField(2);
 
-  /// optional string group_id = 3;
-  /// optional string email = 2;
-  /// optional string phone = 3;
   @$pb.TagNumber(99)
   $core.int get page => $_getIZ(2);
   @$pb.TagNumber(99)
