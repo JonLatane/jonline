@@ -26,82 +26,59 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
   const group = useGroupContext();
   const instanceLink = useLink(createInstanceLink(event, instance, group));
 
+  const mx = linkToInstance ? 'auto' : undefined;
+  const lh = 14;
+
   function dateView(date: string) {
     return <YStack>
-      <Heading size="$2" color={primaryColor} mr='$2'>
-        {moment.utc(date).local().format('ddd, MMM Do YYYY')}
-      </Heading>
-      <Heading size="$4" color={primaryColor}>
+      <Paragraph size="$2" color={color} fontWeight='800' mx={mx} lineHeight={lh}>
+        {moment.utc(date).local().format('dddd')}
+      </Paragraph>
+      <Paragraph size="$1" color={color} mx={mx} lineHeight={lh}>
+        {moment.utc(date).local().format('MMM Do YYYY')}
+      </Paragraph>
+      <Heading size="$2" color={color} lineHeight={lh} mx={mx}>
         {moment.utc(date).local().format('h:mm a')}
       </Heading>
     </YStack>;
   }
 
-  function dateRangeView(startsAt: string, endsAt: string) {
-    const startsAtDate = moment.utc(startsAt).local().format('ddd, MMM Do YYYY');
-    const endsAtDate = moment.utc(endsAt).local().format('ddd, MMM Do YYYY');
-    if (startsAtDate == endsAtDate) {
-      return <YStack my='auto'
-        backgroundColor={themeBgColor} opacity={0.8} pl='$2' borderRadius='$3'>
-        <XStack>
-          <Paragraph size="$3" fontWeight='800' color={primaryColor} mr='$2'>
-            {startsAtDate}
-          </Paragraph>
-        </XStack>
-        <XStack space>
-          <Heading size="$3" color={primaryColor}>
-            {moment.utc(startsAt).local().format('h:mm a')}
-          </Heading>
-          <Heading size="$3" color={primaryColor}>
-            -
-          </Heading>
-          <Heading size="$3" color={primaryColor}>
-            {moment.utc(endsAt).local().format('h:mm a')}
-          </Heading>
-        </XStack>
-      </YStack>;
-    } else {
-      return <XStack>
-        <YStack f={1}>
-          {startsAt ? dateView(startsAt) : undefined}
-        </YStack>
-        <YStack f={1}>
-          {endsAt ? dateView(endsAt) : undefined}
-        </YStack>
-      </XStack>;
-    }
-  }
-
-  const startsAtDate = moment.utc(startsAt).local().format('ddd, MMM Do YYYY');
-  const endsAtDate = moment.utc(endsAt).local().format('ddd, MMM Do YYYY');
+  const startsAtDay = moment.utc(startsAt).local().format('dddd');
+  const startsAtDate = moment.utc(startsAt).local().format('MMM Do YYYY');
+  const endsAtDay = moment.utc(endsAt).local().format('dddd');
+  const endsAtDate = moment.utc(endsAt).local().format('MMM Do YYYY');
   const color = highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryAnchorColor;
-  const key=`instance-time-${instance.id}`
+  const key = `instance-time-${instance.id}`
   const mainView = (startsAtDate == endsAtDate)
     ? <YStack key={key}
       backgroundColor={linkToInstance ? undefined : themeBgColor}
-      opacity={linkToInstance ? undefined : 0.8} pl='$2' borderRadius='$3'>
-      <XStack>
-        <Paragraph size="$3" color={color} fontWeight='800' mr='$2'>
-          {startsAtDate}
-        </Paragraph>
-      </XStack>
-      <XStack space='$2'>
-        <Heading size="$3" color={color}>
-          {moment.utc(startsAt).local().format('h:mm a')}
+      opacity={linkToInstance ? undefined : 0.8} px='$2' borderRadius='$3'>
+      <Paragraph size="$2" color={color} fontWeight='800' mx={mx} lineHeight={lh}>
+        {startsAtDay}
+      </Paragraph>
+      <Paragraph size="$1" color={color} mx={mx} lineHeight={lh}>
+        {startsAtDate}
+      </Paragraph>
+      <XStack space='$2' mx={mx}>
+        <Heading size="$2" color={color} lineHeight={lh}>
+          {moment.utc(startsAt).local().format('h:mma').replace(':00', '')}
         </Heading>
-        <Heading size="$3" color={color}>
+        <Heading size="$3" color={color} lineHeight={lh} fontWeight='900'>
           -
         </Heading>
-        <Heading size="$3" color={color}>
-          {moment.utc(endsAt).local().format('h:mm a')}
+        <Heading size="$2" color={color} lineHeight={lh}>
+          {moment.utc(endsAt).local().format('h:mma').replace(':00', '')}
         </Heading>
       </XStack>
     </YStack>
-    : <XStack>
-      <YStack f={1}>
+    : <XStack space={linkToInstance ? undefined : '$2'}>
+      <YStack f={linkToInstance ? 1 : undefined}>
         {startsAt ? dateView(startsAt) : undefined}
       </YStack>
-      <YStack f={1}>
+      <Heading size="$3" color={color} my='auto' fontWeight='900'>
+        -
+      </Heading>
+      <YStack f={linkToInstance ? 1 : undefined}>
         {endsAt ? dateView(endsAt) : undefined}
       </YStack>
     </XStack>;

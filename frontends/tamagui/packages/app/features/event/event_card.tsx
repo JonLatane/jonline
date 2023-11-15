@@ -519,21 +519,12 @@ export const EventCard: React.FC<Props> = ({
                       </XStack>
                       {repeatedInstances.length > 0
                         ? <YStack>
-                          {/* <XStack>
-                            <Paragraph f={1} my='auto'>First:</Paragraph>
-                            <InstanceTime key={i.id} event={event} instance={repeatedInstances[0]!} />
-                          </XStack> */}
-                          <XStack>
+                          <XStack mt='$2'>
                             <Paragraph f={1} my='auto'>Last:</Paragraph>
                             <InstanceTime key={i.id} event={event} instance={repeatedInstances[repeatedInstances.length - 1]!} />
                           </XStack>
                         </YStack>
                         : undefined}
-                      {/* <ScrollView height={'$10'}>
-                        <YStack space='$2'>
-                          {repeatedInstances.map(i => <InstanceTime key={i.id} event={event} instance={i} />)}
-                        </YStack>
-                      </ScrollView> */}
                     </Dialog.Description>
 
                     <XStack space="$3" jc="flex-end">
