@@ -134,6 +134,15 @@ pub fn upsert_event_attendance(
                     attendance.moderation = Moderation::Pending.to_string_moderation();
                 }
             }
+            if is_event_owner {
+                attendance.moderation = match (attendance.moderation.to_proto_moderation(), request.moderation.to_proto_moderation()) {
+                    (_, Some(Moderation::Rejected)) => Moderation::Rejected.to_string_moderation(),
+                    (_, Some(Moderation::Approved)) => Moderation::Approved.to_string_moderation(),
+                    (_, Some(Moderation::Pending)) => Moderation::Pending.to_string_moderation(),
+                    (_, Some(Moderation::Unmoderated)) => Moderation::Approved.to_string_moderation(),
+                    _ => attendance.moderation,
+                };
+            }
             if is_own_attendance || is_anonymous {
                 attendance.number_of_guests = i32::try_from(request.number_of_guests)
                     .map_err(|_e| Status::new(Code::InvalidArgument, "invalid_number_of_guests"))?;

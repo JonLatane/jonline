@@ -7,3 +7,7 @@ export function passes(moderation: Moderation | undefined): boolean {
 export function pending(moderation: Moderation | undefined): boolean {
   return moderation != undefined && [Moderation.PENDING].includes(moderation);
 }
+
+export function rejected(moderation: Moderation | undefined): boolean {
+  return moderation != undefined && [Moderation.REJECTED].includes(moderation);
+}

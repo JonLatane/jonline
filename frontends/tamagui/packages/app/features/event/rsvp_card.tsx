@@ -1,5 +1,5 @@
-import { useAccountOrServer, useCredentialDispatch, useServerTheme } from "app/store";
-import React from "react";
+import { getCredentialClient, useAccountOrServer, useCredentialDispatch, useServerTheme } from "app/store";
+import React, { useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Moderation, Post } from "@jonline/api";
 import { Button, Card, Heading, Paragraph, useMedia, XStack, YStack } from "@jonline/ui";
@@ -13,15 +13,16 @@ interface Props {
   event: Event;
   instance: EventInstance;
   attendance: EventAttendance;
-  onEdit?: () => void;
+  onPressEdit?: () => void;
+  onModerated?: (attendance: EventAttendance) => void;
 }
-
 
 export const RsvpCard: React.FC<Props> = ({
   event,
   instance,
   attendance,
-  onEdit,
+  onPressEdit,
+  onModerated,
 }) => {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -32,6 +33,16 @@ export const RsvpCard: React.FC<Props> = ({
   const { server, textColor, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
 
   const { anonymousAttendee, userAttendee, publicNote, privateNote, status, numberOfGuests } = attendance;
+
+  const [upserting, setUpserting] = useState(false);
+  async function applyModeration(moderation: Moderation) {
+    setUpserting(true);
+
+    const client = await getCredentialClient(accountOrServer);
+    client.upsertEventAttendance({ ...attendance, moderation }, client.credential)
+      .then(onModerated)
+      .finally(() => setUpserting(false));
+  }
 
   return <Card theme="dark" elevate size="$4" bordered
     key={`attendance-card-${attendance.id}`}
@@ -64,8 +75,8 @@ export const RsvpCard: React.FC<Props> = ({
           </Paragraph>
           {/* : undefined} */}
         </YStack>
-        {onEdit
-          ? <Button circular transparent icon={Edit} onClick={onEdit} />
+        {onPressEdit
+          ? <Button circular transparent icon={Edit} onClick={onPressEdit} />
           : undefined}
       </XStack>
     </Card.Header>
@@ -83,9 +94,8 @@ export const RsvpCard: React.FC<Props> = ({
           {isEventOwner ?
             <ModerationPicker moderation={attendance.moderation}
               moderationDescription={attendanceModerationDescription}
-              onChange={() => {
-
-              }} />
+              disabled={upserting}
+              onChange={applyModeration} />
             : !passes(attendance.moderation)
               ? <Paragraph size='$1' ml='auto'>{attendanceModerationDescription(attendance.moderation)}</Paragraph>
               : undefined}
