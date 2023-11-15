@@ -75,8 +75,9 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
   const startsAtDate = moment.utc(startsAt).local().format('ddd, MMM Do YYYY');
   const endsAtDate = moment.utc(endsAt).local().format('ddd, MMM Do YYYY');
   const color = highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryAnchorColor;
+  const key=`instance-time-${instance.id}`
   const mainView = (startsAtDate == endsAtDate)
-    ? <YStack
+    ? <YStack key={key}
       backgroundColor={linkToInstance ? undefined : themeBgColor}
       opacity={linkToInstance ? undefined : 0.8} pl='$2' borderRadius='$3'>
       <XStack>
@@ -106,7 +107,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
     </XStack>;
 
   if (linkToInstance) {
-    return <Button {...instanceLink} mx='$2' px='$2'>
+    return <Button key={key} {...instanceLink} mx='$2' px='$2'>
       {mainView}
     </Button>;
   } else {

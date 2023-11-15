@@ -313,6 +313,9 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
             <p><a href="#jonline-TimeFilter">TimeFilter</a></p>
           </li>
           <li>
+            <p><a href="#jonline-UserAttendee">UserAttendee</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-AttendanceStatus">AttendanceStatus</a></p>
           </li>
           <li>
@@ -1172,6 +1175,10 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-ContactMethod"></a></p>
     <h3 id="contactmethod"><a class="anchor" aria-hidden="true" tabindex="-1" href="#contactmethod"><span class="octicon octicon-link"></span></a>ContactMethod</h3>
+    <p>
+      A contact method for a user. Models designed to support verification,
+      but verification RPCs are not yet implemented.
+    </p>
     <table>
       <thead>
         <tr>
@@ -1186,7 +1193,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>value</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td><code>mailto:</code> or <code>tel:</code> URL.</td>
+          <td>Either a <code>mailto:</code> or <code>tel:</code> URL.</td>
         </tr>
         <tr>
           <td>visibility</td>
@@ -1210,6 +1217,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-Follow"></a></p>
     <h3 id="follow"><a class="anchor" aria-hidden="true" tabindex="-1" href="#follow"><span class="octicon octicon-link"></span></a>Follow</h3>
+    <p>Model for a user's follow of another user.</p>
     <table>
       <thead>
         <tr>
@@ -1224,19 +1232,19 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>user_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The follower in the relationship.</td>
         </tr>
         <tr>
           <td>target_user_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The user being followed.</td>
         </tr>
         <tr>
           <td>target_user_moderation</td>
           <td><a href="#jonline-Moderation">Moderation</a></td>
           <td></td>
-          <td></td>
+          <td>Tracks whether the target user needs to approve the follow.</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -1254,6 +1262,10 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-GetUsersRequest"></a></p>
     <h3 id="getusersrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getusersrequest"><span class="octicon octicon-link"></span></a>GetUsersRequest</h3>
+    <p>
+      Request to get one or more users by a variety of parameters.
+      Supported parameters depend on <code>listing_type</code>.
+    </p>
     <table>
       <thead>
         <tr>
@@ -1280,7 +1292,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>page</td>
           <td><a href="#int32">int32</a></td>
           <td>optional</td>
-          <td>optional string group_id = 3; optional string email = 2; optional string phone = 3;</td>
+          <td></td>
         </tr>
         <tr>
           <td>listing_type</td>
@@ -1337,13 +1349,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>user_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The member (or requested/invited member).</td>
         </tr>
         <tr>
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The group the membership pertains to.</td>
         </tr>
         <tr>
           <td>permissions</td>
@@ -2435,17 +2447,34 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>replies</td>
           <td><a href="#jonline-Post">Post</a></td>
           <td>repeated</td>
-          <td>Hierarchical replies to this post.</td>
+          <td>Hierarchical replies to this post. There will never be more than <code>reply_count</code> replies. However, there may be fewer than <code>reply_count</code> replies if some replies are hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts in the frontend.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>published_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>last_activity_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
         </tr>
       </tbody>
     </table>
-    <p>
-      There will never be more than <code>reply_count</code> replies. However, there may be fewer than <code>reply_count</code> replies if some replies are hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts in the frontend. |
-      | created_at | <a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a> | | |
-      | updated_at | <a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a> | optional | |
-      | published_at | <a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a> | optional | |
-      | last_activity_at | <a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a> | | |
-    </p>
     <p><a name="jonline-UserPost"></a></p>
     <h3 id="userpost"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userpost"><span class="octicon octicon-link"></span></a>UserPost</h3>
     <p>A <code>UserPost</code> is a "direct share" of a <code>Post</code> to a <code>User</code>. Currently unused.</p>
@@ -2566,8 +2595,9 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h2 id="eventsproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsproto"><span class="octicon octicon-link"></span></a>events.proto</h2>
     <p><a name="jonline-AnonymousAttendee"></a></p>
     <h3 id="anonymousattendee"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anonymousattendee"><span class="octicon octicon-link"></span></a>AnonymousAttendee</h3>
+    <p>An anonymous internet user who has RSVP'd to an <code>EventInstance</code>.</p>
     <p>
-      The visibility on <code>AnonymousAttendee</code> <code>ContactMethod</code>s support the <code>LIMITED</code> visibility, which will
+      (TODO:) The visibility on <code>AnonymousAttendee</code> <code>ContactMethod</code>s should support the <code>LIMITED</code> visibility, which will
       make them visible to the event creator.
     </p>
     <table>
@@ -2584,7 +2614,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>name</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>A name for the anonymous user. For instance, "Bob Gomez" or "The guy on your front porch."</td>
         </tr>
         <tr>
           <td>contact_methods</td>
@@ -2596,12 +2626,17 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>auth_token</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records.</td>
+          <td>Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new <code>EventAttendance</code>.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-Event"></a></p>
     <h3 id="event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event"><span class="octicon octicon-link"></span></a>Event</h3>
+    <p>
+      An <code>Event</code> is a top-level type used to organize calendar events, RSVPs, and messaging/posting
+      about the <code>Event</code>. Actual time data lies in its <code>EventInstances</code>.
+    </p>
+    <p>(Eventually, Jonline Events should also support ticketing.)</p>
     <table>
       <thead>
         <tr>
@@ -2616,25 +2651,25 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>Unique ID for the event generated by the Jonline BE.</td>
         </tr>
         <tr>
           <td>post</td>
           <td><a href="#jonline-Post">Post</a></td>
           <td></td>
-          <td></td>
+          <td>The Post containing the underlying data for the event (names). Its <code>PostContext</code> should be <code>EVENT</code>.</td>
         </tr>
         <tr>
           <td>info</td>
           <td><a href="#jonline-EventInfo">EventInfo</a></td>
           <td></td>
-          <td></td>
+          <td>Event configuration like whether to allow (anonymous) RSVPs, etc.</td>
         </tr>
         <tr>
           <td>instances</td>
           <td><a href="#jonline-EventInstance">EventInstance</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>A list of instances for the Event. <em>Events will only include all instances if the request is for a single event.</em></td>
         </tr>
       </tbody>
     </table>
@@ -2669,14 +2704,20 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       </thead>
       <tbody>
         <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
           <td>event_instance_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
           <td></td>
         </tr>
         <tr>
-          <td>user_id</td>
-          <td><a href="#string">string</a></td>
+          <td>user_attendee</td>
+          <td><a href="#jonline-UserAttendee">UserAttendee</a></td>
           <td></td>
           <td></td>
         </tr>
@@ -2991,6 +3032,39 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>ends_before</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-UserAttendee"></a></p>
+    <h3 id="userattendee"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userattendee"><span class="octicon octicon-link"></span></a>UserAttendee</h3>
+    <p>Wire-identical to <a href="#author">Author</a>, but with a different name to avoid confusion.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>username</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>avatar</td>
+          <td><a href="#jonline-MediaReference">MediaReference</a></td>
           <td>optional</td>
           <td></td>
         </tr>

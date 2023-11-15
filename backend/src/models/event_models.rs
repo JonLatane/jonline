@@ -73,6 +73,7 @@ pub struct NewEventAttendance {
     pub inviting_user_id: Option<i64>,
     pub public_note: String,
     pub private_note: String,
+    pub moderation: String,
 }
 
 // #[derive(Debug, Queryable, Identifiable, AsChangeset)]

@@ -144,7 +144,7 @@ export function EventDetailsScreen() {
 
   useEffect(() => {
     if (eventId) {
-      if ((!subjectEvent || !loadedEvent || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingEvent) {
+      if ((!subjectEvent || !loadedEvent) && !loadingEvent) {
         setLoadingEvent(true);
         // useEffect(() => {
         console.log('loadEvent', eventId!)

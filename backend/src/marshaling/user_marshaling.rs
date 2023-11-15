@@ -83,10 +83,26 @@ impl ToProtoUser for models::User {
 
 pub trait ToProtoAuthor {
     fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Author;
+    fn to_proto_user_attendee(&self, media_lookup: Option<&MediaLookup>) -> UserAttendee;
 }
 impl ToProtoAuthor for models::Author {
     fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Author {
         Author {
+            user_id: self.id.to_proto_id().to_string(),
+            username: Some(self.username.to_owned()),
+            avatar: self
+                .avatar_media_id
+                .to_owned()
+                .map(|id| {
+                    media_lookup
+                        .find_media(id)
+                        .map(|media_ref| media_ref.to_proto())
+                })
+                .flatten(),
+        }
+    }
+    fn to_proto_user_attendee(&self, media_lookup: Option<&MediaLookup>) -> UserAttendee {
+        UserAttendee {
             user_id: self.id.to_proto_id().to_string(),
             username: Some(self.username.to_owned()),
             avatar: self

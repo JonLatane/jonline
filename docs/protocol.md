@@ -72,6 +72,7 @@
     - [GetEventsRequest](#jonline-GetEventsRequest)
     - [GetEventsResponse](#jonline-GetEventsResponse)
     - [TimeFilter](#jonline-TimeFilter)
+    - [UserAttendee](#jonline-UserAttendee)
   
     - [AttendanceStatus](#jonline-AttendanceStatus)
     - [EventListingType](#jonline-EventListingType)
@@ -446,12 +447,13 @@ from its own cache (for things like admin/bot icons).
 <a name="jonline-ContactMethod"></a>
 
 ### ContactMethod
-
+A contact method for a user. Models designed to support verification,
+but verification RPCs are not yet implemented.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| value | [string](#string) | optional | `mailto:` or `tel:` URL. |
+| value | [string](#string) | optional | Either a `mailto:` or `tel:` URL. |
 | visibility | [Visibility](#jonline-Visibility) |  |  |
 | supported_by_server | [bool](#bool) |  | Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method. |
 | verified | [bool](#bool) |  | Indicates the user has completed verification of the contact method. Verification requires `supported_by_server` to be `true`. |
@@ -464,14 +466,14 @@ from its own cache (for things like admin/bot icons).
 <a name="jonline-Follow"></a>
 
 ### Follow
-
+Model for a user&#39;s follow of another user.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| user_id | [string](#string) |  |  |
-| target_user_id | [string](#string) |  |  |
-| target_user_moderation | [Moderation](#jonline-Moderation) |  |  |
+| user_id | [string](#string) |  | The follower in the relationship. |
+| target_user_id | [string](#string) |  | The user being followed. |
+| target_user_moderation | [Moderation](#jonline-Moderation) |  | Tracks whether the target user needs to approve the follow. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 
@@ -483,14 +485,15 @@ from its own cache (for things like admin/bot icons).
 <a name="jonline-GetUsersRequest"></a>
 
 ### GetUsersRequest
-
+Request to get one or more users by a variety of parameters.
+Supported parameters depend on `listing_type`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | username | [string](#string) | optional |  |
 | user_id | [string](#string) | optional |  |
-| page | [int32](#int32) | optional | optional string group_id = 3; optional string email = 2; optional string phone = 3; |
+| page | [int32](#int32) | optional |  |
 | listing_type | [UserListingType](#jonline-UserListingType) |  |  |
 
 
@@ -524,8 +527,8 @@ to reconcile memberships with groups.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| user_id | [string](#string) |  |  |
-| group_id | [string](#string) |  |  |
+| user_id | [string](#string) |  | The member (or requested/invited member). |
+| group_id | [string](#string) |  | The group the membership pertains to. |
 | permissions | [Permission](#jonline-Permission) | repeated | Valid Membership Permissions are: * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS` * `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS` * `ADMIN` and `MODERATE_USERS` |
 | group_moderation | [Moderation](#jonline-Moderation) |  | Tracks whether group moderators need to approve the membership. |
 | user_moderation | [Moderation](#jonline-Moderation) |  | Tracks whether the user needs to approve the membership. |
@@ -1003,9 +1006,7 @@ and Event Instances.
 | visibility | [Visibility](#jonline-Visibility) |  | The visibility of the Post. |
 | moderation | [Moderation](#jonline-Moderation) |  | The moderation of the Post. |
 | current_group_post | [GroupPost](#jonline-GroupPost) | optional | If the Post was retrieved from GetPosts with a group_id, the GroupPost metadata may be returned along with the Post. |
-| replies | [Post](#jonline-Post) | repeated | Hierarchical replies to this post.
-
-There will never be more than `reply_count` replies. However, there may be fewer than `reply_count` replies if some replies are hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts in the frontend. |
+| replies | [Post](#jonline-Post) | repeated | Hierarchical replies to this post. There will never be more than `reply_count` replies. However, there may be fewer than `reply_count` replies if some replies are hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts in the frontend. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | published_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
@@ -1083,15 +1084,17 @@ A high-level enumeration of general ways of requesting posts.
 <a name="jonline-AnonymousAttendee"></a>
 
 ### AnonymousAttendee
-The visibility on `AnonymousAttendee` `ContactMethod`s support the `LIMITED` visibility, which will
+An anonymous internet user who has RSVP&#39;d to an `EventInstance`.
+
+(TODO:) The visibility on `AnonymousAttendee` `ContactMethod`s should support the `LIMITED` visibility, which will
 make them visible to the event creator.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
+| name | [string](#string) |  | A name for the anonymous user. For instance, &#34;Bob Gomez&#34; or &#34;The guy on your front porch.&#34; |
 | contact_methods | [ContactMethod](#jonline-ContactMethod) | repeated | Contact methods for anonymous attendees. Currently not linked to Contact methods for users. |
-| auth_token | [string](#string) | optional | Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. |
+| auth_token | [string](#string) | optional | Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new `EventAttendance`. |
 
 
 
@@ -1101,15 +1104,18 @@ make them visible to the event creator.
 <a name="jonline-Event"></a>
 
 ### Event
+An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
+about the `Event`. Actual time data lies in its `EventInstances`.
 
+(Eventually, Jonline Events should also support ticketing.)
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| post | [Post](#jonline-Post) |  |  |
-| info | [EventInfo](#jonline-EventInfo) |  |  |
-| instances | [EventInstance](#jonline-EventInstance) | repeated |  |
+| id | [string](#string) |  | Unique ID for the event generated by the Jonline BE. |
+| post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (names). Its `PostContext` should be `EVENT`. |
+| info | [EventInfo](#jonline-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
+| instances | [EventInstance](#jonline-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
 
 
 
@@ -1134,8 +1140,9 @@ they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
 | event_instance_id | [string](#string) |  |  |
-| user_id | [string](#string) |  |  |
+| user_attendee | [UserAttendee](#jonline-UserAttendee) |  |  |
 | anonymous_attendee | [AnonymousAttendee](#jonline-AnonymousAttendee) |  |  |
 | number_of_guests | [uint32](#uint32) |  |  |
 | status | [AttendanceStatus](#jonline-AttendanceStatus) |  |  |
@@ -1286,6 +1293,23 @@ Time filter that simply works on the starts_at and ends_at fields.
 | ends_after | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | starts_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 | ends_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+
+
+
+
+
+
+<a name="jonline-UserAttendee"></a>
+
+### UserAttendee
+Wire-identical to [Author](#author), but with a different name to avoid confusion.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_id | [string](#string) |  |  |
+| username | [string](#string) | optional |  |
+| avatar | [MediaReference](#jonline-MediaReference) | optional |  |
 
 
 

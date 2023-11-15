@@ -103,7 +103,7 @@ impl ToProtoEventAttendance for (models::EventAttendance, Option<models::Author>
             id: self.0.id.to_proto_id(),
             event_instance_id: self.0.event_instance_id.to_proto_id(),
             attendee: match (&self.1, &self.0.anonymous_attendee) {
-                (Some(author), _) => Some(Attendee::UserAttendee(author.to_proto(None))),
+                (Some(author), _) => Some(Attendee::UserAttendee(author.to_proto_user_attendee(None))),
                 (_, Some(anonymous_attendee)) => {
                     Some(Attendee::AnonymousAttendee(AnonymousAttendee {
                         name: anonymous_attendee

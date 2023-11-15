@@ -122,12 +122,9 @@ message Post {
   // metadata may be returned along with the Post.
   optional GroupPost current_group_post = 18;
 
-  // Hierarchical replies to this post.
-  //
-  // There will never be more than `reply_count` replies. However,
+  // Hierarchical replies to this post. There will never be more than `reply_count` replies. However,
   // there may be fewer than `reply_count` replies if some replies are
-  // hidden by moderation or visibility.
-  // Replies are not generally loaded by default, but can be added to Posts
+  // hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts
   // in the frontend.
   repeated Post replies = 19;
 

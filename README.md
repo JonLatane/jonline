@@ -6,9 +6,9 @@ Jonline is an open-source, community-scale social network designed to be capable
 These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
 | Name                                                                                | Purpose                          | Links                                                                     |
 | ----------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------- |
-| [Jonline <br> ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io) | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/) |
-| [Bull City Social <br> ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/) |
-| [Oak City Social <br> ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/) | Raleigh, NC Community Page | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/) |
+| [Jonline <br> ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io) | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/) |
+| [Bull City Social <br> ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) |
+| [Oak City Social <br> ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/) | Raleigh, NC Community Page | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/) |
 
 ### Native App Releases
 | Workflow Status                                                                                                                                                                        | Stable Release | Beta Release                                             | Notes                                                                           |
@@ -53,7 +53,8 @@ These badges link to the communities' "About" pages. The versions, names, and/or
     - [Media](#media)
     - [Posts](#posts)
     - [Events](#events)
-  - [Protocol documentation](#protocol-documentation)
+  - [Documentation](#documentation)
+    - [Protocol Documentation](#protocol-documentation)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deploying to other namespaces](#deploying-to-other-namespaces)
     - [Validating your deployment](#validating-your-deployment)
@@ -139,8 +140,11 @@ Posts are also reused for Events, and will be similarly reused for future featur
 ### Events
 Events are a thin layer atop Posts. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data.
 
-## Protocol documentation
-A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is pretty readable](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline).
+## Documentation
+Jonline documentation consists of Markdown in the [`docs/` directory](https://github.com/JonLatane/jonline/tree/main/docs), starting from [`docs/README.md`](https://github.com/JonLatane/jonline/blob/main/docs/README.md).
+
+### Protocol Documentation
+A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their documentation (for example, [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol)).
 
 ## Quick deploy to your own cluster
 If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) First make sure `kubectl` is setup correctly and your instance has the `jonline` namespace available with `kubectl get services` and `kubectl get namespace jonline`:

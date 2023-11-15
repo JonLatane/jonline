@@ -18,7 +18,10 @@ pub fn upsert_event_attendance(
     conn: &mut PgPooledConnection,
 ) -> Result<EventAttendance, Status> {
     if &request.number_of_guests < &1 {
-        return Err(Status::new(Code::InvalidArgument, "invalid_number_of_guests"));
+        return Err(Status::new(
+            Code::InvalidArgument,
+            "invalid_number_of_guests",
+        ));
     }
 
     let event_instance_id = request
@@ -157,7 +160,9 @@ pub fn upsert_event_attendance(
                 inviting_user_id,
                 request.status.to_proto_attendance_status(),
             ) {
-                (Some(_), _) => AttendanceStatus::Requested.to_string_attendance_status(),
+                (Some(_), _) if !is_own_attendance => AttendanceStatus::Requested.to_string_attendance_status(),
+                (None, Some(AttendanceStatus::Going)) => AttendanceStatus::Going.to_string_attendance_status(),
+                (None, Some(AttendanceStatus::NotGoing)) => AttendanceStatus::NotGoing.to_string_attendance_status(),
                 _ => AttendanceStatus::Interested.to_string_attendance_status(),
             };
             let attendance = diesel::insert_into(event_attendances::table)
@@ -173,6 +178,12 @@ pub fn upsert_event_attendance(
                     })?,
                     public_note: request.public_note,
                     private_note: request.private_note,
+                    moderation: (if is_anonymous {
+                        Moderation::Pending
+                    } else {
+                        Moderation::Unmoderated
+                    })
+                    .to_string_moderation(),
                 })
                 .get_result::<models::EventAttendance>(conn)
                 .map_err(|_e| Status::new(Code::Internal, "failed_to_create_event_attendance"))?;

@@ -118,6 +118,9 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
 
         }, 1);
       }
+      setTimeout(() => {
+        store.dispatch(loadEventsPage({ page: 0, listingType: defaultEventListingType, filter: undefined }));
+      }, 1);
     });
     builder.addCase(updateEvent.rejected, (state, action) => {
       state.updateStatus = "errored";

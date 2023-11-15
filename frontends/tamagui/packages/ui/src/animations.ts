@@ -69,7 +69,7 @@ export const standardHorizontalAnimation = {
   o: 1,
   x: 0,
   enterStyle: { x: -29, o: 0, },
-  exitStyle: { x: 29, o: 0, },
+  exitStyle: { x: -29, o: 0, },
 }
 
 export const reverseHorizontalAnimation = {

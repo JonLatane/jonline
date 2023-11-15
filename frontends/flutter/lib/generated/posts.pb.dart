@@ -544,13 +544,10 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(18)
   GroupPost ensureCurrentGroupPost() => $_ensure(16);
 
-  ///  Hierarchical replies to this post.
-  ///
-  ///  There will never be more than `reply_count` replies. However,
-  ///  there may be fewer than `reply_count` replies if some replies are
-  ///  hidden by moderation or visibility.
-  ///  Replies are not generally loaded by default, but can be added to Posts
-  ///  in the frontend.
+  /// Hierarchical replies to this post. There will never be more than `reply_count` replies. However,
+  /// there may be fewer than `reply_count` replies if some replies are
+  /// hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts
+  /// in the frontend.
   @$pb.TagNumber(19)
   $core.List<Post> get replies => $_getList(17);
 

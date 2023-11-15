@@ -8,6 +8,7 @@ import { hasPermission } from "app/utils/permission_utils";
 import { createParam } from "solito";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import RsvpCard from "./rsvp_card";
+import { passes, pending } from "app/utils/moderation_utils";
 
 export interface EventRsvpManagerProps {
   event: Event;
@@ -32,6 +33,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   let { dispatch, accountOrServer } = useCredentialDispatch();
   const { account } = accountOrServer;
+  const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
 
   const showRsvpSection = event?.info?.allowsRsvps &&
     (event?.info?.allowsAnonymousRsvps || hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS));
@@ -102,33 +104,36 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   const canRsvp = (newRsvpMode === 'user' && account?.user) || anonymousRsvpName.length > 0;
 
+  const upsertableAttendance = instance ? {
+    eventInstanceId: instance.id,
+    userAttendee: newRsvpMode === 'user'
+      ? { userId: account?.user?.id }
+      : undefined,
+    anonymousAttendee: newRsvpMode === 'anonymous' ? {
+      name: anonymousRsvpName,
+      authToken: anonymousAuthToken
+    } : undefined,
+    status: rsvpStatus,
+    numberOfGuests: numberOfGuests,
+    privateNote,
+    publicNote,
+  } : undefined;
+
   const [upserting, setUpserting] = useState(false);
   async function upsertRsvp() {
     setUpserting(true);
 
     const client = await getCredentialClient(accountOrServer);
-    client.upsertEventAttendance({
-      eventInstanceId: instance.id,
-      userAttendee: newRsvpMode === 'user'
-        ? { userId: account?.user?.id }
-        : undefined,
-      anonymousAttendee: newRsvpMode === 'anonymous' ? {
-        name: anonymousRsvpName,
-        authToken: anonymousAuthToken
-      } : undefined,
-      status: rsvpStatus,
-      numberOfGuests: numberOfGuests,
-      privateNote,
-      publicNote,
-    }, client.credential).then((attendance) => {
+    client.upsertEventAttendance(upsertableAttendance!, client.credential).then((attendance) => {
       setAttendances([
         attendance,
         ...attendances.filter(a => a.id !== attendance.id)
       ]);
-      setNewRsvpMode(undefined);
-      // setNewRsvpMode(undefined);
+
       if (newRsvpMode === 'anonymous') {
         setQueryAnonAuthToken(attendance.anonymousAttendee?.authToken ?? '');
+      } else {
+        setNewRsvpMode(undefined);
       }
     }).finally(() => setUpserting(false));
   }
@@ -167,13 +172,21 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   }
 
   const editingAttendance = newRsvpMode === 'anonymous' ? currentAnonRsvp : newRsvpMode === 'user' ? currentRsvp : undefined;
-  const displayedAttendances = [
-    ...attendances.filter(a => ![currentAnonRsvp?.id, currentRsvp?.id].includes(a.id))
-  ];
-  const [goingRsvpCount, goingAttendeeCount] = attendances.filter(a => a.status === AttendanceStatus.GOING)
+
+  const nonPendingAttendances = attendances.filter(a => passes(a.moderation));
+  const [goingRsvpCount, goingAttendeeCount] = nonPendingAttendances
+    .filter(a => a.status === AttendanceStatus.GOING)
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
-  const [interestedRsvpCount, interestedAttendeeCount] = attendances.filter(a => [AttendanceStatus.INTERESTED, AttendanceStatus.REQUESTED].includes(a.status))
+  const [interestedRsvpCount, interestedAttendeeCount] = nonPendingAttendances
+    .filter(a => [AttendanceStatus.INTERESTED, AttendanceStatus.REQUESTED].includes(a.status))
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
+  const pendingAttendances = attendances.filter(a => pending(a.moderation));
+  const [pendingRsvpCount, pendingAttendeeCount] = pendingAttendances
+    .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
+  const hasPendingAttendances = pendingRsvpCount > 0 || pendingAttendeeCount > 0;
+
+  const displayedAttendances = [...pendingAttendances.sort((a, b) => a.status - b.status), ...nonPendingAttendances.sort((a, b) => a.status - b.status)]
+    .filter(a => ![currentAnonRsvp?.id, currentRsvp?.id].includes(a.id));
 
   return showRsvpSection
     ? <YStack space='$2' mb='$4' mx='$3' >
@@ -240,6 +253,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     value={anonymousAuthToken}
                     onChange={(data) => { setQueryAnonAuthToken(data.nativeEvent.text) }} />
                   : <Paragraph size='$1' my='auto' f={1}>Invite #{anonymousAuthToken}</Paragraph>} */}
+                {queryAnonAuthToken && queryAnonAuthToken.length > 0 && !currentAnonRsvp
+                  ? <Paragraph size='$2' mx='$4' mb='$2' als='center' ta='center'>
+                    Your anonymous RSVP token was not found. Check the link you used to get here, or just create a new anonymous RSVP.
+                  </Paragraph>
+                  : undefined}
                 {!previewingRsvp
                   ? <Input textContentType="name" f={1}
                     my='$1'
@@ -331,9 +349,75 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             {newRsvpMode === 'anonymous'
               ? <>
                 {queryAnonAuthToken && queryAnonAuthToken.length > 0
-                  ? <Paragraph size='$4' mx='$4' my='$1' als='center' ta='center'>
-                    Save <Anchor href={`/rsvp/${queryAnonAuthToken}`} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
-                  </Paragraph>
+                  ? <>
+                    {currentAnonRsvp
+                      ? <>
+                        <Paragraph size='$4' mx='$4' my='$1' als='center' ta='center'>
+                          Save <Anchor href={`/rsvp/${queryAnonAuthToken}`} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
+                        </Paragraph>
+
+                        <Dialog>
+                          <Dialog.Trigger asChild>
+                            <Button transparent mx='auto' color={primaryAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
+                              Create New Anonymous RSVP
+                            </Button>
+                          </Dialog.Trigger>
+                          <Dialog.Portal zi={1000011}>
+                            <Dialog.Overlay
+                              key="overlay"
+                              animation="quick"
+                              o={0.5}
+                              enterStyle={{ o: 0 }}
+                              exitStyle={{ o: 0 }}
+                            />
+                            <Dialog.Content
+                              bordered
+                              elevate
+                              key="content"
+                              animation={[
+                                'quick',
+                                {
+                                  opacity: {
+                                    overshootClamping: true,
+                                  },
+                                },
+                              ]}
+                              m='$3'
+                              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                              x={0}
+                              scale={1}
+                              opacity={1}
+                              y={0}
+                            >
+                              <YStack space>
+                                <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
+                                <Dialog.Description>
+                                  Make sure you've saved the <Anchor href={`/rsvp/${queryAnonAuthToken}`} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor>
+                                  to update/delete your current RSVP later!
+                                </Dialog.Description>
+
+                                <XStack space="$3" jc="flex-end">
+                                  <Dialog.Close asChild>
+                                    <Button>Cancel</Button>
+                                  </Dialog.Close>
+                                  <Dialog.Close asChild>
+                                    {/* <Theme inverse> */}
+                                    <Button color={primaryAnchorColor}
+                                      onPress={() => setQueryAnonAuthToken(undefined)}>
+                                      Delete
+                                    </Button>
+                                    {/* </Theme> */}
+                                  </Dialog.Close>
+                                </XStack>
+                              </YStack>
+                            </Dialog.Content>
+                          </Dialog.Portal>
+                        </Dialog>
+                      </>
+                      : undefined}
+
+                  </>
                   : <Paragraph size='$1' mx='$4' my='$1' ta='center'>
                     When you press "RSVP", you will be assigned a unique RSVP link.
                     You can use it to edit or delete your RSVP later.
@@ -412,9 +496,21 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             </XStack>
           </YStack>
           : undefined}
-        <Button key='rsvp-card-toggle' h={mediaQuery.gtXxxxs ? '$5' : '$10'} onPress={() => setShowRsvpCards(!showRsvpCards)} disabled={attendances.length === 0} o={attendances.length === 0 ? 0.5 : 1}>
+        <Button key='rsvp-card-toggle'
+          h={hasPendingAttendances
+            ? (mediaQuery.gtXxxxs ? '$10' : '$15')
+            : (mediaQuery.gtXxxxs ? '$5' : '$10')}
+          onPress={() => setShowRsvpCards(!showRsvpCards)} disabled={attendances.length === 0} o={attendances.length === 0 ? 0.5 : 1}>
           <XStack w='100%'>
             <YStack f={1}>
+              {hasPendingAttendances
+                ? <XStack w='100%' flexWrap="wrap">
+                  <Paragraph size='$1' fontWeight='700'>{isEventOwner ? 'Pending Your Approval' : 'Pending Owner Approval'}</Paragraph>
+                  {loaded
+                    ? <Paragraph size='$1' ml='auto'>{pendingRsvpCount} {pendingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {pendingAttendeeCount} {pendingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
+                    : <Paragraph size='$1' ml='auto'>...</Paragraph>}
+                </XStack>
+                : undefined}
               <XStack w='100%' flexWrap="wrap">
                 <Paragraph size='$1' color={primaryAnchorColor}>Going</Paragraph>
                 {loaded
@@ -426,7 +522,6 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 {loaded
                   ? <Paragraph size='$1' ml='auto'>{interestedRsvpCount} {interestedRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {interestedAttendeeCount} {interestedAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
                   : <Paragraph size='$1' ml='auto'>...</Paragraph>}
-
               </XStack>
             </YStack>
             <XStack animation='quick' my='auto' ml='$2' rotate={showRsvpCards ? '90deg' : '0deg'}>

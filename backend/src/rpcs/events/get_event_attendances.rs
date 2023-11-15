@@ -36,7 +36,8 @@ pub fn get_event_attendances(
         .first::<(models::Event, models::Post, models::EventInstance)>(conn)
         .map_err(|_e| Status::new(Code::Internal, "invalid_event_instance_id"))?;
 
-    let is_event_owner = user.is_some() && event_post.user_id == user.map(|u| u.id);
+    let is_event_owner = user.is_some() && event_post.user_id.is_some() && event_post.user_id.unwrap() == user.map(|u| u.id).unwrap();
+    log::info!("is_event_owner={:?}", is_event_owner);
 
     match (event_post.visibility.to_proto_visibility().unwrap(), user) {
         (Visibility::GlobalPublic, _) => {}

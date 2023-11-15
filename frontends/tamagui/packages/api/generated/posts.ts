@@ -247,12 +247,9 @@ export interface Post {
     | GroupPost
     | undefined;
   /**
-   * Hierarchical replies to this post.
-   *
-   * There will never be more than `reply_count` replies. However,
+   * Hierarchical replies to this post. There will never be more than `reply_count` replies. However,
    * there may be fewer than `reply_count` replies if some replies are
-   * hidden by moderation or visibility.
-   * Replies are not generally loaded by default, but can be added to Posts
+   * hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts
    * in the frontend.
    */
   replies: Post[];

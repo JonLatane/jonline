@@ -4,7 +4,7 @@ import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
 import { Event, EventInstance, Group, Media, Visibility } from "@jonline/api";
-import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions, Select, getFontSize, Sheet, Adapt, ZStack, AnimatePresence, standardAnimation, reverseStandardAnimation } from "@jonline/ui";
+import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions, Select, getFontSize, Sheet, Adapt, ZStack, AnimatePresence, standardAnimation, reverseStandardAnimation, standardHorizontalAnimation } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -27,6 +27,7 @@ import { VisibilityPicker } from "../../components/visibility_picker";
 import { postVisibilityDescription } from "../post/base_create_post_sheet";
 import { RsvpMode } from "./event_rsvp_manager";
 import { ToggleRow } from "app/components/toggle_row";
+import { themedButtonBackground } from "app/utils/themed_button_background";
 
 interface Props {
   event: Event;
@@ -55,7 +56,7 @@ export const EventCard: React.FC<Props> = ({
   const currentUser = useAccount()?.user;
   const post = event.post!;
 
-  const { server, textColor, primaryColor, navAnchorColor: navColor, backgroundColor: themeBgColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
+  const { server, textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor } = useServerTheme();
   const [editing, _setEditing] = useState(false);
   function setEditing(value: boolean) {
     _setEditing(value);
@@ -275,16 +276,31 @@ export const EventCard: React.FC<Props> = ({
 
   const [scrollInstancesVertically, setScrollInstancesVertically] = useState(false);
   const [showPastInstances, setShowPastInstances] = useState(false);
+
+  const canEasilySeeInstances = (instances: EventInstance[]) => mediaQuery.gtXxs ? instances.length <= 3 : instances.length <= 2;
+  const canEasilySeeAllPastInstances = canEasilySeeInstances(instances);
   const filteredInstances = showPastInstances
     ? instances
     : instances.filter(isNotPastInstance);
   const sortedFilteredInstances = [...filteredInstances].sort(instanceTimeSort);
-  const displayedInstances = editing || scrollInstancesVertically
-    ? sortedFilteredInstances
-    : [
-      ...(selectedInstance ? [selectedInstance] : []),
-      ...sortedFilteredInstances.filter(i => i.id != selectedInstance?.id)
-    ];
+  const canEasilySeeAllInstances = canEasilySeeInstances(sortedFilteredInstances);
+  const arrangedInstances = canEasilySeeAllPastInstances
+    ? instances
+    : canEasilySeeAllInstances
+      ? sortedFilteredInstances
+      : editing || scrollInstancesVertically || canEasilySeeAllInstances
+        ? sortedFilteredInstances
+        : [
+          ...(selectedInstance ? [selectedInstance] : []),
+          ...sortedFilteredInstances.filter(i => i.id != selectedInstance?.id)
+        ];
+
+  const displayedInstances = selectedInstance
+    ? arrangedInstances.map(i => i.id).includes(selectedInstance.id ?? 'undefinedid')
+      ? arrangedInstances
+      : [selectedInstance, ...arrangedInstances]
+    : arrangedInstances;
+  ;
   // Old displayedInstances:
   //editingInstance
   //? [editingInstance, ...sortedFilteredInstances.filter(i => i.id != editingInstance.id)]
@@ -295,10 +311,10 @@ export const EventCard: React.FC<Props> = ({
     ? <Anchor key='post-link' textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
       <XStack>
         <YStack my='auto' mr='$1'>
-          <Link size='$1' color={navColor} />
+          <Link size='$1' color={navAnchorColor} />
         </YStack>
         <YStack f={1} my='auto'>
-          <Paragraph size="$2" color={navColor} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">{post.link}</Paragraph>
+          <Paragraph size="$2" color={navAnchorColor} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">{post.link}</Paragraph>
         </YStack>
       </XStack>
     </Anchor>
@@ -326,7 +342,7 @@ export const EventCard: React.FC<Props> = ({
         </XStack>
         {postLinkView}
         {primaryInstance
-          ? <InstanceTime key='instance-time' event={event} instance={primaryInstance} highlight />
+          ? displayedInstances.length > 1 ? undefined : <InstanceTime key='instance-time' event={event} instance={primaryInstance} highlight />
           : editing && previewingEdits
             ? <Paragraph key='missing-instance' size='$1'>This instance no longer exists.</Paragraph>
             : undefined}
@@ -343,9 +359,10 @@ export const EventCard: React.FC<Props> = ({
 
   const headerLinks = <XStack w='100%'>
     {editing && !previewingEdits ? headerLinksEdit : headerLinksView}
-    {displayedInstances.length > 3 || (displayedInstances.length > 2 && !mediaQuery.gtXxs)
-      ? <Button onPress={() => setScrollInstancesVertically(!scrollInstancesVertically)} ml="$1">
-        <ZStack h='$1' w='$1'>
+    {canEasilySeeAllInstances
+      ? undefined
+      : <Button p='$2' onPress={() => setScrollInstancesVertically(!scrollInstancesVertically)} ml="$1">
+        <ZStack h='$1' w='$1' mx='auto' my='auto' transform={[{ translateY: -1 }]}>
           <XStack animation='standard' o={scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
             <ChevronRight />
           </XStack>
@@ -353,8 +370,7 @@ export const EventCard: React.FC<Props> = ({
             <Menu />
           </XStack>
         </ZStack>
-      </Button>
-      : undefined}
+      </Button>}
   </XStack>;
 
   const contentView = editing || (post.content && post.content) != ''
@@ -410,7 +426,7 @@ export const EventCard: React.FC<Props> = ({
     const isPrimary = i.id == primaryInstance?.id;
     const isEditingInstance = i.id == editingInstance?.id;
     const highlight = editing ? isEditingInstance : isPrimary;
-    let result = <YStack mx={editing ? '$2' : undefined} o={highlight ? 1 : 0.5} mb={scrollInstancesVertically ? '$2' : undefined}>
+    let result = <YStack key={`instance-${i.id}`} mx={editing ? '$2' : undefined} animation='standard' {...standardHorizontalAnimation} o={highlight ? 1 : 0.5} mb={scrollInstancesVertically ? '$2' : undefined}>
       <InstanceTime key={i.id} linkToInstance={!editing}
         event={event} instance={i}
         highlight={highlight}
@@ -575,9 +591,10 @@ export const EventCard: React.FC<Props> = ({
                 {!isPreview && (instances.length > 1 || editing)
                   ? <XStack key='instances' w='100%' mt='$2' ml='$4' space>
                     <YStack key='instances-buttons' my='$2' space="$3">
-                      {hasPastInstances
+                      {hasPastInstances && !canEasilySeeAllPastInstances
                         ? <Button mr={-7} size='$3'
-                          color={showPastInstances ? navAnchorColor : undefined}
+                          {...showPastInstances ? themedButtonBackground(navColor, navTextColor) : {}}
+                          // color={showPastInstances ? navAnchorColor : undefined}
                           circular={(displayedInstances?.length ?? 0) > 0} icon={History}
                           onPress={() => setShowPastInstances(!showPastInstances)} >
                           {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
@@ -590,11 +607,15 @@ export const EventCard: React.FC<Props> = ({
 
                     {scrollInstancesVertically
                       ? <XStack key='instance-display' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
-                        {displayedInstances?.map((i) => renderInstance(i))}
+                        <AnimatePresence>
+                          {displayedInstances?.map((i) => renderInstance(i))}
+                        </AnimatePresence>
                       </XStack>
                       : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
                         <XStack mt='$1'>
-                          {displayedInstances?.map((i) => renderInstance(i))}
+                          <AnimatePresence>
+                            {displayedInstances?.map((i) => renderInstance(i))}
+                          </AnimatePresence>
                         </XStack>
                       </ScrollView>}
 
