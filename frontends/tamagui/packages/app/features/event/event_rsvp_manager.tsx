@@ -536,67 +536,81 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
         </Button>
         {showRsvpCards
           ? <YStack key='attendance-cards' mt='$2' space='$2' animation='standard' {...standardAnimation}>
-            {currentRsvp || currentAnonRsvp
-              ? <Heading size='$6' mx='auto'>Your {currentRsvp && currentAnonRsvp ? 'RSVPs' : 'RSVP'}</Heading>
-              : undefined}
-            {loadFailed
-              ? <AlertTriangle />
-              : undefined}
-            {currentAnonRsvp && newRsvpMode !== 'anonymous'
-              ? <RsvpCard key={`rsvp-${currentAnonRsvp.anonymousAttendee?.authToken}`}
-                attendance={currentAnonRsvp}
-                event={event}
-                instance={instance}
-                onPressEdit={() => {
-                  setNewRsvpMode('anonymous');
-                  document.querySelector('#rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-                }}
-                onModerated={updateAttendance}
-              /> : undefined}
-            {currentRsvp && newRsvpMode !== 'user'
-              ? <RsvpCard key={`rsvp-${currentRsvp.userAttendee?.userId}`}
-                attendance={currentRsvp}
-                event={event}
-                instance={instance}
-                onPressEdit={() => {
-                  setNewRsvpMode('user');
-                  document.querySelector('#rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-                }}
-                onModerated={updateAttendance}
-              /> : undefined}
+            <AnimatePresence>
+              {loadFailed
+                ? <AlertTriangle key='error' />
+                : undefined}
+
+              {currentRsvp || currentAnonRsvp
+                ? <Heading size='$6' mx='auto' key='your-rsvps'
+                  animation='standard'
+                  {...standardAnimation}>Your {currentRsvp && currentAnonRsvp ? 'RSVPs' : 'RSVP'}</Heading>
+                : undefined}
+              {currentAnonRsvp && newRsvpMode !== 'anonymous'
+                ? <RsvpCard key={`current-anon-rsvp-${currentAnonRsvp.anonymousAttendee?.authToken}`}
+                  attendance={currentAnonRsvp}
+                  event={event}
+                  instance={instance}
+                  onPressEdit={() => {
+                    setNewRsvpMode('anonymous');
+                    document.querySelector('#rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                  }}
+                  onModerated={updateAttendance}
+                /> : undefined}
+              {currentRsvp && newRsvpMode !== 'user'
+                ? <RsvpCard key={`current-rsvp-${currentRsvp.userAttendee?.userId}`}
+                  attendance={currentRsvp}
+                  event={event}
+                  instance={instance}
+                  onPressEdit={() => {
+                    setNewRsvpMode('user');
+                    document.querySelector('#rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                  }}
+                  onModerated={updateAttendance}
+                /> : undefined}
+
               {pendingAttendances.length > 0
-                ? <Heading size='$6' mx='auto'>Pending RSVPs</Heading>
+                ? <Heading size='$6' mx='auto' key='pending-rsvps'
+                  animation='standard'
+                  {...standardAnimation}>Pending RSVPs</Heading>
                 : undefined}
               {pendingAttendances.map((attendance, index) => {
-                return <RsvpCard key={`rsvp-${attendance.userAttendee?.userId ?? index}`}
+                return <RsvpCard key={`pending-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}
                   instance={instance}
                   onModerated={updateAttendance}
                 />;
               })}
+
               {nonPendingAttendances.length > 0
-                ? <Heading size='$6' mx='auto'>Others' RSVPs</Heading>
+                ? <Heading size='$6' mx='auto' key='other-rsvps'
+                  animation='standard'
+                  {...standardAnimation}>Others' RSVPs</Heading>
                 : undefined}
               {nonPendingAttendances.map((attendance, index) => {
-                return <RsvpCard key={`rsvp-${attendance.userAttendee?.userId ?? index}`}
+                return <RsvpCard key={`non-pending-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}
                   instance={instance}
                   onModerated={updateAttendance}
                 />;
               })}
+
               {rejectedAttendances.length > 0
-                ? <Heading size='$6' mx='auto'>Rejected RSVPs</Heading>
+                ? <Heading size='$6' mx='auto' key='rejected-rsvps'
+                  animation='standard'
+                  {...standardAnimation}>Rejected RSVPs</Heading>
                 : undefined}
               {rejectedAttendances.map((attendance, index) => {
-                return <RsvpCard key={`rsvp-${attendance.userAttendee?.userId ?? index}`}
+                return <RsvpCard key={`rejected-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}
                   instance={instance}
                   onModerated={updateAttendance}
                 />;
               })}
+            </AnimatePresence>
           </YStack>
           : undefined}
       </AnimatePresence>

@@ -8,6 +8,7 @@ import { AuthorInfo } from "../post/author_info";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { ModerationPicker } from "app/components/moderation_picker";
 import { passes } from "app/utils/moderation_utils";
+import { standardAnimation } from '../../../ui/src/animations';
 
 interface Props {
   event: Event;
@@ -45,11 +46,14 @@ export const RsvpCard: React.FC<Props> = ({
   }
 
   return <Card theme="dark" elevate size="$4" bordered
+    animation='standard'
+    {...standardAnimation}
     key={`attendance-card-${attendance.id}`}
     margin='$0'
     scale={1}
-    opacity={1}
+    // opacity={1}
     y={0}
+    mb='$2'
   >
     <Card.Header>
       <XStack>
@@ -109,9 +113,9 @@ export const RsvpCard: React.FC<Props> = ({
 
 export function attendanceModerationDescription(v: Moderation) {
   switch (v) {
-    case Moderation.UNMODERATED: return 'Not moderated, nor awaiting moderation. Visible to anyone who can view this event.';
+    case Moderation.UNMODERATED: return 'Visible to anyone who can view this event.';
     case Moderation.REJECTED: return 'Rejected by the event owner. Visible only to attendee and owner.';
-    case Moderation.APPROVED: return 'Approved by the event owner. Visible to anyone who can view the event.';
+    case Moderation.APPROVED: return 'Visible to anyone who can view the event.';
     case Moderation.PENDING: return 'Awaiting approval by the event owner. Visible only to attendee and owner.';
   }
 }
