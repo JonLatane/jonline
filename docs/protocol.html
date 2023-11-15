@@ -2677,21 +2677,9 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h3 id="eventattendance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventattendance"><span class="octicon octicon-link"></span></a>EventAttendance</h3>
     <p>Describes the attendance of a user at an <code>EventInstance</code>. Such as:</p>
     <ul>
-      <li>A user's RSVP to an <code>EventInstance</code>.</li>
+      <li>A user's RSVP to an <code>EventInstance</code> (one of <code>INTERESTED</code>, <code>REQUESTED</code> (i.e. invited), <code>GOING</code>, <code>NOT_GOING</code>).</li>
       <li>Invitation status of a user to an <code>EventInstance</code>.</li>
       <li><code>ContactMethod</code>-driven management for anonymous RSVPs to an <code>EventInstance</code>.</li>
-    </ul>
-    <p>
-      <code>EventAttendance.status</code> works like a state machine, but state transitions are governed only
-      by the current time and the start/end times of <code>EventInstance</code>s:
-    </p>
-    <ul>
-      <li>Before an event starts, EventAttendance essentially only describes RSVPs and invitations.</li>
-      <li>
-        After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate
-        they <code>WENT</code> or <code>DID_NOT_GO</code>. Invitations can no longer be created.
-      </li>
-      <li>During an event, invites, can be sent, RSVPs can be made, <em>and</em> users can indicate they <code>WENT</code> or <code>DID_NOT_GO</code>.</li>
     </ul>
     <table>
       <thead>
@@ -2707,55 +2695,55 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>Unique server-generated ID for the attendance.</td>
         </tr>
         <tr>
           <td>event_instance_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>ID of the <code>EventInstance</code> the attendance is for.</td>
         </tr>
         <tr>
           <td>user_attendee</td>
           <td><a href="#jonline-UserAttendee">UserAttendee</a></td>
           <td></td>
-          <td></td>
+          <td>If the attendance is non-anonymous, core data about the user.</td>
         </tr>
         <tr>
           <td>anonymous_attendee</td>
           <td><a href="#jonline-AnonymousAttendee">AnonymousAttendee</a></td>
           <td></td>
-          <td></td>
+          <td>If the attendance is anonymous, core data about the anonymous attendee.</td>
         </tr>
         <tr>
           <td>number_of_guests</td>
           <td><a href="#uint32">uint32</a></td>
           <td></td>
-          <td></td>
+          <td>Number of guests including the RSVPing user. (Minimum 1).</td>
         </tr>
         <tr>
           <td>status</td>
           <td><a href="#jonline-AttendanceStatus">AttendanceStatus</a></td>
           <td></td>
-          <td></td>
+          <td>The user's RSVP to an <code>EventInstance</code> (one of <code>INTERESTED</code>, <code>REQUESTED</code> (i.e. invited), <code>GOING</code>, <code>NOT_GOING</code>)</td>
         </tr>
         <tr>
           <td>inviting_user_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>User who invited the attendee. (Not yet used.)</td>
         </tr>
         <tr>
           <td>private_note</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>Public note for everyone who can see the event to see.</td>
         </tr>
         <tr>
           <td>public_note</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>Private note for the event owner.</td>
         </tr>
         <tr>
           <td>moderation</td>

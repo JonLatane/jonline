@@ -1126,29 +1126,22 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 
 ### EventAttendance
 Describes the attendance of a user at an `EventInstance`. Such as:
-* A user&#39;s RSVP to an `EventInstance`.
+* A user&#39;s RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`).
 * Invitation status of a user to an `EventInstance`.
 * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
-
-`EventAttendance.status` works like a state machine, but state transitions are governed only 
-by the current time and the start/end times of `EventInstance`s:
-* Before an event starts, EventAttendance essentially only describes RSVPs and invitations.
-* After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate 
-they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
-* During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| event_instance_id | [string](#string) |  |  |
-| user_attendee | [UserAttendee](#jonline-UserAttendee) |  |  |
-| anonymous_attendee | [AnonymousAttendee](#jonline-AnonymousAttendee) |  |  |
-| number_of_guests | [uint32](#uint32) |  |  |
-| status | [AttendanceStatus](#jonline-AttendanceStatus) |  |  |
-| inviting_user_id | [string](#string) | optional |  |
-| private_note | [string](#string) |  |  |
-| public_note | [string](#string) |  |  |
+| id | [string](#string) |  | Unique server-generated ID for the attendance. |
+| event_instance_id | [string](#string) |  | ID of the `EventInstance` the attendance is for. |
+| user_attendee | [UserAttendee](#jonline-UserAttendee) |  | If the attendance is non-anonymous, core data about the user. |
+| anonymous_attendee | [AnonymousAttendee](#jonline-AnonymousAttendee) |  | If the attendance is anonymous, core data about the anonymous attendee. |
+| number_of_guests | [uint32](#uint32) |  | Number of guests including the RSVPing user. (Minimum 1). |
+| status | [AttendanceStatus](#jonline-AttendanceStatus) |  | The user&#39;s RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) |
+| inviting_user_id | [string](#string) | optional | User who invited the attendee. (Not yet used.) |
+| private_note | [string](#string) |  | Public note for everyone who can see the event to see. |
+| public_note | [string](#string) |  | Private note for the event owner. |
 | moderation | [Moderation](#jonline-Moderation) |  |  |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
