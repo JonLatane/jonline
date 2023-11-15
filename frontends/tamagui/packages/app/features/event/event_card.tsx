@@ -426,20 +426,21 @@ export const EventCard: React.FC<Props> = ({
     const isPrimary = i.id == primaryInstance?.id;
     const isEditingInstance = i.id == editingInstance?.id;
     const highlight = editing ? isEditingInstance : isPrimary;
-    let result = <YStack key={`instance-${i.id}`} mx={editing ? '$2' : undefined} animation='standard' {...standardHorizontalAnimation} o={highlight ? 1 : 0.5} mb={scrollInstancesVertically ? '$2' : undefined}>
+    let result = <YStack key={`instance-${i.id}`} mx={editing ? '$1' : undefined} animation='standard'
+      {...standardHorizontalAnimation} o={highlight ? 1 : 0.5} mb={scrollInstancesVertically ? '$2' : undefined}>
       <InstanceTime key={i.id} linkToInstance={!editing}
         event={event} instance={i}
         highlight={highlight}
       />
       {editing
-        ? <XStack w='100%'>
+        ? <XStack w='100%' mt='$2'>
           <Theme inverse={editingInstance?.id === i.id}>
-            <Button mx='auto' mt='$2' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
+            <Button mx='auto' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
           </Theme>
           {i.id == editingInstance?.id
             ? <Dialog>
               <Dialog.Trigger asChild>
-                <Button mx='auto' mt='$2' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
+                <Button mx='auto' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
               </Dialog.Trigger>
               <Dialog.Portal zi={1000011}>
                 <Dialog.Overlay
@@ -547,14 +548,14 @@ export const EventCard: React.FC<Props> = ({
             </Dialog>
             : undefined}
           {editedInstances.length > 1
-            ? <Button mx='auto' mt='$2' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
+            ? <Button mx='auto' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
             : undefined}
         </XStack>
         : undefined}
     </YStack>;
 
     if (editing) {
-      result = <YStack ml='$2' h={100}
+      result = <YStack ml='$1' h={100} mb='$1'
         padding='$2'
         borderRadius='$3' backgroundColor='$backgroundStrong'>
         {result}
