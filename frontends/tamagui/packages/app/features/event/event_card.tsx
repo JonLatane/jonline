@@ -117,7 +117,7 @@ export const EventCard: React.FC<Props> = ({
   }
 
   function addInstance() {
-    const newInstance = { ...defaultEventInstance(), id: `${newEventId++}` };
+    const newInstance = { ...defaultEventInstance(), id: `unsynchronized-event-instance-${newEventId++}` };
     setEditedInstances([newInstance, ...editedInstances]);
     setEditingInstance(newInstance);
   }
@@ -295,7 +295,7 @@ export const EventCard: React.FC<Props> = ({
           ...sortedFilteredInstances.filter(i => i.id != selectedInstance?.id)
         ];
 
-  const displayedInstances = selectedInstance
+  const displayedInstances = selectedInstance && !editing
     ? arrangedInstances.map(i => i.id).includes(selectedInstance.id ?? 'undefinedid')
       ? arrangedInstances
       : [selectedInstance, ...arrangedInstances]
@@ -398,7 +398,7 @@ export const EventCard: React.FC<Props> = ({
     if (editingInstance) {
       [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
         const repeatedInstance = EventInstance.create({
-          id: `${newEventId++}`,
+          id: `unsynchronized-event-instance-${newEventId++}`,
           startsAt: moment(editingInstance.startsAt).add(weeksAfter, 'weeks').toISOString(),
           endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString()
         });
@@ -546,7 +546,9 @@ export const EventCard: React.FC<Props> = ({
               </Dialog.Portal>
             </Dialog>
             : undefined}
-          <Button mx='auto' mt='$2' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
+          {editedInstances.length > 1
+            ? <Button mx='auto' mt='$2' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
+            : undefined}
         </XStack>
         : undefined}
     </YStack>;

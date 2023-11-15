@@ -22,7 +22,7 @@ export const createInstanceLink = (event: Event, instance: EventInstance, group?
 
 export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false }) => {
   const { startsAt, endsAt } = instance;
-  const { server, primaryColor, primaryAnchorColor, navAnchorColor, backgroundColor: themeBgColor } = useServerTheme();
+  const { server, primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = useServerTheme();
   const group = useGroupContext();
   const instanceLink = useLink(createInstanceLink(event, instance, group));
 
@@ -47,12 +47,19 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
   const startsAtDate = moment.utc(startsAt).local().format('MMM Do YYYY');
   const endsAtDay = moment.utc(endsAt).local().format('dddd');
   const endsAtDate = moment.utc(endsAt).local().format('MMM Do YYYY');
-  const color = highlight ? primaryAnchorColor : linkToInstance ? navAnchorColor : primaryAnchorColor;
+  const isPast = moment.utc().isAfter(moment.utc(endsAt));
+  const color = highlight
+    ? primaryAnchorColor
+    : linkToInstance
+      ? (isPast ? textColor : navAnchorColor)
+      : primaryAnchorColor;
   const key = `instance-time-${instance.id}`
+  const opacity = linkToInstance || highlight ? undefined : 0.8;
   const mainView = (startsAtDate == endsAtDate)
     ? <YStack key={key}
       backgroundColor={linkToInstance ? undefined : themeBgColor}
-      opacity={linkToInstance ? undefined : 0.8} px='$2' borderRadius='$3'>
+      opacity={opacity}
+      px='$2' borderRadius='$3'>
       <Paragraph size="$2" color={color} fontWeight='800' mx={mx} lineHeight={lh}>
         {startsAtDay}
       </Paragraph>
@@ -71,7 +78,8 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
         </Heading>
       </XStack>
     </YStack>
-    : <XStack space={linkToInstance ? undefined : '$2'}>
+    : <XStack space={linkToInstance ? undefined : '$2'}
+      opacity={opacity}>
       <YStack f={linkToInstance ? 1 : undefined}>
         {startsAt ? dateView(startsAt) : undefined}
       </YStack>
