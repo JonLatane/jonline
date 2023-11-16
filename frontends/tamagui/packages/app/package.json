@@ -19,6 +19,7 @@
     "@tamagui/lucide-icons": "latest",
     "@tamagui/shorthands": "latest",
     "@tamagui/themes": "latest",
+    "@tanstack/react-query": "^5.8.4",
     "add": "^2.0.6",
     "burnt": "^0.10.0",
     "expo-constants": "^14.2.1",

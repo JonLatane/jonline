@@ -85,11 +85,14 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
         hideAdditionalGroups={accountOrServer.account === undefined}
         hideLeaveButtons
       />
-      {selectedGroup && otherGroupCount && sharedToSelectedGroup === false ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text> : undefined}
+      {selectedGroup && otherGroupCount && sharedToSelectedGroup === false
+        ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text>
+        : undefined}
     </XStack>
     {groupPostData && selectedGroup
       ? otherGroupCount
-        ? <Text my='auto' ml={selectedGroup && otherGroupCount && sharedToSelectedGroup === false ? 0 : '$2'} fontSize={'$1'} fontFamily='$body'>
+        ? <Text my='auto' ml={selectedGroup && otherGroupCount && sharedToSelectedGroup === false ? 0 : '$2'}
+          fontSize={'$1'} fontFamily='$body'>
           {sharedToSelectedGroup === true ? ' + ' : undefined}
           {sharedToSelectedGroup === false ? 'Shared to ' : undefined}
           {otherGroupCount} group{otherGroupCount > 1 ? 's' : undefined}.

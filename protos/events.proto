@@ -80,6 +80,8 @@ message Event {
 message EventInfo {
   optional bool allows_rsvps = 1;
   optional bool allows_anonymous_rsvps = 2;
+  // No effect unless `allows_rsvps` is true.
+  optional uint32 max_attendees = 3;
 }
 
 message EventInstance {
@@ -95,7 +97,26 @@ message EventInstance {
 // To be used for ticketing, RSVPs, etc.
 // Stored as JSON in the database.
 message EventInstanceInfo {
+  optional EventInstanceRsvpInfo rsvp_info = 1;
+}
 
+message EventInstanceRsvpInfo {
+  // Overrides `EventInfo.allows_rsvps`, if set, for this instance.
+  optional bool allows_rsvps = 1;
+  // Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance.
+  optional bool allows_anonymous_rsvps = 2;
+
+  
+  optional uint32 max_attendees = 3;
+
+  optional uint32 going_rsvps = 4;
+  optional uint32 going_attendees = 5;
+
+  optional uint32 interested_rsvps = 6;
+  optional uint32 interested_attendees = 7;
+
+  optional uint32 invited_rsvps = 8;
+  optional uint32 invited_attendees = 9;
 }
 
 // EventInstance attendance statuses. State transitions may generally happen
@@ -124,7 +145,7 @@ message EventAttendances {
   repeated EventAttendance attendances = 1;
 }
 
-// Describes the attendance of a user at an `EventInstance`. Such as:
+// Could be called an "RSVP." Describes the attendance of a user at an `EventInstance`. Such as:
 // * A user's RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`).
 // * Invitation status of a user to an `EventInstance`.
 // * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.

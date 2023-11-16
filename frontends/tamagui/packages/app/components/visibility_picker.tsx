@@ -1,7 +1,7 @@
 import { Visibility } from "@jonline/api";
-import { Adapt, Heading, Paragraph, Select, Sheet, XStack, YStack, standardAnimation } from "@jonline/ui";
+import { Adapt, Heading, Paragraph, Text, Select, Sheet, Tooltip, XStack, YStack, standardAnimation } from "@jonline/ui";
 import { LinearGradient } from "@tamagui/linear-gradient";
-import { Check, ChevronDown, ChevronUp } from "@tamagui/lucide-icons";
+import { Check, ChevronDown, ChevronUp, Info } from "@tamagui/lucide-icons";
 import { styled } from 'tamagui';
 
 export type VisibilityPickerProps = {
@@ -12,17 +12,35 @@ export type VisibilityPickerProps = {
   label?: string;
   // unused as yet
   visibilityDescription?: (visibility: Visibility) => string | undefined;
+  // Does not render a picker at all. Just the label with a description as a tooltip.
+  readOnly?: boolean;
 };
 
 
-export function VisibilityPicker({ id, visibility, onChange, disabled, label, visibilityDescription = defaultVisibilityDescription }: VisibilityPickerProps) {
+export function VisibilityPicker({ id, visibility, onChange, disabled, label, visibilityDescription = defaultVisibilityDescription, readOnly }: VisibilityPickerProps) {
   function onValueSelected(v: string) {
     const selectedVisibility = parseInt(v) as Visibility;
     onChange(selectedVisibility)
   }
   const description = visibilityDescription?.(visibility);
 
-
+  if (readOnly) {
+    return <Tooltip>
+      <Tooltip.Trigger>
+        <XStack my='auto' pt='$1' opacity={0.5} space='$2'>
+          {/* <Heading size='$1' mr='$2' opacity={0.5}>Visibility:</Heading> */}
+          <Paragraph my='auto' pt='$1' size='$1'>{visibilityName(visibility)}</Paragraph>
+          {/* <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>{visibilityName(visibility)}</Text> */}
+          {/* <XStack my='auto'>
+            <Info size='$1 ' />
+          </XStack> */}
+        </XStack>
+      </Tooltip.Trigger>
+      {description ? <Tooltip.Content>
+        <Paragraph size='$1'>{description}</Paragraph>
+      </Tooltip.Content> : undefined}
+    </Tooltip>
+  }
 
   return <YStack w='100%' maw={350}>
     {/* <style>

@@ -9,6 +9,7 @@ export * from './generated/media'
 export * from './generated/groups'
 export * from './generated/posts'
 export * from './generated/events'
+export * from './generated/location'
 export * from './generated/server_configuration'
 export * from './generated/federation'
 

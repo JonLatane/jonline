@@ -9,6 +9,16 @@ import Head from 'next/head'
 import React, { startTransition } from 'react'
 import type { SolitoAppProps } from 'solito'
 import { isSafari } from '@jonline/ui'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+
+const queryClient = new QueryClient()
+
+// export default function App() {
+//    return (
+//        <Example />
+//      </QueryClientProvider>
+//    )
+// }
 
 if (process.env.NODE_ENV === 'production') {
   require('../public/tamagui.css')
@@ -33,6 +43,7 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
   }, []);
 
   const SolitoComponentShim = Component as any;
+
   return (
     <>
       <Head>
@@ -40,7 +51,7 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
         <meta name="description" content="Jonline is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends." />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/favicon.ico"/>
+        <link rel="apple-touch-icon" href="/favicon.ico" />
 
         {/* <link rel="icon" href="/favicon.ico" sizes="any" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/favicon.ico"/>
@@ -50,9 +61,12 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
         {/* <link rel="mask-icon" href="/favicon.ico" color="#000000" /> */}
 
       </Head>
-      <ThemeProvider>
-        <SolitoComponentShim {...pageProps} />
-      </ThemeProvider>
+
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <SolitoComponentShim {...pageProps} />
+        </ThemeProvider>
+      </QueryClientProvider>
     </>
   )
 }

@@ -409,7 +409,18 @@ export const PostCard: React.FC<PostCardProps> = ({
                           </Dialog>
                         </>
                       : undefined}
-                    {editing && !previewingEdits
+
+                    <XStack key='visibility-edit' mt='$2' ml='auto'>
+                      <VisibilityPicker
+                        id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
+                        label='Post Visibility'
+                        visibility={visibility}
+                        onChange={setEditedVisibility}
+                        visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'post')}
+                        readOnly={!editing || previewingEdits}
+                      />
+                    </XStack>
+                    {/* {editing && !previewingEdits
                       ? <XStack mt='$2' ml='$2'>
                         <VisibilityPicker
                           id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
@@ -422,10 +433,10 @@ export const PostCard: React.FC<PostCardProps> = ({
                         ? <Paragraph size='$1' my='auto' ml='$2'>
                           {postVisibilityDescription(visibility, groupContext, server, 'post')}
                         </Paragraph>
-                        : undefined}
+                        : undefined} */}
                     {post?.replyToPostId
                       ? undefined
-                      : <XStack pt={10} ml='auto' px='$2' maw='100%'>
+                      : <XStack pt={10} pr='$2' maw='100%'>
                         <GroupPostManager post={post} isVisible={isVisible} />
                       </XStack>}
                   </XStack>

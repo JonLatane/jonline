@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 
-import { Event, EventInstance, Group, Media, Visibility } from "@jonline/api";
+import { Event, EventInstance, Group, Location, Media, Visibility } from "@jonline/api";
 import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions, Select, getFontSize, Sheet, Adapt, ZStack, AnimatePresence, standardAnimation, reverseStandardAnimation, standardHorizontalAnimation } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import moment from "moment";
@@ -28,6 +28,7 @@ import { postVisibilityDescription } from "../post/base_create_post_sheet";
 import { RsvpMode } from "./event_rsvp_manager";
 import { ToggleRow } from "app/components/toggle_row";
 import { themedButtonBackground } from "app/utils/themed_button_background";
+import { LocationControl } from "./location_control";
 
 interface Props {
   event: Event;
@@ -89,6 +90,14 @@ export const EventCard: React.FC<Props> = ({
     editing && previewingEdits && !editedInstances.some(i => i.id === selectedInstance?.id)
       ? undefined
       : selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
+
+  function editingOrPrimary<T>(getter: (i: EventInstance | undefined) => T): T {
+    if (editingInstance) {
+      return getter(editingInstance);
+    } else {
+      return getter(primaryInstance);
+    }
+  }
 
   function saveEdits() {
     setSavingEdits(true);
@@ -646,6 +655,16 @@ export const EventCard: React.FC<Props> = ({
                     {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
                   </>
                   : undefined}
+                {primaryInstance
+                  ? <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
+                    readOnly={!editing || previewingEdits}
+                    setLocation={(location: Location) => {
+                      if (editingInstance) {
+                        updateEditingInstance({ ...editingInstance, location });
+                      }
+                    }} />
+                  : undefined}
+
               </YStack>
             </Card.Header>
             : undefined}
@@ -796,21 +815,24 @@ export const EventCard: React.FC<Props> = ({
                       </>
                     : undefined}
 
-                  {editing && !previewingEdits
-                    ? <XStack key='visibility-edit' mt='$2' ml='$2'>
-                      <VisibilityPicker
-                        id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
-                        label='Post Visibility'
-                        visibility={visibility}
-                        onChange={setEditedVisibility}
-                        visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')} />
-                    </XStack>
-                    : visibility != Visibility.GLOBAL_PUBLIC && !horizontal
+                  {/* {editing && !previewingEdits
+                    ?  */}
+                  <XStack key='visibility-edit' mt='$2' ml='auto'>
+                    <VisibilityPicker
+                      id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
+                      label='Event Visibility'
+                      visibility={visibility}
+                      onChange={setEditedVisibility}
+                      visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
+                      readOnly={!editing || previewingEdits}
+                    />
+                  </XStack>
+                  {/* : visibility != Visibility.GLOBAL_PUBLIC && !horizontal
                       ? <Paragraph key='visibility-info' size='$1' my='auto' ml='$2'>
                         {postVisibilityDescription(visibility, groupContext, server, 'Event')}
                       </Paragraph>
-                      : undefined}
-                  <XStack pt={10} ml='auto' my='auto' px='$2' maw='100%'>
+                      : undefined} */}
+                  <XStack pt={10} my='auto' pr='$2' maw='100%'>
                     <GroupPostManager post={post} isVisible={isVisible}
                       createViewHref={createGroupEventViewHref} />
                   </XStack>
