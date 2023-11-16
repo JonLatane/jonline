@@ -1,7 +1,7 @@
 import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Menu, Plus, RefreshCw, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector, useLocalApp, setBrowsingServers, setViewingRecommendedServers } from 'app/store';
+import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector, useLocalApp, setBrowsingServers, setViewingRecommendedServers, setAllowServerSelection } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -28,8 +28,7 @@ export type AccountsSheetProps = {
 export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }: AccountsSheetProps) {
   const mediaQuery = useMedia();
   const [open, setOpen] = useState(false);
-  const { allowServerSelection, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalApp();
-
+  const { allowServerSelection: allowServerSelectionSetting, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalApp();
   const [addingServer, setAddingServer] = useState(false);
   const [addingAccount, setAddingAccount] = useState(false);
   const [position, setPosition] = useState(0);
@@ -43,6 +42,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const { server, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
   const serversState = useTypedSelector((state: RootState) => state.servers);
   const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
+  const allowServerSelection = allowServerSelectionSetting || servers.length > 1;
   const serversLoading = serversState.status == 'loading';
   const newServerHostNotBlank = newServerHost != '';
   const newServerExists = servers.some(s => s.host == newServerHost);

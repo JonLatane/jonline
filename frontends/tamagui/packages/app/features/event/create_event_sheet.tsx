@@ -1,4 +1,4 @@
-import { Event, EventInstance, EventListingType, Group, Post, Visibility } from '@jonline/api';
+import { Event, EventInstance, EventListingType, Group, Location, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Text, TextArea, XStack, YStack, useMedia } from '@jonline/ui';
 import { ChevronDown, Settings } from '@tamagui/lucide-icons';
 import { RootState, clearPostAlerts, createEvent, createGroupPost, loadEventsPage, loadGroupEventsPage, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
@@ -10,6 +10,7 @@ import moment from 'moment';
 import { VisibilityPicker } from '../../components/visibility_picker';
 import EventCard from './event_card';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
+import { LocationControl } from './location_control';
 
 export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
@@ -25,6 +26,7 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [location, setLocation] = useState(Location.create({}));
 
   const endDateInvalid = !moment(endTime).isAfter(moment(startTime));
   const invalid = endDateInvalid;
@@ -99,8 +101,10 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
           <input type='datetime-local' value={endTime} min={startTime} onChange={(v) => setEndTime(v.target.value)} style={{ padding: 10 }} />
         </Text>
       </XStack>
+
       {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
 
+      <LocationControl key='location-control' location={location} setLocation={setLocation} />
     </>}
   />;
 }

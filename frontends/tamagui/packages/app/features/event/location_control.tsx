@@ -78,7 +78,7 @@ export const LocationControl: React.FC<Props> = ({
 
       <Popover size="$5" allowFlip placement='left'>
         <Popover.Trigger asChild>
-          <Button icon={MapPin} />
+          <Button circular icon={MapPin} />
         </Popover.Trigger>
 
         {/* <Adapt when="sm" platform="touch">
@@ -173,7 +173,7 @@ export const LocationControl: React.FC<Props> = ({
 
     <Popover size="$5" allowFlip placement='left'>
       <Popover.Trigger asChild>
-        <Button icon={MapPin} />
+        <Button circular ml='$3' icon={MapPin} />
       </Popover.Trigger>
 
       <Adapt when="sm" platform="touch">

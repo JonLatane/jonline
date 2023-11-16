@@ -291,7 +291,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                       </ZStack>
                     </XStack>
                     {showSettings
-                      ? <YStack key='create-post-settings' ac='center' jc='center' mx='auto' p='$3'
+                      ? <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$3'
                         animation='standard' {...standardAnimation} backgroundColor={'$backgroundStrong'} borderRadius='$5'
                       >
                         {visibility != Visibility.PRIVATE

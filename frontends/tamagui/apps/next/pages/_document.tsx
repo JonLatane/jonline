@@ -44,6 +44,8 @@ export default class Document extends NextDocument {
       <Html>
         <Head>
           <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+          <meta property="og:title" content="Jonline Social Link" />
+          <meta property="og:image" content="/favicon.ico" />
         </Head>
         <body>
           <Main />
