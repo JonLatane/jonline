@@ -416,18 +416,9 @@ export const EventCard: React.FC<Props> = ({
       });
     }
     return instances;
-  }, [repeatWeeks, editingInstance?.startsAt, editingInstance?.endsAt]);
+  }, [repeatWeeks, editingInstance?.startsAt, editingInstance?.endsAt, editingInstance?.location?.uniformlyFormattedAddress]);
 
   function doRepeatInstance() {
-    // const repeatedInstances: EventInstance[] = [];
-    // [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
-    //   const repeatedInstance = EventInstance.create({
-    //     id: `${newEventId++}`,
-    //     startsAt: moment(editingInstance!.startsAt).add(weeksAfter, 'weeks').toISOString(),
-    //     endsAt: moment(editingInstance!.endsAt).add(weeksAfter, 'weeks').toISOString()
-    //   });
-    //   repeatedInstances.push(repeatedInstance);
-    // });
     setEditedInstances([...editedInstances, ...repeatedInstances]);
     setTimeout(forceUpdate, 1);
   }
