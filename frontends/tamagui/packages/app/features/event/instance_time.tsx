@@ -38,7 +38,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
         {moment.utc(date).local().format('MMM Do YYYY')}
       </Paragraph>
       <Heading size="$2" color={color} lineHeight={lh} mx={mx}>
-        {moment.utc(date).local().format('h:mm a')}
+        {moment.utc(date).local().format('h:mma').replace(':00', '')}
       </Heading>
     </YStack>;
   }
@@ -92,7 +92,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
     </XStack>;
 
   if (linkToInstance) {
-    return <Button key={key} {...instanceLink} mx='$2' px='$2'>
+    return <Button key={key} {...instanceLink} h='auto' mx='$2' px='$2'>
       {mainView}
     </Button>;
   } else {

@@ -128,6 +128,10 @@ fn update_event_instances(
                 let mut updated_instance = existing_instance.clone();
                 let starts_at = request_instance.starts_at.to_db()?;
                 let ends_at = request_instance.ends_at.to_db()?;
+                let location = request_instance
+                    .location
+                    .as_ref()
+                    .map(|c| serde_json::to_value(c).unwrap());
                 if starts_at > ends_at {
                     return Err(Status::new(
                         Code::InvalidArgument,
@@ -138,13 +142,17 @@ fn update_event_instances(
                     ));
                 }
                 println!(
-                    "Comparing instance times: {:?} - {:?} / {:?} - {:?}",
-                    starts_at, ends_at, updated_instance.starts_at, updated_instance.ends_at
+                    "Comparing instance times and locations: {:?} - {:?} (loc: {:?}) / {:?} - {:?} (loc: {:?})",
+                    starts_at, ends_at, &location, updated_instance.starts_at, updated_instance.ends_at, &updated_instance.location
                 );
 
-                if starts_at != updated_instance.starts_at || ends_at != updated_instance.ends_at {
+                if starts_at != updated_instance.starts_at
+                    || ends_at != updated_instance.ends_at
+                    || location != updated_instance.location
+                {
                     updated_instance.starts_at = starts_at;
                     updated_instance.ends_at = ends_at;
+                    updated_instance.location = location;
                     updated_instance.updated_at = SystemTime::now().into();
                 }
                 // updated_instance.location = instance

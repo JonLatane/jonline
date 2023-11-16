@@ -588,7 +588,7 @@ export const EventCard: React.FC<Props> = ({
           y={0}
         >
           {post.link || post.title
-            ? <Card.Header>
+            ? <Card.Header paddingBottom={0}>
               <YStack w='100%'>
                 {headerLinks}
                 {!isPreview && (instances.length > 1 || editing)
@@ -668,7 +668,7 @@ export const EventCard: React.FC<Props> = ({
               </YStack>
             </Card.Header>
             : undefined}
-          <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} >
+          <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} paddingTop='$2' >
             {deleted
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%' {...footerProps}>
