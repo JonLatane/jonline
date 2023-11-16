@@ -1,5 +1,5 @@
 import { Permission, User } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Heading, Image, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, Heading, Image, Input, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
@@ -80,7 +80,17 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       <Heading size="$1" mr='auto'>{server?.host}/</Heading>
 
       {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
-      <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>
+      {editable && !editingDisabled && setUsername
+        ? <Input textContentType="name" f={1}
+          my='auto'
+          mr='$2'
+          placeholder={`Username (required)`}
+          disabled={editingDisabled} opacity={editingDisabled || username == '' ? 0.5 : 1}
+          autoCapitalize='words'
+          value={username}
+          onChange={(data) => { setUsername(data.nativeEvent.text) }} />
+        :
+        <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>}
     </YStack>
     {app.showUserIds ? <XStack o={0.6}>
       <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>

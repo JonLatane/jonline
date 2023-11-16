@@ -1,5 +1,5 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
 import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation_utils';
@@ -150,16 +150,28 @@ export function UsernameDetailsScreen() {
   const windowHeight = useWindowDimensions().height;
   const [saving, setSaving] = useState(false);
   //= useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
+  const toast = useToastController()
 
   async function saveUser() {
     if (!canEdit && !user) return;
 
+    const usernameChanged = username != user?.username;
+
     setSaving(true);
     dispatch(updateUser({
       ...accountOrServer,
-      ...{ ...user!, bio: bio ?? '', avatar, defaultFollowModeration, visibility, permissions },
+      ...{ ...user!, username: username ?? '', bio: bio ?? '', avatar, defaultFollowModeration, visibility, permissions },
     })).then((result) => {
-      setSuccessSaving(result.type == updateUser.fulfilled.type);
+      const success = result.type == updateUser.fulfilled.type;
+      if (success && usernameChanged) {
+        window.location.replace(`/${username}`);
+      }
+      if (!success) {
+        toast.show('Failed to save profile changes.', {
+          message: usernameChanged ? 'The new username may be taken or invalid.' : undefined,
+        })
+      }
+      setSuccessSaving(success);
       setSaving(false);
       setTimeout(() => setSuccessSaving(false), 3000);
     });
@@ -314,6 +326,12 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
   const isAdmin = hasAdminPermission(account?.user);
   const canEdit = isCurrentUser || isAdmin;
   const disableInputs = !editMode || !canEdit;
+
+  function doDeleteUser() {
+    dispatch(deleteUser({ ...user!, ...accountOrServer }))
+      .then(() => window.location.replace('/'));
+  }
+
   return <AnimatePresence>
     {expanded ? <YStack animation='standard' key='user-visibility-permissions'
       p='$3'
@@ -404,7 +422,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                   </Dialog.Close>
                   {/* <Dialog.Action asChild> */}
                   <Theme inverse>
-                    <Button onPress={() => dispatch(deleteUser({ ...user, ...accountOrServer }))}>Delete</Button>
+                    <Button onPress={doDeleteUser}>Delete</Button>
                   </Theme>
                   {/* </Dialog.Action> */}
                 </XStack>

@@ -378,7 +378,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       Jonline uses a standard OAuth2 flow for authentication, with rotating <code>access_token</code>s
       and <code>refresh_token</code>s.
       Authenticated calls require an <code>access_token</code> in request metadata to be included
-      directly as the value of the <code>authorization</code> header (with no <code>Bearer </code>prefix).
+      directly as the value of the <code>authorization</code> header (no <code>Bearer </code>prefix).
     </p>
     <p>
       First, use the <code>CreateAccount</code> or <code>Login</code> RPCs to fetch (and store) an initial
@@ -388,7 +388,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </p>
     <h5 id="http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs)</h5>
     <p>
-      When negotiating the gRPC connection to a host, say, <code>jonline.io</code>, before attempting
+      When first negotiating the gRPC connection to a host, say, <code>jonline.io</code>, before attempting
       to connect to <code>jonline.io</code> via gRPC on 27707/443, the client
       is expected to first attempt to <code>GET jonline.io/backend_host</code> over HTTP (port 80) or HTTPS (port 443)
       (depending upon whether the gRPC server is expected to have TLS). If the <code>backend_host</code> string resource
@@ -398,10 +398,15 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       <code>jonline.io</code>.
     </p>
     <p>
-      This negotiation enables support for external CDNs as frontends. See <a href="https://jonline.io/about">https://jonline.io/about</a> for
+      This negotiation enables support for external CDNs as frontends. See <a href="https://jonline.io/about?section=cdn">https://jonline.io/about?section=cdn</a> for
       more information about external CDN setup. Developers may wish to review the <a href="https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts">React/Tamagui</a>
       and <a href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart">Flutter</a>
       client implementations of this negotiation.
+    </p>
+    <p>
+      In the works to be released soon, Jonline will also support a "fully behind CDN" mode, where gRPC is served over port 443 and HTTP over port
+      80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare's gRPC
+      proxy support. With this, both web and gRPC resources can live behind a CDN.
     </p>
     <h4 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h4>
     <table>
