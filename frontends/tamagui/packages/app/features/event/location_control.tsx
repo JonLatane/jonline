@@ -1,6 +1,6 @@
 import { Location } from "@jonline/api";
 import { Adapt, Anchor, Button, Heading, Input, Label, Paragraph, Popover, ScrollView, Spinner, XStack, YStack, useMedia } from "@jonline/ui";
-import { MapPin, Scroll } from "@tamagui/lucide-icons";
+import { ExternalLink, MapPin, Scroll } from "@tamagui/lucide-icons";
 import { NominatimResult, useNominatim } from "app/hooks/use_nominatim";
 import { useQueryDebounce } from "app/hooks/use_query_debounce";
 import { useEffect, useState } from "react";
@@ -61,6 +61,7 @@ export const LocationControl: React.FC<Props> = ({
   useEffect(() => {
     setShowResults(true);
   }, [results]);
+  const willAdaptEdit = !mediaQuery.gtSm;
 
   //https://maps.google.com?q=newyork or
 
@@ -70,13 +71,64 @@ export const LocationControl: React.FC<Props> = ({
     }
     return <XStack space='$2'>
       <Paragraph my='auto' f={1} size='$1'>{value}</Paragraph>
-      <Button my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$1'>OpenStreet</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Map</Paragraph></YStack></Button>
-      <Button my='auto' h='auto' px='$2' {...appleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Apple</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
-      <Button my='auto' h='auto' px='$2' {...googleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Google</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
+      <Popover size="$5" allowFlip placement='left'>
+        <Popover.Trigger asChild>
+          <Button icon={MapPin} />
+        </Popover.Trigger>
+
+        {/* <Adapt when="sm" platform="touch">
+          <Popover.Sheet modal dismissOnSnapToBottom>
+            <Popover.Sheet.Frame padding="$4">
+              <Adapt.Contents />
+            </Popover.Sheet.Frame>
+            <Popover.Sheet.Overlay
+              animation="lazy"
+              enterStyle={{ opacity: 0 }}
+              exitStyle={{ opacity: 0 }}
+            />
+          </Popover.Sheet>
+        </Adapt> */}
+
+        <Popover.Content
+          borderWidth={1}
+          borderColor="$borderColor"
+          enterStyle={{ y: -10, opacity: 0 }}
+          exitStyle={{ y: -10, opacity: 0 }}
+          elevate
+          animation={[
+            'quick',
+            {
+              opacity: {
+                overshootClamping: true,
+              },
+            },
+          ]}
+        >
+          <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+
+          <YStack space="$3" h='100%'>
+            {/* {willAdaptEdit ?
+              <Popover.Sheet.ScrollView f={1}> */}
+            <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>OpenStreet</Paragraph><Paragraph lineHeight='$1' size='$2'>Map</Paragraph></YStack></Button>
+            <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...appleMapsLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Apple</Paragraph><Paragraph lineHeight='$1' size='$2'>Maps</Paragraph></YStack></Button>
+            <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...googleMapsLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Google</Paragraph><Paragraph lineHeight='$1' size='$2'>Maps</Paragraph></YStack></Button>
+            {/* </Popover.Sheet.ScrollView>
+              : <ScrollView h='$20'>
+                <Button my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$1'>OpenStreet</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Map</Paragraph></YStack></Button>
+                <Button my='auto' h='auto' px='$2' {...appleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Apple</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
+                <Button my='auto' h='auto' px='$2' {...googleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Google</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
+              </ScrollView>} */}
+          </YStack>
+        </Popover.Content>
+      </Popover >
+      {/* <XStack my='auto' ml='auto' space='$2'>
+        <Button my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$1'>OpenStreet</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Map</Paragraph></YStack></Button>
+        <Button my='auto' h='auto' px='$2' {...appleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Apple</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
+        <Button my='auto' h='auto' px='$2' {...googleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Google</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
+      </XStack> */}
     </XStack>;
   }
 
-  const willAdapt = !mediaQuery.gtSm;
 
   const resultsView = <YStack space='$2'>
     {results
@@ -161,8 +213,8 @@ export const LocationControl: React.FC<Props> = ({
             Submit
           </Button> */}
           {/* </Popover.Close> */}
-          {results?.length === 0 ? <Paragraph mx='auto' {...willAdapt ? { f: 1 } : {}}>No results.</Paragraph> : undefined}
-          {willAdapt ?
+          {results?.length === 0 ? <Paragraph mx='auto' {...willAdaptEdit ? { f: 1 } : {}}>No results.</Paragraph> : undefined}
+          {willAdaptEdit ?
             <Popover.Sheet.ScrollView f={1}>
               {resultsView}
             </Popover.Sheet.ScrollView>
