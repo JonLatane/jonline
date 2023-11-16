@@ -25,7 +25,7 @@ export function MediaScreen() {
 
   useEffect(() => {
     let title = 'My Media';
-    title += ` | ${server?.serverConfiguration?.serverInfo?.name || 'Jonline'}`;
+    title += ` | ${server?.serverConfiguration?.serverInfo?.name || '...'}`;
     document.title = title;
   });
 

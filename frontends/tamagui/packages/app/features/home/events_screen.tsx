@@ -42,7 +42,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   console.log('timeFilter', timeFilter);
   useEffect(() => {
-    const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
     document.title = `Events | ${title}`;
   });

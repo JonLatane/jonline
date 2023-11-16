@@ -42,7 +42,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
             : '/'
   });
   const dispatch = useTypedDispatch();
-  const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || 'Jonline';
+  const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || '...';
   const app = useTypedSelector((state: RootState) => state.app);
   const [serverNameBeforeEmoji, serverNameEmoji, serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const veryShortServername = serverNameBeforeEmoji!.length < 10;

@@ -24,7 +24,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   const dimensions = useWindowDimensions();
 
   useEffect(() => {
-    const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
     document.title = `Posts | ${title}`;  });
 

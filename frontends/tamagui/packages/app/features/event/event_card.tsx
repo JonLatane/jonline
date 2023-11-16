@@ -409,7 +409,8 @@ export const EventCard: React.FC<Props> = ({
         const repeatedInstance = EventInstance.create({
           id: `unsynchronized-event-instance-${newEventId++}`,
           startsAt: moment(editingInstance.startsAt).add(weeksAfter, 'weeks').toISOString(),
-          endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString()
+          endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString(),
+          location: editingInstance.location,
         });
         instances.push(repeatedInstance);
       });

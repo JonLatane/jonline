@@ -50,7 +50,7 @@ export function PostDetailsScreen() {
         setLoadingPost(false);
       }
     }
-    const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     let title = '';
     if (subjectPost) {
       if (subjectPost.title && subjectPost.title.length > 0) {

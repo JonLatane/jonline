@@ -23,7 +23,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
 
   // useEffect(() => {
   //   let title = 'Media';
-  //   title += ` | ${server?.serverConfiguration?.serverInfo?.name || 'Jonline'}`;
+  //   title += ` | ${server?.serverConfiguration?.serverInfo?.name || '...'}`;
   //   document.title = title;
   // });
 

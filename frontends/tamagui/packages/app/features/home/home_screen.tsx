@@ -35,7 +35,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
   const dimensions = useWindowDimensions();
 
   useEffect(() => {
-    const serverName = server?.serverConfiguration?.serverInfo?.name || 'Jonline';
+    const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
     document.title = `Latest | ${title}`;
   });
