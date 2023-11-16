@@ -12,13 +12,15 @@ interface Props {
   setLocation: (location: Location) => void;
   disabled?: boolean;
   readOnly?: boolean;
+  preview?: boolean;
 }
 
 export const LocationControl: React.FC<Props> = ({
   location,
   setLocation,
   disabled,
-  readOnly
+  readOnly,
+  preview
 }) => {
   const mediaQuery = useMedia();
   const value = location.uniformlyFormattedAddress;
@@ -50,7 +52,7 @@ export const LocationControl: React.FC<Props> = ({
   const appleMapsLink = useLink({ href: `https://maps.apple.com/?q=${uriValue}` });
   const osmLink = useLink({ href: `https://www.openstreetmap.org/search?query=${uriValue}` });
 
-  const osmCopyrightLink = useLink({ href: 'openstreetmap.org/copyright' })
+  const osmCopyrightLink = useLink({ href: 'https://openstreetmap.org/copyright' })
 
   useEffect(() => {
     if (debouncedSearchAddress && debouncedSearchAddress.length > 5) {
@@ -70,7 +72,10 @@ export const LocationControl: React.FC<Props> = ({
       return <></>;
     }
     return <XStack space='$2'>
-      <Paragraph my='auto' f={1} size='$1'>{value}</Paragraph>
+      <Paragraph my='auto' f={1} size='$1'  {...preview ? { overflow: 'hidden', whiteSpace: "nowrap", textOverflow: 'ellipsis' } : {}}>
+        {value}
+      </Paragraph>
+
       <Popover size="$5" allowFlip placement='left'>
         <Popover.Trigger asChild>
           <Button icon={MapPin} />

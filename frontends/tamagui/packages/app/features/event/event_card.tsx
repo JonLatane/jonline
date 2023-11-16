@@ -658,6 +658,7 @@ export const EventCard: React.FC<Props> = ({
                 {primaryInstance
                   ? <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
                     readOnly={!editing || previewingEdits}
+                    preview={isPreview}
                     setLocation={(location: Location) => {
                       if (editingInstance) {
                         updateEditingInstance({ ...editingInstance, location });
