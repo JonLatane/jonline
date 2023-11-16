@@ -1,33 +1,22 @@
-import { deleteEvent, deletePost, loadMedia, loadUser, RootState, selectMediaById, selectUserById, updateEvent, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Platform, View } from "react-native";
 import { useIsVisible } from 'app/hooks/use_is_visible';
+import { deleteEvent, loadUser, RootState, updateEvent, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import React, { useEffect, useMemo, useState } from "react";
 
-import { Event, EventInstance, Group, Location, Media, Visibility } from "@jonline/api";
-import { Anchor, Text, Button, Card, Heading, Image, Paragraph, ScrollView, createFadeAnimation, TamaguiElement, Theme, useMedia, XStack, YStack, Dialog, TextArea, Input, useWindowDimensions, Select, getFontSize, Sheet, Adapt, ZStack, AnimatePresence, standardAnimation, reverseStandardAnimation, standardHorizontalAnimation } from "@jonline/ui";
-import { useMediaUrl } from "app/hooks/use_media_url";
-import moment from "moment";
-import { useLink } from "solito/link";
-import { AuthorInfo } from "../post/author_info";
-import { TamaguiMarkdown } from "../post/tamagui_markdown";
-import { InstanceTime } from "./instance_time";
-import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
-import { Repeat, Delete, Edit, Eye, History, Save, CalendarPlus, X as XIcon, Link, Check, ChevronDown, ChevronUp, ChevronRight, Menu, Scroll } from "@tamagui/lucide-icons";
-import icons from "@tamagui/lucide-icons";
-import { GroupPostManager } from "../groups/group_post_manager";
-import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
-import { MediaRenderer } from "../media/media_renderer";
-import { FadeInView } from "../../components/fade_in_view";
-import { postBackgroundSize } from "../post/post_card";
-import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
-import { LinearGradient } from '@tamagui/linear-gradient';
-import { PostMediaManager } from "../post/post_media_manager";
-import { PostMediaRenderer } from "../post/post_media_renderer";
-import { VisibilityPicker } from "../../components/visibility_picker";
-import { postVisibilityDescription } from "../post/base_create_post_sheet";
-import { RsvpMode } from "./event_rsvp_manager";
-import { ToggleRow } from "app/components/toggle_row";
+import { Event, EventInstance, Group, Location } from "@jonline/api";
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, reverseStandardAnimation, ScrollView, Select, standardAnimation, standardHorizontalAnimation, TamaguiElement, Text, TextArea, Theme, useMedia, useWindowDimensions, XStack, YStack, ZStack } from "@jonline/ui";
+import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, History, Link, Menu, Repeat, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { FadeInView, ToggleRow, VisibilityPicker } from "app/components";
+import { GroupPostManager } from "app/features/groups";
+import { AuthorInfo, postBackgroundSize, PostMediaManager, PostMediaRenderer, postVisibilityDescription, TamaguiMarkdown } from "app/features/post";
+import { useForceUpdate, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
+import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
+import moment from "moment";
+import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
+import { useLink } from "solito/link";
+// import { PostMediaRenderer } from "../post/post_media_renderer";
+import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
+import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
 
 interface Props {
@@ -81,6 +70,7 @@ export const EventCard: React.FC<Props> = ({
   const embedLink = editing ? editedEmbedLink : post.embedLink;
   const [editedInstances, setEditedInstances] = useState(event.instances);
   const instances = editing ? editedInstances : event.instances;
+  const hasPastInstances = instances.find(isPastInstance) != undefined;
   // console.log('instances', instances);
   const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
   const [repeatWeeks, setRepeatWeeks] = useState(1);
@@ -309,13 +299,7 @@ export const EventCard: React.FC<Props> = ({
       ? arrangedInstances
       : [selectedInstance, ...arrangedInstances]
     : arrangedInstances;
-  ;
-  // Old displayedInstances:
-  //editingInstance
-  //? [editingInstance, ...sortedFilteredInstances.filter(i => i.id != editingInstance.id)]
-  //: 
-  // sortedFilteredInstances
-  const hasPastInstances = instances.find(isPastInstance) != undefined;
+
   const postLinkView = postLink
     ? <Anchor key='post-link' textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
       <XStack>
@@ -400,7 +384,7 @@ export const EventCard: React.FC<Props> = ({
     : undefined;
 
   const weeklyRepeatOptions = [...Array(52).keys()];
-  const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
+  const forceUpdate = useForceUpdate();
 
   const repeatedInstances = useMemo(() => {
     const instances: EventInstance[] = [];
@@ -416,7 +400,11 @@ export const EventCard: React.FC<Props> = ({
       });
     }
     return instances;
-  }, [repeatWeeks, editingInstance?.startsAt, editingInstance?.endsAt, editingInstance?.location?.uniformlyFormattedAddress]);
+  }, [
+    repeatWeeks,
+    editingInstance?.startsAt,
+    editingInstance?.endsAt, editingInstance?.location?.uniformlyFormattedAddress
+  ]);
 
   function doRepeatInstance() {
     setEditedInstances([...editedInstances, ...repeatedInstances]);
@@ -685,32 +673,7 @@ export const EventCard: React.FC<Props> = ({
                         embedLink
                       }, isPreview, groupContext, hasBeenVisible
                     }} />}
-                {/* {hasBeenVisible && embedComponent
-                  ? <FadeInView><div>{embedComponent}</div></FadeInView>
-                  : undefined}
-                {showScrollableMediaPreviews ?
-                  <XStack w='100%' maw={800}>
-                    <ScrollView horizontal w={isPreview ? '260px' : '100%'}
-                      h={mediaQuery.gtXs ? '400px' : '260px'} >
-                      <XStack space='$2'>
-                        {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={mediaQuery.gtXs ? '400px' : '260px'} h='100%'>
-                          <MediaRenderer media={mediaRef} />
-                        </YStack>)}
-                      </XStack>
-                    </ScrollView>
-                  </XStack> : undefined} */}
                 <YStack key='content' maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
-                  {/* {singleMediaPreview
-                    // (!isPreview && previewUrl && previewUrl != '' && hasGeneratedPreview) 
-                    ? <Image
-                      mb='$3'
-                      width={foregroundSize}
-                      height={foregroundSize}
-                      resizeMode="contain"
-                      als="center"
-                      source={{ uri: previewUrl, height: foregroundSize, width: foregroundSize }}
-                      borderRadius={10}
-                    /> : undefined} */}
                   {contentView}
                 </YStack>
                 {editing && !previewingEdits

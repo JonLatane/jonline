@@ -1,6 +1,7 @@
 import { Group, GroupListingType } from "@jonline/api";
 import { RootState, getGroupPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, useCredentialDispatch, useTypedSelector } from "app/store";
 import { useEffect, useState } from "react";
+import { finishPagination } from './post_pagination_hooks';
 
 export type GroupPageParams = { onLoaded?: () => void };
 
@@ -33,11 +34,4 @@ export function useGroupPages(listingType: GroupListingType, throughPage: number
   }
 
   return { groups, loadingGroups, reloadGroups, hasMorePages, firstPageLoaded };
-}
-
-export function finishPagination(setLoading: (v: boolean) => void, onLoaded?: () => void) {
-  return () => {
-    setLoading(false);
-    onLoaded?.();
-  };
 }
