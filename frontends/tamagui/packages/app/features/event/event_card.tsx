@@ -843,7 +843,7 @@ setNewRsvpMode,
                 <Image
                   pos="absolute"
                   width={backgroundSize}
-                  opacity={0.13}
+                  opacity={0.11}
                   height={backgroundSize}
                   resizeMode="cover"
                   als="flex-start"
