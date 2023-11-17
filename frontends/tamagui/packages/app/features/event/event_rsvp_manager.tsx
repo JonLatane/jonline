@@ -288,8 +288,17 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const rsvpDetailsLink = useLink({ href: rsvpDetailsLinkWithToken });
   const rsvpLink = `/event/${event.id}/i/${instance.id}?anonymousAuthToken=${queryAnonAuthToken}`;
 
+  function formatCount(rsvpCount: number, attendeeCount: number,) {
+    if (rsvpCount === attendeeCount) {
+      return <>{rsvpCount} {rsvpCount === 1 ? 'RSVP' : 'RSVPs'}</>;
+    }
+    return <>
+      {rsvpCount} {rsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {attendeeCount} {attendeeCount === 1 ? 'attendee' : 'attendees'}
+    </>;
+  }
+
   return showRsvpSection
-    ? <YStack space={isPreview ? '$1' : '$2'} mt='$3' p='$3' pb='$2' className={className}
+    ? <YStack space={isPreview ? '$1' : '$2'} mt='$2' p='$3' pb='$2' className={className}
       backgroundColor='$backgroundStrong' borderRadius='$5'
     // pt={attendances.length === 0 ? 0 : undefined}
     >
@@ -673,20 +682,28 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' fontWeight='700'>{isPreview ? 'Pending' : isEventOwner ? 'Pending Your Approval' : 'Pending Owner Approval'}</Paragraph>
                   {loaded
-                    ? <Paragraph size='$1' ml='auto'>{pendingRsvpCount} {pendingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {pendingAttendeeCount} {pendingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
+                    ? <Paragraph size='$1' ml='auto'>
+                      {formatCount(pendingRsvpCount, pendingAttendeeCount)}
+                    </Paragraph>
+                    // ? <Paragraph size='$1' ml='auto'>{pendingRsvpCount} {pendingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {pendingAttendeeCount} {pendingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
                     : <Paragraph size='$1' ml='auto'>...</Paragraph>}
                 </XStack>
                 : undefined}
               <XStack w='100%' flexWrap="wrap">
                 <Paragraph size='$1' color={primaryAnchorColor}>Going</Paragraph>
                 {loaded
-                  ? <Paragraph size='$1' ml='auto'>{goingRsvpCount} {goingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {goingAttendeeCount} {goingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
+                  ? <Paragraph size='$1' ml='auto'>
+                    {formatCount(goingRsvpCount, goingAttendeeCount)}
+                  </Paragraph>
+                  // ? <Paragraph size='$1' ml='auto'>{goingRsvpCount} {goingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {goingAttendeeCount} {goingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
                   : <Paragraph size='$1' ml='auto'>...</Paragraph>}
               </XStack>
               <XStack w='100%' flexWrap="wrap">
                 <Paragraph size='$1' color={navAnchorColor}>Maybe</Paragraph>
                 {loaded
-                  ? <Paragraph size='$1' ml='auto'>{interestedRsvpCount} {interestedRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {interestedAttendeeCount} {interestedAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
+                  ? <Paragraph size='$1' ml='auto'>
+                    {formatCount(interestedRsvpCount, interestedAttendeeCount)}
+                  </Paragraph>
                   : <Paragraph size='$1' ml='auto'>...</Paragraph>}
               </XStack>
             </YStack>

@@ -653,6 +653,13 @@ export const EventCard: React.FC<Props> = ({
                         }
                       }} />
                     : undefined}
+
+                  {primaryInstance && (!isPreview || hasBeenVisible)
+                    ? <EventRsvpManager
+                      key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
+                      event={event!} 
+                      instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
+                    : undefined}
                 </YStack>
 
               </YStack>
@@ -662,7 +669,7 @@ export const EventCard: React.FC<Props> = ({
             {deleted
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%' {...footerProps}>
-                <YStack maw={800} mx='auto'>
+                <YStack w='100%' maw={800} mx='auto'>
                   {editing && !previewingEdits
                     ? <PostMediaManager
                       key='media-edit'
@@ -695,10 +702,10 @@ export const EventCard: React.FC<Props> = ({
                     </>
                     : undefined}
 
-                  {primaryInstance && (!isPreview || hasBeenVisible)
+                  {/* {primaryInstance && (!isPreview || hasBeenVisible)
                     ? <EventRsvpManager key={`rsvp-manager-${primaryInstance?.id}`}
                       event={event!} instance={primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
-                    : undefined}
+                    : undefined} */}
                 </YStack>
                 <XStack space='$2' flexWrap="wrap" key='save-buttons'>
                   {showEdit
