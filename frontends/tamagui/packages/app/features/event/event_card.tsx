@@ -43,7 +43,7 @@ export const EventCard: React.FC<Props> = ({
   hideEditControls,
   onEditingChange,
   newRsvpMode,
-setNewRsvpMode,
+  setNewRsvpMode,
 }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
@@ -340,7 +340,7 @@ setNewRsvpMode,
         </XStack>
         {postLinkView}
         {primaryInstance
-          ? displayedInstances.length > 1 ? undefined : <InstanceTime key='instance-time' event={event} instance={primaryInstance} highlight />
+          ? <InstanceTime key='instance-time' event={event} instance={primaryInstance} highlight />
           : editing && previewingEdits
             ? <Paragraph key='missing-instance' size='$1'>This instance no longer exists.</Paragraph>
             : undefined}
@@ -610,46 +610,50 @@ setNewRsvpMode,
                   </XStack>
                   : undefined
                 }
-                {editingInstance && editing && !previewingEdits
-                  ? <>
-                    <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
-                      <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
-                      <Text fontSize='$2' fontFamily='$body'>
-                        <input type='datetime-local' style={{ padding: 10 }}
-                          min={supportDateInput(moment(0))}
-                          value={supportDateInput(moment(editingInstance.startsAt))}
-                          onChange={(v) => {
-                            const updatedInstance = { ...editingInstance, startsAt: toProtoISOString(v.target.value) };
-                            updateEditingInstance(updatedInstance);
-                            //  setStartTime(v.target.value)
-                          }} />
-                      </Text>
-                    </XStack>
-                    <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
-                      <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
-                      <Text fontSize='$2' fontFamily='$body' color={textColor}>
-                        <input type='datetime-local' style={{ padding: 10 }}
-                          min={editingInstance.startsAt}
-                          value={supportDateInput(moment(editingInstance.endsAt))}
-                          onChange={(v) => {
-                            const updatedInstance = { ...editingInstance, endsAt: toProtoISOString(v.target.value) };
-                            updateEditingInstance(updatedInstance);
-                          }} />
-                      </Text>
-                    </XStack>
-                    {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
-                  </>
-                  : undefined}
-                {primaryInstance
-                  ? <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
-                    readOnly={!editing || previewingEdits}
-                    preview={isPreview && horizontal}
-                    setLocation={(location: Location) => {
-                      if (editingInstance) {
-                        updateEditingInstance({ ...editingInstance, location });
-                      }
-                    }} />
-                  : undefined}
+                <YStack w='100%' maw={800} mx='auto'>
+                  {editingInstance && editing && !previewingEdits
+                    ? <>
+                      <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
+                        <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
+                        <Text fontSize='$2' fontFamily='$body'>
+                          <input type='datetime-local' style={{ padding: 10 }}
+                            min={supportDateInput(moment(0))}
+                            value={supportDateInput(moment(editingInstance.startsAt))}
+                            onChange={(v) => {
+                              const updatedInstance = { ...editingInstance, startsAt: toProtoISOString(v.target.value) };
+                              updateEditingInstance(updatedInstance);
+                              //  setStartTime(v.target.value)
+                            }} />
+                        </Text>
+                      </XStack>
+                      <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
+                        <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
+                        <Text fontSize='$2' fontFamily='$body' color={textColor}>
+                          <input type='datetime-local' style={{ padding: 10 }}
+                            min={editingInstance.startsAt}
+                            value={supportDateInput(moment(editingInstance.endsAt))}
+                            onChange={(v) => {
+                              const updatedInstance = { ...editingInstance, endsAt: toProtoISOString(v.target.value) };
+                              updateEditingInstance(updatedInstance);
+                            }} />
+                        </Text>
+                      </XStack>
+                      {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
+                    </>
+                    : undefined}
+                  {primaryInstance
+                    ?
+                    <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
+                      readOnly={!editing || previewingEdits}
+                      preview={isPreview && horizontal}
+                      link={isPreview ? eventLink : undefined}
+                      setLocation={(location: Location) => {
+                        if (editingInstance) {
+                          updateEditingInstance({ ...editingInstance, location });
+                        }
+                      }} />
+                    : undefined}
+                </YStack>
 
               </YStack>
             </Card.Header>
@@ -658,43 +662,44 @@ setNewRsvpMode,
             {deleted
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%' {...footerProps}>
-                {editing && !previewingEdits
-                  ? <PostMediaManager
-                    key='media-edit'
-                    link={post.link}
-                    media={editedMedia}
-                    setMedia={setEditedMedia}
-                    embedLink={editedEmbedLink}
-                    setEmbedLink={setEditedEmbedLink}
-                    disableInputs={savingEdits}
-                  />
-                  : <PostMediaRenderer
-                    key='media-view'
-                    horizontalPreview={horizontal && isPreview}
-                    {...{
-                      post: {
-                        ...post,
-                        media,
-                        embedLink
-                      }, isPreview, groupContext, hasBeenVisible
-                    }} />}
-                <YStack key='content' maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
-                  {contentView}
+                <YStack maw={800} mx='auto'>
+                  {editing && !previewingEdits
+                    ? <PostMediaManager
+                      key='media-edit'
+                      link={post.link}
+                      media={editedMedia}
+                      setMedia={setEditedMedia}
+                      embedLink={editedEmbedLink}
+                      setEmbedLink={setEditedEmbedLink}
+                      disableInputs={savingEdits}
+                    />
+                    : <PostMediaRenderer
+                      key='media-view'
+                      horizontalPreview={horizontal && isPreview}
+                      {...{
+                        post: {
+                          ...post,
+                          media,
+                          embedLink
+                        }, isPreview, groupContext, hasBeenVisible
+                      }} />}
+                  <YStack key='content' maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
+                    {contentView}
+                  </YStack>
+                  {editing && !previewingEdits
+                    ? <>
+                      <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
+                      <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps}
+                        disabled={!editedAllowRsvps}
+                        setter={setEditedAllowAnonymousRsvps} />
+                    </>
+                    : undefined}
+
+                  {primaryInstance && (!isPreview || hasBeenVisible)
+                    ? <EventRsvpManager key={`rsvp-manager-${primaryInstance?.id}`}
+                      event={event!} instance={primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
+                    : undefined}
                 </YStack>
-                {editing && !previewingEdits
-                  ? <>
-                    <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
-                    <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps}
-                      disabled={!editedAllowRsvps}
-                      setter={setEditedAllowAnonymousRsvps} />
-                  </>
-                  : undefined}
-
-                {primaryInstance && (!isPreview || hasBeenVisible)
-                  ? <EventRsvpManager key={`rsvp-manager-${primaryInstance?.id}`}
-                    event={event!} instance={primaryInstance} {...{isPreview, newRsvpMode, setNewRsvpMode}} />
-                  : undefined}
-
                 <XStack space='$2' flexWrap="wrap" key='save-buttons'>
                   {showEdit
                     ? editing

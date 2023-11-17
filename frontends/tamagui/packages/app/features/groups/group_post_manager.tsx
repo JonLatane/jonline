@@ -26,7 +26,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
     // onChange(selectedVisibility)
   }
   const { navColor, navTextColor, primaryAnchorColor } = useServerTheme();
-  const title = `Group ${post.context == PostContext.EVENT ? 'Event' : 'Post'} Sharing`;
+  const title = `Share ${post.context == PostContext.EVENT ? 'Event' : 'Post'}`;
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const selectedGroup = useGroupContext();
   const [loading, setLoading] = useState(false);
@@ -54,6 +54,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
     : undefined;
   // return <></>;
 
+  const groupsUnavailable = !groupPostData || (accountOrServer.account === undefined && groupPostData.length == 0);
   return <XStack flexWrap='wrap' maw='100%'>
     {!selectedGroup && otherGroupCount
       ?
@@ -67,24 +68,26 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
     </Text>
     {loading && errorCount < maxErrors ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
     <XStack>
-      <GroupsSheet
-        title={title}
-        itemTitle={post.title}
-        selectedGroup={selectedGroup}
-        // onGroupSelected={() => { }}
-        disabled={!groupPostData || (accountOrServer.account === undefined && groupPostData.length == 0)}
-        topGroupIds={groupPostData?.map(gp => gp.groupId) ?? []}
-        extraListItemChrome={(group) => {
-          const groupPost = groupPostData?.find(gp => gp.groupId == group.id);
+      {groupsUnavailable ? undefined :
+        <GroupsSheet
+          title={title}
+          itemTitle={post.title}
+          selectedGroup={selectedGroup}
+          // onGroupSelected={() => { }}
+          disabled={groupsUnavailable}
+          topGroupIds={groupPostData?.map(gp => gp.groupId) ?? []}
+          extraListItemChrome={(group) => {
+            const groupPost = groupPostData?.find(gp => gp.groupId == group.id);
 
-          return <GroupPostChrome group={group} groupPost={groupPost} post={post} createViewHref={createViewHref} />
-        }}
-        disableSelection
-        hideInfoButtons
-        delayRenderingSheet
-        hideAdditionalGroups={accountOrServer.account === undefined}
-        hideLeaveButtons
-      />
+            return <GroupPostChrome group={group} groupPost={groupPost} post={post} createViewHref={createViewHref} />
+          }}
+          disableSelection
+          hideInfoButtons
+          delayRenderingSheet
+          hideAdditionalGroups={accountOrServer.account === undefined}
+          hideLeaveButtons
+        />
+      }
       {selectedGroup && otherGroupCount && sharedToSelectedGroup === false
         ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text>
         : undefined}

@@ -13,6 +13,7 @@ interface Props {
   disabled?: boolean;
   readOnly?: boolean;
   preview?: boolean;
+  link?: object;
 }
 
 export const LocationControl: React.FC<Props> = ({
@@ -20,7 +21,8 @@ export const LocationControl: React.FC<Props> = ({
   setLocation,
   disabled,
   readOnly,
-  preview
+  preview,
+  link,
 }) => {
   const mediaQuery = useMedia();
   const value = location.uniformlyFormattedAddress;
@@ -72,9 +74,17 @@ export const LocationControl: React.FC<Props> = ({
       return <></>;
     }
     return <XStack space='$2' w='100%'>
-      <Paragraph my='auto' f={1} size='$1'  {...preview ? { overflow: 'hidden', whiteSpace: "nowrap", textOverflow: 'ellipsis' } : {}}>
-        {value}
-      </Paragraph>
+      {link
+        ? <Anchor {...link} my='auto' textDecorationLine="none">
+          <Paragraph my='auto' f={1} size='$1'
+            {...preview ? { overflow: 'hidden', whiteSpace: "nowrap", textOverflow: 'ellipsis' } : {}}>
+            {value}
+          </Paragraph>
+        </Anchor>
+        : <Paragraph my='auto' f={1} size='$1'
+          {...preview ? { overflow: 'hidden', whiteSpace: "nowrap", textOverflow: 'ellipsis' } : {}}>
+          {value}
+        </Paragraph>}
 
       <Popover size="$5" allowFlip placement='left'>
         <Popover.Trigger asChild>
@@ -161,7 +171,7 @@ export const LocationControl: React.FC<Props> = ({
         })
       : undefined}
   </YStack>;
-  return <XStack space='$1'>
+  return <XStack space='$1' w='100%'>
     <Input f={1} textContentType="fullStreetAddress" placeholder={`Location (optional)`}
       disabled={disabled} opacity={disabled || '' ? 0.5 : 1}
       autoCapitalize='words'

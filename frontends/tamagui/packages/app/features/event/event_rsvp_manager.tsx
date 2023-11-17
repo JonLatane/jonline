@@ -10,7 +10,7 @@ import { createParam } from "solito";
 import { useLink } from "solito/link";
 import { useGroupContext } from "../groups/group_context";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
-import RsvpCard from "./rsvp_card";
+import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
 
 export interface EventRsvpManagerProps {
   event: Event;
@@ -54,14 +54,17 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   // const [newRsvpMode, setNewRsvpMode] = useState(undefined as RsvpMode);
   const [attendances, setAttendances] = useState([] as EventAttendance[]);
-  const currentRsvp = attendances.find(a => account !== undefined && a.userAttendee?.userId === account.user?.id);
-  const currentAnonRsvp = attendances.find(a => queryAnonAuthToken && queryAnonAuthToken !== '' && a.anonymousAttendee && a.anonymousAttendee?.authToken === queryAnonAuthToken);
-  // const [currentRsvp, setCurrentRsvp] = useState(undefined as EventAttendance | undefined);
-  // const [currentAnonRsvp, setCurrentAnonRsvp] = useState(undefined as EventAttendance | undefined);
-  // useEffect(() => {
-  //   setCurrentRsvp(attendances.find(a => account !== undefined && a.userAttendee?.userId === account.user?.id));
-  //   setCurrentAnonRsvp(attendances.find(a => a.anonymousAttendee?.authToken === anonymousAuthToken));
-  // }, [attendances.map(a => a.id).join(',')]);
+  const currentRsvp = attendances.find(
+    a => account !== undefined && a.userAttendee?.userId === account.user?.id
+  );
+  const currentAnonRsvp = attendances.find(
+    a => queryAnonAuthToken && queryAnonAuthToken !== '' && a.anonymousAttendee
+      && a.anonymousAttendee?.authToken === queryAnonAuthToken
+  );
+
+  const editingRsvp = newRsvpMode === 'anonymous' ? currentAnonRsvp
+    : newRsvpMode === 'user' ? currentRsvp : undefined;
+
   const [showRsvpCards, setShowRsvpCards] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -72,17 +75,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const numberOfGuestsOptions = [...Array(52).keys()];
 
   useEffect(() => {
-    if (newRsvpMode === 'anonymous' && currentAnonRsvp) {
-      setAnonymousRsvpName(currentAnonRsvp.anonymousAttendee?.name ?? '');
-      setNumberOfGuests(currentAnonRsvp.numberOfGuests);
-      setPublicNote(currentAnonRsvp.publicNote);
-      setPrivateNote(currentAnonRsvp.privateNote);
-      setRsvpStatus(currentAnonRsvp.status);
-    } else if (newRsvpMode === 'user' && currentRsvp) {
-      setNumberOfGuests(currentRsvp.numberOfGuests);
-      setPublicNote(currentRsvp.publicNote);
-      setPrivateNote(currentRsvp.privateNote);
-      setRsvpStatus(currentRsvp.status);
+    if (editingRsvp) {
+      if (newRsvpMode === 'anonymous') {
+        setAnonymousRsvpName(editingRsvp.anonymousAttendee?.name ?? '');
+      }
+      setNumberOfGuests(editingRsvp.numberOfGuests);
+      setPublicNote(editingRsvp.publicNote);
+      setPrivateNote(editingRsvp.privateNote);
+      setRsvpStatus(editingRsvp.status);
     } else {
       setAnonymousRsvpName('');
       setNumberOfGuests(1);
@@ -236,6 +236,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     return <></>;
   }
 
+  const yourAttendances = [currentAnonRsvp, currentRsvp]
+    .filter(a => a !== undefined).map(a => a as EventAttendance);
+
   const sortedAttendances = attendances
     .sort((a, b) => (a.userAttendee ? -1 : 1) - (b.userAttendee ? -1 : 1))
     .sort((a, b) => b.status - a.status);
@@ -250,6 +253,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
 
 
+
+  // const displayedNonPendingAttendances = nonPendingAttendances
+  //   .filter(a => !yourAttendances.some(b => b.id === a.id));
+
+
   const pendingAttendances = sortedAttendances.filter(a => pending(a.moderation));
   const [pendingRsvpCount, pendingAttendeeCount] = pendingAttendances
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
@@ -258,6 +266,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const rejectedAttendances = sortedAttendances.filter(a => rejected(a.moderation));
 
   const othersAttendances = nonPendingAttendances.filter(a => [currentRsvp, currentAnonRsvp].every(c => c?.id !== a.id));
+
+
+  const displayedPendingAttendances = pendingAttendances
+    .filter(a => !yourAttendances.some(b => b.id === a.id));
+  const displayedRejectedAttendances = rejectedAttendances
+    .filter(a => !yourAttendances.some(b => b.id === a.id));
+  const displayedOthersAttendances = othersAttendances
+    .filter(a => !yourAttendances.some(b => b.id === a.id));
 
   const mainButtonHeight = '$4';
   const groupContext = useGroupContext();
@@ -376,10 +392,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 ? <Heading my='auto' f={1}>{account?.user?.username}</Heading>
                 : undefined}
 
-            {newRsvpMode === 'anonymous' && !queryAnonAuthToken && !isPreview
-              ? <Paragraph size='$1' mx='$4' my='$1' ta='center'>
-                When you RSVP, you will be assigned a unique RSVP link.
-                You can use it to edit or delete your RSVP later.
+            {newRsvpMode === 'anonymous' && !queryAnonAuthToken
+              ? <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
+                Event owner approval required.
+                You will be assigned a unique RSVP link.
+                Use it to edit or delete your RSVP later.
                 Save it in your browser bookmarks, notes app, or calendar app of choice.
               </Paragraph>
               : undefined}
@@ -402,6 +419,15 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 <RadioGroupItemWithLabel size="$3" {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
               </XStack>
             </RadioGroup>
+            {!editingRsvp || passes(editingRsvp?.moderation) ? undefined
+              : <>
+                <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
+                  {attendanceModerationDescription(editingRsvp.moderation)}
+                </Paragraph>
+                {/* <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
+                  {editingRsvp?.moderation?.moderator?.username}
+                </Paragraph> */}
+              </>}
 
             {/* {isPreview
               ? undefined
@@ -679,7 +705,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               {currentRsvp || currentAnonRsvp
                 ? <Heading size='$6' mx='auto' key='your-rsvps'
                   animation='standard'
-                  {...standardAnimation}>Your {currentRsvp && currentAnonRsvp ? 'RSVPs' : 'RSVP'}</Heading>
+                  {...standardAnimation}>
+                  Your {yourAttendances.length !== 1 ? 'RSVPs' : 'RSVP'}
+                </Heading>
                 : undefined}
               {currentAnonRsvp //&& newRsvpMode !== 'anonymous'
                 ? //<Theme inverse={newRsvpMode === 'anonymous'}>
@@ -712,12 +740,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 //</Theme>
                 : undefined}
 
-              {pendingAttendances.length > 0
+              {displayedPendingAttendances.length > 0
                 ? <Heading size='$6' mx='auto' key='pending-rsvps'
                   animation='standard'
                   {...standardAnimation} pb='$1'>Pending RSVPs</Heading>
                 : undefined}
-              {pendingAttendances.map((attendance, index) => {
+              {displayedPendingAttendances.map((attendance, index) => {
                 return <RsvpCard key={`pending-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}
@@ -726,12 +754,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 />;
               })}
 
-              {othersAttendances.length > 0 && (account || queryAnonAuthToken)
+              {displayedOthersAttendances.length > 0 && (account || queryAnonAuthToken)
                 ? <Heading size='$6' mx='auto' key='other-rsvps'
                   animation='standard' pb='$1'
                   {...standardAnimation}>Others' RSVPs</Heading>
                 : undefined}
-              {othersAttendances.map((attendance, index) => {
+              {displayedOthersAttendances.map((attendance, index) => {
                 return <RsvpCard key={`non-pending-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}
@@ -740,12 +768,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 />;
               })}
 
-              {rejectedAttendances.length > 0
+              {displayedRejectedAttendances.length > 0
                 ? <Heading size='$6' mx='auto' key='rejected-rsvps'
                   animation='standard'
                   {...standardAnimation} pb='$1'>Rejected RSVPs</Heading>
                 : undefined}
-              {rejectedAttendances.map((attendance, index) => {
+              {displayedRejectedAttendances.map((attendance, index) => {
                 return <RsvpCard key={`rejected-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}

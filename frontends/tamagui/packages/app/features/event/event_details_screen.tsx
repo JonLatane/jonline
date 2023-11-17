@@ -253,7 +253,7 @@ export function EventDetailsScreen() {
             <Heading size='$3' ta='center'>It may either not exist, not be visible to you, or be hidden by moderators.</Heading>
           </>
           : <Spinner size='large' color={navColor} scale={2} />
-        : <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
+        : <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={1200}>
 
           <ScrollView w='100%'>
             <XStack w='100%' paddingHorizontal='$3'>
