@@ -1,5 +1,5 @@
 import { Location } from "@jonline/api";
-import { Adapt, Anchor, Button, Heading, Input, Label, Paragraph, Popover, ScrollView, Spinner, XStack, YStack, useMedia } from "@jonline/ui";
+import { Adapt, Anchor, Button, Heading, Input, Label, Paragraph, Popover, ScrollView, Spinner, Text, XStack, YStack, useMedia } from "@jonline/ui";
 import { ExternalLink, MapPin, Scroll } from "@tamagui/lucide-icons";
 import { NominatimResult, useNominatim } from "app/hooks/use_nominatim";
 import { useQueryDebounce } from "app/hooks/use_query_debounce";
@@ -75,12 +75,14 @@ export const LocationControl: React.FC<Props> = ({
     }
     return <XStack space='$2' w='100%'>
       {link
-        ? <Anchor {...link} my='auto' textDecorationLine="none">
-          <Paragraph my='auto' f={1} size='$1'
-            {...preview ? { overflow: 'hidden', whiteSpace: "nowrap", textOverflow: 'ellipsis' } : {}}>
-            {value}
-          </Paragraph>
-        </Anchor>
+        ? <XStack my='auto' f={1}>
+          <Anchor {...link} f={1} my='auto' w='100%' textDecorationLine="none">
+            <Text fontSize='$1' my='auto' w='100%' display='block'
+              {...preview ? { overflow: 'hidden', whiteSpace: "nowrap", textOverflow: 'ellipsis' } : {}}>
+              {value}
+            </Text>
+          </Anchor>
+        </XStack>
         : <Paragraph my='auto' f={1} size='$1'
           {...preview ? { overflow: 'hidden', whiteSpace: "nowrap", textOverflow: 'ellipsis' } : {}}>
           {value}

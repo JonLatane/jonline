@@ -657,7 +657,7 @@ export const EventCard: React.FC<Props> = ({
                 </YStack>
 
               </YStack>
-              {primaryInstance && (!isPreview || hasBeenVisible)
+              {!isPreview && primaryInstance && (!isPreview || hasBeenVisible)
                 ? <YStack maw={800} w='100%' px='$1' mx='auto'>
                   <EventRsvpManager
                     key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
@@ -667,11 +667,13 @@ export const EventCard: React.FC<Props> = ({
                 : undefined}
             </Card.Header>
             : undefined}
-          <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} paddingTop='$2' >
+          <Card.Footer p={0} paddingTop='$2' >
             {deleted
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%' {...footerProps}>
-                <YStack w='100%' maw={800} mx='auto'>
+                <YStack p='$3' pt={0} w='100%' maw={800} mx='auto' pr={mediaQuery.gtXs ? '$3' : '$1'}
+                // mah={isPreview && horizontal ? 50 : undefined} overflow='hidden'
+                >
                   {editing && !previewingEdits
                     ? <PostMediaManager
                       key='media-edit'
@@ -681,6 +683,7 @@ export const EventCard: React.FC<Props> = ({
                       embedLink={editedEmbedLink}
                       setEmbedLink={setEditedEmbedLink}
                       disableInputs={savingEdits}
+                      
                     />
                     : <PostMediaRenderer
                       key='media-view'
@@ -709,7 +712,15 @@ export const EventCard: React.FC<Props> = ({
                       event={event!} instance={primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                     : undefined} */}
                 </YStack>
-                <XStack space='$2' flexWrap="wrap" key='save-buttons'>
+                {isPreview && primaryInstance && (!isPreview || hasBeenVisible)
+                  ? <YStack maw={800} w='100%' px='$1' mx='auto'>
+                    <EventRsvpManager
+                      key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
+                      event={event!}
+                      instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
+                  </YStack>
+                  : undefined}
+                <XStack space='$2' p='$3' flexWrap="wrap" key='save-buttons' pr={mediaQuery.gtXs ? '$3' : '$1'}>
                   {showEdit
                     ? editing
                       ? <>
@@ -819,7 +830,7 @@ export const EventCard: React.FC<Props> = ({
                   </XStack>
                 </XStack>
 
-                <XStack {...detailsProps} key='details'>
+                <XStack {...detailsProps} key='details' pr={mediaQuery.gtXs ? '$3' : '$1'}>
                   <AuthorInfo key='author-details' {...{ post, detailsMargins, isVisible }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$3'>

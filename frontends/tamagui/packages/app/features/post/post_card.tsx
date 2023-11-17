@@ -311,7 +311,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack maxHeight={isPreview
                       ? (showScrollableMediaPreviews) ? 150 : 300
-                      : editing && !previewingEdits ? backgroundSize * (media.length > 0 ? 0.6 : 0.8) : undefined} overflow='hidden' {...contentProps}>
+                      : editing && !previewingEdits ? backgroundSize * (media.length > 0 ? 0.6 : 0.8) : undefined} overflow='hidden' 
+                      {...contentProps}>
                       {
                         editing && !previewingEdits
                           ? <TextArea f={1} pt='$2' value={editedContent}

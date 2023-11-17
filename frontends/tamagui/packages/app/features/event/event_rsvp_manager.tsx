@@ -406,7 +406,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 ? <Heading my='auto' f={1}>{account?.user?.username}</Heading>
                 : undefined}
 
-            {newRsvpMode === 'anonymous' && !queryAnonAuthToken
+            {newRsvpMode === 'anonymous' && !currentAnonRsvp//!queryAnonAuthToken
               ? <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
                 Event owner approval required.
                 You will be assigned a unique RSVP link.

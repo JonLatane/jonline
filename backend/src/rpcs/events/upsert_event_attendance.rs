@@ -6,9 +6,7 @@ use tonic::{Code, Status};
 use crate::db_connection::PgPooledConnection;
 use crate::generate_token;
 use crate::marshaling::*;
-use crate::models;
-use crate::models::get_author;
-use crate::models::{get_event_attendance, NewEventAttendance};
+use crate::models::{self, get_author, get_event_attendance, NewEventAttendance};
 use crate::protos::*;
 use crate::schema::{event_attendances, event_instances, events, posts};
 
@@ -85,6 +83,7 @@ pub fn upsert_event_attendance(
         attendee_auth_token,
         conn,
     );
+
     let anonymous_attendee: Option<AnonymousAttendee> = match &attendee_user_id {
         Some(_user_id) => None,
         None => match request.attendee {
@@ -111,8 +110,6 @@ pub fn upsert_event_attendance(
         },
     };
 
-    //TODO Validate moderation changes, etc.
-
     match existing_attendance {
         Some((mut attendance, author)) => {
             if !is_own_attendance && !is_event_owner && !is_anonymous {
@@ -122,6 +119,7 @@ pub fn upsert_event_attendance(
                 ));
             }
 
+            // Update anonymous attendee data and reset moderation status.
             if is_anonymous {
                 let attendee = anonymous_attendee.as_ref().unwrap();
 
