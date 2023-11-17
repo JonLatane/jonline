@@ -244,17 +244,12 @@ setNewRsvpMode,
     }
   }
 
-  const imagePreview = post?.media?.find(m => m.contentType.startsWith('image'));
-  const hasImagePreview = imagePreview && post?.media?.length == 1 && !embedComponent;
+  const imagePreview = media?.find(m => m.contentType.startsWith('image'));
+  // const scrollableMediaMinCount = isPreview && hasSingleImagePreview ? 3 : 2;
+  const showScrollableMediaPreviews = (media?.filter(m => !m.generated).length ?? 0) >= 2;
+  const previewUrl = useMediaUrl(imagePreview?.id);
 
-  const scrollableMediaMinCount = isPreview && hasImagePreview ? 3 : 2;
-  const showScrollableMediaPreviews = (post?.media?.length ?? 0) >= scrollableMediaMinCount;
-  const singleMediaPreview = showScrollableMediaPreviews
-    ? undefined
-    : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
-  const previewUrl = useMediaUrl(hasImagePreview ? imagePreview?.id : undefined);
-
-  const showBackgroundPreview = hasImagePreview
+  const showBackgroundPreview = !!imagePreview;
   //  && isPreview
   ;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
   const backgroundSize = isPreview && horizontal
@@ -848,7 +843,7 @@ setNewRsvpMode,
                 <Image
                   pos="absolute"
                   width={backgroundSize}
-                  opacity={0.15}
+                  opacity={0.13}
                   height={backgroundSize}
                   resizeMode="cover"
                   als="flex-start"
