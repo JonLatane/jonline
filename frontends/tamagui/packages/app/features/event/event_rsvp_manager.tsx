@@ -708,7 +708,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 />;
               })}
 
-              {othersAttendances.length > 0
+              {othersAttendances.length > 0 && account
                 ? <Heading size='$6' mx='auto' key='other-rsvps'
                   animation='standard' pb='$1'
                   {...standardAnimation}>Others' RSVPs</Heading>
