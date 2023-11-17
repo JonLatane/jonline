@@ -1,7 +1,7 @@
 import { EventInstance, Permission, Post } from '@jonline/api'
 import { Button, Heading, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui'
 import { ListEnd, Plus } from '@tamagui/lucide-icons'
-import { RootState, loadEvent, loadPostReplies, selectEventById, selectGroupById, selectPostById, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
+import { RootState, loadEvent, loadPostReplies, selectEventById, selectGroupById, selectPostById, serverID, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
 import moment, { Moment } from 'moment'
 import React, { useEffect, useReducer, useState } from 'react'
 import { createParam } from 'solito'
@@ -13,6 +13,7 @@ import { TabsNavigation } from '../tabs/tabs_navigation'
 import { hasPermission } from 'app/utils/permission_utils'
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager'
 import { themedButtonBackground } from 'app/utils/themed_button_background'
+import { setDocumentTitle } from 'app/utils/set_title'
 
 const { useParam } = createParam<{ eventId: string, instanceId: string, shortname: string | undefined }>()
 
@@ -191,9 +192,8 @@ export function EventDetailsScreen() {
     if (shortname && shortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
     }
-    document.title = title;
-
-  }, [subjectPost, group])
+    setDocumentTitle(title)
+  }, [subjectPost?.id, group?.id, server ? serverID(server) : undefined])
 
   function toggleCollapseReplies(eventId: string) {
     if (collapsedReplies.has(eventId)) {

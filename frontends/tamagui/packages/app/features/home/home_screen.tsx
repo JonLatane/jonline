@@ -3,6 +3,7 @@ import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, 
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks';
 import { RootState, setShowEventsOnLatest, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { setDocumentTitle } from 'app/utils/set_title';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { useLink } from 'solito/link';
@@ -37,7 +38,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
-    document.title = `Latest | ${title}`;
+    setDocumentTitle(`Latest | ${title}`)
   });
 
   const [currentPostsPage, setCurrentPostsPage] = useState(0);

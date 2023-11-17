@@ -283,22 +283,42 @@ export const EventCard: React.FC<Props> = ({
     : instances.filter(isNotPastInstance);
   const sortedFilteredInstances = [...filteredInstances].sort(instanceTimeSort);
   const canEasilySeeAllInstances = canEasilySeeInstances(sortedFilteredInstances);
-  const arrangedInstances = canEasilySeeAllPastInstances
+  const displayedInstances = canEasilySeeAllPastInstances
     ? instances
-    : canEasilySeeAllInstances
-      ? sortedFilteredInstances
-      : editing || scrollInstancesVertically || canEasilySeeAllInstances
-        ? sortedFilteredInstances
-        : [
-          ...(selectedInstance ? [selectedInstance] : []),
-          ...sortedFilteredInstances.filter(i => i.id != selectedInstance?.id)
-        ];
+    : sortedFilteredInstances;
 
-  const displayedInstances = selectedInstance && !editing
-    ? arrangedInstances.map(i => i.id).includes(selectedInstance.id ?? 'undefinedid')
-      ? arrangedInstances
-      : [selectedInstance, ...arrangedInstances]
-    : arrangedInstances;
+
+  useEffect(() => {
+    if (!isPreview) {
+      setTimeout(() =>
+        document.querySelectorAll('.highlighted-instance-time')
+          .forEach(e => e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })),
+        1000);
+    }
+  }, [selectedInstance?.id]);
+  useEffect(() => {
+    if (!scrollInstancesVertically) {
+      // setTimeout(() =>
+      document.querySelectorAll('.highlighted-instance-time')
+        .forEach(e => e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }));
+      // 1000);
+    }
+  }, [scrollInstancesVertically]);
+
+  // canEasilySeeAllInstances
+  //   ? sortedFilteredInstances
+  //   : editing || scrollInstancesVertically || canEasilySeeAllInstances
+  //     ? sortedFilteredInstances
+  //     : [
+  //       ...(selectedInstance ? [selectedInstance] : []),
+  //       ...sortedFilteredInstances.filter(i => i.id != selectedInstance?.id)
+  //     ];
+
+  // const displayedInstances = selectedInstance && !editing
+  //   ? arrangedInstances.map(i => i.id).includes(selectedInstance.id ?? 'undefinedid')
+  //     ? arrangedInstances
+  //     : [selectedInstance, ...arrangedInstances]
+  //   : arrangedInstances;
 
   const postLinkView = postLink
     ? <Anchor key='post-link' textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
@@ -555,7 +575,7 @@ export const EventCard: React.FC<Props> = ({
   }
   return (
     <>
-      <YStack w='100%' key={`event-card-${event.id}-${primaryInstance?.id}-${isPreview ? '-preview' : ''}`}>
+      <YStack w='100%' key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}>
         <Card theme="dark" elevate size="$4" bordered
           key='event-card'
           margin='$0'

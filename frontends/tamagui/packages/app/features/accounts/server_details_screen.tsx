@@ -21,6 +21,7 @@ import { MediaRef } from '../media/media_chooser'
 import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 import RecommendedServer from './recommended_server';
 import { SubnavButton } from 'app/components/subnav_button';
+import { setDocumentTitle } from 'app/utils/set_title';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 
@@ -61,7 +62,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   // }
 
   useEffect(() => {
-    document.title = `About ${specificServer ? 'Community' : 'Server'}${serverName && serverName != '' ? ` | ${serverName}` : ''}`;
+    setDocumentTitle(`About ${specificServer ? 'Community' : 'Server'}${serverName && serverName != '' ? ` | ${serverName}` : ''}`)
   }, [serverName]);
 
   const serverDescription = serverConfiguration?.serverInfo?.description;

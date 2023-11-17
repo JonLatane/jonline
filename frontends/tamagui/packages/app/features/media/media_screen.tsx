@@ -4,7 +4,7 @@ import { RootState, getMediaPage, loadMediaPage, useAccountOrServer, useCredenti
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../post/create_post_sheet';
-import { useAccount } from 'app/store';
+import { setDocumentTitle } from 'app/utils/set_title';
 import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { MediaCard } from './media_card';
@@ -26,7 +26,7 @@ export function MediaScreen() {
   useEffect(() => {
     let title = 'My Media';
     title += ` | ${server?.serverConfiguration?.serverInfo?.name || '...'}`;
-    document.title = title;
+    setDocumentTitle(title)
   });
 
   const { media, loadingMedia, reloadMedia } = useMediaPage(

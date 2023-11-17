@@ -57,6 +57,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
   const opacity = linkToInstance || highlight ? undefined : 0.8;
   const mainView = (startsAtDate == endsAtDate)
     ? <YStack key={key}
+      className={highlight ? 'highlighted-instance-time' : undefined}
       backgroundColor={linkToInstance ? undefined : themeBgColor}
       opacity={opacity}
       px='$2' borderRadius='$3'>

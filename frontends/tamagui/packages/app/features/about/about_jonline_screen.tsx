@@ -5,6 +5,7 @@ import { Linking, Platform } from 'react-native';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { Container, Github } from '@tamagui/lucide-icons';
 import { AppSection } from '../tabs/features_navigation';
+import { setDocumentTitle } from 'app/utils/set_title';
 
 const quotes = [
   'I read about it Jonline',
@@ -29,7 +30,7 @@ export function AboutJonlineScreen() {
   // const quote= quotes[Math.floor(Math.random()*quotes.length)];
 
   useEffect(() => {
-    document.title = `About Jonline`;
+    setDocumentTitle(`About Jonline`);
   });
 
   return (

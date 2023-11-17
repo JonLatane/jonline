@@ -1,14 +1,13 @@
-import { Post, PostListingType, User, UserListingType } from '@jonline/api';
-import { dismissScrollPreserver, Heading, isClient, needsScrollPreservers, Spinner, useWindowDimensions, YStack } from '@jonline/ui';
-import { getUsersPage, loadPostsPage, loadUsersPage, RootState, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { User, UserListingType } from '@jonline/api';
+import { Heading, Spinner, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { RootState, getUsersPage, loadUsersPage, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
-import { FlatList } from 'react-native';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../post/create_post_sheet';
-import PostCard from '../post/post_card';
+import { setDocumentTitle } from 'app/utils/set_title';
 import { AppSection, AppSubsection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
-import {UserCard} from '../user/user_card';
+import { UserCard } from '../user/user_card';
 
 export function FollowRequestsScreen() {
   return BasePeopleScreen(UserListingType.FOLLOW_REQUESTS);
@@ -50,7 +49,7 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
     }
     let title = listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';
     title += ` | ${server?.serverConfiguration?.serverInfo?.name || '...'}`;
-    document.title = title;
+    setDocumentTitle(title)
   });
 
   function reloadUsers() {

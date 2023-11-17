@@ -2,6 +2,7 @@ import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { useGroupPostPages, usePostPages } from 'app/hooks/post_pagination_hooks';
 import { RootState, useServerTheme, useTypedSelector } from 'app/store';
+import { setDocumentTitle } from 'app/utils/set_title';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import PostCard from '../post/post_card';
@@ -26,7 +27,8 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
-    document.title = `Posts | ${title}`;  });
+    setDocumentTitle(`Posts | ${title}`);
+  });
 
   const [currentPage, setCurrentPage] = useState(0);
   const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded } = selectedGroup

@@ -9,6 +9,7 @@ import { ConversationManager } from './conversation_manager'
 
 import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
+import { setDocumentTitle } from 'app/utils/set_title'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -67,7 +68,7 @@ export function PostDetailsScreen() {
     if (shortname && shortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
     }
-    document.title = title;
+    setDocumentTitle(title)
   });
 
   return (

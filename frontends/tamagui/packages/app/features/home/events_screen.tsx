@@ -15,6 +15,7 @@ import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
 import { createParam } from 'solito';
 import { SubnavButton } from 'app/components/subnav_button';
+import { setDocumentTitle } from 'app/utils/set_title';
 
 const { useParam } = createParam<{ endsAfter: string }>()
 export function EventsScreen() {
@@ -44,7 +45,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
-    document.title = `Events | ${title}`;
+    setDocumentTitle(`Events | ${title}`)
   });
 
   const [currentPage, setCurrentPage] = useState(0);
