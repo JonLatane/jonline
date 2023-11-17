@@ -367,7 +367,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       {/* } */}
       <AnimatePresence>
         {newRsvpMode !== undefined
-          ? <YStack className={formClassName} key='rsvp-section' space='$2' mb={0} animation='standard' {...standardAnimation}>
+          ? <YStack className={formClassName} key='rsvp-section' space='$2'
+            backgroundColor='$backgroundHover' borderRadius='$4'
+            p='$2'
+            pb={0}
+            mb='$2'
+            animation='standard' {...standardAnimation}>
             {newRsvpMode === 'anonymous'
               ? <>
                 {/* {!previewingRsvp
@@ -428,20 +433,22 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 <RadioGroupItemWithLabel size="$3" {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
               </XStack>
             </RadioGroup>
+
             {!editingRsvp || passes(editingRsvp?.moderation) ? undefined
-              : <>
-                <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
-                  {attendanceModerationDescription(editingRsvp.moderation)}
-                </Paragraph>
-                {/* <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
-                  {editingRsvp?.moderation?.moderator?.username}
-                </Paragraph> */}
-              </>}
+              : <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
+                {attendanceModerationDescription(editingRsvp.moderation)}
+              </Paragraph>}
+
+            {newRsvpMode === 'anonymous' && queryAnonAuthToken && queryAnonAuthToken.length > 0 && currentAnonRsvp
+              ? <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$1' als='center' ta='center'>
+                Save <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
+              </Paragraph>
+              : undefined}
 
             {/* {isPreview
               ? undefined
               :  */}
-            <Button h='auto' onPress={() => setShowDetails(!showDetails)} mb='$2'>
+            <Button h='auto' onPress={() => setShowDetails(!showDetails)} mb={showDetails ? '$2' : 0}>
               <XStack>
                 <Heading size='$2' my='auto'>Details</Heading>
                 <XStack my='auto' animation='standard' rotate={showDetails ? '90deg' : '0deg'}>
@@ -523,72 +530,63 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             </AnimatePresence>
             {newRsvpMode === 'anonymous' && queryAnonAuthToken && queryAnonAuthToken.length > 0
               ? <>
-                {currentAnonRsvp
-                  ? <>
-                    <Paragraph size='$4' mx='$4' my='$1' als='center' ta='center'>
-                      Save <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
-                    </Paragraph>
+                <Dialog>
+                  <Dialog.Trigger asChild>
+                    <Button transparent mx='auto' color={primaryAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
+                      Create New Anonymous RSVP
+                    </Button>
+                  </Dialog.Trigger>
+                  <Dialog.Portal zi={1000011}>
+                    <Dialog.Overlay
+                      key="overlay"
+                      animation="quick"
+                      o={0.5}
+                      enterStyle={{ o: 0 }}
+                      exitStyle={{ o: 0 }}
+                    />
+                    <Dialog.Content
+                      bordered
+                      elevate
+                      key="content"
+                      animation={[
+                        'quick',
+                        {
+                          opacity: {
+                            overshootClamping: true,
+                          },
+                        },
+                      ]}
+                      m='$3'
+                      enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                      exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                      x={0}
+                      scale={1}
+                      opacity={1}
+                      y={0}
+                    >
+                      <YStack space>
+                        <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
+                        <Dialog.Description>
+                          Make sure you've saved <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
+                        </Dialog.Description>
 
-                    <Dialog>
-                      <Dialog.Trigger asChild>
-                        <Button transparent mx='auto' color={primaryAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
-                          Create New Anonymous RSVP
-                        </Button>
-                      </Dialog.Trigger>
-                      <Dialog.Portal zi={1000011}>
-                        <Dialog.Overlay
-                          key="overlay"
-                          animation="quick"
-                          o={0.5}
-                          enterStyle={{ o: 0 }}
-                          exitStyle={{ o: 0 }}
-                        />
-                        <Dialog.Content
-                          bordered
-                          elevate
-                          key="content"
-                          animation={[
-                            'quick',
-                            {
-                              opacity: {
-                                overshootClamping: true,
-                              },
-                            },
-                          ]}
-                          m='$3'
-                          enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                          exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                          x={0}
-                          scale={1}
-                          opacity={1}
-                          y={0}
-                        >
-                          <YStack space>
-                            <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
-                            <Dialog.Description>
-                              Make sure you've saved <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
-                            </Dialog.Description>
-
-                            <XStack space="$3" jc="flex-end">
-                              <Dialog.Close asChild>
-                                <Button>Cancel</Button>
-                              </Dialog.Close>
-                              <Dialog.Close asChild>
-                                {/* <Theme inverse> */}
-                                <Button color={primaryAnchorColor}
-                                  onPress={() => setQueryAnonAuthToken(undefined)}>
-                                  Create
-                                </Button>
-                                {/* </Theme> */}
-                              </Dialog.Close>
-                            </XStack>
-                          </YStack>
-                        </Dialog.Content>
-                      </Dialog.Portal>
-                    </Dialog>
-                  </>
-                  : undefined}
-
+                        <XStack space="$3" jc="flex-end">
+                          <Dialog.Close asChild>
+                            <Button>Cancel</Button>
+                          </Dialog.Close>
+                          <Dialog.Close asChild>
+                            {/* <Theme inverse> */}
+                            <Button color={primaryAnchorColor}
+                              onPress={() => setQueryAnonAuthToken(undefined)}>
+                              Create
+                            </Button>
+                            {/* </Theme> */}
+                          </Dialog.Close>
+                        </XStack>
+                      </YStack>
+                    </Dialog.Content>
+                  </Dialog.Portal>
+                </Dialog>
               </>
               : undefined}
             <XStack w='100%' space='$2'>

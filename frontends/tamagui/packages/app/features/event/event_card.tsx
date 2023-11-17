@@ -573,8 +573,8 @@ export const EventCard: React.FC<Props> = ({
           y={0}
         >
           {post.link || post.title
-            ? <Card.Header paddingBottom={0}>
-              <YStack w='100%'>
+            ? <Card.Header p={0}>
+              <YStack w='100%' padding='$4' paddingBottom={0}>
                 {headerLinks}
                 {!isPreview && (instances.length > 1 || editing)
                   ? <XStack key='instances' w='100%' mt='$2' ml='$4' space>
@@ -654,15 +654,17 @@ export const EventCard: React.FC<Props> = ({
                       }} />
                     : undefined}
 
-                  {primaryInstance && (!isPreview || hasBeenVisible)
-                    ? <EventRsvpManager
-                      key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
-                      event={event!} 
-                      instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
-                    : undefined}
                 </YStack>
 
               </YStack>
+              {primaryInstance && (!isPreview || hasBeenVisible)
+                ? <YStack maw={800} w='100%' px='$1' mx='auto'>
+                  <EventRsvpManager
+                    key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
+                    event={event!}
+                    instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
+                </YStack>
+                : undefined}
             </Card.Header>
             : undefined}
           <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} paddingTop='$2' >

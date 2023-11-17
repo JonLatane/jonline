@@ -92,7 +92,18 @@ pub fn upsert_event_attendance(
                 Some(AnonymousAttendee {
                     name: attendee.name,
                     contact_methods: attendee.contact_methods,
-                    auth_token: Some(generate_token!(42)),
+                    auth_token: Some(match existing_attendance {
+                        Some(ref attendance) => match attendance.to_proto(true, false).attendee {
+                            Some(event_attendance::Attendee::AnonymousAttendee(
+                                AnonymousAttendee {
+                                    auth_token: Some(token),
+                                    ..
+                                },
+                            )) => token,
+                            _ => generate_token!(42),
+                        },
+                        None => generate_token!(42),
+                    }),
                 })
             }
             Some(event_attendance::Attendee::UserAttendee(_)) => None,
@@ -135,11 +146,16 @@ pub fn upsert_event_attendance(
                 }
             }
             if is_event_owner {
-                attendance.moderation = match (attendance.moderation.to_proto_moderation(), request.moderation.to_proto_moderation()) {
+                attendance.moderation = match (
+                    attendance.moderation.to_proto_moderation(),
+                    request.moderation.to_proto_moderation(),
+                ) {
                     (_, Some(Moderation::Rejected)) => Moderation::Rejected.to_string_moderation(),
                     (_, Some(Moderation::Approved)) => Moderation::Approved.to_string_moderation(),
                     (_, Some(Moderation::Pending)) => Moderation::Pending.to_string_moderation(),
-                    (_, Some(Moderation::Unmoderated)) => Moderation::Approved.to_string_moderation(),
+                    (_, Some(Moderation::Unmoderated)) => {
+                        Moderation::Approved.to_string_moderation()
+                    }
                     _ => attendance.moderation,
                 };
             }
@@ -169,9 +185,15 @@ pub fn upsert_event_attendance(
                 inviting_user_id,
                 request.status.to_proto_attendance_status(),
             ) {
-                (Some(_), _) if !is_own_attendance => AttendanceStatus::Requested.to_string_attendance_status(),
-                (None, Some(AttendanceStatus::Going)) => AttendanceStatus::Going.to_string_attendance_status(),
-                (None, Some(AttendanceStatus::NotGoing)) => AttendanceStatus::NotGoing.to_string_attendance_status(),
+                (Some(_), _) if !is_own_attendance => {
+                    AttendanceStatus::Requested.to_string_attendance_status()
+                }
+                (None, Some(AttendanceStatus::Going)) => {
+                    AttendanceStatus::Going.to_string_attendance_status()
+                }
+                (None, Some(AttendanceStatus::NotGoing)) => {
+                    AttendanceStatus::NotGoing.to_string_attendance_status()
+                }
                 _ => AttendanceStatus::Interested.to_string_attendance_status(),
             };
             let attendance = diesel::insert_into(event_attendances::table)
