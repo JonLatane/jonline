@@ -124,7 +124,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   }, [queryAnonAuthToken]);
 
   useEffect(() => {
-    if (newRsvpMode !== undefined) {
+    if (newRsvpMode !== undefined && !isPreview) {
       scrollToRsvpForm();
     }
   }, [newRsvpMode]);
@@ -342,7 +342,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       {/* } */}
       <AnimatePresence>
         {newRsvpMode !== undefined
-          ? <YStack className={formClassName} key='rsvp-section' space='$2' mb='$4' animation='standard' {...standardAnimation}>
+          ? <YStack className={formClassName} key='rsvp-section' space='$2' mb={0} animation='standard' {...standardAnimation}>
             {newRsvpMode === 'anonymous'
               ? <>
                 {/* {!previewingRsvp
@@ -376,7 +376,16 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 ? <Heading my='auto' f={1}>{account?.user?.username}</Heading>
                 : undefined}
 
+            {newRsvpMode === 'anonymous' && !queryAnonAuthToken && !isPreview
+              ? <Paragraph size='$1' mx='$4' my='$1' ta='center'>
+                When you RSVP, you will be assigned a unique RSVP link.
+                You can use it to edit or delete your RSVP later.
+                Save it in your browser bookmarks, notes app, or calendar app of choice.
+              </Paragraph>
+              : undefined}
+
             <RadioGroup aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
+              disabled={!canRsvp || creatingRsvp} opacity={!canRsvp || creatingRsvp ? 0.5 : 1}
               onValueChange={v => {
                 setRsvpStatus(parseInt(v));
 
@@ -409,7 +418,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
             <AnimatePresence>
               {showDetails
-                ? <YStack maw='$20' className={formClassName} key='rsvp-details' space='$2' animation='standard' {...standardAnimation}>
+                ? <YStack className={formClassName} key='rsvp-details' space='$2' animation='standard' {...standardAnimation}>
                   <Select native onValueChange={v => setNumberOfGuests(parseInt(v))} value={numberOfGuests.toString()}>
                     <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
                       <Select.Value w='100%' placeholder="Choose Visibility" />
@@ -477,92 +486,84 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </YStack>
                 : undefined}
             </AnimatePresence>
-            {newRsvpMode === 'anonymous'
+            {newRsvpMode === 'anonymous' && queryAnonAuthToken && queryAnonAuthToken.length > 0
               ? <>
-                {queryAnonAuthToken && queryAnonAuthToken.length > 0
+                {currentAnonRsvp
                   ? <>
-                    {currentAnonRsvp
-                      ? <>
-                        <Paragraph size='$4' mx='$4' my='$1' als='center' ta='center'>
-                          Save <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
-                        </Paragraph>
+                    <Paragraph size='$4' mx='$4' my='$1' als='center' ta='center'>
+                      Save <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
+                    </Paragraph>
 
-                        <Dialog>
-                          <Dialog.Trigger asChild>
-                            <Button transparent mx='auto' color={primaryAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
-                              Create New Anonymous RSVP
-                            </Button>
-                          </Dialog.Trigger>
-                          <Dialog.Portal zi={1000011}>
-                            <Dialog.Overlay
-                              key="overlay"
-                              animation="quick"
-                              o={0.5}
-                              enterStyle={{ o: 0 }}
-                              exitStyle={{ o: 0 }}
-                            />
-                            <Dialog.Content
-                              bordered
-                              elevate
-                              key="content"
-                              animation={[
-                                'quick',
-                                {
-                                  opacity: {
-                                    overshootClamping: true,
-                                  },
-                                },
-                              ]}
-                              m='$3'
-                              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                              x={0}
-                              scale={1}
-                              opacity={1}
-                              y={0}
-                            >
-                              <YStack space>
-                                <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
-                                <Dialog.Description>
-                                  Make sure you've saved <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
-                                </Dialog.Description>
+                    <Dialog>
+                      <Dialog.Trigger asChild>
+                        <Button transparent mx='auto' color={primaryAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
+                          Create New Anonymous RSVP
+                        </Button>
+                      </Dialog.Trigger>
+                      <Dialog.Portal zi={1000011}>
+                        <Dialog.Overlay
+                          key="overlay"
+                          animation="quick"
+                          o={0.5}
+                          enterStyle={{ o: 0 }}
+                          exitStyle={{ o: 0 }}
+                        />
+                        <Dialog.Content
+                          bordered
+                          elevate
+                          key="content"
+                          animation={[
+                            'quick',
+                            {
+                              opacity: {
+                                overshootClamping: true,
+                              },
+                            },
+                          ]}
+                          m='$3'
+                          enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                          exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                          x={0}
+                          scale={1}
+                          opacity={1}
+                          y={0}
+                        >
+                          <YStack space>
+                            <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
+                            <Dialog.Description>
+                              Make sure you've saved <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
+                            </Dialog.Description>
 
-                                <XStack space="$3" jc="flex-end">
-                                  <Dialog.Close asChild>
-                                    <Button>Cancel</Button>
-                                  </Dialog.Close>
-                                  <Dialog.Close asChild>
-                                    {/* <Theme inverse> */}
-                                    <Button color={primaryAnchorColor}
-                                      onPress={() => setQueryAnonAuthToken(undefined)}>
-                                      Delete
-                                    </Button>
-                                    {/* </Theme> */}
-                                  </Dialog.Close>
-                                </XStack>
-                              </YStack>
-                            </Dialog.Content>
-                          </Dialog.Portal>
-                        </Dialog>
-                      </>
-                      : undefined}
-
+                            <XStack space="$3" jc="flex-end">
+                              <Dialog.Close asChild>
+                                <Button>Cancel</Button>
+                              </Dialog.Close>
+                              <Dialog.Close asChild>
+                                {/* <Theme inverse> */}
+                                <Button color={primaryAnchorColor}
+                                  onPress={() => setQueryAnonAuthToken(undefined)}>
+                                  Create
+                                </Button>
+                                {/* </Theme> */}
+                              </Dialog.Close>
+                            </XStack>
+                          </YStack>
+                        </Dialog.Content>
+                      </Dialog.Portal>
+                    </Dialog>
                   </>
-                  : isPreview
-                    ? undefined
-                    : <Paragraph size='$1' mx='$4' my='$1' ta='center'>
-                      When you press "RSVP", you will be assigned a unique RSVP link.
-                      You can use it to edit or delete your RSVP later.
-                      Save it in your browser bookmarks, notes app, or calendar app of choice.
-                    </Paragraph>}
+                  : undefined}
+
               </>
               : undefined}
             <XStack w='100%' space='$2'>
-              <Button f={1} disabled={!canRsvp || upserting || deleting} opacity={canRsvp && !upserting && !deleting ? 1 : 0.5}
-                onPress={() => upsertRsvp()} color={newRsvpMode === 'anonymous' ? navAnchorColor : primaryAnchorColor}>
-                {editingAttendance ? 'Save' : 'RSVP'}
-              </Button>
-              {editingAttendance && !isPreview
+              {editingAttendance ?
+                <Button mb='$2' f={1} disabled={!canRsvp || upserting || deleting} opacity={canRsvp && !upserting && !deleting ? 1 : 0.5}
+                  onPress={() => upsertRsvp()} color={newRsvpMode === 'anonymous' ? navAnchorColor : primaryAnchorColor}>
+                  Save
+                </Button>
+                : undefined}
+              {editingAttendance //&& !isPreview
                 ? <Dialog>
                   <Dialog.Trigger asChild>
                     <Button f={1} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
@@ -621,15 +622,16 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   </Dialog.Portal>
                 </Dialog>
                 : undefined}
-              <Button f={1} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}
+              {/* <Button f={1} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}
                 onPress={() => setNewRsvpMode?.(undefined)}>
                 Cancel
-              </Button>
+              </Button> */}
             </XStack>
           </YStack>
           : undefined}
         <Button key='rsvp-card-toggle'
           className={showRsvpCardsButtonClassName}
+          mt={isPreview ? undefined : '$2'}
           h='auto'
           // {hasPendingAttendances
           //   ? (mediaQuery.gtXxxxs ? '$10' : '$15')
@@ -687,7 +689,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   instance={instance}
                   onPressEdit={() => {
                     setNewRsvpMode?.('anonymous');
-                    setTimeout(() => scrollToRsvpForm(), 1000);
+                    // setTimeout(() => scrollToRsvpForm(), 1000);
                     // document.querySelectors rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
                   }}
                   onModerated={updateAttendance}
@@ -702,7 +704,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   instance={instance}
                   onPressEdit={() => {
                     setNewRsvpMode?.('user');
-                    setTimeout(() => scrollToRsvpForm(), 1000);
+                    // setTimeout(() => scrollToRsvpForm(), 1000);
                     // document.querySelector('.rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
                   }}
                   onModerated={updateAttendance}
@@ -724,7 +726,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 />;
               })}
 
-              {othersAttendances.length > 0 && account
+              {othersAttendances.length > 0 && (account || queryAnonAuthToken)
                 ? <Heading size='$6' mx='auto' key='other-rsvps'
                   animation='standard' pb='$1'
                   {...standardAnimation}>Others' RSVPs</Heading>
