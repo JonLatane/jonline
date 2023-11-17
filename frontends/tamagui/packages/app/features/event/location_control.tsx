@@ -71,7 +71,7 @@ export const LocationControl: React.FC<Props> = ({
     if (!location || location.uniformlyFormattedAddress === '') {
       return <></>;
     }
-    return <XStack space='$2'>
+    return <XStack space='$2' w='100%'>
       <Paragraph my='auto' f={1} size='$1'  {...preview ? { overflow: 'hidden', whiteSpace: "nowrap", textOverflow: 'ellipsis' } : {}}>
         {value}
       </Paragraph>

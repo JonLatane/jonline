@@ -1,4 +1,4 @@
-import { accountOrServerId, getCredentialClient, useCredentialDispatch, useServerTheme } from "app/store";
+import { accountOrServerId, getCredentialClient, useCredentialDispatch, useLocalApp, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
@@ -195,6 +195,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     ]);
   }
 
+  const { browseRsvpsFromPreviews } = useLocalApp();
   const [deleting, setDeleting] = useState(false);
   async function deleteRsvp(attendance: EventAttendance) {
     setDeleting(true);
@@ -254,6 +255,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const mainButtonHeight = '$4';
   const groupContext = useGroupContext();
 
+  const linkToDetailsPageRsvps = isPreview && !browseRsvpsFromPreviews;
   const rsvpDetailsLink = useLink({
     href: groupContext
       ? `/g/${groupContext.shortname}/e/${event.id}/i/${instance!.id}?section=rsvp`
@@ -273,7 +275,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
         {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
           ? <Button disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
             transparent={newRsvpMode != 'user'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'user' ? undefined : 'user')}>
-            <XStack ai='center'>
+            <XStack ai='center' space='$2'>
               {/* {isPreview ? undefined : */}
               <ZStack h='$2' w='$2' my='auto' pt='$5'>
                 <XStack animation='standard' rotate={newRsvpMode === 'user' ? '90deg' : '0deg'}
@@ -300,7 +302,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           ? <>
             <Button mb='$2' disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
               transparent={newRsvpMode != 'anonymous'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'anonymous' ? undefined : 'anonymous')}>
-              <XStack ai='center'>
+              <XStack ai='center' space='$2'>
                 {/* {isPreview ? undefined : */}
                 <ZStack h='$2' w='$2'>
                   <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '90deg' : '0deg'}
@@ -376,20 +378,22 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               </XStack>
             </RadioGroup>
 
-            {isPreview
+            {/* {isPreview
               ? undefined
-              : <Button h='auto' onPress={() => setShowDetails(!showDetails)} mb='$2'>
-                <XStack>
-                  <Heading size='$2' my='auto'>Details</Heading>
-                  <XStack my='auto' animation='standard' rotate={showDetails ? '90deg' : '0deg'}>
-                    <ChevronRight size='$1' />
-                  </XStack>
+              :  */}
+            <Button h='auto' onPress={() => setShowDetails(!showDetails)} mb='$2'>
+              <XStack>
+                <Heading size='$2' my='auto'>Details</Heading>
+                <XStack my='auto' animation='standard' rotate={showDetails ? '90deg' : '0deg'}>
+                  <ChevronRight size='$1' />
                 </XStack>
-              </Button>}
+              </XStack>
+            </Button>
+            {/* } */}
 
             <AnimatePresence>
               {showDetails
-                ? <YStack className={formClassName} key='rsvp-details' space='$2' animation='standard' {...standardAnimation}>
+                ? <YStack maw='$20' className={formClassName} key='rsvp-details' space='$2' animation='standard' {...standardAnimation}>
                   <Select native onValueChange={v => setNumberOfGuests(parseInt(v))} value={numberOfGuests.toString()}>
                     <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
                       <Select.Value w='100%' placeholder="Choose Visibility" />
@@ -528,11 +532,13 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                       : undefined}
 
                   </>
-                  : <Paragraph size='$1' mx='$4' my='$1' ta='center'>
-                    When you press "RSVP", you will be assigned a unique RSVP link.
-                    You can use it to edit or delete your RSVP later.
-                    Save it in your browser bookmarks, notes app, or calendar app of choice.
-                  </Paragraph>}
+                  : isPreview
+                    ? undefined
+                    : <Paragraph size='$1' mx='$4' my='$1' ta='center'>
+                      When you press "RSVP", you will be assigned a unique RSVP link.
+                      You can use it to edit or delete your RSVP later.
+                      Save it in your browser bookmarks, notes app, or calendar app of choice.
+                    </Paragraph>}
               </>
               : undefined}
             <XStack w='100%' space='$2'>
@@ -612,8 +618,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           // {hasPendingAttendances
           //   ? (mediaQuery.gtXxxxs ? '$10' : '$15')
           //   : (mediaQuery.gtXxxxs ? '$5' : '$10')}
-          {...isPreview ? rsvpDetailsLink : {}}
-          onPress={isPreview
+          {...linkToDetailsPageRsvps ? rsvpDetailsLink : {}}
+          onPress={linkToDetailsPageRsvps
             ? undefined
             : () => setShowRsvpCards(!showRsvpCards)}
           disabled={attendances.length === 0} o={attendances.length === 0 ? 0.5 : 1}>

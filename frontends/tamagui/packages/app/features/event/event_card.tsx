@@ -646,7 +646,7 @@ setNewRsvpMode,
                 {primaryInstance
                   ? <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
                     readOnly={!editing || previewingEdits}
-                    preview={isPreview}
+                    preview={isPreview && horizontal}
                     setLocation={(location: Location) => {
                       if (editingInstance) {
                         updateEditingInstance({ ...editingInstance, location });
