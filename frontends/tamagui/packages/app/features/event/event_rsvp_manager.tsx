@@ -228,9 +228,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     return <></>;
   }
 
+  const sortedAttendances = attendances
+    .sort((a, b) => (a.userAttendee ? -1 : 1) - (b.userAttendee ? -1 : 1))
+    .sort((a, b) => b.status - a.status);
   const editingAttendance = newRsvpMode === 'anonymous' ? currentAnonRsvp : newRsvpMode === 'user' ? currentRsvp : undefined;
 
-  const nonPendingAttendances = attendances.filter(a => passes(a.moderation)).sort((a, b) => a.status - b.status);
+  const nonPendingAttendances = sortedAttendances.filter(a => passes(a.moderation));
   const [goingRsvpCount, goingAttendeeCount] = nonPendingAttendances
     .filter(a => a.status === AttendanceStatus.GOING)
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
@@ -239,16 +242,16 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
 
 
-  const pendingAttendances = attendances.filter(a => pending(a.moderation)).sort((a, b) => a.status - b.status);
+  const pendingAttendances = sortedAttendances.filter(a => pending(a.moderation));
   const [pendingRsvpCount, pendingAttendeeCount] = pendingAttendances
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
   const hasPendingAttendances = pendingRsvpCount > 0 || pendingAttendeeCount > 0;
 
-  const rejectedAttendances = attendances.filter(a => rejected(a.moderation)).sort((a, b) => a.status - b.status);
+  const rejectedAttendances = sortedAttendances.filter(a => rejected(a.moderation));
 
   const othersAttendances = nonPendingAttendances.filter(a => [currentRsvp, currentAnonRsvp].every(c => c?.id !== a.id));
 
-  const mainButtonHeight = isPreview ? '$4' : '$7';
+  const mainButtonHeight = '$4';
   const groupContext = useGroupContext();
 
   const rsvpDetailsLink = useLink({
@@ -270,55 +273,57 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
         {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
           ? <Button disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
             transparent={newRsvpMode != 'user'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'user' ? undefined : 'user')}>
-            <YStack ai='center'>
-              {isPreview ? undefined :
-                <ZStack h='$2' w='$2'>
-                  <XStack animation='standard' rotate={newRsvpMode === 'user' ? '90deg' : '0deg'}
-                    opacity={newRsvpMode === 'user' ? 1 : 0}>
-                    <ChevronRight color={primaryAnchorColor} />
-                  </XStack>
-                  <XStack animation='standard' rotate={newRsvpMode === 'user' ? '45deg' : '0deg'}
-                    opacity={!currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
-                    <Plus color={primaryAnchorColor} />
-                  </XStack>
-                  <XStack animation='standard'
-                    opacity={currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
-                    <Edit color={primaryAnchorColor} />
-                  </XStack>
-                </ZStack>
-              }
-              <Heading color={primaryAnchorColor} size='$5'>
+            <XStack ai='center'>
+              {/* {isPreview ? undefined : */}
+              <ZStack h='$2' w='$2' my='auto' pt='$5'>
+                <XStack animation='standard' rotate={newRsvpMode === 'user' ? '90deg' : '0deg'}
+                  opacity={newRsvpMode === 'user' ? 1 : 0}>
+                  <ChevronRight color={primaryAnchorColor} />
+                </XStack>
+                <XStack animation='standard' rotate={newRsvpMode === 'user' ? '45deg' : '0deg'}
+                  opacity={!currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
+                  <Plus color={primaryAnchorColor} />
+                </XStack>
+                <XStack animation='standard'
+                  opacity={currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
+                  <Edit color={primaryAnchorColor} />
+                </XStack>
+              </ZStack>
+              {/* } */}
+              <Paragraph color={primaryAnchorColor} size='$4' my='auto' f={1} textAlign="center">
                 {currentRsvp ? attendanceName(currentRsvp.status) : 'RSVP'}
-              </Heading>
-            </YStack>
+              </Paragraph>
+            </XStack>
           </Button>
           : undefined}
         {event?.info?.allowsAnonymousRsvps
           ? <>
             <Button mb='$2' disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
               transparent={newRsvpMode != 'anonymous'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'anonymous' ? undefined : 'anonymous')}>
-              <YStack ai='center'>
-                {isPreview ? undefined :
-                  <ZStack h='$2' w='$2'>
-                    <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '90deg' : '0deg'}
-                      opacity={newRsvpMode === 'anonymous' ? 1 : 0}>
-                      <ChevronRight color={navAnchorColor} />
-                    </XStack>
-                    <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '45deg' : '0deg'}
-                      opacity={!currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
-                      <Plus color={navAnchorColor} />
-                    </XStack>
-                    <XStack animation='standard'
-                      opacity={currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
-                      <Edit color={navAnchorColor} />
-                    </XStack>
-                  </ZStack>
-                }
-                <Heading color={navAnchorColor} size='$3'>Anonymously</Heading>
-                <Heading color={navAnchorColor} size='$2'>
-                  {currentAnonRsvp ? attendanceName(currentAnonRsvp.status) : 'RSVP'}
-                </Heading>
-              </YStack>
+              <XStack ai='center'>
+                {/* {isPreview ? undefined : */}
+                <ZStack h='$2' w='$2'>
+                  <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '90deg' : '0deg'}
+                    opacity={newRsvpMode === 'anonymous' ? 1 : 0}>
+                    <ChevronRight color={navAnchorColor} />
+                  </XStack>
+                  <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '45deg' : '0deg'}
+                    opacity={!currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
+                    <Plus color={navAnchorColor} />
+                  </XStack>
+                  <XStack animation='standard'
+                    opacity={currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
+                    <Edit color={navAnchorColor} />
+                  </XStack>
+                </ZStack>
+                {/* } */}
+                <YStack f={1}>
+                  <Paragraph color={navAnchorColor} size='$2' mx='auto'>Anonymously</Paragraph>
+                  <Paragraph color={navAnchorColor} size='$1' mx='auto'>
+                    {currentAnonRsvp ? attendanceName(currentAnonRsvp.status) : 'RSVP'}
+                  </Paragraph>
+                </YStack>
+              </XStack>
             </Button>
           </>
           : undefined}
@@ -653,34 +658,34 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   {...standardAnimation}>Your {currentRsvp && currentAnonRsvp ? 'RSVPs' : 'RSVP'}</Heading>
                 : undefined}
               {currentAnonRsvp //&& newRsvpMode !== 'anonymous'
-                ? <Theme inverse={newRsvpMode === 'anonymous'}>
-                  <RsvpCard key={`current-anon-rsvp-${currentAnonRsvp.anonymousAttendee?.authToken}`}
-                    attendance={currentAnonRsvp}
-                    event={event}
-                    instance={instance}
-                    onPressEdit={() => {
-                      setNewRsvpMode?.('anonymous');
-                      scrollToRsvpForm();
-                      // document.querySelectors rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-                    }}
-                    onModerated={updateAttendance}
-                  />
-                </Theme>
+                ? //<Theme inverse={newRsvpMode === 'anonymous'}>
+                <RsvpCard key={`current-anon-rsvp-${currentAnonRsvp.anonymousAttendee?.authToken}`}
+                  attendance={currentAnonRsvp}
+                  event={event}
+                  instance={instance}
+                  onPressEdit={() => {
+                    setNewRsvpMode?.('anonymous');
+                    setTimeout(() => scrollToRsvpForm(), 1000);
+                    // document.querySelectors rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                  }}
+                  onModerated={updateAttendance}
+                />
+                //</Theme>
                 : undefined}
               {currentRsvp //&& newRsvpMode !== 'user'
-                ? <Theme inverse={newRsvpMode === 'user'}>
-                  <RsvpCard key={`current-rsvp-${currentRsvp.userAttendee?.userId}`}
-                    attendance={currentRsvp}
-                    event={event}
-                    instance={instance}
-                    onPressEdit={() => {
-                      setNewRsvpMode?.('user');
-                      scrollToRsvpForm();
-                      // document.querySelector('.rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-                    }}
-                    onModerated={updateAttendance}
-                  />
-                </Theme>
+                ? //<Theme inverse={newRsvpMode === 'user'}>
+                <RsvpCard key={`current-rsvp-${currentRsvp.userAttendee?.userId}`}
+                  attendance={currentRsvp}
+                  event={event}
+                  instance={instance}
+                  onPressEdit={() => {
+                    setNewRsvpMode?.('user');
+                    setTimeout(() => scrollToRsvpForm(), 1000);
+                    // document.querySelector('.rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                  }}
+                  onModerated={updateAttendance}
+                />
+                //</Theme>
                 : undefined}
 
               {pendingAttendances.length > 0
