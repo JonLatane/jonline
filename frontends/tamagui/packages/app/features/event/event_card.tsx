@@ -244,17 +244,19 @@ setNewRsvpMode,
     }
   }
 
-  const generatedPreview = post?.media?.find(m => m.contentType.startsWith('image') && m.generated);
-  const hasGeneratedPreview = generatedPreview && post?.media?.length == 1 && !embedComponent;
+  const imagePreview = post?.media?.find(m => m.contentType.startsWith('image'));
+  const hasImagePreview = imagePreview && post?.media?.length == 1 && !embedComponent;
 
-  const scrollableMediaMinCount = isPreview && hasGeneratedPreview ? 3 : 2;
+  const scrollableMediaMinCount = isPreview && hasImagePreview ? 3 : 2;
   const showScrollableMediaPreviews = (post?.media?.length ?? 0) >= scrollableMediaMinCount;
   const singleMediaPreview = showScrollableMediaPreviews
     ? undefined
     : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
-  const previewUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
+  const previewUrl = useMediaUrl(hasImagePreview ? imagePreview?.id : undefined);
 
-  const showBackgroundPreview = hasGeneratedPreview;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
+  const showBackgroundPreview = hasImagePreview
+  //  && isPreview
+  ;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
   const backgroundSize = isPreview && horizontal
     ? (mediaQuery.gtSm ? 400 : 310)
     : postBackgroundSize(mediaQuery);
