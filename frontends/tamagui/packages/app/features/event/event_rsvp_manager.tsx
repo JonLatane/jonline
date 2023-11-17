@@ -288,14 +288,16 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   </Paragraph>
                   : undefined}
                 {!previewingRsvp
-                  ? <Input textContentType="name" f={1}
-                    my='$1'
-
-                    placeholder={`Anonymous Guest Name (required)`}
-                    disabled={creatingRsvp} opacity={creatingRsvp || anonymousRsvpName == '' ? 0.5 : 1}
-                    autoCapitalize='words'
-                    value={anonymousRsvpName}
-                    onChange={(data) => { setAnonymousRsvpName(data.nativeEvent.text) }} />
+                  ? <XStack
+                    animation='standard' {...standardAnimation}>
+                    <Input textContentType="name" f={1}
+                      my='$1'
+                      placeholder={`Anonymous Guest Name (required)`}
+                      disabled={creatingRsvp} o={creatingRsvp || anonymousRsvpName == '' ? 0.5 : 1}
+                      autoCapitalize='words'
+                      value={anonymousRsvpName}
+                      onChange={(data) => { setAnonymousRsvpName(data.nativeEvent.text) }} />
+                  </XStack>
                   : <Heading my='auto' f={1}>{anonymousRsvpName}</Heading>}
               </>
               : previewingRsvp
