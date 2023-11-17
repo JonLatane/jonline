@@ -260,12 +260,14 @@ export function EventDetailsScreen() {
               {subjectEvent
                 ? <EventCard event={subjectEvent} key={`event-card-loaded-${loadedEvent}`}
                   onEditingChange={subjectPost ? editHandler(subjectPost.id) : undefined}
-                  selectedInstance={subjectInstance} />
+                  selectedInstance={subjectInstance}
+                  {...{newRsvpMode, setNewRsvpMode}}
+                   />
                 : undefined}
             </XStack>
 
-            <EventRsvpManager key={`rsvp-manager-${subjectInstance?.id}`}
-              event={subjectEvent!} instance={subjectInstance!} {...{ newRsvpMode, setNewRsvpMode }} />
+            {/* <EventRsvpManager key={`rsvp-manager-${subjectInstance?.id}`}
+              event={subjectEvent!} instance={subjectInstance!} {...{ newRsvpMode, setNewRsvpMode }} /> */}
 
             <XStack>
               <XStack f={1} />

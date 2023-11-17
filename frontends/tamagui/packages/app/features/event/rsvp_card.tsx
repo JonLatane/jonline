@@ -45,17 +45,18 @@ export const RsvpCard: React.FC<Props> = ({
       .finally(() => setUpserting(false));
   }
 
-  return <Card theme="dark" elevate size="$4" bordered
+  return <Card elevate size="$4" bordered
     animation='standard'
     {...standardAnimation}
     key={`attendance-card-${attendance.id}`}
     margin='$0'
+    mx="$2"
     scale={1}
     // opacity={1}
     y={0}
     mb='$2'
   >
-    <Card.Header>
+    <Card.Header pb={0}>
       <XStack>
         <YStack f={1}>
           {anonymousAttendee
@@ -84,7 +85,7 @@ export const RsvpCard: React.FC<Props> = ({
           : undefined}
       </XStack>
     </Card.Header>
-    <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} >
+    <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} pt={0}>
       <YStack w='100%'>
         <TamaguiMarkdown text={publicNote} />
         {privateNote && privateNote.length > 0

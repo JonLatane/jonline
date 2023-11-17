@@ -18,6 +18,7 @@ import { useLink } from "solito/link";
 import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
+import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 
 interface Props {
   event: Event;
@@ -27,6 +28,8 @@ interface Props {
   horizontal?: boolean;
   hideEditControls?: boolean;
   onEditingChange?: (editing: boolean) => void;
+  newRsvpMode?: RsvpMode;
+  setNewRsvpMode?: (mode: RsvpMode) => void;
 }
 
 let newEventId = 0;
@@ -39,6 +42,8 @@ export const EventCard: React.FC<Props> = ({
   horizontal,
   hideEditControls,
   onEditingChange,
+  newRsvpMode,
+setNewRsvpMode,
 }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingPreview, setLoadingPreview] = React.useState(false);
@@ -289,7 +294,7 @@ export const EventCard: React.FC<Props> = ({
 
 
   useEffect(() => {
-    if (!isPreview) {
+    if (!isPreview && !scrollInstancesVertically) {
       setTimeout(() =>
         document.querySelectorAll('.highlighted-instance-time')
           .forEach(e => e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })),
@@ -687,6 +692,12 @@ export const EventCard: React.FC<Props> = ({
                       setter={setEditedAllowAnonymousRsvps} />
                   </>
                   : undefined}
+
+                {primaryInstance && (!isPreview || hasBeenVisible)
+                  ? <EventRsvpManager key={`rsvp-manager-${primaryInstance?.id}`}
+                    event={event!} instance={primaryInstance} {...{isPreview, newRsvpMode, setNewRsvpMode}} />
+                  : undefined}
+
                 <XStack space='$2' flexWrap="wrap" key='save-buttons'>
                   {showEdit
                     ? editing
@@ -796,6 +807,7 @@ export const EventCard: React.FC<Props> = ({
                       createViewHref={createGroupEventViewHref} />
                   </XStack>
                 </XStack>
+
                 <XStack {...detailsProps} key='details'>
                   <AuthorInfo key='author-details' {...{ post, detailsMargins, isVisible }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>

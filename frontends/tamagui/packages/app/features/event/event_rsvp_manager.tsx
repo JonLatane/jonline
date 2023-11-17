@@ -2,31 +2,35 @@ import { accountOrServerId, getCredentialClient, useCredentialDispatch, useServe
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, standardAnimation, TextArea, Theme, useMedia, XStack, YStack, ZStack } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, TextArea, Theme, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from "@jonline/ui";
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Edit, Plus } from "@tamagui/lucide-icons";
+import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { createParam } from "solito";
+import { useLink } from "solito/link";
+import { useGroupContext } from "../groups/group_context";
 import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import RsvpCard from "./rsvp_card";
-import { passes, pending, rejected } from "app/utils/moderation_utils";
 
 export interface EventRsvpManagerProps {
   event: Event;
   instance: EventInstance;
-  newRsvpMode: RsvpMode;
-  setNewRsvpMode: (mode: RsvpMode) => void;
+  newRsvpMode?: RsvpMode;
+  setNewRsvpMode?: (mode: RsvpMode) => void;
+  isPreview?: boolean;
 }
 
 export type RsvpMode = 'anonymous' | 'user' | undefined;
 
 // let newEventId = 0;
-const { useParam } = createParam<{ anonymousAuthToken: string }>()
+const { useParam } = createParam<{ anonymousAuthToken: string, section: string }>()
 
 export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   event,
   instance,
-  newRsvpMode,
-  setNewRsvpMode
+  newRsvpMode: givenNewRsvpMode,
+  setNewRsvpMode: givenSetNewRsvpMode,
+  isPreview,
 }) => {
   const mediaQuery = useMedia();
   const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
@@ -36,7 +40,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
 
   const [queryAnonAuthToken, setQueryAnonAuthToken] = useParam('anonymousAuthToken');
+  const [querySection, setQuerySection] = useParam('section');
   const anonymousAuthToken = queryAnonAuthToken ?? '';
+
+  const [selfNewRsvpMode, setSelfNewRsvpMode] = useState(undefined as RsvpMode);
+  const [newRsvpMode, setNewRsvpMode] = [
+    givenNewRsvpMode ?? selfNewRsvpMode,
+    givenSetNewRsvpMode ?? setSelfNewRsvpMode
+  ];
 
   const showRsvpSection = event?.info?.allowsRsvps &&
     (event?.info?.allowsAnonymousRsvps || hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS));
@@ -44,7 +55,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   // const [newRsvpMode, setNewRsvpMode] = useState(undefined as RsvpMode);
   const [attendances, setAttendances] = useState([] as EventAttendance[]);
   const currentRsvp = attendances.find(a => account !== undefined && a.userAttendee?.userId === account.user?.id);
-  const currentAnonRsvp = attendances.find(a => a.anonymousAttendee && a.anonymousAttendee?.authToken === queryAnonAuthToken);
+  const currentAnonRsvp = attendances.find(a => queryAnonAuthToken && queryAnonAuthToken !== '' && a.anonymousAttendee && a.anonymousAttendee?.authToken === queryAnonAuthToken);
   // const [currentRsvp, setCurrentRsvp] = useState(undefined as EventAttendance | undefined);
   // const [currentAnonRsvp, setCurrentAnonRsvp] = useState(undefined as EventAttendance | undefined);
   // useEffect(() => {
@@ -75,14 +86,32 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     }
   }, [newRsvpMode, currentAnonRsvp, currentRsvp]);
 
-  const scrollToRsvps = () =>
-    document.querySelectorAll('.event-rsvp-manager')
-      .forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+  const className = `event-rsvp-manager-${instance.id}`;
+  const showRsvpCardsButtonClassName = `event-rsvp-card-button-${instance.id}`;
+  const formClassName = `event-rsvp-form-${instance.id}`;
+  const topButtonsClassName = 'rsvp-manager-buttons';
 
+  const scrollToRsvps = () => document.querySelectorAll(`.${topButtonsClassName}`)
+    .forEach(e => e.scrollIntoView({ block: 'start', inline: 'center', behavior: 'smooth' }));
+
+  const scrollToRsvpForm = () => setTimeout(() =>
+    document.querySelectorAll(`.${formClassName}`)
+      .forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' })),
+    500);
+
+  const [showDetails, setShowDetails] = useState(false);
   useEffect(() => {
-    if (queryAnonAuthToken && queryAnonAuthToken !== '') {
+    if (!isPreview && querySection === 'rsvp' && loaded) {
+      setShowRsvpCards(true);
       setTimeout(() => {
-        setNewRsvpMode('anonymous');
+        scrollToRsvps();
+      }, 1000);
+    }
+  }, [querySection, loaded]);
+  useEffect(() => {
+    if (!isPreview && queryAnonAuthToken && queryAnonAuthToken !== '') {
+      setTimeout(() => {
+        setNewRsvpMode?.('anonymous');
       },
         1000)
     }
@@ -90,7 +119,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   useEffect(() => {
     if (newRsvpMode !== undefined) {
-      scrollToRsvps();
+      scrollToRsvpForm();
     }
   }, [newRsvpMode]);
 
@@ -142,17 +171,19 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   } : undefined;
 
   const [upserting, setUpserting] = useState(false);
+  const toast = useToastController();
   async function upsertRsvp() {
     setUpserting(true);
 
     const client = await getCredentialClient(accountOrServer);
     client.upsertEventAttendance(upsertableAttendance!, client.credential).then((attendance) => {
       updateAttendance(attendance);
+      toast.show('RSVP saved.', { type: 'success' });
 
       if (newRsvpMode === 'anonymous') {
         setQueryAnonAuthToken(attendance.anonymousAttendee?.authToken ?? '');
       } else {
-        setNewRsvpMode(undefined);
+        setNewRsvpMode?.(undefined);
       }
     }).finally(() => setUpserting(false));
   }
@@ -186,7 +217,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       setAttendances([
         ...attendances.filter(a => a.id !== attendance.id)
       ]);
-      setNewRsvpMode(undefined);
+      setNewRsvpMode?.(undefined);
       if (attendance.anonymousAttendee !== undefined) {
         setQueryAnonAuthToken('');
       }
@@ -217,60 +248,85 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   const othersAttendances = nonPendingAttendances.filter(a => [currentRsvp, currentAnonRsvp].every(c => c?.id !== a.id));
 
+  const mainButtonHeight = isPreview ? '$4' : '$7';
+  const groupContext = useGroupContext();
+
+  const rsvpDetailsLink = useLink({
+    href: groupContext
+      ? `/g/${groupContext.shortname}/e/${event.id}/i/${instance!.id}?section=rsvp`
+      : `/event/${event.id}/i/${instance!.id}?section=rsvp`
+  });
+  const rsvpLink = `/event/${event.id}/i/${instance.id}?anonymousAuthToken=${queryAnonAuthToken}`;
+
   return showRsvpSection
-    ? <YStack space='$2' mb='$4' mx='$3' className="event-rsvp-manager">
-      <XStack id='rsvp-manager-buttons' space='$2' w='100%'>
+    ? <YStack space={isPreview ? '$1' : '$2'} mt='$3' p='$3' pb='$2' className={className}
+      backgroundColor='$backgroundStrong' borderRadius='$5'
+    // pt={attendances.length === 0 ? 0 : undefined}
+    >
+      {/* {isPreview
+        ? <></>
+        :  */}
+      <XStack className={topButtonsClassName} space='$1' w='100%'>
         {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
           ? <Button disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
-            transparent={newRsvpMode != 'user'} h='$7' f={1} p={0} onPress={() => setNewRsvpMode(newRsvpMode === 'user' ? undefined : 'user')}>
+            transparent={newRsvpMode != 'user'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'user' ? undefined : 'user')}>
             <YStack ai='center'>
-              <ZStack h='$2' w='$2'>
-                <XStack animation='standard' rotate={newRsvpMode === 'user' ? '90deg' : '0deg'}
-                  opacity={newRsvpMode === 'user' ? 1 : 0}>
-                  <ChevronRight color={primaryAnchorColor} />
-                </XStack>
-                <XStack animation='standard' rotate={newRsvpMode === 'user' ? '45deg' : '0deg'}
-                  opacity={!currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
-                  <Plus color={primaryAnchorColor} />
-                </XStack>
-                <XStack animation='standard'
-                  opacity={currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
-                  <Edit color={primaryAnchorColor} />
-                </XStack>
-              </ZStack>
-              <Heading color={primaryAnchorColor} size='$5'>RSVP</Heading>
+              {isPreview ? undefined :
+                <ZStack h='$2' w='$2'>
+                  <XStack animation='standard' rotate={newRsvpMode === 'user' ? '90deg' : '0deg'}
+                    opacity={newRsvpMode === 'user' ? 1 : 0}>
+                    <ChevronRight color={primaryAnchorColor} />
+                  </XStack>
+                  <XStack animation='standard' rotate={newRsvpMode === 'user' ? '45deg' : '0deg'}
+                    opacity={!currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
+                    <Plus color={primaryAnchorColor} />
+                  </XStack>
+                  <XStack animation='standard'
+                    opacity={currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
+                    <Edit color={primaryAnchorColor} />
+                  </XStack>
+                </ZStack>
+              }
+              <Heading color={primaryAnchorColor} size='$5'>
+                {currentRsvp ? attendanceName(currentRsvp.status) : 'RSVP'}
+              </Heading>
             </YStack>
           </Button>
           : undefined}
         {event?.info?.allowsAnonymousRsvps
           ? <>
             <Button mb='$2' disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
-              transparent={newRsvpMode != 'anonymous'} h='$7' f={1} p={0} onPress={() => setNewRsvpMode(newRsvpMode === 'anonymous' ? undefined : 'anonymous')}>
+              transparent={newRsvpMode != 'anonymous'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'anonymous' ? undefined : 'anonymous')}>
               <YStack ai='center'>
-                <ZStack h='$2' w='$2'>
-                  <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '90deg' : '0deg'}
-                    opacity={newRsvpMode === 'anonymous' ? 1 : 0}>
-                    <ChevronRight color={navAnchorColor} />
-                  </XStack>
-                  <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '45deg' : '0deg'}
-                    opacity={!currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
-                    <Plus color={navAnchorColor} />
-                  </XStack>
-                  <XStack animation='standard'
-                    opacity={currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
-                    <Edit color={navAnchorColor} />
-                  </XStack>
-                </ZStack>
-                <Heading color={navAnchorColor} size='$3'>Anonymous</Heading>
-                <Heading color={navAnchorColor} size='$2'>RSVP</Heading>
+                {isPreview ? undefined :
+                  <ZStack h='$2' w='$2'>
+                    <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '90deg' : '0deg'}
+                      opacity={newRsvpMode === 'anonymous' ? 1 : 0}>
+                      <ChevronRight color={navAnchorColor} />
+                    </XStack>
+                    <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '45deg' : '0deg'}
+                      opacity={!currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
+                      <Plus color={navAnchorColor} />
+                    </XStack>
+                    <XStack animation='standard'
+                      opacity={currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
+                      <Edit color={navAnchorColor} />
+                    </XStack>
+                  </ZStack>
+                }
+                <Heading color={navAnchorColor} size='$3'>Anonymously</Heading>
+                <Heading color={navAnchorColor} size='$2'>
+                  {currentAnonRsvp ? attendanceName(currentAnonRsvp.status) : 'RSVP'}
+                </Heading>
               </YStack>
             </Button>
           </>
           : undefined}
       </XStack>
+      {/* } */}
       <AnimatePresence>
         {newRsvpMode !== undefined
-          ? <YStack key='rsvp-section' space='$2' mb='$4' animation='standard' {...standardAnimation}>
+          ? <YStack className={formClassName} key='rsvp-section' space='$2' mb='$4' animation='standard' {...standardAnimation}>
             {newRsvpMode === 'anonymous'
               ? <>
                 {/* {!previewingRsvp
@@ -304,79 +360,98 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 ? <Heading my='auto' f={1}>{account?.user?.username}</Heading>
                 : undefined}
 
+            <RadioGroup aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
+              onValueChange={v => setRsvpStatus(parseInt(v))}
+              mb='$1'
+              value={rsvpStatus.toString()} name="form" >
+              <XStack alignItems="center" space="$2" flexWrap="wrap" mb={isPreview ? undefined : '$2'}>
+                <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3" {...valueAndLabel(AttendanceStatus.GOING)} />
+                <RadioGroupItemWithLabel color={navAnchorColor} size="$3" {...valueAndLabel(AttendanceStatus.INTERESTED)} />
+                <RadioGroupItemWithLabel size="$3" {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
+              </XStack>
+            </RadioGroup>
 
-            <Select native onValueChange={v => setNumberOfGuests(parseInt(v))} value={numberOfGuests.toString()}>
-              <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
-                <Select.Value w='100%' placeholder="Choose Visibility" />
-              </Select.Trigger>
-
-              <RadioGroup aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
-                onValueChange={v => setRsvpStatus(parseInt(v))}
-                value={rsvpStatus.toString()} name="form" >
-                <XStack alignItems="center" space="$2" flexWrap="wrap" mb='$2'>
-                  <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3" value={AttendanceStatus.GOING.toString()} label="Going" />
-                  <RadioGroupItemWithLabel color={navAnchorColor} size="$3" value={AttendanceStatus.INTERESTED.toString()} label="Interested" />
-                  <RadioGroupItemWithLabel size="$3" value={AttendanceStatus.NOT_GOING.toString()} label="Not Going" />
-                </XStack>
-              </RadioGroup>
-
-
-              <Select.Content zIndex={200000}>
-                <Select.Viewport minWidth={200} w='100%'>
-                  <XStack w='100%'>
-                    <Select.Group space="$0" w='100%'>
-                      {numberOfGuestsOptions.map(i => i + 1).map((item, i) => {
-                        return (
-                          <Select.Item
-                            debug="verbose"
-                            index={i}
-                            key={item.toString()}
-                            value={item.toString()}
-                          >
-                            <Select.ItemText>{item} {item === 1 ? 'attendee' : 'attendees'}</Select.ItemText>
-                            <Select.ItemIndicator marginLeft="auto">
-                              <Check size={16} />
-                            </Select.ItemIndicator>
-                          </Select.Item>
-                        )
-                      })}
-                    </Select.Group>
-                    <YStack
-                      position="absolute"
-                      right={0}
-                      top={0}
-                      bottom={0}
-                      alignItems="center"
-                      justifyContent="center"
-                      width={'$4'}
-                      pointerEvents="none"
-                    >
-                      <ChevronDown size='$2' />
-                    </YStack>
+            {isPreview
+              ? undefined
+              : <Button h='auto' onPress={() => setShowDetails(!showDetails)} mb='$2'>
+                <XStack>
+                  <Heading size='$2' my='auto'>Details</Heading>
+                  <XStack my='auto' animation='standard' rotate={showDetails ? '90deg' : '0deg'}>
+                    <ChevronRight size='$1' />
                   </XStack>
-                </Select.Viewport>
-              </Select.Content>
-            </Select>
+                </XStack>
+              </Button>}
 
-            {!previewingRsvp
-              ? <TextArea f={1} pt='$2' my='$1' value={publicNote}
-                disabled={creatingRsvp} opacity={creatingRsvp || publicNote == '' ? 0.5 : 1}
-                h={(publicNote?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
-                onChangeText={setPublicNote}
-                placeholder={`Public note (optional). Markdown is supported.`} />
-              : <YStack maw={600} als='center' width='100%'>
-                <TamaguiMarkdown text={publicNote} />
-              </YStack>}
+            <AnimatePresence>
+              {showDetails
+                ? <YStack className={formClassName} key='rsvp-details' space='$2' animation='standard' {...standardAnimation}>
+                  <Select native onValueChange={v => setNumberOfGuests(parseInt(v))} value={numberOfGuests.toString()}>
+                    <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
+                      <Select.Value w='100%' placeholder="Choose Visibility" />
+                    </Select.Trigger>
 
-            {!previewingRsvp
-              ? <TextArea f={1} pt='$2' my='$1' value={privateNote}
-                disabled={creatingRsvp} opacity={creatingRsvp || privateNote == '' ? 0.5 : 1}
-                h={(privateNote?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
-                onChangeText={setPrivateNote}
-                placeholder={`Private note (optional). Markdown is supported.`} />
-              : <YStack maw={600} als='center' width='100%'>
-                <TamaguiMarkdown text={privateNote} />
-              </YStack>}
+
+
+
+                    <Select.Content zIndex={200000}>
+                      <Select.Viewport minWidth={200} w='100%'>
+                        <XStack w='100%'>
+                          <Select.Group space="$0" w='100%'>
+                            {numberOfGuestsOptions.map(i => i + 1).map((item, i) => {
+                              return (
+                                <Select.Item
+                                  debug="verbose"
+                                  index={i}
+                                  key={item.toString()}
+                                  value={item.toString()}
+                                >
+                                  <Select.ItemText>{item} {item === 1 ? 'attendee' : 'attendees'}</Select.ItemText>
+                                  <Select.ItemIndicator marginLeft="auto">
+                                    <Check size={16} />
+                                  </Select.ItemIndicator>
+                                </Select.Item>
+                              )
+                            })}
+                          </Select.Group>
+                          <YStack
+                            position="absolute"
+                            right={0}
+                            top={0}
+                            bottom={0}
+                            alignItems="center"
+                            justifyContent="center"
+                            width={'$4'}
+                            pointerEvents="none"
+                          >
+                            <ChevronDown size='$2' />
+                          </YStack>
+                        </XStack>
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select>
+
+                  {!previewingRsvp
+                    ? <TextArea f={1} pt='$2' my='$1' value={publicNote}
+                      disabled={creatingRsvp} opacity={creatingRsvp || publicNote == '' ? 0.5 : 1}
+                      h={(publicNote?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
+                      onChangeText={setPublicNote}
+                      placeholder={`Public note (optional). Markdown is supported.`} />
+                    : <YStack maw={600} als='center' width='100%'>
+                      <TamaguiMarkdown text={publicNote} />
+                    </YStack>}
+
+                  {!previewingRsvp
+                    ? <TextArea f={1} pt='$2' my='$1' value={privateNote}
+                      disabled={creatingRsvp} opacity={creatingRsvp || privateNote == '' ? 0.5 : 1}
+                      h={(privateNote?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
+                      onChangeText={setPrivateNote}
+                      placeholder={`Private note (optional). Markdown is supported.`} />
+                    : <YStack maw={600} als='center' width='100%'>
+                      <TamaguiMarkdown text={privateNote} />
+                    </YStack>}
+                </YStack>
+                : undefined}
+            </AnimatePresence>
             {newRsvpMode === 'anonymous'
               ? <>
                 {queryAnonAuthToken && queryAnonAuthToken.length > 0
@@ -384,7 +459,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     {currentAnonRsvp
                       ? <>
                         <Paragraph size='$4' mx='$4' my='$1' als='center' ta='center'>
-                          Save <Anchor href={`/rsvp/${queryAnonAuthToken}`} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
+                          Save <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
                         </Paragraph>
 
                         <Dialog>
@@ -424,8 +499,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                               <YStack space>
                                 <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
                                 <Dialog.Description>
-                                  Make sure you've saved the <Anchor href={`/rsvp/${queryAnonAuthToken}`} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor>
-                                  to update/delete your current RSVP later!
+                                  Make sure you've saved <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
                                 </Dialog.Description>
 
                                 <XStack space="$3" jc="flex-end">
@@ -459,13 +533,13 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             <XStack w='100%' space='$2'>
               <Button f={1} disabled={!canRsvp || upserting || deleting} opacity={canRsvp && !upserting && !deleting ? 1 : 0.5}
                 onPress={upsertRsvp} color={newRsvpMode === 'anonymous' ? navAnchorColor : primaryAnchorColor}>
-                {editingAttendance ? 'Update RSVP' : 'RSVP'}
+                {editingAttendance ? 'Save' : 'RSVP'}
               </Button>
-              {editingAttendance
+              {editingAttendance && !isPreview
                 ? <Dialog>
                   <Dialog.Trigger asChild>
                     <Button f={1} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
-                      Delete RSVP
+                      Delete
                     </Button>
                   </Dialog.Trigger>
                   <Dialog.Portal zi={1000011}>
@@ -521,22 +595,28 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </Dialog>
                 : undefined}
               <Button f={1} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}
-                onPress={() => setNewRsvpMode(undefined)}>
+                onPress={() => setNewRsvpMode?.(undefined)}>
                 Cancel
               </Button>
             </XStack>
           </YStack>
           : undefined}
         <Button key='rsvp-card-toggle'
-          h={hasPendingAttendances
-            ? (mediaQuery.gtXxxxs ? '$10' : '$15')
-            : (mediaQuery.gtXxxxs ? '$5' : '$10')}
-          onPress={() => setShowRsvpCards(!showRsvpCards)} disabled={attendances.length === 0} o={attendances.length === 0 ? 0.5 : 1}>
+          className={showRsvpCardsButtonClassName}
+          h='auto'
+          // {hasPendingAttendances
+          //   ? (mediaQuery.gtXxxxs ? '$10' : '$15')
+          //   : (mediaQuery.gtXxxxs ? '$5' : '$10')}
+          {...isPreview ? rsvpDetailsLink : {}}
+          onPress={isPreview
+            ? undefined
+            : () => setShowRsvpCards(!showRsvpCards)}
+          disabled={attendances.length === 0} o={attendances.length === 0 ? 0.5 : 1}>
           <XStack w='100%'>
             <YStack f={1}>
               {hasPendingAttendances
                 ? <XStack w='100%' flexWrap="wrap">
-                  <Paragraph size='$1' fontWeight='700'>{isEventOwner ? 'Pending Your Approval' : 'Pending Owner Approval'}</Paragraph>
+                  <Paragraph size='$1' fontWeight='700'>{isPreview ? 'Pending' : isEventOwner ? 'Pending Your Approval' : 'Pending Owner Approval'}</Paragraph>
                   {loaded
                     ? <Paragraph size='$1' ml='auto'>{pendingRsvpCount} {pendingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {pendingAttendeeCount} {pendingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
                     : <Paragraph size='$1' ml='auto'>...</Paragraph>}
@@ -549,7 +629,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   : <Paragraph size='$1' ml='auto'>...</Paragraph>}
               </XStack>
               <XStack w='100%' flexWrap="wrap">
-                <Paragraph size='$1' color={navAnchorColor}>Interested/Invited</Paragraph>
+                <Paragraph size='$1' color={navAnchorColor}>Maybe</Paragraph>
                 {loaded
                   ? <Paragraph size='$1' ml='auto'>{interestedRsvpCount} {interestedRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {interestedAttendeeCount} {interestedAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
                   : <Paragraph size='$1' ml='auto'>...</Paragraph>}
@@ -579,9 +659,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     event={event}
                     instance={instance}
                     onPressEdit={() => {
-                      setNewRsvpMode('anonymous');
-                      scrollToRsvps();
-                      // document.querySelectorsrsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                      setNewRsvpMode?.('anonymous');
+                      scrollToRsvpForm();
+                      // document.querySelectors rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
                     }}
                     onModerated={updateAttendance}
                   />
@@ -594,9 +674,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     event={event}
                     instance={instance}
                     onPressEdit={() => {
-                      setNewRsvpMode('user');
-                      scrollToRsvps();
-                      // document.querySelector('#rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                      setNewRsvpMode?.('user');
+                      scrollToRsvpForm();
+                      // document.querySelector('.rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
                     }}
                     onModerated={updateAttendance}
                   />
@@ -606,7 +686,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               {pendingAttendances.length > 0
                 ? <Heading size='$6' mx='auto' key='pending-rsvps'
                   animation='standard'
-                  {...standardAnimation}>Pending RSVPs</Heading>
+                  {...standardAnimation} pb='$1'>Pending RSVPs</Heading>
                 : undefined}
               {pendingAttendances.map((attendance, index) => {
                 return <RsvpCard key={`pending-rsvp-${attendance.userAttendee?.userId ?? index}`}
@@ -619,7 +699,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
               {othersAttendances.length > 0
                 ? <Heading size='$6' mx='auto' key='other-rsvps'
-                  animation='standard'
+                  animation='standard' pb='$1'
                   {...standardAnimation}>Others' RSVPs</Heading>
                 : undefined}
               {othersAttendances.map((attendance, index) => {
@@ -634,7 +714,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               {rejectedAttendances.length > 0
                 ? <Heading size='$6' mx='auto' key='rejected-rsvps'
                   animation='standard'
-                  {...standardAnimation}>Rejected RSVPs</Heading>
+                  {...standardAnimation} pb='$1'>Rejected RSVPs</Heading>
                 : undefined}
               {rejectedAttendances.map((attendance, index) => {
                 return <RsvpCard key={`rejected-rsvp-${attendance.userAttendee?.userId ?? index}`}
@@ -660,7 +740,7 @@ export function RadioGroupItemWithLabel(props: {
 }) {
   const id = `radiogroup-${props.value}`
   return (
-    <XStack f={1} alignItems="center" space="$4">
+    <XStack f={1} alignItems="center" space="$2">
       <RadioGroup.Item value={props.value} id={id} size={props.size}>
         <RadioGroup.Indicator />
       </RadioGroup.Item>
@@ -672,3 +752,24 @@ export function RadioGroupItemWithLabel(props: {
   )
 }
 
+/* <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3" value={AttendanceStatus.GOING.toString()} label="Going" />
+<RadioGroupItemWithLabel color={navAnchorColor} size="$3" value={AttendanceStatus.INTERESTED.toString()} label="Interested" />
+<RadioGroupItemWithLabel size="$3" value={AttendanceStatus.NOT_GOING.toString()} label="Not Going" /> */
+
+function valueAndLabel(value: AttendanceStatus) {
+  return { value: value.toString(), label: attendanceName(value) as string };
+}
+function attendanceName(attendanceStatus: AttendanceStatus) {
+  switch (attendanceStatus) {
+    case AttendanceStatus.GOING:
+      return 'Going';
+    case AttendanceStatus.INTERESTED:
+      return 'Interested';
+    case AttendanceStatus.NOT_GOING:
+      return 'Not Going';
+    case AttendanceStatus.REQUESTED:
+      return 'Invited';
+    default:
+      return 'Unknown';
+  }
+}
