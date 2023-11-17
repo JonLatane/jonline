@@ -2,7 +2,7 @@ import { accountOrServerId, getCredentialClient, useCredentialDispatch, useServe
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, standardAnimation, TextArea, useMedia, XStack, YStack, ZStack } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, standardAnimation, TextArea, Theme, useMedia, XStack, YStack, ZStack } from "@jonline/ui";
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Edit, Plus } from "@tamagui/lucide-icons";
 import { hasPermission } from "app/utils/permission_utils";
 import { createParam } from "solito";
@@ -72,6 +72,25 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       setPublicNote(currentRsvp.publicNote);
       setPrivateNote(currentRsvp.privateNote);
       setRsvpStatus(currentRsvp.status);
+    }
+  }, [newRsvpMode, currentAnonRsvp, currentRsvp]);
+
+  const scrollToRsvps = () =>
+    document.querySelectorAll('.event-rsvp-manager')
+      .forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+
+  useEffect(() => {
+    if (queryAnonAuthToken && queryAnonAuthToken !== '') {
+      setTimeout(() => {
+        setNewRsvpMode('anonymous');
+      },
+        1000)
+    }
+  }, [queryAnonAuthToken]);
+
+  useEffect(() => {
+    if (newRsvpMode !== undefined) {
+      scrollToRsvps();
     }
   }, [newRsvpMode]);
 
@@ -199,7 +218,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const othersAttendances = nonPendingAttendances.filter(a => [currentRsvp, currentAnonRsvp].every(c => c?.id !== a.id));
 
   return showRsvpSection
-    ? <YStack space='$2' mb='$4' mx='$3' >
+    ? <YStack space='$2' mb='$4' mx='$3' className="event-rsvp-manager">
       <XStack id='rsvp-manager-buttons' space='$2' w='100%'>
         {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
           ? <Button disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
@@ -551,28 +570,36 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   animation='standard'
                   {...standardAnimation}>Your {currentRsvp && currentAnonRsvp ? 'RSVPs' : 'RSVP'}</Heading>
                 : undefined}
-              {currentAnonRsvp && newRsvpMode !== 'anonymous'
-                ? <RsvpCard key={`current-anon-rsvp-${currentAnonRsvp.anonymousAttendee?.authToken}`}
-                  attendance={currentAnonRsvp}
-                  event={event}
-                  instance={instance}
-                  onPressEdit={() => {
-                    setNewRsvpMode('anonymous');
-                    document.querySelector('#rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-                  }}
-                  onModerated={updateAttendance}
-                /> : undefined}
-              {currentRsvp && newRsvpMode !== 'user'
-                ? <RsvpCard key={`current-rsvp-${currentRsvp.userAttendee?.userId}`}
-                  attendance={currentRsvp}
-                  event={event}
-                  instance={instance}
-                  onPressEdit={() => {
-                    setNewRsvpMode('user');
-                    document.querySelector('#rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-                  }}
-                  onModerated={updateAttendance}
-                /> : undefined}
+              {currentAnonRsvp //&& newRsvpMode !== 'anonymous'
+                ? <Theme inverse={newRsvpMode === 'anonymous'}>
+                  <RsvpCard key={`current-anon-rsvp-${currentAnonRsvp.anonymousAttendee?.authToken}`}
+                    attendance={currentAnonRsvp}
+                    event={event}
+                    instance={instance}
+                    onPressEdit={() => {
+                      setNewRsvpMode('anonymous');
+                      scrollToRsvps();
+                      // document.querySelectorsrsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                    }}
+                    onModerated={updateAttendance}
+                  />
+                </Theme>
+                : undefined}
+              {currentRsvp //&& newRsvpMode !== 'user'
+                ? <Theme inverse={newRsvpMode === 'user'}>
+                  <RsvpCard key={`current-rsvp-${currentRsvp.userAttendee?.userId}`}
+                    attendance={currentRsvp}
+                    event={event}
+                    instance={instance}
+                    onPressEdit={() => {
+                      setNewRsvpMode('user');
+                      scrollToRsvps();
+                      // document.querySelector('#rsvp-manager-buttons')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                    }}
+                    onModerated={updateAttendance}
+                  />
+                </Theme>
+                : undefined}
 
               {pendingAttendances.length > 0
                 ? <Heading size='$6' mx='auto' key='pending-rsvps'

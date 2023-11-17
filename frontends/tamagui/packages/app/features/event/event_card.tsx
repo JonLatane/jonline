@@ -297,28 +297,11 @@ export const EventCard: React.FC<Props> = ({
     }
   }, [selectedInstance?.id]);
   useEffect(() => {
-    if (!scrollInstancesVertically) {
-      // setTimeout(() =>
+    if (!isPreview && !scrollInstancesVertically) {
       document.querySelectorAll('.highlighted-instance-time')
         .forEach(e => e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }));
-      // 1000);
     }
   }, [scrollInstancesVertically]);
-
-  // canEasilySeeAllInstances
-  //   ? sortedFilteredInstances
-  //   : editing || scrollInstancesVertically || canEasilySeeAllInstances
-  //     ? sortedFilteredInstances
-  //     : [
-  //       ...(selectedInstance ? [selectedInstance] : []),
-  //       ...sortedFilteredInstances.filter(i => i.id != selectedInstance?.id)
-  //     ];
-
-  // const displayedInstances = selectedInstance && !editing
-  //   ? arrangedInstances.map(i => i.id).includes(selectedInstance.id ?? 'undefinedid')
-  //     ? arrangedInstances
-  //     : [selectedInstance, ...arrangedInstances]
-  //   : arrangedInstances;
 
   const postLinkView = postLink
     ? <Anchor key='post-link' textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
