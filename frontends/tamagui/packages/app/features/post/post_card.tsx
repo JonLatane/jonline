@@ -1,9 +1,9 @@
-import { colorMeta, deletePost, loadPostReplies, loadUser, RootState, selectUserById, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { deletePost, loadPostReplies, RootState, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
 import React, { useEffect, useState } from "react";
-import { GestureResponderEvent, Platform, View } from "react-native";
+import { GestureResponderEvent, View } from "react-native";
 
-import { Group, Post, Visibility } from "@jonline/api";
-import { Anchor, Button, Card, Heading, Image, TamaguiMediaState, ScrollView, Spinner, Theme, useMedia, useTheme, XStack, YStack, TextArea, Dialog, Paragraph } from '@jonline/ui';
+import { Group, Post } from "@jonline/api";
+import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronRight, Delete, Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useMediaUrl } from "app/hooks/use_media_url";
@@ -12,13 +12,12 @@ import { useLink } from "solito/link";
 import { AuthorInfo } from "./author_info";
 import { TamaguiMarkdown } from "./tamagui_markdown";
 
-import { MediaRenderer } from "../media/media_renderer";
 import { FadeInView } from '../../components/fade_in_view';
-import { GroupPostManager } from '../groups/group_post_manager';
-import { PostMediaRenderer } from "./post_media_renderer";
-import { PostMediaManager } from "./post_media_manager";
 import { VisibilityPicker } from "../../components/visibility_picker";
+import { GroupPostManager } from '../groups/group_post_manager';
 import { postVisibilityDescription } from "./base_create_post_sheet";
+import { PostMediaManager } from "./post_media_manager";
+import { PostMediaRenderer } from "./post_media_renderer";
 
 interface PostCardProps {
   post: Post;
@@ -57,11 +56,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const mediaQuery = useMedia();
 
-  const theme = useTheme();
   const currentUser = useAccount()?.user;
-  const textColor: string = theme.color?.val ?? '#000000';
-  const themeBgColor = theme.background?.val ?? '#ffffff';
-  const { luma: themeBgLuma } = colorMeta(themeBgColor);
   const { server, primaryColor, navAnchorColor: navColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
   const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
   const [editing, _setEditing] = useState(false);
@@ -115,9 +110,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   }, [isVisible]);
 
-  const authorId = post.author?.userId;
-  const authorName = post.author?.username;
-
   const postHasWebLink = post.link && post.link.startsWith('http');
   const postLink = postHasWebLink ? useLink({
     href: post.link!,
@@ -127,36 +119,13 @@ export const PostCard: React.FC<PostCardProps> = ({
       ? `/g/${groupContext.shortname}/p/${post.id}`
       : `/post/${post.id}`,
   });
-  const authorLink = useLink({
-    href: authorName
-      ? `/${authorName}`
-      : `/user/${authorId}`
-  });
-  const authorLinkProps = post.author ? authorLink : undefined;
   const showDetailsShadow = isPreview && post.content && post.content.length > 700;
-  const detailsMargins = showDetailsShadow ? 20 : 0;
-  const footerProps = isPreview ? {
-    // ml: -detailsMargins,
-    mr: -detailsMargins,
-  } : {};
-  const contentProps = isPreview ? {
-    // ml: detailsMargins,
-    // mr: 2 * detailsMargins,
-  } : {};
-  const detailsProps = isPreview ? showDetailsShadow ? {
-    ml: -detailsMargins,
-    mr: -0.5 * detailsMargins,
-    pr: 0,//1 * detailsMargins - 5,
-    mb: -detailsMargins,
-    pb: detailsMargins,
+
+  const detailsShadowProps = showDetailsShadow ? {
     shadowOpacity: 0.3,
     shadowOffset: { width: -5, height: -5 },
     shadowRadius: 10
-  } : {
-    mr: -10,
-  } : {
-    // mr: -2 * detailsMargins,
-  };
+  } : {};
 
   const author = post.author;
   const isAuthor = author && author.userId === currentUser?.id;
@@ -213,7 +182,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   // const singleMediaPreview = showScrollableMediaPreviews
   //   ? undefined
   //   : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
-  const previewUrl = useMediaUrl( imagePreview?.id);
+  const previewUrl = useMediaUrl(imagePreview?.id);
 
   const showBackgroundPreview = !!imagePreview;
   const backgroundSize = postBackgroundSize(mediaQuery);
@@ -286,163 +255,148 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </Anchor>
               </Card.Header>
               : undefined}
-            <Card.Footer p='$3' pr={mediaQuery.gtXs ? '$3' : '$1'} >
+            <Card.Footer p={0} >
               {deleted
                 ? <Paragraph size='$1'>This {post.replyToPostId ? 'comment' : 'post'} has been deleted.</Paragraph>
-                : <YStack zi={1000} width='100%' {...footerProps}>
+                : <YStack zi={1000} width='100%'>
 
-                  {editing && !previewingEdits
-                    ? <PostMediaManager
-                      link={post.link}
-                      media={editedMedia}
-                      setMedia={setEditedMedia}
-                      embedLink={editedEmbedLink}
-                      setEmbedLink={setEditedEmbedLink}
-                      disableInputs={savingEdits}
-                    />
-                    : <PostMediaRenderer {...{
-                      post: {
-                        ...post,
-                        media,
-                        embedLink
-                      }, isPreview, groupContext, hasBeenVisible
-                    }} />}
+                  <YStack w='100%' px='$3'>
+                    {editing && !previewingEdits
+                      ? <PostMediaManager
+                        link={post.link}
+                        media={editedMedia}
+                        setMedia={setEditedMedia}
+                        embedLink={editedEmbedLink}
+                        setEmbedLink={setEditedEmbedLink}
+                        disableInputs={savingEdits}
+                      />
+                      : <PostMediaRenderer {...{
+                        post: {
+                          ...post,
+                          media,
+                          embedLink
+                        }, isPreview, groupContext, hasBeenVisible
+                      }} />}
 
-                  <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                    <YStack maxHeight={isPreview
-                      ? (showScrollableMediaPreviews) ? 150 : 300
-                      : editing && !previewingEdits ? backgroundSize * (media.length > 0 ? 0.6 : 0.8) : undefined} overflow='hidden' 
-                      {...contentProps}>
-                      {
-                        editing && !previewingEdits
-                          ? <TextArea f={1} pt='$2' value={editedContent}
-                            disabled={savingEdits} opacity={savingEdits || editedContent == '' ? 0.5 : 1}
-                            h={(editedContent?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
-                            onChangeText={setEditedContent}
-                            placeholder={`Text content (optional). Markdown is supported.`} />
-                          : content && content != ''
-                            ? <TamaguiMarkdown text={content} disableLinks={isPreview} />
-                            : undefined
-                      }
-                    </YStack>
-                  </Anchor>
-                  <XStack space='$2' flexWrap="wrap">
-                    {showEdit
-                      ? editing
-                        ? <>
-                          <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
-                            Save
-                          </Button>
-                          <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
-                            Cancel
-                          </Button>
-                          {previewingEdits
-                            ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                    <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                      <YStack maxHeight={isPreview
+                        ? (showScrollableMediaPreviews) ? 150 : 300
+                        : editing && !previewingEdits ? backgroundSize * (media.length > 0 ? 0.6 : 0.8) : undefined} overflow='hidden'
+                      >
+                        {
+                          editing && !previewingEdits
+                            ? <TextArea f={1} pt='$2' value={editedContent}
+                              disabled={savingEdits} opacity={savingEdits || editedContent == '' ? 0.5 : 1}
+                              h={(editedContent?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
+                              onChangeText={setEditedContent}
+                              placeholder={`Text content (optional). Markdown is supported.`} />
+                            : content && content != ''
+                              ? <TamaguiMarkdown text={content} disableLinks={isPreview} />
+                              : undefined
+                        }
+                      </YStack>
+                    </Anchor>
+                    <XStack space='$2' flexWrap="wrap">
+                      {showEdit
+                        ? editing
+                          ? <>
+                            <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
+                              Save
+                            </Button>
+                            <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+                              Cancel
+                            </Button>
+                            {previewingEdits
+                              ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                                Edit
+                              </Button>
+                              :
+                              <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
+                                Preview
+                              </Button>}
+                          </>
+                          : <>
+                            <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
                               Edit
                             </Button>
-                            :
-                            <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
-                              Preview
-                            </Button>}
-                        </>
-                        : <>
-                          <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
-                            Edit
-                          </Button>
 
-                          <Dialog>
-                            <Dialog.Trigger asChild>
-                              <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
-                                Delete
-                              </Button>
-                            </Dialog.Trigger>
-                            <Dialog.Portal zi={1000011}>
-                              <Dialog.Overlay
-                                key="overlay"
-                                animation="quick"
-                                o={0.5}
-                                enterStyle={{ o: 0 }}
-                                exitStyle={{ o: 0 }}
-                              />
-                              <Dialog.Content
-                                bordered
-                                elevate
-                                key="content"
-                                animation={[
-                                  'quick',
-                                  {
-                                    opacity: {
-                                      overshootClamping: true,
+                            <Dialog>
+                              <Dialog.Trigger asChild>
+                                <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
+                                  Delete
+                                </Button>
+                              </Dialog.Trigger>
+                              <Dialog.Portal zi={1000011}>
+                                <Dialog.Overlay
+                                  key="overlay"
+                                  animation="quick"
+                                  o={0.5}
+                                  enterStyle={{ o: 0 }}
+                                  exitStyle={{ o: 0 }}
+                                />
+                                <Dialog.Content
+                                  bordered
+                                  elevate
+                                  key="content"
+                                  animation={[
+                                    'quick',
+                                    {
+                                      opacity: {
+                                        overshootClamping: true,
+                                      },
                                     },
-                                  },
-                                ]}
-                                m='$3'
-                                enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                                exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                                x={0}
-                                scale={1}
-                                opacity={1}
-                                y={0}
-                              >
-                                <YStack space>
-                                  <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
-                                  <Dialog.Description>
-                                    Really delete {post.replyToPostId ? 'reply' : 'post'}?
-                                    The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
-                                  </Dialog.Description>
+                                  ]}
+                                  m='$3'
+                                  enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                                  exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                                  x={0}
+                                  scale={1}
+                                  opacity={1}
+                                  y={0}
+                                >
+                                  <YStack space>
+                                    <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
+                                    <Dialog.Description>
+                                      Really delete {post.replyToPostId ? 'reply' : 'post'}?
+                                      The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
+                                    </Dialog.Description>
 
-                                  <XStack space="$3" jc="flex-end">
-                                    <Dialog.Close asChild>
-                                      <Button>Cancel</Button>
-                                    </Dialog.Close>
-                                    {/* <Dialog.Action asChild> */}
-                                    <Theme inverse>
-                                      <Button onPress={doDeletePost}>Delete</Button>
-                                    </Theme>
-                                    {/* </Dialog.Action> */}
-                                  </XStack>
-                                </YStack>
-                              </Dialog.Content>
-                            </Dialog.Portal>
-                          </Dialog>
-                        </>
-                      : undefined}
+                                    <XStack space="$3" jc="flex-end">
+                                      <Dialog.Close asChild>
+                                        <Button>Cancel</Button>
+                                      </Dialog.Close>
+                                      {/* <Dialog.Action asChild> */}
+                                      <Theme inverse>
+                                        <Button onPress={doDeletePost}>Delete</Button>
+                                      </Theme>
+                                      {/* </Dialog.Action> */}
+                                    </XStack>
+                                  </YStack>
+                                </Dialog.Content>
+                              </Dialog.Portal>
+                            </Dialog>
+                          </>
+                        : undefined}
 
-                    <XStack key='visibility-edit' mt='$2' ml='auto'>
-                      <VisibilityPicker
-                        id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
-                        label='Post Visibility'
-                        visibility={visibility}
-                        onChange={setEditedVisibility}
-                        visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'post')}
-                        readOnly={!editing || previewingEdits}
-                      />
-                    </XStack>
-                    {/* {editing && !previewingEdits
-                      ? <XStack mt='$2' ml='$2'>
+                      <XStack key='visibility-edit' mt='$2' ml='auto'>
                         <VisibilityPicker
                           id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
                           label='Post Visibility'
                           visibility={visibility}
                           onChange={setEditedVisibility}
-                          visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'post')} />
+                          visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'post')}
+                          readOnly={!editing || previewingEdits}
+                        />
                       </XStack>
-                      : visibility != Visibility.GLOBAL_PUBLIC
-                        ? <Paragraph size='$1' my='auto' ml='$2'>
-                          {postVisibilityDescription(visibility, groupContext, server, 'post')}
-                        </Paragraph>
-                        : undefined} */}
-                    {post?.replyToPostId
-                      ? undefined
-                      : <XStack pt={10} pr='$2' maw='100%'>
-                        <GroupPostManager post={post} isVisible={isVisible} />
-                      </XStack>}
-                  </XStack>
-
-                  <XStack pt={post?.replyToPostId
-                    ? 10
-                    : undefined} {...detailsProps}>
-                    <AuthorInfo {...{ post, detailsMargins, isVisible }} />
+                      {post?.replyToPostId
+                        ? undefined
+                        : <XStack pt={10} maw='100%'>
+                          <GroupPostManager post={post} isVisible={isVisible} />
+                        </XStack>}
+                    </XStack>
+                  </YStack>
+                  <XStack p='$3' pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
+                    <AuthorInfo {...{ post, isVisible }} />
                     {onPressReply ? <Button onPress={onPressReply} circular icon={Reply}
                       my='auto' size='$2' mr='$2' /> : undefined}
                     <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
@@ -451,7 +405,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                           borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
                           disabled={cannotToggleReplies || loadingReplies}
                           marginVertical='auto'
-                          mr={isPreview ? '$2' : undefined}
+                          // mr={isPreview ? '$2' : undefined}
                           size='$3'
                           onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
                           <XStack opacity={0.9}>

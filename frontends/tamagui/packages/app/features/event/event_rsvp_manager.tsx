@@ -298,7 +298,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   }
 
   return showRsvpSection
-    ? <YStack space={isPreview ? '$1' : '$2'} mt='$2' p='$3' pb='$2' className={className}
+    ? <YStack space={isPreview ? '$1' : '$2'} mt={0} p='$3' pb='$2' className={className}
       backgroundColor='$backgroundStrong' borderRadius='$5'
     // pt={attendances.length === 0 ? 0 : undefined}
     >

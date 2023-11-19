@@ -72,6 +72,10 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
 
   const singlePreviewSize = horizontalPreview ? 300 : foregroundSize;
 
+  // if (!embedComponent && (post?.media?.length ?? 0 === 0)) {
+  //   return <></>;
+  // }
+
   return <YStack zi={1000} width='100%'>
     {hasBeenVisible && embedComponent && false
       ? <FadeInView><div>{embedComponent}</div></FadeInView>

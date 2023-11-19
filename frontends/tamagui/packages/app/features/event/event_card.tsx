@@ -46,7 +46,6 @@ export const EventCard: React.FC<Props> = ({
   setNewRsvpMode,
 }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const [loadingPreview, setLoadingPreview] = React.useState(false);
   const mediaQuery = useMedia();
   const currentUser = useAccount()?.user;
   const post = event.post!;
@@ -76,7 +75,6 @@ export const EventCard: React.FC<Props> = ({
   const [editedInstances, setEditedInstances] = useState(event.instances);
   const instances = editing ? editedInstances : event.instances;
   const hasPastInstances = instances.find(isPastInstance) != undefined;
-  // console.log('instances', instances);
   const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
   const [repeatWeeks, setRepeatWeeks] = useState(1);
 
@@ -199,29 +197,11 @@ export const EventCard: React.FC<Props> = ({
   const authorLinkProps = post.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;
   const showDetailsShadow = isPreview && post.content && post.content.length > contentLengthShadowThreshold;
-  const detailsMargins = showDetailsShadow ? 20 : 0;
-  const footerProps = isPreview ? {
-    // ml: -detailsMargins,
-    mr: -detailsMargins,
-  } : {};
-  const contentProps = isPreview ? {
-    // ml: detailsMargins,
-    // mr: 2 * detailsMargins,
-  } : {};
-  const detailsProps = isPreview ? showDetailsShadow ? {
-    ml: -detailsMargins,
-    mr: -2 * detailsMargins,
-    pr: 1 * detailsMargins,
-    mb: -detailsMargins,
-    pb: detailsMargins,
+  const detailsShadowProps = showDetailsShadow ? {
     shadowOpacity: 0.3,
     shadowOffset: { width: -5, height: -5 },
     shadowRadius: 10
-  } : {
-    mr: -20,
-  } : {
-    // mr: -2 * detailsMargins,
-  };
+  } : {};
   const embedSupported = post.embedLink && post.link && post.link.length;
   let embedComponent: React.ReactNode | undefined = undefined;
   if (embedSupported) {
@@ -670,8 +650,8 @@ export const EventCard: React.FC<Props> = ({
           <Card.Footer p={0} paddingTop='$2' >
             {deleted
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
-              : <YStack key='footer-base' zi={1000} width='100%' {...footerProps}>
-                <YStack p='$3' pt={0} w='100%' maw={800} mx='auto' pr={mediaQuery.gtXs ? '$3' : '$1'}
+              : <YStack key='footer-base' zi={1000} width='100%'>
+                <YStack px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'/*{mediaQuery.gtXs ? '$3' : '$1'}*/
                 // mah={isPreview && horizontal ? 50 : undefined} overflow='hidden'
                 >
                   {editing && !previewingEdits
@@ -683,7 +663,7 @@ export const EventCard: React.FC<Props> = ({
                       embedLink={editedEmbedLink}
                       setEmbedLink={setEditedEmbedLink}
                       disableInputs={savingEdits}
-                      
+
                     />
                     : <PostMediaRenderer
                       key='media-view'
@@ -695,7 +675,7 @@ export const EventCard: React.FC<Props> = ({
                           embedLink
                         }, isPreview, groupContext, hasBeenVisible
                       }} />}
-                  <YStack key='content' maxHeight={maxContentHeight} overflow='hidden' {...contentProps}>
+                  <YStack key='content' maxHeight={maxContentHeight} overflow='hidden'>
                     {contentView}
                   </YStack>
                   {editing && !previewingEdits
@@ -720,7 +700,7 @@ export const EventCard: React.FC<Props> = ({
                       instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                   </YStack>
                   : undefined}
-                <XStack space='$2' p='$3' flexWrap="wrap" key='save-buttons' pr={mediaQuery.gtXs ? '$3' : '$1'}>
+                <XStack space='$2' p='$3' pt={0} flexWrap="wrap" key='save-buttons' /*pr={mediaQuery.gtXs ? '$3' : '$1'}*/>
                   {showEdit
                     ? editing
                       ? <>
@@ -824,22 +804,19 @@ export const EventCard: React.FC<Props> = ({
                         {postVisibilityDescription(visibility, groupContext, server, 'Event')}
                       </Paragraph>
                       : undefined} */}
-                  <XStack pt={10} my='auto' pr='$2' maw='100%'>
+                  <XStack pt={10} my='auto' maw='100%'>
                     <GroupPostManager post={post} isVisible={isVisible}
                       createViewHref={createGroupEventViewHref} />
                   </XStack>
                 </XStack>
 
-                <XStack {...detailsProps} key='details' pr={mediaQuery.gtXs ? '$3' : '$1'}>
-                  <AuthorInfo key='author-details' {...{ post, detailsMargins, isVisible }} />
+                <XStack {...detailsShadowProps} key='details' mt={-10} pl='$3' mb='$3'>
+                  <AuthorInfo key='author-details' {...{ post, isVisible }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                    <YStack h='100%' mr='$3'>
+                    <YStack h='100%'>
                       <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
-
                         disabled={true}
                         marginVertical='auto'
-                        mr={isPreview ? horizontal ? '$1' : '$2' : undefined}
-                        // onPress={toggleReplies} 
                         px='$2'
                       >
                         <XStack opacity={0.9}>
