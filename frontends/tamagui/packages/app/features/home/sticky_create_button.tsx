@@ -33,19 +33,19 @@ export const StickyCreateButton: React.FC<StickyCreateButtonProps> = ({
 
   return isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
     {canCreatePosts
-      ? <XStack w='100%' p='$2' space='$2' opacity={.92} backgroundColor='$background' alignContent='center'>
+      ? <XStack w='100%' p='$2' space='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
         {doShowPosts ? <CreatePostSheet selectedGroup={selectedGroup} /> : undefined}
         {doShowEvents ? <CreateEventSheet selectedGroup={selectedGroup} /> : undefined}
       </XStack>
       : accountOrServer.account
         ? (showPosts || showEvents)
-          ? <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+          ? <YStack w='100%' opacity={.92} paddingVertical='$2' /*backgroundColor='$background'*/ alignContent='center'>
             <Heading size='$1'>You do not have permission to create{
               showPosts && showEvents ? ' posts or events' : showPosts ? ' posts' : showEvents ? ' events' : ''
             }.</Heading>
           </YStack>
           : undefined
-        : <YStack w='100%' opacity={.92} p='$3' backgroundColor='$background' alignContent='center'>
+        : <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
           <AddAccountSheet operation='Post' />
         </YStack>}
   </StickyBox>

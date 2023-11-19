@@ -186,10 +186,10 @@ pub fn upsert_event_attendance(
                 (Some(_), _) if !is_own_attendance => {
                     AttendanceStatus::Requested.to_string_attendance_status()
                 }
-                (None, Some(AttendanceStatus::Going)) => {
+                (_, Some(AttendanceStatus::Going)) => {
                     AttendanceStatus::Going.to_string_attendance_status()
                 }
-                (None, Some(AttendanceStatus::NotGoing)) => {
+                (_, Some(AttendanceStatus::NotGoing)) => {
                     AttendanceStatus::NotGoing.to_string_attendance_status()
                 }
                 _ => AttendanceStatus::Interested.to_string_attendance_status(),
