@@ -130,6 +130,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     if (accountsState.successMessage) {
       setTimeout(() => {
         setAddingAccount(false);
+        setOpen(false);
         setTimeout(() => {
           dispatch(clearAccountAlerts());
           setNewAccountUser('');

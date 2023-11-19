@@ -32,7 +32,7 @@ const initialState: LocalAppConfiguration = {
   darkMode: false,
   allowServerSelection: Platform.OS != 'web',
   browsingServers: false,
-  viewingRecommendedServers: true,
+  viewingRecommendedServers: false,
   separateAccountsByServer: true,
   showBetaNavigation: false,
   discussionChatUI: true,
