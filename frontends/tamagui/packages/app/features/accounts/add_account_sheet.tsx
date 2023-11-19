@@ -4,6 +4,7 @@ import { accountId, clearAccountAlerts, createAccount, login, RootState, selectA
 import React, { useEffect, useState } from 'react';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import AccountCard from './account_card';
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export type AddAccountSheetProps = {
   // primaryServer?: JonlineServer;
@@ -121,7 +122,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
             ? <XStack marginHorizontal='auto' marginVertical='$3'>
               {/* <Tooltip placement="bottom">
                 <Tooltip.Trigger> */}
-              <Button backgroundColor={addingAccount ? undefined : navColor}
+              <Button {...addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
                 transparent={addingAccount}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
                 onPress={() => setAddingAccount(false)}>
@@ -135,7 +136,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
               </Tooltip>
               <Tooltip placement="bottom-end">
                 <Tooltip.Trigger> */}
-              <Button backgroundColor={!addingAccount ? undefined : navColor}
+              <Button {...!addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
                 transparent={!addingAccount}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}

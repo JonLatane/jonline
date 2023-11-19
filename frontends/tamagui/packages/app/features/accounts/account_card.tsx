@@ -99,15 +99,16 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
           </YStack>
           <YStack f={1} />
           {selected
-            ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$1'>Logout</Button>
-            : totalAccounts > 1
-              ? <XStack my='auto' space='$2' mr='$3'>
-                <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
-                <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
-              </XStack>
-              : undefined}
+            ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$2'>Logout</Button>
+            : undefined}
+          {totalAccounts > 1 && (!selected || mediaQuery.gtXxxs)
+            ? <XStack my='auto' space='$2' mr='$2'>
+              <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
+              <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
+            </XStack>
+            : undefined}
 
-          <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$3' />
+          <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$2' />
           <Dialog>
             <Dialog.Trigger asChild>
               <Button icon={<Delete />} circular onPress={(e) => { e.stopPropagation(); }} color="red" />
