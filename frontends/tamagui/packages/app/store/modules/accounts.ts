@@ -8,7 +8,7 @@ import {
   createSlice
 } from "@reduxjs/toolkit";
 import 'react-native-get-random-values';
-import { resetAccessTokens, resetCredentialedData } from "..";
+import { getCredentialClient, resetAccessTokens, resetCredentialedData, store, useCredentialDispatch } from "..";
 import { JonlineAccount, JonlineServer } from "../types";
 import { createAccount, login } from "./account_actions";
 import { serverID, upsertServer } from "./servers";
@@ -61,6 +61,24 @@ export const accountsSlice = createSlice({
       }
       resetAccessTokens();
       state.account = action.payload;
+
+      // Verify that the account is still valid by loading the user data
+      const account = action.payload;
+      if (account) {
+        console.log("Verifying account is still valid");
+        setTimeout(async () => {
+          const client = await getCredentialClient({ account, server: account.server })
+          console.log("Loaded client");
+          client.getCurrentUser({}, client.credential).then(user => {
+            console.log("Account is still valid");
+            store.dispatch(accountsSlice.actions.upsertAccount({ ...account, user }));
+          }).catch(() => {
+            console.warn("Failed to load account user data, account may have been deleted.");
+            store.dispatch(accountsSlice.actions.upsertAccount({ ...account, lastSyncFailed: true, needsReauthentication: true }));
+            store.dispatch(accountsSlice.actions.selectAccount(undefined));
+          });
+        }, 1);
+      }
     },
     clearAccountAlerts: (state) => {
       state.errorMessage = undefined;
@@ -76,6 +94,20 @@ export const accountsSlice = createSlice({
           account.user = action.payload.user;
         }
         //TODO does this work as expected?
+      }
+    },
+    notifyUserDeleted: (state, action: PayloadAction<{ user: User, server: JonlineServer }>) => {
+      for (const id in state.entities) {
+        const account = state.entities[id]!;
+        const { user: accountUser, server: accountServer } = account;
+        const { user: payloadUser, server: payloadServer } = action.payload;
+        if (serverID(accountServer) === serverID(payloadServer) && accountUser.id == payloadUser.id) {
+          account.needsReauthentication = true;
+          account.lastSyncFailed = true;
+          if (state.account && accountId(state.account) === accountId(account)) {
+            state.account = undefined;
+          }
+        }
       }
     },
     moveAccountUp: (state, action: PayloadAction<string>) => {
@@ -118,7 +150,7 @@ export const accountsSlice = createSlice({
     builder.addCase(login.fulfilled, (state, action) => {
       state.status = "loaded";
       state.account = action.payload;
-      accountsAdapter.upsertOne(state, action.payload);
+      accountsAdapter.upsertOne(state, {...action.payload, lastSyncFailed: false, needsReauthentication: false});
       state.successMessage = `Logged in as ${action.payload.user.username}`;
       resetCredentialedData();
     });
@@ -141,7 +173,7 @@ export const accountsSlice = createSlice({
   },
 });
 
-export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts, upsertUserData, moveAccountUp, moveAccountDown } = accountsSlice.actions;
+export const { selectAccount, removeAccount, clearAccountAlerts, resetAccounts, upsertUserData, notifyUserDeleted, moveAccountUp, moveAccountDown } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;

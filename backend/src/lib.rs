@@ -28,7 +28,7 @@ extern crate percent_encoding;
 pub mod auth;
 pub mod db_connection;
 pub mod minio_connection;
-pub mod jonline;
+pub mod jonline_service;
 pub mod logic;
 pub mod marshaling;
 pub mod models;

@@ -275,9 +275,9 @@ export const EventCard: React.FC<Props> = ({
       setTimeout(() =>
         document.querySelectorAll('.highlighted-instance-time')
           .forEach(e => e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })),
-        1000);
+        300);
     }
-  }, [selectedInstance?.id]);
+  }, [selectedInstance?.id, editingInstance?.id]);
   useEffect(() => {
     if (!isPreview && !scrollInstancesVertically) {
       document.querySelectorAll('.highlighted-instance-time')
@@ -359,7 +359,7 @@ export const EventCard: React.FC<Props> = ({
       : editing && !previewingEdits
         ? <TextArea key='content-editor' f={1} pt='$2' value={content}
           disabled={savingEdits} opacity={savingEdits || content == '' ? 0.5 : 1}
-          h={(editedContent?.length ?? 0) > 300 ? Math.max(120, window.height - 100) : undefined}
+          h={(editedContent?.length ?? 0) > 300 ? Math.min(800, Math.max(120, window.height - 100)) : undefined}
 
           onChangeText={t => setEditedContent(t)}
           placeholder={`Text content (optional). Markdown is supported.`} />

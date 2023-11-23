@@ -1,7 +1,7 @@
 use std::{env, sync::Arc};
 
 use crate::{db_connection::PgPool, env_var};
-use crate::jonline::JonLineImpl;
+use crate::jonline_service::JonlineService;
 
 use crate::report_error;
 
@@ -16,7 +16,7 @@ use ::log::{info, warn};
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
 pub fn start_tonic_server(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>, port: u16) -> Result<bool, Box<dyn std::error::Error>> {
-    let jonline = JonLineImpl { pool, bucket };
+    let jonline = JonlineService { pool, bucket };
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)

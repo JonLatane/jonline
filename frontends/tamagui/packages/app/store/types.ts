@@ -17,6 +17,7 @@ export type JonlineAccount = {
   server: JonlineServer;
   lastSynced?: number;
   needsReauthentication?: boolean;
+  lastSyncFailed?: boolean;
 }
 
 // Note that this is inclusive-or

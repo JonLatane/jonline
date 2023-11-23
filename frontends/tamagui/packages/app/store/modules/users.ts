@@ -11,8 +11,8 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { store, upsertUserData } from "..";
-import { LoadUser, LoadUsername, defaultUserListingType, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser, userSaved } from "./user_actions";
+import { notifyUserDeleted, store, upsertUserData } from "..";
+import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser, userSaved } from "./user_actions";
 
 export interface UsersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -140,6 +140,15 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
         state.errorMessage = formatError(action.error as Error);
         state.error = action.error as Error;
       });
+    });
+
+    builder.addCase(deleteUser.fulfilled, (state, action) => {
+      // Update the user in any relevant accounts.
+      const server = action.meta.arg.server!;
+      const user = action.meta.arg as User;
+      setTimeout(() => {
+        store.dispatch(notifyUserDeleted({ server, user }));
+      }, 1);
     });
 
     builder.addCase(loadUserPosts.pending, (state) => {

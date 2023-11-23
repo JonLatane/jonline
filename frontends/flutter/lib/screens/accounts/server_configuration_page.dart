@@ -26,6 +26,7 @@ import '../../models/jonline_account.dart';
 import '../../models/jonline_clients.dart';
 import '../../models/jonline_server.dart';
 import '../../utils/proto_utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const Color defaultPrimaryColor = Color(0xFF2E86AB);
 const Color defaultNavColor = Color(0xFFA23B72);
@@ -218,6 +219,13 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
 
   bool addedGloballyPublishProfilePermissionToMeetInvariant = false;
   Widget buildConfiguration() {
+    Future<void> launchWebUI() async {
+      if (!await launchUrl(Uri.parse("http://$serverHost/about"))) {
+        showSnackBar("Could not launch web UI.");
+        // throw Exception('Could not launch $_url');
+      }
+    }
+
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600),
@@ -232,6 +240,22 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                     child:
                         Text("Jonline Version", style: textTheme.labelLarge)),
                 Text("v${server?.serviceVersion}", style: textTheme.bodySmall),
+              ],
+            ),
+            Row(
+              children: [
+                const Expanded(child: SizedBox()),
+                TextButton(
+                  onPressed: () async {
+                    if (!await launchUrl(
+                        Uri.parse("http://$serverHost/about"))) {
+                      showSnackBar("Could not launch web UI.");
+                      // throw Exception('Could not launch $_url');
+                    }
+                  },
+                  child: const Text('Web UI'),
+                ),
+                // Text(serverHost ?? "", style: textTheme.bodySmall),
               ],
             ),
             const SizedBox(height: 24),

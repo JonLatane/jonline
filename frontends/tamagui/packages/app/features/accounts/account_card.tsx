@@ -1,7 +1,7 @@
 import { Permission } from "@jonline/api";
-import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia } from "@jonline/ui";
+import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia, useTheme } from "@jonline/ui";
 
-import { Bot, Shield, Delete, User as UserIcon, ChevronUp, ChevronDown } from "@tamagui/lucide-icons";
+import { Bot, Shield, Delete, User as UserIcon, ChevronUp, ChevronDown, AlertCircle } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { JonlineAccount, RootState, accountId, colorMeta, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, store, useRootSelector, useTypedDispatch, useTypedSelector } from "app/store";
 import React from "react";
@@ -11,9 +11,10 @@ import { hasAdminPermission, hasPermission } from '../../utils/permission_utils'
 interface Props {
   account: JonlineAccount;
   totalAccounts: number;
+  onReauthenticate?: (account: JonlineAccount) => void;
 }
 
-const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
+const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate }) => {
   const dispatch = useTypedDispatch();
   let selected = accountId(store.getState().accounts.account) == accountId(account);
 
@@ -22,8 +23,15 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
   const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
   const profileLinkProps = useLink({ href: `/${account.user.username}` });
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || '424242'}`;
+  const primaryColorMeta = colorMeta(navColor);
   const navColorMeta = colorMeta(navColor);
 
+  const theme = useTheme();
+  const backgroundColor = theme.background.val;
+  const { luma: themeBgLuma } = colorMeta(backgroundColor);
+  const darkMode = themeBgLuma <= 0.5;
+  const primaryAnchorColor = !darkMode ? primaryColorMeta.darkColor : primaryColorMeta.lightColor;
+  const navAnchorColor = !darkMode ? navColorMeta.darkColor : navColorMeta.lightColor;
 
   function doSelectAccount() {
     if (store.getState().servers.server?.host != account.server.host) {
@@ -48,6 +56,11 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
   const mediaQuery = useMedia();
 
   const textColor = selected ? navColorMeta.textColor : undefined;
+
+  const authenticationRequired = <XStack space='$2'>
+    <YStack my='auto'><AlertCircle color={navAnchorColor} /></YStack>
+    <Paragraph size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>Reauthentication required.</Paragraph>
+  </XStack>;
 
   return (
     // <Theme inverse={selected}>
@@ -84,6 +97,16 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
           <YStack f={1}>
             <Heading size="$1" color={textColor} mr='auto'>{account.server.host}/</Heading>
             <Heading size="$7" color={textColor} mr='auto'>{account.user.username}</Heading>
+            {account.needsReauthentication
+              // ? authenticationRequired
+              ? (onReauthenticate
+                ? <Button mt='$2' mr='auto' h='auto' py='$3' onPress={(e) => { e.stopPropagation(); onReauthenticate(account); }}>
+                  {authenticationRequired}
+                </Button>
+                : <XStack mt='$2' borderColor={textColor} borderWidth='$1' mr='auto' p='$2' borderRadius='$2'>
+                  {authenticationRequired}
+                </XStack>)
+              : undefined}
           </YStack>
           {/* {account.server.secure ? <Lock/> : <Unlock/>} */}
           {hasAdminPermission(account.user) ? <Shield color={textColor} /> : undefined}
@@ -92,78 +115,80 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts }) => {
         </XStack>
       </Card.Header>
       <Card.Footer p='$3'>
-        <XStack width='100%'>
-          <YStack>
-            <Heading size="$1" color={textColor} alignSelf="center">Account ID</Heading>
-            <Paragraph size='$1' color={textColor} alignSelf="center">{account.user.id}</Paragraph>
-          </YStack>
-          <YStack f={1} />
-          {selected
-            ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$2'>Logout</Button>
-            : undefined}
-          {totalAccounts > 1 && (!selected || mediaQuery.gtXxxs)
-            ? <XStack my='auto' space='$2' mr='$2'>
-              <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
-              <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
-            </XStack>
-            : undefined}
+        <YStack width='100%'>
+          <XStack width='100%'>
+            <YStack>
+              <Heading size="$1" color={textColor} alignSelf="center">Account ID</Heading>
+              <Paragraph size='$1' color={textColor} alignSelf="center">{account.user.id}</Paragraph>
+            </YStack>
+            <YStack f={1} />
+            {selected
+              ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$2'>Logout</Button>
+              : undefined}
+            {totalAccounts > 1 && (!selected || mediaQuery.gtXxxs)
+              ? <XStack my='auto' space='$2' mr='$2'>
+                <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
+                <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
+              </XStack>
+              : undefined}
 
-          <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$2' />
-          <Dialog>
-            <Dialog.Trigger asChild>
-              <Button icon={<Delete />} circular onPress={(e) => { e.stopPropagation(); }} color="red" />
-            </Dialog.Trigger>
-            <Dialog.Portal zi={1000011}>
-              <Dialog.Overlay
-                key="overlay"
-                animation="quick"
-                o={0.5}
-                enterStyle={{ o: 0 }}
-                exitStyle={{ o: 0 }}
-              />
-              <Dialog.Content
-                bordered
-                elevate
-                key="content"
-                animation={[
-                  'quick',
-                  {
-                    opacity: {
-                      overshootClamping: true,
+            <Button circular {...profileLinkProps} icon={<UserIcon />} mr='$2' />
+            <Dialog>
+              <Dialog.Trigger asChild>
+                <Button icon={<Delete />} circular onPress={(e) => { e.stopPropagation(); }} color="red" />
+              </Dialog.Trigger>
+              <Dialog.Portal zi={1000011}>
+                <Dialog.Overlay
+                  key="overlay"
+                  animation="quick"
+                  o={0.5}
+                  enterStyle={{ o: 0 }}
+                  exitStyle={{ o: 0 }}
+                />
+                <Dialog.Content
+                  bordered
+                  elevate
+                  key="content"
+                  animation={[
+                    'quick',
+                    {
+                      opacity: {
+                        overshootClamping: true,
+                      },
                     },
-                  },
-                ]}
-                m='$3'
-                enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                x={0}
-                scale={1}
-                opacity={1}
-                y={0}
-              >
-                <YStack space>
-                  <Dialog.Title>Remove Account</Dialog.Title>
-                  <Dialog.Description>
-                    Really remove account {account.user.username} on {account.server.host}?
-                    The account will remain on {account.server.host}, but you will have to login
-                    in this browser again.
-                  </Dialog.Description>
+                  ]}
+                  m='$3'
+                  enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                  exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                  x={0}
+                  scale={1}
+                  opacity={1}
+                  y={0}
+                >
+                  <YStack space>
+                    <Dialog.Title>Remove Account</Dialog.Title>
+                    <Dialog.Description>
+                      Really remove account {account.user.username} on {account.server.host}?
+                      The account will remain on {account.server.host}, but you will have to login
+                      in this browser again.
+                    </Dialog.Description>
 
-                  <XStack space="$3" jc="flex-end">
-                    <Dialog.Close asChild>
-                      <Button>Cancel</Button>
-                    </Dialog.Close>
-                    {/* <Dialog.Action asChild> */}
-                    <Theme inverse>
-                      <Button onPress={() => dispatch(removeAccount(accountId(account)!))}>Remove</Button>
-                    </Theme>
-                    {/* </Dialog.Action> */}
-                  </XStack>
-                </YStack>
-              </Dialog.Content>
-            </Dialog.Portal>
-          </Dialog>
-        </XStack>
+                    <XStack space="$3" jc="flex-end">
+                      <Dialog.Close asChild>
+                        <Button>Cancel</Button>
+                      </Dialog.Close>
+                      {/* <Dialog.Action asChild> */}
+                      <Theme inverse>
+                        <Button onPress={() => dispatch(removeAccount(accountId(account)!))}>Remove</Button>
+                      </Theme>
+                      {/* </Dialog.Action> */}
+                    </XStack>
+                  </YStack>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog>
+          </XStack>
+        </YStack>
       </Card.Footer>
       {!selected
         ? <Card.Background>

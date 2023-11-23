@@ -1,5 +1,5 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api'
-import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useWindowDimensions } from '@jonline/ui'
+import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui'
 import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown, Binary, ChevronRight, CheckCircle, TabletSmartphone } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
@@ -54,7 +54,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const [_, githubVersion] = serviceVersion?.version?.split('-') ?? [];
   const githubLink = useLink({ href: `https://github.com/JonLatane/jonline/commit/${githubVersion}` });
   const protocolDocsLink = useLink({ href: `http://${server?.host}/docs/protocol` });
-  const flutterUiLink = useLink({ href: `/flutter` });
+  const flutterUiLink = useLink({ href: `http://${server?.host}/flutter#/accounts/server/${server?.host}/configuration` });
 
   const serverName = serverConfiguration?.serverInfo?.name;
   const [name, setName] = useState(serverName || undefined);
@@ -194,6 +194,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     externalCdnConfig: externalCdnConfig
   };
 
+  const toast = useToastController();
   async function updateServer() {
     setUpdating(true);
     setUpdated(false);
@@ -207,7 +208,10 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     try {
       let returnedConfiguration = await client.configureServer(updatedConfiguration, client.credential);
       await dispatch(upsertServer({ ...server!, serverConfiguration: returnedConfiguration }))
-        .then(() => setUpdated(true))
+        .then(() => {
+          setUpdated(true);
+          toast.show('Server updated.');
+        })
         .then(() => setTimeout(() => setUpdated(false), 3000));
     } catch (e) {
       console.log(e);

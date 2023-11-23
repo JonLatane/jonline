@@ -1,10 +1,8 @@
-import config from '../tamagui.config'
-import { NavigationProvider } from './navigation'
-import { TamaguiProvider, TamaguiProviderProps, ToastProvider, CustomToast } from '@jonline/ui'
-import { PersistGate } from 'redux-persist/integration/react'
-import { store, persistor } from "app/store";
+import { CustomToast, TamaguiProvider, TamaguiProviderProps, ToastProvider } from '@jonline/ui';
+import { persistor, store } from "app/store";
 import { Provider as ReduxProvider } from "react-redux";
-import { ToastViewport } from './ToastViewport'
+import { PersistGate } from 'redux-persist/integration/react';
+import config from '../tamagui.config';
 
 
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {

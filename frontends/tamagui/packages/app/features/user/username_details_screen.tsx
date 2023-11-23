@@ -170,6 +170,8 @@ export function UsernameDetailsScreen() {
         toast.show('Failed to save profile changes.', {
           message: usernameChanged ? 'The new username may be taken or invalid.' : undefined,
         })
+      } else {
+        toast.show('Profile saved.')
       }
       setSuccessSaving(success);
       setSaving(false);

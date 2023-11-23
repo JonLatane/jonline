@@ -31,18 +31,18 @@ extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
 
-pub mod auth;
-pub mod db_connection;
-pub mod jonline;
-pub mod logic;
-pub mod marshaling;
 pub mod minio_connection;
-pub mod models;
-pub mod protos;
-pub mod rpcs;
+pub mod db_connection;
 pub mod schema;
-pub mod servers;
+pub mod models;
+pub mod auth;
+pub mod protos;
+pub mod marshaling;
+pub mod logic;
+pub mod rpcs;
+pub mod jonline_service;
 pub mod web;
+pub mod servers;
 
 use ::jonline::{env_var, init_service_logging, report_error};
 use diesel::*;

@@ -1,7 +1,7 @@
 import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Menu, Plus, RefreshCw, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector, useLocalApp, setBrowsingServers, setViewingRecommendedServers, setAllowServerSelection } from 'app/store';
+import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector, useLocalApp, setBrowsingServers, setViewingRecommendedServers, setAllowServerSelection, JonlineAccount } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -15,6 +15,7 @@ import ServerCard from './server_card';
 import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 import RecommendedServer from './recommended_server';
 import { themedButtonBackground } from 'app/utils/themed_button_background';
+import { Jonline } from '@jonline/api/index';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -49,6 +50,23 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const newServerValid = newServerHostNotBlank && !newServerExists;
   const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
   const effectiveServer = onlyShowServer ?? server;
+
+  const [reauthenticating, setReauthenticating] = useState(false);
+  function reauthenticate(account: JonlineAccount) {
+    dispatch(clearAccountAlerts());
+    setAddingAccount(true);
+    setReauthenticating(true);
+    setNewAccountUser(account.user.username);
+    setNewAccountPass('');
+    setForceDisableAccountButtons(false);
+    setLoginMethod(LoginMethod.Login);
+
+  }
+  useEffect(() => {
+    if (!addingAccount && reauthenticating) {
+      setReauthenticating(false);
+    }
+  }, [addingAccount, reauthenticating])
   const browsingOnDiffers = Platform.OS == 'web' &&
     effectiveServer?.host != browsingOn;
   //   serversState.server && serversState.server.host != browsingOn ||
@@ -512,7 +530,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           setAddingAccount(false)
                         }}
                       />
-                      <Heading size="$9">Add Account</Heading>
+                      <Heading size="$9">{reauthenticating ? 'Re-Enter Password' : 'Add Account'}</Heading>
                       <Heading size="$4">{primaryServer?.host}/</Heading>
                       <Sheet.ScrollView>
                         <YStack space="$2" pb='$2' maw={600} w='100%' als='center'>
@@ -604,31 +622,31 @@ to evaluate support options.
               {separateAccountsByServer
                 ? <>
                   {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on {primaryServer?.host}.</Heading> : undefined}
-                  {accountsOnPrimaryServer.map((account) => <AccountCard account={account} key={accountId(account)}
-                    totalAccounts={accountsOnPrimaryServer.length} />)}
+                  {accountsOnPrimaryServer.map((account) =>
+                    <AccountCard key={accountId(account)}
+                      account={account}
+                      onReauthenticate={reauthenticate}
+                      totalAccounts={accountsOnPrimaryServer.length} />)}
                   {accountsElsewhere.length > 0 && !onlyShowServer
                     ? <>
                       <Heading>Accounts Elsewhere</Heading>
-                      {accountsElsewhere.map((account) => <AccountCard account={account} key={accountId(account)}
-                        totalAccounts={accountsElsewhere.length} />)}
+                      {accountsElsewhere.map((account) =>
+                        <AccountCard key={accountId(account)}
+                          account={account}
+                          onReauthenticate={reauthenticate}
+                          totalAccounts={accountsOnPrimaryServer.length} />)}
                     </>
                     : undefined
                   }
                 </>
                 : <>
                   {displayedAccounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
-                  {displayedAccounts.map((account) => <AccountCard account={account} key={accountId(account)} totalAccounts={displayedAccounts.length} />)}
+                  {displayedAccounts.map((account) =>
+                    <AccountCard key={accountId(account)}
+                      account={account}
+                      onReauthenticate={reauthenticate}
+                      totalAccounts={displayedAccounts.length} />)}
                 </>}
-
-              {/* <FlatList
-                data={accounts}
-                keyExtractor={(account) => accountId(account)}
-                renderItem={({ item }) => {
-                  return <AccountCard account={item} />;
-                }}
-              // style={Styles.trueBackground}
-              // contentContainerStyle={Styles.contentBackground}
-              /> */}
             </YStack>
           </Sheet.ScrollView>
         </Sheet.Frame>

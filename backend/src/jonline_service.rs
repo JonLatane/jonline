@@ -13,14 +13,14 @@ use std::{pin::Pin, time::Duration};
 use tokio::sync::mpsc;
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
-pub struct JonLineImpl {
+pub struct JonlineService {
     pub pool: Arc<PgPool>,
     pub bucket: Arc<s3::Bucket>,
 }
 
-impl Clone for JonLineImpl {
+impl Clone for JonlineService {
     fn clone(&self) -> Self {
-        JonLineImpl {
+        JonlineService {
             pool: self.pool.clone(),
             bucket: self.bucket.clone(),
         }
@@ -66,7 +66,7 @@ macro_rules! unauthenticated_rpc {
 }
 
 #[tonic::async_trait]
-impl Jonline for JonLineImpl {
+impl Jonline for JonlineService {
     async fn get_service_version(
         &self,
         _request: Request<()>,

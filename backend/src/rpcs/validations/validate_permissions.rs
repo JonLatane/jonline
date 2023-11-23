@@ -13,14 +13,7 @@ pub fn validate_group_admin(
 ) -> Result<(), Status> {
     match validate_permission(user, Admin) {
         Ok(_) => Ok(()),
-        Err(_) => Ok(validate_group_permission(group, membership, user, Admin)?)
-        // match membership {
-        //     Some(membership) => validate_group_permission(group, membership, user, Admin),
-        //     None => Err(Status::new(
-        //         Code::PermissionDenied,
-        //         "admin_group_membership_required",
-        //     )),
-        // },
+        Err(_) => Ok(validate_group_permission(group, membership, user, Admin)?),
     }
 }
 
@@ -58,11 +51,7 @@ pub fn validate_any_group_permission(
     let proto_permissions = match membership {
         Some(m) if (*m).passes() => m.permissions.to_proto_permissions(),
         _ => group.non_member_permissions.to_proto_permissions(),
-    } ;
-    // membership
-    //     .map(|m| m.permissions)
-    //     .unwrap_or(group.non_member_permissions)
-    //     .to_proto_permissions();
+    };
 
     let passes = permissions.iter().any(|p| proto_permissions.contains(p));
     if !passes {

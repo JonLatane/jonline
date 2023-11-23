@@ -38,9 +38,9 @@ Future<List<Event>> generateEvents(
   final List<Event> posts = [];
   var events = List.of(eventSetOverride ?? demoEvents);
   var lastMessageTime = DateTime.now();
-  for (final demoPost in events) {
-    final groups = demoPost.groups;
-    final basePost = demoPost.post;
+  for (final demoEvent in events) {
+    final groups = demoEvent.groups;
+    final basePost = demoEvent.post;
 
     // showSnackBar(
     //     'Posting "${basePost.title}" across ${groups.length} groups...');
@@ -48,7 +48,7 @@ Future<List<Event>> generateEvents(
       final event = await client.createEvent(basePost,
           options: account.authenticatedCallOptions);
       posts.add(event);
-      final index = events.indexOf(demoPost);
+      final index = events.indexOf(demoEvent);
       if (shouldNotify(lastMessageTime)) {
         showSnackBar("Created ${index + 1} demo events...");
         lastMessageTime = DateTime.now();

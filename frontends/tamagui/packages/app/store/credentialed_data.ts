@@ -30,49 +30,86 @@ export function resetAccessTokens() {
   _newRefreshToken = undefined;
 }
 export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
-  const { account: currentAccount, server } = accountOrServer;
-  if (!currentAccount) {
+  const { account: account, server } = accountOrServer;
+  if (!account) {
     return getServerClient(server!);
   } else {
-    let account: JonlineAccount = currentAccount;
+    let updatedAccount: JonlineAccount = account;
     const client = await getServerClient(account.server);
     const metadata = new grpc.Metadata();
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     const now = moment.utc();
     const expired = accessExpiresAt.subtract(1, 'minutes').isBefore(now);
-    if (expired) {
+    console.log("expired:", expired);
+    if (expired && !account.needsReauthentication) {
       let newAccessToken: ExpirableToken | undefined = undefined;
       let newRefreshToken: ExpirableToken | undefined = undefined;
+      console.log("blocking on access token refresh:", _accessFetchLock)
+      // debugger;
       while (_accessFetchLock) {
         await new Promise(resolve => setTimeout(resolve, 100));
         newAccessToken = _newAccessToken;
         newRefreshToken = _newRefreshToken;
       }
-      const newTokenExpired = !newAccessToken ||
-        moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
-      if (newTokenExpired) {
-        console.log(`Access token expired, refreshing..., now=${now}, expiresAt=${accessExpiresAt}`);
-        _accessFetchLock = true;
-        let { accessToken: fetchedAccessToken, refreshToken: fetchedRefreshToken } = await client.accessToken({ refreshToken: account.refreshToken!.token });
-        newAccessToken = fetchedAccessToken!;
-        _newAccessToken = newAccessToken;
-        newRefreshToken = fetchedRefreshToken!;
-        _newRefreshToken = newRefreshToken;
-        _accessFetchLock = false;
-        account = { ...account, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken! };
-        store.dispatch(accountsSlice.actions.upsertAccount(account));
-        metadata.append('authorization', account.accessToken.token);
+      _accessFetchLock = true;
+      try {
+        console.log("access token refresh unblocked")
+        const newTokenExpired = !newAccessToken ||
+          moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
 
-        // Update the current user asynchronously.
-        client.getCurrentUser({}, metadata).then(user => {
-          account = { ...account, user };
+        console.log("newTokenExpired:", newTokenExpired);
+        if (newTokenExpired) {
+          console.log(`Access token expired, refreshing..., now=${now}, expiresAt=${accessExpiresAt}`);
+          const accessTokenResult = await client
+            .accessToken({ refreshToken: account.refreshToken!.token })
+            .then((result) => {
+              updatedAccount = { ...account, lastSyncFailed: false, needsReauthentication: false };
+              store.dispatch(accountsSlice.actions.upsertAccount(account));
+              return result;
+            })
+            .catch(() => {
+              console.log("failed to load access token");
+              updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
+              store.dispatch(accountsSlice.actions.upsertAccount(account));
+              store.dispatch(accountsSlice.actions.selectAccount(undefined))
+
+              return undefined;
+            });
+
+          if (!accessTokenResult) {
+            return getServerClient(server!);
+          }
+
+          let { accessToken: fetchedAccessToken, refreshToken: fetchedRefreshToken } = accessTokenResult;
+          newAccessToken = fetchedAccessToken!;
+          _newAccessToken = newAccessToken;
+          newRefreshToken = fetchedRefreshToken!;
+          _newRefreshToken = newRefreshToken;
+          updatedAccount = { ...account, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken! };
           store.dispatch(accountsSlice.actions.upsertAccount(account));
-        });
-      } else {
-        metadata.append('authorization', account.accessToken.token);
+          metadata.append('authorization', account.accessToken.token);
+
+          console.log("loading current user...");
+          // Update the current user asynchronously.
+          client.getCurrentUser({}, metadata).then(user => {
+            console.log("loaded current user");
+            updatedAccount = { ...account, user, lastSyncFailed: false, needsReauthentication: false };
+            store.dispatch(accountsSlice.actions.upsertAccount(account));
+          }).catch(() => {
+            console.log("failed to load current user");
+            updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
+            store.dispatch(accountsSlice.actions.upsertAccount(account));
+            store.dispatch(accountsSlice.actions.selectAccount(undefined))
+          });
+        } else {
+          metadata.append('authorization', account.accessToken.token);
+        }
+        // account = { ...account, accessToken: newAccessToken! };
+        // store.dispatch(accountsSlice.actions.upsertAccount(account));
+      } finally {
+        console.log("unblocking access token refresh")
+        _accessFetchLock = false;
       }
-      // account = { ...account, accessToken: newAccessToken! };
-      // store.dispatch(accountsSlice.actions.upsertAccount(account));
     } else {
       metadata.append('authorization', account.accessToken.token);
     }
