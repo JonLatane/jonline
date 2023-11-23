@@ -10,11 +10,8 @@ import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_m
 export const protobufPackage = "jonline";
 
 export enum EventListingType {
-  /**
-   * PUBLIC_EVENTS - Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible.
-   * Also usable for getting replies anywhere.
-   */
-  PUBLIC_EVENTS = 0,
+  /** ALL_ACCESSIBLE_EVENTS - Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible. */
+  ALL_ACCESSIBLE_EVENTS = 0,
   /** FOLLOWING_EVENTS - Returns events from users the user is following. */
   FOLLOWING_EVENTS = 1,
   /** MY_GROUPS_EVENTS - Returns events from any group the user is a member of. */
@@ -31,8 +28,8 @@ export enum EventListingType {
 export function eventListingTypeFromJSON(object: any): EventListingType {
   switch (object) {
     case 0:
-    case "PUBLIC_EVENTS":
-      return EventListingType.PUBLIC_EVENTS;
+    case "ALL_ACCESSIBLE_EVENTS":
+      return EventListingType.ALL_ACCESSIBLE_EVENTS;
     case 1:
     case "FOLLOWING_EVENTS":
       return EventListingType.FOLLOWING_EVENTS;
@@ -60,8 +57,8 @@ export function eventListingTypeFromJSON(object: any): EventListingType {
 
 export function eventListingTypeToJSON(object: EventListingType): string {
   switch (object) {
-    case EventListingType.PUBLIC_EVENTS:
-      return "PUBLIC_EVENTS";
+    case EventListingType.ALL_ACCESSIBLE_EVENTS:
+      return "ALL_ACCESSIBLE_EVENTS";
     case EventListingType.FOLLOWING_EVENTS:
       return "FOLLOWING_EVENTS";
     case EventListingType.MY_GROUPS_EVENTS:
@@ -139,29 +136,47 @@ export function attendanceStatusToJSON(object: AttendanceStatus): string {
 
 /**
  * Valid GetEventsRequest formats:
- * - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
- * - {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
- * - {event_id:}                                     (TODO: get single event including preview data)
- * - {listing_type: GroupEvents|
- *      GroupEventsPendingModeration,
- *      group_id:}                                  (TODO: get events/events needing moderation for a group)
- * - {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
- * - {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+ * - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
+ * - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
+ * - `{event_id:}`                                    (TODO: get single event including preview data)
+ * - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
+ *                                                    (TODO: get events/events needing moderation for a group)
+ * - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
+ * - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
  */
 export interface GetEventsRequest {
   /** Returns the single event with the given ID. */
   eventId?:
     | string
     | undefined;
+  /** Limits results to those by the given author user ID. */
+  authorUserId?:
+    | string
+    | undefined;
+  /** Limits results to those in the given group ID (via `GroupPost` association's for the Event's internal `Post`). */
+  groupId?:
+    | string
+    | undefined;
+  /** Limits results to those with the given event instance ID. */
+  eventInstanceId?:
+    | string
+    | undefined;
+  /** Filters returned `EventInstance`s by time. */
+  timeFilter?:
+    | TimeFilter
+    | undefined;
   /**
-   * Limits results to replies to the given event.
-   * optional string replies_to_event_id = 2;
-   * Limits results to those by the given author user ID.
+   * If set, only returns events that the given user is attending. If `attendance_statuses` is also set,
+   * returns events where that user's status is one of the given statuses.
    */
-  authorUserId?: string | undefined;
-  groupId?: string | undefined;
-  eventInstanceId?: string | undefined;
-  timeFilter?: TimeFilter | undefined;
+  attendeeId?:
+    | string
+    | undefined;
+  /**
+   * If set, only return events for which the current user's attendance status matches one of the given statuses. If `attendee_id` is also set,
+   * only returns events where the given user's status matches one of the given statuses.
+   */
+  attendanceStatuses: AttendanceStatus[];
   listingType: EventListingType;
 }
 
@@ -173,6 +188,19 @@ export interface TimeFilter {
   endsBefore?: string | undefined;
 }
 
+/**
+ * A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
+ *
+ * Note that `GetEventsResponse` may often include duplicate Events with the same ID.
+ * I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
+ * This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+ * The client should be able to handle this.
+ *
+ * In the React/Tamagui client, this is handled by the Redux store, which
+ * effectively "compacts" all response into its own internal Events store, in a form something like:
+ * `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+ * (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
+ */
 export interface GetEventsResponse {
   events: Event[];
 }
@@ -204,7 +232,11 @@ export interface Event {
  */
 export interface EventInfo {
   allowsRsvps?: boolean | undefined;
-  allowsAnonymousRsvps?: boolean | undefined;
+  allowsAnonymousRsvps?:
+    | boolean
+    | undefined;
+  /** No effect unless `allows_rsvps` is true. */
+  maxAttendees?: number | undefined;
 }
 
 export interface EventInstance {
@@ -222,6 +254,23 @@ export interface EventInstance {
  * Stored as JSON in the database.
  */
 export interface EventInstanceInfo {
+  rsvpInfo?: EventInstanceRsvpInfo | undefined;
+}
+
+export interface EventInstanceRsvpInfo {
+  /** Overrides `EventInfo.allows_rsvps`, if set, for this instance. */
+  allowsRsvps?:
+    | boolean
+    | undefined;
+  /** Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. */
+  allowsAnonymousRsvps?: boolean | undefined;
+  maxAttendees?: number | undefined;
+  goingRsvps?: number | undefined;
+  goingAttendees?: number | undefined;
+  interestedRsvps?: number | undefined;
+  interestedAttendees?: number | undefined;
+  invitedRsvps?: number | undefined;
+  invitedAttendees?: number | undefined;
 }
 
 export interface GetEventAttendancesRequest {
@@ -234,27 +283,35 @@ export interface EventAttendances {
 }
 
 /**
- * Describes the attendance of a user at an `EventInstance`. Such as:
- * * A user's RSVP to an `EventInstance`.
+ * Could be called an "RSVP." Describes the attendance of a user at an `EventInstance`. Such as:
+ * * A user's RSVP to an `EventInstance` (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
  * * Invitation status of a user to an `EventInstance`.
  * * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
- *
- * `EventAttendance.status` works like a state machine, but state transitions are governed only
- * by the current time and the start/end times of `EventInstance`s:
- * * Before an event starts, EventAttendance essentially only describes RSVPs and invitations.
- * * After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate
- * they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
- * * During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
  */
 export interface EventAttendance {
+  /** Unique server-generated ID for the attendance. */
   id: string;
+  /** ID of the `EventInstance` the attendance is for. */
   eventInstanceId: string;
-  userAttendee?: UserAttendee | undefined;
-  anonymousAttendee?: AnonymousAttendee | undefined;
+  /** If the attendance is non-anonymous, core data about the user. */
+  userAttendee?:
+    | UserAttendee
+    | undefined;
+  /** If the attendance is anonymous, core data about the anonymous attendee. */
+  anonymousAttendee?:
+    | AnonymousAttendee
+    | undefined;
+  /** Number of guests including the RSVPing user. (Minimum 1). */
   numberOfGuests: number;
+  /** The user's RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) */
   status: AttendanceStatus;
-  invitingUserId?: string | undefined;
+  /** User who invited the attendee. (Not yet used.) */
+  invitingUserId?:
+    | string
+    | undefined;
+  /** Public note for everyone who can see the event to see. */
   privateNote: string;
+  /** Private note for the event owner. */
   publicNote: string;
   moderation: Moderation;
   createdAt: string | undefined;
@@ -295,6 +352,8 @@ function createBaseGetEventsRequest(): GetEventsRequest {
     groupId: undefined,
     eventInstanceId: undefined,
     timeFilter: undefined,
+    attendeeId: undefined,
+    attendanceStatuses: [],
     listingType: 0,
   };
 }
@@ -316,6 +375,14 @@ export const GetEventsRequest = {
     if (message.timeFilter !== undefined) {
       TimeFilter.encode(message.timeFilter, writer.uint32(42).fork()).ldelim();
     }
+    if (message.attendeeId !== undefined) {
+      writer.uint32(50).string(message.attendeeId);
+    }
+    writer.uint32(58).fork();
+    for (const v of message.attendanceStatuses) {
+      writer.int32(v);
+    }
+    writer.ldelim();
     if (message.listingType !== 0) {
       writer.uint32(80).int32(message.listingType);
     }
@@ -364,6 +431,30 @@ export const GetEventsRequest = {
 
           message.timeFilter = TimeFilter.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.attendeeId = reader.string();
+          continue;
+        case 7:
+          if (tag === 56) {
+            message.attendanceStatuses.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 58) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.attendanceStatuses.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
         case 10:
           if (tag !== 80) {
             break;
@@ -387,6 +478,10 @@ export const GetEventsRequest = {
       groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
       eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : undefined,
       timeFilter: isSet(object.timeFilter) ? TimeFilter.fromJSON(object.timeFilter) : undefined,
+      attendeeId: isSet(object.attendeeId) ? globalThis.String(object.attendeeId) : undefined,
+      attendanceStatuses: globalThis.Array.isArray(object?.attendanceStatuses)
+        ? object.attendanceStatuses.map((e: any) => attendanceStatusFromJSON(e))
+        : [],
       listingType: isSet(object.listingType) ? eventListingTypeFromJSON(object.listingType) : 0,
     };
   },
@@ -408,6 +503,12 @@ export const GetEventsRequest = {
     if (message.timeFilter !== undefined) {
       obj.timeFilter = TimeFilter.toJSON(message.timeFilter);
     }
+    if (message.attendeeId !== undefined) {
+      obj.attendeeId = message.attendeeId;
+    }
+    if (message.attendanceStatuses?.length) {
+      obj.attendanceStatuses = message.attendanceStatuses.map((e) => attendanceStatusToJSON(e));
+    }
     if (message.listingType !== 0) {
       obj.listingType = eventListingTypeToJSON(message.listingType);
     }
@@ -426,6 +527,8 @@ export const GetEventsRequest = {
     message.timeFilter = (object.timeFilter !== undefined && object.timeFilter !== null)
       ? TimeFilter.fromPartial(object.timeFilter)
       : undefined;
+    message.attendeeId = object.attendeeId ?? undefined;
+    message.attendanceStatuses = object.attendanceStatuses?.map((e) => e) || [];
     message.listingType = object.listingType ?? 0;
     return message;
   },
@@ -699,7 +802,7 @@ export const Event = {
 };
 
 function createBaseEventInfo(): EventInfo {
-  return { allowsRsvps: undefined, allowsAnonymousRsvps: undefined };
+  return { allowsRsvps: undefined, allowsAnonymousRsvps: undefined, maxAttendees: undefined };
 }
 
 export const EventInfo = {
@@ -709,6 +812,9 @@ export const EventInfo = {
     }
     if (message.allowsAnonymousRsvps !== undefined) {
       writer.uint32(16).bool(message.allowsAnonymousRsvps);
+    }
+    if (message.maxAttendees !== undefined) {
+      writer.uint32(24).uint32(message.maxAttendees);
     }
     return writer;
   },
@@ -734,6 +840,13 @@ export const EventInfo = {
 
           message.allowsAnonymousRsvps = reader.bool();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maxAttendees = reader.uint32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -749,6 +862,7 @@ export const EventInfo = {
       allowsAnonymousRsvps: isSet(object.allowsAnonymousRsvps)
         ? globalThis.Boolean(object.allowsAnonymousRsvps)
         : undefined,
+      maxAttendees: isSet(object.maxAttendees) ? globalThis.Number(object.maxAttendees) : undefined,
     };
   },
 
@@ -760,6 +874,9 @@ export const EventInfo = {
     if (message.allowsAnonymousRsvps !== undefined) {
       obj.allowsAnonymousRsvps = message.allowsAnonymousRsvps;
     }
+    if (message.maxAttendees !== undefined) {
+      obj.maxAttendees = Math.round(message.maxAttendees);
+    }
     return obj;
   },
 
@@ -770,6 +887,7 @@ export const EventInfo = {
     const message = createBaseEventInfo();
     message.allowsRsvps = object.allowsRsvps ?? undefined;
     message.allowsAnonymousRsvps = object.allowsAnonymousRsvps ?? undefined;
+    message.maxAttendees = object.maxAttendees ?? undefined;
     return message;
   },
 };
@@ -936,11 +1054,14 @@ export const EventInstance = {
 };
 
 function createBaseEventInstanceInfo(): EventInstanceInfo {
-  return {};
+  return { rsvpInfo: undefined };
 }
 
 export const EventInstanceInfo = {
-  encode(_: EventInstanceInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: EventInstanceInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.rsvpInfo !== undefined) {
+      EventInstanceRsvpInfo.encode(message.rsvpInfo, writer.uint32(10).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -951,6 +1072,13 @@ export const EventInstanceInfo = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rsvpInfo = EventInstanceRsvpInfo.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -960,20 +1088,219 @@ export const EventInstanceInfo = {
     return message;
   },
 
-  fromJSON(_: any): EventInstanceInfo {
-    return {};
+  fromJSON(object: any): EventInstanceInfo {
+    return { rsvpInfo: isSet(object.rsvpInfo) ? EventInstanceRsvpInfo.fromJSON(object.rsvpInfo) : undefined };
   },
 
-  toJSON(_: EventInstanceInfo): unknown {
+  toJSON(message: EventInstanceInfo): unknown {
     const obj: any = {};
+    if (message.rsvpInfo !== undefined) {
+      obj.rsvpInfo = EventInstanceRsvpInfo.toJSON(message.rsvpInfo);
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<EventInstanceInfo>, I>>(base?: I): EventInstanceInfo {
     return EventInstanceInfo.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EventInstanceInfo>, I>>(_: I): EventInstanceInfo {
+  fromPartial<I extends Exact<DeepPartial<EventInstanceInfo>, I>>(object: I): EventInstanceInfo {
     const message = createBaseEventInstanceInfo();
+    message.rsvpInfo = (object.rsvpInfo !== undefined && object.rsvpInfo !== null)
+      ? EventInstanceRsvpInfo.fromPartial(object.rsvpInfo)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseEventInstanceRsvpInfo(): EventInstanceRsvpInfo {
+  return {
+    allowsRsvps: undefined,
+    allowsAnonymousRsvps: undefined,
+    maxAttendees: undefined,
+    goingRsvps: undefined,
+    goingAttendees: undefined,
+    interestedRsvps: undefined,
+    interestedAttendees: undefined,
+    invitedRsvps: undefined,
+    invitedAttendees: undefined,
+  };
+}
+
+export const EventInstanceRsvpInfo = {
+  encode(message: EventInstanceRsvpInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.allowsRsvps !== undefined) {
+      writer.uint32(8).bool(message.allowsRsvps);
+    }
+    if (message.allowsAnonymousRsvps !== undefined) {
+      writer.uint32(16).bool(message.allowsAnonymousRsvps);
+    }
+    if (message.maxAttendees !== undefined) {
+      writer.uint32(24).uint32(message.maxAttendees);
+    }
+    if (message.goingRsvps !== undefined) {
+      writer.uint32(32).uint32(message.goingRsvps);
+    }
+    if (message.goingAttendees !== undefined) {
+      writer.uint32(40).uint32(message.goingAttendees);
+    }
+    if (message.interestedRsvps !== undefined) {
+      writer.uint32(48).uint32(message.interestedRsvps);
+    }
+    if (message.interestedAttendees !== undefined) {
+      writer.uint32(56).uint32(message.interestedAttendees);
+    }
+    if (message.invitedRsvps !== undefined) {
+      writer.uint32(64).uint32(message.invitedRsvps);
+    }
+    if (message.invitedAttendees !== undefined) {
+      writer.uint32(72).uint32(message.invitedAttendees);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): EventInstanceRsvpInfo {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventInstanceRsvpInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.allowsRsvps = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.allowsAnonymousRsvps = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maxAttendees = reader.uint32();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.goingRsvps = reader.uint32();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.goingAttendees = reader.uint32();
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.interestedRsvps = reader.uint32();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.interestedAttendees = reader.uint32();
+          continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.invitedRsvps = reader.uint32();
+          continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.invitedAttendees = reader.uint32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventInstanceRsvpInfo {
+    return {
+      allowsRsvps: isSet(object.allowsRsvps) ? globalThis.Boolean(object.allowsRsvps) : undefined,
+      allowsAnonymousRsvps: isSet(object.allowsAnonymousRsvps)
+        ? globalThis.Boolean(object.allowsAnonymousRsvps)
+        : undefined,
+      maxAttendees: isSet(object.maxAttendees) ? globalThis.Number(object.maxAttendees) : undefined,
+      goingRsvps: isSet(object.goingRsvps) ? globalThis.Number(object.goingRsvps) : undefined,
+      goingAttendees: isSet(object.goingAttendees) ? globalThis.Number(object.goingAttendees) : undefined,
+      interestedRsvps: isSet(object.interestedRsvps) ? globalThis.Number(object.interestedRsvps) : undefined,
+      interestedAttendees: isSet(object.interestedAttendees)
+        ? globalThis.Number(object.interestedAttendees)
+        : undefined,
+      invitedRsvps: isSet(object.invitedRsvps) ? globalThis.Number(object.invitedRsvps) : undefined,
+      invitedAttendees: isSet(object.invitedAttendees) ? globalThis.Number(object.invitedAttendees) : undefined,
+    };
+  },
+
+  toJSON(message: EventInstanceRsvpInfo): unknown {
+    const obj: any = {};
+    if (message.allowsRsvps !== undefined) {
+      obj.allowsRsvps = message.allowsRsvps;
+    }
+    if (message.allowsAnonymousRsvps !== undefined) {
+      obj.allowsAnonymousRsvps = message.allowsAnonymousRsvps;
+    }
+    if (message.maxAttendees !== undefined) {
+      obj.maxAttendees = Math.round(message.maxAttendees);
+    }
+    if (message.goingRsvps !== undefined) {
+      obj.goingRsvps = Math.round(message.goingRsvps);
+    }
+    if (message.goingAttendees !== undefined) {
+      obj.goingAttendees = Math.round(message.goingAttendees);
+    }
+    if (message.interestedRsvps !== undefined) {
+      obj.interestedRsvps = Math.round(message.interestedRsvps);
+    }
+    if (message.interestedAttendees !== undefined) {
+      obj.interestedAttendees = Math.round(message.interestedAttendees);
+    }
+    if (message.invitedRsvps !== undefined) {
+      obj.invitedRsvps = Math.round(message.invitedRsvps);
+    }
+    if (message.invitedAttendees !== undefined) {
+      obj.invitedAttendees = Math.round(message.invitedAttendees);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventInstanceRsvpInfo>, I>>(base?: I): EventInstanceRsvpInfo {
+    return EventInstanceRsvpInfo.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventInstanceRsvpInfo>, I>>(object: I): EventInstanceRsvpInfo {
+    const message = createBaseEventInstanceRsvpInfo();
+    message.allowsRsvps = object.allowsRsvps ?? undefined;
+    message.allowsAnonymousRsvps = object.allowsAnonymousRsvps ?? undefined;
+    message.maxAttendees = object.maxAttendees ?? undefined;
+    message.goingRsvps = object.goingRsvps ?? undefined;
+    message.goingAttendees = object.goingAttendees ?? undefined;
+    message.interestedRsvps = object.interestedRsvps ?? undefined;
+    message.interestedAttendees = object.interestedAttendees ?? undefined;
+    message.invitedRsvps = object.invitedRsvps ?? undefined;
+    message.invitedAttendees = object.invitedAttendees ?? undefined;
     return message;
   },
 };

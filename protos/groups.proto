@@ -14,6 +14,7 @@ message Group {
   string shortname = 3;
   string description = 4;
   optional MediaReference avatar = 5;
+
   repeated Permission default_membership_permissions = 6;
   // Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
   Moderation default_membership_moderation = 7;
@@ -27,6 +28,7 @@ message Group {
   uint32 post_count = 12;
   uint32 event_count = 13;
 
+  repeated Permission non_member_permissions = 18;
   optional Membership current_user_membership = 19;
   google.protobuf.Timestamp created_at = 20;
   optional google.protobuf.Timestamp updated_at = 21;

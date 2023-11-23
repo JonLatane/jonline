@@ -91,7 +91,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
     bool invitePending = group.currentUserMembership.groupModeration.pending;
     bool canJoin = appState.selectedAccount != null;
     bool selected = appState.selectedGroup.value?.id == group.id;
-    final backgroundColor = selected ? appState.navColor : null;
+    final backgroundColor = selected ? appState.navColor : Colors.grey[800];
     final textColor = backgroundColor?.textColor;
     return Card(
       color: backgroundColor,

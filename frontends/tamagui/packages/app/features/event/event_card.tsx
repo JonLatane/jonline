@@ -239,7 +239,7 @@ export const EventCard: React.FC<Props> = ({
 
   const author = post.author;
   const isAuthor = author && author.userId === currentUser?.id;
-  const showEdit = isAuthor && !isPreview && !hideEditControls;
+  const showEdit = !!isAuthor && !isPreview && !hideEditControls;
   // const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
   const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
 
@@ -810,7 +810,7 @@ export const EventCard: React.FC<Props> = ({
                   </XStack>
                 </XStack>
 
-                <XStack {...detailsShadowProps} key='details' mt={-10} pl='$3' mb='$3'>
+                <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
                   <AuthorInfo key='author-details' {...{ post, isVisible }} />
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%'>

@@ -1,11 +1,11 @@
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::rpcs::validations::*;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::validations::*;
 use crate::schema::group_posts;
 
 pub fn create_group_post(
@@ -14,8 +14,8 @@ pub fn create_group_post(
     conn: &mut PgPooledConnection,
 ) -> Result<GroupPost, Status> {
     let group_id = request.group_id.to_db_id_or_err("group_id")?;
-    let membership = models::get_membership(group_id, user.id, conn)?;
-    validate_group_permission(&membership, &user, Permission::CreatePosts)?;
+    let (group, membership) = models::get_group_and_membership(group_id, Some(user.id), conn)?;
+    validate_group_permission(&group, &membership.as_ref(), &Some(user), Permission::CreatePosts)?;
 
     let post_id = request.post_id.to_db_id_or_err("post_id")?;
     let post = models::get_post(post_id, conn)?;

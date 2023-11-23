@@ -50,6 +50,7 @@ class EventListScreenState extends State<EventListScreen>
                 .map((book) => Column(
                       children: [
                         Card(
+                          color: Colors.grey[400],
                           margin: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           child: ListTile(

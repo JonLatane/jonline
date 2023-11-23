@@ -41,14 +41,8 @@ pub fn get_event_attendances(
 
     match (event_post.visibility.to_proto_visibility().unwrap(), user) {
         (Visibility::GlobalPublic, _) => {}
-        (Visibility::ServerPublic, Some(user)) => {
+        (Visibility::ServerPublic, _) => {
             validate_permission(user, Permission::ViewEvents)?
-        }
-        (Visibility::ServerPublic, None) => {
-            return Err(Status::new(
-                Code::PermissionDenied,
-                "not_logged_in_cannot_view_local_events",
-            ))
         }
         (Visibility::Limited, Some(user))
             if event_post.user_id.map(|id| id == user.id).unwrap_or(false) => {}

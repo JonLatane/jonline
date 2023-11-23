@@ -1,11 +1,11 @@
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::rpcs::validations::*;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::validations::*;
 use crate::schema::{follows, users};
 
 pub fn create_follow(
@@ -15,7 +15,7 @@ pub fn create_follow(
 ) -> Result<Follow, Status> {
     validate_follow(&request, OperationType::Create)?;
     if request.user_id != user.id.to_proto_id() {
-        validate_permission(&user, Permission::Admin)?;
+        validate_permission(&Some(user), Permission::Admin)?;
     }
     let target_user = users::table
         .select(users::all_columns)

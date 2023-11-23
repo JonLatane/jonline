@@ -47,7 +47,7 @@ extension JonlineClients on JonlineAccount {
   static Future<JonlineClient?> createAndTestClient(String server,
       {Function(String)? showMessage, bool allowInsecure = false}) async {
     JonlineClient? client;
-    String? serviceVersion;
+    // String? serviceVersion;
 
     // We can't actually gracefully handle browser SSL errors, so must
     // use this "if" block instead.
@@ -55,35 +55,32 @@ extension JonlineClients on JonlineAccount {
     if (server != "localhost") {
       for (final port in [443, 27707]) {
         try {
-          client = await _createClient(server, true, port);
-          serviceVersion = (await client.getServiceVersion(Empty())).version;
-        } catch (e) {
-          if (!allowInsecure) {
-            showMessage?.call("Failed to connect to \"$server\" securely!");
-          }
-          client = null;
-        }
+          final maybeClient = await _createClient(server, true, port);
+          (await maybeClient.getServiceVersion(Empty())).version;
+          client = maybeClient;
+        } catch (e) {}
+      }
+      if (client == null && !allowInsecure) {
+        showMessage?.call("Failed to connect to \"$server\" securely!");
       }
     }
 
-    if (allowInsecure && serviceVersion == null) {
+    if (allowInsecure && client == null) {
       await communicationDelay;
       for (final port in [27707, 443]) {
         try {
           // showMessage?.call("Trying to connect to \"$server\" insecurely...");
-          client = await _createClient(server, false, port);
-          serviceVersion = (await client.getServiceVersion(Empty())).version;
-          showMessage?.call("Connected to \"$server\" insecurely 🤨");
-        } catch (e) {
-          showMessage?.call("Failed to connect to \"$server\" insecurely!");
-          return null;
-        }
+          final maybeClient = await _createClient(server, false, port);
+          (await maybeClient.getServiceVersion(Empty())).version;
+          client = maybeClient;
+        } catch (e) {}
+      }
+      if (client == null) {
+        showMessage?.call("Failed to connect to \"$server\" insecurely!");
+      } else {
+        showMessage?.call("Connected to \"$server\" insecurely 🤨");
       }
     }
-    // if (client != null) {
-    //   showMessage
-    //       ?.call("Connected to $server running Jonline $serviceVersion!");
-    // }
     return client;
   }
 

@@ -67,21 +67,21 @@ service Jonline {
   // Gets the current user. *Authenticated.*
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
 
+  // Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media).
+  rpc GetMedia(GetMediaRequest) returns (GetMediaResponse) {}
   // Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO.
   // Deleting other users' media requires `ADMIN` permissions.
   rpc DeleteMedia(Media) returns (google.protobuf.Empty) {}
-  // Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media).
-  rpc GetMedia(GetMediaRequest) returns (GetMediaResponse) {}
 
+  // Gets Users. *Publicly accessible **or** Authenticated.*
+  // Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
   // Update a user by ID. *Authenticated.*
   // Updating other users requires `ADMIN` permissions.
   rpc UpdateUser(User) returns (User) {}
   // Deletes a user by ID. *Authenticated.*
   // Deleting other users requires `ADMIN` permissions.
   rpc DeleteUser(User) returns (google.protobuf.Empty) {}
-  // Gets Users. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
-  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {}
 
   // Follow (or request to follow) a user. *Authenticated.*
   rpc CreateFollow(Follow) returns (Follow) {}
@@ -90,6 +90,9 @@ service Jonline {
   // Unfollow (or unrequest) a user. *Authenticated.*
   rpc DeleteFollow(Follow) returns (google.protobuf.Empty) {}
 
+  // Gets Groups. *Publicly accessible **or** Authenticated.*
+  // Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
+  rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse) {}
   // Creates a group with the current user as its admin. *Authenticated.*
   // Requires the `CREATE_GROUPS` permission.
   rpc CreateGroup(Group) returns (Group) {}
@@ -99,10 +102,9 @@ service Jonline {
   // Delete a Group. *Authenticated.*
   // Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   rpc DeleteGroup(Group) returns (google.protobuf.Empty) {}
-  // Gets Groups. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
-  rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse) {}
 
+  // Get Members (User+Membership) of a Group. *Authenticated.*
+  rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {}
   // Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.*
   // Memberships and moderations are set to their defaults.
   rpc CreateMembership(Membership) returns (Membership) {}
@@ -112,48 +114,46 @@ service Jonline {
   rpc UpdateMembership(Membership) returns (Membership) {}
   // Leave a group (or cancel membership request). *Authenticated.*
   rpc DeleteMembership(Membership) returns (google.protobuf.Empty) {}
-  // Get Members (User+Membership) of a Group. *Authenticated.*
-  rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {}
 
+  // Gets Posts. *Publicly accessible **or** Authenticated.*
+  // Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility.
+  rpc GetPosts(GetPostsRequest) returns (GetPostsResponse) {}
   // Creates a Post. *Authenticated.*
   rpc CreatePost(Post) returns (Post) {}
   // Updates a Post. *Authenticated.*
   rpc UpdatePost(Post) returns (Post) {}
   // (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.*
   rpc DeletePost(Post) returns (Post) {}
-  // Gets Posts. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility.
-  rpc GetPosts(GetPostsRequest) returns (GetPostsResponse) {}
 
+  // Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.*
+  rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsResponse) {}
   // Cross-post a Post to a Group. *Authenticated.*
   rpc CreateGroupPost(GroupPost) returns (GroupPost) {}
   // Group Moderators: Approve/Reject a GroupPost. *Authenticated.*
   rpc UpdateGroupPost(GroupPost) returns (GroupPost) {}
   // Delete a GroupPost. *Authenticated.*
   rpc DeleteGroupPost(GroupPost) returns (google.protobuf.Empty) {}
-  // Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.*
-  rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsResponse) {}
 
+  // Gets Events. *Publicly accessible **or** Authenticated.*
+  // Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
+  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
   // Creates an Event. *Authenticated.*
   rpc CreateEvent(Event) returns (Event) {}
   // Updates an Event. *Authenticated.*
   rpc UpdateEvent(Event) returns (Event) {}
   // (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.*
   rpc DeleteEvent(Event) returns (Event) {}
-  // Gets Events. *Publicly accessible **or** Authenticated.*
-  // Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
-  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
 
-  // Upsert an EventAttendance. *Authenticated or anonymous.*
+  // Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.*
+  rpc GetEventAttendances(GetEventAttendancesRequest) returns (EventAttendances) {}
+  // Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.*
   // See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee)
   // for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token`
   // returned by this RPC (the client should save this for the user, and ideally, offer a link
   // with the token).
   rpc UpsertEventAttendance(EventAttendance) returns (EventAttendance) {}
-  // Delete an EventAttendance. *Authenticated or anonymous.*
+  // Delete an EventAttendance.  *Publicly accessible **or** Authenticated, with anonymous RSVP support.*
   rpc DeleteEventAttendance(EventAttendance) returns (google.protobuf.Empty) {}
-  // Gets EventAttendances for an EventInstance. *Authenticated.*
-  rpc GetEventAttendances(GetEventAttendancesRequest) returns (EventAttendances) {}
 
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
   // Requires `ADMIN` permissions.

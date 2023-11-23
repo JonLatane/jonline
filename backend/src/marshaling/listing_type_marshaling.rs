@@ -18,7 +18,7 @@ pub const ALL_USER_LISTING_TYPES: [UserListingType; 5] = [
 ];
 
 pub const ALL_POST_LISTING_TYPES: [PostListingType; 4] = [
-  PostListingType::PublicPosts,
+  PostListingType::AllAccessiblePosts,
   PostListingType::FollowingPosts,
   PostListingType::MyGroupsPosts,
   PostListingType::DirectPosts,

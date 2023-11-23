@@ -29,7 +29,7 @@ export interface UsersState {
   idReplies: Dictionary<string[]>;
   idEventInstances: Dictionary<string[]>;
   // Stores pages of listed users for listing types used in the UI.
-  // i.e.: userPages[PostListingType.PUBLIC_POSTS][1] -> ["userId1", "userId2"].
+  // i.e.: userPages[PostListingType.ALL_ACCESSIBLE_POSTS][1] -> ["userId1", "userId2"].
   // Users should be loaded from the adapter/slice's entities.
   // Maps UserListingType -> page -> userIds
   userPages: Dictionary<Dictionary<string[]>>;

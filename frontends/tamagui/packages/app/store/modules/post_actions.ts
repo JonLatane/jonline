@@ -5,7 +5,7 @@ import {
 } from "@reduxjs/toolkit";
 import { AccountOrServer, getCredentialClient } from "..";
 
-export const defaultPostListingType = PostListingType.PUBLIC_POSTS;
+export const defaultPostListingType = PostListingType.ALL_ACCESSIBLE_POSTS;
 
 export type LocallyUpsertPost = AccountOrServer & Post;
 export const locallyUpsertPost: AsyncThunk<Post, LocallyUpsertPost, any> = createAsyncThunk<Post, LocallyUpsertPost>(

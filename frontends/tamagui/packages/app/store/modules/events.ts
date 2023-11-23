@@ -36,7 +36,7 @@ export interface EventsState {
 }
 
 // Stores pages of listed event *instances* for listing types used in the UI.
-// i.e.: eventPages[EventListingType.PUBLIC_EVENTS]['{"ends_after":null}'][0]:  -> ["eventInstanceId1", "eventInstanceId2"].
+// i.e.: eventPages[EventListingType.ALL_ACCESSIBLE_EVENTS]['{"ends_after":null}'][0]:  -> ["eventInstanceId1", "eventInstanceId2"].
 // Events should be loaded from the adapter/slice's entities.
 // Maps EventListingType -> serialized timeFilter-> page (as a number) -> eventInstanceIds
 export type GroupedEventInstancePages = Dictionary<Dictionary<Dictionary<string[]>>>

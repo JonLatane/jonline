@@ -14,7 +14,7 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 class EventListingType extends $pb.ProtobufEnum {
-  static const EventListingType PUBLIC_EVENTS = EventListingType._(0, _omitEnumNames ? '' : 'PUBLIC_EVENTS');
+  static const EventListingType ALL_ACCESSIBLE_EVENTS = EventListingType._(0, _omitEnumNames ? '' : 'ALL_ACCESSIBLE_EVENTS');
   static const EventListingType FOLLOWING_EVENTS = EventListingType._(1, _omitEnumNames ? '' : 'FOLLOWING_EVENTS');
   static const EventListingType MY_GROUPS_EVENTS = EventListingType._(2, _omitEnumNames ? '' : 'MY_GROUPS_EVENTS');
   static const EventListingType DIRECT_EVENTS = EventListingType._(3, _omitEnumNames ? '' : 'DIRECT_EVENTS');
@@ -23,7 +23,7 @@ class EventListingType extends $pb.ProtobufEnum {
   static const EventListingType GROUP_EVENTS_PENDING_MODERATION = EventListingType._(11, _omitEnumNames ? '' : 'GROUP_EVENTS_PENDING_MODERATION');
 
   static const $core.List<EventListingType> values = <EventListingType> [
-    PUBLIC_EVENTS,
+    ALL_ACCESSIBLE_EVENTS,
     FOLLOWING_EVENTS,
     MY_GROUPS_EVENTS,
     DIRECT_EVENTS,

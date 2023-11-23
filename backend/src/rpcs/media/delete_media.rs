@@ -31,9 +31,9 @@ pub fn delete_media(
     let self_delete = affected_media.unwrap().user_id == Some(current_user.id);
     let mut admin = false;
     if !self_delete {
-        validate_any_permission(&current_user, vec![Permission::Admin])?;
+        validate_any_permission(&Some(current_user), vec![Permission::Admin])?;
     }
-    match validate_permission(&current_user, Permission::Admin) {
+    match validate_permission(&Some(current_user), Permission::Admin) {
         Ok(_) => admin = true,
         Err(_) => {}
     };

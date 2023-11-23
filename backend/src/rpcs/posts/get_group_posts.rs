@@ -1,10 +1,11 @@
 use diesel::*;
 use tonic::Status;
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
 use crate::logic::*;
+use crate::marshaling::*;
 use crate::models;
+use crate::models::get_group_and_membership;
 use crate::protos::Moderation::*;
 use crate::protos::Permission::ModeratePosts;
 use crate::protos::*;
@@ -29,7 +30,7 @@ pub fn get_group_posts(
             // memberships::all_columns.nullable(),
         ));
     let results: Vec<(models::GroupPost, String)> = match request.group_id {
-         None => query
+        None => query
             .filter(group_posts::post_id.eq(post_id))
             .load::<(models::GroupPost, String)>(conn)
             .unwrap(),
@@ -45,12 +46,20 @@ pub fn get_group_posts(
     let filtered_results = results
         .iter()
         .filter_map(|(group_post, post_visibility)| {
-            let membership = models::get_membership(group_post.group_id, user.as_ref().map_or(-1, |u| u.id), conn).ok();
+            let (group, membership) =
+                get_group_and_membership(group_post.group_id, user.as_ref().map(|u| u.id), conn)
+                    .ok()?;
+            // let membership = models::get_membership(group_post.group_id, user.as_ref().map_or(-1, |u| u.id), conn).ok();
             let moderations = match (user.as_ref(), membership.as_ref()) {
                 (Some(user), Some(membership)) => {
                     match (
                         membership.passes(),
-                        validate_group_permission(&membership, &user, ModeratePosts),
+                        validate_group_permission(
+                            &group,
+                            &Some(&membership),
+                            &Some(user),
+                            ModeratePosts,
+                        ),
                     ) {
                         (true, Ok(_)) => vec![Unmoderated, Approved, Pending],
                         _ => vec![Unmoderated, Approved],

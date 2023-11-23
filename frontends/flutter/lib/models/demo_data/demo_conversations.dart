@@ -20,11 +20,11 @@ createDemoConversations(
     return;
   }
   await account.ensureAccessToken(showMessage: showSnackBar);
-  final posts = (await client.getPosts(
-          GetPostsRequest()..listingType = PostListingType.PUBLIC_POSTS))
+  final posts = (await client.getPosts(GetPostsRequest()
+        ..listingType = PostListingType.ALL_ACCESSIBLE_POSTS))
       .posts;
-  final events = (await client.getEvents(
-          GetEventsRequest()..listingType = EventListingType.PUBLIC_EVENTS))
+  final events = (await client.getEvents(GetEventsRequest()
+        ..listingType = EventListingType.ALL_ACCESSIBLE_EVENTS))
       .events;
   List<JonlineAccount> sideAccounts =
       await generateSideAccounts(client, account, showSnackBar, appState, 30);

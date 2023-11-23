@@ -19,7 +19,7 @@ pub fn create_post(
         &user.username,
         user.id
     );
-    validate_permission(&user, Permission::CreatePosts)?;
+    validate_permission(&Some(user), Permission::CreatePosts)?;
 
     let configuration = crate::rpcs::get_server_configuration_proto(conn)?;
     match request.title.to_owned() {
@@ -87,8 +87,8 @@ pub fn create_post(
         v => v,
     };
     match visibility {
-        Visibility::GlobalPublic => validate_permission(&user, Permission::PublishPostsGlobally)?,
-        Visibility::ServerPublic => validate_permission(&user, Permission::PublishPostsLocally)?,
+        Visibility::GlobalPublic => validate_permission(&Some(user), Permission::PublishPostsGlobally)?,
+        Visibility::ServerPublic => validate_permission(&Some(user), Permission::PublishPostsLocally)?,
         _ => {}
     };
 

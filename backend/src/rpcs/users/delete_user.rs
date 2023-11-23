@@ -2,8 +2,8 @@ use diesel::NotFound;
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::schema::users;
@@ -20,19 +20,13 @@ pub fn delete_user(
     let self_delete = request.id == current_user.id.to_proto_id();
     let mut admin = false;
     if !self_delete {
-        validate_any_permission(
-            &current_user,
-            vec![Permission::Admin],
-        )?;
+        validate_any_permission(&Some(current_user), vec![Permission::Admin])?;
     }
-    match validate_permission(&current_user, Permission::Admin) {
+    match validate_permission(&Some(current_user), Permission::Admin) {
         Ok(_) => admin = true,
         Err(_) => {}
     };
-    log::info!(
-        "self_delete: {}, admin: {}",
-        self_delete, admin
-    );
+    log::info!("self_delete: {}, admin: {}", self_delete, admin);
 
     let db_result = delete(users::table.find(request.id.to_db_id_or_err("id")?)).execute(conn);
 

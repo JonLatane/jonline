@@ -447,6 +447,8 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                 child: MultiSelectChipField<vm.Visibility?>(
                   decoration: const BoxDecoration(),
                   showHeader: false,
+                  chipColor: Colors.grey[800],
+                  textStyle: const TextStyle(color: Colors.white),
                   selectedChipColor: appState.navColor,
                   selectedTextStyle:
                       TextStyle(color: appState.navColor.textColor),

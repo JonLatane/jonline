@@ -1,6 +1,6 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api'
 import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useWindowDimensions } from '@jonline/ui'
-import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown, Binary, ChevronRight, CheckCircle } from '@tamagui/lucide-icons';
+import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown, Binary, ChevronRight, CheckCircle, TabletSmartphone } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { HexColorPicker } from "react-colorful"
@@ -54,6 +54,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const [_, githubVersion] = serviceVersion?.version?.split('-') ?? [];
   const githubLink = useLink({ href: `https://github.com/JonLatane/jonline/commit/${githubVersion}` });
   const protocolDocsLink = useLink({ href: `http://${server?.host}/docs/protocol` });
+  const flutterUiLink = useLink({ href: `/flutter` });
 
   const serverName = serverConfiguration?.serverInfo?.name;
   const [name, setName] = useState(serverName || undefined);
@@ -292,6 +293,11 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         iconAfter={<Binary size='$2' />}>
                         <Heading size='$1' color={navTextColor}>Protocol Docs</Heading>
                       </Button>
+                      <Button {...flutterUiLink} target='_blank' size='$2' ml='$2' mb='$2' {...themedButtonBackground(navColor, navTextColor)}
+                        iconAfter={<TabletSmartphone size='$1' />}>
+                        <Heading size='$1' color={navTextColor}>Flutter UI</Heading>
+                      </Button>
+                      
                       {githubVersion
                         ? <XStack ml='auto' mb='$2'>
                           <Button {...githubLink} target='_blank' size='$2' ml='$2'   {...themedButtonBackground(navColor, navTextColor)}

@@ -48,7 +48,7 @@ export const protobufPackage = "jonline";
  * Jonline uses a standard OAuth2 flow for authentication, with rotating `access_token`s
  * and `refresh_token`s.
  * Authenticated calls require an `access_token` in request metadata to be included
- * directly as the value of the `authorization` header (with no `Bearer ` prefix).
+ * directly as the value of the `authorization` header (no `Bearer ` prefix).
  *
  * First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
  * `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
@@ -56,7 +56,7 @@ export const protobufPackage = "jonline";
  * may also return a new `refresh_token`, which should replace the old one in client storage.)
  *
  * ##### HTTP-based client host negotiation (for external CDNs)
- * When negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
+ * When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
  * to connect to `jonline.io` via gRPC on 27707/443, the client
  * is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
  * (depending upon whether the gRPC server is expected to have TLS). If the `backend_host` string resource
@@ -65,10 +65,14 @@ export const protobufPackage = "jonline";
  * be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
  * `jonline.io`.
  *
- * This negotiation enables support for external CDNs as frontends. See https://jonline.io/about for
+ * This negotiation enables support for external CDNs as frontends. See https://jonline.io/about?section=cdn for
  * more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts)
  * and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart)
  * client implementations of this negotiation.
+ *
+ * In the works to be released soon, Jonline will also support a "fully behind CDN" mode, where gRPC is served over port 443 and HTTP over port
+ * 80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare's gRPC
+ * proxy support. With this, both web and gRPC resources can live behind a CDN.
  *
  * #### gRPC API
  */
@@ -85,13 +89,18 @@ export interface Jonline {
   accessToken(request: DeepPartial<AccessTokenRequest>, metadata?: grpc.Metadata): Promise<AccessTokenResponse>;
   /** Gets the current user. *Authenticated.* */
   getCurrentUser(request: DeepPartial<Empty>, metadata?: grpc.Metadata): Promise<User>;
+  /** Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media). */
+  getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse>;
   /**
    * Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO.
    * Deleting other users' media requires `ADMIN` permissions.
    */
   deleteMedia(request: DeepPartial<Media>, metadata?: grpc.Metadata): Promise<Empty>;
-  /** Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media). */
-  getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse>;
+  /**
+   * Gets Users. *Publicly accessible **or** Authenticated.*
+   * Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
+   */
+  getUsers(request: DeepPartial<GetUsersRequest>, metadata?: grpc.Metadata): Promise<GetUsersResponse>;
   /**
    * Update a user by ID. *Authenticated.*
    * Updating other users requires `ADMIN` permissions.
@@ -102,17 +111,17 @@ export interface Jonline {
    * Deleting other users requires `ADMIN` permissions.
    */
   deleteUser(request: DeepPartial<User>, metadata?: grpc.Metadata): Promise<Empty>;
-  /**
-   * Gets Users. *Publicly accessible **or** Authenticated.*
-   * Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
-   */
-  getUsers(request: DeepPartial<GetUsersRequest>, metadata?: grpc.Metadata): Promise<GetUsersResponse>;
   /** Follow (or request to follow) a user. *Authenticated.* */
   createFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow>;
   /** Used to approve follow requests. *Authenticated.* */
   updateFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow>;
   /** Unfollow (or unrequest) a user. *Authenticated.* */
   deleteFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Empty>;
+  /**
+   * Gets Groups. *Publicly accessible **or** Authenticated.*
+   * Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
+   */
+  getGroups(request: DeepPartial<GetGroupsRequest>, metadata?: grpc.Metadata): Promise<GetGroupsResponse>;
   /**
    * Creates a group with the current user as its admin. *Authenticated.*
    * Requires the `CREATE_GROUPS` permission.
@@ -128,11 +137,8 @@ export interface Jonline {
    * Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
    */
   deleteGroup(request: DeepPartial<Group>, metadata?: grpc.Metadata): Promise<Empty>;
-  /**
-   * Gets Groups. *Publicly accessible **or** Authenticated.*
-   * Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
-   */
-  getGroups(request: DeepPartial<GetGroupsRequest>, metadata?: grpc.Metadata): Promise<GetGroupsResponse>;
+  /** Get Members (User+Membership) of a Group. *Authenticated.* */
+  getMembers(request: DeepPartial<GetMembersRequest>, metadata?: grpc.Metadata): Promise<GetMembersResponse>;
   /**
    * Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.*
    * Memberships and moderations are set to their defaults.
@@ -146,53 +152,51 @@ export interface Jonline {
   updateMembership(request: DeepPartial<Membership>, metadata?: grpc.Metadata): Promise<Membership>;
   /** Leave a group (or cancel membership request). *Authenticated.* */
   deleteMembership(request: DeepPartial<Membership>, metadata?: grpc.Metadata): Promise<Empty>;
-  /** Get Members (User+Membership) of a Group. *Authenticated.* */
-  getMembers(request: DeepPartial<GetMembersRequest>, metadata?: grpc.Metadata): Promise<GetMembersResponse>;
+  /**
+   * Gets Posts. *Publicly accessible **or** Authenticated.*
+   * Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility.
+   */
+  getPosts(request: DeepPartial<GetPostsRequest>, metadata?: grpc.Metadata): Promise<GetPostsResponse>;
   /** Creates a Post. *Authenticated.* */
   createPost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post>;
   /** Updates a Post. *Authenticated.* */
   updatePost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post>;
   /** (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* */
   deletePost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post>;
-  /**
-   * Gets Posts. *Publicly accessible **or** Authenticated.*
-   * Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility.
-   */
-  getPosts(request: DeepPartial<GetPostsRequest>, metadata?: grpc.Metadata): Promise<GetPostsResponse>;
+  /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
+  getGroupPosts(request: DeepPartial<GetGroupPostsRequest>, metadata?: grpc.Metadata): Promise<GetGroupPostsResponse>;
   /** Cross-post a Post to a Group. *Authenticated.* */
   createGroupPost(request: DeepPartial<GroupPost>, metadata?: grpc.Metadata): Promise<GroupPost>;
   /** Group Moderators: Approve/Reject a GroupPost. *Authenticated.* */
   updateGroupPost(request: DeepPartial<GroupPost>, metadata?: grpc.Metadata): Promise<GroupPost>;
   /** Delete a GroupPost. *Authenticated.* */
   deleteGroupPost(request: DeepPartial<GroupPost>, metadata?: grpc.Metadata): Promise<Empty>;
-  /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
-  getGroupPosts(request: DeepPartial<GetGroupPostsRequest>, metadata?: grpc.Metadata): Promise<GetGroupPostsResponse>;
+  /**
+   * Gets Events. *Publicly accessible **or** Authenticated.*
+   * Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
+   */
+  getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse>;
   /** Creates an Event. *Authenticated.* */
   createEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event>;
   /** Updates an Event. *Authenticated.* */
   updateEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event>;
   /** (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
   deleteEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event>;
+  /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
+  getEventAttendances(
+    request: DeepPartial<GetEventAttendancesRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<EventAttendances>;
   /**
-   * Gets Events. *Publicly accessible **or** Authenticated.*
-   * Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
-   */
-  getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse>;
-  /**
-   * Upsert an EventAttendance. *Authenticated or anonymous.*
+   * Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.*
    * See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee)
    * for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token`
    * returned by this RPC (the client should save this for the user, and ideally, offer a link
    * with the token).
    */
   upsertEventAttendance(request: DeepPartial<EventAttendance>, metadata?: grpc.Metadata): Promise<EventAttendance>;
-  /** Delete an EventAttendance. *Authenticated or anonymous.* */
+  /** Delete an EventAttendance.  *Publicly accessible **or** Authenticated, with anonymous RSVP support.* */
   deleteEventAttendance(request: DeepPartial<EventAttendance>, metadata?: grpc.Metadata): Promise<Empty>;
-  /** Gets EventAttendances for an EventInstance. *Authenticated.* */
-  getEventAttendances(
-    request: DeepPartial<GetEventAttendancesRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<EventAttendances>;
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
    * Requires `ADMIN` permissions.
@@ -219,37 +223,37 @@ export class JonlineClientImpl implements Jonline {
     this.login = this.login.bind(this);
     this.accessToken = this.accessToken.bind(this);
     this.getCurrentUser = this.getCurrentUser.bind(this);
-    this.deleteMedia = this.deleteMedia.bind(this);
     this.getMedia = this.getMedia.bind(this);
+    this.deleteMedia = this.deleteMedia.bind(this);
+    this.getUsers = this.getUsers.bind(this);
     this.updateUser = this.updateUser.bind(this);
     this.deleteUser = this.deleteUser.bind(this);
-    this.getUsers = this.getUsers.bind(this);
     this.createFollow = this.createFollow.bind(this);
     this.updateFollow = this.updateFollow.bind(this);
     this.deleteFollow = this.deleteFollow.bind(this);
+    this.getGroups = this.getGroups.bind(this);
     this.createGroup = this.createGroup.bind(this);
     this.updateGroup = this.updateGroup.bind(this);
     this.deleteGroup = this.deleteGroup.bind(this);
-    this.getGroups = this.getGroups.bind(this);
+    this.getMembers = this.getMembers.bind(this);
     this.createMembership = this.createMembership.bind(this);
     this.updateMembership = this.updateMembership.bind(this);
     this.deleteMembership = this.deleteMembership.bind(this);
-    this.getMembers = this.getMembers.bind(this);
+    this.getPosts = this.getPosts.bind(this);
     this.createPost = this.createPost.bind(this);
     this.updatePost = this.updatePost.bind(this);
     this.deletePost = this.deletePost.bind(this);
-    this.getPosts = this.getPosts.bind(this);
+    this.getGroupPosts = this.getGroupPosts.bind(this);
     this.createGroupPost = this.createGroupPost.bind(this);
     this.updateGroupPost = this.updateGroupPost.bind(this);
     this.deleteGroupPost = this.deleteGroupPost.bind(this);
-    this.getGroupPosts = this.getGroupPosts.bind(this);
+    this.getEvents = this.getEvents.bind(this);
     this.createEvent = this.createEvent.bind(this);
     this.updateEvent = this.updateEvent.bind(this);
     this.deleteEvent = this.deleteEvent.bind(this);
-    this.getEvents = this.getEvents.bind(this);
+    this.getEventAttendances = this.getEventAttendances.bind(this);
     this.upsertEventAttendance = this.upsertEventAttendance.bind(this);
     this.deleteEventAttendance = this.deleteEventAttendance.bind(this);
-    this.getEventAttendances = this.getEventAttendances.bind(this);
     this.configureServer = this.configureServer.bind(this);
     this.resetData = this.resetData.bind(this);
     this.streamReplies = this.streamReplies.bind(this);
@@ -279,12 +283,16 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineGetCurrentUserDesc, Empty.fromPartial(request), metadata);
   }
 
+  getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse> {
+    return this.rpc.unary(JonlineGetMediaDesc, GetMediaRequest.fromPartial(request), metadata);
+  }
+
   deleteMedia(request: DeepPartial<Media>, metadata?: grpc.Metadata): Promise<Empty> {
     return this.rpc.unary(JonlineDeleteMediaDesc, Media.fromPartial(request), metadata);
   }
 
-  getMedia(request: DeepPartial<GetMediaRequest>, metadata?: grpc.Metadata): Promise<GetMediaResponse> {
-    return this.rpc.unary(JonlineGetMediaDesc, GetMediaRequest.fromPartial(request), metadata);
+  getUsers(request: DeepPartial<GetUsersRequest>, metadata?: grpc.Metadata): Promise<GetUsersResponse> {
+    return this.rpc.unary(JonlineGetUsersDesc, GetUsersRequest.fromPartial(request), metadata);
   }
 
   updateUser(request: DeepPartial<User>, metadata?: grpc.Metadata): Promise<User> {
@@ -293,10 +301,6 @@ export class JonlineClientImpl implements Jonline {
 
   deleteUser(request: DeepPartial<User>, metadata?: grpc.Metadata): Promise<Empty> {
     return this.rpc.unary(JonlineDeleteUserDesc, User.fromPartial(request), metadata);
-  }
-
-  getUsers(request: DeepPartial<GetUsersRequest>, metadata?: grpc.Metadata): Promise<GetUsersResponse> {
-    return this.rpc.unary(JonlineGetUsersDesc, GetUsersRequest.fromPartial(request), metadata);
   }
 
   createFollow(request: DeepPartial<Follow>, metadata?: grpc.Metadata): Promise<Follow> {
@@ -311,6 +315,10 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineDeleteFollowDesc, Follow.fromPartial(request), metadata);
   }
 
+  getGroups(request: DeepPartial<GetGroupsRequest>, metadata?: grpc.Metadata): Promise<GetGroupsResponse> {
+    return this.rpc.unary(JonlineGetGroupsDesc, GetGroupsRequest.fromPartial(request), metadata);
+  }
+
   createGroup(request: DeepPartial<Group>, metadata?: grpc.Metadata): Promise<Group> {
     return this.rpc.unary(JonlineCreateGroupDesc, Group.fromPartial(request), metadata);
   }
@@ -323,8 +331,8 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineDeleteGroupDesc, Group.fromPartial(request), metadata);
   }
 
-  getGroups(request: DeepPartial<GetGroupsRequest>, metadata?: grpc.Metadata): Promise<GetGroupsResponse> {
-    return this.rpc.unary(JonlineGetGroupsDesc, GetGroupsRequest.fromPartial(request), metadata);
+  getMembers(request: DeepPartial<GetMembersRequest>, metadata?: grpc.Metadata): Promise<GetMembersResponse> {
+    return this.rpc.unary(JonlineGetMembersDesc, GetMembersRequest.fromPartial(request), metadata);
   }
 
   createMembership(request: DeepPartial<Membership>, metadata?: grpc.Metadata): Promise<Membership> {
@@ -339,8 +347,8 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineDeleteMembershipDesc, Membership.fromPartial(request), metadata);
   }
 
-  getMembers(request: DeepPartial<GetMembersRequest>, metadata?: grpc.Metadata): Promise<GetMembersResponse> {
-    return this.rpc.unary(JonlineGetMembersDesc, GetMembersRequest.fromPartial(request), metadata);
+  getPosts(request: DeepPartial<GetPostsRequest>, metadata?: grpc.Metadata): Promise<GetPostsResponse> {
+    return this.rpc.unary(JonlineGetPostsDesc, GetPostsRequest.fromPartial(request), metadata);
   }
 
   createPost(request: DeepPartial<Post>, metadata?: grpc.Metadata): Promise<Post> {
@@ -355,8 +363,8 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineDeletePostDesc, Post.fromPartial(request), metadata);
   }
 
-  getPosts(request: DeepPartial<GetPostsRequest>, metadata?: grpc.Metadata): Promise<GetPostsResponse> {
-    return this.rpc.unary(JonlineGetPostsDesc, GetPostsRequest.fromPartial(request), metadata);
+  getGroupPosts(request: DeepPartial<GetGroupPostsRequest>, metadata?: grpc.Metadata): Promise<GetGroupPostsResponse> {
+    return this.rpc.unary(JonlineGetGroupPostsDesc, GetGroupPostsRequest.fromPartial(request), metadata);
   }
 
   createGroupPost(request: DeepPartial<GroupPost>, metadata?: grpc.Metadata): Promise<GroupPost> {
@@ -371,8 +379,8 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineDeleteGroupPostDesc, GroupPost.fromPartial(request), metadata);
   }
 
-  getGroupPosts(request: DeepPartial<GetGroupPostsRequest>, metadata?: grpc.Metadata): Promise<GetGroupPostsResponse> {
-    return this.rpc.unary(JonlineGetGroupPostsDesc, GetGroupPostsRequest.fromPartial(request), metadata);
+  getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse> {
+    return this.rpc.unary(JonlineGetEventsDesc, GetEventsRequest.fromPartial(request), metadata);
   }
 
   createEvent(request: DeepPartial<Event>, metadata?: grpc.Metadata): Promise<Event> {
@@ -387,8 +395,11 @@ export class JonlineClientImpl implements Jonline {
     return this.rpc.unary(JonlineDeleteEventDesc, Event.fromPartial(request), metadata);
   }
 
-  getEvents(request: DeepPartial<GetEventsRequest>, metadata?: grpc.Metadata): Promise<GetEventsResponse> {
-    return this.rpc.unary(JonlineGetEventsDesc, GetEventsRequest.fromPartial(request), metadata);
+  getEventAttendances(
+    request: DeepPartial<GetEventAttendancesRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<EventAttendances> {
+    return this.rpc.unary(JonlineGetEventAttendancesDesc, GetEventAttendancesRequest.fromPartial(request), metadata);
   }
 
   upsertEventAttendance(request: DeepPartial<EventAttendance>, metadata?: grpc.Metadata): Promise<EventAttendance> {
@@ -397,13 +408,6 @@ export class JonlineClientImpl implements Jonline {
 
   deleteEventAttendance(request: DeepPartial<EventAttendance>, metadata?: grpc.Metadata): Promise<Empty> {
     return this.rpc.unary(JonlineDeleteEventAttendanceDesc, EventAttendance.fromPartial(request), metadata);
-  }
-
-  getEventAttendances(
-    request: DeepPartial<GetEventAttendancesRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<EventAttendances> {
-    return this.rpc.unary(JonlineGetEventAttendancesDesc, GetEventAttendancesRequest.fromPartial(request), metadata);
   }
 
   configureServer(request: DeepPartial<ServerConfiguration>, metadata?: grpc.Metadata): Promise<ServerConfiguration> {
@@ -559,6 +563,29 @@ export const JonlineGetCurrentUserDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
+export const JonlineGetMediaDesc: UnaryMethodDefinitionish = {
+  methodName: "GetMedia",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return GetMediaRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = GetMediaResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
 export const JonlineDeleteMediaDesc: UnaryMethodDefinitionish = {
   methodName: "DeleteMedia",
   service: JonlineDesc,
@@ -582,19 +609,19 @@ export const JonlineDeleteMediaDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
-export const JonlineGetMediaDesc: UnaryMethodDefinitionish = {
-  methodName: "GetMedia",
+export const JonlineGetUsersDesc: UnaryMethodDefinitionish = {
+  methodName: "GetUsers",
   service: JonlineDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return GetMediaRequest.encode(this).finish();
+      return GetUsersRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = GetMediaResponse.decode(data);
+      const value = GetUsersResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -641,29 +668,6 @@ export const JonlineDeleteUserDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = Empty.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
-
-export const JonlineGetUsersDesc: UnaryMethodDefinitionish = {
-  methodName: "GetUsers",
-  service: JonlineDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return GetUsersRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = GetUsersResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -743,6 +747,29 @@ export const JonlineDeleteFollowDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
+export const JonlineGetGroupsDesc: UnaryMethodDefinitionish = {
+  methodName: "GetGroups",
+  service: JonlineDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return GetGroupsRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = GetGroupsResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
 export const JonlineCreateGroupDesc: UnaryMethodDefinitionish = {
   methodName: "CreateGroup",
   service: JonlineDesc,
@@ -812,19 +839,19 @@ export const JonlineDeleteGroupDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
-export const JonlineGetGroupsDesc: UnaryMethodDefinitionish = {
-  methodName: "GetGroups",
+export const JonlineGetMembersDesc: UnaryMethodDefinitionish = {
+  methodName: "GetMembers",
   service: JonlineDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return GetGroupsRequest.encode(this).finish();
+      return GetMembersRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = GetGroupsResponse.decode(data);
+      const value = GetMembersResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -904,19 +931,19 @@ export const JonlineDeleteMembershipDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
-export const JonlineGetMembersDesc: UnaryMethodDefinitionish = {
-  methodName: "GetMembers",
+export const JonlineGetPostsDesc: UnaryMethodDefinitionish = {
+  methodName: "GetPosts",
   service: JonlineDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return GetMembersRequest.encode(this).finish();
+      return GetPostsRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = GetMembersResponse.decode(data);
+      const value = GetPostsResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -996,19 +1023,19 @@ export const JonlineDeletePostDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
-export const JonlineGetPostsDesc: UnaryMethodDefinitionish = {
-  methodName: "GetPosts",
+export const JonlineGetGroupPostsDesc: UnaryMethodDefinitionish = {
+  methodName: "GetGroupPosts",
   service: JonlineDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return GetPostsRequest.encode(this).finish();
+      return GetGroupPostsRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = GetPostsResponse.decode(data);
+      const value = GetGroupPostsResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -1088,19 +1115,19 @@ export const JonlineDeleteGroupPostDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
-export const JonlineGetGroupPostsDesc: UnaryMethodDefinitionish = {
-  methodName: "GetGroupPosts",
+export const JonlineGetEventsDesc: UnaryMethodDefinitionish = {
+  methodName: "GetEvents",
   service: JonlineDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return GetGroupPostsRequest.encode(this).finish();
+      return GetEventsRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = GetGroupPostsResponse.decode(data);
+      const value = GetEventsResponse.decode(data);
       return {
         ...value,
         toObject() {
@@ -1180,19 +1207,19 @@ export const JonlineDeleteEventDesc: UnaryMethodDefinitionish = {
   } as any,
 };
 
-export const JonlineGetEventsDesc: UnaryMethodDefinitionish = {
-  methodName: "GetEvents",
+export const JonlineGetEventAttendancesDesc: UnaryMethodDefinitionish = {
+  methodName: "GetEventAttendances",
   service: JonlineDesc,
   requestStream: false,
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return GetEventsRequest.encode(this).finish();
+      return GetEventAttendancesRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = GetEventsResponse.decode(data);
+      const value = EventAttendances.decode(data);
       return {
         ...value,
         toObject() {
@@ -1239,29 +1266,6 @@ export const JonlineDeleteEventAttendanceDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = Empty.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
-
-export const JonlineGetEventAttendancesDesc: UnaryMethodDefinitionish = {
-  methodName: "GetEventAttendances",
-  service: JonlineDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return GetEventAttendancesRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = EventAttendances.decode(data);
       return {
         ...value,
         toObject() {

@@ -24,14 +24,13 @@ import 'visibility_moderation.pbenum.dart' as $10;
 export 'events.pbenum.dart';
 
 /// Valid GetEventsRequest formats:
-/// - {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
-/// - {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
-/// - {event_id:}                                     (TODO: get single event including preview data)
-/// - {listing_type: GroupEvents|
-///      GroupEventsPendingModeration,
-///      group_id:}                                  (TODO: get events/events needing moderation for a group)
-/// - {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
-/// - {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+/// - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
+/// - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
+/// - `{event_id:}`                                    (TODO: get single event including preview data)
+/// - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
+///                                                    (TODO: get events/events needing moderation for a group)
+/// - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
+/// - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
 class GetEventsRequest extends $pb.GeneratedMessage {
   factory GetEventsRequest({
     $core.String? eventId,
@@ -39,6 +38,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.String? groupId,
     $core.String? eventInstanceId,
     TimeFilter? timeFilter,
+    $core.String? attendeeId,
+    $core.Iterable<AttendanceStatus>? attendanceStatuses,
     EventListingType? listingType,
   }) {
     final $result = create();
@@ -57,6 +58,12 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     if (timeFilter != null) {
       $result.timeFilter = timeFilter;
     }
+    if (attendeeId != null) {
+      $result.attendeeId = attendeeId;
+    }
+    if (attendanceStatuses != null) {
+      $result.attendanceStatuses.addAll(attendanceStatuses);
+    }
     if (listingType != null) {
       $result.listingType = listingType;
     }
@@ -72,7 +79,9 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'groupId')
     ..aOS(4, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOM<TimeFilter>(5, _omitFieldNames ? '' : 'timeFilter', subBuilder: TimeFilter.create)
-    ..e<EventListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: EventListingType.PUBLIC_EVENTS, valueOf: EventListingType.valueOf, enumValues: EventListingType.values)
+    ..aOS(6, _omitFieldNames ? '' : 'attendeeId')
+    ..pc<AttendanceStatus>(7, _omitFieldNames ? '' : 'attendanceStatuses', $pb.PbFieldType.KE, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values, defaultEnumValue: AttendanceStatus.INTERESTED)
+    ..e<EventListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: EventListingType.ALL_ACCESSIBLE_EVENTS, valueOf: EventListingType.valueOf, enumValues: EventListingType.values)
     ..hasRequiredFields = false
   ;
 
@@ -107,8 +116,6 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearEventId() => clearField(1);
 
-  /// Limits results to replies to the given event.
-  /// optional string replies_to_event_id = 2;
   /// Limits results to those by the given author user ID.
   @$pb.TagNumber(2)
   $core.String get authorUserId => $_getSZ(1);
@@ -119,6 +126,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAuthorUserId() => clearField(2);
 
+  /// Limits results to those in the given group ID (via `GroupPost` association's for the Event's internal `Post`).
   @$pb.TagNumber(3)
   $core.String get groupId => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -128,6 +136,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearGroupId() => clearField(3);
 
+  /// Limits results to those with the given event instance ID.
   @$pb.TagNumber(4)
   $core.String get eventInstanceId => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -137,6 +146,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearEventInstanceId() => clearField(4);
 
+  /// Filters returned `EventInstance`s by time.
   @$pb.TagNumber(5)
   TimeFilter get timeFilter => $_getN(4);
   @$pb.TagNumber(5)
@@ -148,12 +158,28 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   TimeFilter ensureTimeFilter() => $_ensure(4);
 
+  /// If set, only returns events that the given user is attending. If `attendance_statuses` is also set,
+  /// returns events where that user's status is one of the given statuses.
+  @$pb.TagNumber(6)
+  $core.String get attendeeId => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set attendeeId($core.String v) { $_setString(5, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasAttendeeId() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearAttendeeId() => clearField(6);
+
+  /// If set, only return events for which the current user's attendance status matches one of the given statuses. If `attendee_id` is also set,
+  /// only returns events where the given user's status matches one of the given statuses.
+  @$pb.TagNumber(7)
+  $core.List<AttendanceStatus> get attendanceStatuses => $_getList(6);
+
   @$pb.TagNumber(10)
-  EventListingType get listingType => $_getN(5);
+  EventListingType get listingType => $_getN(7);
   @$pb.TagNumber(10)
   set listingType(EventListingType v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasListingType() => $_has(5);
+  $core.bool hasListingType() => $_has(7);
   @$pb.TagNumber(10)
   void clearListingType() => clearField(10);
 }
@@ -259,6 +285,17 @@ class TimeFilter extends $pb.GeneratedMessage {
   $9.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
+///  A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
+///
+///  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
+///  I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
+///  This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+///  The client should be able to handle this.
+///
+///  In the React/Tamagui client, this is handled by the Redux store, which
+///  effectively "compacts" all response into its own internal Events store, in a form something like:
+///  `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+///  (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
 class GetEventsResponse extends $pb.GeneratedMessage {
   factory GetEventsResponse({
     $core.Iterable<Event>? events,
@@ -407,6 +444,7 @@ class EventInfo extends $pb.GeneratedMessage {
   factory EventInfo({
     $core.bool? allowsRsvps,
     $core.bool? allowsAnonymousRsvps,
+    $core.int? maxAttendees,
   }) {
     final $result = create();
     if (allowsRsvps != null) {
@@ -414,6 +452,9 @@ class EventInfo extends $pb.GeneratedMessage {
     }
     if (allowsAnonymousRsvps != null) {
       $result.allowsAnonymousRsvps = allowsAnonymousRsvps;
+    }
+    if (maxAttendees != null) {
+      $result.maxAttendees = maxAttendees;
     }
     return $result;
   }
@@ -424,6 +465,7 @@ class EventInfo extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
+    ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
     ..hasRequiredFields = false
   ;
 
@@ -465,6 +507,16 @@ class EventInfo extends $pb.GeneratedMessage {
   $core.bool hasAllowsAnonymousRsvps() => $_has(1);
   @$pb.TagNumber(2)
   void clearAllowsAnonymousRsvps() => clearField(2);
+
+  /// No effect unless `allows_rsvps` is true.
+  @$pb.TagNumber(3)
+  $core.int get maxAttendees => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set maxAttendees($core.int v) { $_setUnsignedInt32(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasMaxAttendees() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearMaxAttendees() => clearField(3);
 }
 
 class EventInstance extends $pb.GeneratedMessage {
@@ -614,12 +666,21 @@ class EventInstance extends $pb.GeneratedMessage {
 /// To be used for ticketing, RSVPs, etc.
 /// Stored as JSON in the database.
 class EventInstanceInfo extends $pb.GeneratedMessage {
-  factory EventInstanceInfo() => create();
+  factory EventInstanceInfo({
+    EventInstanceRsvpInfo? rsvpInfo,
+  }) {
+    final $result = create();
+    if (rsvpInfo != null) {
+      $result.rsvpInfo = rsvpInfo;
+    }
+    return $result;
+  }
   EventInstanceInfo._() : super();
   factory EventInstanceInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory EventInstanceInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<EventInstanceRsvpInfo>(1, _omitFieldNames ? '' : 'rsvpInfo', subBuilder: EventInstanceRsvpInfo.create)
     ..hasRequiredFields = false
   ;
 
@@ -643,6 +704,181 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   @$core.pragma('dart2js:noInline')
   static EventInstanceInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceInfo>(create);
   static EventInstanceInfo? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  EventInstanceRsvpInfo get rsvpInfo => $_getN(0);
+  @$pb.TagNumber(1)
+  set rsvpInfo(EventInstanceRsvpInfo v) { setField(1, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasRsvpInfo() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRsvpInfo() => clearField(1);
+  @$pb.TagNumber(1)
+  EventInstanceRsvpInfo ensureRsvpInfo() => $_ensure(0);
+}
+
+class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
+  factory EventInstanceRsvpInfo({
+    $core.bool? allowsRsvps,
+    $core.bool? allowsAnonymousRsvps,
+    $core.int? maxAttendees,
+    $core.int? goingRsvps,
+    $core.int? goingAttendees,
+    $core.int? interestedRsvps,
+    $core.int? interestedAttendees,
+    $core.int? invitedRsvps,
+    $core.int? invitedAttendees,
+  }) {
+    final $result = create();
+    if (allowsRsvps != null) {
+      $result.allowsRsvps = allowsRsvps;
+    }
+    if (allowsAnonymousRsvps != null) {
+      $result.allowsAnonymousRsvps = allowsAnonymousRsvps;
+    }
+    if (maxAttendees != null) {
+      $result.maxAttendees = maxAttendees;
+    }
+    if (goingRsvps != null) {
+      $result.goingRsvps = goingRsvps;
+    }
+    if (goingAttendees != null) {
+      $result.goingAttendees = goingAttendees;
+    }
+    if (interestedRsvps != null) {
+      $result.interestedRsvps = interestedRsvps;
+    }
+    if (interestedAttendees != null) {
+      $result.interestedAttendees = interestedAttendees;
+    }
+    if (invitedRsvps != null) {
+      $result.invitedRsvps = invitedRsvps;
+    }
+    if (invitedAttendees != null) {
+      $result.invitedAttendees = invitedAttendees;
+    }
+    return $result;
+  }
+  EventInstanceRsvpInfo._() : super();
+  factory EventInstanceRsvpInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory EventInstanceRsvpInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceRsvpInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
+    ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
+    ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
+    ..a<$core.int>(4, _omitFieldNames ? '' : 'goingRsvps', $pb.PbFieldType.OU3)
+    ..a<$core.int>(5, _omitFieldNames ? '' : 'goingAttendees', $pb.PbFieldType.OU3)
+    ..a<$core.int>(6, _omitFieldNames ? '' : 'interestedRsvps', $pb.PbFieldType.OU3)
+    ..a<$core.int>(7, _omitFieldNames ? '' : 'interestedAttendees', $pb.PbFieldType.OU3)
+    ..a<$core.int>(8, _omitFieldNames ? '' : 'invitedRsvps', $pb.PbFieldType.OU3)
+    ..a<$core.int>(9, _omitFieldNames ? '' : 'invitedAttendees', $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  EventInstanceRsvpInfo clone() => EventInstanceRsvpInfo()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  EventInstanceRsvpInfo copyWith(void Function(EventInstanceRsvpInfo) updates) => super.copyWith((message) => updates(message as EventInstanceRsvpInfo)) as EventInstanceRsvpInfo;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static EventInstanceRsvpInfo create() => EventInstanceRsvpInfo._();
+  EventInstanceRsvpInfo createEmptyInstance() => create();
+  static $pb.PbList<EventInstanceRsvpInfo> createRepeated() => $pb.PbList<EventInstanceRsvpInfo>();
+  @$core.pragma('dart2js:noInline')
+  static EventInstanceRsvpInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceRsvpInfo>(create);
+  static EventInstanceRsvpInfo? _defaultInstance;
+
+  /// Overrides `EventInfo.allows_rsvps`, if set, for this instance.
+  @$pb.TagNumber(1)
+  $core.bool get allowsRsvps => $_getBF(0);
+  @$pb.TagNumber(1)
+  set allowsRsvps($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasAllowsRsvps() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearAllowsRsvps() => clearField(1);
+
+  /// Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance.
+  @$pb.TagNumber(2)
+  $core.bool get allowsAnonymousRsvps => $_getBF(1);
+  @$pb.TagNumber(2)
+  set allowsAnonymousRsvps($core.bool v) { $_setBool(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasAllowsAnonymousRsvps() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAllowsAnonymousRsvps() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get maxAttendees => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set maxAttendees($core.int v) { $_setUnsignedInt32(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasMaxAttendees() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearMaxAttendees() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get goingRsvps => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set goingRsvps($core.int v) { $_setUnsignedInt32(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasGoingRsvps() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearGoingRsvps() => clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get goingAttendees => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set goingAttendees($core.int v) { $_setUnsignedInt32(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasGoingAttendees() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearGoingAttendees() => clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.int get interestedRsvps => $_getIZ(5);
+  @$pb.TagNumber(6)
+  set interestedRsvps($core.int v) { $_setUnsignedInt32(5, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasInterestedRsvps() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearInterestedRsvps() => clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.int get interestedAttendees => $_getIZ(6);
+  @$pb.TagNumber(7)
+  set interestedAttendees($core.int v) { $_setUnsignedInt32(6, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasInterestedAttendees() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearInterestedAttendees() => clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.int get invitedRsvps => $_getIZ(7);
+  @$pb.TagNumber(8)
+  set invitedRsvps($core.int v) { $_setUnsignedInt32(7, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasInvitedRsvps() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearInvitedRsvps() => clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.int get invitedAttendees => $_getIZ(8);
+  @$pb.TagNumber(9)
+  set invitedAttendees($core.int v) { $_setUnsignedInt32(8, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasInvitedAttendees() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearInvitedAttendees() => clearField(9);
 }
 
 class GetEventAttendancesRequest extends $pb.GeneratedMessage {
@@ -759,17 +995,10 @@ enum EventAttendance_Attendee {
   notSet
 }
 
-///  Describes the attendance of a user at an `EventInstance`. Such as:
-///  * A user's RSVP to an `EventInstance`.
-///  * Invitation status of a user to an `EventInstance`.
-///  * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
-///
-///  `EventAttendance.status` works like a state machine, but state transitions are governed only
-///  by the current time and the start/end times of `EventInstance`s:
-///  * Before an event starts, EventAttendance essentially only describes RSVPs and invitations.
-///  * After an event ends, EventAttendance describes what RSVPs were before the event ended, and users can also indicate
-///  they `WENT` or `DID_NOT_GO`. Invitations can no longer be created.
-///  * During an event, invites, can be sent, RSVPs can be made, *and* users can indicate they `WENT` or `DID_NOT_GO`.
+/// Could be called an "RSVP." Describes the attendance of a user at an `EventInstance`. Such as:
+/// * A user's RSVP to an `EventInstance` (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+/// * Invitation status of a user to an `EventInstance`.
+/// * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
 class EventAttendance extends $pb.GeneratedMessage {
   factory EventAttendance({
     $core.String? id,
@@ -874,6 +1103,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   EventAttendance_Attendee whichAttendee() => _EventAttendance_AttendeeByTag[$_whichOneof(0)]!;
   void clearAttendee() => clearField($_whichOneof(0));
 
+  /// Unique server-generated ID for the attendance.
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -883,6 +1113,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
+  /// ID of the `EventInstance` the attendance is for.
   @$pb.TagNumber(2)
   $core.String get eventInstanceId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -892,6 +1123,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearEventInstanceId() => clearField(2);
 
+  /// If the attendance is non-anonymous, core data about the user.
   @$pb.TagNumber(3)
   UserAttendee get userAttendee => $_getN(2);
   @$pb.TagNumber(3)
@@ -903,6 +1135,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   UserAttendee ensureUserAttendee() => $_ensure(2);
 
+  /// If the attendance is anonymous, core data about the anonymous attendee.
   @$pb.TagNumber(4)
   AnonymousAttendee get anonymousAttendee => $_getN(3);
   @$pb.TagNumber(4)
@@ -914,6 +1147,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   AnonymousAttendee ensureAnonymousAttendee() => $_ensure(3);
 
+  /// Number of guests including the RSVPing user. (Minimum 1).
   @$pb.TagNumber(5)
   $core.int get numberOfGuests => $_getIZ(4);
   @$pb.TagNumber(5)
@@ -923,6 +1157,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearNumberOfGuests() => clearField(5);
 
+  /// The user's RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
   @$pb.TagNumber(6)
   AttendanceStatus get status => $_getN(5);
   @$pb.TagNumber(6)
@@ -932,6 +1167,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   void clearStatus() => clearField(6);
 
+  /// User who invited the attendee. (Not yet used.)
   @$pb.TagNumber(7)
   $core.String get invitingUserId => $_getSZ(6);
   @$pb.TagNumber(7)
@@ -941,6 +1177,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   void clearInvitingUserId() => clearField(7);
 
+  /// Public note for everyone who can see the event to see.
   @$pb.TagNumber(8)
   $core.String get privateNote => $_getSZ(7);
   @$pb.TagNumber(8)
@@ -950,6 +1187,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearPrivateNote() => clearField(8);
 
+  /// Private note for the event owner.
   @$pb.TagNumber(9)
   $core.String get publicNote => $_getSZ(8);
   @$pb.TagNumber(9)

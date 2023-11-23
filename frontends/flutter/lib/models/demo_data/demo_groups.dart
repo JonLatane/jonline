@@ -93,60 +93,60 @@ enum DemoGroup {
 
 final Map<DemoGroup, Group> _demoGroups = Map.unmodifiable({
   DemoGroup.coolKidsClub: Group()
-    ..name = "Cool Kids Club"
+    ..name = "Cool Kids Club 🤫"
     ..description = "Only the coolest ppl get in. Approval required to join."
     ..defaultMembershipModeration = Moderation.PENDING
     ..visibility = Visibility.SERVER_PUBLIC,
   DemoGroup.everyoneWelcome: Group()
-    ..name = "Everyone Welcome"
+    ..name = "Everyone Welcome 🤙"
     ..description = "Feel free to join!",
   DemoGroup.music: Group()
-    ..name = "Funktastic"
+    ..name = "Funktastic 🎶"
     ..description =
-        "🎵 Post your Spotify playlists, audio tracks, videos and whatever",
+        "For music lovers. Post your Spotify playlists, audio tracks, videos and whatever",
   DemoGroup.fitness: Group()
-    ..name = "Fitness"
+    ..name = "Fitness 🏋️‍♀️"
     ..description =
         "Climbing, biking, running, spikeball, other things involving balls\n\nAlso barbells.\n\nAnd fuck it dance too!",
   DemoGroup.makers: Group()
-    ..name = "Makers"
+    ..name = "Makers 🧶"
     ..description =
         "Creators of art, music, furniture, knitting, software... just make stuff!",
   DemoGroup.yoga: Group()
-    ..name = "Yoga"
+    ..name = "Yoga 🧘‍♂️"
     ..description = "🤸‍♀️🧘‍♀️🧘‍♂️🤸‍♂️🧘‍♀️🧘‍♂️🤸‍♀️",
   DemoGroup.engineering: Group()
-    ..name = "Real Engineering"
+    ..name = "Real Engineering 🪄"
     ..description = "Like with real things not just logic 😂😭",
   DemoGroup.math: Group()
-    ..name = "Math"
+    ..name = "Math 🧮"
     ..description =
         "Shit that is literally not real but also the basis of reality",
   DemoGroup.science: Group()
-    ..name = "Science"
+    ..name = "Science 🧪"
     ..description = "Straight from the lab bench",
   DemoGroup.tech: Group()
-    ..name = "Tech"
+    ..name = "Tech 📡"
     ..description =
         "General tech 🤓🤖💚\n\nNo billionaire-worship bullshit allowed.",
   DemoGroup.gamers: Group()
-    ..name = "Gamers"
+    ..name = "Gamers 👾"
     ..description =
         "Honestly just tryna play my Zeldas and Final Fantasies and Marios, is this how my dad feels with his classic blues/funk-infused rock love?",
   DemoGroup.homeImprovement: Group()
-    ..name = "Home Improvement"
+    ..name = "Home Improvement 🪚"
     ..description = "An endless and delightful hole",
   DemoGroup.toolSharing: Group()
-    ..name = "Tool Sharing"
+    ..name = "Tool Sharing 🛠️"
     ..description = "Making Marx proud",
   DemoGroup.cooking: Group()
-    ..name = "Cooking"
+    ..name = "Cooking 🍳"
     ..description = "😋 on the cheap and local",
   DemoGroup.restaurants: Group()
-    ..name = "Restaurants"
+    ..name = "Restaurants 👨‍🍳"
     ..description = "Tasty food and good vibes",
   DemoGroup.programming: Group()
-    ..name = "Programming"
+    ..name = "Programming ⌨️"
     ..description =
         "Math for people who want to make money, plus dealing with other people who want to make money without doing math",
 }.map((key, value) => MapEntry(key, value.jonRebuild((e) {

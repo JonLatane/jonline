@@ -51,7 +51,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const [currentPage, setCurrentPage] = useState(0);
   const { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
     ? useGroupEventPages(selectedGroup.id, currentPage, { filter: timeFilter })
-    : useEventPages(EventListingType.PUBLIC_EVENTS, currentPage, { filter: timeFilter });
+    : useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, currentPage, { filter: timeFilter });
 
   useEffect(() => {
     if (firstPageLoaded) {

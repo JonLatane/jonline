@@ -266,7 +266,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                             fontWeight: FontWeight.w300,
                             color: Colors.grey),
                       ),
-                      if (author?.hasAvatar() ?? false ?? false)
+                      if (author?.hasAvatar() ?? false)
                         Padding(
                           padding: const EdgeInsets.only(right: 5.0),
                           child: CircleAvatar(
@@ -383,6 +383,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
     }
 
     final card = Card(
+        color: Colors.grey[800],
         child: widget.onTap == null
             ? view
             : InkWell(onTap: widget.onTap, child: view));
@@ -727,6 +728,7 @@ class _PostPreviewGroupChooserState
         context: context,
         position: position,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        color: Colors.grey[700],
         // color: (musicBackgroundColor.luminance < 0.5
         //         ? subBackgroundColor
         //         : musicBackgroundColor)

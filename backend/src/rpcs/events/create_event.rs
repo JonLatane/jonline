@@ -20,7 +20,7 @@ pub fn create_event(
         &user.username,
         user.id
     );
-    validate_permission(&user, Permission::CreateEvents)?;
+    validate_permission(&Some(&user), Permission::CreateEvents)?;
     let configuration = crate::rpcs::get_server_configuration_proto(conn)?;
     let moderation = match &configuration
         .event_settings
@@ -60,10 +60,10 @@ pub fn create_event(
                 };
                 match visibility {
                     Visibility::GlobalPublic => {
-                        validate_permission(&user, Permission::PublishEventsGlobally)?
+                        validate_permission(&Some(&user), Permission::PublishEventsGlobally)?
                     }
                     Visibility::ServerPublic => {
-                        validate_permission(&user, Permission::PublishEventsLocally)?
+                        validate_permission(&Some(&user), Permission::PublishEventsLocally)?
                     }
                     _ => {}
                 };
@@ -86,8 +86,8 @@ pub fn create_event(
         v => v,
     };
     match visibility {
-        Visibility::GlobalPublic => validate_permission(&user, Permission::PublishEventsGlobally)?,
-        Visibility::ServerPublic => validate_permission(&user, Permission::PublishEventsLocally)?,
+        Visibility::GlobalPublic => validate_permission(&Some(user), Permission::PublishEventsGlobally)?,
+        Visibility::ServerPublic => validate_permission(&Some(user), Permission::PublishEventsLocally)?,
         _ => {}
     };
     let author = models::Author {

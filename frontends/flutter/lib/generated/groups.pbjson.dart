@@ -46,6 +46,7 @@ const Group$json = {
     {'1': 'member_count', '3': 11, '4': 1, '5': 13, '10': 'memberCount'},
     {'1': 'post_count', '3': 12, '4': 1, '5': 13, '10': 'postCount'},
     {'1': 'event_count', '3': 13, '4': 1, '5': 13, '10': 'eventCount'},
+    {'1': 'non_member_permissions', '3': 18, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'nonMemberPermissions'},
     {'1': 'current_user_membership', '3': 19, '4': 1, '5': 11, '6': '.jonline.Membership', '9': 1, '10': 'currentUserMembership', '17': true},
     {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'updatedAt', '17': true},
@@ -70,12 +71,13 @@ final $typed_data.Uint8List groupDescriptor = $convert.base64Decode(
     'b24YCSABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SFmRlZmF1bHRFdmVudE1vZGVyYXRpb24SMw'
     'oKdmlzaWJpbGl0eRgKIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIhCgxt'
     'ZW1iZXJfY291bnQYCyABKA1SC21lbWJlckNvdW50Eh0KCnBvc3RfY291bnQYDCABKA1SCXBvc3'
-    'RDb3VudBIfCgtldmVudF9jb3VudBgNIAEoDVIKZXZlbnRDb3VudBJQChdjdXJyZW50X3VzZXJf'
-    'bWVtYmVyc2hpcBgTIAEoCzITLmpvbmxpbmUuTWVtYmVyc2hpcEgBUhVjdXJyZW50VXNlck1lbW'
-    'JlcnNoaXCIAQESOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3Rh'
-    'bXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GBUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbW'
-    'VzdGFtcEgCUgl1cGRhdGVkQXSIAQFCCQoHX2F2YXRhckIaChhfY3VycmVudF91c2VyX21lbWJl'
-    'cnNoaXBCDQoLX3VwZGF0ZWRfYXQ=');
+    'RDb3VudBIfCgtldmVudF9jb3VudBgNIAEoDVIKZXZlbnRDb3VudBJJChZub25fbWVtYmVyX3Bl'
+    'cm1pc3Npb25zGBIgAygOMhMuam9ubGluZS5QZXJtaXNzaW9uUhRub25NZW1iZXJQZXJtaXNzaW'
+    '9ucxJQChdjdXJyZW50X3VzZXJfbWVtYmVyc2hpcBgTIAEoCzITLmpvbmxpbmUuTWVtYmVyc2hp'
+    'cEgBUhVjdXJyZW50VXNlck1lbWJlcnNoaXCIAQESOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2'
+    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GBUgASgLMhou'
+    'Z29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgCUgl1cGRhdGVkQXSIAQFCCQoHX2F2YXRhckIaCh'
+    'hfY3VycmVudF91c2VyX21lbWJlcnNoaXBCDQoLX3VwZGF0ZWRfYXQ=');
 
 @$core.Deprecated('Use getGroupsRequestDescriptor instead')
 const GetGroupsRequest$json = {

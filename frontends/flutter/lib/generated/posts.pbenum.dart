@@ -15,7 +15,7 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 /// A high-level enumeration of general ways of requesting posts.
 class PostListingType extends $pb.ProtobufEnum {
-  static const PostListingType PUBLIC_POSTS = PostListingType._(0, _omitEnumNames ? '' : 'PUBLIC_POSTS');
+  static const PostListingType ALL_ACCESSIBLE_POSTS = PostListingType._(0, _omitEnumNames ? '' : 'ALL_ACCESSIBLE_POSTS');
   static const PostListingType FOLLOWING_POSTS = PostListingType._(1, _omitEnumNames ? '' : 'FOLLOWING_POSTS');
   static const PostListingType MY_GROUPS_POSTS = PostListingType._(2, _omitEnumNames ? '' : 'MY_GROUPS_POSTS');
   static const PostListingType DIRECT_POSTS = PostListingType._(3, _omitEnumNames ? '' : 'DIRECT_POSTS');
@@ -24,7 +24,7 @@ class PostListingType extends $pb.ProtobufEnum {
   static const PostListingType GROUP_POSTS_PENDING_MODERATION = PostListingType._(11, _omitEnumNames ? '' : 'GROUP_POSTS_PENDING_MODERATION');
 
   static const $core.List<PostListingType> values = <PostListingType> [
-    PUBLIC_POSTS,
+    ALL_ACCESSIBLE_POSTS,
     FOLLOWING_POSTS,
     MY_GROUPS_POSTS,
     DIRECT_POSTS,

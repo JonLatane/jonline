@@ -111,7 +111,8 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
   Widget build(BuildContext context) {
     bool following = user.currentUserFollow.targetUserModeration.passes;
     bool cannotFollow = appState.selectedAccount == null || currentUserProfile;
-    final backgroundColor = currentUserProfile ? appState.navColor : null;
+    final backgroundColor =
+        currentUserProfile ? appState.navColor : Colors.grey[800];
     final textColor = backgroundColor?.textColor;
     // print("user.targetCurrentUserFollow: ${user.targetCurrentUserFollow}");
     return Card(

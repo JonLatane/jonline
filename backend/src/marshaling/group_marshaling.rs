@@ -55,9 +55,11 @@ impl ToProtoGroup for models::Group {
             shortname: self.shortname.to_owned(),
             description: self.description.to_owned(),
             avatar,
-            // avatar_media_id: self.avatar_media_id.to_owned().map(|id| id.to_proto_id()),
             default_membership_permissions: self
                 .default_membership_permissions
+                .to_i32_permissions(),
+            non_member_permissions: self
+                .non_member_permissions
                 .to_i32_permissions(),
             default_membership_moderation: self.default_membership_moderation.to_i32_moderation(),
             default_post_moderation: self.default_post_moderation.to_i32_moderation(),
@@ -70,7 +72,6 @@ impl ToProtoGroup for models::Group {
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
         };
-        // log::info!("Converted Group: {:?}", group);
         return group;
     }
 }

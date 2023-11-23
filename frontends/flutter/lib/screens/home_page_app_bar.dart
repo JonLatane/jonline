@@ -21,11 +21,11 @@ extension HomePageAppBar on HomePageState {
       title: titleWidget ??
           Text(
             title,
-            // style: const TextStyle(
-            // fontSize: 20,
-            // color: Colors.white,
-            // fontWeight: FontWeight.w200,
-            // ),
+            style: const TextStyle(
+              // fontSize: 20,
+              color: Colors.white,
+              // fontWeight: FontWeight.w200,
+            ),
           ),
       key: Key("appbar-${appState.colorTheme.value?.hashCode}"),
       leading: leadingNavWidget,
@@ -124,6 +124,7 @@ extension HomePageAppBar on HomePageState {
     }
     return const AutoLeadingButton(
       // showIfChildCanPop: false,
+      color: Colors.white,
       showIfParentCanPop: false,
       ignorePagelessRoutes: true,
     );

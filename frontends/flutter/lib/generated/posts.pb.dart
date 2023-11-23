@@ -23,7 +23,7 @@ export 'posts.pbenum.dart';
 
 ///  Valid GetPostsRequest formats:
 ///
-///  - `{[listing_type: PublicPosts]}`
+///  - `{[listing_type: AllAccessiblePosts]}`
 ///      - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
 ///  - `{listing_type:MyGroupsPosts|FollowingPosts}`
 ///      - Get posts from groups you're a member of or from users you're following. Authorization required.
@@ -81,7 +81,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'groupId')
     ..a<$core.int>(4, _omitFieldNames ? '' : 'replyDepth', $pb.PbFieldType.OU3)
     ..e<PostContext>(5, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
-    ..e<PostListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: PostListingType.PUBLIC_POSTS, valueOf: PostListingType.valueOf, enumValues: PostListingType.values)
+    ..e<PostListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: PostListingType.ALL_ACCESSIBLE_POSTS, valueOf: PostListingType.valueOf, enumValues: PostListingType.values)
     ..a<$core.int>(15, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
     ..hasRequiredFields = false
   ;

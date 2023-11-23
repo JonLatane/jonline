@@ -45,12 +45,12 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
 
   const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } = selectedGroup
     ? useGroupPostPages(selectedGroup.id, currentPostsPage)
-    : usePostPages(PostListingType.PUBLIC_POSTS, currentPostsPage);
+    : usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPostsPage);
 
   // Only load the first page of events on this screen.
   const { events, loadingEvents, reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
     ? useGroupEventPages(selectedGroup.id, 0)
-    : useEventPages(EventListingType.PUBLIC_EVENTS, 0);
+    : useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, 0);
 
   function onHomePressed() {
     if (isClient && window.scrollY > 0) {

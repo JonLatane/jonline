@@ -117,6 +117,7 @@ CREATE TABLE groups (
   description TEXT NOT NULL DEFAULT '',
   avatar_media_id BIGINT NULL REFERENCES media ON DELETE SET NULL,
   visibility VARCHAR NOT NULL DEFAULT 'SERVER_PUBLIC',
+  non_member_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   default_membership_permissions JSONB NOT NULL DEFAULT '[]'::JSONB,
   default_membership_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',
   default_post_moderation VARCHAR NOT NULL DEFAULT 'UNMODERATED',

@@ -25,11 +25,11 @@ pub fn update_post(
 
     let mut admin = false;
     let mut moderator = false;
-    match validate_permission(&current_user, Permission::Admin) {
+    match validate_permission(&Some(current_user), Permission::Admin) {
         Ok(_) => admin = true,
         Err(_) => {}
     };
-    match validate_permission(&current_user, Permission::ModeratePosts) {
+    match validate_permission(&Some(current_user), Permission::ModeratePosts) {
         Ok(_) => moderator = true,
         Err(_) => {}
     };
@@ -50,7 +50,7 @@ pub fn update_post(
 
     if !self_update {
         validate_any_permission(
-            &current_user,
+            &Some(current_user),
             vec![Permission::Admin, Permission::ModeratePosts],
         )?;
     }

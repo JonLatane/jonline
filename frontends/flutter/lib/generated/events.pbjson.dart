@@ -17,7 +17,7 @@ import 'dart:typed_data' as $typed_data;
 const EventListingType$json = {
   '1': 'EventListingType',
   '2': [
-    {'1': 'PUBLIC_EVENTS', '2': 0},
+    {'1': 'ALL_ACCESSIBLE_EVENTS', '2': 0},
     {'1': 'FOLLOWING_EVENTS', '2': 1},
     {'1': 'MY_GROUPS_EVENTS', '2': 2},
     {'1': 'DIRECT_EVENTS', '2': 3},
@@ -29,10 +29,10 @@ const EventListingType$json = {
 
 /// Descriptor for `EventListingType`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List eventListingTypeDescriptor = $convert.base64Decode(
-    'ChBFdmVudExpc3RpbmdUeXBlEhEKDVBVQkxJQ19FVkVOVFMQABIUChBGT0xMT1dJTkdfRVZFTl'
-    'RTEAESFAoQTVlfR1JPVVBTX0VWRU5UUxACEhEKDURJUkVDVF9FVkVOVFMQAxIdChlFVkVOVFNf'
-    'UEVORElOR19NT0RFUkFUSU9OEAQSEAoMR1JPVVBfRVZFTlRTEAoSIwofR1JPVVBfRVZFTlRTX1'
-    'BFTkRJTkdfTU9ERVJBVElPThAL');
+    'ChBFdmVudExpc3RpbmdUeXBlEhkKFUFMTF9BQ0NFU1NJQkxFX0VWRU5UUxAAEhQKEEZPTExPV0'
+    'lOR19FVkVOVFMQARIUChBNWV9HUk9VUFNfRVZFTlRTEAISEQoNRElSRUNUX0VWRU5UUxADEh0K'
+    'GUVWRU5UU19QRU5ESU5HX01PREVSQVRJT04QBBIQCgxHUk9VUF9FVkVOVFMQChIjCh9HUk9VUF'
+    '9FVkVOVFNfUEVORElOR19NT0RFUkFUSU9OEAs=');
 
 @$core.Deprecated('Use attendanceStatusDescriptor instead')
 const AttendanceStatus$json = {
@@ -59,6 +59,8 @@ const GetEventsRequest$json = {
     {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupId', '17': true},
     {'1': 'event_instance_id', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'eventInstanceId', '17': true},
     {'1': 'time_filter', '3': 5, '4': 1, '5': 11, '6': '.jonline.TimeFilter', '9': 4, '10': 'timeFilter', '17': true},
+    {'1': 'attendee_id', '3': 6, '4': 1, '5': 9, '9': 5, '10': 'attendeeId', '17': true},
+    {'1': 'attendance_statuses', '3': 7, '4': 3, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'attendanceStatuses'},
     {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.EventListingType', '10': 'listingType'},
   ],
   '8': [
@@ -67,6 +69,7 @@ const GetEventsRequest$json = {
     {'1': '_group_id'},
     {'1': '_event_instance_id'},
     {'1': '_time_filter'},
+    {'1': '_attendee_id'},
   ],
 };
 
@@ -76,9 +79,12 @@ final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
     'V0aG9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEh4KCGdyb3VwX2lkGAMgASgJ'
     'SAJSB2dyb3VwSWSIAQESLwoRZXZlbnRfaW5zdGFuY2VfaWQYBCABKAlIA1IPZXZlbnRJbnN0YW'
     '5jZUlkiAEBEjkKC3RpbWVfZmlsdGVyGAUgASgLMhMuam9ubGluZS5UaW1lRmlsdGVySARSCnRp'
-    'bWVGaWx0ZXKIAQESPAoMbGlzdGluZ190eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3Rpbm'
-    'dUeXBlUgtsaXN0aW5nVHlwZUILCglfZXZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9n'
-    'cm91cF9pZEIUChJfZXZlbnRfaW5zdGFuY2VfaWRCDgoMX3RpbWVfZmlsdGVy');
+    'bWVGaWx0ZXKIAQESJAoLYXR0ZW5kZWVfaWQYBiABKAlIBVIKYXR0ZW5kZWVJZIgBARJKChNhdH'
+    'RlbmRhbmNlX3N0YXR1c2VzGAcgAygOMhkuam9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUhJhdHRl'
+    'bmRhbmNlU3RhdHVzZXMSPAoMbGlzdGluZ190eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3'
+    'RpbmdUeXBlUgtsaXN0aW5nVHlwZUILCglfZXZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsK'
+    'CV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdGFuY2VfaWRCDgoMX3RpbWVfZmlsdGVyQg4KDF9hdH'
+    'RlbmRlZV9pZA==');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {
@@ -143,18 +149,21 @@ const EventInfo$json = {
   '2': [
     {'1': 'allows_rsvps', '3': 1, '4': 1, '5': 8, '9': 0, '10': 'allowsRsvps', '17': true},
     {'1': 'allows_anonymous_rsvps', '3': 2, '4': 1, '5': 8, '9': 1, '10': 'allowsAnonymousRsvps', '17': true},
+    {'1': 'max_attendees', '3': 3, '4': 1, '5': 13, '9': 2, '10': 'maxAttendees', '17': true},
   ],
   '8': [
     {'1': '_allows_rsvps'},
     {'1': '_allows_anonymous_rsvps'},
+    {'1': '_max_attendees'},
   ],
 };
 
 /// Descriptor for `EventInfo`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventInfoDescriptor = $convert.base64Decode(
     'CglFdmVudEluZm8SJgoMYWxsb3dzX3JzdnBzGAEgASgISABSC2FsbG93c1JzdnBziAEBEjkKFm'
-    'FsbG93c19hbm9ueW1vdXNfcnN2cHMYAiABKAhIAVIUYWxsb3dzQW5vbnltb3VzUnN2cHOIAQFC'
-    'DwoNX2FsbG93c19yc3Zwc0IZChdfYWxsb3dzX2Fub255bW91c19yc3Zwcw==');
+    'FsbG93c19hbm9ueW1vdXNfcnN2cHMYAiABKAhIAVIUYWxsb3dzQW5vbnltb3VzUnN2cHOIAQES'
+    'KAoNbWF4X2F0dGVuZGVlcxgDIAEoDUgCUgxtYXhBdHRlbmRlZXOIAQFCDwoNX2FsbG93c19yc3'
+    'Zwc0IZChdfYWxsb3dzX2Fub255bW91c19yc3Zwc0IQCg5fbWF4X2F0dGVuZGVlcw==');
 
 @$core.Deprecated('Use eventInstanceDescriptor instead')
 const EventInstance$json = {
@@ -186,11 +195,60 @@ final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {
   '1': 'EventInstanceInfo',
+  '2': [
+    {'1': 'rsvp_info', '3': 1, '4': 1, '5': 11, '6': '.jonline.EventInstanceRsvpInfo', '9': 0, '10': 'rsvpInfo', '17': true},
+  ],
+  '8': [
+    {'1': '_rsvp_info'},
+  ],
 };
 
 /// Descriptor for `EventInstanceInfo`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventInstanceInfoDescriptor = $convert.base64Decode(
-    'ChFFdmVudEluc3RhbmNlSW5mbw==');
+    'ChFFdmVudEluc3RhbmNlSW5mbxJACglyc3ZwX2luZm8YASABKAsyHi5qb25saW5lLkV2ZW50SW'
+    '5zdGFuY2VSc3ZwSW5mb0gAUghyc3ZwSW5mb4gBAUIMCgpfcnN2cF9pbmZv');
+
+@$core.Deprecated('Use eventInstanceRsvpInfoDescriptor instead')
+const EventInstanceRsvpInfo$json = {
+  '1': 'EventInstanceRsvpInfo',
+  '2': [
+    {'1': 'allows_rsvps', '3': 1, '4': 1, '5': 8, '9': 0, '10': 'allowsRsvps', '17': true},
+    {'1': 'allows_anonymous_rsvps', '3': 2, '4': 1, '5': 8, '9': 1, '10': 'allowsAnonymousRsvps', '17': true},
+    {'1': 'max_attendees', '3': 3, '4': 1, '5': 13, '9': 2, '10': 'maxAttendees', '17': true},
+    {'1': 'going_rsvps', '3': 4, '4': 1, '5': 13, '9': 3, '10': 'goingRsvps', '17': true},
+    {'1': 'going_attendees', '3': 5, '4': 1, '5': 13, '9': 4, '10': 'goingAttendees', '17': true},
+    {'1': 'interested_rsvps', '3': 6, '4': 1, '5': 13, '9': 5, '10': 'interestedRsvps', '17': true},
+    {'1': 'interested_attendees', '3': 7, '4': 1, '5': 13, '9': 6, '10': 'interestedAttendees', '17': true},
+    {'1': 'invited_rsvps', '3': 8, '4': 1, '5': 13, '9': 7, '10': 'invitedRsvps', '17': true},
+    {'1': 'invited_attendees', '3': 9, '4': 1, '5': 13, '9': 8, '10': 'invitedAttendees', '17': true},
+  ],
+  '8': [
+    {'1': '_allows_rsvps'},
+    {'1': '_allows_anonymous_rsvps'},
+    {'1': '_max_attendees'},
+    {'1': '_going_rsvps'},
+    {'1': '_going_attendees'},
+    {'1': '_interested_rsvps'},
+    {'1': '_interested_attendees'},
+    {'1': '_invited_rsvps'},
+    {'1': '_invited_attendees'},
+  ],
+};
+
+/// Descriptor for `EventInstanceRsvpInfo`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List eventInstanceRsvpInfoDescriptor = $convert.base64Decode(
+    'ChVFdmVudEluc3RhbmNlUnN2cEluZm8SJgoMYWxsb3dzX3JzdnBzGAEgASgISABSC2FsbG93c1'
+    'JzdnBziAEBEjkKFmFsbG93c19hbm9ueW1vdXNfcnN2cHMYAiABKAhIAVIUYWxsb3dzQW5vbnlt'
+    'b3VzUnN2cHOIAQESKAoNbWF4X2F0dGVuZGVlcxgDIAEoDUgCUgxtYXhBdHRlbmRlZXOIAQESJA'
+    'oLZ29pbmdfcnN2cHMYBCABKA1IA1IKZ29pbmdSc3Zwc4gBARIsCg9nb2luZ19hdHRlbmRlZXMY'
+    'BSABKA1IBFIOZ29pbmdBdHRlbmRlZXOIAQESLgoQaW50ZXJlc3RlZF9yc3ZwcxgGIAEoDUgFUg'
+    '9pbnRlcmVzdGVkUnN2cHOIAQESNgoUaW50ZXJlc3RlZF9hdHRlbmRlZXMYByABKA1IBlITaW50'
+    'ZXJlc3RlZEF0dGVuZGVlc4gBARIoCg1pbnZpdGVkX3JzdnBzGAggASgNSAdSDGludml0ZWRSc3'
+    'Zwc4gBARIwChFpbnZpdGVkX2F0dGVuZGVlcxgJIAEoDUgIUhBpbnZpdGVkQXR0ZW5kZWVziAEB'
+    'Qg8KDV9hbGxvd3NfcnN2cHNCGQoXX2FsbG93c19hbm9ueW1vdXNfcnN2cHNCEAoOX21heF9hdH'
+    'RlbmRlZXNCDgoMX2dvaW5nX3JzdnBzQhIKEF9nb2luZ19hdHRlbmRlZXNCEwoRX2ludGVyZXN0'
+    'ZWRfcnN2cHNCFwoVX2ludGVyZXN0ZWRfYXR0ZW5kZWVzQhAKDl9pbnZpdGVkX3JzdnBzQhQKEl'
+    '9pbnZpdGVkX2F0dGVuZGVlcw==');
 
 @$core.Deprecated('Use getEventAttendancesRequestDescriptor instead')
 const GetEventAttendancesRequest$json = {

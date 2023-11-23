@@ -18,7 +18,7 @@ pub fn create_group(
     user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Group, Status> {
-    validate_permission(&user, Permission::CreateGroups)?;
+    validate_permission(&Some(user), Permission::CreateGroups)?;
     validate_group(&request)?;
 
     let visibility = match request.visibility.to_proto_visibility() {
@@ -48,6 +48,7 @@ pub fn create_group(
         None => None,
     };
     let avatar_media_id = avatar.clone().map(|m| m.id);
+    let non_member_permissions = request.non_member_permissions.to_json_permissions();
     let mut default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();
     if request.default_membership_permissions.is_empty() {
@@ -69,6 +70,7 @@ pub fn create_group(
                     description,
                     avatar_media_id,
                     visibility,
+                    non_member_permissions,
                     default_membership_permissions,
                     default_membership_moderation,
                     default_post_moderation,

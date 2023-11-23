@@ -79,6 +79,7 @@ export interface Group {
   memberCount: number;
   postCount: number;
   eventCount: number;
+  nonMemberPermissions: Permission[];
   currentUserMembership?: Membership | undefined;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
@@ -136,6 +137,7 @@ function createBaseGroup(): Group {
     memberCount: 0,
     postCount: 0,
     eventCount: 0,
+    nonMemberPermissions: [],
     currentUserMembership: undefined,
     createdAt: undefined,
     updatedAt: undefined,
@@ -185,6 +187,11 @@ export const Group = {
     if (message.eventCount !== 0) {
       writer.uint32(104).uint32(message.eventCount);
     }
+    writer.uint32(146).fork();
+    for (const v of message.nonMemberPermissions) {
+      writer.int32(v);
+    }
+    writer.ldelim();
     if (message.currentUserMembership !== undefined) {
       Membership.encode(message.currentUserMembership, writer.uint32(154).fork()).ldelim();
     }
@@ -305,6 +312,23 @@ export const Group = {
 
           message.eventCount = reader.uint32();
           continue;
+        case 18:
+          if (tag === 144) {
+            message.nonMemberPermissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 146) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.nonMemberPermissions.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
         case 19:
           if (tag !== 154) {
             break;
@@ -356,6 +380,9 @@ export const Group = {
       memberCount: isSet(object.memberCount) ? globalThis.Number(object.memberCount) : 0,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : 0,
       eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : 0,
+      nonMemberPermissions: globalThis.Array.isArray(object?.nonMemberPermissions)
+        ? object.nonMemberPermissions.map((e: any) => permissionFromJSON(e))
+        : [],
       currentUserMembership: isSet(object.currentUserMembership)
         ? Membership.fromJSON(object.currentUserMembership)
         : undefined,
@@ -405,6 +432,9 @@ export const Group = {
     if (message.eventCount !== 0) {
       obj.eventCount = Math.round(message.eventCount);
     }
+    if (message.nonMemberPermissions?.length) {
+      obj.nonMemberPermissions = message.nonMemberPermissions.map((e) => permissionToJSON(e));
+    }
     if (message.currentUserMembership !== undefined) {
       obj.currentUserMembership = Membership.toJSON(message.currentUserMembership);
     }
@@ -437,6 +467,7 @@ export const Group = {
     message.memberCount = object.memberCount ?? 0;
     message.postCount = object.postCount ?? 0;
     message.eventCount = object.eventCount ?? 0;
+    message.nonMemberPermissions = object.nonMemberPermissions?.map((e) => e) || [];
     message.currentUserMembership =
       (object.currentUserMembership !== undefined && object.currentUserMembership !== null)
         ? Membership.fromPartial(object.currentUserMembership)

@@ -133,7 +133,8 @@ final List<DemoPost> _demoPosts = [
             "Introductory, Practical Web Development Principles You Don't Learn At School"
         ..content = '''
 * Ideally, do your job work in Chrome
-* Do your personal work in Safari, Firefox, or honestly even Edge - or whatever you want, really
+* Do your personal work in Safari, Firefox, or honestly even Edge - or whatever you want, really.
+    * Don't do work you can't easily do in a browser on a work machine.
 * A password manager is absolutely a necessary investment, probably before paying for an IDE or paying Apple/Google developer fees.
 '''),
   DemoPost(
@@ -217,7 +218,8 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
   DemoPost(
       [DemoGroup.everyoneWelcome],
       Post()
-        ..title = "My reddit profile, or at least the one I'd post here 🙃"
+        ..title =
+            "My Reddit profile, but I'd advise people to get off of that platform"
         ..link = "https://www.reddit.com/user/pseudocomposer"),
   DemoPost(
       [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],

@@ -6,7 +6,6 @@ use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
 use crate::schema::groups;
-use crate::schema::memberships;
 
 use crate::rpcs::validations::*;
 
@@ -16,17 +15,12 @@ pub fn delete_group(
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     validate_group(&request)?;
-    let user_membership = match memberships::table
-        .select(memberships::all_columns)
-        .filter(memberships::user_id.eq(user.id))
-        .filter(memberships::group_id.eq(request.id.to_db_id_or_err("id")?))
-        .first::<models::Membership>(conn)
-    {
-        Ok(membership) => Some(membership),
-        Err(diesel::NotFound) => None,
-        Err(_) => return Err(Status::new(Code::Internal, "data_error")),
-    };
-    validate_group_admin(&user, &user_membership)?;
+    let (group, membership) = models::get_group_and_membership(
+        request.id.to_db_id_or_err("id")?,
+        Some(user.id),
+        conn,
+    )?;
+    validate_group_admin(&Some(user), &group, &membership.as_ref())?;
 
     let group = groups::table
         .select(groups::all_columns)

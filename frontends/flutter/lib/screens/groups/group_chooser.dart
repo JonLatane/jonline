@@ -138,6 +138,7 @@ Future<Object> showGroupsMenu(
       context: context,
       position: position,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: Colors.grey[600],
       // color: (musicBackgroundColor.luminance < 0.5
       //         ? subBackgroundColor
       //         : musicBackgroundColor)

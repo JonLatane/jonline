@@ -68,6 +68,7 @@
     - [EventInfo](#jonline-EventInfo)
     - [EventInstance](#jonline-EventInstance)
     - [EventInstanceInfo](#jonline-EventInstanceInfo)
+    - [EventInstanceRsvpInfo](#jonline-EventInstanceRsvpInfo)
     - [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest)
     - [GetEventsRequest](#jonline-GetEventsRequest)
     - [GetEventsResponse](#jonline-GetEventsResponse)
@@ -158,37 +159,37 @@ proxy support. With this, both web and gRPC resources can live behind a CDN.
 | Login | [LoginRequest](#jonline-LoginRequest) | [RefreshTokenResponse](#jonline-RefreshTokenResponse) | Logs in a user and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.* |
 | AccessToken | [AccessTokenRequest](#jonline-AccessTokenRequest) | [AccessTokenResponse](#jonline-AccessTokenResponse) | Gets a new `access_token` (and possibly a new `refresh_token`, which should replace the old one in client storage), given a `refresh_token`. *Publicly accessible.* |
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#jonline-User) | Gets the current user. *Authenticated.* |
-| DeleteMedia | [Media](#jonline-Media) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users&#39; media requires `ADMIN` permissions. |
 | GetMedia | [GetMediaRequest](#jonline-GetMediaRequest) | [GetMediaResponse](#jonline-GetMediaResponse) | Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media). |
+| DeleteMedia | [Media](#jonline-Media) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users&#39; media requires `ADMIN` permissions. |
+| GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility. |
 | UpdateUser | [User](#jonline-User) | [User](#jonline-User) | Update a user by ID. *Authenticated.* Updating other users requires `ADMIN` permissions. |
 | DeleteUser | [User](#jonline-User) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user by ID. *Authenticated.* Deleting other users requires `ADMIN` permissions. |
-| GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility. |
 | CreateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Follow (or request to follow) a user. *Authenticated.* |
 | UpdateFollow | [Follow](#jonline-Follow) | [Follow](#jonline-Follow) | Used to approve follow requests. *Authenticated.* |
 | DeleteFollow | [Follow](#jonline-Follow) | [.google.protobuf.Empty](#google-protobuf-Empty) | Unfollow (or unrequest) a user. *Authenticated.* |
+| GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility. |
 | CreateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Creates a group with the current user as its admin. *Authenticated.* Requires the `CREATE_GROUPS` permission. |
 | UpdateGroup | [Group](#jonline-Group) | [Group](#jonline-Group) | Update a Groups&#39;s information, default membership permissions or moderation. *Authenticated.* Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user. |
 | DeleteGroup | [Group](#jonline-Group) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a Group. *Authenticated.* Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user. |
-| GetGroups | [GetGroupsRequest](#jonline-GetGroupsRequest) | [GetGroupsResponse](#jonline-GetGroupsResponse) | Gets Groups. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility. |
+| GetMembers | [GetMembersRequest](#jonline-GetMembersRequest) | [GetMembersResponse](#jonline-GetMembersResponse) | Get Members (User&#43;Membership) of a Group. *Authenticated.* |
 | CreateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.* Memberships and moderations are set to their defaults. |
 | UpdateMembership | [Membership](#jonline-Membership) | [Membership](#jonline-Membership) | Update aspects of a user&#39;s membership. *Authenticated.* Updating permissions requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user. Updating moderation (approving/denying/banning) requires the same, or `MODERATE_USERS` permissions within the group. |
 | DeleteMembership | [Membership](#jonline-Membership) | [.google.protobuf.Empty](#google-protobuf-Empty) | Leave a group (or cancel membership request). *Authenticated.* |
-| GetMembers | [GetMembersRequest](#jonline-GetMembersRequest) | [GetMembersResponse](#jonline-GetMembersResponse) | Get Members (User&#43;Membership) of a Group. *Authenticated.* |
+| GetPosts | [GetPostsRequest](#jonline-GetPostsRequest) | [GetPostsResponse](#jonline-GetPostsResponse) | Gets Posts. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility. |
 | CreatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Creates a Post. *Authenticated.* |
 | UpdatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Updates a Post. *Authenticated.* |
 | DeletePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* |
-| GetPosts | [GetPostsRequest](#jonline-GetPostsRequest) | [GetPostsResponse](#jonline-GetPostsResponse) | Gets Posts. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility. |
+| GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
 | CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. *Authenticated.* |
 | UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Group Moderators: Approve/Reject a GroupPost. *Authenticated.* |
 | DeleteGroupPost | [GroupPost](#jonline-GroupPost) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a GroupPost. *Authenticated.* |
-| GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
+| GetEvents | [GetEventsRequest](#jonline-GetEventsRequest) | [GetEventsResponse](#jonline-GetEventsResponse) | Gets Events. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility. |
 | CreateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates an Event. *Authenticated.* |
 | UpdateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates an Event. *Authenticated.* |
 | DeleteEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* |
-| GetEvents | [GetEventsRequest](#jonline-GetEventsRequest) | [GetEventsResponse](#jonline-GetEventsResponse) | Gets Events. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility. |
-| UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Authenticated or anonymous.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
-| DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Authenticated or anonymous.* |
-| GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Authenticated.* |
+| GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
+| UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
+| DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
 | ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. |
 | ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
 | StreamReplies | [Post](#jonline-Post) | [Post](#jonline-Post) stream | (TODO) Reply streaming interface. Currently just streams fake example data. |
@@ -704,10 +705,10 @@ and the media item&#39;s name (for alt text usage).
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| content_type | [string](#string) |  |  |
-| id | [string](#string) |  |  |
-| name | [string](#string) | optional |  |
-| generated | [bool](#bool) |  |  |
+| content_type | [string](#string) |  | The MIME content type of the media item. |
+| id | [string](#string) |  | The ID of the media item. |
+| name | [string](#string) | optional | An optional title for the media item. |
+| generated | [bool](#bool) |  | Indicates the media was generated by the server rather than uploaded manually by a user. |
 
 
 
@@ -820,6 +821,7 @@ and the media item&#39;s name (for alt text usage).
 | member_count | [uint32](#uint32) |  |  |
 | post_count | [uint32](#uint32) |  |  |
 | event_count | [uint32](#uint32) |  |  |
+| non_member_permissions | [Permission](#jonline-Permission) | repeated |  |
 | current_user_membership | [Membership](#jonline-Membership) | optional |  |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
@@ -912,7 +914,7 @@ Used for getting context about GroupPosts of an existing Post.
 ### GetPostsRequest
 Valid GetPostsRequest formats:
 
-- `{[listing_type: PublicPosts]}`
+- `{[listing_type: AllAccessiblePosts]}`
     - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
 - `{listing_type:MyGroupsPosts|FollowingPosts}`
     - Get posts from groups you&#39;re a member of or from users you&#39;re following. Authorization required.
@@ -1061,7 +1063,7 @@ A high-level enumeration of general ways of requesting posts.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PUBLIC_POSTS | 0 | Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible. Also usable for getting replies anywhere. |
+| ALL_ACCESSIBLE_POSTS | 0 | Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible. Also usable for getting replies anywhere. |
 | FOLLOWING_POSTS | 1 | Returns posts from users the user is following. |
 | MY_GROUPS_POSTS | 2 | Returns posts from any group the user is a member of. |
 | DIRECT_POSTS | 3 | Returns `DIRECT` posts that are directly addressed to the user. |
@@ -1129,8 +1131,8 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 <a name="jonline-EventAttendance"></a>
 
 ### EventAttendance
-Describes the attendance of a user at an `EventInstance`. Such as:
-* A user&#39;s RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`).
+Could be called an &#34;RSVP.&#34; Describes the attendance of a user at an `EventInstance`. Such as:
+* A user&#39;s RSVP to an `EventInstance` (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
 * Invitation status of a user to an `EventInstance`.
 * `ContactMethod`-driven management for anonymous RSVPs to an `EventInstance`.
 
@@ -1181,6 +1183,7 @@ Stored as JSON in the database.
 | ----- | ---- | ----- | ----------- |
 | allows_rsvps | [bool](#bool) | optional |  |
 | allows_anonymous_rsvps | [bool](#bool) | optional |  |
+| max_attendees | [uint32](#uint32) | optional | No effect unless `allows_rsvps` is true. |
 
 
 
@@ -1215,6 +1218,34 @@ To be used for ticketing, RSVPs, etc.
 Stored as JSON in the database.
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rsvp_info | [EventInstanceRsvpInfo](#jonline-EventInstanceRsvpInfo) | optional |  |
+
+
+
+
+
+
+<a name="jonline-EventInstanceRsvpInfo"></a>
+
+### EventInstanceRsvpInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| allows_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_rsvps`, if set, for this instance. |
+| allows_anonymous_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. |
+| max_attendees | [uint32](#uint32) | optional |  |
+| going_rsvps | [uint32](#uint32) | optional |  |
+| going_attendees | [uint32](#uint32) | optional |  |
+| interested_rsvps | [uint32](#uint32) | optional |  |
+| interested_attendees | [uint32](#uint32) | optional |  |
+| invited_rsvps | [uint32](#uint32) | optional |  |
+| invited_attendees | [uint32](#uint32) | optional |  |
+
+
 
 
 
@@ -1239,23 +1270,24 @@ Stored as JSON in the database.
 
 ### GetEventsRequest
 Valid GetEventsRequest formats:
-- {[listing_type: PublicEvents]}                  (TODO: get ServerPublic/GlobalPublic events you can see)
-- {listing_type:MyGroupsEvents|FollowingEvents}   (TODO: get events for groups joined or user followed; auth required)
-- {event_id:}                                     (TODO: get single event including preview data)
-- {listing_type: GroupEvents|
-     GroupEventsPendingModeration,
-     group_id:}                                  (TODO: get events/events needing moderation for a group)
-- {author_user_id:, group_id:}                   (TODO: get events by a user for a group)
-- {listing_type: AuthorEvents, author_user_id:}  (TODO: get events by a user)
+- `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
+- `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
+- `{event_id:}`                                    (TODO: get single event including preview data)
+- `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
+                                                   (TODO: get events/events needing moderation for a group)
+- `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
+- `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | event_id | [string](#string) | optional | Returns the single event with the given ID. |
-| author_user_id | [string](#string) | optional | Limits results to replies to the given event. optional string replies_to_event_id = 2; Limits results to those by the given author user ID. |
-| group_id | [string](#string) | optional |  |
-| event_instance_id | [string](#string) | optional |  |
-| time_filter | [TimeFilter](#jonline-TimeFilter) | optional |  |
+| author_user_id | [string](#string) | optional | Limits results to those by the given author user ID. |
+| group_id | [string](#string) | optional | Limits results to those in the given group ID (via `GroupPost` association&#39;s for the Event&#39;s internal `Post`). |
+| event_instance_id | [string](#string) | optional | Limits results to those with the given event instance ID. |
+| time_filter | [TimeFilter](#jonline-TimeFilter) | optional | Filters returned `EventInstance`s by time. |
+| attendee_id | [string](#string) | optional | If set, only returns events that the given user is attending. If `attendance_statuses` is also set, returns events where that user&#39;s status is one of the given statuses. |
+| attendance_statuses | [AttendanceStatus](#jonline-AttendanceStatus) | repeated | If set, only return events for which the current user&#39;s attendance status matches one of the given statuses. If `attendee_id` is also set, only returns events where the given user&#39;s status matches one of the given statuses. |
 | listing_type | [EventListingType](#jonline-EventListingType) |  |  |
 
 
@@ -1266,7 +1298,17 @@ Valid GetEventsRequest formats:
 <a name="jonline-GetEventsResponse"></a>
 
 ### GetEventsResponse
+A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
 
+Note that `GetEventsResponse` may often include duplicate Events with the same ID.
+I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
+This semantically means: &#34;Event A has both instances X and Y in the time frame the client asked for.&#34;
+The client should be able to handle this.
+
+In the React/Tamagui client, this is handled by the Redux store, which
+effectively &#34;compacts&#34; all response into its own internal Events store, in a form something like:
+`{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+(In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
 
 
 | Field | Type | Label | Description |
@@ -1341,7 +1383,7 @@ in any direction, but:
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PUBLIC_EVENTS | 0 | Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible. Also usable for getting replies anywhere. |
+| ALL_ACCESSIBLE_EVENTS | 0 | Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible. |
 | FOLLOWING_EVENTS | 1 | Returns events from users the user is following. |
 | MY_GROUPS_EVENTS | 2 | Returns events from any group the user is a member of. |
 | DIRECT_EVENTS | 3 | Returns `DIRECT` events that are directly addressed to the user. |

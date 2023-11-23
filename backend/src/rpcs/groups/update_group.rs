@@ -12,7 +12,6 @@ use crate::models;
 use crate::models::get_media_reference;
 use crate::protos::*;
 use crate::schema::groups;
-use crate::schema::memberships;
 
 use crate::rpcs::validations::*;
 
@@ -23,18 +22,10 @@ pub fn update_group(
 ) -> Result<Group, Status> {
     validate_group(&request)?;
 
-    match memberships::table
-        .select(memberships::all_columns)
-        .filter(memberships::user_id.eq(user.id))
-        .filter(memberships::group_id.eq(request.id.to_db_id_or_err("id")?))
-        .first::<models::Membership>(conn)
-    {
-        Ok(membership) => {
-            validate_group_admin(&user, &Some(membership))?;
-        }
-        Err(diesel::NotFound) => return Err(Status::new(Code::NotFound, "not_a_member")),
-        Err(_) => return Err(Status::new(Code::Internal, "data_error")),
-    };
+    let (group, membership) =
+        models::get_group_and_membership(request.id.to_db_id_or_err("id")?, Some(user.id), conn)?;
+
+    validate_group_admin(&Some(user), &group, &membership.as_ref())?;
 
     let mut group = groups::table
         .select(groups::all_columns)
@@ -52,6 +43,7 @@ pub fn update_group(
     group.avatar_media_id = avatar.map(|m| m.id);
 
     group.visibility = request.visibility.to_string_visibility();
+    group.non_member_permissions = request.non_member_permissions.to_json_permissions();
     group.default_membership_permissions =
         request.default_membership_permissions.to_json_permissions();
     group.default_membership_moderation =

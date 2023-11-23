@@ -19,13 +19,14 @@ class PostDataKey {
 
 class PostCache
     extends DataCache<PostListingType, PostDataKey, GetPostsResponse> {
-  PostCache() : super(ValueNotifier(PostListingType.PUBLIC_POSTS));
+  PostCache() : super(ValueNotifier(PostListingType.ALL_ACCESSIBLE_POSTS));
 
   @override
   GetPostsResponse get emptyResult => GetPostsResponse();
 
   @override
-  PostDataKey get mainKey => PostDataKey(null, PostListingType.PUBLIC_POSTS);
+  PostDataKey get mainKey =>
+      PostDataKey(null, PostListingType.ALL_ACCESSIBLE_POSTS);
 
   @override
   Future<GetPostsResponse?> getCurrentData() async {
@@ -36,7 +37,7 @@ class PostCache
     final key = getCurrentKey!();
     final listingType = key.postListingType;
     switch (listingType) {
-      case PostListingType.PUBLIC_POSTS:
+      case PostListingType.ALL_ACCESSIBLE_POSTS:
       case PostListingType.DIRECT_POSTS:
       case PostListingType.FOLLOWING_POSTS:
       case PostListingType.MY_GROUPS_POSTS:

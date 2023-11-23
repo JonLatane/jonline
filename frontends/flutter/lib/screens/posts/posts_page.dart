@@ -82,7 +82,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
         setState(() {
           listingType = viewingGroup
               ? PostListingType.GROUP_POSTS
-              : PostListingType.PUBLIC_POSTS;
+              : PostListingType.ALL_ACCESSIBLE_POSTS;
           sectionScrollController.animateTo(0,
               duration: animationDuration, curve: Curves.easeInOut);
         });
@@ -112,7 +112,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
           PostListingType.GROUP_POSTS,
           PostListingType.GROUP_POSTS_PENDING_MODERATION
         ].contains(listingType)) {
-      listingType = PostListingType.PUBLIC_POSTS;
+      listingType = PostListingType.ALL_ACCESSIBLE_POSTS;
     } else if (viewingGroup &&
         ![
           PostListingType.GROUP_POSTS,
@@ -125,7 +125,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
     if (!JonlineAccount.loggedIn) {
       listingType = viewingGroup
           ? PostListingType.GROUP_POSTS
-          : PostListingType.PUBLIC_POSTS;
+          : PostListingType.ALL_ACCESSIBLE_POSTS;
     }
     if (listingType == PostListingType.GROUP_POSTS_PENDING_MODERATION &&
         !canShowGroupPendingModeration) {
@@ -133,7 +133,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
     }
     if (listingType == PostListingType.POSTS_PENDING_MODERATION &&
         !canShowPendingModeration) {
-      listingType = PostListingType.PUBLIC_POSTS;
+      listingType = PostListingType.ALL_ACCESSIBLE_POSTS;
     }
     if (listingType != initialListingType) {
       appState.posts.update();
@@ -409,7 +409,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
   Widget buildSectionSelector() {
     final visibleSections = (!appState.viewingGroup)
         ? [
-            PostListingType.PUBLIC_POSTS,
+            PostListingType.ALL_ACCESSIBLE_POSTS,
             PostListingType.FOLLOWING_POSTS,
             PostListingType.MY_GROUPS_POSTS,
             // PostListingType.DIRECT_POSTS,
@@ -427,7 +427,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
       children: [
         ...[
           PostListingType.GROUP_POSTS,
-          PostListingType.PUBLIC_POSTS,
+          PostListingType.ALL_ACCESSIBLE_POSTS,
           PostListingType.FOLLOWING_POSTS,
           PostListingType.MY_GROUPS_POSTS,
           PostListingType.DIRECT_POSTS,
@@ -435,8 +435,8 @@ class PostsScreenState extends JonlineState<PostsScreen>
         ]
             // .where((l) => l != UserListingType.FRIENDS)
             .map((l) {
-          bool usable =
-              JonlineAccount.loggedIn || l == PostListingType.PUBLIC_POSTS;
+          bool usable = JonlineAccount.loggedIn ||
+              l == PostListingType.ALL_ACCESSIBLE_POSTS;
           usable &= canShowGroupPendingModeration ||
               l != PostListingType.GROUP_POSTS_PENDING_MODERATION;
           var textButton = TextButton(

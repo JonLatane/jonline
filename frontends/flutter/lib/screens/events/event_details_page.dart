@@ -35,6 +35,7 @@ class EventDetailsPageState extends JonlineState<EventDetailsPage> {
                 child: Hero(
                   tag: 'Hero${book.id}',
                   child: Card(
+                    color: Colors.grey[900],
                     margin: const EdgeInsets.all(48),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

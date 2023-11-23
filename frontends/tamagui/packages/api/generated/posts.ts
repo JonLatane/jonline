@@ -17,10 +17,10 @@ export const protobufPackage = "jonline";
 /** A high-level enumeration of general ways of requesting posts. */
 export enum PostListingType {
   /**
-   * PUBLIC_POSTS - Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
+   * ALL_ACCESSIBLE_POSTS - Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
    * Also usable for getting replies anywhere.
    */
-  PUBLIC_POSTS = 0,
+  ALL_ACCESSIBLE_POSTS = 0,
   /** FOLLOWING_POSTS - Returns posts from users the user is following. */
   FOLLOWING_POSTS = 1,
   /** MY_GROUPS_POSTS - Returns posts from any group the user is a member of. */
@@ -41,8 +41,8 @@ export enum PostListingType {
 export function postListingTypeFromJSON(object: any): PostListingType {
   switch (object) {
     case 0:
-    case "PUBLIC_POSTS":
-      return PostListingType.PUBLIC_POSTS;
+    case "ALL_ACCESSIBLE_POSTS":
+      return PostListingType.ALL_ACCESSIBLE_POSTS;
     case 1:
     case "FOLLOWING_POSTS":
       return PostListingType.FOLLOWING_POSTS;
@@ -70,8 +70,8 @@ export function postListingTypeFromJSON(object: any): PostListingType {
 
 export function postListingTypeToJSON(object: PostListingType): string {
   switch (object) {
-    case PostListingType.PUBLIC_POSTS:
-      return "PUBLIC_POSTS";
+    case PostListingType.ALL_ACCESSIBLE_POSTS:
+      return "ALL_ACCESSIBLE_POSTS";
     case PostListingType.FOLLOWING_POSTS:
       return "FOLLOWING_POSTS";
     case PostListingType.MY_GROUPS_POSTS:
@@ -138,7 +138,7 @@ export function postContextToJSON(object: PostContext): string {
 /**
  * Valid GetPostsRequest formats:
  *
- * - `{[listing_type: PublicPosts]}`
+ * - `{[listing_type: AllAccessiblePosts]}`
  *     - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
  * - `{listing_type:MyGroupsPosts|FollowingPosts}`
  *     - Get posts from groups you're a member of or from users you're following. Authorization required.

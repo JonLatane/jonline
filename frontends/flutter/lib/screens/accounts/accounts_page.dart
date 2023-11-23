@@ -520,8 +520,9 @@ class AccountsPageState extends JonlineState<AccountsPage> {
 
   Map<String, Uint8List?> accountAvatars = {};
   Widget buildAccountItem(JonlineAccount account) {
-    final backgroundColor =
-        appState.selectedAccount?.id == account.id ? appState.navColor : null;
+    final backgroundColor = appState.selectedAccount?.id == account.id
+        ? appState.navColor
+        : Colors.grey[600];
     final textColor = backgroundColor?.textColor;
     return AnimatedContainer(
       // constraints: const BoxConstraints(maxWidth: 600),
@@ -556,7 +557,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
               }
             },
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(6.0),
               child: Stack(
                 children: [
                   Column(
@@ -826,7 +827,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
             defaultPrimaryColor.value)
         : JonlineServer.selectedServer == server
             ? appState.navColor
-            : null;
+            : Colors.black26;
     final textColor = backgroundColor?.textColor;
     return AnimatedContainer(
       duration: animationDuration,

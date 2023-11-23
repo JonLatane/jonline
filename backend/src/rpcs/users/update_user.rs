@@ -7,8 +7,8 @@ use diesel::NotFound;
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs;
@@ -28,21 +28,23 @@ pub fn update_user(
     let mut moderator = false;
     if !self_update {
         validate_any_permission(
-            &current_user,
+            &Some(current_user),
             vec![Permission::Admin, Permission::ModerateUsers],
         )?;
     }
-    match validate_permission(&current_user, Permission::Admin) {
+    match validate_permission(&Some(current_user), Permission::Admin) {
         Ok(_) => admin = true,
         Err(_) => {}
     };
-    match validate_permission(&current_user, Permission::ModerateUsers) {
+    match validate_permission(&Some(current_user), Permission::ModerateUsers) {
         Ok(_) => moderator = true,
         Err(_) => {}
     };
     log::info!(
         "self_update: {}, admin: {}, moderator: {}",
-        self_update, admin, moderator
+        self_update,
+        admin,
+        moderator
     );
 
     let transaction_result: Result<models::User, diesel::result::Error> = conn
@@ -54,16 +56,22 @@ pub fn update_user(
             if admin || self_update {
                 existing_user.username = request.username.to_owned();
                 existing_user.bio = request.bio.to_owned();
-                existing_user.avatar_media_id = request.avatar.as_ref().map(|a| &a.id).to_db_opt_id().unwrap();
+                existing_user.avatar_media_id = request
+                    .avatar
+                    .as_ref()
+                    .map(|a| &a.id)
+                    .to_db_opt_id()
+                    .unwrap();
                 if request.visibility == Visibility::GlobalPublic as i32
                     && existing_user.visibility.to_proto_visibility().unwrap()
                         != Visibility::GlobalPublic
                 {
-                    validate_permission(&current_user, Permission::PublishUsersGlobally)
+                    validate_permission(&Some(current_user), Permission::PublishUsersGlobally)
                         .map_err(|_| RollbackTransaction)?;
                 }
                 existing_user.visibility = request.visibility.to_string_visibility();
-                existing_user.default_follow_moderation = request.default_follow_moderation.to_string_moderation();
+                existing_user.default_follow_moderation =
+                    request.default_follow_moderation.to_string_moderation();
             }
             if admin {
                 existing_user.permissions = request.permissions.to_json_permissions();
@@ -91,9 +99,10 @@ pub fn update_user(
                 },
                 &Some(current_user),
                 conn,
-            ).map(|u| u.users[0].to_owned())
+            )
+            .map(|u| u.users[0].to_owned())
             // Ok(result.to_proto(&None, &None, None))
-        },
+        }
         Err(NotFound) => Err(Status::new(Code::NotFound, "user_not_found")),
         Err(RollbackTransaction) => Err(Status::new(
             Code::InvalidArgument,

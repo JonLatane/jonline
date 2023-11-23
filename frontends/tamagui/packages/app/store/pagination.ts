@@ -13,7 +13,7 @@ import { TimeFilter } from '../../api/generated/events';
  *  * <code>PostListingType</code> -> <code>page</code> -> <code>postIds</code>, or
  *  * <code>groupId</code> -> <code>page</code> -> <code>postIds</code>
  * Access for page <code>0</code> looks like:
- *  * <code>postPages[PostListingType.PUBLIC_POSTS][0]</code> -> <code>["postId1", "postId2"]</code>.
+ *  * <code>postPages[PostListingType.ALL_ACCESSIBLE_POSTS][0]</code> -> <code>["postId1", "postId2"]</code>.
  *  * <code>groupPostPages['groupId1'][0]</code> -> <code>["postId1", "postId2"]</code>.
  */
 export type GroupedPages = Dictionary<PaginatedIds>;

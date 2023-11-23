@@ -1,12 +1,12 @@
 use diesel::*;
 use tonic::Status;
 
-use crate::rpcs::validations::*;
 use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::models::MEDIA_REFERENCE_COLUMNS;
 use crate::protos::*;
+use crate::rpcs::validations::*;
 
 use crate::schema::media;
 use crate::schema::{follows, memberships, users};
@@ -17,15 +17,10 @@ pub fn get_members(
     conn: &mut PgPooledConnection,
 ) -> Result<GetMembersResponse, Status> {
     let group_id: i64 = request.group_id.to_db_id_or_err("group_id")?;
+    let (group, membership) = models::get_group_and_membership(group_id, Some(user.id), conn)?;
     match request.group_moderation() {
         Moderation::Pending => {
-            let user_membership = memberships::table
-                .select(memberships::all_columns)
-                .filter(memberships::group_id.eq(group_id))
-                .filter(memberships::user_id.eq(user.id))
-                .first::<models::Membership>(conn)
-                .ok();
-            validate_group_user_moderator(&user, &user_membership)?;
+            validate_group_user_moderator(&Some(user), &group, &membership.as_ref())?
         }
         _ => {}
     };
@@ -143,8 +138,8 @@ fn get_all_members(
         .map(
             |(membership, user, follow, target_follow, media_reference)| {
                 let lookup = media_reference.to_media_lookup();
-                    // .as_ref()
-                    // .map(|mr| media_lookup(vec![mr.clone()]));
+                // .as_ref()
+                // .map(|mr| media_lookup(vec![mr.clone()]));
                 Member {
                     user: Some(user.to_proto(
                         &follow.as_ref(),
@@ -227,15 +222,13 @@ fn get_members_by_username(
         .unwrap()
         .iter()
         .map(
-            |(membership, user, follow, target_follow, media_reference)| {
-                Member {
-                    user: Some(user.to_proto(
-                        &follow.as_ref(),
-                        &target_follow.as_ref(),
-                        media_reference.to_media_lookup().as_ref(),
-                    )),
-                    membership: Some(membership.to_proto()),
-                }
+            |(membership, user, follow, target_follow, media_reference)| Member {
+                user: Some(user.to_proto(
+                    &follow.as_ref(),
+                    &target_follow.as_ref(),
+                    media_reference.to_media_lookup().as_ref(),
+                )),
+                membership: Some(membership.to_proto()),
             },
         )
         .collect();

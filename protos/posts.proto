@@ -11,7 +11,7 @@ import "users.proto";
 
 // Valid GetPostsRequest formats:
 //
-// - `{[listing_type: PublicPosts]}`
+// - `{[listing_type: AllAccessiblePosts]}`
 //     - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
 // - `{listing_type:MyGroupsPosts|FollowingPosts}`
 //     - Get posts from groups you're a member of or from users you're following. Authorization required.
@@ -49,7 +49,7 @@ message GetPostsResponse {
 enum PostListingType {
   // Gets SERVER_PUBLIC and GLOBAL_PUBLIC posts as is sensible.
   // Also usable for getting replies anywhere.
-  PUBLIC_POSTS = 0;
+  ALL_ACCESSIBLE_POSTS = 0;
   // Returns posts from users the user is following.
   FOLLOWING_POSTS = 1;
   // Returns posts from any group the user is a member of.

@@ -17,7 +17,7 @@ import 'dart:typed_data' as $typed_data;
 const PostListingType$json = {
   '1': 'PostListingType',
   '2': [
-    {'1': 'PUBLIC_POSTS', '2': 0},
+    {'1': 'ALL_ACCESSIBLE_POSTS', '2': 0},
     {'1': 'FOLLOWING_POSTS', '2': 1},
     {'1': 'MY_GROUPS_POSTS', '2': 2},
     {'1': 'DIRECT_POSTS', '2': 3},
@@ -29,10 +29,10 @@ const PostListingType$json = {
 
 /// Descriptor for `PostListingType`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List postListingTypeDescriptor = $convert.base64Decode(
-    'Cg9Qb3N0TGlzdGluZ1R5cGUSEAoMUFVCTElDX1BPU1RTEAASEwoPRk9MTE9XSU5HX1BPU1RTEA'
-    'ESEwoPTVlfR1JPVVBTX1BPU1RTEAISEAoMRElSRUNUX1BPU1RTEAMSHAoYUE9TVFNfUEVORElO'
-    'R19NT0RFUkFUSU9OEAQSDwoLR1JPVVBfUE9TVFMQChIiCh5HUk9VUF9QT1NUU19QRU5ESU5HX0'
-    '1PREVSQVRJT04QCw==');
+    'Cg9Qb3N0TGlzdGluZ1R5cGUSGAoUQUxMX0FDQ0VTU0lCTEVfUE9TVFMQABITCg9GT0xMT1dJTk'
+    'dfUE9TVFMQARITCg9NWV9HUk9VUFNfUE9TVFMQAhIQCgxESVJFQ1RfUE9TVFMQAxIcChhQT1NU'
+    'U19QRU5ESU5HX01PREVSQVRJT04QBBIPCgtHUk9VUF9QT1NUUxAKEiIKHkdST1VQX1BPU1RTX1'
+    'BFTkRJTkdfTU9ERVJBVElPThAL');
 
 @$core.Deprecated('Use postContextDescriptor instead')
 const PostContext$json = {

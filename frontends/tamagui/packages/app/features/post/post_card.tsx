@@ -395,7 +395,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                         </XStack>}
                     </XStack>
                   </YStack>
-                  <XStack p='$3' pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
+                  <XStack p='$3' mt={showEdit ? -11 : -15} pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
                     <AuthorInfo {...{ post, isVisible }} />
                     {onPressReply ? <Button onPress={onPressReply} circular icon={Reply}
                       my='auto' size='$2' mr='$2' /> : undefined}

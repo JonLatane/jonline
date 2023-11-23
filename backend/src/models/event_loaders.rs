@@ -40,7 +40,7 @@ pub fn get_event_instances(
     event_id: i64,
     user: &Option<&User>,
     conn: &mut PgPooledConnection,
-) -> Result<Vec<(EventInstance, Option<Post>, Option<User>)>, Status> {
+) -> Result<Vec<(EventInstance, Option<Post>, Option<Author>)>, Status> {
     event_instances::table
         .left_join(posts::table.on(event_instances::post_id.eq(posts::id.nullable())))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
@@ -54,10 +54,10 @@ pub fn get_event_instances(
         .select((
             event_instances::all_columns,
             posts::all_columns.nullable(),
-            users::all_columns.nullable(),
+            AUTHOR_COLUMNS.nullable(),
         ))
         .filter(event_instances::event_id.eq(event_id))
-        .load::<(EventInstance, Option<Post>, Option<User>)>(conn)
+        .load::<(EventInstance, Option<Post>, Option<Author>)>(conn)
         .map_err(|e| {
             log::error!(
                 "Failed to load event instances for event_id={}: {:?}",

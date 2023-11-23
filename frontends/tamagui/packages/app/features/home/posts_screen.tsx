@@ -33,7 +33,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   const [currentPage, setCurrentPage] = useState(0);
   const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded } = selectedGroup
     ? useGroupPostPages(selectedGroup.id, currentPage)
-    : usePostPages(PostListingType.PUBLIC_POSTS, currentPage);
+    : usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPage);
 
   useEffect(() => {
     if (firstPageLoaded) {

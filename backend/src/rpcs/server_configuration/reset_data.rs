@@ -2,14 +2,18 @@ use crate::db_connection::PgPooledConnection;
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::rpcs::validations::*;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::validations::*;
 use crate::schema::*;
 
-pub fn reset_data(_request: (), user: &models::User, conn: &mut PgPooledConnection) -> Result<(), Status> {
+pub fn reset_data(
+    _request: (),
+    user: &models::User,
+    conn: &mut PgPooledConnection,
+) -> Result<(), Status> {
     log::info!("ResetData called");
-    validate_permission(&user, Permission::Admin)?;
+    validate_permission(&Some(user), Permission::Admin)?;
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
         update(media::table)

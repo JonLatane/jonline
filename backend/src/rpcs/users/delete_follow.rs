@@ -1,11 +1,11 @@
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::rpcs::validations::*;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::validations::*;
 use crate::schema::follows;
 
 pub fn delete_follow(
@@ -13,8 +13,10 @@ pub fn delete_follow(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    if request.user_id != current_user.id.to_proto_id() && request.target_user_id != current_user.id.to_proto_id() {
-        validate_permission(&current_user, Permission::Admin)?;
+    if request.user_id != current_user.id.to_proto_id()
+        && request.target_user_id != current_user.id.to_proto_id()
+    {
+        validate_permission(&Some(current_user), Permission::Admin)?;
     }
     let existing_follow = follows::table
         .select(follows::all_columns)
@@ -31,7 +33,7 @@ pub fn delete_follow(
         Ok(_) => {
             existing_follow.update_related_counts(conn)?;
             Ok(())
-        },
+        }
         Err(_) => Err(Status::new(Code::Internal, "data_error")),
     }
 }

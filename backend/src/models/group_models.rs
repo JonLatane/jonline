@@ -1,12 +1,26 @@
 use std::time::SystemTime;
 
-use tonic::{Code, Status};
 use diesel::*;
+use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
 use crate::schema::{groups, memberships};
 
-pub fn get_group(group_id: i64, conn: &mut PgPooledConnection,) -> Result<Group, Status> {
+pub fn get_group_and_membership(
+    group_id: i64,
+    user_id: Option<i64>,
+    conn: &mut PgPooledConnection,
+) -> Result<(Group, Option<Membership>), Status> {
+    groups::table
+        .left_join(memberships::table.on(memberships::group_id.eq(groups::id)))
+        .select((groups::all_columns, memberships::all_columns.nullable()))
+        .filter(memberships::user_id.nullable().eq(user_id))
+        .filter(memberships::group_id.eq(group_id))
+        .first::<(Group, Option<Membership>)>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "group_membership_data_not_found"))
+}
+
+pub fn get_group(group_id: i64, conn: &mut PgPooledConnection) -> Result<Group, Status> {
     groups::table
         .select(groups::all_columns)
         .filter(groups::id.eq(group_id))
@@ -14,7 +28,11 @@ pub fn get_group(group_id: i64, conn: &mut PgPooledConnection,) -> Result<Group,
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))
 }
 
-pub fn get_membership(group_id: i64, user_id: i64, conn: &mut PgPooledConnection,) -> Result<Membership, Status> {
+pub fn get_membership(
+    group_id: i64,
+    user_id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<Membership, Status> {
     memberships::table
         .select(memberships::all_columns)
         .filter(memberships::user_id.eq(user_id))
@@ -31,6 +49,7 @@ pub struct Group {
     pub description: String,
     pub avatar_media_id: Option<i64>,
     pub visibility: String,
+    pub non_member_permissions: serde_json::Value,
     pub default_membership_permissions: serde_json::Value,
     pub default_membership_moderation: String,
     pub default_post_moderation: String,
@@ -51,6 +70,7 @@ pub struct NewGroup {
     pub description: String,
     pub avatar_media_id: Option<i64>,
     pub visibility: String,
+    pub non_member_permissions: serde_json::Value,
     pub default_membership_permissions: serde_json::Value,
     pub default_membership_moderation: String,
     pub default_post_moderation: String,

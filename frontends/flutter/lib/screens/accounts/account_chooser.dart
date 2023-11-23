@@ -194,6 +194,7 @@ Future<Object> showAccountsMenu(
       context: context,
       position: position,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      color: Colors.grey[800],
       // color: (musicBackgroundColor.luminance < 0.5
       //         ? subBackgroundColor
       //         : musicBackgroundColor)

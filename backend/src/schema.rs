@@ -86,6 +86,7 @@ table! {
         description -> Text,
         avatar_media_id -> Nullable<Int8>,
         visibility -> Varchar,
+        non_member_permissions -> Jsonb,
         default_membership_permissions -> Jsonb,
         default_membership_moderation -> Varchar,
         default_post_moderation -> Varchar,

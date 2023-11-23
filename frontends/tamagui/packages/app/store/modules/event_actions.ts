@@ -36,7 +36,7 @@ export type LoadEventsRequest = AccountOrServer & {
   page?: number
   filter?: TimeFilter
 };
-export const defaultEventListingType = EventListingType.PUBLIC_EVENTS;
+export const defaultEventListingType = EventListingType.ALL_ACCESSIBLE_EVENTS;
 export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, any> = createAsyncThunk<GetEventsResponse, LoadEventsRequest>(
   "events/loadPage",
   async (request) => {

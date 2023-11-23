@@ -1,11 +1,11 @@
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::rpcs::validations::*;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::validations::*;
 use crate::schema::{groups, memberships};
 
 pub fn create_membership(
@@ -102,7 +102,9 @@ fn invite_other_user(
     let (group_moderation, initial_permissions) = match (
         group.default_membership_moderation.to_proto_moderation(),
         validate_any_group_permission(
-            &user_membership, &user,
+            &group,
+            &Some(&user_membership),
+            &Some(user),
             vec![Permission::Admin, Permission::ModerateUsers],
         ),
     ) {
