@@ -2,10 +2,11 @@ import { accountOrServerId, getCredentialClient, useCredentialDispatch, useLocal
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, TextArea, Theme, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from "@jonline/ui";
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Edit, Plus } from "@tamagui/lucide-icons";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
+import { isPastInstance } from "app/utils/time";
 import { createParam } from "solito";
 import { useLink } from "solito/link";
 import { useGroupContext } from "../groups/group_context";
@@ -287,6 +288,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     : rsvpDetailsBaseLink;
   const rsvpDetailsLink = useLink({ href: rsvpDetailsLinkWithToken });
   const rsvpLink = `/event/${event.id}/i/${instance.id}?anonymousAuthToken=${queryAnonAuthToken}`;
+  const isPast = isPastInstance(instance);
 
   function formatCount(rsvpCount: number, attendeeCount: number,) {
     if (rsvpCount === attendeeCount) {
@@ -828,17 +830,17 @@ export function RadioGroupItemWithLabel(props: {
 <RadioGroupItemWithLabel color={navAnchorColor} size="$3" value={AttendanceStatus.INTERESTED.toString()} label="Interested" />
 <RadioGroupItemWithLabel size="$3" value={AttendanceStatus.NOT_GOING.toString()} label="Not Going" /> */
 
-function valueAndLabel(value: AttendanceStatus) {
-  return { value: value.toString(), label: attendanceName(value) as string };
+function valueAndLabel(value: AttendanceStatus, isPast: boolean = false) {
+  return { value: value.toString(), label: attendanceName(value, isPast) as string };
 }
-function attendanceName(attendanceStatus: AttendanceStatus) {
+function attendanceName(attendanceStatus: AttendanceStatus, isPast: boolean = false) {
   switch (attendanceStatus) {
     case AttendanceStatus.GOING:
-      return 'Going';
+      return isPast ? 'Went' : 'Going';
     case AttendanceStatus.INTERESTED:
       return 'Interested';
     case AttendanceStatus.NOT_GOING:
-      return 'Not Going';
+      return isPast ? "Didn't Go" : 'Not Going';
     case AttendanceStatus.REQUESTED:
       return 'Invited';
     default:

@@ -26,6 +26,23 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [duration, _setDuration] = useState(0);
+  useEffect(() => {
+    if (startTime && endTime) {
+      const start = moment(startTime);
+      const end = moment(endTime);
+      _setDuration(end.diff(start, 'minutes'));
+    }
+  }, [endTime]);
+  useEffect(() => {
+    if (startTime && duration) {
+      const start = moment(startTime);
+      const end = start.add(duration, 'minutes');
+      setEndTime(supportDateInput(end));
+    }
+  }, [startTime]);
+
+
   const [location, setLocation] = useState(Location.create({}));
 
   const endDateInvalid = !moment(endTime).isAfter(moment(startTime));

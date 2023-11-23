@@ -3,7 +3,7 @@ import { deleteEvent, loadUser, RootState, updateEvent, useAccount, useCredentia
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Group, Location } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, reverseStandardAnimation, ScrollView, Select, standardAnimation, standardHorizontalAnimation, TamaguiElement, Text, TextArea, Theme, useMedia, useWindowDimensions, XStack, YStack, ZStack } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, reverseStandardAnimation, ScrollView, Select, standardAnimation, standardHorizontalAnimation, TamaguiElement, Text, TextArea, Theme, Tooltip, useMedia, useWindowDimensions, XStack, YStack, ZStack } from "@jonline/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, History, Link, Menu, Repeat, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
@@ -76,6 +76,37 @@ export const EventCard: React.FC<Props> = ({
   const instances = editing ? editedInstances : event.instances;
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
+
+  const [startTime, endTime] = [editingInstance?.startsAt, editingInstance?.endsAt]
+  function setEndTime(value: string) {
+    if (!editingInstance) {
+      return;
+    }
+    const updatedInstance = { ...editingInstance, endsAt: toProtoISOString(value) };
+    updateEditingInstance(updatedInstance);
+  }
+  function setStartTime(value: string) {
+    if (!editingInstance) {
+      return;
+    }
+    const updatedInstance = { ...editingInstance, startsAt: toProtoISOString(value) };
+    updateEditingInstance(updatedInstance);
+  }
+  const [duration, _setDuration] = useState(0);
+  useEffect(() => {
+    if (startTime && endTime) {
+      const start = moment(startTime);
+      const end = moment(endTime);
+      _setDuration(end.diff(start, 'minutes'));
+    }
+  }, [endTime]);
+  useEffect(() => {
+    if (startTime && duration) {
+      const start = moment(startTime);
+      const end = start.add(duration, 'minutes');
+      setEndTime(supportDateInput(end));
+    }
+  }, [startTime]);
   const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   const endDateInvalid = editingInstance && !moment(editingInstance.endsAt).isAfter(moment(editingInstance.startsAt));
@@ -538,6 +569,7 @@ export const EventCard: React.FC<Props> = ({
 
     return result;
   }
+
   return (
     <>
       <YStack w='100%' key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}>
@@ -560,13 +592,22 @@ export const EventCard: React.FC<Props> = ({
                   ? <XStack key='instances' w='100%' mt='$2' ml='$4' space>
                     <YStack key='instances-buttons' my='$2' space="$3">
                       {hasPastInstances && !canEasilySeeAllPastInstances
-                        ? <Button mr={-7} size='$3'
-                          {...showPastInstances ? themedButtonBackground(navColor, navTextColor) : {}}
-                          // color={showPastInstances ? navAnchorColor : undefined}
-                          circular={(displayedInstances?.length ?? 0) > 0} icon={History}
-                          onPress={() => setShowPastInstances(!showPastInstances)} >
-                          {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
-                        </Button>
+                        ? <Tooltip placement='bottom-start'>
+                          <Tooltip.Trigger>
+                            <Button mr={-7} size='$3'
+                              {...showPastInstances ? themedButtonBackground(navColor, navTextColor) : {}}
+                              // color={showPastInstances ? navAnchorColor : undefined}
+                              circular={(displayedInstances?.length ?? 0) > 0} icon={History}
+                              onPress={() => setShowPastInstances(!showPastInstances)} >
+                              {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
+                            </Button>
+                          </Tooltip.Trigger>
+                          {(displayedInstances?.length ?? 0) === 0
+                            ? undefined
+                            : <Tooltip.Content>
+                              <Paragraph size='$1'>{showPastInstances ? 'Show' : 'Hide'} Past Instances</Paragraph>
+                            </Tooltip.Content>}
+                        </Tooltip>
                         : undefined}
                       {editing
                         ? <Button mt='$2' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
@@ -599,11 +640,7 @@ export const EventCard: React.FC<Props> = ({
                           <input type='datetime-local' style={{ padding: 10 }}
                             min={supportDateInput(moment(0))}
                             value={supportDateInput(moment(editingInstance.startsAt))}
-                            onChange={(v) => {
-                              const updatedInstance = { ...editingInstance, startsAt: toProtoISOString(v.target.value) };
-                              updateEditingInstance(updatedInstance);
-                              //  setStartTime(v.target.value)
-                            }} />
+                            onChange={(v) => setStartTime(v.target.value)} />
                         </Text>
                       </XStack>
                       <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
@@ -612,10 +649,7 @@ export const EventCard: React.FC<Props> = ({
                           <input type='datetime-local' style={{ padding: 10 }}
                             min={editingInstance.startsAt}
                             value={supportDateInput(moment(editingInstance.endsAt))}
-                            onChange={(v) => {
-                              const updatedInstance = { ...editingInstance, endsAt: toProtoISOString(v.target.value) };
-                              updateEditingInstance(updatedInstance);
-                            }} />
+                            onChange={(v) => setEndTime(v.target.value)} />
                         </Text>
                       </XStack>
                       {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
