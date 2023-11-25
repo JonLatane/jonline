@@ -1,12 +1,8 @@
-// import { ReactNativeTransport } from "@improbable-eng/grpc-web-react-native-transport";
-// import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/api";
-// import { Platform } from "react-native";
 import { serverID, upsertServer } from "./modules";
 import { store } from "./store";
 import { JonlineServer } from "./types";
-import {createChannel, createClient as createClientNice} from 'nice-grpc-web';
+import { createChannel, createClient } from 'nice-grpc-web';
 import { JonlineDefinition, JonlineClient } from "@jonline/api/generated/jonline";
-// import { JonlineClient } from '../../api/generated/jonline';
 
 const clients = new Map<string, JonlineClient>();
 const loadingClients = new Set<string>();
@@ -17,8 +13,8 @@ export function deleteClient(server: JonlineServer) {
   loadingClients.delete(serverId);
 }
 
-export type JonlineClientCreationArgs = { 
-  skipUpsert?: boolean; 
+export type JonlineClientCreationArgs = {
+  skipUpsert?: boolean;
   onServerConfigured?: (server: JonlineServer) => void
 };
 
@@ -78,26 +74,20 @@ async function clientForServer(server: JonlineServer, port: number, args?: Jonli
 
   // Get the gRPC client
   const host = `${serverID({ ...server, host: backendHost }).replace(":", "://")}:${port}`;
-  const client = await createClient(host, server, args);
+  const client = await doCreateClient(host, server, args);
 
   return client;
 }
 
-async function createClient(host: string, server: JonlineServer, args?: JonlineClientCreationArgs) {
+async function doCreateClient(host: string, server: JonlineServer, args?: JonlineClientCreationArgs) {
   const serverId = serverID(server);
 
   const channel = createChannel(host);
 
-  const client: JonlineClient = createClientNice(
+  const client: JonlineClient = createClient(
     JonlineDefinition,
     channel,
   );
-  
-  // const client = new JonlineClientImpl(
-  //   new GrpcWebImpl(host, {
-  //     transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
-  //   })
-  // );
 
   console.log(`Getting service version and server configuration for ${host}...`);
 
