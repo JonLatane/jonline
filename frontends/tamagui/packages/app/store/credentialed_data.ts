@@ -5,6 +5,7 @@ import 'react-native-get-random-values';
 import { accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers } from ".";
 import { AppDispatch, RootState, store, useTypedDispatch, useTypedSelector } from "./store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient } from "./types";
+import { Metadata } from "nice-grpc-web";
 
 export const useAccount = () => useTypedSelector((state: RootState) => state.accounts.account);
 export const useServer = () => useTypedSelector((state: RootState) => state.servers.server);
@@ -36,7 +37,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
   } else {
     let updatedAccount: JonlineAccount = account;
     const client = await getServerClient(account.server);
-    const metadata = new grpc.Metadata();
+    const metadata = Metadata();
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     const now = moment.utc();
     const expired = accessExpiresAt.subtract(1, 'minutes').isBefore(now);
@@ -91,7 +92,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
 
           console.log("loading current user...");
           // Update the current user asynchronously.
-          client.getCurrentUser({}, metadata).then(user => {
+          client.getCurrentUser({}, { metadata: Metadata({ authorization: account.accessToken.token }) }).then(user => {
             console.log("loaded current user");
             updatedAccount = { ...account, user, lastSyncFailed: false, needsReauthentication: false };
             store.dispatch(accountsSlice.actions.upsertAccount(account));
@@ -114,7 +115,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
       metadata.append('authorization', account.accessToken.token);
     }
     // setCookie('jonline_access_token', account.accessToken.token);
-    return { ...client, credential: metadata };
+    return { ...client, credential: { metadata } };
   }
 }
 

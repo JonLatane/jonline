@@ -828,7 +828,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
         : JonlineServer.selectedServer == server
             ? appState.navColor
             : Colors.black26;
-    final textColor = backgroundColor?.textColor;
+    final textColor = backgroundColor.textColor;
     return AnimatedContainer(
       duration: animationDuration,
       width: 163 + 20 * mq.textScaleFactor,

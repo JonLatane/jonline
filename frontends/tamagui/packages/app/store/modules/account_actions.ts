@@ -6,6 +6,7 @@ import {
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { JonlineAccount, JonlineServer, getServerClient } from "..";
+import { Metadata } from "nice-grpc-web";
 
 export type CreateAccount = JonlineServer & CreateAccountRequest;
 export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
@@ -13,9 +14,9 @@ export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
   async (createAccountRequest) => {
     let client = await getServerClient(createAccountRequest);
     let { refreshToken, accessToken, user } = await client.createAccount(createAccountRequest);
-    let metadata = new grpc.Metadata();
-    metadata.append('authorization', accessToken!.token)
-    user = user || await client.getCurrentUser({}, metadata);
+    // let metadata = new grpc.Metadata();
+    // metadata.append('authorization', accessToken!.token)
+    user = user || await client.getCurrentUser({}, {metadata: Metadata({authorization: accessToken!.token})});
     return {
       id: uuidv4(),
       user: user!,
@@ -32,9 +33,9 @@ export const login = createAsyncThunk<JonlineAccount, Login>(
   async (loginRequest) => {
     let client = await getServerClient(loginRequest);
     let { refreshToken, accessToken, user } = await client.login(loginRequest);
-    let metadata = new grpc.Metadata();
-    metadata.append('authorization', accessToken!.token)
-    user = user || await client.getCurrentUser({}, metadata);
+    // let metadata = new grpc.Metadata();
+    // metadata.append('authorization', accessToken!.token)
+    user = user || await client.getCurrentUser({}, {metadata: Metadata({authorization: accessToken!.token})});
     return {
       id: uuidv4(),
       user: user!,
