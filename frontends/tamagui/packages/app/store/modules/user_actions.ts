@@ -45,6 +45,7 @@ export const loadUser: AsyncThunk<User, LoadUser, any> = createAsyncThunk<User, 
 
       user = response.users[0]!;
     }
+    if (!user) throw 'User not found';
     return user;
   }
 );
@@ -69,6 +70,7 @@ export const loadUsername: AsyncThunk<User, LoadUsername, any> = createAsyncThun
 
       user = response.users[0]!;
     }
+    if (!user) throw 'User not found';
     return user;
   }
 );

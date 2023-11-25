@@ -25,6 +25,7 @@
     "expo-constants": "^14.2.1",
     "expo-linking": "^4.0.1",
     "moment": "^2.29.4",
+    "nice-grpc-web": "^3.3.2",
     "react-colorful": "^5.6.1",
     "react-drag-drop-files": "^2.3.10",
     "react-markdown": "^8.0.5",

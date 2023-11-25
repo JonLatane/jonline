@@ -1,11 +1,14 @@
-import { ReactNativeTransport } from "@improbable-eng/grpc-web-react-native-transport";
-import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/api";
-import { Platform } from "react-native";
+// import { ReactNativeTransport } from "@improbable-eng/grpc-web-react-native-transport";
+// import { GrpcWebImpl, Jonline, JonlineClientImpl } from "@jonline/api";
+// import { Platform } from "react-native";
 import { serverID, upsertServer } from "./modules";
 import { store } from "./store";
 import { JonlineServer } from "./types";
+import {createChannel, createClient as createClientNice} from 'nice-grpc-web';
+import { JonlineDefinition, JonlineClient } from "@jonline/api/generated/jonline";
+// import { JonlineClient } from '../../api/generated/jonline';
 
-const clients = new Map<string, JonlineClientImpl>();
+const clients = new Map<string, JonlineClient>();
 const loadingClients = new Set<string>();
 
 export function deleteClient(server: JonlineServer) {
@@ -20,7 +23,7 @@ export type JonlineClientCreationArgs = {
 };
 
 // Creates a client and upserts the server into the store.
-export async function getServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<Jonline> {
+export async function getServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<JonlineClient> {
   const serverId = serverID(server);
   // TODO: Why does this fail miserable if using port 443?
   const ports = [27707, 443];
@@ -60,7 +63,7 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
   return clients.get(serverId)!;
 }
 
-async function clientForServer(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClientImpl | undefined> {
+async function clientForServer(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClient | undefined> {
   // Resolve the actual backend server from its backend_host endpoint
   const backendHost = await window.fetch(
     `${server.secure ? 'https' : 'http'}://${server.host}/backend_host`
@@ -82,11 +85,19 @@ async function clientForServer(server: JonlineServer, port: number, args?: Jonli
 
 async function createClient(host: string, server: JonlineServer, args?: JonlineClientCreationArgs) {
   const serverId = serverID(server);
-  const client = new JonlineClientImpl(
-    new GrpcWebImpl(host, {
-      transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
-    })
+
+  const channel = createChannel(host);
+
+  const client: JonlineClient = createClientNice(
+    JonlineDefinition,
+    channel,
   );
+  
+  // const client = new JonlineClientImpl(
+  //   new GrpcWebImpl(host, {
+  //     transport: Platform.OS == 'web' ? undefined : ReactNativeTransport({})
+  //   })
+  // );
 
   console.log(`Getting service version and server configuration for ${host}...`);
 

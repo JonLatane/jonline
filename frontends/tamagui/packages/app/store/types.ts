@@ -1,6 +1,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
-import { ExpirableToken, GetServiceVersionResponse, Jonline, ServerConfiguration, User } from "@jonline/api";
+import { ExpirableToken, GetServiceVersionResponse, JonlineClient, ServerConfiguration, User } from "@jonline/api";
 import { accountId, serverID } from "./modules";
+import { CallOptions } from "nice-grpc-web";
 
 export type JonlineServer = {
   host: string;
@@ -34,6 +35,6 @@ export function accountOrServerId(accountOrServer: AccountOrServer) {
 }
 
 // A Jonline client with an optional credentials field bolted on.
-export type JonlineCredentialClient = Jonline & {
-  credential?: grpc.Metadata;
+export type JonlineCredentialClient = JonlineClient & {
+  credential?: CallOptions;
 }

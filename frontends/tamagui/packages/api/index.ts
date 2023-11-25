@@ -1,5 +1,5 @@
-import { GrpcWebImpl, DeepPartial, protobufPackage } from './generated/jonline';
-import { Exact } from './generated/server_configuration'
+// import {DeepPartial, protobufPackage } from './generated/jonline';
+// import { Exact } from './generated/server_configuration'
 
 export * from './generated/authentication'
 export * from './generated/permissions'
@@ -18,8 +18,8 @@ export { Timestamp } from './generated/google/protobuf/timestamp'
 // export { Jonline, JonlineClientImpl } from './generated/jonline'
 
 export type { Exact } from './generated/server_configuration'
-export { GrpcWebImpl, JonlineClientImpl, protobufPackage } from './generated/jonline'
-export type { Jonline, DeepPartial } from './generated/jonline'
+export { protobufPackage } from './generated/jonline'
+export type { JonlineClient, JonlineDefinition, DeepPartial } from './generated/jonline'
 
 
 // export { DeepPartial, Exact, protobufPackage, GrpcWebImpl }

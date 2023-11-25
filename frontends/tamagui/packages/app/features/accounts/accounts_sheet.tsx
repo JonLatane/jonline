@@ -1,21 +1,20 @@
 import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Menu, Plus, RefreshCw, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Plus, RefreshCw, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, upsertServer, useLoadingCredentialedData, useServerTheme, useTypedDispatch, useTypedSelector, useLocalApp, setBrowsingServers, setViewingRecommendedServers, setAllowServerSelection, JonlineAccount } from 'app/store';
+import { JonlineAccount, JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, setBrowsingServers, setViewingRecommendedServers, upsertServer, useLoadingCredentialedData, useLocalApp, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 import React, { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, TextInput } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
 import { physicallyHostingServerId } from '../about/about_screen';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import { SettingsSheet } from '../settings_sheet';
+import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
-import ServerCard from './server_card';
-import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
 import RecommendedServer from './recommended_server';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
-import { Jonline } from '@jonline/api/index';
+import ServerCard from './server_card';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -52,6 +51,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const effectiveServer = onlyShowServer ?? server;
 
   const [reauthenticating, setReauthenticating] = useState(false);
+  const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
   function reauthenticate(account: JonlineAccount) {
     dispatch(clearAccountAlerts());
     setAddingAccount(true);
@@ -60,6 +60,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     setNewAccountPass('');
     setForceDisableAccountButtons(false);
     setLoginMethod(LoginMethod.Login);
+    // (document.querySelector('#accounts-sheet-password-input') as HTMLInputElement)?.focus();
+    setTimeout(() => passwordRef.current.focus(), 100);
 
   }
   useEffect(() => {
@@ -103,13 +105,18 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   //?.filter(host => !currentServerHosts.includes(host)) ?? [];
   // const recommendedServerHostList = recommendableServerHosts;//?.filter(host => !currentServerHosts.includes(host)) ?? [];
   // const recommendedServerHosts = [...new Set(recommendedServerHostList)];
+  const [authError, setAuthError] = useState(undefined as string | undefined);
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
       ...primaryServer!,
       username: newAccountUser,
       password: newAccountPass,
-    }));
+    })).then(r => {
+      console.log('login success', r)
+    }).catch(e => {
+      console.log('login error', e)
+    });
   }
   function createServerAccount() {
     dispatch(clearAccountAlerts());
@@ -530,10 +537,16 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           setAddingAccount(false)
                         }}
                       />
-                      <Heading size="$9">{reauthenticating ? 'Re-Enter Password' : 'Add Account'}</Heading>
+                      <Heading size="$9">
+                        {reauthenticating ? 'Re-Enter Password'
+                          : loginMethod === 'login' ? 'Login'
+                            : loginMethod === 'create_account' ? 'Create Account'
+                              : 'Add Account'}
+                      </Heading>
                       <Heading size="$4">{primaryServer?.host}/</Heading>
                       <Sheet.ScrollView>
-                        <YStack space="$2" pb='$2' maw={600} w='100%' als='center'>
+                        <YStack space="$2" pb='$2' maw={600} w='100%' als='center'
+                          pt={loginMethod === 'login' ? Math.max(0, (window.innerHeight - 400) * 0.3) : 0}>
                           {/* <Heading size="$10">Add Account</Heading> */}
                           <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
                             editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
@@ -544,6 +557,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           {loginMethod
                             ? <XStack w='100%' animation="quick" {...standardAnimation}>
                               <Input secureTextEntry w='100%'
+                                ref={passwordRef}
+                                id='accounts-sheet-password-input'
                                 textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
                                 placeholder="Password"
                                 editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
@@ -583,10 +598,10 @@ to evaluate support options.
 
                           {loginMethod
                             ? <XStack>
-                              <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                              {reauthenticating ? undefined : <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
                                 disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
                                 Back
-                              </Button>
+                              </Button>}
                               <Button flex={1} backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor} onPress={() => {
                                 if (loginMethod == LoginMethod.Login) {
                                   loginToServer();
@@ -594,7 +609,7 @@ to evaluate support options.
                                   createServerAccount();
                                 }
                               }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                                {loginMethod == LoginMethod.Login ? 'Login' : 'Create Account'}
+                                {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Create Account'}
                               </Button>
                             </XStack>
                             : <XStack>

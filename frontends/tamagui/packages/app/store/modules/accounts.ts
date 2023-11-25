@@ -157,8 +157,6 @@ export const accountsSlice = createSlice({
     builder.addCase(login.rejected, (state, action) => {
       state.status = "errored";
       state.error = action.error as Error;
-      state.status = "errored";
-      state.error = action.error as Error;
       state.errorMessage = formatError(action.error as Error);
       state.error = action.error as Error;
     });
