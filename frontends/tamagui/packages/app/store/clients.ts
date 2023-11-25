@@ -86,7 +86,7 @@ async function clientForServer(server: JonlineServer, port: number, args?: Jonli
 async function createClient(host: string, server: JonlineServer, args?: JonlineClientCreationArgs) {
   const serverId = serverID(server);
 
-  const channel = createChannel('http://localhost:8080');
+  const channel = createChannel(host);
 
   const client: JonlineClient = createClientNice(
     JonlineDefinition,
