@@ -1,21 +1,26 @@
 use std::{env, sync::Arc};
 
-use crate::{db_connection::PgPool, env_var};
 use crate::jonline_service::JonlineService;
+use crate::{db_connection::PgPool, env_var};
 
 use crate::report_error;
 
 use crate::protos::jonline_server::JonlineServer;
 
-use std::net::SocketAddr;
-use tonic::transport::{Server, ServerTlsConfig, Certificate, Identity};
-use tonic_web::GrpcWebLayer;
-use tower_http::cors::CorsLayer;
 use ::log::{info, warn};
+use http::header::HeaderName;
+use std::net::SocketAddr;
+use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
+use tonic_web::GrpcWebLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
-pub fn start_tonic_server(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>, port: u16) -> Result<bool, Box<dyn std::error::Error>> {
+pub fn start_tonic_server(
+    pool: Arc<PgPool>,
+    bucket: Arc<s3::Bucket>,
+    port: u16,
+) -> Result<bool, Box<dyn std::error::Error>> {
     let jonline = JonlineService { pool, bucket };
 
     let reflection_service = tonic_reflection::server::Builder::configure()
@@ -46,15 +51,17 @@ pub fn start_tonic_server(pool: Arc<PgPool>, bucket: Arc<s3::Bucket>, port: u16)
 
     let tonic_router = tonic_server
         .accept_http1(true)
-        .layer(CorsLayer::very_permissive())
+        .layer(CorsLayer::permissive())
         .layer(GrpcWebLayer::new())
+        // .layer(CorsLayer::permissive())
         .add_service(JonlineServer::new(jonline))
         .add_service(reflection_service);
 
     tokio::spawn(async move {
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], port));
+        info!("Starting Tonic server on {}", tonic_addr);
         match tonic_router.serve(tonic_addr).await {
-            Ok(_) => ::log::info!("Tonic server started on {}", tonic_addr),
+            Ok(_) => info!("Tonic server finished on {}", tonic_addr),
             Err(e) => {
                 ::log::warn!("Unable to start Tonic server on port {}", port);
                 report_error(e);

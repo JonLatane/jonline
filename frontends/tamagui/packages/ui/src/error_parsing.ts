@@ -23,10 +23,20 @@ const grpcErrorConversions: RegExpErrorMatcher[] = [
   },
 ];
 
-export function formatError ( error : Error ) : string { 
+export type ParsedError = { status: string, message: string };
+export function parseErrorMessage(unparsed: string): { status: string, message: string } {
+  let [_, status, message] = unparsed.match(/^\/jonline.Jonline\/\w+ (\w+): (.*)$/)?.map(a => a) ?? [];
+  return { status, message };
+}
+
+export function formatError(error: Error): string {
   let message = error.message;
   if (!message) message = error.toString();
-  grpcErrorConversions.forEach(({regex, handler}) => {
+  const parsedMessage = parseErrorMessage(message);
+  if (parsedMessage) {
+    message = parsedMessage.message;
+  }
+  grpcErrorConversions.forEach(({ regex, handler }) => {
     let matches = message.match(regex);
     if (matches) {
       message = handler(matches);
@@ -35,7 +45,7 @@ export function formatError ( error : Error ) : string {
   return message;
 }
 
-function capitalize(str: string){
+function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
-const sIfPlural = (s: string, {suffix = 's'}) => s == '1' ? '' : suffix;
+const sIfPlural = (s: string, { suffix = 's' }) => s == '1' ? '' : suffix;

@@ -81,9 +81,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
           />
         </YStack>
       </StickyBox> : undefined}
-      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={1400} space>
+      <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
         {eventsLoaded && postsLoaded
-          ? <XStack w='100%'>
+          ? <XStack w='100%' px='$3'>
             <Button onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
               <Heading size='$6'>Upcoming Events</Heading>
               <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>

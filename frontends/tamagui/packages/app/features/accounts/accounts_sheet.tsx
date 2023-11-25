@@ -60,7 +60,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     setNewAccountPass('');
     setForceDisableAccountButtons(false);
     setLoginMethod(LoginMethod.Login);
-    passwordRef.current.focus();
+    // (document.querySelector('#accounts-sheet-password-input') as HTMLInputElement)?.focus();
+    setTimeout(() => passwordRef.current.focus(), 100);
 
   }
   useEffect(() => {
@@ -104,6 +105,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   //?.filter(host => !currentServerHosts.includes(host)) ?? [];
   // const recommendedServerHostList = recommendableServerHosts;//?.filter(host => !currentServerHosts.includes(host)) ?? [];
   // const recommendedServerHosts = [...new Set(recommendedServerHostList)];
+  const [authError, setAuthError] = useState(undefined as string | undefined);
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
@@ -535,11 +537,16 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                           setAddingAccount(false)
                         }}
                       />
-                      <Heading size="$9">{reauthenticating ? 'Re-Enter Password' : 'Add Account'}</Heading>
+                      <Heading size="$9">
+                        {reauthenticating ? 'Re-Enter Password'
+                          : loginMethod === 'login' ? 'Login'
+                            : loginMethod === 'create_account' ? 'Create Account'
+                              : 'Add Account'}
+                      </Heading>
                       <Heading size="$4">{primaryServer?.host}/</Heading>
                       <Sheet.ScrollView>
-                        <YStack space="$2" pb='$2' maw={600} w='100%' als='center' 
-                        pt={loginMethod === 'login' ? Math.max(0, (window.innerHeight - 400) * 0.3) : 0}>
+                        <YStack space="$2" pb='$2' maw={600} w='100%' als='center'
+                          pt={loginMethod === 'login' ? Math.max(0, (window.innerHeight - 400) * 0.3) : 0}>
                           {/* <Heading size="$10">Add Account</Heading> */}
                           <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
                             editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
@@ -551,6 +558,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                             ? <XStack w='100%' animation="quick" {...standardAnimation}>
                               <Input secureTextEntry w='100%'
                                 ref={passwordRef}
+                                id='accounts-sheet-password-input'
                                 textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
                                 placeholder="Password"
                                 editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
