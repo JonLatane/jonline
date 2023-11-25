@@ -734,7 +734,7 @@ export const EventCard: React.FC<Props> = ({
                       instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                   </YStack>
                   : undefined}
-                <XStack space='$2' p='$3' pt={0} flexWrap="wrap" key='save-buttons' /*pr={mediaQuery.gtXs ? '$3' : '$1'}*/>
+                <XStack space='$2'px='$3' py='$2' pt={0} flexWrap="wrap" key='save-buttons' /*pr={mediaQuery.gtXs ? '$3' : '$1'}*/>
                   {showEdit
                     ? editing
                       ? <>
@@ -821,26 +821,21 @@ export const EventCard: React.FC<Props> = ({
                       </>
                     : undefined}
 
-                  {/* {editing && !previewingEdits
-                    ?  */}
-                  <XStack key='visibility-edit' mt='$2' ml='auto'>
-                    <VisibilityPicker
-                      id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
-                      label='Event Visibility'
-                      visibility={visibility}
-                      onChange={setEditedVisibility}
-                      visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
-                      readOnly={!editing || previewingEdits}
-                    />
-                  </XStack>
-                  {/* : visibility != Visibility.GLOBAL_PUBLIC && !horizontal
-                      ? <Paragraph key='visibility-info' size='$1' my='auto' ml='$2'>
-                        {postVisibilityDescription(visibility, groupContext, server, 'Event')}
-                      </Paragraph>
-                      : undefined} */}
-                  <XStack pt={10} my='auto' maw='100%'>
-                    <GroupPostManager post={post} isVisible={isVisible}
-                      createViewHref={createGroupEventViewHref} />
+                  <XStack space='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
+                    <XStack key='visibility-edit' my='auto' ml='auto'>
+                      <VisibilityPicker
+                        id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
+                        label='Event Visibility'
+                        visibility={visibility}
+                        onChange={setEditedVisibility}
+                        visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
+                        readOnly={!editing || previewingEdits}
+                      />
+                    </XStack>
+                    <XStack my='auto' maw='100%' ml='auto'>
+                      <GroupPostManager post={post} isVisible={isVisible}
+                        createViewHref={createGroupEventViewHref} />
+                    </XStack>
                   </XStack>
                 </XStack>
 

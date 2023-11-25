@@ -27,9 +27,9 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
   if (readOnly) {
     return <Tooltip>
       <Tooltip.Trigger>
-        <XStack my='auto' pt='$1' opacity={0.5} space='$2'>
+        <XStack my='auto' opacity={0.5} space='$2'>
           {/* <Heading size='$1' mr='$2' opacity={0.5}>Visibility:</Heading> */}
-          <Paragraph my='auto' pt='$1' size='$1'>{visibilityName(visibility)}</Paragraph>
+          <Paragraph my='auto' size='$1'>{visibilityName(visibility)}</Paragraph>
           {/* <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>{visibilityName(visibility)}</Text> */}
           {/* <XStack my='auto'>
             <Info size='$1 ' />
