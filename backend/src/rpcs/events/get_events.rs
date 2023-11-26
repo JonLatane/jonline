@@ -34,6 +34,7 @@ pub fn get_events(
     ) {
         // TODO: implement the other listing types
         (_, Some(event_id), _, _) => get_event_by_id(&user, &event_id, conn)?,
+        (_, _, Some(instance_id), _) => get_event_by_instance_id(&user, &instance_id, conn)?,
         (EventListingType::GroupEvents, _, _, _) => match request.group_id {
             Some(group_id) => get_group_events(
                 group_id.to_db_id_or_err("group_id")?,
@@ -166,6 +167,15 @@ fn get_user_events(
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
     Ok(marshalable_event_data!(event_data))
+}
+
+fn get_event_by_instance_id(
+    user: &Option<&models::User>,
+    instance_id: &str,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<MarshalableEvent>, Status> {
+    let instance = models::get_event_instance(instance_id.to_string().to_db_id_or_err("instance_id")?, user, conn)?;
+    get_event_by_id(user, &instance.event_id.to_proto_id(), conn)
 }
 
 fn get_event_by_id(

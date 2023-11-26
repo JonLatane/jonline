@@ -14,7 +14,7 @@ use crate::{
 
 pub fn get_event(
     event_id: i64,
-    _user: &Option<User>,
+    _user: &Option<&User>,
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
     events::table
@@ -26,7 +26,7 @@ pub fn get_event(
 
 pub fn get_event_instance(
     event_instance_id: i64,
-    _user: &Option<User>,
+    _user: &Option<&User>,
     conn: &mut PgPooledConnection,
 ) -> Result<EventInstance, Status> {
     event_instances::table

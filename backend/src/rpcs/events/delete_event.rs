@@ -11,7 +11,7 @@ pub fn delete_event(
 ) -> Result<Event, Status> {
     let event = get_event(
         request.id.to_db_id_or_err("id")?,
-        &Some(current_user.clone()),
+        &Some(current_user),
         conn,
     )?;
     request.post.map_or_else(

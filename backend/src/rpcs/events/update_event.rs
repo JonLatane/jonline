@@ -19,7 +19,7 @@ pub fn update_event(
     conn: &mut PgPooledConnection,
 ) -> Result<Event, Status> {
     let event_id = request.id.to_db_id_or_err("id")?;
-    let mut existing_event = models::get_event(event_id, &Some(current_user.clone()), conn)?;
+    let mut existing_event = models::get_event(event_id, &Some(current_user), conn)?;
 
     log::info!("Updating event: {:?}", existing_event);
     existing_event.info = serde_json::to_value(request.info.to_owned()).unwrap();
@@ -76,7 +76,7 @@ fn update_event_instances(
 ) -> Result<Event, Status> {
     let event = models::get_event(
         request.id.to_db_id_or_err("id")?,
-        &Some(current_user.clone()),
+        &Some(current_user),
         conn,
     )?;
     let existing_instance_data = models::get_event_instances(event.id, &Some(&current_user), conn)?;
