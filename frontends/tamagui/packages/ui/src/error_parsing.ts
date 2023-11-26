@@ -24,9 +24,13 @@ const grpcErrorConversions: RegExpErrorMatcher[] = [
 ];
 
 export type ParsedError = { status: string, message: string };
-export function parseErrorMessage(unparsed: string): { status: string, message: string } {
+export function parseErrorMessage(unparsed: string): ParsedError | undefined {
   let [_, status, message] = unparsed.match(/^\/jonline.Jonline\/\w+ (\w+): (.*)$/)?.map(a => a) ?? [];
-  return { status, message };
+  if (status && message) {
+    return { status, message };
+  } else {
+    return undefined;
+  }
 }
 
 export function formatError(error: Error): string {
