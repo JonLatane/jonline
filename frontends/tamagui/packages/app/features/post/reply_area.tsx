@@ -13,16 +13,15 @@ import { PostMediaRenderer } from './post_media_renderer'
 
 interface ReplyAreaProps {
   replyingToPath: string[];
-  editingPost?: Post;
-  onCancelEditing?: () => void;
   hidden?: boolean;
+  onStopReplying?: () => void;
 }
 
 // let _replyTextFocused = false;
 
 // export const isReplyTextFocused = () => _replyTextFocused;
 
-export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPost, hidden }) => {
+export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, onStopReplying }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const [media, setMedia] = useState([] as MediaRef[]);
@@ -122,7 +121,11 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, editingPos
           </>
           : undefined}
         {replyingToPath.length > 1
-          ? <Heading size='$1'>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
+          ? <XStack w='100%'>
+            <Heading size='$1' f={1}>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
+            {onStopReplying ? <Button size='$1' onPress={onStopReplying}>Cancel</Button>: undefined}
+            <XStack f={1} />
+          </XStack>
           : undefined}
         <XStack>
           <ZStack f={1}>

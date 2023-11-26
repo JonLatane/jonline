@@ -9,12 +9,14 @@ export type ServerTheme = {
   primaryTextColor: string;
   primaryDarkColor: string;
   primaryLightColor: string;
+  primaryBgColor: string;
   primaryAnchorColor: string;
 
   navColor: string;
   navTextColor: string;
   navDarkColor: string;
   navLightColor: string;
+  navBgColor: string;
   navAnchorColor: string;
 
   textColor: string;
@@ -47,12 +49,27 @@ export function useServerTheme(): ServerTheme {
   const backgroundColor = theme.background.val;
   const { luma: themeBgLuma, textColor } = colorMeta(backgroundColor);
   const darkMode = themeBgLuma <= 0.5;
+  const primaryBgColor = darkMode ? primaryDarkColor : primaryLightColor;
   const primaryAnchorColor = !darkMode ? primaryDarkColor : primaryLightColor;
   const navAnchorColor = !darkMode ? navDarkColor : navLightColor;
+  const navBgColor = !darkMode ? navDarkColor : navLightColor;
 
   const warningAnchorColor = !darkMode ? '#d1c504' : '#EBDF1C';
   // debugger;
-  return { server, textColor, primaryColor, navColor, primaryTextColor, navTextColor, primaryDarkColor, navDarkColor, primaryLightColor, navLightColor, primaryAnchorColor, navAnchorColor, warningAnchorColor, darkMode, backgroundColor };
+  return {
+    server,
+    backgroundColor,
+    textColor,
+    darkMode,
+
+    warningAnchorColor,
+
+    primaryColor, primaryTextColor, primaryDarkColor, primaryLightColor,
+    primaryBgColor, primaryAnchorColor,
+
+    navColor, navTextColor, navDarkColor, navLightColor,
+    navBgColor, navAnchorColor,
+  };
 }
 
 type ColorMeta = {

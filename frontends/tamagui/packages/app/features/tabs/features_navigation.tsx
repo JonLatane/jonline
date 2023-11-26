@@ -1,12 +1,10 @@
 import { Group, User, UserListingType } from "@jonline/api";
-import { JonlineServer, RootState, getUsersPage, loadUsersPage, setInlineFeatureNavigation, useAccountOrServer, useCredentialDispatch, useTypedSelector } from 'app/store';
-import { Button, Heading, Popover, ScrollView, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
-import { useAccount, useLocalApp, useServerTheme } from 'app/store';
-import { useLink } from "solito/link";
-import { AlertTriangle, Menu, Circle, SeparatorVertical, Video, Users, Calendar, MessageSquare, Clapperboard, Users2, MenuSquare } from "@tamagui/lucide-icons";
+import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
+import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 } from "@tamagui/lucide-icons";
+import { RootState, getUsersPage, loadUsersPage, useAccount, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store';
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 import { useEffect, useState } from "react";
-import { color } from "@tamagui/themes";
+import { useLink } from "solito/link";
 
 export enum AppSection {
   HOME = 'home',

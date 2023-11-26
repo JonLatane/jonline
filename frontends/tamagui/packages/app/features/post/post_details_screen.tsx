@@ -28,7 +28,7 @@ export function PostDetailsScreen() {
   const subjectPost = useTypedSelector((state: RootState) => selectPostById(state.posts, postId!));
   const [loadingPost, setLoadingPost] = useState(false);
   const conversationContext = useStatefulConversationContext();
-  const { editingPosts, replyPostIdPath, editHandler } = conversationContext;
+  const { editingPosts, replyPostIdPath, setReplyPostIdPath, editHandler } = conversationContext;
 
   // const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   // const chatUI = app?.discussionChatUI;
@@ -73,7 +73,7 @@ export function PostDetailsScreen() {
 
   return (
     <TabsNavigation appSection={AppSection.POST} selectedGroup={group}>
-      {!subjectPost
+      { !subjectPost
         ? failedToLoadPost
           ? <>
             <Heading size='$5'>Post not found.</Heading>
@@ -87,9 +87,11 @@ export function PostDetailsScreen() {
               <XStack w='100%' paddingHorizontal='$3'>
                 {subjectPost ? <PostCard post={subjectPost!} onEditingChange={editHandler(subjectPost.id)} /> : undefined}
               </XStack>
-              <ConversationManager post={subjectPost} />
+              {/* <ConversationManager post={subjectPost} /> */}
             </ScrollView>
-            <ReplyArea replyingToPath={replyPostIdPath} hidden={!showReplyArea} />
+
+
+            <ReplyArea replyingToPath={replyPostIdPath} onStopReplying={() => postId && setReplyPostIdPath([postId])} hidden={!showReplyArea} />
           </YStack>
         </ConversationContextProvider>
       }

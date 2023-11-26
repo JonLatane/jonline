@@ -11,14 +11,7 @@ import type { SolitoAppProps } from 'solito'
 import { isSafari } from '@jonline/ui'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 
-const queryClient = new QueryClient()
-
-// export default function App() {
-//    return (
-//        <Example />
-//      </QueryClientProvider>
-//    )
-// }
+const queryClient = new QueryClient();
 
 if (process.env.NODE_ENV === 'production') {
   require('../public/tamagui.css')
@@ -50,6 +43,7 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
         <title>Jonline</title>
         <meta name="description" content="Jonline is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends." />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        {/* <meta name="viewport" content="viewport-fit=cover" /> */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
 
