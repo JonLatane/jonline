@@ -30,7 +30,6 @@ extern crate percent_encoding;
 extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
-extern crate http;
 
 pub mod minio_connection;
 pub mod db_connection;

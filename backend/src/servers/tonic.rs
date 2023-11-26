@@ -8,11 +8,10 @@ use crate::report_error;
 use crate::protos::jonline_server::JonlineServer;
 
 use ::log::{info, warn};
-use http::header::HeaderName;
 use std::net::SocketAddr;
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
 use tonic_web::GrpcWebLayer;
-use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::cors::CorsLayer;
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("greeter_descriptor");
 
