@@ -43,7 +43,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const app = useTypedSelector((state: RootState) => state.app);
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
-  const backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}A6`;
+  const backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}FF`;
 
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
@@ -128,11 +128,11 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
         </YStack>
       </StickyBox>
 
-      <XStack w={testValue}>
-        <YStack f={1} jc="center" ai="center" backgroundColor={bgColor}>
-          {children}
-        </YStack>
-      </XStack>
+        {/* <XStack> */}
+          <YStack jc="center" ai="center" backgroundColor={bgColor}>
+            {children}
+          </YStack>
+        {/* </XStack> */}
       {/* <YStack w={testValue} jc="center" ai="center" backgroundColor={bgColor}>
         {children}
       </YStack> */}
