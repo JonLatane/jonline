@@ -290,45 +290,45 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                         </Button>
                       </ZStack>
                     </XStack>
-                    <AnimatePresence>
-                      {showSettings
-                        ? <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$3'
-                          animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
-                        >
-                          {visibility != Visibility.PRIVATE
-                            ? <XStack w='100%' mb='$2'>
-                              <GroupsSheet
-                                groupNamePrefix='Share to '
-                                noGroupSelectedText={publicVisibility(visibility)
-                                  ? 'Share Everywhere' : 'Share To A Group'}
-                                selectedGroup={group}
-                                onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
-                              />
-                            </XStack>
-                            : undefined}
-                          {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
-                          <VisibilityPicker id={`visibility-picker-create-${entityName?.toLowerCase() ?? 'post'}`}
-                            label='Post Visibility'
-                            visibility={visibility}
-                            onChange={setVisibility}
-                            visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
-                          <ToggleRow
-                            // key={`'create-post-shareable-${shareable}`} 
-                            name={
-                              publicVisibility(visibility) || visibility == Visibility.LIMITED ?
-                                `Allow sharing to ${group ? 'other ' : ''}Groups`
-                                : 'Allow sharing to other users'
-                            }
-                            value={shareable}
-                            setter={(v) => setShareable(v)}
-                            disabled={disableInputs || visibility == Visibility.PRIVATE} />
-                        </YStack> : undefined}
+                    {/* <AnimatePresence> */}
+                    {showSettings
+                      ? <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$3'
+                        animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
+                      >
+                        {visibility != Visibility.PRIVATE
+                          ? <XStack w='100%' mb='$2'>
+                            <GroupsSheet
+                              groupNamePrefix='Share to '
+                              noGroupSelectedText={publicVisibility(visibility)
+                                ? 'Share Everywhere' : 'Share To A Group'}
+                              selectedGroup={group}
+                              onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+                            />
+                          </XStack>
+                          : undefined}
+                        {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
+                        <VisibilityPicker id={`visibility-picker-create-${entityName?.toLowerCase() ?? 'post'}`}
+                          label='Post Visibility'
+                          visibility={visibility}
+                          onChange={setVisibility}
+                          visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
+                        <ToggleRow
+                          // key={`'create-post-shareable-${shareable}`} 
+                          name={
+                            publicVisibility(visibility) || visibility == Visibility.LIMITED ?
+                              `Allow sharing to ${group ? 'other ' : ''}Groups`
+                              : 'Allow sharing to other users'
+                          }
+                          value={shareable}
+                          setter={(v) => setShareable(v)}
+                          disabled={disableInputs || visibility == Visibility.PRIVATE} />
+                      </YStack> : undefined}
                     {/* </AnimatePresence> */}
                     {/* <AnimatePresence> */}
                     {showMedia
                       ? <PostMediaManager
                         {...{ link, media, setMedia, embedLink, setEmbedLink }} /> : undefined}
-                    </AnimatePresence>
+                    {/* </AnimatePresence> */}
 
                     <TextArea f={1} pt='$2' value={content} ref={textAreaRef}
                       onFocus={() => setShowSettings(false)}
