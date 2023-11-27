@@ -79,12 +79,8 @@ export function getHasMorePostPages(posts: PostsState, listingType: PostListingT
 }
 
 function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number): Event[] {
-  const pageInstaceIds: string[] = ((events.eventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
-  const pageInstances = pageInstaceIds.map(id => events.instances[id]).filter(p => p) as EventInstance[];
-  const pageEvents = pageInstances.map(instance => {
-    const event = selectEventById(events, instance.eventId);
-    return event ? { ...event, instances: [instance] } : undefined;
-  }).filter(p => p) as Event[];
+  const pageInstanceIds: string[] = ((events.eventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
+  const pageEvents = instancesToEvents(events, pageInstanceIds);
   return pageEvents;
 }
 
@@ -133,16 +129,6 @@ export function getHasMoreGroupPostPages(groups: GroupsState, groupId: string, c
 }
 
 
-function getGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): Event[] {
-  const { events, groups } = state;
-  const pageInstaceIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
-  const pageInstances = pageInstaceIds.map(id => events.instances[id]).filter(p => p) as EventInstance[];
-  const pageEvents = pageInstances.map(instance => {
-    const event = selectEventById(events, instance.eventId);
-    return event ? { ...event, instances: [instance] } : undefined;
-  }).filter(p => p) as Event[];
-  return pageEvents;
-}
 
 export function getGroupEventPages(state: RootState, groupId: string, timeFilter: string, throughPage: number): Event[] {
   const result: Event[] = [];
@@ -155,8 +141,31 @@ export function getGroupEventPages(state: RootState, groupId: string, timeFilter
   return result;
 }
 
-export function getHasGroupEventsPage(groups: GroupsState, groupId: string, timeFilter: string, page: number): boolean {
-  return ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] != undefined;
+function getGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): Event[] {
+  const { events, groups } = state;
+  const pageInstanceIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
+  const pageEvents = instancesToEvents(events, pageInstanceIds);
+  console.log('pageInstanceIds.length', pageInstanceIds.length, pageInstanceIds, 'pageEvents.length', pageEvents.length);
+  return pageEvents;
+}
+
+function instancesToEvents(events: EventsState, instanceIds: string[]) {
+  return instanceIds.map(instanceId => {
+    const eventId = events.instanceEvents[instanceId];
+    console.log('eventId', eventId, events.instanceEvents)
+    if (!eventId) return undefined;
+
+    const event = selectEventById(events, eventId)
+    if (!event) return undefined;
+
+    return { ...event, instances: event.instances.filter(i => i.id == instanceId) };
+  }).filter(p => p).map(p => p as Event);
+}
+
+export function getHasGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): boolean {
+  const { events, groups } = state;
+  const data = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page];
+  return data != undefined// && instancesToEvents(events, data).length > 0;
 }
 
 export function getHasMoreGroupEventPages(groups: GroupsState, groupId: string, timeFilter: string, currentPage: number): boolean {

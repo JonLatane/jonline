@@ -64,3 +64,15 @@ export const loadEvent: AsyncThunk<Event, LoadEvent, any> = createAsyncThunk<Eve
     return event;
   }
 );
+
+export type LoadEventByInstance = { instanceId: string } & AccountOrServer;
+export const loadEventByInstance: AsyncThunk<Event, LoadEventByInstance, any> = createAsyncThunk<Event, LoadEventByInstance>(
+  "events/loadOneByInstance",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const response = await client.getEvents(GetEventsRequest.create({ eventInstanceId: request.instanceId }), client.credential);
+    if (response.events.length == 0) throw 'Event not found';
+    const event = response.events[0]!;
+    return event;
+  }
+);

@@ -42,8 +42,8 @@ const initialState: LocalAppConfiguration = {
   showEventsOnLatest: true,
   serverRecentGroups: {},
   inlineFeatureNavigation: undefined,
-  shrinkFeatureNavigation: false,
-  browseRsvpsFromPreviews: false
+  shrinkFeatureNavigation: true,
+  browseRsvpsFromPreviews: true
 };
 
 export const localAppSlice = createSlice({

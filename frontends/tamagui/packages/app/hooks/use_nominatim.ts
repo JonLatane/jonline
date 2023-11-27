@@ -48,7 +48,7 @@ export function useNominatim(
   const { isLoading, isFetching, isError, data, refetch } = useQuery({
     queryKey: ['OpenStreetMapNominatim', query],
     queryFn: () => {
-      console.log('starting query', query);
+      // console.log('starting query', query);
       if (!query) {
         return [];
       }

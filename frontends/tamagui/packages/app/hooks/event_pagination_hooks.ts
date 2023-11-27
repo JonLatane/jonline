@@ -2,6 +2,7 @@ import { Event, EventListingType, TimeFilter } from "@jonline/api";
 import { RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, useCredentialDispatch, useTypedSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { PostPageParams, finishPagination } from "./post_pagination_hooks";
+import { optServerID, serverID } from '../store/modules/servers';
 
 export type EventPageParams = PostPageParams & { filter?: TimeFilter };
 
@@ -30,8 +31,6 @@ export function useEventPages(listingType: EventListingType, throughPage: number
     dispatch(loadEventsPage({ ...accountOrServer, listingType, filter: params?.filter })).then(finishPagination(setLoadingEvents, params?.onLoaded));
   }
 
-  // debugger;
-
   return { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded };
 }
 
@@ -44,9 +43,7 @@ export function useGroupEventPages(groupId: string, throughPage: number, params?
 
   const events: Event[] = getGroupEventPages(state, groupId, timeFilter, throughPage);
 
-  // debugger;
-
-  const firstPageLoaded = getHasGroupEventsPage(state.groups, groupId, timeFilter, 0);
+  const firstPageLoaded = getHasGroupEventsPage(state, groupId, timeFilter, 0);
   useEffect(() => {
     if (!firstPageLoaded && !loadingEvents) {
       if (!accountOrServer.server) return;
@@ -55,13 +52,14 @@ export function useGroupEventPages(groupId: string, throughPage: number, params?
       setLoadingEvents(true);
       reloadEvents();
     }
-  });
-
+  }, [loadingEvents, optServerID(accountOrServer.server), groupId, timeFilter]);
   const hasMorePages = getHasMoreGroupEventPages(state.groups, groupId, timeFilter, throughPage);
 
   function reloadEvents() {
-    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId, filter: params?.filter })).then(finishPagination(setLoadingEvents, params?.onLoaded));
+    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId, filter: params?.filter }))
+      .then(finishPagination(setLoadingEvents, params?.onLoaded));
   }
 
+  console.log("useGroupEventPages", groupId, throughPage, events, hasMorePages, firstPageLoaded);
   return { events, loadingEvents: loadingEvents || state.groups.eventPageStatus == 'loading', reloadEvents, hasMorePages, firstPageLoaded };
 }

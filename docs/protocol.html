@@ -387,7 +387,8 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       First, use the <code>CreateAccount</code> or <code>Login</code> RPCs to fetch (and store) an initial
       <code>refresh_token</code> and <code>access_token</code>. Clients should use the <code>access_token</code> until it expires,
       then use the <code>refresh_token</code> to call the <code>AccessToken</code> RPC for a new one. (The <code>AccessToken</code> RPC
-      may also return a new <code>refresh_token</code>, which should replace the old one in client storage.)
+      may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
+      one in client storage.)
     </p>
     <h5 id="http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs)</h5>
     <p>
@@ -410,6 +411,39 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       In the works to be released soon, Jonline will also support a "fully behind CDN" mode, where gRPC is served over port 443 and HTTP over port
       80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare's gRPC
       proxy support. With this, both web and gRPC resources can live behind a CDN.
+    </p>
+    <h5 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h5>
+    <h6 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h6>
+    <p>
+      Jonline APIs are designed to support <code>Moderation</code> and <code>Visibility</code> controls at the level of individual entities. However, to keep things
+      DRY, moderation and visibility controls are only implemented for <code>User</code>s, <code>Media</code>, <code>Group</code>s, and <code>Post</code>s.
+    </p>
+    <p>
+      <code>Event</code>s and future <code>Post</code>-like types simply use the same implementation as their contained <code>Post</code>s. The intent here is to maximize
+      both shared code and implementation robustness.
+    </p>
+    <h6 id="composition-over-inheritance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#composition-over-inheritance"><span class="octicon octicon-link"></span></a>Composition Over Inheritance</h6>
+    <p>
+      Jonline's APIs are designed using composition over inheritance. For instance, an <code>Event</code> contains
+      a <code>Post</code> rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized),
+      through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
+    </p>
+    <h6 id="predictable-atomicity"><a class="anchor" aria-hidden="true" tabindex="-1" href="#predictable-atomicity"><span class="octicon octicon-link"></span></a>Predictable Atomicity</h6>
+    <p>
+      The use of composition over inheritance also means that Jonline APIs can be <em>predictably</em> non-atomic based on their compositional structure.
+      For instance, <code>UpdatePost</code> is fully atomic.
+    </p>
+    <p>
+      <code>UpdateEvent</code>, however, is non-atomic. Given that an <code>Event</code> has a <code>Post</code> and many <code>EventInstance</code>s,
+      <code>UpdateEvent</code> will first update the <code>Post</code> atomically (literally calling the <code>UpdatePost</code> RPC),
+      then the <code>Event</code> atomically, and then finally process updates to its <code>EventInstance</code>s in a final atomic operation.
+    </p>
+    <p>
+      Because moderation/visibility lives at the <code>Post</code> level, this means that a developer error in <code>UpdateEvents</code> cannot prevent
+      visibility and moderation changes from being made in Events, even if there are errors elsewhere.
+      This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
+      moderation controls (for instance, <code>Sheet</code>, <code>SharedExpenseReport</code>, <code>SharedCalendar</code>, etc.). The entire architecture should promote this
+      approach to predictable atomicity.
     </p>
     <h4 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h4>
     <table>

@@ -109,6 +109,11 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       groupsAdapter.upsertOne(state, group);
       state.shortnameIds[action.meta.arg.shortname] = undefined;
       state.shortnameIds[group.shortname] = group.id;
+      setTimeout(() => {
+        // TODO: Use separate dispatch to delete old shortname/ID link.
+        //
+        // state.shortnameIds[action.meta.arg.shortname] = undefined;
+      }, 5000)
     });
     builder.addCase(deleteGroup.fulfilled, (state, action) => {
       groupsAdapter.removeOne(state, action.meta.arg.id);

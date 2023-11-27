@@ -27,7 +27,8 @@ export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNex
     }
   }, [isVisible, loadingPage, page]);
 
-  const [fgColor, bgColor] = hasNextPage ? [navTextColor, navColor] : [primaryTextColor, primaryColor];
+  const [fgColor, bgColor] = hasNextPage
+    ? [navTextColor, navColor] : [undefined, '$backgroundFocus'];
 
   const renderedPageCount = page + (hasNextPage ? 1 : 0);
   return <XStack backgroundColor={bgColor} h={80} borderRadius={5} ref={ref} p='$5' w='100%'>

@@ -281,13 +281,13 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   const linkToDetailsPageRsvps = isPreview && !browseRsvpsFromPreviews;
   const rsvpDetailsBaseLink = groupContext
-    ? `/g/${groupContext.shortname}/e/${event.id}/i/${instance!.id}?section=rsvp`
-    : `/event/${event.id}/i/${instance!.id}?section=rsvp`;
+    ? `/g/${groupContext.shortname}/e/${instance!.id}?section=rsvp`
+    : `/event/${instance!.id}?section=rsvp`;
   const rsvpDetailsLinkWithToken = currentAnonRsvp
     ? `${rsvpDetailsBaseLink}&anonymousAuthToken=${currentAnonRsvp.anonymousAttendee?.authToken}`
     : rsvpDetailsBaseLink;
   const rsvpDetailsLink = useLink({ href: rsvpDetailsLinkWithToken });
-  const rsvpLink = `/event/${event.id}/i/${instance.id}?anonymousAuthToken=${queryAnonAuthToken}`;
+  const rsvpLink = `/event/${instance.id}?anonymousAuthToken=${queryAnonAuthToken}`;
   const isPast = isPastInstance(instance);
 
   function formatCount(rsvpCount: number, attendeeCount: number,) {

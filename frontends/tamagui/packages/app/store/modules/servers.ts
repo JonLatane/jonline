@@ -11,6 +11,10 @@ import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 import { GetServiceVersionResponse } from "@jonline/api";
 
+export function optServerID(server: JonlineServer | undefined): string | undefined{
+  return server ? serverID(server) : undefined;
+}
+
 export function serverID(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}:${server.host}`;
 }

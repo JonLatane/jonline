@@ -14,16 +14,18 @@ export function isSafari() {
 }
 
 export function needsScrollPreservers(): boolean {
-  if (!isClient) return false;
+  return true;
 
-  if (!isSafari()) return false;
+  // if (!isClient) return false;
 
-  const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
-  const result = ['back_forward', 'reload'].includes(nav.type);
-  // console.log(`NavigationType=${nav.type}, needsScrollPreservers=${result}`);
-  return result;
+  // if (!isSafari()) return false;
+
+  // const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
+  // const result = ['back_forward', 'reload'].includes(nav.type);
+  // // console.log(`NavigationType=${nav.type}, needsScrollPreservers=${result}`);
+  // return result;
 }
 
 export function dismissScrollPreserver(setShowScrollPreserver: (show: boolean) => void) {
-  setTimeout(() => setShowScrollPreserver(false), 2300);
+  setTimeout(() => setShowScrollPreserver(false), 100);
 }

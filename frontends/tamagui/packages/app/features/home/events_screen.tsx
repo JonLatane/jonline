@@ -27,6 +27,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const eventsState = useTypedSelector((state: RootState) => state.events);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
+
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
@@ -41,7 +42,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
 
   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
-  console.log('timeFilter', timeFilter);
+  // console.log('timeFilter', timeFilter);
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
@@ -65,16 +66,19 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     switch (displayMode) {
       case 'upcoming':
         if (queryEndsAfter != undefined) {
+          console.log('setting ends after to undefined');
           setQueryEndsAfter(undefined);
         }
         break;
       case 'all':
         if (queryEndsAfter != moment(0).toISOString(true)) {
+          console.log('setting ends after to 0');
           setQueryEndsAfter(moment(0).toISOString(true));
         }
         break;
       case 'filtered':
         if (queryEndsAfter === undefined) {
+          console.log('setting ends after to page load time');
           setQueryEndsAfter(moment(pageLoadTime).toISOString(true));
         }
         break;
@@ -97,8 +101,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       selectedGroup={selectedGroup}
       groupPageForwarder={(group) => `/g/${group.shortname}/events`}
     >
-      <StickyBox offsetTop={56} className='blur' style={{ width: '100%', zIndex: 10 }}>
-        <YStack w='100%' px='$2'>
+      <StickyBox key='filters' offsetTop={56} className='blur' style={{ width: '100%', zIndex: 10 }}>
+        <YStack w='100%' px='$2' key='filter-toolbar'>
 
           <XStack w='100%'>
             {displayModeButton('upcoming', 'Upcoming')}
@@ -148,10 +152,10 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
                   hasNextPage={hasMorePages}
                   loadNextPage={() => setCurrentPage(currentPage + 1)} />
-                {showScrollPreserver ? <YStack h={100000} /> : undefined}
               </YStack>
             </>
           : undefined}
+        {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>
       <StickyCreateButton selectedGroup={selectedGroup} showEvents />
       {/* <StickyCreateButton /> */}

@@ -1,7 +1,8 @@
 import { grpc } from "@improbable-eng/grpc-web";
-import { ExpirableToken, GetServiceVersionResponse, JonlineClient, ServerConfiguration, User } from "@jonline/api";
+import { ExpirableToken, GetServiceVersionResponse, ServerConfiguration, User } from "@jonline/api";
 import { accountId, serverID } from "./modules";
 import { CallOptions } from "nice-grpc-web";
+import { JonlineClient } from "@jonline/api/generated/jonline";
 
 export type JonlineServer = {
   host: string;

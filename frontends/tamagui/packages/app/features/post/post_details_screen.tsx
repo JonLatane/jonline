@@ -42,11 +42,9 @@ export function PostDetailsScreen() {
     if (postId) {
       if ((!subjectPost || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
         setLoadingPost(true);
-        // useEffect(() => {
         console.log('loadPost', postId!)
         setTimeout(() =>
           dispatch(loadPost({ ...accountOrServer, id: postId! })));
-        // });
       } else if (subjectPost && loadingPost) {
         setLoadingPost(false);
       }
@@ -73,7 +71,7 @@ export function PostDetailsScreen() {
 
   return (
     <TabsNavigation appSection={AppSection.POST} selectedGroup={group}>
-      { !subjectPost
+      {!subjectPost
         ? failedToLoadPost
           ? <>
             <Heading size='$5'>Post not found.</Heading>
@@ -85,13 +83,17 @@ export function PostDetailsScreen() {
           <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
             <ScrollView w='100%'>
               <XStack w='100%' paddingHorizontal='$3'>
-                {subjectPost ? <PostCard post={subjectPost!} onEditingChange={editHandler(subjectPost.id)} /> : undefined}
+                <PostCard key={`post-card-main-${postId}`}
+                post={subjectPost} 
+                onEditingChange={editHandler(subjectPost.id)} />
               </XStack>
               <ConversationManager post={subjectPost} />
             </ScrollView>
 
 
-            <ReplyArea replyingToPath={replyPostIdPath} onStopReplying={() => postId && setReplyPostIdPath([postId])} hidden={!showReplyArea} />
+            <ReplyArea replyingToPath={replyPostIdPath}
+              onStopReplying={() => postId && setReplyPostIdPath([postId])}
+              hidden={!showReplyArea} />
           </YStack>
         </ConversationContextProvider>
       }

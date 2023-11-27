@@ -38,6 +38,7 @@ pub fn update_group(
         None => None,
     };
 
+    group.shortname = derive_shortname(&request.name);
     group.name = request.name;
     group.description = request.description;
     group.avatar_media_id = avatar.map(|m| m.id);

@@ -17,6 +17,7 @@ import { PayloadAction } from '@reduxjs/toolkit';
 import { VisibilityPicker } from 'app/components/visibility_picker';
 import { ToggleRow } from 'app/components/toggle_row';
 import { splitOnFirstEmoji } from '../tabs/server_name_and_logo';
+import { createParam } from 'solito';
 
 export type GroupDetailsSheetProps = {
   selectedGroup?: Group;
@@ -26,12 +27,16 @@ export type GroupDetailsSheetProps = {
   hideLeaveButtons?: boolean;
 }
 
+const { useParam, useUpdateParams } = createParam<{ shortname: string | undefined }>();
 export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInfoOpen, hideLeaveButtons }: GroupDetailsSheetProps) {
   const infoGroup = useTypedSelector((state: RootState) =>
     infoGroupId ? state.groups.entities[infoGroupId] : undefined);
   const [position, setPosition] = useState(0);
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { account, server } = accountOrServer;
+
+  const [shortname] = useParam('shortname');
+  const updateParams = useUpdateParams();
 
   const infoRenderingGroup = infoGroup ?? selectedGroup;
   const canEditGroup = !!account?.user?.permissions?.includes(Permission.ADMIN)
@@ -50,22 +55,31 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
       name: editedName,
       description: editedDescription,
       avatar: editedAvatar,
-      // This will force the server to derive a new shortname based on the edited name.
-      // Maybe eventually it's worth exposing explicit shortname editing in the UI.
-      shortname: ''
-    })).then(() => {
+    })).then((action: PayloadAction<Group, any, any>) => {
       setSavingEdits(false);
       setEditing(false);
       setPreviewingEdits(false);
+      // if ((shortname?.length ?? 0) > 0 && 
+      //   (action.payload?.shortname?.length ?? 0) > 0 &&
+      //   shortname != infoRenderingGroup?.shortname) {
+        console.log('shortname', shortname, 'infoRenderingGroup?.shortname', infoRenderingGroup?.shortname);
+      if (shortname !== undefined && shortname.length > 0 && shortname === infoRenderingGroup?.shortname) {
+        console.log('replacing shortname')
+        updateParams({ shortname: action.payload.shortname }, { web: { replace: true } });
+      }
     });
   }
   async function doDeleteGroup() {
-    dispatch(deleteGroup({ ...accountOrServer, ...(infoRenderingGroup!) })).then((result) => {
+    dispatch(deleteGroup({ ...accountOrServer, ...(infoRenderingGroup!) })).then((action) => {
       setDeleted(true);
       setInfoOpen(false);
       setDeleting(false);
-      actionFailed
-      return result;
+      // actionFailed
+      return action;
+    }).then(() => {
+      if (shortname !== undefined && shortname.length > 0 && shortname === infoRenderingGroup?.shortname) {
+        window.location.replace('/');
+      }
     });
   }
 
@@ -166,7 +180,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
 
         <YStack space="$0" px='$4' maw={800} als='center' width='100%'>
           <XStack>
-            {editing && !previewingEdits && infoRenderingGroup?.id != selectedGroup?.id
+            {editing && !previewingEdits //&& infoRenderingGroup?.id != selectedGroup?.id
               ? <Input textContentType="name" f={1}
                 my='auto'
                 mr='$2'
@@ -243,36 +257,36 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
           </XStack>
 
           <AnimatePresence>
-          {showSettings
-            ? <YStack key='edit-group-settings'
-              animation='standard'
-              mt='$2'
-              // touch={showSettings}
+            {showSettings
+              ? <YStack key='edit-group-settings'
+                animation='standard'
+                mt='$2'
+                // touch={showSettings}
 
-              {...standardAnimation}
-            >
-              <XStack mx='auto'>
-                <VisibilityPicker id={'visibility-picker-edit-group'}
-                  label='Group Visibility'
-                  visibility={visibility}
-                  disabled={disableInputs}
-                  onChange={setEditedVisibility}
-                  visibilityDescription={v => groupVisibilityDescription(v, server)} />
-              </XStack>
-              <ToggleRow name='Require Permission to Join'
-                value={pending(defaultMembershipModeration)}
-                setter={(v) => setEditedDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                disabled={disableInputs} />
-              <ToggleRow name='Require Permission to Post'
-                value={pending(defaultPostModeration)}
-                setter={(v) => setEditedDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                disabled={disableInputs} />
-              <ToggleRow name='Require Permission to Create Events'
-                value={pending(defaultEventModeration)}
-                setter={(v) => setEditedDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                disabled={disableInputs} />
-            </YStack>
-            : undefined}
+                {...standardAnimation}
+              >
+                <XStack mx='auto'>
+                  <VisibilityPicker id={'visibility-picker-edit-group'}
+                    label='Group Visibility'
+                    visibility={visibility}
+                    disabled={disableInputs}
+                    onChange={setEditedVisibility}
+                    visibilityDescription={v => groupVisibilityDescription(v, server)} />
+                </XStack>
+                <ToggleRow name='Require Permission to Join'
+                  value={pending(defaultMembershipModeration)}
+                  setter={(v) => setEditedDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                  disabled={disableInputs} />
+                <ToggleRow name='Require Permission to Post'
+                  value={pending(defaultPostModeration)}
+                  setter={(v) => setEditedDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                  disabled={disableInputs} />
+                <ToggleRow name='Require Permission to Create Events'
+                  value={pending(defaultEventModeration)}
+                  setter={(v) => setEditedDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                  disabled={disableInputs} />
+              </YStack>
+              : undefined}
           </AnimatePresence>
         </YStack>
         {editing && !previewingEdits
@@ -302,12 +316,13 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
               </Paragraph>
             </YStack>
           }
-          deleteInstructions={infoRenderingGroup?.id != selectedGroup?.id
-            ? undefined
-            : <Paragraph size='$1' ml='auto' my='auto'>
-              To delete or edit group name, view this group's info from the <Anchor size='$1' color={navAnchorColor} {...homeLink}>home page</Anchor>.
-            </Paragraph>
-          } />
+        // deleteInstructions={infoRenderingGroup?.id != selectedGroup?.id
+        //   ? undefined
+        //   : <Paragraph size='$1' ml='auto' my='auto'>
+        //     To delete or edit group name, view this group's info from the <Anchor size='$1' color={navAnchorColor} {...homeLink}>home page</Anchor>.
+        //   </Paragraph>
+        // } 
+        />
       </Sheet.Frame >
     </Sheet >
   </EditingContextProvider >;

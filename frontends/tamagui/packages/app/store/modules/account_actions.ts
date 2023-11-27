@@ -15,7 +15,6 @@ export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
     const client = await getServerClient(createAccountRequest);
     const { refreshToken, accessToken, user } = await client.createAccount(createAccountRequest);
     return {
-      id: uuidv4(),
       user: user!,
       refreshToken: refreshToken!,
       accessToken: accessToken!,
@@ -31,7 +30,6 @@ export const login = createAsyncThunk<JonlineAccount, Login>(
     const client = await getServerClient(loginRequest);
     const { refreshToken, accessToken, user } = await client.login(loginRequest);
     return {
-      id: uuidv4(),
       user: user!,
       refreshToken: refreshToken!,
       accessToken: accessToken!,

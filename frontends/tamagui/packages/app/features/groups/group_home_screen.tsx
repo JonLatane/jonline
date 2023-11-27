@@ -20,7 +20,6 @@ export function GroupHomeScreen() {
 
 export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComponent }: GroupHomeScreenProps) => {
   const [shortname] = useParam('shortname');
-  console.log('shortname', shortname);
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const groupId = useTypedSelector((state: RootState) => state.groups.shortnameIds[shortname!]);
   const group = useTypedSelector((state: RootState) =>

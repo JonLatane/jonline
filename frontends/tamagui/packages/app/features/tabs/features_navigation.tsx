@@ -168,7 +168,11 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     navButton(isPosts, postsLink, AppSection.POSTS),
     navButton(isEvents, eventsLink, AppSection.EVENTS),
   ];
-  const postsEventsRow = inlineNavigation && reorderInlineNavigation
+  const postsEventsRow = selectedGroup ? 
+  inlineNavigation && reorderInlineNavigation && (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
+      ? <>{latest}{events}{posts}</>
+      : <>{latest}{posts}{events}</>
+  : inlineNavigation && reorderInlineNavigation
     ? (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
       ? <>{events}{posts}</>
       : (appSection == AppSection.POST || appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)

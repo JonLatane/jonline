@@ -1,17 +1,19 @@
-import { grpc } from "@improbable-eng/grpc-web";
 import { ExpirableToken } from "@jonline/api";
 import moment from "moment";
+import { Metadata } from "nice-grpc-web";
 import 'react-native-get-random-values';
 import { accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers } from ".";
 import { AppDispatch, RootState, store, useTypedDispatch, useTypedSelector } from "./store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient } from "./types";
-import { Metadata } from "nice-grpc-web";
 
 export const useAccount = () => useTypedSelector((state: RootState) => state.accounts.account);
 export const useServer = () => useTypedSelector((state: RootState) => state.servers.server);
 
 export function useAccountOrServer(): AccountOrServer {
-  return { account: useAccount(), server: useServer() };
+  return {
+    account: useAccount(),
+    server: useServer()
+  };
 }
 
 export type CredentialDispatch = {
@@ -41,7 +43,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     const now = moment.utc();
     const expired = accessExpiresAt.subtract(1, 'minutes').isBefore(now);
-    console.log("expired:", expired);
+    // console.log("expired:", expired);
     if (expired && !account.needsReauthentication) {
       let newAccessToken: ExpirableToken | undefined = undefined;
       let newRefreshToken: ExpirableToken | undefined = undefined;

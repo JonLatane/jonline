@@ -1,5 +1,5 @@
-use super::OperationType;
 use super::validate_strings::*;
+use super::OperationType;
 use tonic::{Code, Status};
 
 use crate::marshaling::*;
@@ -14,8 +14,11 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
         Some(ref avatar) => {
             avatar.id.to_db_id_or_err("avatar.id")?;
         }
-    };    match group.visibility.to_proto_visibility().unwrap() {
-        Visibility::Unknown => return Err(Status::new(Code::InvalidArgument, "invalid_visibility")),
+    };
+    match group.visibility.to_proto_visibility().unwrap() {
+        Visibility::Unknown => {
+            return Err(Status::new(Code::InvalidArgument, "invalid_visibility"))
+        }
         _ => (),
     };
     for permission in group.default_membership_permissions.to_proto_permissions() {
@@ -36,8 +39,7 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
             }
         };
     }
-    match group.default_membership_moderation()
-    {
+    match group.default_membership_moderation() {
         Moderation::Unmoderated | Moderation::Pending => {}
         _ => {
             return Err(Status::new(
@@ -46,8 +48,7 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
             ))
         }
     };
-    match group .default_post_moderation()
-    {
+    match group.default_post_moderation() {
         Moderation::Unmoderated | Moderation::Pending => {}
         _ => {
             return Err(Status::new(
@@ -56,8 +57,7 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
             ))
         }
     };
-    match group.default_event_moderation()
-    {
+    match group.default_event_moderation() {
         Moderation::Unmoderated | Moderation::Pending => {}
         _ => {
             return Err(Status::new(
@@ -67,25 +67,27 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
         }
     };
 
-    if derive_shortname(group).is_empty() {
+    if derive_shortname(&group.name).is_empty() {
         return Err(Status::new(Code::InvalidArgument, "blank_shortname"));
     }
     Ok(())
 }
 
-pub fn derive_shortname(group: &Group) -> String {
-    let re = regex::Regex::new(r"[^\w]").unwrap();
-    let mut shortname = re.replace_all(&group.shortname, "");
-    if shortname.is_empty() {
-        shortname = re.replace_all(&group.name, "");
-    }
-    shortname.as_ref().to_string()
+pub fn derive_shortname(name: &str) -> String {
+    let re = regex::Regex::new(r"[^A-Za-z0-9]").unwrap();
+    re.replace_all(name, "").as_ref().to_string()
 }
 
-pub fn validate_membership(membership: &Membership, operation_type: OperationType) -> Result<(), Status> {
+pub fn validate_membership(
+    membership: &Membership,
+    operation_type: OperationType,
+) -> Result<(), Status> {
     membership.user_id.to_db_id_or_err("user_id")?;
     membership.group_id.to_db_id_or_err("group_id")?;
-    match operation_type { OperationType::Delete | OperationType::Create => return Ok(()), _ => () };
+    match operation_type {
+        OperationType::Delete | OperationType::Create => return Ok(()),
+        _ => (),
+    };
     for permission in membership.permissions.to_proto_permissions() {
         match permission {
             Permission::ViewPosts

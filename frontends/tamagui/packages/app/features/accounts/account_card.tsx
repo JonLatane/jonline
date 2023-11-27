@@ -3,10 +3,11 @@ import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack,
 
 import { Bot, Shield, Delete, User as UserIcon, ChevronUp, ChevronDown, AlertCircle } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { JonlineAccount, RootState, accountId, colorMeta, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, store, useRootSelector, useTypedDispatch, useTypedSelector } from "app/store";
+import { JonlineAccount, RootState, accountId, colorMeta, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, serverID, store, useAccount, useCredentialDispatch, useRootSelector, useTypedDispatch, useTypedSelector } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
+import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
 
 interface Props {
   account: JonlineAccount;
@@ -15,7 +16,7 @@ interface Props {
 }
 
 const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate }) => {
-  const dispatch = useTypedDispatch();
+  const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   let selected = accountId(store.getState().accounts.account) == accountId(account);
 
   const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
@@ -33,7 +34,14 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
   const primaryAnchorColor = !darkMode ? primaryColorMeta.darkColor : primaryColorMeta.lightColor;
   const navAnchorColor = !darkMode ? navColorMeta.darkColor : navColorMeta.lightColor;
 
+  const currentServer = currentAccountOrServer.server;
+  const isCurrentServer = currentServer &&
+    serverID(currentServer) == serverID(account.server);
+
   function doSelectAccount() {
+    if (account.needsReauthentication && onReauthenticate) {
+      onReauthenticate(account);
+    }
     if (store.getState().servers.server?.host != account.server.host) {
       dispatch(selectServer(account.server));
     }
@@ -76,6 +84,13 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
     >
       <Card.Header>
         <XStack>
+          {isCurrentServer ? undefined
+            : <>
+              <YStack w={50} h={50} my='auto' jc='center' ai='center' ac='center'>
+                <ServerNameAndLogo server={account.server} shrinkToSquare />
+              </YStack>
+              <Heading my='auto' mx='$2' size='$7'>/</Heading>
+            </>}
           {(avatarUrl && avatarUrl != '') ?
 
             <XStack w={mediaQuery.gtXs || true ? 50 : 26} h={mediaQuery.gtXs || true ? 50 : 26}
@@ -190,13 +205,18 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
           </XStack>
         </YStack>
       </Card.Footer>
-      {!selected
-        ? <Card.Background>
-          <YStack h='100%' w={5}
-            borderTopLeftRadius={20} borderBottomLeftRadius={20}
-            backgroundColor={navColor} />
+      {/* {!selected
+        ?  */}
+        <Card.Background>
+          <XStack h='100%'>
+            <YStack h='100%' w={5}
+              borderTopLeftRadius={20} borderBottomLeftRadius={20}
+              backgroundColor={primaryColor} />
+            <YStack h='100%' w={5}
+              backgroundColor={navColor} />
+          </XStack>
         </Card.Background>
-        : undefined}
+        {/* : undefined} */}
     </Card>
   );
 };

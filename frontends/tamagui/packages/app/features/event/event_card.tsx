@@ -19,6 +19,7 @@ import { defaultEventInstance, supportDateInput, toProtoISOString } from "./crea
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
+import { PayloadAction } from '@reduxjs/toolkit';
 
 interface Props {
   event: Event;
@@ -30,6 +31,7 @@ interface Props {
   onEditingChange?: (editing: boolean) => void;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
+  onInstancesUpdated?: (instances: EventInstance[]) => void;
 }
 
 let newEventId = 0;
@@ -44,6 +46,7 @@ export const EventCard: React.FC<Props> = ({
   onEditingChange,
   newRsvpMode,
   setNewRsvpMode,
+  onInstancesUpdated,
 }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const mediaQuery = useMedia();
@@ -141,11 +144,12 @@ export const EventCard: React.FC<Props> = ({
         visibility: editedVisibility
       },
       instances: editedInstances,
-    })).then(result => {
+    })).then((result: PayloadAction<Event, any, any, any>) => {
+      onInstancesUpdated?.(result.payload?.instances);
       setEditing(false);
       setSavingEdits(false);
       setPreviewingEdits(false);
-      setEditedInstances(event.instances);
+      setEditedInstances(result.payload?.instances);
     });
   }
 
@@ -198,20 +202,11 @@ export const EventCard: React.FC<Props> = ({
   const authorName = post.author?.username;
 
   const eventLink = useLink({
-    href: groupContext
-      ? primaryInstance
-        ? `/g/${groupContext.shortname}/e/${event.id}/i/${primaryInstance!.id}`
-        : `/g/${groupContext.shortname}/e/${event.id}`
-      : primaryInstance
-        ? `/event/${event.id}/i/${primaryInstance!.id}`
-        : `/event/${event.id}`,
-    // instance
-    //   ? groupContext
-    //     ? `/g/${groupContext.shortname}/e/${event.id}/i/${instance!.id}`
-    //     : `/event/${event.id}/i/${instance!.id}`
-    //   : groupContext
-    //     ? `/g/${groupContext.shortname}/e/${event.id}`
-    //     : `/event/${event.id}`,
+    href: primaryInstance ?
+      groupContext
+        ? `/g/${groupContext.shortname}/e/${primaryInstance.id}`
+        : `/event/${primaryInstance!.id}`
+      : '.'
   });
   const authorLink = useLink({
     href: authorName
@@ -219,8 +214,8 @@ export const EventCard: React.FC<Props> = ({
       : `/user/${authorId}`
   });
   const createGroupEventViewHref = (group: Group) => primaryInstance
-    ? `/g/${group.shortname}/e/${event.id}/i/${primaryInstance!.id}`
-    : `/g/${group.shortname}/e/${event.id}`;
+    ? `/g/${group.shortname}/e/${primaryInstance!.id}`
+    : `.`;
 
   const maxContentHeight = isPreview ? horizontal ? 100 : 300 : undefined;
   const detailsLink = isPreview ? eventLink : undefined;
@@ -734,7 +729,7 @@ export const EventCard: React.FC<Props> = ({
                       instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                   </YStack>
                   : undefined}
-                <XStack space='$2'px='$3' py='$2' pt={0} flexWrap="wrap" key='save-buttons' /*pr={mediaQuery.gtXs ? '$3' : '$1'}*/>
+                <XStack space='$2' px='$3' py='$2' pt={0} flexWrap="wrap" key='save-buttons' /*pr={mediaQuery.gtXs ? '$3' : '$1'}*/>
                   {showEdit
                     ? editing
                       ? <>

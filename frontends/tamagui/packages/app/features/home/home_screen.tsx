@@ -121,7 +121,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                   : undefined
                 : <ScrollView horizontal
                   w='100%'>
-                  <XStack w={media.gtSm ? 400 : 310} space='$2'>
+                  <XStack w={media.gtSm ? 400 : 310} space='$2' mx='$2'>
                     {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`} event={event} isPreview horizontal />)}
                     <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
                       <YStack ai='center' py='$3' jc='center'>
@@ -146,7 +146,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                 <Heading size='$5' mb='$3'>No posts found.</Heading>
                 <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
               </YStack>
-              : <YStack f={1} w='100%' key={`post-list`}// animation='quick' {...standardAnimation}
+              : <YStack f={1} px='$3' w='100%' key={`post-list`}// animation='quick' {...standardAnimation}
               >
                 <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
                 {posts.map((post) => {
@@ -157,11 +157,11 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                   hasNextPage={hasMorePages}
                   loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
                 />
-                {showScrollPreserver ? <YStack h={100000} /> : undefined}
               </YStack>
             : undefined
           }
         </YStack>
+        {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>
       <StickyCreateButton selectedGroup={selectedGroup} showPosts showEvents />
     </TabsNavigation>

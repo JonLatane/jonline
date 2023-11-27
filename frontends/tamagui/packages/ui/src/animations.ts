@@ -55,7 +55,7 @@ export const standardAnimation = {
   o: 1,
   y: 0,
   enterStyle: { y: -29, o: 0, },
-  exitStyle: { y: -29, o: 0, },
+  exitStyle: { y: -29, o: 0},
 }
 
 export const reverseStandardAnimation = {

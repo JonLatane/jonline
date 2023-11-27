@@ -59,7 +59,7 @@ pub fn create_group(
     let name = (&request.name).clone();
     let description = (&request.description).clone();
 
-    let derived_shortname = derive_shortname(&request);
+    let derived_shortname = derive_shortname(&request.name);
 
     let group: Result<models::Group, diesel::result::Error> = conn
         .transaction::<models::Group, diesel::result::Error, _>(|conn| {

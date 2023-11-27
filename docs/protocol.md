@@ -128,7 +128,8 @@ directly as the value of the `authorization` header (no `Bearer ` prefix).
 First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
 `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
 then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `AccessToken` RPC
-may also return a new `refresh_token`, which should replace the old one in client storage.)
+may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
+one in client storage.)
 
 ##### HTTP-based client host negotiation (for external CDNs)
 When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
@@ -148,6 +149,33 @@ client implementations of this negotiation.
 In the works to be released soon, Jonline will also support a &#34;fully behind CDN&#34; mode, where gRPC is served over port 443 and HTTP over port
 80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare&#39;s gRPC
 proxy support. With this, both web and gRPC resources can live behind a CDN.
+
+##### API Design Notes
+###### Moderation and Visibility
+Jonline APIs are designed to support `Moderation` and `Visibility` controls at the level of individual entities. However, to keep things
+DRY, moderation and visibility controls are only implemented for `User`s, `Media`, `Group`s, and `Post`s.
+
+`Event`s and future `Post`-like types simply use the same implementation as their contained `Post`s. The intent here is to maximize
+both shared code and implementation robustness.
+
+###### Composition Over Inheritance
+Jonline&#39;s APIs are designed using composition over inheritance. For instance, an `Event` contains
+a `Post` rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized), 
+through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
+
+###### Predictable Atomicity
+The use of composition over inheritance also means that Jonline APIs can be *predictably* non-atomic based on their compositional structure.
+For instance, `UpdatePost` is fully atomic.
+
+`UpdateEvent`, however, is non-atomic. Given that an `Event` has a `Post` and many `EventInstance`s, 
+`UpdateEvent` will first update the `Post` atomically (literally calling the `UpdatePost` RPC),
+then the `Event` atomically, and then finally process updates to its `EventInstance`s in a final atomic operation. 
+
+Because moderation/visibility lives at the `Post` level, this means that a developer error in `UpdateEvents` cannot prevent 
+visibility and moderation changes from being made in Events, even if there are errors elsewhere.
+This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
+moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
+approach to predictable atomicity.
 
 #### gRPC API
 

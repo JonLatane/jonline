@@ -7,8 +7,8 @@ use ring::rand::*;
 
 use crate::db_connection::*;
 use crate::protos::*;
-use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use crate::schema::user_access_tokens::dsl as user_access_tokens;
+use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 
 /// Generate a secure random token of the given length.
 #[macro_export]
@@ -47,22 +47,26 @@ pub fn generate_refresh_and_access_token(
             .returning((user_refresh_tokens::id, user_refresh_tokens::expires_at))
             .get_result::<(i64, Option<SystemTime>)>(&mut *conn)
             .unwrap();
-    let auth_exp_token = ExpirableToken {
+    let refresh_token = ExpirableToken {
         token: refresh_token.to_owned(),
         expires_at: expires_at.map(Timestamp::from),
     };
     log::info!("Generated refresh token for user_id={}", user_id);
 
-    let refresh_exp_token = generate_access_token(refresh_token_id, conn);
+    let access_token = generate_access_token(refresh_token_id, conn);
+
     RefreshTokenResponse {
-        refresh_token: Some(auth_exp_token),
-        access_token: Some(refresh_exp_token),
+        refresh_token: Some(refresh_token),
+        access_token: Some(access_token),
         user: None,
     }
 }
 
 /// Generate and store an access token for the given refresh token.
-pub fn generate_access_token(refresh_token_id: i64, conn: &mut PgPooledConnection) -> ExpirableToken {
+pub fn generate_access_token(
+    refresh_token_id: i64,
+    conn: &mut PgPooledConnection,
+) -> ExpirableToken {
     let access_token = generate_token!(128);
     let expires_at: SystemTime = insert_into(user_access_tokens::user_access_tokens)
         .values((
@@ -72,7 +76,11 @@ pub fn generate_access_token(refresh_token_id: i64, conn: &mut PgPooledConnectio
         .returning(user_access_tokens::expires_at)
         .get_result::<SystemTime>(conn)
         .unwrap();
-    log::info!("Generated access token for refresh_token_id={}, expires_at={:#?}", refresh_token_id, expires_at);
+    log::info!(
+        "Generated access token for refresh_token_id={}, expires_at={:#?}",
+        refresh_token_id,
+        expires_at
+    );
     ExpirableToken {
         token: access_token.to_owned(),
         expires_at: Some(Timestamp::from(expires_at)),

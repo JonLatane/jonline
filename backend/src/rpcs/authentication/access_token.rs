@@ -26,7 +26,7 @@ pub fn access_token(
         .first::<(i64, i64, Option<SystemTime>)>(conn);
 
     const LIFETIME_DAYS: u64 = 7;
-    const RENEWAL_PERIOD_DAYS: u64 = 3;
+    const RENEWAL_PERIOD_DAYS: u64 = 1;
     match token_user_expiry {
         Err(_) => {
             log::warn!("Auth token {} not found.", requested_token);

@@ -4,13 +4,13 @@ import {
   Dictionary,
   Draft,
   EntityAdapter,
-  EntityId, Slice,
+  EntityId, PayloadAction, Slice,
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
-import { LoadEvent, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventsPage, updateEvent } from './event_actions';
+import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 import postsReducer, { locallyUpsertPost, postsAdapter, upsertPost } from "./posts";
@@ -30,9 +30,10 @@ export interface EventsState {
   entities: Dictionary<Event>;
   // Links instance IDs to Event IDs.
   instanceEvents: Dictionary<string>;
-  instances: Dictionary<EventInstance>;
+  // instances: Dictionary<EventInstance>;
   eventInstancePages: GroupedEventInstancePages;
   failedEventIds: string[];
+  failedInstanceIds: string[];
 }
 
 // Stores pages of listed event *instances* for listing types used in the UI.
@@ -57,8 +58,9 @@ const initialState: EventsState = {
   updateStatus: undefined,
   deleteStatus: undefined,
   failedEventIds: [],
+  failedInstanceIds: [],
   eventInstancePages: {},
-  instances: {},
+  // instances: {},
   instanceEvents: {},
   ...eventsAdapter.getInitialState(),
 };
@@ -114,7 +116,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       if (event.post) {
         setTimeout(() => {
           console.log("upserting post", event.post);
-          store.dispatch(locallyUpsertPost({...action.meta.arg, ...event.post! }));
+          store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
 
         }, 1);
       }
@@ -148,9 +150,13 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     });
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {
       state.loadStatus = "loaded";
+      console.log('loaded events page', action.payload.events.length);
       action.payload.events.forEach((e) => mergeEvent(state, e));
 
       const instanceIds = action.payload.events.map(event => event.instances[0]!.id);
+      // for (const instanceId of instanceIds) {
+      //   state.instanceEvents[instanceId] = action.payload.events[0]!.id;
+      // }
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
 
@@ -184,24 +190,23 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       state.error = action.error as Error;
     });
     builder.addCase(loadEvent.pending, (state) => {
-      // state.loadStatus = "loading";
       state.error = undefined;
     });
-    builder.addCase(loadEvent.fulfilled, (state, action) => {
-      // state.loadStatus = "loaded";
-      // const oldPost = selectEventById(state, action.payload.event.id);
+    const saveSingleEvent = (state: EventsState, action: PayloadAction<Event, any, any>) => {
       const event = action.payload;
       eventsAdapter.upsertOne(state, event);
-      if (event.post) {
-        setTimeout(() => {
-          console.log("upserting post", event.post);
-          store.dispatch(locallyUpsertPost({...action.meta.arg, ...event.post! }));
-
-        }, 1);
-      }
-      // postsReducer.upsertOne(state, event.post);
-      state.successMessage = `Post data loaded.`;
-    });
+      event.instances.forEach(instance => {
+        state.instanceEvents[instance.id] = event.id;
+      });
+      // if (event.post) {
+      //   setTimeout(() => {
+      //     console.log("upserting event's post", event.post);
+      //     store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
+      //   }, 1);
+      // }
+    };
+    builder.addCase(loadEvent.fulfilled, saveSingleEvent);
+    builder.addCase(loadEventByInstance.fulfilled, saveSingleEvent);
     builder.addCase(loadEvent.rejected, (state, action) => {
       // state.loadStatus = "errored";
       state.error = action.error as Error;
@@ -210,26 +215,37 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       state.failedEventIds = [...state.failedEventIds, (action.meta.arg as LoadEvent).id];
     });
 
+    builder.addCase(loadEventByInstance.rejected, (state, action) => {
+      // state.loadStatus = "errored";
+      state.error = action.error as Error;
+      state.errorMessage = formatError(action.error as Error);
+      state.error = action.error as Error;
+      state.failedInstanceIds = [...state.failedInstanceIds, (action.meta.arg as LoadEventByInstance).instanceId];
+    });
+
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
       const { events } = action.payload;
       if (!events) return;
 
       action.payload.events.forEach((e) => mergeEvent(state, e));
-      upsertEvents(state, events);
+      // upsertEvents(state, events);
+      events.forEach((e) => mergeEvent(state, e));
     });
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
       const { events } = action.payload;
-      upsertEvents(state, events);
+      // upsertEvents(state, events);
+      events.forEach((e) => mergeEvent(state, e));
     });
   },
 });
 
 const mergeEvent = (state: EventsState, event: Event) => {
+  console.log('merging event', event);
   const oldEvent = selectEventById(state, event.id);
   let instances = event.instances;
   for (const instance of instances) {
     state.instanceEvents[instance.id] = event.id;
-    state.instances[instance.id] = instance;
+    // state.instances[instance.id] = instance;
   }
   if (oldEvent) {
     instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);

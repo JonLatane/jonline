@@ -80,63 +80,59 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
 
     <GroupContextProvider value={selectedGroup}>
 
-      <StickyBox style={{ zIndex: 10, width: '100%' }} className="blur">
-        <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
-          <XStack space="$1" marginVertical={5}>
-            <XStack w={5} />
-            <Button //size="$4"
-              py={0}
-              px={
-                shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
-                  !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
-              height={48}
-              width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
+      <YStack backgroundColor='$backgroundFocus'>
+        <StickyBox style={{ zIndex: 10, width: '100%' }} className="blur">
+          <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
+            <XStack space="$1" marginVertical={5}>
+              <XStack w={5} />
+              <Button //size="$4"
+                py={0}
+                px={
+                  shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
+                    !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
+                height={48}
+                width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
 
-              overflow='hidden'
-              icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
-              {...homeProps}
-            >
-              {renderHomeButtonChildren
-                ? <ServerNameAndLogo shrinkToSquare={shrinkHomeButton}
-                  fallbackToHomeIcon
-                  server={primaryServer} />
-                : undefined}
-            </Button>
-            {!scrollGroupsSheet
-              ? <XStack space='$2' ml='$1' my='auto'>
-                <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
-              </XStack>
-              : undefined}
-            <ScrollView horizontal>
+                overflow='hidden'
+                icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
+                {...homeProps}
+              >
+                {renderHomeButtonChildren
+                  ? <ServerNameAndLogo shrinkToSquare={shrinkHomeButton}
+                    fallbackToHomeIcon
+                    server={primaryServer} />
+                  : undefined}
+              </Button>
               {!scrollGroupsSheet
-                ? <>
-                  <XStack w={2} />
-                </>
-                : <>
-                  <XStack w={1} />
+                ? <XStack space='$2' ml='$1' my='auto'>
                   <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
-                  <XStack w={3} />
-                </>
-              }
-              <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
-            </ScrollView>
-            <XStack f={1} />
-            <AccountsSheet size='$4' circular={!mediaQuery.gtSm} onlyShowServer={onlyShowServer} />
-            <XStack w={5} />
-          </XStack>
+                </XStack>
+                : undefined}
+              <ScrollView horizontal>
+                {!scrollGroupsSheet
+                  ? <>
+                    <XStack w={2} />
+                  </>
+                  : <>
+                    <XStack w={1} />
+                    <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                    <XStack w={3} />
+                  </>
+                }
+                <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
+              </ScrollView>
+              <XStack f={1} />
+              <AccountsSheet size='$4' circular={!mediaQuery.gtSm} onlyShowServer={onlyShowServer} />
+              <XStack w={5} />
+            </XStack>
 
-        </YStack>
-      </StickyBox>
-
-        {/* <XStack> */}
-          <YStack w='100%' jc="center" ai="center" backgroundColor={bgColor}>
-            {children}
           </YStack>
-        {/* </XStack> */}
-      {/* <YStack w={testValue} jc="center" ai="center" backgroundColor={bgColor}>
-        {children}
-      </YStack> */}
+        </StickyBox>
 
+        <YStack w='100%' jc="center" ai="center" backgroundColor={bgColor}>
+          {children}
+        </YStack>
+      </YStack>
     </GroupContextProvider>
   </Theme>;
 }

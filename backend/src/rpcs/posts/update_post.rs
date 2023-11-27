@@ -17,21 +17,21 @@ use crate::rpcs::validations::*;
 
 pub fn update_post(
     request: Post,
-    current_user: &models::User,
+    user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Post, Status> {
     // validate_user(&request)?;
     // validate_post(&request)?;
 
-    let mut admin = false;
-    let mut moderator = false;
-    match validate_permission(&Some(current_user), Permission::Admin) {
-        Ok(_) => admin = true,
-        Err(_) => {}
-    };
-    match validate_permission(&Some(current_user), Permission::ModeratePosts) {
-        Ok(_) => moderator = true,
-        Err(_) => {}
+    let admin = validate_permission(&Some(user), Permission::Admin).is_ok();
+    let moderator = validate_permission(&Some(user), Permission::ModeratePosts).is_ok();
+
+    let moderator_accessible_moderations = [Moderation::Approved, Moderation::Rejected, Moderation::Pending];
+    let moderation = match (moderator, request.moderation.to_proto_moderation().ok_or(Status::new(Code::InvalidArgument, "invalid_moderation"))?) {
+            (true, m) if moderator_accessible_moderations.contains(&m) => {
+                Some(request.moderation)
+            }
+            _ => None,
     };
 
     let mut existing_post = posts::table
@@ -40,7 +40,7 @@ pub fn update_post(
         .first::<models::Post>(conn)
         .map_err(|_| Status::new(Code::NotFound, "post_not_found"))?;
 
-    let self_update = existing_post.user_id == Some(current_user.id);
+    let self_update = existing_post.user_id == Some(user.id);
     log::info!(
         "self_update: {}, admin: {}, moderator: {}",
         self_update,
@@ -50,7 +50,7 @@ pub fn update_post(
 
     if !self_update {
         validate_any_permission(
-            &Some(current_user),
+            &Some(user),
             vec![Permission::Admin, Permission::ModeratePosts],
         )?;
     }
@@ -76,6 +76,21 @@ pub fn update_post(
                 existing_post.shareable = request.shareable;
                 existing_post.updated_at = SystemTime::now().into();
                 existing_post.visibility = request.visibility.to_string_visibility();
+
+                if moderation.is_some() {
+                    existing_post.moderation = moderation.unwrap().to_string_moderation();
+                }
+
+                // if validate_permission(&Some(user), Permission::ModeratePosts).is_ok() {
+                //     let moderation = match request.moderation.to_proto_moderation().ok_or() {
+                //         Moderation::Approved | Moderation::Rejected | Moderation::Pending => {
+                //             request.moderation.to_string_moderation()
+                //         }
+                //         _ => existing_post.moderation,
+                //     };
+                //     existing_post.moderation = moderation;
+                // }
+
                 // existing_post.username = request.username.to_owned();
                 // existing_post.bio = request.bio.to_owned();
                 // existing_post.avatar_media_id = request.avatar.as_ref().map(|a| &a.id).to_db_opt_id().unwrap();
@@ -114,7 +129,7 @@ pub fn update_post(
                     post_id: Some(request.id.clone()),
                     ..Default::default()
                 },
-                &Some(current_user),
+                &Some(user),
                 conn,
             )
             .map(|u| u.posts[0].to_owned())

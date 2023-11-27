@@ -6,6 +6,7 @@ import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
 import moment from "moment";
 import { useLink } from "solito/link";
 import { useGroupContext } from "../groups/group_context";
+import { themedButtonBackground } from "app/utils/themed_button_background";
 
 interface Props {
   event: Event;
@@ -16,8 +17,8 @@ interface Props {
 
 export const createInstanceLink = (event: Event, instance: EventInstance, group?: Group) => ({
   href: group
-    ? `/g/${group.shortname}/e/${event.id}/i/${instance!.id}`
-    : `/event/${event.id}/i/${instance!.id}`
+    ? `/g/${group.shortname}/e/${instance!.id}`
+    : `/event/${instance!.id}`
 });
 
 export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false }) => {
@@ -93,7 +94,10 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
     </XStack>;
 
   if (linkToInstance) {
-    return <Button key={key} {...instanceLink} h='auto' mx='$2' px='$2'>
+    return <Button key={key}
+    {...themedButtonBackground(highlight ? '$backgroundFocus' : undefined)}
+      // backgroundColor={highlight ? '$backgroundFocus' : undefined}
+      {...instanceLink} h='auto' mx='$2' px='$2'>
       {mainView}
     </Button>;
   } else {

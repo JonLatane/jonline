@@ -294,6 +294,7 @@ export function UsernameDetailsScreen() {
                 </XStack>
               </YStack>
             </StickyBox>
+
               : <Button mt='$3' backgroundColor={primaryColor} onPress={saveUser}>Save Changes</Button>
             : undefined}
         </>
