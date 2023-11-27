@@ -220,6 +220,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     {/* <XStack w='100%'>
               <> */}
     <YStack w='100%' key='comments'>
+      {flattenedReplies.length == 0 ? <Heading size='$3' f={1} ta='center' mt='$10' mb='$8'>No replies yet.</Heading> : undefined}
       {flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
         let stripeColor = navColor;
         const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;

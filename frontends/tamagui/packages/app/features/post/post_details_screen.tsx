@@ -87,7 +87,7 @@ export function PostDetailsScreen() {
               <XStack w='100%' paddingHorizontal='$3'>
                 {subjectPost ? <PostCard post={subjectPost!} onEditingChange={editHandler(subjectPost.id)} /> : undefined}
               </XStack>
-              {/* <ConversationManager post={subjectPost} /> */}
+              <ConversationManager post={subjectPost} />
             </ScrollView>
 
 

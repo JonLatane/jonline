@@ -129,7 +129,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
       </StickyBox>
 
         {/* <XStack> */}
-          <YStack jc="center" ai="center" backgroundColor={bgColor}>
+          <YStack w='100%' jc="center" ai="center" backgroundColor={bgColor}>
             {children}
           </YStack>
         {/* </XStack> */}
