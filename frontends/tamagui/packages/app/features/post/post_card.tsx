@@ -18,6 +18,7 @@ import { GroupPostManager } from '../groups/group_post_manager';
 import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
 import { PostMediaRenderer } from "./post_media_renderer";
+import { ShareableToggle } from "app/components/shareable_toggle";
 
 interface PostCardProps {
   post: Post;
@@ -71,10 +72,13 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [editedMedia, setEditedMedia] = useState(post.media);
   const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
   const [editedVisibility, setEditedVisibility] = useState(post.visibility);
+  const [editedShareable, setEditedShareable] = useState(post.shareable);
+
   const content = editing ? editedContent : post.content;
   const media = editing ? editedMedia : post.media;
   const embedLink = editing ? editedEmbedLink : post.embedLink;
   const visibility = editing ? editedVisibility : post.visibility;
+  const shareable = editing ? editedShareable : post.shareable;
 
   function saveEdits() {
     setSavingEdits(true);
@@ -84,6 +88,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       media: editedMedia,
       embedLink: editedEmbedLink,
       visibility: editedVisibility,
+      shareable: editedShareable,
     })).then(() => {
       setEditing(false);
       setSavingEdits(false);
@@ -378,7 +383,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                       </>
                     : undefined}
                   <XStack space='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
-                    <XStack key='visibility-edit' my='auto' ml='auto'>
+                    <XStack key='visibility-edit' my='auto' ml='auto' pl='$2'>
                       <VisibilityPicker
                         id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
                         label='Post Visibility'
@@ -387,6 +392,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                         visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'post')}
                         readOnly={!editing || previewingEdits}
                       />
+                    </XStack>
+                    <XStack key='visibility-edit' my='auto' ml='auto' pb='$1'>
+                      <ShareableToggle value={shareable}
+                        setter={setEditedShareable}
+                        readOnly={!editing || previewingEdits} />
                     </XStack>
                     {post?.replyToPostId
                       ? undefined

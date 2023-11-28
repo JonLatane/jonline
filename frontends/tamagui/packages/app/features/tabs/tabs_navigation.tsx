@@ -80,7 +80,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
 
     <GroupContextProvider value={selectedGroup}>
 
-      <YStack backgroundColor='$backgroundFocus'>
+      <YStack backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
         <StickyBox style={{ zIndex: 10, width: '100%' }} className="blur">
           <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
             <XStack space="$1" marginVertical={5}>
@@ -129,7 +129,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
           </YStack>
         </StickyBox>
 
-        <YStack w='100%' jc="center" ai="center" backgroundColor={bgColor}>
+        <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>
           {children}
         </YStack>
       </YStack>

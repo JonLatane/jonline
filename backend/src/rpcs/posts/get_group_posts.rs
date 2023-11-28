@@ -1,4 +1,5 @@
 use diesel::*;
+use log::info;
 use tonic::Status;
 
 use crate::db_connection::PgPooledConnection;
@@ -43,12 +44,14 @@ pub fn get_group_posts(
                 .unwrap()
         }
     };
+
     let filtered_results = results
         .iter()
         .filter_map(|(group_post, post_visibility)| {
             let (group, membership) =
                 get_group_and_membership(group_post.group_id, user.as_ref().map(|u| u.id), conn)
                     .ok()?;
+
             // let membership = models::get_membership(group_post.group_id, user.as_ref().map_or(-1, |u| u.id), conn).ok();
             let moderations = match (user.as_ref(), membership.as_ref()) {
                 (Some(user), Some(membership)) => {
@@ -67,6 +70,7 @@ pub fn get_group_posts(
                 }
                 _ => vec![Unmoderated, Approved],
             };
+
             match post_visibility.to_proto_visibility().unwrap() {
                 Visibility::Limited => {
                     if !membership.as_ref().map(|m| m.passes()).unwrap_or(false) {
@@ -78,6 +82,7 @@ pub fn get_group_posts(
                 //TODO implement direct post visibility
                 Visibility::Direct => return None,
             };
+
             if moderations.contains(&group_post.group_moderation.to_proto_moderation().unwrap()) {
                 Some(group_post.to_proto())
             } else {
@@ -86,6 +91,11 @@ pub fn get_group_posts(
         })
         .collect::<Vec<GroupPost>>();
 
+    info!(
+        "get_group_posts results: {}, filtered_results: {}",
+        &results.len(),
+        &filtered_results.len()
+    );
     Ok(GetGroupPostsResponse {
         group_posts: filtered_results,
     })

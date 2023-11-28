@@ -266,7 +266,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                 {...standardAnimation}
               >
                 <XStack mx='auto'>
-                  <VisibilityPicker id={'visibility-picker-edit-group'}
+                  <VisibilityPicker
                     label='Group Visibility'
                     visibility={visibility}
                     disabled={disableInputs}

@@ -307,7 +307,7 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                           </XStack>
                           : undefined}
                         {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
-                        <VisibilityPicker id={`visibility-picker-create-${entityName?.toLowerCase() ?? 'post'}`}
+                        <VisibilityPicker
                           label='Post Visibility'
                           visibility={visibility}
                           onChange={setVisibility}

@@ -49,21 +49,29 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
 
   // This is undefined if data isn't loaded, true if shared, false if not shared.
   const sharedToSelectedGroup = selectedGroup && groupPostData?.some(gp => gp.groupId == selectedGroup?.id);
+  const sharedToSingleGroup = groupPostData?.length == 1;
+  const singleSharedGroupId = sharedToSingleGroup
+    ? groupPostData[0]!.groupId
+    : undefined;
+  const singleSharedGroup = useTypedSelector((state: RootState) => singleSharedGroupId
+    ? state.groups.entities[singleSharedGroupId]
+    : undefined);
   const otherGroupCount = groupPostData
     ? groupPostData.filter(g => knownGroupIds.includes(g.groupId)).length - (sharedToSelectedGroup ? 1 : 0)
     : undefined;
   // return <></>;
 
-  const groupsUnavailable = !groupPostData || (accountOrServer.account === undefined && groupPostData.length == 0);
+  //TODO revert this:
+  const groupsUnavailable = false;//!groupPostData || (accountOrServer.account === undefined && groupPostData.length == 0);
   return <XStack flexWrap='wrap' maw='100%'>
-    {!selectedGroup && otherGroupCount
+    {!selectedGroup && !singleSharedGroup && otherGroupCount
       ?
-      <Text my='auto' ml='$2' fontSize={'$1'} fontFamily='$body'>
+      <Text my='auto' fontSize={'$1'} fontFamily='$body'>
         Shared to {otherGroupCount} group{otherGroupCount > 1 ? 's' : undefined}.
       </Text>
       : undefined}
     <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
-      {sharedToSelectedGroup === true ? 'In ' : undefined}
+      {sharedToSelectedGroup === true || singleSharedGroup? 'In ' : undefined}
       {sharedToSelectedGroup === false ? 'Not shared to ' : undefined}
     </Text>
     {loading && errorCount < maxErrors ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
@@ -72,7 +80,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
         <GroupsSheet
           title={title}
           itemTitle={post.title}
-          selectedGroup={selectedGroup}
+          selectedGroup={selectedGroup ?? singleSharedGroup}
           // onGroupSelected={() => { }}
           disabled={groupsUnavailable}
           topGroupIds={groupPostData?.map(gp => gp.groupId) ?? []}

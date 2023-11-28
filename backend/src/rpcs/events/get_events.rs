@@ -13,6 +13,8 @@ use crate::protos::*;
 use crate::rpcs::validate_group_permission;
 use crate::schema::*;
 
+const PAGE_SIZE: i64 = 1000;
+
 type EventLoadData = (
     models::EventInstance,
     models::Event,
@@ -150,7 +152,7 @@ fn get_public_and_following_events(
     filter: Option<TimeFilter>,
 ) -> Result<Vec<MarshalableEvent>, Status> {
     let query = select_events_instancewise!(user, filter);
-    let binding = query.limit(20).load::<EventLoadData>(conn).unwrap();
+    let binding = query.limit(PAGE_SIZE).load::<EventLoadData>(conn).unwrap();
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
     Ok(marshalable_event_data!(event_data))
@@ -163,7 +165,7 @@ fn get_user_events(
     filter: Option<TimeFilter>,
 ) -> Result<Vec<MarshalableEvent>, Status> {
     let query = select_events_instancewise!(user, filter).filter(posts::user_id.eq(user_id));
-    let binding = query.limit(20).load::<EventLoadData>(conn).unwrap();
+    let binding = query.limit(PAGE_SIZE).load::<EventLoadData>(conn).unwrap();
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
     Ok(marshalable_event_data!(event_data))
@@ -328,7 +330,7 @@ fn get_group_events(
     let result = match (group.visibility.to_proto_visibility().unwrap(), user) {
         (Visibility::GlobalPublic, _) | (_, Some(_)) => {
             let query = select_group_events_instancewise!(user, filter, group_id);
-            let binding = query.limit(20).load::<EventLoadData>(conn).unwrap();
+            let binding = query.limit(PAGE_SIZE).load::<EventLoadData>(conn).unwrap();
             let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
             marshalable_event_data!(event_data)

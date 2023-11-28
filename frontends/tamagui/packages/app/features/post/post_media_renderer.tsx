@@ -16,7 +16,8 @@ interface PostMediaRendererProps {
   isPreview?: boolean;
   groupContext?: Group;
   hasBeenVisible?: boolean;
-  horizontalPreview?: boolean;
+  smallPreview?: boolean;
+  xsPreview?: boolean;
 }
 
 export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
@@ -24,7 +25,8 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   isPreview,
   groupContext,
   hasBeenVisible = true,
-  horizontalPreview
+  smallPreview,
+  xsPreview
 }) => {
   const mediaQuery = useMedia();
   const { primaryColor } = useServerTheme();
@@ -70,7 +72,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const backgroundSize = postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
-  const singlePreviewSize = horizontalPreview ? 300 : foregroundSize;
+  const singlePreviewSize = xsPreview ? 250 : smallPreview ? 300 : foregroundSize;
 
   // if (!embedComponent && (post?.media?.length ?? 0 === 0)) {
   //   return <></>;
@@ -95,7 +97,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       </XStack> : undefined}
 
     <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-      <YStack maxHeight={isPreview ? horizontalPreview ? 150 : 300 : undefined} overflow='hidden'>
+      <YStack maxHeight={isPreview ? smallPreview ? 150 : 300 : undefined} overflow='hidden'>
         {singleMediaPreview
           ? <Image
             mb='$3'

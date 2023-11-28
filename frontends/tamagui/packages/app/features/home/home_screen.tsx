@@ -69,6 +69,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
 
   // console.log("BaseHomeScreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
 
+  const eventCardWidth = media.gtSm ? 400 : 310;
   return (
     <TabsNavigation
       customHomeAction={selectedGroup ? undefined : onHomePressed}
@@ -121,8 +122,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                   : undefined
                 : <ScrollView horizontal
                   w='100%'>
-                  <XStack w={media.gtSm ? 400 : 310} space='$2' mx='$2'>
-                    {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`} event={event} isPreview horizontal />)}
+                  <XStack w={eventCardWidth} space='$2' mx='$2'>
+                    {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`}
+                     event={event} isPreview horizontal xs />)}
                     <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
                       <YStack ai='center' py='$3' jc='center'>
                         <Heading size='$4'>More</Heading>

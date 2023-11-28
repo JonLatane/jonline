@@ -41,6 +41,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
   function doSelectAccount() {
     if (account.needsReauthentication && onReauthenticate) {
       onReauthenticate(account);
+      return;
     }
     if (store.getState().servers.server?.host != account.server.host) {
       dispatch(selectServer(account.server));

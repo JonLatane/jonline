@@ -1,11 +1,14 @@
 import { EventListingType, TimeFilter } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Heading, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { RootState, useServerTheme, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../evepont/create_event_sheet';
+import { SubnavButton } from 'app/components/subnav_button';
 import { useEventPages, useGroupEventPages } from 'app/hooks';
+import { setDocumentTitle } from 'app/utils/set_title';
 import moment from 'moment';
+import { createParam } from 'solito';
 import { supportDateInput, toProtoISOString } from '../event/create_event_sheet';
 import EventCard from '../event/event_card';
 import { AppSection } from '../tabs/features_navigation';
@@ -13,9 +16,6 @@ import { TabsNavigation } from '../tabs/tabs_navigation';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
-import { createParam } from 'solito';
-import { SubnavButton } from 'app/components/subnav_button';
-import { setDocumentTitle } from 'app/utils/set_title';
 
 const { useParam } = createParam<{ endsAfter: string }>()
 export function EventsScreen() {
@@ -24,6 +24,7 @@ export function EventsScreen() {
 
 export type EventDisplayMode = 'upcoming' | 'all' | 'filtered';
 export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
+  const mediaQuery = useMedia();
   const eventsState = useTypedSelector((state: RootState) => state.events);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
@@ -95,6 +96,19 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }} />;
   }
+  const renderInColumns = mediaQuery.gtXs;
+  const eventCardWidth = renderInColumns
+    // ? mediaQuery.gtXl
+    //   ? (window.innerWidth - 40) / 5
+    ? mediaQuery.gtLg
+      ? (window.innerWidth - 80) / 4
+      : mediaQuery.gtMd
+        ? (window.innerWidth - 40) / 3
+        : (window.innerWidth - 40) / 2
+    //310
+    : undefined;
+  const maxWidth = 2000;
+
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
@@ -134,7 +148,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
           />
         </YStack>
       </StickyBox> : undefined}
-      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
+      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' px='$3' maw={maxWidth} space>
 
         {firstPageLoaded
           ? events.length == 0
@@ -142,10 +156,24 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               <Heading size='$5' mb='$3'>No events found.</Heading>
               <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
-            : <>
-              <YStack>
+            : renderInColumns ?
+              <YStack space='$2'>
+                <XStack ac='center' ai='center' jc='center' space='$2' flexWrap='wrap'>
+                  {events.map((event) => {
+                    return <XStack w={eventCardWidth}>
+                      <EventCard event={event} isPreview horizontal />
+                    </XStack>;
+                  })}
+                </XStack>
+                <PaginationIndicator
+                  page={currentPage}
+                  loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
+                  hasNextPage={hasMorePages}
+                  loadNextPage={() => setCurrentPage(currentPage + 1)} />
+              </YStack>
+              : <YStack w='100%' ac='center' ai='center' jc='center' space='$2'>
                 {events.map((event) => {
-                  return <EventCard event={event} isPreview />;
+                  return <EventCard event={event} isPreview horizontal />;
                 })}
                 <PaginationIndicator
                   page={currentPage}
@@ -153,7 +181,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   hasNextPage={hasMorePages}
                   loadNextPage={() => setCurrentPage(currentPage + 1)} />
               </YStack>
-            </>
           : undefined}
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>

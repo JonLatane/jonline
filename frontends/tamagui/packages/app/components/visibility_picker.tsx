@@ -1,8 +1,7 @@
 import { Visibility } from "@jonline/api";
-import { Adapt, Heading, Paragraph, Text, Select, Sheet, Tooltip, XStack, YStack, standardAnimation } from "@jonline/ui";
-import { LinearGradient } from "@tamagui/linear-gradient";
-import { Check, ChevronDown, ChevronUp, Info } from "@tamagui/lucide-icons";
-import { styled } from 'tamagui';
+import { Heading, Label, Paragraph, Select, Tooltip, XStack, YStack } from "@jonline/ui";
+import { Check, ChevronDown } from "@tamagui/lucide-icons";
+import { useState } from "react";
 
 export type VisibilityPickerProps = {
   id?: string;
@@ -17,6 +16,7 @@ export type VisibilityPickerProps = {
 };
 
 
+let _key = 1;
 export function VisibilityPicker({ id, visibility, onChange, disabled, label, visibilityDescription = defaultVisibilityDescription, readOnly }: VisibilityPickerProps) {
   function onValueSelected(v: string) {
     const selectedVisibility = parseInt(v) as Visibility;
@@ -42,6 +42,8 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
     </Tooltip>
   }
 
+  const [name] = useState(() => `visibility-${_key++}`);
+
   return <YStack w='100%' maw={350}>
     {/* <style>
       select {
@@ -55,7 +57,7 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
         <Heading size='$1' mr='$2' opacity={0.5}>Visibility:</Heading>
         <Heading size='$2' opacity={0.5}>{visibilityName(visibility)}</Heading>
       </XStack>
-      : <Select native id={id ?? 'visibility-picker'} onValueChange={onValueSelected}  {...{ disabled }} value={visibility.toString()}>
+      : <Select native id={id ?? name} name={name} onValueChange={onValueSelected}  {...{ disabled }} value={visibility.toString()}>
         <Select.Trigger w='100%' f={1} opacity={disabled ? 0.5 : 1} iconAfter={ChevronDown} {...{ disabled }}>
           <Select.Value w='100%' placeholder="Choose Visibility" />
         </Select.Trigger>
@@ -116,7 +118,10 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
       </Select.ScrollDownButton> */}
         </Select.Content>
       </Select>}
-    {description ? <Paragraph size='$1' mx='$2' my='$1'>{description}</Paragraph> : undefined}
+    {description
+      ? <Label htmlFor={name}>
+        <Paragraph size='$1' mx='$2' my='$1'>{description}</Paragraph>
+      </Label> : undefined}
   </YStack>;
   // return <Select onValueChange={v => onChange(Visibility[v])} value={visibility.toString()}>
   //   {[Visibility.PRIVATE, Visibility.LIMITED, Visibility.SERVER_PUBLIC, Visibility.GLOBAL_PUBLIC,].map((item, i) => {

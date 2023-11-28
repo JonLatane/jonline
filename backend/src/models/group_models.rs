@@ -12,10 +12,13 @@ pub fn get_group_and_membership(
     conn: &mut PgPooledConnection,
 ) -> Result<(Group, Option<Membership>), Status> {
     groups::table
-        .left_join(memberships::table.on(memberships::group_id.eq(groups::id)))
+        .left_join(
+            memberships::table.on(memberships::group_id
+                .eq(groups::id)
+                .and(memberships::user_id.nullable().eq(user_id))),
+        )
         .select((groups::all_columns, memberships::all_columns.nullable()))
-        .filter(memberships::user_id.nullable().eq(user_id))
-        .filter(memberships::group_id.eq(group_id))
+        .filter(groups::id.eq(group_id))
         .first::<(Group, Option<Membership>)>(conn)
         .map_err(|_| Status::new(Code::NotFound, "group_membership_data_not_found"))
 }

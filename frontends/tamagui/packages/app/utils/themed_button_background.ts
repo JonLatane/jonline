@@ -6,11 +6,15 @@ export function themedButtonBackground(color: string | undefined, textColor?: st
     opacity: opacity ?? 0.95,
     hoverStyle: {
       backgroundColor: color,
-      opacity: opacity ?? 1,
+      // opacity: opacity ?? 1,
+    },
+    focusStyle: {
+      backgroundColor: color,
+      // opacity: opacity ?? 1,
     },
     pressStyle: {
       backgroundColor: color,
-      opacity: opacity ?? 1,
+      // opacity: opacity ?? 1,
     }
   }
 }

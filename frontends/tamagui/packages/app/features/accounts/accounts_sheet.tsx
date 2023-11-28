@@ -1,7 +1,7 @@
 import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Plus, RefreshCw, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineAccount, JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAllAccounts, selectAllServers, serverID, setBrowsingServers, setViewingRecommendedServers, upsertServer, useLoadingCredentialedData, useLocalApp, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { JonlineAccount, JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, upsertServer, useLoadingCredentialedData, useLocalApp, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 import React, { useEffect, useState } from 'react';
 import { Platform, TextInput } from 'react-native';
@@ -54,6 +54,10 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
   function reauthenticate(account: JonlineAccount) {
     dispatch(clearAccountAlerts());
+    dispatch(selectServer(account.server));
+    if (accountsState.account && serverID(accountsState.account.server) != serverID(account.server)) {
+      dispatch(selectAccount(undefined));
+    }
     setAddingAccount(true);
     setReauthenticating(true);
     setNewAccountUser(account.user.username);

@@ -296,7 +296,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                           {...standardAnimation}
                         >
                           <XStack mx='auto'>
-                            <VisibilityPicker id={'visibility-picker-create-group'}
+                            <VisibilityPicker
                               label='Group Visibility'
                               visibility={visibility}
                               disabled={disableInputs}

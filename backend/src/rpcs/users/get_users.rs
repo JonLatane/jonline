@@ -12,6 +12,7 @@ use crate::schema::follows;
 use crate::schema::media;
 use crate::schema::users;
 
+const PAGE_SIZE: i64 = 1000;
 pub fn get_users(
     request: GetUsersRequest,
     user: &Option<&models::User>,
@@ -91,7 +92,7 @@ fn get_all_users(
                 .or(users::id.nullable().eq(user.map(|u| u.id))),
         )
         .order(users::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
         .load::<(
             models::User,
@@ -141,7 +142,7 @@ fn get_follow_requests(
             target_follows_target_user_moderation.eq(Moderation::Pending.to_string_moderation()),
         ))
         .order(users::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
         .load::<(
             models::User,
@@ -213,7 +214,7 @@ fn get_by_username(
         // .filter(users::username.ilike(format!("{}%", request.username.unwrap())))
         .filter(users::username.eq(request.username.unwrap()))
         .order(users::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
         .load::<(
             models::User,
@@ -278,7 +279,7 @@ fn get_by_user_id(
         )
         .filter(users::id.eq(request.user_id.unwrap().to_db_id().unwrap()))
         .order(users::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
         .load::<(
             models::User,

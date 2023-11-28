@@ -13,6 +13,7 @@ use crate::schema::{follows, group_posts, groups, memberships, posts, users};
 
 use crate::rpcs::validations::PASSING_MODERATIONS;
 
+const PAGE_SIZE: i64 = 1000;
 pub fn get_posts(
     request: GetPostsRequest,
     user: &Option<&models::User>,
@@ -151,7 +152,7 @@ fn get_public_and_following_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(posts::user_id.is_not_null())
         .order(posts::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
@@ -180,7 +181,7 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
             .filter(posts::context.eq(PostContext::Post.as_str_name()))
             .order(posts::id.desc())
             .distinct_on(posts::id)
-            .limit(100)
+            .limit(PAGE_SIZE)
             .load::<(models::Post, Option<models::Author>)>(conn)
             .unwrap()
             .iter()
@@ -206,7 +207,7 @@ fn get_my_group_posts(user: &models::User, conn: &mut PgPooledConnection) -> Vec
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::id.desc())
         .distinct_on(posts::id)
-        .limit(100)
+        .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
@@ -238,7 +239,7 @@ fn get_group_posts(
             .filter(posts::context.eq(PostContext::Post.as_str_name()))
             .filter(posts::user_id.is_not_null())
             .order(posts::created_at.desc())
-            .limit(100)
+            .limit(PAGE_SIZE)
             .load::<(models::Post, Option<models::Author>, models::GroupPost)>(conn)
             .unwrap()
             .iter()
@@ -268,7 +269,7 @@ fn get_group_posts(
             .filter(posts::context.eq(PostContext::Post.as_str_name()))
             .filter(posts::user_id.is_not_null())
             .order(posts::created_at.desc())
-            .limit(100)
+            .limit(PAGE_SIZE)
             .load::<(models::Post, Option<models::Author>, models::GroupPost)>(conn)
             .unwrap()
             .iter()
@@ -319,7 +320,7 @@ fn load_group_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(posts::user_id.is_not_null())
         .order(posts::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
@@ -352,7 +353,7 @@ fn get_user_posts(
         .filter(posts::user_id.eq(user_id))
         .filter(posts::context.eq(request.context().as_str_name()))
         .order(posts::last_activity_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
@@ -372,7 +373,7 @@ fn get_following_posts(user: &models::User, conn: &mut PgPooledConnection) -> Ve
         ))
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .order(posts::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
@@ -400,7 +401,7 @@ fn get_replies_to_post_id(
         .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
         .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         .order(posts::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()

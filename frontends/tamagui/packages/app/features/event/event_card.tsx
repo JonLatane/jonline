@@ -20,6 +20,7 @@ import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { PayloadAction } from '@reduxjs/toolkit';
+import { ShareableToggle } from 'app/components/shareable_toggle';
 
 interface Props {
   event: Event;
@@ -27,6 +28,7 @@ interface Props {
   isPreview?: boolean;
   groupContext?: Group;
   horizontal?: boolean;
+  xs?: boolean;
   hideEditControls?: boolean;
   onEditingChange?: (editing: boolean) => void;
   newRsvpMode?: RsvpMode;
@@ -42,6 +44,7 @@ export const EventCard: React.FC<Props> = ({
   isPreview,
   groupContext,
   horizontal,
+  xs,
   hideEditControls,
   onEditingChange,
   newRsvpMode,
@@ -63,20 +66,24 @@ export const EventCard: React.FC<Props> = ({
   const [savingEdits, setSavingEdits] = useState(false);
 
   const [editedTitle, setEditedTitle] = useState(post.title);
-  const title = editing ? editedTitle : post.title;
   const [editedContent, setEditedContent] = useState(post.content);
   const [editedMedia, setEditedMedia] = useState(post.media);
   const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
   const [editedVisibility, setEditedVisibility] = useState(post.visibility);
-  const visibility = editing ? editedVisibility : post.visibility;
+  const [editedShareable, setEditedShareable] = useState(post.shareable);
+
+  const [editedInstances, setEditedInstances] = useState(event.instances);
   const [editedAllowRsvps, setEditedAllowRsvps] = useState(event.info?.allowsRsvps ?? false);
   const [editedAllowAnonymousRsvps, setEditedAllowAnonymousRsvps] = useState(event.info?.allowsAnonymousRsvps ?? false);
 
+  const title = editing ? editedTitle : post.title;
   const content = editing ? editedContent : post.content;
   const media = editing ? editedMedia : post.media;
   const embedLink = editing ? editedEmbedLink : post.embedLink;
-  const [editedInstances, setEditedInstances] = useState(event.instances);
+  const visibility = editing ? editedVisibility : post.visibility;
+  const shareable = editing ? editedShareable : post.shareable;
   const instances = editing ? editedInstances : event.instances;
+
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
 
@@ -141,7 +148,8 @@ export const EventCard: React.FC<Props> = ({
         title: editedTitle,
         content: editedContent,
         media: editedMedia,
-        visibility: editedVisibility
+        visibility: editedVisibility,
+        shareable: editedShareable,
       },
       instances: editedInstances,
     })).then((result: PayloadAction<Event, any, any, any>) => {
@@ -217,7 +225,7 @@ export const EventCard: React.FC<Props> = ({
     ? `/g/${group.shortname}/e/${primaryInstance!.id}`
     : `.`;
 
-  const maxContentHeight = isPreview ? horizontal ? 100 : 300 : undefined;
+  const maxContentHeight = isPreview ? horizontal ? xs ? 75 : 100 : 300 : undefined;
   const detailsLink = isPreview ? eventLink : undefined;
   const postLink = post.link ? useLink({ href: post.link }) : undefined;
   const authorLinkProps = post.author ? authorLink : undefined;
@@ -681,29 +689,33 @@ export const EventCard: React.FC<Props> = ({
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%'>
                 <YStack px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'/*{mediaQuery.gtXs ? '$3' : '$1'}*/
-                // mah={isPreview && horizontal ? 50 : undefined} overflow='hidden'
                 >
-                  {editing && !previewingEdits
-                    ? <PostMediaManager
-                      key='media-edit'
-                      link={post.link}
-                      media={editedMedia}
-                      setMedia={setEditedMedia}
-                      embedLink={editedEmbedLink}
-                      setEmbedLink={setEditedEmbedLink}
-                      disableInputs={savingEdits}
+                  <YStack
+                  mah={maxContentHeight} overflow='hidden'
+                  >
+                    {editing && !previewingEdits
+                      ? <PostMediaManager
+                        key='media-edit'
+                        link={post.link}
+                        media={editedMedia}
+                        setMedia={setEditedMedia}
+                        embedLink={editedEmbedLink}
+                        setEmbedLink={setEditedEmbedLink}
+                        disableInputs={savingEdits}
 
-                    />
-                    : <PostMediaRenderer
-                      key='media-view'
-                      horizontalPreview={horizontal && isPreview}
-                      {...{
-                        post: {
-                          ...post,
-                          media,
-                          embedLink
-                        }, isPreview, groupContext, hasBeenVisible
-                      }} />}
+                      />
+                      : <PostMediaRenderer
+                        key='media-view'
+                        smallPreview={horizontal && isPreview}
+                        xsPreview={xs && isPreview}
+                        {...{
+                          post: {
+                            ...post,
+                            media,
+                            embedLink
+                          }, isPreview, groupContext, hasBeenVisible
+                        }} />}
+                  </YStack>
                   <YStack key='content' maxHeight={maxContentHeight} overflow='hidden'>
                     {contentView}
                   </YStack>
@@ -826,6 +838,11 @@ export const EventCard: React.FC<Props> = ({
                         visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
                         readOnly={!editing || previewingEdits}
                       />
+                    </XStack>
+                    <XStack key='visibility-edit' my='auto' ml='auto' pb='$1'>
+                      <ShareableToggle value={shareable}
+                        setter={setEditedShareable}
+                        readOnly={!editing || previewingEdits} />
                     </XStack>
                     <XStack my='auto' maw='100%' ml='auto'>
                       <GroupPostManager post={post} isVisible={isVisible}

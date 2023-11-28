@@ -1,10 +1,11 @@
 import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, createAccount, login, RootState, selectAllAccounts, serverID, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { accountId, clearAccountAlerts, createAccount, JonlineAccount, login, RootState, selectAllAccounts, serverID, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import AccountCard from './account_card';
 import { themedButtonBackground } from 'app/utils/themed_button_background';
+import { TextInput } from 'react-native';
 
 export type AddAccountSheetProps = {
   // primaryServer?: JonlineServer;
@@ -23,10 +24,13 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
   const [open, setOpen] = useState(false);
   const [addingAccount, setAddingAccount] = useState(false);
   const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
+  const [reauthenticating, setReauthenticating] = useState(false);
   const [position, setPosition] = useState(0);
   const [newAccountUser, setNewAccountUser] = useState('');
   const [newAccountPass, setNewAccountPass] = useState('');
 
+
+  const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
   const dispatch = useTypedDispatch();
   const app = useTypedSelector((state: RootState) => state.app);
   const serversState = useTypedSelector((state: RootState) => state.servers);
@@ -38,6 +42,14 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
   // const accountsOnPrimaryServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
   const accountsOnServer = server ? accounts.filter(a => serverID(a.server) == serverID(server!)) : [];
 
+  function reauthenticateAccount(account: JonlineAccount) {
+    setReauthenticating(true);
+    setAddingAccount(true);
+    setLoginMethod(LoginMethod.Login);
+    setNewAccountUser(account.user.username);
+    setOpen(true);
+    setTimeout(() => passwordRef.current.focus(), 100);
+  }
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
@@ -79,6 +91,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
         setNewAccountPass('');
         setForceDisableAccountButtons(false);
         setLoginMethod(undefined);
+        setReauthenticating(false);
       }, 1000);
     }, 1500);
   } else if (accountsState.errorMessage && forceDisableAccountButtons) {
@@ -125,7 +138,10 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
               <Button {...addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
                 transparent={addingAccount}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
-                onPress={() => setAddingAccount(false)}>
+                onPress={() => {
+                  setAddingAccount(false);
+                  setReauthenticating(false);
+                }}>
                 <Heading size='$4' color={addingAccount ? undefined : navTextColor}>Choose Account</Heading>
               </Button>
               {/* </Tooltip.Trigger>
@@ -141,7 +157,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
                 onPress={() => setAddingAccount(true)}>
-                <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>Add Account</Heading>
+                <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>{reauthenticating ? 'Reauthenticate' : 'Add Account'}</Heading>
               </Button>
               {/* </Tooltip.Trigger>
                 <Tooltip.Content>
@@ -163,6 +179,7 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
                   {loginMethod
                     ? <XStack w='100%' animation="quick"  {...standardAnimation}>
                       <Input secureTextEntry w='100%'
+                        ref={passwordRef}
                         textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
                         placeholder="Password"
                         editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
@@ -198,26 +215,31 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
 
                   {loginMethod
                     ? <XStack>
-                      <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                      {reauthenticating ? undefined : <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
                         disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
                         Back
-                      </Button>
-                      <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => {
-                        if (loginMethod == LoginMethod.Login) {
-                          loginToServer();
-                        } else {
-                          createServerAccount();
-                        }
-                      }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                        {loginMethod == LoginMethod.Login ? 'Login' : 'Create Account'}
+                      </Button>}
+                      <Button key='confirm-button' flex={1} {...themedButtonBackground(primaryColor, primaryTextColor)}
+                        onPress={() => {
+                          if (loginMethod == LoginMethod.Login) {
+                            loginToServer();
+                          } else {
+                            createServerAccount();
+                          }
+                        }}
+                        disabled={disableAccountButtons}
+                        opacity={disableAccountButtons ? 0.5 : 1}
+                      >
+                        {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Create Account'}
                       </Button>
                     </XStack>
-                    : <XStack>
+                    : <XStack space='$1'>
                       <Button flex={2} marginRight='$1' onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
                         disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                         Create Account
                       </Button>
-                      <Button flex={1} backgroundColor={primaryColor} color={primaryTextColor} onPress={() => setLoginMethod(LoginMethod.Login)}
+                      <Button flex={1} {...themedButtonBackground(primaryColor, primaryTextColor)}
+                        onPress={() => setLoginMethod(LoginMethod.Login)}
                         disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                         Login
                       </Button>
@@ -225,7 +247,9 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                 </YStack>
                 : accountsOnServer.length > 0 ? <>
                   {/* <Heading size="$7" paddingVertical='$2'>Choose Account</Heading> */}
-                  {accountsOnServer.map((account) => <AccountCard account={account} key={accountId(account)} totalAccounts={accountsOnServer.length} />)}
+                  {accountsOnServer.map((account) =>
+                    <AccountCard account={account} key={accountId(account)} totalAccounts={accountsOnServer.length}
+                      onReauthenticate={reauthenticateAccount} />)}
                 </>
                   : undefined}
             </YStack>

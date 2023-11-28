@@ -8,6 +8,8 @@ use crate::protos::*;
 use crate::protos::GroupListingType::*;
 use crate::schema::groups;
 
+const PAGE_SIZE: i64 = 1000;
+
 pub fn get_groups(
     request: GetGroupsRequest,
     user: &Option<&models::User>,
@@ -57,7 +59,7 @@ fn get_all_groups(
         .filter(groups::visibility.eq_any(visibilities))
         // .filter(groups::name.ilike(format!("{}%", request.group_name.unwrap())))
         .order(groups::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
         .load::<models::Group>(conn)
         .unwrap()
@@ -86,7 +88,7 @@ fn get_by_name(
         .filter(groups::visibility.eq_any(visibilities))
         .filter(groups::name.ilike(format!("{}%", request.group_name.unwrap())))
         .order(groups::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
         .load::<models::Group>(conn)
         .unwrap()
@@ -122,7 +124,7 @@ fn get_by_id(
                 .unwrap()),
         )
         .order(groups::created_at.desc())
-        .limit(100)
+        .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
         .load::<models::Group>(conn)
         .unwrap()
