@@ -72,7 +72,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const backgroundSize = postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
-  const singlePreviewSize = xsPreview ? 250 : smallPreview ? 300 : foregroundSize;
+  const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
 
   // if (!embedComponent && (post?.media?.length ?? 0 === 0)) {
   //   return <></>;
