@@ -1,4 +1,4 @@
-import { Event, EventInstance, Post } from "@jonline/api";
+import { Event, TimeFilter } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   Dictionary,
@@ -10,12 +10,11 @@ import {
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
+import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
+import { locallyUpsertPost } from "./posts";
 import { loadUserEvents } from "./user_actions";
-import postsReducer, { locallyUpsertPost, postsAdapter, upsertPost } from "./posts";
-import { store } from "../store";
-import { TimeFilter } from '../../../api/generated/events';
 export * from './event_actions';
 
 export interface EventsState {
