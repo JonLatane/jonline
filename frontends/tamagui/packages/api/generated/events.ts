@@ -6,7 +6,6 @@ import { MediaReference } from "./media";
 import { Post } from "./posts";
 import { ContactMethod } from "./users";
 import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_moderation";
-import { loadGroupEventsPage } from '../../app/store/modules/group_actions';
 
 export const protobufPackage = "jonline";
 
