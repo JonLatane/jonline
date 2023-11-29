@@ -225,7 +225,18 @@ export const EventCard: React.FC<Props> = ({
     ? `/g/${group.shortname}/e/${primaryInstance!.id}`
     : `.`;
 
-  const maxContentHeight = isPreview ? horizontal ? xs ? 75 : 100 : 300 : undefined;
+  const maxTotalContentHeight = isPreview
+    ? (horizontal ? xs ? 225 : 350 : 500) 
+      - (event.info?.allowsRsvps ? 100 : 0)
+      - (primaryInstance?.location?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
+    : undefined;
+  console.log({ maxTotalContentHeight })
+  const numContentSections = ((content?.length ?? 0) > 0 ? 1 : 0)
+    + (embedLink || media.length > 0 ? 1 : 0);
+  const maxContentSectionHeight = isPreview ?
+    maxTotalContentHeight! / numContentSections
+    : undefined;
+
   const detailsLink = isPreview ? eventLink : undefined;
   const postLink = post.link ? useLink({ href: post.link }) : undefined;
   const authorLinkProps = post.author ? authorLink : undefined;
@@ -691,7 +702,7 @@ export const EventCard: React.FC<Props> = ({
                 <YStack px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'/*{mediaQuery.gtXs ? '$3' : '$1'}*/
                 >
                   <YStack
-                  mah={maxContentHeight} overflow='hidden'
+                    mah={maxContentSectionHeight} overflow='hidden'
                   >
                     {editing && !previewingEdits
                       ? <PostMediaManager
@@ -716,7 +727,7 @@ export const EventCard: React.FC<Props> = ({
                           }, isPreview, groupContext, hasBeenVisible
                         }} />}
                   </YStack>
-                  <YStack key='content' maxHeight={maxContentHeight} overflow='hidden'>
+                  <YStack key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>
                     {contentView}
                   </YStack>
                   {editing && !previewingEdits

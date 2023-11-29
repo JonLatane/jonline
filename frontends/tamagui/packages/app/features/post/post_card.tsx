@@ -267,23 +267,25 @@ export const PostCard: React.FC<PostCardProps> = ({
             ? <Paragraph size='$1'>This {post.replyToPostId ? 'comment' : 'post'} has been deleted.</Paragraph>
             : <YStack zi={1000} width='100%'>
 
-              <YStack w='100%' px='$3'>
-                {editing && !previewingEdits
-                  ? <PostMediaManager
-                    link={post.link}
-                    media={editedMedia}
-                    setMedia={setEditedMedia}
-                    embedLink={editedEmbedLink}
-                    setEmbedLink={setEditedEmbedLink}
-                    disableInputs={savingEdits}
-                  />
-                  : <PostMediaRenderer {...{
-                    post: {
-                      ...post,
-                      media,
-                      embedLink
-                    }, isPreview, groupContext, hasBeenVisible
-                  }} />}
+              <YStack w='100%' px='$3' >
+                <YStack mah={isPreview ? 300 : undefined} overflow='hidden'>
+                  {editing && !previewingEdits
+                    ? <PostMediaManager
+                      link={post.link}
+                      media={editedMedia}
+                      setMedia={setEditedMedia}
+                      embedLink={editedEmbedLink}
+                      setEmbedLink={setEditedEmbedLink}
+                      disableInputs={savingEdits}
+                    />
+                    : <PostMediaRenderer {...{
+                      post: {
+                        ...post,
+                        media,
+                        embedLink
+                      }, isPreview, groupContext, hasBeenVisible
+                    }} />}
+                </YStack>
 
                 <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                   <YStack maxHeight={isPreview
@@ -466,7 +468,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         </Card.Background>
       </Card >
       {/* </Theme> */}
-    </YStack>
+    </YStack >
   );
 };
 

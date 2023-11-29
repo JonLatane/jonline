@@ -97,7 +97,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       </XStack> : undefined}
 
     <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-      <YStack maxHeight={isPreview ? smallPreview ? 150 : 300 : undefined} overflow='hidden'>
+      <YStack>
         {singleMediaPreview
           ? <Image
             mb='$3'

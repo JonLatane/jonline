@@ -103,7 +103,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     ? mediaQuery.gtLg
       ? (window.innerWidth - 80) / 4
       : mediaQuery.gtMd
-        ? (window.innerWidth - 40) / 3
+        ? (window.innerWidth - 60) / 3
         : (window.innerWidth - 40) / 2
     //310
     : undefined;
