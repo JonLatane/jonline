@@ -4,7 +4,7 @@ import {
 import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 import { Group } from "@jonline/api";
-import { serverID } from './servers';
+import { serverID } from './servers_state';
 
 export type LocalAppConfiguration = {
   showIntro: boolean;
@@ -21,6 +21,7 @@ export type LocalAppConfiguration = {
   showUserIds: boolean;
   showEventsOnLatest: boolean;
   serverRecentGroups: { [serverId: string]: string[] };
+  // Here, undefined means "auto" (i.e. based on screen/window width)
   inlineFeatureNavigation: boolean | undefined;
   shrinkFeatureNavigation: boolean;
   browseRsvpsFromPreviews: boolean;
@@ -42,7 +43,7 @@ const initialState: LocalAppConfiguration = {
   showEventsOnLatest: true,
   serverRecentGroups: {},
   inlineFeatureNavigation: undefined,
-  shrinkFeatureNavigation: true,
+  shrinkFeatureNavigation: false,
   browseRsvpsFromPreviews: true
 };
 

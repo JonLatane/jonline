@@ -100,7 +100,7 @@ pub async fn media_file<'a>(
     let _user = get_media_user(authorization, auth_header, cookies, state).ok();
 
     let data = load_media_file_data(id, state).await?;
-    
+
     Ok(CacheResponse::Public {
         responder: data,
         max_age: 3600 * 12,

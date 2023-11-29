@@ -18,6 +18,7 @@ import { VisibilityPicker } from 'app/components/visibility_picker';
 import { ToggleRow } from 'app/components/toggle_row';
 import { splitOnFirstEmoji } from '../tabs/server_name_and_logo';
 import { createParam } from 'solito';
+import { PermissionsEditorProps, PermissionsEditor } from '../user/permissions_editor';
 
 export type GroupDetailsSheetProps = {
   selectedGroup?: Group;
@@ -48,27 +49,6 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
 
   const homeLink = useLink({ href: '/' });
 
-  function doUpdateGroup() {
-    dispatch(updateGroup({
-      ...accountOrServer,
-      ...(infoRenderingGroup!),
-      name: editedName,
-      description: editedDescription,
-      avatar: editedAvatar,
-    })).then((action: PayloadAction<Group, any, any>) => {
-      setSavingEdits(false);
-      setEditing(false);
-      setPreviewingEdits(false);
-      // if ((shortname?.length ?? 0) > 0 && 
-      //   (action.payload?.shortname?.length ?? 0) > 0 &&
-      //   shortname != infoRenderingGroup?.shortname) {
-        console.log('shortname', shortname, 'infoRenderingGroup?.shortname', infoRenderingGroup?.shortname);
-      if (shortname !== undefined && shortname.length > 0 && shortname === infoRenderingGroup?.shortname) {
-        console.log('replacing shortname')
-        updateParams({ shortname: action.payload.shortname }, { web: { replace: true } });
-      }
-    });
-  }
   async function doDeleteGroup() {
     dispatch(deleteGroup({ ...accountOrServer, ...(infoRenderingGroup!) })).then((action) => {
       setDeleted(true);
@@ -87,9 +67,48 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   const [description, editedDescription, setEditedDescription] = useEditableState<string>(infoRenderingGroup?.description ?? '', editingContext);
   const [avatar, editedAvatar, setEditedAvatar] = useEditableState(infoRenderingGroup?.avatar, editingContext);
   const [visibility, editedVisibility, setEditedVisibility] = useEditableState(infoRenderingGroup?.visibility ?? Visibility.VISIBILITY_UNKNOWN, editingContext);
-  const [defaultMembershipModeration, editedDefaultMembershipModeration, setEditedDefaultMembershipModeration] = useEditableState(infoRenderingGroup?.defaultMembershipModeration, editingContext);
-  const [defaultPostModeration, editedDefaultPostModeration, setEditedDefaultPostModeration] = useEditableState(infoRenderingGroup?.defaultPostModeration, editingContext);
-  const [defaultEventModeration, editedDefaultEventModeration, setEditedDefaultEventModeration] = useEditableState(infoRenderingGroup?.defaultEventModeration, editingContext);
+  const [defaultMembershipModeration, editedDefaultMembershipModeration, setEditedDefaultMembershipModeration] = useEditableState(infoRenderingGroup?.defaultMembershipModeration ?? Moderation.MODERATION_UNKNOWN, editingContext);
+  const [defaultPostModeration, editedDefaultPostModeration, setEditedDefaultPostModeration] = useEditableState(infoRenderingGroup?.defaultPostModeration ?? Moderation.MODERATION_UNKNOWN, editingContext);
+  const [defaultEventModeration, editedDefaultEventModeration, setEditedDefaultEventModeration] = useEditableState(infoRenderingGroup?.defaultEventModeration ?? Moderation.MODERATION_UNKNOWN, editingContext);
+  const [defaultMembershipPermissions, editedDefaultMembershipPermissions, setEditedDefaultMembershipPermissions] = useEditableState(infoRenderingGroup?.defaultMembershipPermissions ?? [], editingContext);
+  const [nonMemberPermissions, editedNonMemberPermissions, setEditedNonMemberPermissions] = useEditableState(infoRenderingGroup?.nonMemberPermissions ?? [], editingContext);
+
+  const updatedGroup: Group = {
+    ...accountOrServer,
+    ...(infoRenderingGroup!),
+    name: editedName,
+    description: editedDescription,
+    avatar: editedAvatar,
+    visibility,
+    defaultMembershipModeration,
+    defaultPostModeration,
+    defaultEventModeration,
+    defaultMembershipPermissions,
+    nonMemberPermissions,
+  };
+
+  function doUpdateGroup() {
+    dispatch(updateGroup(updatedGroup)).then((action: PayloadAction<Group, any, any>) => {
+      setSavingEdits(false);
+      setEditing(false);
+      setPreviewingEdits(false);
+
+      // console.log('shortname', shortname, 'infoRenderingGroup?.shortname', infoRenderingGroup?.shortname);
+      if (shortname !== undefined && shortname.length > 0 && shortname === infoRenderingGroup?.shortname) {
+        console.log('replacing shortname')
+        updateParams({ shortname: action.payload.shortname }, { web: { replace: true } });
+      }
+    });
+  }
+
+  // useEffect(() => {
+  //   if (infoGroup) {
+  //     setEditing(false);
+  //     setEditedName(infoGroup.name);
+  //     setEditedDescription(infoGroup.description ?? '');
+  //     setEditedAvatar(infoGroup.avatar);
+  //   }
+  // }, [infoGroupId, server ? serverID(server) : 'no server']);
 
   const [deleted, setDeleted] = useState(false);
 
@@ -109,14 +128,54 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
     }
   }
 
-  useEffect(() => {
-    if (infoGroup) {
-      setEditing(false);
-      setEditedName(infoGroup.name);
-      setEditedDescription(infoGroup.description ?? '');
-      setEditedAvatar(infoGroup.avatar);
+  const configurableUserPermissions = [
+    Permission.VIEW_USERS,
+    // Permission.PUBLISH_USERS_LOCALLY,
+    // Permission.PUBLISH_USERS_GLOBALLY,
+    // Permission.VIEW_GROUPS,
+    // Permission.CREATE_GROUPS,
+    // Permission.VIEW_MEDIA,
+    // Permission.CREATE_MEDIA,
+    // Permission.PUBLISH_MEDIA_LOCALLY,
+    // Permission.PUBLISH_MEDIA_GLOBALLY,
+    // Permission.PUBLISH_GROUPS_LOCALLY,
+    // Permission.PUBLISH_GROUPS_GLOBALLY,
+    // Permission.JOIN_GROUPS,
+    Permission.VIEW_POSTS,
+    Permission.CREATE_POSTS,
+    // Permission.PUBLISH_POSTS_LOCALLY,
+    // Permission.PUBLISH_POSTS_GLOBALLY,
+    Permission.VIEW_EVENTS,
+    Permission.CREATE_EVENTS,
+    // Permission.PUBLISH_EVENTS_LOCALLY,
+    // Permission.PUBLISH_EVENTS_GLOBALLY,
+    Permission.ADMIN,
+  ];
+  function selectDefaultPermission(permission: Permission, permissionSet: Permission[], setPermissionSet: (permissions: Permission[]) => void) {
+    if (permissionSet.includes(permission)) {
+      setPermissionSet(permissionSet.filter(p => p != permission));
+    } else {
+      setPermissionSet([...permissionSet, permission]);
     }
-  }, [infoGroupId, server ? serverID(server) : 'no server']);
+  }
+  function deselectDefaultPermission(permission: Permission, permissionSet: Permission[], setPermissionSet: (permissions: Permission[]) => void) {
+    setPermissionSet(permissionSet.filter(p => p != permission));
+  }
+  const isGroupAdmin = infoRenderingGroup?.currentUserMembership?.permissions?.includes(Permission.ADMIN);
+  const membershipPermissionsEditorProps: PermissionsEditorProps = {
+    selectablePermissions: configurableUserPermissions,
+    selectedPermissions: defaultMembershipPermissions,
+    selectPermission: (p: Permission) => selectDefaultPermission(p, defaultMembershipPermissions, setEditedDefaultMembershipPermissions),
+    deselectPermission: (p: Permission) => deselectDefaultPermission(p, defaultMembershipPermissions, setEditedDefaultMembershipPermissions),
+    editMode: editing,
+  };
+  const nonMemberPermissionsEditorProps: PermissionsEditorProps = {
+    selectablePermissions: configurableUserPermissions.filter(p => ![Permission.ADMIN].includes(p)),
+    selectedPermissions: nonMemberPermissions,
+    selectPermission: (p: Permission) => selectDefaultPermission(p, nonMemberPermissions, setEditedNonMemberPermissions),
+    deselectPermission: (p: Permission) => deselectDefaultPermission(p, nonMemberPermissions, setEditedNonMemberPermissions),
+    editMode: editing,
+  };
 
 
   //TODO: Simplify/abstract this into its own component? But then, with this design, will there ever be a need
@@ -261,6 +320,9 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
               ? <YStack key='edit-group-settings'
                 animation='standard'
                 mt='$2'
+                p='$2'
+                backgroundColor='$backgroundHover'
+                borderRadius='$2'
                 // touch={showSettings}
 
                 {...standardAnimation}
@@ -273,18 +335,25 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                     onChange={setEditedVisibility}
                     visibilityDescription={v => groupVisibilityDescription(v, server)} />
                 </XStack>
-                <ToggleRow name='Require Permission to Join'
+                <ToggleRow name='Require Membership Moderation'
                   value={pending(defaultMembershipModeration)}
                   setter={(v) => setEditedDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
                   disabled={disableInputs} />
-                <ToggleRow name='Require Permission to Post'
+                <ToggleRow name='Require Post Moderation'
+                  description='Hide all Posts shared to this Group until approved by a moderator.'
                   value={pending(defaultPostModeration)}
                   setter={(v) => setEditedDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
                   disabled={disableInputs} />
-                <ToggleRow name='Require Permission to Create Events'
-                  value={pending(defaultEventModeration)}
+                <ToggleRow name='Require Event Moderation'
+                  description='Hide all Events shared to this Group until approved by a moderator.'
+                   value={pending(defaultEventModeration)}
                   setter={(v) => setEditedDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
                   disabled={disableInputs} />
+
+                <PermissionsEditor label='Default Member Permissions'
+                  {...membershipPermissionsEditorProps} />
+                <PermissionsEditor label='Non-Member Permissions'
+                  {...nonMemberPermissionsEditorProps} />
               </YStack>
               : undefined}
           </AnimatePresence>

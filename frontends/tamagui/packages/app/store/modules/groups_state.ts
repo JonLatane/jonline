@@ -11,11 +11,11 @@ import {
   Slice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import { GroupedEventInstancePages, serializeTimeFilter } from "./events";
+import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
 import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, respondToMembershipRequest, loadGroupsPage, updateGroup, deleteGroup } from "./group_actions";
 import { store } from "../store";
 import { passes } from "app/utils/moderation_utils";
-import { usersAdapter } from "./users";
+import { usersAdapter } from "./users_state";
 import { GroupedPages } from "../pagination";
 
 export interface GroupsState {

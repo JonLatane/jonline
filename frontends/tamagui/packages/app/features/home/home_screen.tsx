@@ -122,7 +122,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
                   : undefined
                 : <ScrollView horizontal
                   w='100%'>
-                  <XStack w={eventCardWidth} space='$2' mx='$2'>
+                  <XStack w={eventCardWidth} space='$2' mx='$2' my='auto'>
                     {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`}
                      event={event} isPreview horizontal xs />)}
                     <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>

@@ -18,28 +18,30 @@ use super::{load_media_file_data, open_named_file};
 
 lazy_static! {
     pub static ref TAMAGUI_PAGES: Vec<Route> = routes![
-        tamagui_index,
-        tamagui_media,
-        tamagui_posts,
-        tamagui_events,
-        tamagui_about,
-        tamagui_about_jonline,
-        tamagui_post,
-        tamagui_event,
-        tamagui_event_instance,
-        tamagui_user,
-        tamagui_people,
-        tamagui_follow_requests,
-        tamagui_server,
-        tamagui_group_home,
-        tamagui_group_posts,
-        tamagui_group_events,
-        tamagui_group_post,
-        tamagui_group_event,
-        tamagui_group_event_instance,
-        tamagui_favicon,
-        tamagui_file_or_username
-    ];
+            tamagui_index,
+            tamagui_media,
+            tamagui_posts,
+            tamagui_events,
+            tamagui_about,
+            tamagui_about_jonline,
+            tamagui_post,
+            tamagui_event,
+            tamagui_event_instance,
+            tamagui_user,
+            tamagui_people,
+            tamagui_follow_requests,
+            tamagui_server,
+            tamagui_group_home,
+            tamagui_group_posts,
+            tamagui_group_post,
+            tamagui_group_events,
+            tamagui_group_event,
+            tamagui_group_event_instance,
+            tamagui_group_members,
+            tamagui_group_member,
+            tamagui_favicon,
+            tamagui_file_or_username,
+        ];
 }
 
 #[rocket::get("/<file..>")]
@@ -130,7 +132,10 @@ pub async fn tamagui_favicon<'a>(
             }
 
             Ok(CacheResponse::Public {
-                responder: (content_type.to_owned(), open_named_file(named_filename).await?),
+                responder: (
+                    content_type.to_owned(),
+                    open_named_file(named_filename).await?,
+                ),
                 max_age: 3600 * 12,
                 must_revalidate: true,
             })
@@ -138,97 +143,36 @@ pub async fn tamagui_favicon<'a>(
     }
 }
 
-#[rocket::get("/tamagui")]
-pub async fn tamagui_index() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("index.html").await
+macro_rules! tamagui_resource {
+    ($name:tt, $web_route:tt, $html_path:literal) => {
+        #[rocket::get($web_route)]
+        pub async fn $name() -> CacheResponse<Result<NamedFile, Status>> {
+            tamagui_path($html_path).await
+        }
+    }
 }
 
-#[rocket::get("/media")]
-async fn tamagui_media() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("media.html").await
-}
-
-#[rocket::get("/posts")]
-async fn tamagui_posts() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("posts.html").await
-}
-
-#[rocket::get("/events")]
-async fn tamagui_events() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("events.html").await
-}
-
-#[rocket::get("/about")]
-async fn tamagui_about() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("about.html").await
-}
-#[rocket::get("/about_jonline")]
-async fn tamagui_about_jonline() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("about_jonline.html").await
-}
-
-#[rocket::get("/post/<_..>")]
-async fn tamagui_post() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("post/[postId].html").await
-}
-
-#[rocket::get("/event/<_>")]
-async fn tamagui_event() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("event/[eventId].html").await
-}
-
-#[rocket::get("/event/<_>/i/<_..>")]
-async fn tamagui_event_instance() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("event/[eventId]/i/[instanceId].html").await
-}
-
-#[rocket::get("/user/<_>")]
-async fn tamagui_user() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("user/[id].html").await
-}
-#[rocket::get("/people")]
-async fn tamagui_people() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("people.html").await
-}
-#[rocket::get("/people/follow_requests")]
-async fn tamagui_follow_requests() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("people/follow_requests.html").await
-}
-
-#[rocket::get("/g/<_>")]
-async fn tamagui_group_home() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("g/[shortname].html").await
-}
-
-#[rocket::get("/g/<_>/posts")]
-async fn tamagui_group_posts() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("g/[shortname]/posts.html").await
-}
-
-#[rocket::get("/g/<_>/events")]
-async fn tamagui_group_events() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("g/[shortname]/events.html").await
-}
-
-#[rocket::get("/g/<_>/p/<_..>")]
-async fn tamagui_group_post() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("g/[shortname]/p/[postId].html").await
-}
-
-#[rocket::get("/g/<_>/e/<_>")]
-async fn tamagui_group_event() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("g/[shortname]/e/[eventId].html").await
-}
-
-#[rocket::get("/g/<_>/e/<_>/i/<_..>")]
-async fn tamagui_group_event_instance() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("g/[shortname]/e/[eventId]/i/[instanceId].html").await
-}
-
-#[rocket::get("/server/<_..>")]
-async fn tamagui_server() -> CacheResponse<Result<NamedFile, Status>> {
-    tamagui_path("server/[id].html").await
-}
+tamagui_resource!(tamagui_index, "/tamagui", "index.html");
+tamagui_resource!(tamagui_media, "/media", "media.html");
+tamagui_resource!(tamagui_posts, "/posts", "posts.html");
+tamagui_resource!(tamagui_events, "/events", "events.html");
+tamagui_resource!(tamagui_about, "/about", "about.html");
+tamagui_resource!(tamagui_about_jonline, "/about_jonline", "about_jonline.html");
+tamagui_resource!(tamagui_post, "/post/<_..>", "post/[postId].html");
+tamagui_resource!(tamagui_event, "/event/<_>", "event/[eventId].html");
+tamagui_resource!(tamagui_event_instance, "/event/<_>/i/<_..>", "event/[eventId]/i/[instanceId].html");
+tamagui_resource!(tamagui_user, "/user/<_>", "user/[id].html");
+tamagui_resource!(tamagui_people, "/people", "people.html");
+tamagui_resource!(tamagui_follow_requests, "/people/follow_requests", "people/follow_requests.html");
+tamagui_resource!(tamagui_group_home, "/g/<_>", "g/[shortname].html");
+tamagui_resource!(tamagui_group_posts, "/g/<_>/posts", "g/[shortname]/posts.html");
+tamagui_resource!(tamagui_group_post, "/g/<_>/p/<_..>", "g/[shortname]/p/[postId].html");
+tamagui_resource!(tamagui_group_events, "/g/<_>/events", "g/[shortname]/events.html");
+tamagui_resource!(tamagui_group_event, "/g/<_>/e/<_>", "g/[shortname]/e/[eventId].html");
+tamagui_resource!(tamagui_group_event_instance, "/g/<_>/e/<_>/i/<_..>", "g/[shortname]/e/[eventId]/i/[instanceId].html");
+tamagui_resource!(tamagui_group_members, "/g/<_>/members", "g/[shortname]/members.html");
+tamagui_resource!(tamagui_group_member, "/g/<_>/m/<_>", "g/[shortname]/m/[username].html");
+tamagui_resource!(tamagui_server, "/server/<_..>", "server/[id].html");
 
 async fn tamagui_path(path: &str) -> CacheResponse<Result<NamedFile, Status>> {
     let result = match NamedFile::open(format!("opt/tamagui_web/{}", path)).await {

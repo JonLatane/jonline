@@ -13,7 +13,7 @@ import moment from "moment";
 import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
-import { locallyUpsertPost } from "./posts";
+import { locallyUpsertPost } from "./posts_state";
 import { loadUserEvents } from "./user_actions";
 export * from './event_actions';
 

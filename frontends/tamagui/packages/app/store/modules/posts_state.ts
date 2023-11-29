@@ -15,7 +15,7 @@ import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loa
 import { loadUserPosts } from "./user_actions";
 import { loadEvent, loadEventsPage } from "./event_actions";
 import { GroupedPages } from "../pagination";
-import { eventsAdapter, eventsSlice } from './events';
+import { eventsAdapter, eventsSlice } from './events_state';
 import { store } from "../store";
 export * from './post_actions';
 

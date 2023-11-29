@@ -2,7 +2,7 @@ import { Event, EventListingType, TimeFilter } from "@jonline/api";
 import { RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, useCredentialDispatch, useTypedSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { PostPageParams, finishPagination } from "./post_pagination_hooks";
-import { optServerID, serverID } from '../store/modules/servers';
+import { optServerID, serverID } from '../store/modules/servers_state';
 
 export type EventPageParams = PostPageParams & { filter?: TimeFilter };
 

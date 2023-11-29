@@ -303,15 +303,17 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                               onChange={setVisibility}
                               visibilityDescription={v => groupVisibilityDescription(v, server)} />
                           </XStack>
-                          <ToggleRow name='Require Permission to Join'
+                          <ToggleRow name='Require Membership Moderation'
                             value={pending(defaultMembershipModeration)}
                             setter={(v) => setDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
                             disabled={disableInputs} />
-                          <ToggleRow name='Require Permission to Post'
+                          <ToggleRow name='Require Post Moderation'
+                            description='Hide all Posts shared to this Group until approved by a moderator.'
                             value={pending(defaultPostModeration)}
                             setter={(v) => setDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
                             disabled={disableInputs} />
-                          <ToggleRow name='Require Permission to Create Events'
+                          <ToggleRow name='Require Event Moderation'
+                            description='Hide all Events shared to this Group until approved by a moderator.'
                             value={pending(defaultEventModeration)}
                             setter={(v) => setDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
                             disabled={disableInputs} />

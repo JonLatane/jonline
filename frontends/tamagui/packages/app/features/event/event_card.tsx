@@ -230,7 +230,7 @@ export const EventCard: React.FC<Props> = ({
       - (event.info?.allowsRsvps ? 100 : 0)
       - (primaryInstance?.location?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
     : undefined;
-  console.log({ maxTotalContentHeight })
+  // console.log({ maxTotalContentHeight })
   const numContentSections = ((content?.length ?? 0) > 0 ? 1 : 0)
     + (embedLink || media.length > 0 ? 1 : 0);
   const maxContentSectionHeight = isPreview ?
@@ -685,14 +685,14 @@ export const EventCard: React.FC<Props> = ({
                 </YStack>
 
               </YStack>
-              {!isPreview && primaryInstance && (!isPreview || hasBeenVisible)
+              {/*!isPreview && primaryInstance && (!isPreview || hasBeenVisible)
                 ? <YStack maw={800} w='100%' px='$1' mx='auto'>
                   <EventRsvpManager
                     key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
                     event={event!}
                     instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                 </YStack>
-                : undefined}
+                    : undefined*/}
             </Card.Header>
             : undefined}
           <Card.Footer p={0} paddingTop='$2' >
@@ -739,12 +739,8 @@ export const EventCard: React.FC<Props> = ({
                     </>
                     : undefined}
 
-                  {/* {primaryInstance && (!isPreview || hasBeenVisible)
-                    ? <EventRsvpManager key={`rsvp-manager-${primaryInstance?.id}`}
-                      event={event!} instance={primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
-                    : undefined} */}
                 </YStack>
-                {isPreview && primaryInstance && (!isPreview || hasBeenVisible)
+                {primaryInstance && (!isPreview || hasBeenVisible)
                   ? <YStack maw={800} w='100%' px='$1' mx='auto'>
                     <EventRsvpManager
                       key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}

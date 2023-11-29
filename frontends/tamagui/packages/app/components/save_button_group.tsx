@@ -66,7 +66,25 @@ export function useEditableState<T>(uneditedValue: T, editingContext?: EditableC
   const [editedValue, setEditedValue] = useState(uneditedValue);
   // console.log('editing', editing, 'editedValue', editedValue, 'uneditedValue', uneditedValue)
   const value = editing ? editedValue : uneditedValue;
+
+  useEffect(() => {
+    const changed = Array.isArray(uneditedValue) || Array.isArray(editedValue)
+      ? !arrayEquals(uneditedValue as Array<any>, editedValue as Array<any>)
+      : uneditedValue != editedValue;
+
+    if (changed) {
+      console.log('overwriting editedValue', editedValue, 'with uneditedValue', uneditedValue, arrayEquals(uneditedValue as Array<any>, editedValue as Array<any>))
+      setEditedValue(uneditedValue);
+    }
+  }, [uneditedValue]);
   return [value, editedValue, setEditedValue];
+}
+
+function arrayEquals(a: Array<any>, b: Array<any>) {
+  return Array.isArray(a) &&
+    Array.isArray(b) &&
+    a.length === b.length &&
+    a.every((val, index) => val === b[index]);
 }
 
 export type SaveButtonGroupProps = {

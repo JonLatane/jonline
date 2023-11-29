@@ -53,6 +53,7 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
       post: post,
       instances: [
         EventInstance.create({
+          location,
           startsAt: toProtoISOString(startTime),
           endsAt: toProtoISOString(endTime)
         }),

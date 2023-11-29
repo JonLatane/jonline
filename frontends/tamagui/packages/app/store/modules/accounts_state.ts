@@ -11,7 +11,7 @@ import 'react-native-get-random-values';
 import { getCredentialClient, resetAccessTokens, resetCredentialedData, store, useCredentialDispatch } from "..";
 import { JonlineAccount, JonlineServer } from "../types";
 import { createAccount, login } from "./account_actions";
-import { serverID, upsertServer } from "./servers";
+import { serverID, upsertServer } from "./servers_state";
 
 export interface AccountsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
