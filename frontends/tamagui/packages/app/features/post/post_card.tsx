@@ -395,7 +395,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                         readOnly={!editing || previewingEdits}
                       />
                     </XStack>
-                    <XStack key='visibility-edit' my='auto' ml='auto' pb='$1'>
+                    <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
                       <ShareableToggle value={shareable}
                         setter={setEditedShareable}
                         readOnly={!editing || previewingEdits} />

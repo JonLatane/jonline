@@ -832,7 +832,7 @@ export const EventCard: React.FC<Props> = ({
                         readOnly={!editing || previewingEdits}
                       />
                     </XStack>
-                    <XStack key='visibility-edit' my='auto' ml='auto' pb='$1'>
+                    <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
                       <ShareableToggle value={shareable}
                         setter={setEditedShareable}
                         readOnly={!editing || previewingEdits} />

@@ -85,6 +85,7 @@ type ColorMeta = {
 }
 
 const _colorMetas = new Map<string, ColorMeta>();
+const _colorLumas = new Map<string, number>();
 export function colorIntMeta(colorInt: number): ColorMeta {
   const color = '#' + colorInt.toString(16).slice(-6);
   return colorMeta(color);
@@ -111,20 +112,41 @@ export function colorMeta(color: string): ColorMeta {
     rgb = { r: r!, g: g!, b: b! };
   }
   const { r, g, b } = rgb!;
+  const colorAsHex = encodeAsColor(r, g, b);
   const red = r / 255;
   const green = g / 255;
   const blue = b / 255;
   const luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 
   let textColor: string, darkColor: string, lightColor: string
+
   if (luma > 0.5) {
     textColor = '#000000';
     lightColor = color;
-    darkColor = shadeColor(color, -40);
+    darkColor = shadeColor(colorAsHex, -20);
+    // console.log('darkColor', darkColor, colorLuma(darkColor));
+    while (colorLuma(darkColor) > 0.5) {
+      const oldDarkColor = darkColor;
+      darkColor = shadeColor(oldDarkColor, -20);
+      // console.log('darkened', oldDarkColor, colorLuma(oldDarkColor), 'to', darkColor, colorLuma(darkColor));
+      if (darkColor == oldDarkColor) {
+        break;
+      }
+    }
   } else {
     textColor = '#FFFFFF';
     darkColor = color;
-    lightColor = shadeColor(color, 40);
+    // console.log('initial shade ', -(luma - 0.5) * 100)
+    lightColor = shadeColor(colorAsHex, 20);
+    // console.log('lightColor', lightColor, colorLuma(lightColor));
+    while (colorLuma(lightColor) < 0.5) {
+      const oldLightColor = lightColor;
+      lightColor = shadeColor(oldLightColor, 20);
+      // console.log('lightened', oldLightColor, colorLuma(oldLightColor), 'to', lightColor, colorLuma(lightColor));
+      if (lightColor == oldLightColor) {
+        break;
+      }
+    }
   }
 
   // debugger;
@@ -132,30 +154,87 @@ export function colorMeta(color: string): ColorMeta {
   _colorMetas[color] = meta;
   return meta;
 }
+
+const _shades = new Map<string, Map<number, string>>();
 function shadeColor(color: string, percent: number) {
+  if (_shades[color]?.[percent] !== undefined) {
+    return _shades[color]?.[percent];
+  }
+  const R = parseInt(color.substring(1, 3), 16);
+  const G = parseInt(color.substring(3, 5), 16);
+  const B = parseInt(color.substring(5, 7), 16);
+  const multiplier = ((100.0 + percent) / 100.0);
+  // console.log('initial', color, multiplier, [R, G, B]);
+  const [R1, G1, B1] = [R, G, B]
+    .map(n => Math.max(10, Math.min(245, n)))
+    .map(n => {
+      const result = n * multiplier;
+      if (Math.round(result) === Math.round(n)) {
+        if (multiplier > 1) {
+          return n + 1;
+        } else if (multiplier < 1) {
+          return n - 1;
+        }
+      }
+      return result;
+    })
+    .map(n => Math.max(0, Math.min(n, 255)))
+    .map(Math.round) as [number, number, number];
 
-  var R = parseInt(color.substring(1, 3), 16);
-  var G = parseInt(color.substring(3, 5), 16);
-  var B = parseInt(color.substring(5, 7), 16);
+  // console.log('encoding', [R1, G1, B1]);
 
-  R = R * (100 + percent) / 100;
-  G = G * (100 + percent) / 100;
-  B = B * (100 + percent) / 100;
+  const result =  encodeAsColor(R1, G1, B1);
 
-  R = (R < 255) ? R : 255;
-  G = (G < 255) ? G : 255;
-  B = (B < 255) ? B : 255;
+  if (!_shades[color]) {
+    _shades[color] = new Map<number, string>();
+  }
+  _shades[color][percent] = result;
 
-  R = Math.round(R)
-  G = Math.round(G)
-  B = Math.round(B)
-
-  var RR = ((R.toString(16).length == 1) ? "0" + R.toString(16) : R.toString(16));
-  var GG = ((G.toString(16).length == 1) ? "0" + G.toString(16) : G.toString(16));
-  var BB = ((B.toString(16).length == 1) ? "0" + B.toString(16) : B.toString(16));
-
-  return "#" + RR + GG + BB;
+  return result;
 }
+
+// Input bounds: 0-255
+function encodeAsColor(r: number, g: number, b: number) {
+
+  const [RR, GG, BB] = [r,g,b]
+    .map(n => n.toString(16))
+    .map(n => (n.length == 1) ? "0" + n : n) as [string, string, string];
+
+  const result = "#" + RR + GG + BB;
+  return result;
+}
+
+function colorLuma(color: string): number {
+  if (_colorLumas.has(color)) {
+    return _colorLumas[color];
+  }
+  const parsed = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+  let rgb = parsed ? {
+    r: parseInt(parsed[1]!, 16),
+    g: parseInt(parsed[2]!, 16),
+    b: parseInt(parsed[3]!, 16),
+  } : null;
+  if (!rgb) {
+    const parsedHsl = /hsl\(\s*(\d+)\s*,\s*(\d+(?:\.\d+)?%)\s*,\s*(\d+(?:\.\d+)?%)\)/.exec(color);
+    const hsl = parsedHsl ? {
+      h: parseInt(parsedHsl[1]!, 10),
+      s: parseFloat(parsedHsl[2]!),
+      l: parseFloat(parsedHsl[3]!),
+    } : null;
+    if (!hsl) throw 'Invalid color: ' + color;
+    let [r, g, b] = hslToRgb(hsl.h, hsl.s, hsl.l);
+    rgb = { r: r!, g: g!, b: b! };
+  }
+  let { r, g, b } = rgb!;
+  [r, g, b] = [r, g, b].map(n => n < 255 ? (n > 0 ? n : 0) : 255) as [number, number, number];
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+
+  return luma;
+}
+
 function hslToRgb(h: number, s: number, l: number): number[] {
   var r, g, b;
 

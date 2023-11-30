@@ -92,13 +92,6 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         :
         <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>}
     </YStack>
-    <YStack jc='flex-end' ai='flex-end' ac='flex-end'>
-      <Paragraph size='$1'>Joined</Paragraph>
-      <DateViewer date={user.createdAt} updatedDate={user.updatedAt} />
-      {app.showUserIds ? <XStack o={0.6}>
-        <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
-      </XStack> : undefined}
-    </YStack>
   </XStack>;
 
 
@@ -175,6 +168,13 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
       <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
     </XStack>
+    <YStack jc='flex-end' ai='flex-end' ac='flex-end'>
+      <Paragraph size='$1' o={0.5}>Account Created</Paragraph>
+      <DateViewer date={user.createdAt} updatedDate={user.updatedAt} />
+      {app.showUserIds ? <XStack o={0.6}>
+        <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
+      </XStack> : undefined}
+    </YStack>
   </YStack>;
 
   const backgroundSize = postBackgroundSize(media);
