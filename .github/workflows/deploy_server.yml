@@ -15,8 +15,8 @@ on:
         required: true
 
 jobs:
-  build_and_deliver:
-    name: Build jonline
+  build_flutter_web_app:
+    name: Build Flutter Web App
     runs-on: ubuntu-latest
 
     steps:
@@ -30,20 +30,41 @@ jobs:
     - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-    - uses: docker/setup-buildx-action@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - uses: arduino/setup-protoc@v2
     - uses: subosito/flutter-action@v2
+
+    - working-directory: frontends/flutter
+      run: flutter pub get
+    # - working-directory: frontends/flutter
+    #   run: flutter test
+    - working-directory: frontends/flutter
+      run: flutter build web --web-renderer canvaskit --release --base-href /flutter/
+
+    - uses: actions/cache/save@v3
+      id: flutter-app-cache
+      with:
+        path: frontends/flutter/build/web
+        key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+
+  build_tamagui_web_app:
+    name: Build Tamagui Web App
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+
+    - name: Extract Versioning Data
+      id: vars
+      run: |-
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+    
     - uses: actions/setup-node@v3
       with:
         node-version: 18.x
-
-    - uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - run: npm install --global yarn
     - working-directory: frontends/tamagui
@@ -55,17 +76,87 @@ jobs:
     - working-directory: frontends/tamagui
       run: yarn web:prod:build
 
-    - working-directory: frontends/flutter
-      run: flutter pub get
-    # - working-directory: frontends/flutter
-    #   run: flutter test
-    - working-directory: frontends/flutter
-      run: flutter build web --web-renderer canvaskit --release --base-href /flutter/
+    - uses: actions/cache/save@v3
+      id: web-app-cache
+      with:
+        path: frontends/tamagui/apps/next/out
+        key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+  build_rust_server_binaries:
+    name: Build Rust Server Binary
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Extract Versioning Data
+      id: vars
+      run: |-
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: arduino/setup-protoc@v2
 
     # - working-directory: backend
     #   run: cargo test --all-features
+
     - working-directory: backend
       run: cargo build --release
+
+
+    - uses: actions/cache/save@v3
+      id: rust-app-cache
+      with:
+        path: backend/target/release
+        key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+  build_and_deliver:
+    name: Deliver to DockerHub
+    runs-on: ubuntu-latest
+    needs:
+      - build_flutter_web_app
+      - build_tamagui_web_app
+      - build_rust_server_binaries
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Extract Versioning Data
+      id: vars
+      run: |-
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+
+    - uses: actions/cache/save@v3
+      id: fllutter-app-cache
+      with:
+        path: frontends/flutter/build/web
+        key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+    - uses: actions/cache/restore@v3
+      id: web-app-cache
+      with:
+        path: frontends/tamagui/apps/next/out
+        key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+    - uses: actions/cache/restore@v3
+      id: rust-app-cache
+      with:
+        path: backend/target/release
+        key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+
+    - uses: docker/setup-buildx-action@v2
+    - uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Rename Rust binaries for Dockerfiles
       run: >-

@@ -191,7 +191,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   useEffect(() => {
     setLoaded(false);
-    setAttendances([]);
+    // setAttendances([]);
   }, [accountOrServerId(accountOrServer), anonymousAuthToken, event?.id, instance?.id]);
 
   const [rsvpStatus, setRsvpStatus] = useState(AttendanceStatus.INTERESTED);
@@ -212,8 +212,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const rsvpValid = canRsvpWhenStatusSet
     && [AttendanceStatus.GOING, AttendanceStatus.INTERESTED, AttendanceStatus.REQUESTED, AttendanceStatus.NOT_GOING,]
       .includes(editingRsvp?.status ?? AttendanceStatus.UNRECOGNIZED);
-  const canRsvp = editingRsvp
-    && rsvpValid;
+  // const canRsvp = editingRsvp
+  //   && rsvpValid;
 
   const upsertableAttendance = instance ? {
     eventInstanceId: instance.id,
@@ -265,7 +265,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   const pendingUpsertableAttendance = useDebounceValue(upsertableAttendance, 800)
   useEffect(() => {
-    if (hasModifiedRsvp && !upserting && !deleting && canRsvp) {
+    if (hasModifiedRsvp && editingRsvp && rsvpValid && !upserting && !deleting) {
       upsertRsvp();
     }
   }, [pendingUpsertableAttendance]);
@@ -277,12 +277,13 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     ]);
   }
 
-  const loadedDebounce = useDebounceValue(loaded, 1500);
-  useEffect(() => {
-    if (!loadedDebounce && attendances.length > 0) {
-      setLoaded(true);
-    }
-  }, [loadedDebounce]);
+  // const loadedDebounce = useDebounceValue(loaded, 1500);
+  // useEffect(() => {
+  //   if (!loadedDebounce && attendances.length > 0) {
+  //     setLoaded(true);
+  //   }
+  // }, [loadedDebounce]);
+
   const { browseRsvpsFromPreviews } = useLocalConfiguration();
   async function deleteRsvp(attendance: EventAttendance) {
     setDeleting(true);
