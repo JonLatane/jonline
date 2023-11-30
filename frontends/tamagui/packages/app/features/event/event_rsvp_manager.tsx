@@ -191,6 +191,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   useEffect(() => {
     setLoaded(false);
+    setAttendances([]);
   }, [accountOrServerId(accountOrServer), anonymousAuthToken, event?.id, instance?.id]);
 
   const [rsvpStatus, setRsvpStatus] = useState(AttendanceStatus.INTERESTED);
@@ -276,6 +277,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     ]);
   }
 
+  const loadedDebounce = useDebounceValue(loaded, 1500);
+  useEffect(() => {
+    if (!loadedDebounce && attendances.length > 0) {
+      setLoaded(true);
+    }
+  }, [loadedDebounce]);
   const { browseRsvpsFromPreviews } = useLocalConfiguration();
   async function deleteRsvp(attendance: EventAttendance) {
     setDeleting(true);
@@ -807,11 +814,13 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               {invitedRsvpCount > 0
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' color={navAnchorColor}>Invited</Paragraph>
-                  {loaded
-                    ? <Paragraph size='$1' ml='auto'>
+                  {/* {loaded
+                    ?  */}
+                    <Paragraph size='$1' ml='auto'>
                       {formatCount(invitedRsvpCount, invitedAttendeeCount)}
                     </Paragraph>
-                    : <Paragraph size='$1' ml='auto'>...</Paragraph>}
+                    {/* : 
+                    <Paragraph size='$1' ml='auto'>...</Paragraph>} */}
                 </XStack>
                 : undefined}
             </YStack>

@@ -124,7 +124,7 @@ pub fn upsert_event_attendance(
                 let attendee = anonymous_attendee.as_ref().unwrap();
 
                 if &attendance.public_note != &request.public_note
-                || &attendance.private_note != &request.private_note
+                // || &attendance.private_note != &request.private_note
                 // || &attendance.status != &request.status
                     || &attendee.name
                         != &attendance
