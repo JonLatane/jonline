@@ -1073,14 +1073,14 @@ A `UserPost` is a &#34;direct share&#34; of a `Post` to a `User`. Currently unus
 <a name="jonline-PostContext"></a>
 
 ### PostContext
-
+Differentiates the context of a Post, as in Jonline&#39;s data models, Post is the &#34;core&#34; type where Jonline consolidates moderation and visibility data and logic.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| POST | 0 |  |
-| REPLY | 1 |  |
-| EVENT | 2 |  |
-| EVENT_INSTANCE | 3 |  |
+| POST | 0 | &#34;Standard&#34; Post. |
+| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`. |
+| EVENT | 2 | An &#34;Event&#34; Post. The Events table should have a row for this Post. |
+| EVENT_INSTANCE | 3 | An &#34;Event Instance&#34; Post. The EventInstances table should have a row for this Post. |
 
 
 

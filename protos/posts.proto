@@ -65,10 +65,15 @@ enum PostListingType {
   GROUP_POSTS_PENDING_MODERATION = 11;
 }
 
+// Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic.
 enum PostContext {
+  // "Standard" Post.
   POST = 0;
+  // Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.
   REPLY = 1;
+  // An "Event" Post. The Events table should have a row for this Post.
   EVENT = 2;
+  // An "Event Instance" Post. The EventInstances table should have a row for this Post.
   EVENT_INSTANCE = 3;
 }
 

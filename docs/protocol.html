@@ -2558,6 +2558,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-PostContext"></a></p>
     <h3 id="postcontext"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postcontext"><span class="octicon octicon-link"></span></a>PostContext</h3>
+    <p>Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic.</p>
     <table>
       <thead>
         <tr>
@@ -2570,22 +2571,22 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>POST</td>
           <td>0</td>
-          <td></td>
+          <td>"Standard" Post.</td>
         </tr>
         <tr>
           <td>REPLY</td>
           <td>1</td>
-          <td></td>
+          <td>Reply to a <code>POST</code>, <code>REPLY</code>, <code>EVENT</code>, or <code>EVENT_INSTANCE</code>.</td>
         </tr>
         <tr>
           <td>EVENT</td>
           <td>2</td>
-          <td></td>
+          <td>An "Event" Post. The Events table should have a row for this Post.</td>
         </tr>
         <tr>
           <td>EVENT_INSTANCE</td>
           <td>3</td>
-          <td></td>
+          <td>An "Event Instance" Post. The EventInstances table should have a row for this Post.</td>
         </tr>
       </tbody>
     </table>

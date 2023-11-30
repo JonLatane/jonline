@@ -46,8 +46,11 @@ These badges link to the communities' "About" pages. The versions, names, and/or
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Features Overview](#features-overview)
+    - [People, Followers and Friends](#people-followers-and-friends)
+    - [Groups and Memberships](#groups-and-memberships)
     - [Media](#media)
     - [Posts](#posts)
+      - [GroupPost](#grouppost)
     - [Events](#events)
   - [Documentation](#documentation)
     - [Protocol Documentation](#protocol-documentation)
@@ -121,20 +124,30 @@ All this is to say: it should be pretty straightforward to create, say, Ruby bin
 ## Features Overview
 All of Jonline's features should be pretty familiar to most social media users. Notably, in both its web and Flutter UIs, Jonline is designed to present "My Media" as a top-level feature and let users delete and manage Media visibility independently of Posts, Events, Groups or anything else.
 
+### People, Followers and Friends
+Jonline allows users to create accounts and login with nothing but a username/password combo. Anyone can Follow anyone, but users can require approval for Follow Requests. Two users who Follow each other are Friends.
+
+### Groups and Memberships
+Jonline users may be 
+
 ### Media
-Jonline Media is straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike Posts and Events, Media is generally not shared directly. It is instead associated with Posts and Events (for media listings) as well as Users and Groups (for their avatars).
+Jonline `Media` is straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike `Post`s and `Event`s, `Media` is generally not shared directly. It is instead associated with `Post`s and `Event`s (for media listings) as well as Users and Groups (for their avatars).
 
 Media is the *only* part of Jonline's APIs offered over HTTP as well as gRPC/gRPC-over-HTTP. (Hopefully the reasons for this are obvious: easy browser streaming and cache utilization for things like images.) Details on the HTTP Media APIs are in the ["Media" section](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#media) of the [protocol documentation](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md).
 
 All Media also carries `Visibility` and `Moderation` values that can be modified in the APIs, but are not currently enforced. Note that any Media visibility updates and/or deletions may take time to propagate fully, depending upon how a given Jonline instance's CDN setup works.
 
 ### Posts
-Posts follow a Twitter- or Reddit- like model. They have a `PostContext` as well as all-optional `title`, `link`, and `description` string values. A top-level post is stored generally the same as a reply. Posts also carry a `Visibility` and `Moderation` value that is enforced by the APIs.
+`Post`s follow a Twitter- or Reddit- like model. They have a [`PostContext`](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-PostContext) as well as all-optional `title`, `link`, and `description` string values. A top-level post is stored generally the same as a reply. Posts also carry a `Visibility` and `Moderation` value that is enforced by the APIs.
 
 Posts are also reused for Events, and will be similarly reused for future features. For developers: this is something like ActiveRecord Polymorphism, but using composition rather than inheritance at the ORM level. For users: Replies, Events, and other Jonline types track their title, description, visibility, moderation, etc. via a Post internally.
 
+#### GroupPost
+A key differentiator between `Post` and `Media` is that `Post`s and types that use them are "group-aware." That is to say: `GroupPost` exists, 
+linking any unique `Group` to any unique `Post`, along with the `User` who created that link.
+
 ### Events
-Events are a thin layer atop Posts. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data.
+`Event`s are a thin layer atop `Post`s. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data. Group Events work through the `GroupPost` mechanism.
 
 ## Documentation
 Jonline documentation consists of Markdown in the [`docs/` directory](https://github.com/JonLatane/jonline/tree/main/docs), starting from [`docs/README.md`](https://github.com/JonLatane/jonline/blob/main/docs/README.md).
