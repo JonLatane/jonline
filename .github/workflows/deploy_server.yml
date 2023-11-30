@@ -15,8 +15,8 @@ on:
         required: true
 
 jobs:
-  build_flutter_web_app:
-    name: Build Flutter Web App
+  build_flutter_ui:
+    name: Build Flutter UI
     runs-on: ubuntu-latest
 
     steps:
@@ -46,8 +46,8 @@ jobs:
         key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
 
-  build_tamagui_web_app:
-    name: Build Tamagui Web App
+  build_tamagui_ui:
+    name: Build Tamagui UI
     runs-on: ubuntu-latest
 
     steps:
@@ -83,7 +83,7 @@ jobs:
         key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   build_rust_server_binaries:
-    name: Build Rust Server Binaries
+    name: Build Rust Server
     runs-on: ubuntu-latest
 
     steps:
@@ -116,11 +116,11 @@ jobs:
         key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   build_and_deliver:
-    name: Deliver to DockerHub
+    name: Deliver Image to DockerHub
     runs-on: ubuntu-latest
     needs:
-      - build_flutter_web_app
-      - build_tamagui_web_app
+      - build_flutter_ui
+      - build_tamagui_ui
       - build_rust_server_binaries
 
     steps:
@@ -237,10 +237,10 @@ jobs:
     - name: Save DigitalOcean kubeconfig with short-lived credentials
       run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    - name: Deploy to Jonline.io via DigitalOcean Kubernetes
+    - name: Deploy to Bull City Social via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/server.yaml -n bullcitysocial
 
-    - name: Verify Jonline.io deployment
+    - name: Verify Bull City Social deployment
       run: kubectl rollout status deployment/jonline -n bullcitysocial
 
   # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server.yaml
@@ -269,8 +269,8 @@ jobs:
     - name: Save DigitalOcean kubeconfig with short-lived credentials
       run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    - name: Deploy to Jonline.io via DigitalOcean Kubernetes
+    - name: Deploy to Oak City Social via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/server.yaml -n oakcitysocial
 
-    - name: Verify Jonline.io deployment
+    - name: Verify Oak City Social deployment
       run: kubectl rollout status deployment/jonline -n oakcitysocial
