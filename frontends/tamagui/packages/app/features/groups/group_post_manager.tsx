@@ -1,4 +1,4 @@
-import { createGroupPost, deleteGroupPost, loadPostGroupPosts, markGroupVisit, RootState, useAccountOrServer, useCredentialDispatch, useServer, useServerTheme, useTypedSelector } from "app/store";
+import { createGroupPost, deleteGroupPost, loadPostGroupPosts, markGroupVisit, RootState, useAccountOrServer, useCredentialDispatch, useServer, useServerTheme, useRootSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 
@@ -30,8 +30,8 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const selectedGroup = useGroupContext();
   const [loading, setLoading] = useState(false);
-  const groupPostData = useTypedSelector((state: RootState) => state.groups.postIdGroupPosts[post.id]);
-  const knownGroupIds = useTypedSelector((state: RootState) => state.groups.ids);
+  const groupPostData = useRootSelector((state: RootState) => state.groups.postIdGroupPosts[post.id]);
+  const knownGroupIds = useRootSelector((state: RootState) => state.groups.ids);
 
   const maxErrors = 3;
   const [errorCount, setErrorCount] = useState(0);
@@ -53,7 +53,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
   const singleSharedGroupId = sharedToSingleGroup
     ? groupPostData[0]!.groupId
     : undefined;
-  const singleSharedGroup = useTypedSelector((state: RootState) => singleSharedGroupId
+  const singleSharedGroup = useRootSelector((state: RootState) => singleSharedGroupId
     ? state.groups.entities[singleSharedGroupId]
     : undefined);
   const otherGroupCount = groupPostData

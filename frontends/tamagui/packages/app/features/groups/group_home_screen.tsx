@@ -1,6 +1,6 @@
 import { GetGroupsRequest, Group } from '@jonline/api'
 import { Spinner, YStack, useWindowDimensions } from '@jonline/ui'
-import { RootState, selectGroupById, loadGroupsPage, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
+import { RootState, selectGroupById, loadGroupsPage, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { BaseHomeScreen } from '../home/home_screen'
@@ -21,8 +21,8 @@ export function GroupHomeScreen() {
 export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComponent }: GroupHomeScreenProps) => {
   const [shortname] = useParam('shortname');
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const groupId = useTypedSelector((state: RootState) => state.groups.shortnameIds[shortname!]);
-  const group = useTypedSelector((state: RootState) =>
+  const groupId = useRootSelector((state: RootState) => state.groups.shortnameIds[shortname!]);
+  const group = useRootSelector((state: RootState) =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
   const [loadingGroups, setLoadingGroups] = useState(false);
 

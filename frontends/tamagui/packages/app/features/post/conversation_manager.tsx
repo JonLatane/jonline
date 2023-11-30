@@ -1,7 +1,7 @@
 import { Post } from '@jonline/api'
 import { Button, Heading, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui'
 import { ListEnd } from '@tamagui/lucide-icons'
-import { RootState, loadPostReplies, setDiscussionChatUI, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
+import { RootState, loadPostReplies, setDiscussionChatUI, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from 'app/store'
 import moment, { Moment } from 'moment'
 import React, { useEffect, useReducer, useState } from 'react'
 import { useConversationContext } from './conversation_context'
@@ -27,10 +27,10 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
 }) => {
   const { replyPostIdPath, setReplyPostIdPath, editHandler } = useConversationContext()!;
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const app = useLocalApp();
+  const app = useLocalConfiguration();
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const postsState = useTypedSelector((state: RootState) => state.posts);
-  // const post = useTypedSelector((state: RootState) => selectPostById(state.posts, postId!));
+  const postsState = useRootSelector((state: RootState) => state.posts);
+  // const post = useRootSelector((state: RootState) => selectPostById(state.posts, postId!));
   const [loadingPost, setLoadingPost] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());

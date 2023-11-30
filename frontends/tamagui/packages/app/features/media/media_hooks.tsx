@@ -1,5 +1,5 @@
 import { Media } from '@jonline/api';
-import { RootState, getMediaPage, loadMediaPage, useAccountOrServer, useCredentialDispatch, useTypedSelector } from 'app/store';
+import { RootState, getMediaPage, loadMediaPage, useAccountOrServer, useCredentialDispatch, useRootSelector } from 'app/store';
 import { useEffect, useState } from 'react';
 // import { StickyCreateButton } from '../post/create_post_sheet';
 
@@ -7,10 +7,10 @@ import { useEffect, useState } from 'react';
 
 export function useMediaPage(userId: string | undefined, page: number, onLoaded?: () => void) {
   const accountOrServer = useAccountOrServer();
-  const mediaState = useTypedSelector((state: RootState) => state.media);
+  const mediaState = useRootSelector((state: RootState) => state.media);
   const [loadingMedia, setLoadingMedia] = useState(false);
 
-  const media: Media[] | undefined = useTypedSelector((state: RootState) => userId ? getMediaPage(state.media, userId, 0) : undefined);
+  const media: Media[] | undefined = useRootSelector((state: RootState) => userId ? getMediaPage(state.media, userId, 0) : undefined);
   const reloadMedia = useReloadMedia(userId, page);
   useEffect(() => {
     if (!loadingMedia && (mediaState.loadStatus == 'unloaded' || media == undefined)) {

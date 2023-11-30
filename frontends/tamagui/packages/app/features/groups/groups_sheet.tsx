@@ -1,7 +1,7 @@
 import { GetGroupsRequest, Group, Permission } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Theme, XStack, YStack } from '@jonline/ui';
 import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, loadGroupsPage, selectAllGroups, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, loadGroupsPage, selectAllGroups, serverID, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { CreateGroupSheet } from './create_group_sheet';
@@ -62,7 +62,7 @@ export function GroupsSheet({
   const { navAnchorColor } = useServerTheme();
   const searchInputRef = React.createRef<TextInput>();
 
-  const groupsState = useTypedSelector((state: RootState) => state.groups);
+  const groupsState = useRootSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
   useEffect(() => {
@@ -92,11 +92,11 @@ export function GroupsSheet({
     );
   }
 
-  const recentGroupIds = useTypedSelector((state: RootState) => server
+  const recentGroupIds = useRootSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
 
-  const allGroups = useTypedSelector((state: RootState) => selectAllGroups(state.groups));
+  const allGroups = useRootSelector((state: RootState) => selectAllGroups(state.groups));
 
 
   const matchedGroups: Group[] = allGroups.filter(g =>

@@ -1,5 +1,5 @@
 import { useIsVisible } from 'app/hooks/use_is_visible';
-import { deleteEvent, loadUser, RootState, updateEvent, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { deleteEvent, updateEvent, useAccount, useCredentialDispatch, useServerTheme } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Group, Location } from "@jonline/api";
@@ -15,12 +15,12 @@ import moment from "moment";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
 import { useLink } from "solito/link";
 // import { PostMediaRenderer } from "../post/post_media_renderer";
-import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
-import { InstanceTime } from "./instance_time";
-import { LocationControl } from "./location_control";
-import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ShareableToggle } from 'app/components/shareable_toggle';
+import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
+import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
+import { InstanceTime } from "./instance_time";
+import { LocationControl } from "./location_control";
 
 interface Props {
   event: Event;
@@ -226,9 +226,9 @@ export const EventCard: React.FC<Props> = ({
     : `.`;
 
   const maxTotalContentHeight = isPreview
-    ? (horizontal ? xs ? 225 : 350 : 500) 
-      - (event.info?.allowsRsvps ? 100 : 0)
-      - (primaryInstance?.location?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
+    ? (horizontal ? xs ? 225 : 350 : 500)
+    - (event.info?.allowsRsvps ? 100 : 0)
+    - (primaryInstance?.location?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
     : undefined;
   // console.log({ maxTotalContentHeight })
   const numContentSections = ((content?.length ?? 0) > 0 ? 1 : 0)
@@ -285,20 +285,6 @@ export const EventCard: React.FC<Props> = ({
   const author = post.author;
   const isAuthor = author && author.userId === currentUser?.id;
   const showEdit = !!isAuthor && !isPreview && !hideEditControls;
-  // const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
-  const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
-
-  const [loadingAuthor, setLoadingAuthor] = useState(false);
-  useEffect(() => {
-    if (hasBeenVisible && authorId) {
-      if (!loadingAuthor && !author && !authorLoadFailed) {
-        setLoadingAuthor(true);
-        setTimeout(() => dispatch(loadUser({ id: authorId, ...accountOrServer })), 1);
-      } else if (loadingAuthor && author) {
-        setLoadingAuthor(false);
-      }
-    }
-  }, [authorId, loadingAuthor, author, authorLoadFailed]);
 
   const [scrollInstancesVertically, setScrollInstancesVertically] = useState(false);
   const [showPastInstances, setShowPastInstances] = useState(false);

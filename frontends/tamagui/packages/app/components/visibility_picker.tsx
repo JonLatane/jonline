@@ -13,11 +13,24 @@ export type VisibilityPickerProps = {
   visibilityDescription?: (visibility: Visibility) => string | undefined;
   // Does not render a picker at all. Just the label with a description as a tooltip.
   readOnly?: boolean;
+
+  canPublishLocally?: boolean;
+  canPublishGlobally?: boolean;
 };
 
 
 let _key = 1;
-export function VisibilityPicker({ id, visibility, onChange, disabled, label, visibilityDescription = defaultVisibilityDescription, readOnly }: VisibilityPickerProps) {
+export function VisibilityPicker({
+  id,
+  visibility,
+  onChange,
+  disabled,
+  label,
+  visibilityDescription = defaultVisibilityDescription,
+  readOnly,
+  canPublishLocally = true,
+  canPublishGlobally = true,
+}: VisibilityPickerProps) {
   function onValueSelected(v: string) {
     const selectedVisibility = parseInt(v) as Visibility;
     onChange(selectedVisibility)
@@ -71,6 +84,11 @@ export function VisibilityPicker({ id, visibility, onChange, disabled, label, vi
               <Select.Group space="$0" w='100%'>
                 <Select.Label w='100%'>{label ?? 'Visibility'}</Select.Label>
                 {[Visibility.PRIVATE, Visibility.LIMITED, Visibility.SERVER_PUBLIC, Visibility.GLOBAL_PUBLIC,].map((item, i) => {
+                  if (item != visibility) {
+                    if (item == Visibility.SERVER_PUBLIC && !canPublishLocally) return undefined;
+                    if (item == Visibility.GLOBAL_PUBLIC && !canPublishGlobally) return undefined;
+                  }
+
                   // const description = visibilityDescription?.(item);
                   return (
                     <Select.Item w='100%' index={i} key={`${item}`} value={item.toString()}>

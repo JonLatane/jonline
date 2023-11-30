@@ -1,6 +1,6 @@
 import { EventListingType, TimeFilter } from '@jonline/api';
 import { AnimatePresence, Heading, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
-import { RootState, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, useServerTheme, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../evepont/create_event_sheet';
@@ -25,7 +25,7 @@ export function EventsScreen() {
 export type EventDisplayMode = 'upcoming' | 'all' | 'filtered';
 export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
   const mediaQuery = useMedia();
-  const eventsState = useTypedSelector((state: RootState) => state.events);
+  const eventsState = useRootSelector((state: RootState) => state.events);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
@@ -158,7 +158,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             </YStack>
             : renderInColumns ?
               <YStack space='$2'>
-                <XStack ac='center' ai='center' jc='center' space='$2' flexWrap='wrap'>
+                <XStack ac='center' jc='center' space='$2' flexWrap='wrap'>
                   {events.map((event) => {
                     return <XStack w={eventCardWidth}>
                       <EventCard event={event} isPreview horizontal />

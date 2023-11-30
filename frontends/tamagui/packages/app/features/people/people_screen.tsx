@@ -1,38 +1,45 @@
 import { User, UserListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { RootState, getUsersPage, loadUsersPage, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, getUsersPage, loadUsersPage, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
-// import { StickyCreateButton } from '../post/create_post_sheet';
 import { setDocumentTitle } from 'app/utils/set_title';
 import { AppSection, AppSubsection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { UserCard } from '../user/user_card';
+import { HomeScreenProps } from '../home/home_screen';
 
 export function FollowRequestsScreen() {
-  return BasePeopleScreen(UserListingType.FOLLOW_REQUESTS);
+  return <BasePeopleScreen listingType={UserListingType.FOLLOW_REQUESTS} />;
 }
 
 export function MainPeopleScreen() {
-  return BasePeopleScreen(UserListingType.EVERYONE);
+  return <BasePeopleScreen listingType={UserListingType.EVERYONE} />;
 }
 
-function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYONE) {
-  const serversState = useTypedSelector((state: RootState) => state.servers);
-  const usersState = useTypedSelector((state: RootState) => state.users);
-  const app = useTypedSelector((state: RootState) => state.app);
 
-  const users: User[] | undefined = useTypedSelector((state: RootState) =>
-    getUsersPage(state.users, listingType, 0));
-  // const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
-  // const posts: Post[] = [];
+export type PeopleScreenProps = HomeScreenProps & {
+  listingType?: UserListingType;
+};
+
+
+export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, selectedGroup }) => {
+  const isForGroupMembers = listingType === undefined;
+
+  // function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYONE) {
+  const serversState = useRootSelector((state: RootState) => state.servers);
+  const usersState = useRootSelector((state: RootState) => state.users);
+  const app = useRootSelector((state: RootState) => state.app);
+
+  const users: User[] | undefined = useRootSelector((state: RootState) =>
+    isForGroupMembers
+      ? []
+      : getUsersPage(state.users, listingType, 0));
+
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-  // let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
-  // let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  // let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
-  // let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
+
   const dimensions = useWindowDimensions();
 
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -47,7 +54,8 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
       setLoadingUsers(false);
       dismissScrollPreserver(setShowScrollPreserver);
     }
-    let title = listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';
+    let title = isForGroupMembers ? 'Members' :
+      listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';
     title += ` | ${server?.serverConfiguration?.serverInfo?.name || '...'}`;
     setDocumentTitle(title)
   });
@@ -64,11 +72,14 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
     }
   }
 
+  console.log('selectedGroup', selectedGroup)
+
   return (
-    <TabsNavigation appSection={AppSection.PEOPLE}
+    <TabsNavigation appSection={selectedGroup ? AppSection.MEMBERS : AppSection.PEOPLE} selectedGroup={selectedGroup}
       appSubsection={listingType == UserListingType.FOLLOW_REQUESTS ? AppSubsection.FOLLOW_REQUESTS : undefined}
-      // customHomeAction={onHomePressed}
-      >
+      groupPageForwarder={(group) => `/g/${group.shortname}/members`}
+    // customHomeAction={onHomePressed}
+    >
       {usersState.pagesStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
@@ -90,16 +101,6 @@ function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYON
               </YStack>
             : undefined
           : <>
-          {/* <FlatList data={users}
-            // onRefresh={reloadUsers}
-            // refreshing={usersState.pagesStatus == 'loading'}
-            // Allow easy restoring of scroll position
-            contentContainerStyle={{width:'100%'}}
-            ListFooterComponent={showScrollPreserver ? <YStack h={100000} /> : undefined}
-            keyExtractor={(user) => user.id}
-            renderItem={({ item: user }) => {
-              return <YStack w='100%' mb='$3'><UserCard user={user} isPreview /></YStack>;
-            }} /> */}
             {users?.map((user) => {
               return <YStack w='100%' mb='$3' key={`user-${user.id}`}><UserCard user={user} isPreview /></YStack>;
             })}

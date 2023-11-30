@@ -1,5 +1,5 @@
 import { Anchor, Button, H2, H4, Heading, isClient, ListItem, needsScrollPreservers, Paragraph, Text, useWindowDimensions, XStack, YStack } from '@jonline/ui';
-import { RootState, selectAllPosts, useCredentialDispatch, useTypedSelector } from 'app/store';
+import { RootState, selectAllPosts, useCredentialDispatch, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import { TabsNavigation } from '../tabs/tabs_navigation';
@@ -15,10 +15,10 @@ const quotes = [
 ];
 export function AboutJonlineScreen() {
   const [showTechDetails, setShowTechDetails] = useState(false);
-  const serversState = useTypedSelector((state: RootState) => state.servers);
-  const postsState = useTypedSelector((state: RootState) => state.posts);
-  const app = useTypedSelector((state: RootState) => state.app);
-  const posts = useTypedSelector((state: RootState) => selectAllPosts(state.posts));
+  const serversState = useRootSelector((state: RootState) => state.servers);
+  const postsState = useRootSelector((state: RootState) => state.posts);
+  const app = useRootSelector((state: RootState) => state.app);
+  const posts = useRootSelector((state: RootState) => selectAllPosts(state.posts));
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
   let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;

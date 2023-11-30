@@ -1,12 +1,12 @@
 import { Post, PostListingType } from "@jonline/api";
-import { RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostPages, loadGroupPostsPage, loadPostsPage, useCredentialDispatch, useTypedSelector } from "app/store";
+import { RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostPages, loadGroupPostsPage, loadPostsPage, useCredentialDispatch, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 
 export type PostPageParams = { onLoaded?: () => void };
 
 export function usePostPages(listingType: PostListingType, throughPage: number, params?: PostPageParams) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const postsState = useRootSelector((state: RootState) => state.posts);
   const [loadingPosts, setLoadingPosts] = useState(false);
 
   const posts: Post[] = getPostPages(postsState, listingType, throughPage);
@@ -44,7 +44,7 @@ export function finishPagination(setLoading: (v: boolean) => void, onLoaded?: ()
 
 export function useGroupPostPages(groupId: string, throughPage: number, params?: PostPageParams) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const state = useTypedSelector((state: RootState) => state);
+  const state = useRootSelector((state: RootState) => state);
   const [loadingPosts, setLoadingPosts] = useState(false);
 
   const postList: Post[] = getGroupPostPages(state, groupId, throughPage);

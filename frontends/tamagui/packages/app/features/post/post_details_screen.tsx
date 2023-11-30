@@ -1,5 +1,5 @@
 import { Heading, ScrollView, Spinner, XStack, YStack } from '@jonline/ui'
-import { RootState, loadPost, selectGroupById, selectPostById, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
+import { RootState, loadPost, selectGroupById, selectPostById, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { AppSection } from '../tabs/features_navigation'
@@ -18,14 +18,14 @@ export function PostDetailsScreen() {
   const [shortname] = useParam('shortname');
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const app = useLocalApp();
-  const groupId = useTypedSelector((state: RootState) =>
+  const app = useLocalConfiguration();
+  const groupId = useRootSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
-  const group = useTypedSelector((state: RootState) =>
+  const group = useRootSelector((state: RootState) =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const postsState = useTypedSelector((state: RootState) => state.posts);
-  const subjectPost = useTypedSelector((state: RootState) => selectPostById(state.posts, postId!));
+  const postsState = useRootSelector((state: RootState) => state.posts);
+  const subjectPost = useRootSelector((state: RootState) => selectPostById(state.posts, postId!));
   const [loadingPost, setLoadingPost] = useState(false);
   const conversationContext = useStatefulConversationContext();
   const { editingPosts, replyPostIdPath, setReplyPostIdPath, editHandler } = conversationContext;

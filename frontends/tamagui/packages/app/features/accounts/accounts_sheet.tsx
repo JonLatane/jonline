@@ -1,7 +1,7 @@
 import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Plus, RefreshCw, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineAccount, JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, upsertServer, useLoadingCredentialedData, useLocalApp, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { JonlineAccount, JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, upsertServer, useLoadingCredentialedData, useLocalConfiguration, useServerTheme, useAppDispatch, useRootSelector } from 'app/store';
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 import React, { useEffect, useState } from 'react';
 import { Platform, TextInput } from 'react-native';
@@ -28,7 +28,7 @@ export type AccountsSheetProps = {
 export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }: AccountsSheetProps) {
   const mediaQuery = useMedia();
   const [open, setOpen] = useState(false);
-  const { allowServerSelection: allowServerSelectionSetting, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalApp();
+  const { allowServerSelection: allowServerSelectionSetting, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalConfiguration();
   const [addingServer, setAddingServer] = useState(false);
   const [addingAccount, setAddingAccount] = useState(false);
   const [position, setPosition] = useState(0);
@@ -38,10 +38,10 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const [newAccountPass, setNewAccountPass] = useState('');
   const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
 
-  const dispatch = useTypedDispatch();
+  const dispatch = useAppDispatch();
   const { server, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
-  const serversState = useTypedSelector((state: RootState) => state.servers);
-  const servers = useTypedSelector((state: RootState) => selectAllServers(state.servers));
+  const serversState = useRootSelector((state: RootState) => state.servers);
+  const servers = useRootSelector((state: RootState) => selectAllServers(state.servers));
   const allowServerSelection = allowServerSelectionSetting || servers.length > 1;
   const serversLoading = serversState.status == 'loading';
   const newServerHostNotBlank = newServerHost != '';
@@ -87,8 +87,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     }));
   }
 
-  const accountsState = useTypedSelector((state: RootState) => state.accounts);
-  const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
+  const accountsState = useRootSelector((state: RootState) => state.accounts);
+  const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   const primaryServer = onlyShowServer || serversState.server;
   const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverID(a.server) == serverID(primaryServer!)) : [];
   const accountsElsewhere = accounts.filter(a => !accountsOnPrimaryServer.includes(a));

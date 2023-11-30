@@ -1,6 +1,6 @@
 import { EventInstance } from '@jonline/api'
 import { Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui'
-import { RootState, loadEventByInstance, selectEventById, selectGroupById, selectPostById, serverID, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store'
+import { RootState, loadEventByInstance, selectEventById, selectGroupById, selectPostById, serverID, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from 'app/store'
 import { setDocumentTitle } from 'app/utils/set_title'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
@@ -41,22 +41,22 @@ export function EventDetailsScreen() {
   const instanceId = pathInstanceId && pathInstanceId.length > 0 ? pathInstanceId : pathEventId;
 
   const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
-  const app = useLocalApp();
-  const groupId = useTypedSelector((state: RootState) =>
+  const app = useLocalConfiguration();
+  const groupId = useRootSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
-  const group = useTypedSelector((state: RootState) =>
+  const group = useRootSelector((state: RootState) =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const eventsState = useTypedSelector((state: RootState) => state.events);
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const eventsState = useRootSelector((state: RootState) => state.events);
+  const postsState = useRootSelector((state: RootState) => state.posts);
 
-  const eventId = useTypedSelector((state: RootState) => instanceId
+  const eventId = useRootSelector((state: RootState) => instanceId
     ? state.events.instanceEvents[instanceId]
     : undefined);
-  const subjectEvent = useTypedSelector((state: RootState) => eventId
+  const subjectEvent = useRootSelector((state: RootState) => eventId
     ? selectEventById(state.events, eventId)
     : undefined);
-  const subjectPost = useTypedSelector((state: RootState) =>
+  const subjectPost = useRootSelector((state: RootState) =>
     selectPostById(state.posts, subjectEvent?.post?.id ?? '') ?? subjectEvent?.post);
   const postId = subjectPost?.id;
 

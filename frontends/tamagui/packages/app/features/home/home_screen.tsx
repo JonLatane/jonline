@@ -2,7 +2,7 @@ import { EventListingType, Group, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks';
-import { RootState, setShowEventsOnLatest, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { RootState, setShowEventsOnLatest, useServerTheme, useAppDispatch, useRootSelector } from 'app/store';
 import { setDocumentTitle } from 'app/utils/set_title';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -21,12 +21,12 @@ export type HomeScreenProps = {
   selectedGroup?: Group
 };
 
-export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
-  const dispatch = useTypedDispatch();
-  const postsState = useTypedSelector((state: RootState) => state.posts);
-  const eventsState = useTypedSelector((state: RootState) => state.events);
+export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => {
+  const dispatch = useAppDispatch();
+  const postsState = useRootSelector((state: RootState) => state.posts);
+  const eventsState = useRootSelector((state: RootState) => state.events);
   const media = useMedia();
-  const app = useTypedSelector((state: RootState) => state.app);
+  const app = useRootSelector((state: RootState) => state.app);
   const showEventsOnLatest = app.showEventsOnLatest ?? true;
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
@@ -138,7 +138,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Hom
             : undefined}
         </AnimatePresence>
 
-        <YStack w='100%' jc="center" ai="center" maw={800} space>
+        <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
           {eventsLoaded && postsLoaded
             ? posts.length === 0
               ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}

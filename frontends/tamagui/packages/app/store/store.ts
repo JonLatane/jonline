@@ -5,7 +5,7 @@ import { createSelectorHook, useDispatch } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { LocalAppConfiguration, accountsReducer, eventsReducer, groupsReducer, localAppReducer, mediaReducer, postsReducer, resetAccounts, resetGroups, resetLocalApp, resetMedia, resetPosts, resetServers, resetUsers, serversReducer, usersReducer } from "./modules";
+import { LocalAppConfiguration, accountsReducer, eventsReducer, groupsReducer, localAppReducer, mediaReducer, postsReducer, resetAccounts, resetGroups, resetLocalConfiguration, resetMedia, resetPosts, resetServers, resetUsers, serversReducer, usersReducer } from "./modules";
 
 const serversPersistConfig = {
   key: 'servers',
@@ -56,15 +56,17 @@ const rootPersistConfig = {
 const persistedReducer = persistReducer(rootPersistConfig, rootReducer)
 
 export type RootState = ReturnType<typeof rootReducer>;
-export const useTypedSelector = createSelectorHook();
-export const useRootSelector = (selector: (state: RootState) => any) => useTypedSelector(selector);
+const useTypedSelector = createSelectorHook();
+export function useRootSelector<T>(selector: (state: RootState) => T): T {
+  return useTypedSelector(selector);
+}
 
 export type AppDispatch = ThunkDispatch<RootState, any, AnyAction>;
-export function useTypedDispatch(): AppDispatch {
+export function useAppDispatch(): AppDispatch {
   return useDispatch<AppDispatch>()
 };
 
-export function useLocalApp(): LocalAppConfiguration {
+export function useLocalConfiguration(): LocalAppConfiguration {
   return useTypedSelector((state: RootState) => state.app);
 }
 
@@ -84,9 +86,9 @@ export const store: AppStore = configureStore({
 export const persistor = persistStore(store);
 
 export const actionSucceeded = (action: PayloadAction<any, string, any, any> | undefined | unknown) => !actionFailed(action);
-export const actionFailed = (action: PayloadAction<any, string, any, any> | undefined | unknown) => 
+export const actionFailed = (action: PayloadAction<any, string, any, any> | undefined | unknown) =>
   action && Object.keys(action).includes('type') && (action as PayloadAction<any, string, any, any>).type.endsWith('rejected');
-  // !!(action?.type.endsWith('rejected'));
+// !!(action?.type.endsWith('rejected'));
 
 // Reset store data that depends on selected server/account.
 export function resetAllData() {
@@ -96,5 +98,5 @@ export function resetAllData() {
   store.dispatch(resetGroups!());
   store.dispatch(resetUsers!());
   store.dispatch(resetMedia!());
-  store.dispatch(resetLocalApp());
+  store.dispatch(resetLocalConfiguration());
 }

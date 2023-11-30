@@ -10,6 +10,7 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { LoadMedia, deleteMedia, loadMedia, loadMediaPage } from './media_actions';
+import { PaginatedIds } from "../pagination";
 export * from './media_actions';
 
 export interface MediaState {
@@ -26,7 +27,7 @@ export interface MediaState {
   // i.e.: mediaPages["userId1"][0] -> ["mediaId1", "mediaId2"].
   // Media should be loaded from the adapter/slice's entities.
   // Maps MediaListingType -> page (as a number) -> mediaInstanceIds
-  userMediaPages: Dictionary<Dictionary<string[]>>;
+  userMediaPages: Dictionary<PaginatedIds>;
   failedMediaIds: string[];
 }
 
@@ -72,7 +73,7 @@ export const mediaSlice: Slice<Draft<MediaState>, any, "media"> = createSlice({
       const userId = action.meta.arg.userId!;
       const page = action.meta.arg.page ?? 0;
 
-      if (!state.userMediaPages[userId]) state.userMediaPages[userId] = {};
+      if (!state.userMediaPages[userId]) state.userMediaPages[userId] = [];
       state.userMediaPages[userId]![page] = action.payload.media.map(media => media.id);
 
       state.successMessage = `Media loaded.`;

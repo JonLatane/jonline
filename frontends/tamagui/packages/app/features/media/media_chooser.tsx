@@ -1,5 +1,5 @@
 import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
-import { RootState, deleteMedia, selectMediaById, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, deleteMedia, selectMediaById, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 import { Media, MediaReference } from '@jonline/api';
@@ -26,13 +26,13 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const mediaQuery = useMedia();
   const [open, _setOpen] = useState(false);
   const [position, setPosition] = useState(0);
-  const serversState = useTypedSelector((state: RootState) => state.servers);
-  const mediaState = useTypedSelector((state: RootState) => state.media);
-  const app = useTypedSelector((state: RootState) => state.app);
+  const serversState = useRootSelector((state: RootState) => state.servers);
+  const mediaState = useRootSelector((state: RootState) => state.media);
+  const app = useRootSelector((state: RootState) => state.app);
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const account = useAccount();
 
-  // const media: Media[] | undefined = useTypedSelector((state: RootState) =>
+  // const media: Media[] | undefined = useRootSelector((state: RootState) =>
   //   accountOrServer.account
   //     ? getMediaPage(state.media, accountOrServer.account?.user?.id, 0)
   //     : undefined);
@@ -58,7 +58,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
     () => { }
   );
 
-  const uploadedMedia = useTypedSelector(
+  const uploadedMedia = useRootSelector(
     (state: RootState) => uploadedMediaId
       ? selectMediaById(state.media, uploadedMediaId) ?? { id: uploadedMediaId } as MediaRef
       : undefined

@@ -11,7 +11,7 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { notifyUserDeleted, store, upsertUserData } from "..";
+import { PaginatedIds, notifyUserDeleted, store, upsertUserData } from "..";
 import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser, userSaved } from "./user_actions";
 
 export interface UsersState {
@@ -32,7 +32,7 @@ export interface UsersState {
   // i.e.: userPages[PostListingType.ALL_ACCESSIBLE_POSTS][1] -> ["userId1", "userId2"].
   // Users should be loaded from the adapter/slice's entities.
   // Maps UserListingType -> page -> userIds
-  userPages: Dictionary<Dictionary<string[]>>;
+  userPages: Dictionary<PaginatedIds>;
   mutatingUserIds: string[];
 }
 
@@ -87,7 +87,7 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       const page = action.meta.arg.page ?? 0;
       const listingType = action.meta.arg.listingType ?? defaultUserListingType;
 
-      if (!state.userPages[listingType]) state.userPages[listingType] = {};
+      if (!state.userPages[listingType]) state.userPages[listingType] = [];
       state.userPages[listingType]![page] = userIds;
 
       state.successMessage = `Users loaded.`;

@@ -15,6 +15,7 @@ import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, d
 import { loadGroupEventsPage } from "./group_actions";
 import { locallyUpsertPost } from "./posts_state";
 import { loadUserEvents } from "./user_actions";
+import { PaginatedIds } from "../pagination";
 export * from './event_actions';
 
 export interface EventsState {
@@ -39,7 +40,7 @@ export interface EventsState {
 // i.e.: eventPages[EventListingType.ALL_ACCESSIBLE_EVENTS]['{"ends_after":null}'][0]:  -> ["eventInstanceId1", "eventInstanceId2"].
 // Events should be loaded from the adapter/slice's entities.
 // Maps EventListingType -> serialized timeFilter-> page (as a number) -> eventInstanceIds
-export type GroupedEventInstancePages = Dictionary<Dictionary<Dictionary<string[]>>>
+export type GroupedEventInstancePages = Dictionary<Dictionary<PaginatedIds>>
 export const unfilteredTime = 'unfiltered';
 export function serializeTimeFilter(filter: TimeFilter | undefined): string {
   if (!filter) return unfilteredTime;
@@ -91,7 +92,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       console.log('created event from server', action.payload);
       if (publicVisibility(action.payload.post?.visibility)) {
         state.eventInstancePages[defaultEventListingType] = state.eventInstancePages[defaultEventListingType] || {};
-        state.eventInstancePages[defaultEventListingType][unfilteredTime] = state.eventInstancePages[defaultEventListingType][unfilteredTime] || {};
+        state.eventInstancePages[defaultEventListingType][unfilteredTime] = state.eventInstancePages[defaultEventListingType][unfilteredTime] || [];
         const firstPage = state.eventInstancePages[defaultEventListingType][unfilteredTime][0] || [];
         state.eventInstancePages[defaultEventListingType][unfilteredTime][0] = [action.payload.id, ...firstPage];
       }
@@ -161,8 +162,8 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
 
       const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
       if (!state.eventInstancePages[listingType]) state.eventInstancePages[listingType] = {};
-      if (!state.eventInstancePages[listingType]![serializedFilter] || page === 0) state.eventInstancePages[listingType]![serializedFilter] = {};
-      const eventPages: Dictionary<string[]> = state.eventInstancePages[listingType]![serializedFilter] ?? {};
+      if (!state.eventInstancePages[listingType]![serializedFilter] || page === 0) state.eventInstancePages[listingType]![serializedFilter] = [];
+      const eventPages: string[][] = state.eventInstancePages[listingType]![serializedFilter] ?? [];
       // Sensible approach:
       // eventPages[page] = postIds;
 

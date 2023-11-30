@@ -51,7 +51,7 @@ export const localAppSlice = createSlice({
   name: "localApp",
   initialState: initialState,
   reducers: {
-    resetLocalApp: () => initialState,
+    resetLocalConfiguration: () => initialState,
     setShowIntro: (state, action: PayloadAction<boolean>) => {
       state.showIntro = action.payload;
     },
@@ -119,7 +119,7 @@ export const localAppSlice = createSlice({
 });
 
 export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection,
-  setSeparateAccountsByServer, setShowBetaNavigation, resetLocalApp, setDiscussionChatUI,
+  setSeparateAccountsByServer, setShowBetaNavigation, resetLocalConfiguration, setDiscussionChatUI,
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews
 } = localAppSlice.actions;

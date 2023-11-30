@@ -55,7 +55,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
           </XStack>
         </Button>)
       }
-      {editMode ? <Select native key={`permissions-${JSON.stringify(selectedPermissions)}`}
+      {editMode && addablePermissions.length > 0 ? <Select native key={`permissions-${JSON.stringify(selectedPermissions)}`}
         onValueChange={(p) => {
           if (p !== Permission.PERMISSION_UNKNOWN.toString()) {
             selectPermission(parseInt(p) as Permission);

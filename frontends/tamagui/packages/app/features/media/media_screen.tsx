@@ -1,6 +1,6 @@
 import { Media } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { RootState, getMediaPage, loadMediaPage, useAccountOrServer, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, getMediaPage, loadMediaPage, useAccountOrServer, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../post/create_post_sheet';
@@ -13,7 +13,7 @@ import { MediaUploader } from './media_uploader';
 
 export function MediaScreen() {
 
-  const mediaState = useTypedSelector((state: RootState) => state.media);
+  const mediaState = useRootSelector((state: RootState) => state.media);
   const accountOrServer = useAccountOrServer();
   const {account} = accountOrServer;
 
@@ -76,10 +76,10 @@ export function MediaScreen() {
 
 export function useMediaPage(userId: string | undefined, page: number, onLoaded?: () => void) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const mediaState = useTypedSelector((state: RootState) => state.media);
+  const mediaState = useRootSelector((state: RootState) => state.media);
   const [loadingMedia, setLoadingMedia] = useState(false);
 
-  const media: Media[] | undefined = useTypedSelector((state: RootState) => userId ? getMediaPage(state.media, userId, 0) : undefined);
+  const media: Media[] | undefined = useRootSelector((state: RootState) => userId ? getMediaPage(state.media, userId, 0) : undefined);
 
   useEffect(() => {
     if (!loadingMedia && (mediaState.loadStatus == 'unloaded' || media == undefined)) {

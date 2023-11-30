@@ -1,6 +1,6 @@
 import { Group } from '@jonline/api';
 import { Button, Text, Image, Heading, Paragraph, Separator, XStack, YStack, useMedia } from '@jonline/ui';
-import { RootState, isGroupLocked, joinLeaveGroup, useAccountOrServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { RootState, isGroupLocked, joinLeaveGroup, useAccountOrServer, useServerTheme, useAppDispatch, useRootSelector } from 'app/store';
 import React from 'react';
 import { useLink } from 'solito/link';
 import { passes, pending } from '../../utils/moderation_utils';
@@ -8,6 +8,7 @@ import { } from '../post/post_card';
 import { Info, Users2 } from '@tamagui/lucide-icons';
 import { useMediaUrl } from 'app/hooks';
 import { splitOnFirstEmoji } from '../tabs/server_name_and_logo';
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export type GroupButtonProps = {
   group: Group;
@@ -28,7 +29,7 @@ export type GroupButtonProps = {
 export function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome, hideLeaveButton }: GroupButtonProps) {
   const accountOrServer = useAccountOrServer();
   const { account } = accountOrServer;
-  const dispatch = useTypedDispatch();
+  const dispatch = useAppDispatch();
   const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
     useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
   const media = useMedia();
@@ -44,7 +45,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
   const membershipRequested = group.currentUserMembership && !joined && passes(group.currentUserMembership?.userModeration);
   const invited = group.currentUserMembership && !joined && passes(group.currentUserMembership?.groupModeration)
   const requiresPermissionToJoin = pending(group.defaultMembershipModeration);
-  const isLocked = useTypedSelector((state: RootState) => isGroupLocked(state.groups, group.id));
+  const isLocked = useRootSelector((state: RootState) => isGroupLocked(state.groups, group.id));
 
   const onJoinPressed = () => {
     // e.stopPropagation();
@@ -72,7 +73,8 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
         // bordered={false}
         // href={`/g/${group.shortname}`}
         transparent={!selected}
-        backgroundColor={selected ? navColor : undefined}
+        // backgroundColor={selected ? navColor : undefined}
+        {...themedButtonBackground(selected ? navColor : undefined, undefined, disabled ? 0.5 : 1)}
         // size="$8"
         // disabled={appSection == AppSection.HOME}
         disabled={disabled}
@@ -188,7 +190,7 @@ export type GroupJoinLeaveButtonProps = {
 export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveButtonProps) {
   const accountOrServer = useAccountOrServer();
   const { account } = accountOrServer;
-  const dispatch = useTypedDispatch();
+  const dispatch = useAppDispatch();
 
   const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
 
@@ -197,7 +199,7 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
   const membershipRequested = group.currentUserMembership && !joined && passes(group.currentUserMembership?.userModeration);
   const invited = group.currentUserMembership && !joined && passes(group.currentUserMembership?.groupModeration)
   const requiresPermissionToJoin = pending(group.defaultMembershipModeration);
-  const isLocked = useTypedSelector((state: RootState) => isGroupLocked(state.groups, group.id));
+  const isLocked = useRootSelector((state: RootState) => isGroupLocked(state.groups, group.id));
 
   const onJoinPressed = () => {
     // e.stopPropagation();

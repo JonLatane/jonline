@@ -1,7 +1,7 @@
-import { Event, EventInstance, EventListingType, Group, Location, Post, Visibility } from '@jonline/api';
+import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Text, TextArea, XStack, YStack, useMedia } from '@jonline/ui';
 import { ChevronDown, Settings } from '@tamagui/lucide-icons';
-import { RootState, clearPostAlerts, createEvent, createGroupPost, loadEventsPage, loadGroupEventsPage, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, clearPostAlerts, createEvent, createGroupPost, loadEventsPage, loadGroupEventsPage, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 // import AccountCard from './account_card';
@@ -27,6 +27,10 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [duration, _setDuration] = useState(0);
+
+  const canPublishLocally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_LOCALLY);
+  const canPublishGlobally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_GLOBALLY);
+
   useEffect(() => {
     if (startTime && endTime) {
       const start = moment(startTime);
@@ -94,14 +98,13 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
 
   return <BaseCreatePostSheet
     entityName='Event'
-    selectedGroup={selectedGroup}
-    doCreate={doCreate}
+    {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, invalid }}
     preview={(post, group) => {
       console.log('previewEvent', previewEvent(post));
       return <EventCard event={previewEvent(post)} hideEditControls />;
     }}
     feedPreview={(post, group) => <EventCard event={previewEvent(post)} isPreview hideEditControls />}
-    invalid={invalid}
+
     onFreshOpen={() => {
       setStartTime(supportDateInput(moment()));
       setEndTime(supportDateInput(moment().add(1, 'hour')));

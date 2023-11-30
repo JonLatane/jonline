@@ -1,7 +1,7 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
-import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector, userSaved } from 'app/store';
+import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useRootSelector, userSaved } from 'app/store';
 import { pending } from 'app/utils/moderation_utils';
 import { hasAdminPermission } from 'app/utils/permission_utils';
 import React, { useEffect, useState } from 'react';
@@ -25,11 +25,11 @@ export function UsernameDetailsScreen() {
   const linkProps = useLink({ href: '/' });
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const paramUserId: string | undefined = useTypedSelector((state: RootState) => inputUsername ? state.users.usernameIds[inputUsername] : undefined);
+  const paramUserId: string | undefined = useRootSelector((state: RootState) => inputUsername ? state.users.usernameIds[inputUsername] : undefined);
   const [userId, setUserId] = useState(paramUserId);
-  const user = useTypedSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
+  const user = useRootSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const usersState = useTypedSelector((state: RootState) => state.users);
+  const usersState = useRootSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
   const userLoadFailed = usersState.failedUsernames.includes(inputUsername!);
@@ -68,7 +68,7 @@ export function UsernameDetailsScreen() {
     || permissionsModified
   );
 
-  const userPosts = useTypedSelector((state: RootState) => {
+  const userPosts = useRootSelector((state: RootState) => {
     return userId
       ? (state.users.idPosts ?? {})[userId]
         ?.map(postId => state.posts.entities[postId]!)
@@ -149,7 +149,7 @@ export function UsernameDetailsScreen() {
   }, [user, userPosts, showScrollPreserver])
   const windowHeight = useWindowDimensions().height;
   const [saving, setSaving] = useState(false);
-  //= useTypedSelector((state: RootState) => state.users.successMessage == userSaved);
+  //= useRootSelector((state: RootState) => state.users.successMessage == userSaved);
   const toast = useToastController()
 
   async function saveUser() {
@@ -178,7 +178,7 @@ export function UsernameDetailsScreen() {
       setTimeout(() => setSuccessSaving(false), 3000);
     });
   }
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const postsState = useRootSelector((state: RootState) => state.posts);
   const loading = usersState.status == 'loading' || usersState.status == 'unloaded'
     || postsState.status == 'loading' || postsState.status == 'unloaded';
 

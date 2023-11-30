@@ -1,3 +1,3 @@
-import { GroupPostsScreen } from 'app/features/groups/group_posts_screen'
+import { GroupMembersScreen } from 'app/features/groups/group_members_screen';
 
-export default GroupPostsScreen
+export default GroupMembersScreen

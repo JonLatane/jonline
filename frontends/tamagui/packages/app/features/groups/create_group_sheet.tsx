@@ -1,7 +1,7 @@
-import { Group, MediaReference, Moderation, Visibility } from '@jonline/api';
+import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, clearPostAlerts, createGroup, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { JonlineServer, RootState, clearPostAlerts, createGroup, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 // import { PostMediaManager } from '../posts/post_media_manager';
@@ -11,6 +11,9 @@ import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { VisibilityPicker } from '../../components/visibility_picker';
 import { ToggleRow } from '../../components/toggle_row';
 import { actionFailed } from '../../store/store';
+import { PermissionsEditor, PermissionsEditorProps } from '../user/permissions_editor';
+import { groupUserPermissions } from './group_details_sheet';
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export type CreateGroupSheetProps = {
   // selectedGroup?: Group;
@@ -94,27 +97,22 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   const [defaultMembershipModeration, setDefaultMembershipModeration] = useState(Moderation.UNMODERATED);
   const [defaultPostModeration, setDefaultPostModeration] = useState(Moderation.UNMODERATED);
   const [defaultEventModeration, setDefaultEventModeration] = useState(Moderation.UNMODERATED);
+  const [defaultMembershipPermissions, setDefaultMembershipPermissions] = useState([Permission.VIEW_POSTS, Permission.VIEW_EVENTS]);
+  const [nonMemberPermissions, setNonMemberPermissions] = useState([Permission.VIEW_POSTS, Permission.VIEW_EVENTS]);
   const fullAvatarHeight = 72;
 
-  // function setVisibility(v: Visibility) {
-  //   const currentlyPublic = publicVisibility(visibility);
-  //   const willBePublic = publicVisibility(v);
-  //   const willBePrivate = v == Visibility.PRIVATE;
-  //   if (shareable) {
-  //     if (willBePrivate || (currentlyPublic && !willBePublic)) {
-  //       setShareable(false);
-  //     }
-  //   } else if (!currentlyPublic && willBePublic) {
-  //     setShareable(true);
-  //   }
-  //   _setVisibility(v);
-  // }
   function resetGroup() {
     setOpen(false);
     setName('');
     setDescription('');
     setAvatar(undefined);
     setVisibility(Visibility.LIMITED);
+    setDefaultPostModeration(Moderation.UNMODERATED);
+    setDefaultEventModeration(Moderation.UNMODERATED);
+    setDefaultMembershipModeration(Moderation.UNMODERATED);
+    setDefaultMembershipPermissions([Permission.VIEW_POSTS, Permission.VIEW_EVENTS]);
+    setNonMemberPermissions([Permission.VIEW_POSTS, Permission.VIEW_EVENTS]);
+
     setRenderType(RenderType.Edit);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     dispatch(clearPostAlerts!());
@@ -122,6 +120,33 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   }
 
   const [error, setError] = useState(undefined as string | undefined);
+
+
+  function selectDefaultPermission(permission: Permission, permissionSet: Permission[], setPermissionSet: (permissions: Permission[]) => void) {
+    if (permissionSet.includes(permission)) {
+      setPermissionSet(permissionSet.filter(p => p != permission));
+    } else {
+      setPermissionSet([...permissionSet, permission]);
+    }
+  }
+  function deselectDefaultPermission(permission: Permission, permissionSet: Permission[], setPermissionSet: (permissions: Permission[]) => void) {
+    setPermissionSet(permissionSet.filter(p => p != permission));
+  }
+
+  const membershipPermissionsEditorProps: PermissionsEditorProps = {
+    selectablePermissions: groupUserPermissions,
+    selectedPermissions: defaultMembershipPermissions,
+    selectPermission: (p: Permission) => selectDefaultPermission(p, defaultMembershipPermissions, setDefaultMembershipPermissions),
+    deselectPermission: (p: Permission) => deselectDefaultPermission(p, defaultMembershipPermissions, setDefaultMembershipPermissions),
+    editMode: true,
+  };
+  const nonMemberPermissionsEditorProps: PermissionsEditorProps = {
+    selectablePermissions: groupUserPermissions.filter(p => ![Permission.ADMIN].includes(p)),
+    selectedPermissions: nonMemberPermissions,
+    selectPermission: (p: Permission) => selectDefaultPermission(p, nonMemberPermissions, setNonMemberPermissions),
+    deselectPermission: (p: Permission) => deselectDefaultPermission(p, nonMemberPermissions, setNonMemberPermissions),
+    editMode: true,
+  };
 
   function doCreate() {
     const group = Group.create({
@@ -131,7 +156,9 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
       avatar,
       defaultMembershipModeration,
       defaultPostModeration,
-      defaultEventModeration
+      defaultEventModeration,
+      defaultMembershipPermissions,
+      nonMemberPermissions,
     });
     setError(undefined);
     dispatch(createGroup({ ...group, ...accountOrServer }))
@@ -163,16 +190,16 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   const textAreaRef = React.createRef<TextInput>();
 
   const [posting, setPosting] = useState(false);
-  const serversState = useTypedSelector((state: RootState) => state.servers);
+  const serversState = useRootSelector((state: RootState) => state.servers);
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
-  const accountsState = useTypedSelector((state: RootState) => state.accounts);
-  const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
+  const accountsState = useRootSelector((state: RootState) => state.accounts);
+  const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
   // const accountsOnPrimaryServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
   const accountsOnServer = server ? accounts.filter(a => serverID(a.server) == serverID(server!)) : [];
 
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const postsState = useRootSelector((state: RootState) => state.posts);
   const accountsLoading = accountsState.status == 'loading';
   const valid = name.length > 0;
 
@@ -262,6 +289,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                       onChange={(data) => { setName(data.nativeEvent.text) }} />
                     <Button p='$0'
                       ml='$2'
+                      {...themedButtonBackground(showMedia ? navColor : undefined, showMedia ? navTextColor : undefined, )}
                       onPress={() => setShowMedia(!showMedia)}
                       height={hasAvatarUrl ? fullAvatarHeight : undefined}
                     >
@@ -277,20 +305,23 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                           source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
                           borderRadius={10} />
                         : <XStack px='$2'>
-                          <FileImage />
+                          <FileImage color={showMedia ? navTextColor : undefined}/>
                         </XStack>}
                     </Button>
                   </XStack>
-                  <ZStack mt='$1' h={
+                  {/* <ZStack mt='$1' h={
                     showMedia
                       ? 95
                       : showSettings
                         ? mediaQuery.gtXs ? 215 : 230
-                        : 0}>
-                    <AnimatePresence>
+                        : 0}> */}
+                    {/* <AnimatePresence> */}
                       {showSettings
                         ? <YStack key='create-group-settings'
                           animation='standard'
+                          p='$2'
+                          backgroundColor='$backgroundHover'
+                          borderRadius='$5'
                           // touch={showSettings}
 
                           {...standardAnimation}
@@ -317,20 +348,24 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                             value={pending(defaultEventModeration)}
                             setter={(v) => setDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
                             disabled={disableInputs} />
+                          <PermissionsEditor label='Default Member Permissions'
+                            {...membershipPermissionsEditorProps} />
+                          <PermissionsEditor label='Non-Member Permissions'
+                            {...nonMemberPermissionsEditorProps} />
                         </YStack>
                         : undefined}
-                    </AnimatePresence>
-                    {showMediaContainer
-                      ? <AnimatePresence>
+                    {/* </AnimatePresence> */}
+                    {/* {showMediaContainer
+                      ? <AnimatePresence> */}
                         {showMedia
                           ? <SingleMediaChooser key='create-group-avatar-chooser'
                             disabled={!showMedia}
                             selectedMedia={avatar} setSelectedMedia={setAvatar} />
                           : undefined}
 
-                      </AnimatePresence>
+                      {/* </AnimatePresence>
                       : undefined}
-                  </ZStack>
+                  </ZStack> */}
                   <TextArea f={1} pt='$2' value={description} ref={textAreaRef}
                     disabled={posting} opacity={posting || description == '' ? 0.5 : 1}
                     onChangeText={t => setDescription(t)}

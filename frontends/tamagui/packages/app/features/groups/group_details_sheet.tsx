@@ -1,7 +1,7 @@
 import { Empty, GetGroupsRequest, Group, Moderation, Permission, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Image, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text, standardAnimation, Separator, ZStack, Dialog, ListItemText, YGroup, ListItem, TextArea, Anchor, AnimatePresence } from '@jonline/ui';
 import { Boxes, Calendar, ChevronDown, Cloud, Cog, Delete, Edit, Eye, FileImage, Info, MessageSquare, Moon, Save, Search, Star, Sun, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, isGroupLocked, deleteGroup, updateGroup, joinLeaveGroup, selectAllGroups, serverID, loadGroupsPage, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useTypedDispatch, useTypedSelector, DeleteGroup, actionFailed } from 'app/store';
+import { RootState, isGroupLocked, deleteGroup, updateGroup, joinLeaveGroup, selectAllGroups, serverID, loadGroupsPage, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useAppDispatch, useRootSelector, DeleteGroup, actionFailed } from 'app/store';
 import React, { createRef, useEffect, useState } from 'react';
 import { FlatList, GestureResponderEvent, Settings, TextInput, View } from 'react-native';
 import { useLink } from 'solito/link';
@@ -20,6 +20,31 @@ import { splitOnFirstEmoji } from '../tabs/server_name_and_logo';
 import { createParam } from 'solito';
 import { PermissionsEditorProps, PermissionsEditor } from '../user/permissions_editor';
 
+
+export const groupUserPermissions = [
+  Permission.VIEW_USERS,
+  // Permission.PUBLISH_USERS_LOCALLY,
+  // Permission.PUBLISH_USERS_GLOBALLY,
+  // Permission.VIEW_GROUPS,
+  // Permission.CREATE_GROUPS,
+  // Permission.VIEW_MEDIA,
+  // Permission.CREATE_MEDIA,
+  // Permission.PUBLISH_MEDIA_LOCALLY,
+  // Permission.PUBLISH_MEDIA_GLOBALLY,
+  // Permission.PUBLISH_GROUPS_LOCALLY,
+  // Permission.PUBLISH_GROUPS_GLOBALLY,
+  // Permission.JOIN_GROUPS,
+  Permission.VIEW_POSTS,
+  Permission.CREATE_POSTS,
+  // Permission.PUBLISH_POSTS_LOCALLY,
+  // Permission.PUBLISH_POSTS_GLOBALLY,
+  Permission.VIEW_EVENTS,
+  Permission.CREATE_EVENTS,
+  // Permission.PUBLISH_EVENTS_LOCALLY,
+  // Permission.PUBLISH_EVENTS_GLOBALLY,
+  Permission.ADMIN,
+];
+
 export type GroupDetailsSheetProps = {
   selectedGroup?: Group;
   infoGroupId?: string;
@@ -30,7 +55,7 @@ export type GroupDetailsSheetProps = {
 
 const { useParam, useUpdateParams } = createParam<{ shortname: string | undefined }>();
 export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInfoOpen, hideLeaveButtons }: GroupDetailsSheetProps) {
-  const infoGroup = useTypedSelector((state: RootState) =>
+  const infoGroup = useRootSelector((state: RootState) =>
     infoGroupId ? state.groups.entities[infoGroupId] : undefined);
   const [position, setPosition] = useState(0);
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -128,29 +153,6 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
     }
   }
 
-  const configurableUserPermissions = [
-    Permission.VIEW_USERS,
-    // Permission.PUBLISH_USERS_LOCALLY,
-    // Permission.PUBLISH_USERS_GLOBALLY,
-    // Permission.VIEW_GROUPS,
-    // Permission.CREATE_GROUPS,
-    // Permission.VIEW_MEDIA,
-    // Permission.CREATE_MEDIA,
-    // Permission.PUBLISH_MEDIA_LOCALLY,
-    // Permission.PUBLISH_MEDIA_GLOBALLY,
-    // Permission.PUBLISH_GROUPS_LOCALLY,
-    // Permission.PUBLISH_GROUPS_GLOBALLY,
-    // Permission.JOIN_GROUPS,
-    Permission.VIEW_POSTS,
-    Permission.CREATE_POSTS,
-    // Permission.PUBLISH_POSTS_LOCALLY,
-    // Permission.PUBLISH_POSTS_GLOBALLY,
-    Permission.VIEW_EVENTS,
-    Permission.CREATE_EVENTS,
-    // Permission.PUBLISH_EVENTS_LOCALLY,
-    // Permission.PUBLISH_EVENTS_GLOBALLY,
-    Permission.ADMIN,
-  ];
   function selectDefaultPermission(permission: Permission, permissionSet: Permission[], setPermissionSet: (permissions: Permission[]) => void) {
     if (permissionSet.includes(permission)) {
       setPermissionSet(permissionSet.filter(p => p != permission));
@@ -163,14 +165,14 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   }
   const isGroupAdmin = infoRenderingGroup?.currentUserMembership?.permissions?.includes(Permission.ADMIN);
   const membershipPermissionsEditorProps: PermissionsEditorProps = {
-    selectablePermissions: configurableUserPermissions,
+    selectablePermissions: groupUserPermissions,
     selectedPermissions: defaultMembershipPermissions,
     selectPermission: (p: Permission) => selectDefaultPermission(p, defaultMembershipPermissions, setEditedDefaultMembershipPermissions),
     deselectPermission: (p: Permission) => deselectDefaultPermission(p, defaultMembershipPermissions, setEditedDefaultMembershipPermissions),
     editMode: editing,
   };
   const nonMemberPermissionsEditorProps: PermissionsEditorProps = {
-    selectablePermissions: configurableUserPermissions.filter(p => ![Permission.ADMIN].includes(p)),
+    selectablePermissions: groupUserPermissions.filter(p => ![Permission.ADMIN].includes(p)),
     selectedPermissions: nonMemberPermissions,
     selectPermission: (p: Permission) => selectDefaultPermission(p, nonMemberPermissions, setEditedNonMemberPermissions),
     deselectPermission: (p: Permission) => deselectDefaultPermission(p, nonMemberPermissions, setEditedNonMemberPermissions),

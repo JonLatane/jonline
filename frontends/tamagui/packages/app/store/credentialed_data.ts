@@ -3,11 +3,11 @@ import moment from "moment";
 import { Metadata } from "nice-grpc-web";
 import 'react-native-get-random-values';
 import { accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers } from ".";
-import { AppDispatch, RootState, store, useTypedDispatch, useTypedSelector } from "./store";
+import { AppDispatch, RootState, store, useAppDispatch, useRootSelector } from "./store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient } from "./types";
 
-export const useAccount = () => useTypedSelector((state: RootState) => state.accounts.account);
-export const useServer = () => useTypedSelector((state: RootState) => state.servers.server);
+export const useAccount = () => useRootSelector((state: RootState) => state.accounts.account);
+export const useServer = () => useRootSelector((state: RootState) => state.servers.server);
 
 export function useAccountOrServer(): AccountOrServer {
   return {
@@ -21,7 +21,7 @@ export type CredentialDispatch = {
   accountOrServer: AccountOrServer;
 };
 export function useCredentialDispatch(): CredentialDispatch {
-  return { dispatch: useTypedDispatch(), accountOrServer: useAccountOrServer() };
+  return { dispatch: useAppDispatch(), accountOrServer: useAccountOrServer() };
 }
 
 let _accessFetchLock = false;
@@ -122,7 +122,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
 }
 
 export function useLoadingCredentialedData() {
-  return useTypedSelector((state: RootState) => state.posts.status == 'loading'
+  return useRootSelector((state: RootState) => state.posts.status == 'loading'
     || state.groups.status == 'loading'
     || state.users.status == 'loading');
 }

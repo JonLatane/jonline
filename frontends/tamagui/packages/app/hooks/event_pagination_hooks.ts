@@ -1,5 +1,5 @@
 import { Event, EventListingType, TimeFilter } from "@jonline/api";
-import { RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, useCredentialDispatch, useTypedSelector } from "app/store";
+import { RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, useCredentialDispatch, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { PostPageParams, finishPagination } from "./post_pagination_hooks";
 import { optServerID, serverID } from '../store/modules/servers_state';
@@ -8,7 +8,7 @@ export type EventPageParams = PostPageParams & { filter?: TimeFilter };
 
 export function useEventPages(listingType: EventListingType, throughPage: number, params?: EventPageParams) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const eventsState = useTypedSelector((state: RootState) => state.events);
+  const eventsState = useRootSelector((state: RootState) => state.events);
   const [loadingEvents, setLoadingEvents] = useState(false);
 
   const timeFilter = serializeTimeFilter(params?.filter);
@@ -36,7 +36,7 @@ export function useEventPages(listingType: EventListingType, throughPage: number
 
 export function useGroupEventPages(groupId: string, throughPage: number, params?: EventPageParams) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const state = useTypedSelector((state: RootState) => state);
+  const state = useRootSelector((state: RootState) => state);
   const [loadingEvents, setLoadingEvents] = useState(false);
 
   const timeFilter = serializeTimeFilter(params?.filter);

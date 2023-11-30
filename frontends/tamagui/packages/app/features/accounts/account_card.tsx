@@ -1,9 +1,9 @@
 import { Permission } from "@jonline/api";
 import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia, useTheme } from "@jonline/ui";
 
-import { Bot, Shield, Delete, User as UserIcon, ChevronUp, ChevronDown, AlertCircle } from "@tamagui/lucide-icons";
+import { AlertCircle, Bot, ChevronDown, ChevronUp, Delete, Shield, User as UserIcon } from "@tamagui/lucide-icons";
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { JonlineAccount, RootState, accountId, colorMeta, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, serverID, store, useAccount, useCredentialDispatch, useRootSelector, useTypedDispatch, useTypedSelector } from "app/store";
+import { JonlineAccount, accountId, colorMeta, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, serverID, store, useCredentialDispatch, useRootSelector } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
@@ -208,16 +208,16 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
       </Card.Footer>
       {/* {!selected
         ?  */}
-        <Card.Background>
-          <XStack h='100%'>
-            <YStack h='100%' w={5}
-              borderTopLeftRadius={20} borderBottomLeftRadius={20}
-              backgroundColor={primaryColor} />
-            <YStack h='100%' w={5}
-              backgroundColor={navColor} />
-          </XStack>
-        </Card.Background>
-        {/* : undefined} */}
+      <Card.Background>
+        <XStack h='100%'>
+          <YStack h='100%' w={5}
+            borderTopLeftRadius={20} borderBottomLeftRadius={20}
+            backgroundColor={primaryColor} />
+          <YStack h='100%' w={5}
+            backgroundColor={navColor} />
+        </XStack>
+      </Card.Background>
+      {/* : undefined} */}
     </Card>
   );
 };

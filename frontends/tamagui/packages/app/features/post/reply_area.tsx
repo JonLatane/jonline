@@ -1,7 +1,7 @@
 import { Permission, Post } from '@jonline/api'
 import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack, isClient, isWeb, useWindowDimensions } from '@jonline/ui'
 import { ChevronRight, Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
-import { RootState, confirmReplySent, replyToPost, selectPostById, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store'
+import { RootState, confirmReplySent, replyToPost, selectPostById, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
 import StickyBox from 'react-sticky-box'
@@ -33,7 +33,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   // const [isReplying, setIsReplying] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
   const textAreaRef = React.createRef<TextInput>();// as React.MutableRefObject<HTMLElement | View>;
-  const chatUI = useTypedSelector((state: RootState) => state.app.discussionChatUI);
+  const chatUI = useRootSelector((state: RootState) => state.app.discussionChatUI);
   const [showMedia, setShowMedia] = useState(true);
 
   const [replyTextFocused, _setReplyTextFocused] = useState(false);
@@ -64,7 +64,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   }
   // const replyingToPost = 
   let pathIndex = 0;
-  const rootPost = useTypedSelector((state: RootState) => selectPostById(state.posts, replyingToPath[pathIndex++]!));
+  const rootPost = useRootSelector((state: RootState) => selectPostById(state.posts, replyingToPath[pathIndex++]!));
   const targetPostId = replyingToPath[replyingToPath.length - 1];
   let targetPost = rootPost;
   while (targetPost != null && targetPost?.id != targetPostId) {
@@ -74,7 +74,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
     // debugger;
   }
   const replyingToPost = targetPost;
-  const sendReplyStatus = useTypedSelector((state: RootState) => state.posts.sendReplyStatus);
+  const sendReplyStatus = useRootSelector((state: RootState) => state.posts.sendReplyStatus);
   useEffect(() => {
     if (isSendingReply && sendReplyStatus == 'sent') {
       setIsSendingReply(false);

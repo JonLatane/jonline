@@ -1,5 +1,5 @@
 import { Heading, Label, Paragraph, Switch, XStack, YStack } from '@jonline/ui';
-import { useTypedDispatch } from 'app/store';
+import { useAppDispatch } from 'app/store';
 import React from 'react';
 
 
@@ -12,7 +12,7 @@ export interface ToggleRowProps {
   autoDispatch?: boolean;
 }
 export function ToggleRow({ name, description, value: optionalValue, setter, disabled = false, autoDispatch = false }: ToggleRowProps) {
-  const dispatch = useTypedDispatch();
+  const dispatch = useAppDispatch();
   const nameKey = name.toLowerCase().replace(/[^\w]/g, '_');
   const value = !!optionalValue;
   return <XStack space='$3' o={disabled ? 0.5 : 1} my='$1'>

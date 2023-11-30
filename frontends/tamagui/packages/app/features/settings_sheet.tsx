@@ -1,6 +1,6 @@
 import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useTypedDispatch, useTypedSelector } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useAppDispatch, useRootSelector } from 'app/store';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 
@@ -17,10 +17,10 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState(0)
-  const dispatch = useTypedDispatch();
-  const app = useTypedSelector((state: RootState) => state.app);
-  const accountCount = useTypedSelector((state: RootState) => selectAccountTotal(state.accounts));
-  const serverCount = useTypedSelector((state: RootState) => selectServerTotal(state.servers));
+  const dispatch = useAppDispatch();
+  const app = useRootSelector((state: RootState) => state.app);
+  const accountCount = useRootSelector((state: RootState) => selectAccountTotal(state.accounts));
+  const serverCount = useRootSelector((state: RootState) => selectServerTotal(state.servers));
 
   function doResetAllData() {
     resetAllData();

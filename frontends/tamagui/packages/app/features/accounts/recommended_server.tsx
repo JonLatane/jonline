@@ -1,6 +1,6 @@
 import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
 import { ExternalLink } from "@tamagui/lucide-icons";
-import { RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, setBrowsingServers, upsertServer, useLocalApp, useTypedDispatch, useTypedSelector } from 'app/store';
+import { RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, setBrowsingServers, upsertServer, useLocalConfiguration, useAppDispatch, useRootSelector } from 'app/store';
 import React, { useEffect } from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
@@ -14,8 +14,8 @@ interface Props {
 }
 
 export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit, tiny = false }) => {
-  const dispatch = useTypedDispatch();
-  const existingServer = useTypedSelector(
+  const dispatch = useAppDispatch();
+  const existingServer = useRootSelector(
     (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host
     );
   const prototypeServer = {
@@ -43,7 +43,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
 
   const [loadingClient, setLoadingClient] = React.useState(false);
 
-  const { allowServerSelection, browsingServers } = useLocalApp();
+  const { allowServerSelection, browsingServers } = useLocalConfiguration();
   async function addServer() {
     setLoadingClient(true);
     if (!allowServerSelection) {

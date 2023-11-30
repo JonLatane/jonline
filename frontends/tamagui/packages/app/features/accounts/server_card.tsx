@@ -1,6 +1,6 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation } from "@jonline/ui";
 import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useTypedDispatch, useTypedSelector, accountId, moveServerUp, moveServerDown, colorMeta } from "app/store";
+import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useAppDispatch, useRootSelector, accountId, moveServerUp, moveServerDown, colorMeta } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
@@ -15,11 +15,11 @@ interface Props {
 }
 
 const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerInfo = false, disableHeightLimit, disableFooter = false, disablePress = false }) => {
-  const dispatch = useTypedDispatch();
+  const dispatch = useAppDispatch();
   const selected = store.getState().servers.server?.host == server.host;
-  const serversState = useTypedSelector((state: RootState) => state.servers);
-  const accountsState = useTypedSelector((state: RootState) => state.accounts);
-  const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts))
+  const serversState = useRootSelector((state: RootState) => state.servers);
+  const accountsState = useRootSelector((state: RootState) => state.accounts);
+  const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts))
     .filter(account => account.server.host == server.host);
   const infoLink = useLink({ href: `/server/${serverID(server)}` });
   const primaryColorInt = server.serverConfiguration?.serverInfo?.colors?.primary;

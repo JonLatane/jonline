@@ -11,7 +11,7 @@ export type DateViewerProps = {
 export const DateViewer = ({ date, prefix, disableTooltip = false, updatedDate }: DateViewerProps) => {
   if (!date) return <></>;
 
-  const component = <Heading size="$1" marginVertical='auto' mr='$2'>
+  const component = <Heading size="$1" marginVertical='auto'>
     {moment.utc(date).local().startOf('seconds').fromNow()}{updatedDate ? '*' : ''}
   </Heading>;
 

@@ -1,5 +1,5 @@
 import { useTheme } from "@jonline/ui";
-import { RootState, useTypedSelector } from "./store";
+import { RootState, useRootSelector } from "./store";
 import { JonlineServer } from './types';
 
 export type ServerTheme = {
@@ -27,7 +27,7 @@ export type ServerTheme = {
   darkMode: boolean;
 }
 export function useServerTheme(): ServerTheme {
-  const server = useTypedSelector((state: RootState) => state.servers.server);
+  const server = useRootSelector((state: RootState) => state.servers.server);
   const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;
 

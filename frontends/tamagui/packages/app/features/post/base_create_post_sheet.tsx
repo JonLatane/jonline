@@ -1,7 +1,7 @@
-import { Group, MediaReference, Post, Visibility } from '@jonline/api';
+import { Group, MediaReference, Permission, Post, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, Cog, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useTypedSelector } from 'app/store';
+import { JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
@@ -31,6 +31,8 @@ export type BaseCreatePostSheetProps = {
     group: Group | undefined) => JSX.Element;
   onFreshOpen?: () => void;
   invalid?: boolean;
+  canPublishLocally?: boolean;
+  canPublishGlobally?: boolean;
 }
 
 export const postVisibilityDescription = (
@@ -60,7 +62,18 @@ const edit = (r: RenderType) => r == RenderType.Edit;
 const fullPreview = (r: RenderType) => r == RenderType.FullPreview;
 const shortPreview = (r: RenderType) => r == RenderType.ShortPreview;
 
-export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCreate, preview, feedPreview, additionalFields, invalid, onFreshOpen }: BaseCreatePostSheetProps) {
+export function BaseCreatePostSheet({
+  selectedGroup,
+  entityName = 'Post',
+  doCreate,
+  preview,
+  feedPreview,
+  additionalFields,
+  invalid,
+  onFreshOpen,
+  canPublishLocally,
+  canPublishGlobally
+}: BaseCreatePostSheetProps) {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const account = accountOrServer.account!;
@@ -97,14 +110,37 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
   }
 
   // Form fields
+  const defaultVisibility = canPublishGlobally ? Visibility.GLOBAL_PUBLIC
+    : canPublishLocally ? Visibility.SERVER_PUBLIC
+      : Visibility.LIMITED;
   const [group, setGroup] = useState<Group | undefined>(selectedGroup);
-  const [visibility, _setVisibility] = useState(selectedGroup ? Visibility.LIMITED : Visibility.SERVER_PUBLIC);
+  const [visibility, _setVisibility] = useState(defaultVisibility);
   const [shareable, setShareable] = useState(!selectedGroup);
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
   const [content, setContent] = useState('');
   const [embedLink, setEmbedLink] = useState(false);
   const [media, setMedia] = useState<MediaReference[]>([]);
+
+  function resetPost() {
+    setOpen(false);
+
+    setGroup(selectedGroup);
+    setVisibility(defaultVisibility);
+    setShareable(!selectedGroup);
+    setTitle('');
+    setLink('');
+    setContent('');
+    setEmbedLink(false);
+    setMedia([]);
+
+    setRenderType(RenderType.Edit);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    dispatch(clearPostAlerts!());
+    setPosting(false);
+    // setShowSettings(true);
+  }
 
   function setVisibility(v: Visibility) {
     const currentlyPublic = publicVisibility(visibility);
@@ -119,17 +155,6 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
     }
     _setVisibility(v);
   }
-  function resetPost() {
-    setOpen(false);
-    setTitle('');
-    setContent('');
-    setLink('');
-    setRenderType(RenderType.Edit);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    dispatch(clearPostAlerts!());
-    setPosting(false);
-    // setShowSettings(true);
-  }
 
   const previewPost = Post.create({
     title, link, content, shareable, embedLink, media, visibility,
@@ -138,16 +163,16 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
   const textAreaRef = React.createRef<TextInput>();
 
   const [posting, setPosting] = useState(false);
-  const serversState = useTypedSelector((state: RootState) => state.servers);
+  const serversState = useRootSelector((state: RootState) => state.servers);
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
-  const accountsState = useTypedSelector((state: RootState) => state.accounts);
-  const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
+  const accountsState = useRootSelector((state: RootState) => state.accounts);
+  const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
   // const accountsOnPrimaryServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
   const accountsOnServer = server ? accounts.filter(a => serverID(a.server) == serverID(server!)) : [];
 
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const postsState = useRootSelector((state: RootState) => state.posts);
   const accountsLoading = accountsState.status == 'loading';
   const valid = title.length > 0 && !invalid;
 
@@ -281,10 +306,11 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                       <ZStack w='$4' ml='$2'>
                         <Paragraph zi={1000} pointerEvents='none' size='$1' mt='auto' ml='auto' px={5} o={media.length > 0 ? 0.93 : 0.5}
                           borderRadius={5}
-                          backgroundColor={media.length > 0 ? primaryColor : navColor} color={media.length > 0 ? primaryTextColor : navTextColor}>
+                          backgroundColor={showMedia ? primaryColor : navColor}
+                          color={showMedia ? primaryTextColor : navTextColor}>
                           {media.length}
                         </Paragraph>
-                        <Button backgroundColor={showMedia ? navColor : undefined}
+                        <Button {...themedButtonBackground(showMedia ? navColor : undefined)}
                           onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
                           <ImageIcon color={showMedia ? navTextColor : textColor} />
                         </Button>
@@ -311,6 +337,8 @@ export function BaseCreatePostSheet({ selectedGroup, entityName = 'Post', doCrea
                           label='Post Visibility'
                           visibility={visibility}
                           onChange={setVisibility}
+                          canPublishGlobally={canPublishGlobally}
+                          canPublishLocally={canPublishLocally}
                           visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
                         <ToggleRow
                           // key={`'create-post-shareable-${shareable}`} 

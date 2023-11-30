@@ -16,7 +16,7 @@ import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGrou
 import { store } from "../store";
 import { passes } from "app/utils/moderation_utils";
 import { usersAdapter } from "./users_state";
-import { GroupedPages } from "../pagination";
+import { GroupedPages, PaginatedIds } from "../pagination";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -37,6 +37,7 @@ export interface GroupsState {
   postIdGroupPosts: Dictionary<GroupPost[]>;
   failedShortnames: string[];
   mutatingGroupIds: string[];
+  membershipPages: Dictionary<Membership[][]>;
 }
 
 
@@ -58,6 +59,7 @@ const initialState: GroupsState = {
   groupEventPages: {},
   postIdGroupPosts: {},
   mutatingGroupIds: [],
+  membershipPages: {},
   ...groupsAdapter.getInitialState(),
 };
 
@@ -174,8 +176,8 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
       const groupId = action.meta.arg.groupId;
       const page = action.meta.arg.page;
-      if (!state.groupPostPages[groupId] || page === 0) state.groupPostPages[groupId] = {};
-      const postPages: Dictionary<string[]> = state.groupPostPages[groupId]!;
+      if (!state.groupPostPages[groupId] || page === 0) state.groupPostPages[groupId] = [];
+      const postPages: PaginatedIds = state.groupPostPages[groupId]!;
       // Sensible approach:
       // postPages[page] = postIds;
 
@@ -219,9 +221,9 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
       const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
       if (!state.groupEventPages[groupId]) state.groupEventPages[groupId] = {};
-      if (!state.groupEventPages[groupId]![serializedFilter] || page === 0) state.groupEventPages[groupId]![serializedFilter] = {};
+      if (!state.groupEventPages[groupId]![serializedFilter] || page === 0) state.groupEventPages[groupId]![serializedFilter] = [];
 
-      const eventPages: Dictionary<string[]> = state.groupEventPages[groupId]![serializedFilter]!;
+      const eventPages: string[][] = state.groupEventPages[groupId]![serializedFilter]!;
       // Sensible approach:
       // postPages[page] = postIds;
 

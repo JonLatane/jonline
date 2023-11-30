@@ -1,4 +1,4 @@
-import { accountOrServerId, getCredentialClient, useCredentialDispatch, useLocalApp, useServerTheme } from "app/store";
+import { accountOrServerId, getCredentialClient, useCredentialDispatch, useLocalConfiguration, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
@@ -203,7 +203,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     ]);
   }
 
-  const { browseRsvpsFromPreviews } = useLocalApp();
+  const { browseRsvpsFromPreviews } = useLocalConfiguration();
   const [deleting, setDeleting] = useState(false);
   async function deleteRsvp(attendance: EventAttendance) {
     setDeleting(true);

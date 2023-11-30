@@ -1,7 +1,7 @@
 import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { useGroupPostPages, usePostPages } from 'app/hooks/post_pagination_hooks';
-import { RootState, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, useServerTheme, useRootSelector } from 'app/store';
 import { setDocumentTitle } from 'app/utils/set_title';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -17,7 +17,7 @@ export function PostsScreen() {
 }
 
 export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
-  const postsState = useTypedSelector((state: RootState) => state.posts);
+  const postsState = useRootSelector((state: RootState) => state.posts);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();

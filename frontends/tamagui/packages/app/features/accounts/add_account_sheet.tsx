@@ -1,6 +1,6 @@
 import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, createAccount, JonlineAccount, login, RootState, selectAllAccounts, serverID, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store';
+import { accountId, clearAccountAlerts, createAccount, JonlineAccount, login, RootState, selectAllAccounts, serverID, useServerTheme, useAppDispatch, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TamaguiMarkdown } from '../post/tamagui_markdown';
 import AccountCard from './account_card';
@@ -31,13 +31,13 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
 
 
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
-  const dispatch = useTypedDispatch();
-  const app = useTypedSelector((state: RootState) => state.app);
-  const serversState = useTypedSelector((state: RootState) => state.servers);
+  const dispatch = useAppDispatch();
+  const app = useRootSelector((state: RootState) => state.app);
+  const serversState = useRootSelector((state: RootState) => state.servers);
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const accountsState = useTypedSelector((state: RootState) => state.accounts);
-  const accounts = useTypedSelector((state: RootState) => selectAllAccounts(state.accounts));
+  const accountsState = useRootSelector((state: RootState) => state.accounts);
+  const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
   // const accountsOnPrimaryServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
   const accountsOnServer = server ? accounts.filter(a => serverID(a.server) == serverID(server!)) : [];

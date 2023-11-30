@@ -1,4 +1,4 @@
-import { JonlineServer, RootState, loadMedia, selectMediaById, serverUrl, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { JonlineServer, RootState, loadMedia, selectMediaById, serverUrl, useCredentialDispatch, useServerTheme, useRootSelector } from "app/store";
 import React, { useState, useEffect } from 'react';
 
 import { Media, MediaReference } from "@jonline/api";
@@ -23,7 +23,7 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly
 
   const ReactPlayerShim = ReactPlayer as any;
 
-  const reduxMedia = useTypedSelector((state: RootState) => selectMediaById(state.media, sourceMedia.id));
+  const reduxMedia = useRootSelector((state: RootState) => selectMediaById(state.media, sourceMedia.id));
   useEffect(() => {
     if (reduxMedia?.contentType.length ?? 0 == 0) {
       dispatch(loadMedia({ ...sourceMedia, ...accountOrServer }));

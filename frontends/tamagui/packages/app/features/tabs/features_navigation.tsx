@@ -1,7 +1,7 @@
 import { Group, User, UserListingType } from "@jonline/api";
 import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
 import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 } from "@tamagui/lucide-icons";
-import { RootState, getUsersPage, loadUsersPage, useAccount, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from 'app/store';
+import { RootState, getUsersPage, loadUsersPage, useAccount, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from 'app/store';
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
@@ -13,6 +13,8 @@ export enum AppSection {
   EVENTS = 'events',
   EVENT = 'event',
   PEOPLE = 'people',
+  MEMBERS = 'members',
+  MEMBER = 'member',
   PROFILE = 'profile',
   GROUPS = 'groups',
   GROUP = 'group',
@@ -27,9 +29,8 @@ const MENU_SECTIONS = [
   AppSection.EVENTS,
   // AppSection.EVENT,
   AppSection.PEOPLE,
-  // AppSection.PROFILE,
-  // AppSection.GROUPS,
-  // AppSection.GROUP,
+  AppSection.MEMBERS,
+  AppSection.MEMBER,
   AppSection.MEDIA,
 ];
 
@@ -42,6 +43,7 @@ function menuIcon(section: AppSection, color?: string) {
     case AppSection.EVENTS:
       return <Calendar color={color} />;
     case AppSection.PEOPLE:
+    case AppSection.MEMBERS:
       return <Users2 color={color} />;
     case AppSection.MEDIA:
       return <Clapperboard color={color} />;
@@ -52,6 +54,7 @@ function menuIcon(section: AppSection, color?: string) {
 
 export enum AppSubsection {
   FOLLOW_REQUESTS = 'follow_requests',
+  MEMBER_REQUESTS = 'follow_requests',
 }
 
 export function sectionTitle(section: AppSection): string {
@@ -78,6 +81,10 @@ export function sectionTitle(section: AppSection): string {
       return 'My Media';
     case AppSection.INFO:
       return 'Info';
+    case AppSection.MEMBERS:
+      return 'Members';
+    case AppSection.MEMBER:
+      return 'Member';
     // default:
     //   return 'Latest';
   }
@@ -93,7 +100,7 @@ export function subsectionTitle(subsection?: AppSubsection): string | undefined 
 
 export function useInlineFeatureNavigation() {
   const mediaQuery = useMedia();
-  const { inlineFeatureNavigation, shrinkFeatureNavigation } = useLocalApp();
+  const { inlineFeatureNavigation, shrinkFeatureNavigation } = useLocalConfiguration();
 
   return {
     shrinkNavigation: shrinkFeatureNavigation,
@@ -127,7 +134,10 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     href:
       selectedGroup == undefined ? '/events' : `/g/${selectedGroup.shortname}/events`
   });
-  const peopleLink = useLink({ href: '/people' });
+  const peopleLink = useLink({
+    href:
+      selectedGroup == undefined ? '/people' : `/g/${selectedGroup.shortname}/members`
+  });
   const followRequestsLink = useLink({ href: '/people/follow_requests' });
   const myMediaLink = useLink({ href: '/media' });
 
@@ -135,18 +145,22 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const isPosts = appSection == AppSection.POSTS;
   const isEvents = appSection == AppSection.EVENTS;
   const isMedia = appSection == AppSection.MEDIA;
+
   const isPeople = appSection == AppSection.PEOPLE && appSubsection == undefined;
   const isFollowRequests = appSection == AppSection.PEOPLE && appSubsection == AppSubsection.FOLLOW_REQUESTS;
+
+  const isMembers = appSection == AppSection.MEMBERS && appSubsection == undefined;
+  const isMemberRequests = appSection == AppSection.MEMBERS && appSubsection == AppSubsection.MEMBER_REQUESTS;
 
   const { inlineNavigation, shrinkNavigation } = useInlineFeatureNavigation();
 
   const reorderInlineNavigation = !mediaQuery.gtMd && account;// && !menuItems.includes(appSection));
   const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
 
-  const followRequests: User[] | undefined = useTypedSelector((state: RootState) =>
+  const followRequests: User[] | undefined = useRootSelector((state: RootState) =>
     getUsersPage(state.users, UserListingType.FOLLOW_REQUESTS, 0));
   const followRequestCount = followRequests?.length ?? 0;
-  const followPageStatus = useTypedSelector((state: RootState) => state.users.pagesStatus);
+  const followPageStatus = useRootSelector((state: RootState) => state.users.pagesStatus);
 
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -168,17 +182,17 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     navButton(isPosts, postsLink, AppSection.POSTS),
     navButton(isEvents, eventsLink, AppSection.EVENTS),
   ];
-  const postsEventsRow = selectedGroup ? 
-  inlineNavigation && reorderInlineNavigation && (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
+  const postsEventsRow = selectedGroup ?
+    inlineNavigation && reorderInlineNavigation && (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
       ? <>{latest}{events}{posts}</>
       : <>{latest}{posts}{events}</>
-  : inlineNavigation && reorderInlineNavigation
-    ? (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
-      ? <>{events}{posts}</>
-      : (appSection == AppSection.POST || appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
-        ? <>{posts}{events}</>
-        : <>{latest}{posts}{events}</>
-    : <>{appSection === AppSection.HOME && inlineNavigation ? latest : undefined}{posts}{events}</>;
+    : inlineNavigation && reorderInlineNavigation
+      ? (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
+        ? <>{events}{posts}</>
+        : (appSection == AppSection.POST || appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
+          ? <>{posts}{events}</>
+          : <>{latest}{posts}{events}</>
+      : <>{appSection === AppSection.HOME && inlineNavigation ? latest : undefined}{posts}{events}</>;
 
   const showFollowRequests = account && (
     (!inlineNavigation || (!reorderInlineNavigation && appSubsection == AppSubsection.FOLLOW_REQUESTS))
@@ -186,7 +200,9 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     || isPeople
   );
   const peopleRow = <>
-    {navButton(isPeople, peopleLink, AppSection.PEOPLE)}
+    {selectedGroup
+      ? navButton(isMembers, peopleLink, AppSection.MEMBERS)
+      : navButton(isPeople, peopleLink, AppSection.PEOPLE)}
     {showFollowRequests ? navButton(isFollowRequests, followRequestsLink,
       AppSection.PEOPLE, AppSubsection.FOLLOW_REQUESTS, followRequestCount
     ) : undefined}

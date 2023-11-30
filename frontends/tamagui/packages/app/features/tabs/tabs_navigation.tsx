@@ -1,7 +1,7 @@
 import { Group, WebUserInterface } from "@jonline/api";
 import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, markGroupVisit, useServerTheme, useTypedDispatch, useTypedSelector } from "app/store";
+import { JonlineServer, RootState, markGroupVisit, useServerTheme, useAppDispatch, useRootSelector } from "app/store";
 import { useEffect } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
@@ -27,20 +27,21 @@ export type TabsNavigationProps = {
 
 export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, appSubsection, selectedGroup, customHomeAction, groupPageForwarder, groupPageExiter }: TabsNavigationProps) {
   const mediaQuery = useMedia()
-  const server = useTypedSelector((state: RootState) => state.servers.server);
+  const server = useRootSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;
   const webUI = server?.serverConfiguration?.serverInfo?.webUserInterface;
   const homeProps = customHomeAction ? { onPress: customHomeAction } : useLink({
     href:
       selectedGroup && appSection == AppSection.POSTS ? `/posts` :
         selectedGroup && appSection == AppSection.EVENTS ? `/events` :
-          webUI == WebUserInterface.FLUTTER_WEB
-            ? '/tamagui'
-            : '/'
+          selectedGroup && appSection == AppSection.MEMBERS ? `/people` :
+            webUI == WebUserInterface.FLUTTER_WEB
+              ? '/tamagui'
+              : '/'
   });
-  const dispatch = useTypedDispatch();
+  const dispatch = useAppDispatch();
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || '...';
-  const app = useTypedSelector((state: RootState) => state.app);
+  const app = useRootSelector((state: RootState) => state.app);
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
   const backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}FF`;
@@ -56,7 +57,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
   const showHomeIcon = serverNameEmoji == undefined && !canUseLogo && shrinkHomeButton;
   const renderHomeButtonChildren = !shrinkHomeButton || serverNameEmoji || canUseLogo;
-  const recentGroupIds = useTypedSelector((state: RootState) => server
+  const recentGroupIds = useRootSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
   const { inlineNavigation: inlineFeatureNavigation } = useInlineFeatureNavigation();
@@ -105,7 +106,8 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
               </Button>
               {!scrollGroupsSheet
                 ? <XStack space='$2' ml='$1' my='auto'>
-                  <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                  <GroupsSheet key='main' selectedGroup={selectedGroup}
+                    groupPageForwarder={groupPageForwarder} />
                 </XStack>
                 : undefined}
               <ScrollView horizontal>

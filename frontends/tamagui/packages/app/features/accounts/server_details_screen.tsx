@@ -1,7 +1,7 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api'
 import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui'
-import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown, Binary, ChevronRight, CheckCircle, TabletSmartphone } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useTypedDispatch, useTypedSelector } from 'app/store'
+import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown, Binary, ChevronRight, CheckCircle, TabletSmartphone, Network } from '@tamagui/lucide-icons';
+import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useAppDispatch, useRootSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { HexColorPicker } from "react-colorful"
 import StickyBox from "react-sticky-box"
@@ -29,6 +29,29 @@ export function ServerDetailsScreen() {
   return BaseServerDetailsScreen();
 }
 
+const configurableUserPermissions = [
+  Permission.VIEW_USERS,
+  Permission.PUBLISH_USERS_LOCALLY,
+  Permission.PUBLISH_USERS_GLOBALLY,
+  Permission.VIEW_GROUPS,
+  Permission.CREATE_GROUPS,
+  Permission.VIEW_MEDIA,
+  Permission.CREATE_MEDIA,
+  Permission.PUBLISH_MEDIA_LOCALLY,
+  Permission.PUBLISH_MEDIA_GLOBALLY,
+  Permission.PUBLISH_GROUPS_LOCALLY,
+  Permission.PUBLISH_GROUPS_GLOBALLY,
+  Permission.JOIN_GROUPS,
+  Permission.VIEW_POSTS,
+  Permission.CREATE_POSTS,
+  Permission.PUBLISH_POSTS_LOCALLY,
+  Permission.PUBLISH_POSTS_GLOBALLY,
+  Permission.VIEW_EVENTS,
+  Permission.CREATE_EVENTS,
+  Permission.PUBLISH_EVENTS_LOCALLY,
+  Permission.PUBLISH_EVENTS_GLOBALLY,
+];
+
 export function BaseServerDetailsScreen(specificServer?: string) {
   const [requestedServerUrl] = specificServer ? [specificServer] : useParam('id');
   const requestedServerUrlParts = requestedServerUrl?.split(':')
@@ -36,11 +59,11 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     && ['http', 'https'].includes(requestedServerUrlParts[0]!);
   // debugger
   // const linkProps = useLink({ href: '/' })
-  const dispatch = useTypedDispatch();
-  const app = useTypedSelector((state: RootState) => state.app);
-  const server: JonlineServer | undefined = useTypedSelector((state: RootState) => selectServerById(state.servers, requestedServerUrl!));
-  const selectedServer = useTypedSelector((state: RootState) => state.servers.server);
-  const account = useTypedSelector((state: RootState) => state.accounts.account);
+  const dispatch = useAppDispatch();
+  const app = useRootSelector((state: RootState) => state.app);
+  const server: JonlineServer | undefined = useRootSelector((state: RootState) => selectServerById(state.servers, requestedServerUrl!));
+  const selectedServer = useRootSelector((state: RootState) => state.servers.server);
+  const account = useRootSelector((state: RootState) => state.accounts.account);
   const serverIsSelected = server && selectedServer &&
     serverID(server) == serverID(selectedServer);
   const isAdmin = account && server && serverID(account.server) == serverID(server) &&
@@ -105,18 +128,17 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const navColor = `#${navColorInt.toString(16).slice(-6)}`;
   const [navColorHex, setNavColorHex] = useState(navColor);
   const navColorValid = /^#[0-9A-Fa-f]{6}$/i.test(navColorHex);
-  // if (navColorHex != navColor && navColorHex == '#FFFFFF') {
-  //   setNavColorHex(navColor);
-  // }
+
   const { textColor: primaryTextColor } = colorMeta(primaryColor);
   const { textColor: navTextColor } = colorMeta(navColor);
   const { primaryAnchorColor, navAnchorColor, warningAnchorColor } = useServerTheme();
 
-  const serverDefaultPermissions = serverConfiguration?.defaultUserPermissions;
-  const [_defaultPermissions, setDefaultPermissions] = useState(serverDefaultPermissions);
-  // if (serverDefaultPermissions && _defaultPermissions == undefined) {
-  //   setDefaultPermissions(serverDefaultPermissions);
-  // }
+  const serverDefaultPermissions = serverConfiguration?.defaultUserPermissions ?? [];
+  const serverAnonymousPermissions = serverConfiguration?.anonymousUserPermissions ?? [];
+  const serverBasicPermissions = serverConfiguration?.basicUserPermissions ?? [];
+  const [defaultPermissions, setDefaultPermissions] = useState(serverDefaultPermissions);
+  const [anonymousPermissions, setAnonymousPermissions] = useState(serverAnonymousPermissions);
+  const [basicPermissions, setBasicPermissions] = useState(serverBasicPermissions);
 
   const inputsValid = primaryColorValid && navColorValid;
 
@@ -128,50 +150,43 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     setLogo(serverLogo);
     setExternalCdnConfig(serverExternalCdnConfig);
     setDefaultPermissions(serverDefaultPermissions);
+    setAnonymousPermissions(serverAnonymousPermissions);
+    setBasicPermissions(serverBasicPermissions);
     setPrimaryColorHex(primaryColor);
     setNavColorHex(navColor);
     setRecommendedHosts(serverRecommendedHosts);
 
   }, [serverConfiguration]);
 
-  const defaultPermissions = _defaultPermissions || [];
-  function selectDefaultPermission(permission: Permission) {
-    if (defaultPermissions.includes(permission)) {
-      setDefaultPermissions(defaultPermissions.filter(p => p != permission));
+  function selectDefaultPermission(permission: Permission, permissionSet: Permission[], setPermissionSet: (permissions: Permission[]) => void) {
+    if (permissionSet.includes(permission)) {
+      setPermissionSet(permissionSet.filter(p => p != permission));
     } else {
-      setDefaultPermissions([...defaultPermissions, permission]);
+      setPermissionSet([...permissionSet, permission]);
     }
   }
-  function deselectDefaultPermission(permission: Permission) {
-    setDefaultPermissions(defaultPermissions.filter(p => p != permission));
+  function deselectDefaultPermission(permission: Permission, permissionSet: Permission[], setPermissionSet: (permissions: Permission[]) => void) {
+    setPermissionSet(permissionSet.filter(p => p != permission));
   }
-  const configurableUserPermissions = [
-    Permission.VIEW_USERS,
-    Permission.PUBLISH_USERS_LOCALLY,
-    Permission.PUBLISH_USERS_GLOBALLY,
-    Permission.VIEW_GROUPS,
-    Permission.CREATE_GROUPS,
-    Permission.VIEW_MEDIA,
-    Permission.CREATE_MEDIA,
-    Permission.PUBLISH_MEDIA_LOCALLY,
-    Permission.PUBLISH_MEDIA_GLOBALLY,
-    Permission.PUBLISH_GROUPS_LOCALLY,
-    Permission.PUBLISH_GROUPS_GLOBALLY,
-    Permission.JOIN_GROUPS,
-    Permission.VIEW_POSTS,
-    Permission.CREATE_POSTS,
-    Permission.PUBLISH_POSTS_LOCALLY,
-    Permission.PUBLISH_POSTS_GLOBALLY,
-    Permission.VIEW_EVENTS,
-    Permission.CREATE_EVENTS,
-    Permission.PUBLISH_EVENTS_LOCALLY,
-    Permission.PUBLISH_EVENTS_GLOBALLY,
-  ];
   const defaultPermissionsEditorProps: PermissionsEditorProps = {
     selectablePermissions: configurableUserPermissions,
     selectedPermissions: defaultPermissions,
-    selectPermission: selectDefaultPermission,
-    deselectPermission: deselectDefaultPermission,
+    selectPermission: (p) => selectDefaultPermission(p, defaultPermissions, setDefaultPermissions),
+    deselectPermission: (p) => deselectDefaultPermission(p, defaultPermissions, setDefaultPermissions),
+    editMode: isAdmin ?? false
+  };
+  const anonymousPermissionsEditorProps: PermissionsEditorProps = {
+    selectablePermissions: configurableUserPermissions,
+    selectedPermissions: anonymousPermissions,
+    selectPermission: (p) => selectDefaultPermission(p, anonymousPermissions, setAnonymousPermissions),
+    deselectPermission: (p) => deselectDefaultPermission(p, anonymousPermissions, setAnonymousPermissions),
+    editMode: isAdmin ?? false
+  };
+  const basicPermissionsEditorProps: PermissionsEditorProps = {
+    selectablePermissions: configurableUserPermissions,
+    selectedPermissions: basicPermissions,
+    selectPermission: (p) => selectDefaultPermission(p, basicPermissions, setBasicPermissions),
+    deselectPermission: (p) => deselectDefaultPermission(p, basicPermissions, setBasicPermissions),
     editMode: isAdmin ?? false
   };
 
@@ -191,6 +206,9 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       },
       recommendedServerHosts: recommendedHosts ?? [],
     },
+    defaultUserPermissions: defaultPermissions,
+    anonymousUserPermissions: anonymousPermissions,
+    basicUserPermissions: basicPermissions,
     externalCdnConfig: externalCdnConfig
   };
 
@@ -222,7 +240,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   }
   const windowHeight = useWindowDimensions().height;
   const [querySection, setQuerySection] = useParam('section');
-  type AboutSection = 'about' | 'theme' | 'settings' | 'cdn';
+  type AboutSection = 'about' | 'theme' | 'settings' | 'federation' | 'cdn';
   const section = (querySection ?? 'about') as AboutSection;
   function sectionButton(sectionName: AboutSection, title: string, icon: React.JSX.Element) {
     return <SubnavButton title={title}
@@ -235,7 +253,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     setRecommendedHosts([...(recommendedHosts ?? []), newRecommendedHostName.toLowerCase()]);
     setNewRecommendedHostName('');
   }
-  // const recommendedHostServers = useTypedSelector((state: RootState) => state.servers!.enti);// recommendedHosts?.map(host => ({ host }));
+  // const recommendedHostServers = useRootSelector((state: RootState) => state.servers!.enti);// recommendedHosts?.map(host => ({ host }));
   return (
     <TabsNavigation appSection={AppSection.INFO} onlyShowServer={server}>
       <StickyBox offsetTop={56} className='blur' style={{ width: '100%', zIndex: 10 }}>
@@ -243,6 +261,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           {sectionButton('about', 'About', <Info color={section === 'about' ? navAnchorColor : undefined} />)}
           {sectionButton('theme', 'Theme', <Palette color={section === 'theme' ? navAnchorColor : undefined} />)}
           {sectionButton('settings', 'Settings', <Cog color={section === 'settings' ? navAnchorColor : undefined} />)}
+          {sectionButton('federation', 'Federation', <Network color={section === 'federation' ? navAnchorColor : undefined} />)}
           {/* {sectionButton('servers', 'Servers', <Server color={section === 'servers' ? primaryAnchorColor : undefined} />)} */}
           {sectionButton('cdn', 'CDN', <Code color={section === 'cdn' ? navAnchorColor : undefined} />)}
         </XStack>
@@ -301,7 +320,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         iconAfter={<TabletSmartphone size='$1' />}>
                         <Heading size='$1' color={navTextColor}>Flutter UI</Heading>
                       </Button>
-                      
+
                       {githubVersion
                         ? <XStack ml='auto' mb='$2'>
                           <Button {...githubLink} target='_blank' size='$2' ml='$2'   {...themedButtonBackground(navColor, navTextColor)}
@@ -435,6 +454,22 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
                 {section === 'settings' ? <>
                   <Heading size='$9' als='center' mt='$3'>Server Settings</Heading>
+                  <YStack space='$3' mt='$3'>
+                    {<PermissionsEditor label='Default User Permissions'
+                      {...defaultPermissionsEditorProps} />}
+
+                    {<PermissionsEditor label='Anonymous User Permissions'
+                      {...anonymousPermissionsEditorProps} />}
+
+                    {<PermissionsEditor label='Basic User Permissions'
+                      {...basicPermissionsEditorProps} />}
+                  </YStack>
+
+                </>
+                  : undefined}
+
+                {section === 'federation' ? <>
+                  <Heading size='$9' als='center' mt='$3'>Federation</Heading>
                   <Heading size='$4' mt='$3'>Federated Servers</Heading>
                   <Paragraph size='$1'>
                     Jonline servers can federate with each other, which surfaces to community users
@@ -495,10 +530,6 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       </Button>
                     </>
                     : undefined}
-
-                  {<PermissionsEditor label='Default User Permissions'
-                    {...defaultPermissionsEditorProps} />}
-
                 </>
                   : undefined}
 

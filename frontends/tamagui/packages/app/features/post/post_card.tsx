@@ -1,4 +1,4 @@
-import { deletePost, loadPostReplies, RootState, updatePost, useAccount, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { deletePost, loadPostReplies, RootState, updatePost, useAccount, useCredentialDispatch, useServerTheme, useRootSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
@@ -59,7 +59,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const currentUser = useAccount()?.user;
   const { server, primaryColor, primaryBgColor, navAnchorColor: navColor, primaryAnchorColor, navAnchorColor } = useServerTheme();
-  const postsStatus = useTypedSelector((state: RootState) => state.posts.status);
+  const postsStatus = useRootSelector((state: RootState) => state.posts.status);
   const [editing, _setEditing] = useState(false);
   function setEditing(value: boolean) {
     _setEditing(value);

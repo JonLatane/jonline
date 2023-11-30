@@ -14,7 +14,7 @@ import { loadGroupPostsPage } from "./group_actions";
 import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, locallyUpsertPost, replyToPost, updatePost } from './post_actions';
 import { loadUserPosts } from "./user_actions";
 import { loadEvent, loadEventsPage } from "./event_actions";
-import { GroupedPages } from "../pagination";
+import { GroupedPages, PaginatedIds } from "../pagination";
 import { eventsAdapter, eventsSlice } from './events_state';
 import { store } from "../store";
 export * from './post_actions';
@@ -99,7 +99,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       state.createPostStatus = "posted";
       postsAdapter.upsertOne(state, action.payload);
       if (publicVisibility(action.payload.visibility)) {
-        state.postPages[defaultPostListingType] = state.postPages[defaultPostListingType] || {};
+        state.postPages[defaultPostListingType] = state.postPages[defaultPostListingType] || [];
         const firstPage = state.postPages[defaultPostListingType][0] || [];
         state.postPages[defaultPostListingType][0] = [action.payload.id, ...firstPage];
       }
@@ -202,8 +202,8 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultPostListingType;
 
-      if (!state.postPages[listingType] || page === 0) state.postPages[listingType] = {};
-      const postPages: Dictionary<string[]> = state.postPages[listingType]!;
+      if (!state.postPages[listingType] || page === 0) state.postPages[listingType] = [];
+      const postPages: PaginatedIds = state.postPages[listingType]!;
       // Sensible approach:
       // postPages[page] = postIds;
 

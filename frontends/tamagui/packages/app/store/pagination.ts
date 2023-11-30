@@ -26,7 +26,7 @@ export type GroupedPages = Dictionary<PaginatedIds>;
  * We trust that the server will return the same consistent pagination data, and if not, "refresh the page to see the updated version"
  * is a reasonable fallback.
  */
-export type PaginatedIds = Dictionary<string[]>;
+export type PaginatedIds = string[][];
 
 function getGroupsPage(groups: GroupsState, listingType: GroupListingType, page: number): Group[] {
   const pageGroupIds: string[] = (groups.pages[listingType] ?? {})[page] ?? [];

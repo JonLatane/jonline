@@ -1,4 +1,4 @@
-import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useTypedSelector } from "app/store";
+import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useRootSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { Permission, Post } from "@jonline/api";
@@ -21,9 +21,9 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, navColor } = useServerTheme();
   const media = useMedia();
-  const author = useTypedSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
-  // const authorAvatar = useTypedSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
-  const authorLoadFailed = useTypedSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
+  const author = useRootSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
+  // const authorAvatar = useRootSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
+  const authorLoadFailed = useRootSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   const authorLink = useLink({
@@ -98,7 +98,9 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
         </Heading>
       </XStack>
       <XStack>
-        <DateViewer date={post.createdAt} updatedDate={post.updatedAt} />
+        <XStack mr='$2'>
+          <DateViewer date={post.createdAt} updatedDate={post.updatedAt} />
+        </XStack>
         {author && hasAdminPermission(author)
           ? <PermissionIndicator permission={Permission.ADMIN} /> : undefined}
         {author && hasPermission(author, Permission.RUN_BOTS)

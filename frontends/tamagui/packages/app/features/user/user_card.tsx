@@ -1,10 +1,10 @@
 import { Permission, User } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Heading, Image, Input, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
 import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { followUnfollowUser, isUserLocked, respondToFollowRequest, RootState, useCredentialDispatch, useLocalApp, useServerTheme, useTypedSelector } from "app/store";
+import { followUnfollowUser, isUserLocked, respondToFollowRequest, RootState, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation_utils";
 import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
 import React from "react";
@@ -33,7 +33,7 @@ export function useFullAvatarHeight(): number {
 export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: inputUsername, setUsername, avatar: inputAvatar, setAvatar, editable, editingDisabled }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const media = useMedia();
-  const app = useLocalApp();
+  const app = useLocalConfiguration();
 
   const [username, avatar] = editable ? [inputUsername, inputAvatar]
     : [user.username, user.avatar];
@@ -46,7 +46,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const followRequested = user.currentUserFollow && !following;
   const followsCurrentUser = passes(user.targetCurrentUserFollow?.targetUserModeration);
   const followRequestReceived = user.targetCurrentUserFollow && !followsCurrentUser;
-  const isLocked = useTypedSelector((state: RootState) => isUserLocked(state.users, user.id));
+  const isLocked = useRootSelector((state: RootState) => isUserLocked(state.users, user.id));
   const userLink = useLink({ href: `/${user.username}` });
   const fullAvatarHeight = useFullAvatarHeight();
 
@@ -92,9 +92,13 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         :
         <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>}
     </YStack>
-    {app.showUserIds ? <XStack o={0.6}>
-      <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
-    </XStack> : undefined}
+    <YStack jc='flex-end' ai='flex-end' ac='flex-end'>
+      <Paragraph size='$1'>Joined</Paragraph>
+      <DateViewer date={user.createdAt} updatedDate={user.updatedAt} />
+      {app.showUserIds ? <XStack o={0.6}>
+        <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
+      </XStack> : undefined}
+    </YStack>
   </XStack>;
 
 

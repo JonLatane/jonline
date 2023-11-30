@@ -4,7 +4,7 @@ export * from "./event_actions";
 export * from "./events_state";
 export * from "./group_actions";
 export * from "./groups_state";
-export * from "./local_app_state";
+export * from "./local_app_configuration";
 export * from "./media_state";
 export * from "./media_actions";
 export * from "./post_actions";

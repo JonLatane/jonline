@@ -1,5 +1,5 @@
 import { Heading, Label, Paragraph, Switch, XStack, YStack } from '@jonline/ui';
-import { useAccount, useTypedDispatch } from 'app/store';
+import { useAccount, useAppDispatch } from 'app/store';
 import React from 'react';
 
 
@@ -19,7 +19,7 @@ export function ShareableToggle({
   readOnly = false,
   autoDispatch = false
 }: ShareableToggleProps) {
-  const dispatch = useTypedDispatch();
+  const dispatch = useAppDispatch();
   const value = !!optionalValue;
   const [name] = React.useState(() => `shareable-${_key++}`);
 

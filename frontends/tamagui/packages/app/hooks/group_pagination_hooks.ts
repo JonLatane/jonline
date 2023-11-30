@@ -1,5 +1,5 @@
 import { Group, GroupListingType } from "@jonline/api";
-import { RootState, getGroupPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, useCredentialDispatch, useTypedSelector } from "app/store";
+import { RootState, getGroupPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, useCredentialDispatch, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { finishPagination } from './post_pagination_hooks';
 
@@ -7,7 +7,7 @@ export type GroupPageParams = { onLoaded?: () => void };
 
 export function useGroupPages(listingType: GroupListingType, throughPage: number, params?: GroupPageParams) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const groupsState = useTypedSelector((state: RootState) => state.groups);
+  const groupsState = useRootSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
   const groups: Group[] = getGroupPages(groupsState, listingType, throughPage);
