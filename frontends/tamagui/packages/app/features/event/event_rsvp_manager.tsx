@@ -640,67 +640,67 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </Button>
                 : undefined} */}
 
-            {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0
-              ? <>
-                <Dialog>
-                  <Dialog.Trigger asChild>
-                    <Button f={1} transparent mx='auto' color={navAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
-                      New Anonymous RSVP
-                    </Button>
-                  </Dialog.Trigger>
-                  <Dialog.Portal zi={1000011}>
-                    <Dialog.Overlay
-                      key="overlay"
-                      animation="quick"
-                      o={0.5}
-                      enterStyle={{ o: 0 }}
-                      exitStyle={{ o: 0 }}
-                    />
-                    <Dialog.Content
-                      bordered
-                      elevate
-                      key="content"
-                      animation={[
-                        'quick',
-                        {
-                          opacity: {
-                            overshootClamping: true,
+              {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0
+                ? <>
+                  <Dialog>
+                    <Dialog.Trigger asChild>
+                      <Button f={1} transparent mx='auto' color={navAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
+                        New Anonymous RSVP
+                      </Button>
+                    </Dialog.Trigger>
+                    <Dialog.Portal zi={1000011}>
+                      <Dialog.Overlay
+                        key="overlay"
+                        animation="quick"
+                        o={0.5}
+                        enterStyle={{ o: 0 }}
+                        exitStyle={{ o: 0 }}
+                      />
+                      <Dialog.Content
+                        bordered
+                        elevate
+                        key="content"
+                        animation={[
+                          'quick',
+                          {
+                            opacity: {
+                              overshootClamping: true,
+                            },
                           },
-                        },
-                      ]}
-                      m='$3'
-                      enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                      exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                      x={0}
-                      scale={1}
-                      opacity={1}
-                      y={0}
-                    >
-                      <YStack space>
-                        <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
-                        <Dialog.Description>
-                          Make sure you've saved <Anchor href={anonymousRsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
-                        </Dialog.Description>
+                        ]}
+                        m='$3'
+                        enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                        exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                        x={0}
+                        scale={1}
+                        opacity={1}
+                        y={0}
+                      >
+                        <YStack space>
+                          <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
+                          <Dialog.Description>
+                            Make sure you've saved <Anchor href={anonymousRsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
+                          </Dialog.Description>
 
-                        <XStack space="$3" jc="flex-end">
-                          <Dialog.Close asChild>
-                            <Button>Cancel</Button>
-                          </Dialog.Close>
-                          <Dialog.Close asChild>
-                            {/* <Theme inverse> */}
-                            <Button color={primaryAnchorColor}
-                              onPress={removeAnonymousAuthToken}>
-                              Create
-                            </Button>
-                            {/* </Theme> */}
-                          </Dialog.Close>
-                        </XStack>
-                      </YStack>
-                    </Dialog.Content>
-                  </Dialog.Portal>
-                </Dialog>
-              </>
-              : undefined}
+                          <XStack space="$3" jc="flex-end">
+                            <Dialog.Close asChild>
+                              <Button>Cancel</Button>
+                            </Dialog.Close>
+                            <Dialog.Close asChild>
+                              {/* <Theme inverse> */}
+                              <Button color={primaryAnchorColor}
+                                onPress={removeAnonymousAuthToken}>
+                                Create
+                              </Button>
+                              {/* </Theme> */}
+                            </Dialog.Close>
+                          </XStack>
+                        </YStack>
+                      </Dialog.Content>
+                    </Dialog.Portal>
+                  </Dialog>
+                </>
+                : undefined}
               {editingAttendance //&& !isPreview
                 ? <Dialog>
                   <Dialog.Trigger asChild>
@@ -784,43 +784,33 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               {hasPendingAttendances
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' fontWeight='700'>{isPreview ? 'Pending' : isEventOwner ? 'Pending Your Approval' : 'Pending Owner Approval'}</Paragraph>
-                  {loaded
-                    ? <Paragraph size='$1' ml='auto'>
-                      {formatCount(pendingRsvpCount, pendingAttendeeCount)}
-                    </Paragraph>
-                    : <Paragraph size='$1' ml='auto'>...</Paragraph>}
+                  <Paragraph size='$1' ml='auto'>
+                    {formatCount(pendingRsvpCount, pendingAttendeeCount)}
+                  </Paragraph>
                 </XStack>
                 : undefined}
               {goingRsvpCount > 0 ||
                 (!hasPendingAttendances && interestedRsvpCount === 0 && invitedRsvpCount === 0)
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' color={primaryAnchorColor}>Going</Paragraph>
-                  {loaded
-                    ? <Paragraph size='$1' ml='auto'>
-                      {formatCount(goingRsvpCount, goingAttendeeCount)}
-                    </Paragraph>
-                    : <Paragraph size='$1' ml='auto'>...</Paragraph>}
+                  <Paragraph size='$1' ml='auto'>
+                    {formatCount(goingRsvpCount, goingAttendeeCount)}
+                  </Paragraph>
                 </XStack>
                 : undefined}
               {interestedRsvpCount > 0
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' color={navAnchorColor}>Interested</Paragraph>
-                  {loaded
-                    ? <Paragraph size='$1' ml='auto'>
-                      {formatCount(interestedRsvpCount, interestedAttendeeCount)}
-                    </Paragraph>
-                    : <Paragraph size='$1' ml='auto'>...</Paragraph>}
+                  <Paragraph size='$1' ml='auto'>
+                    {formatCount(interestedRsvpCount, interestedAttendeeCount)}
+                  </Paragraph>
                 </XStack> : undefined}
               {invitedRsvpCount > 0
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' color={navAnchorColor}>Invited</Paragraph>
-                  {/* {loaded
-                    ?  */}
-                    <Paragraph size='$1' ml='auto'>
-                      {formatCount(invitedRsvpCount, invitedAttendeeCount)}
-                    </Paragraph>
-                    {/* : 
-                    <Paragraph size='$1' ml='auto'>...</Paragraph>} */}
+                  <Paragraph size='$1' ml='auto'>
+                    {formatCount(invitedRsvpCount, invitedAttendeeCount)}
+                  </Paragraph>
                 </XStack>
                 : undefined}
             </YStack>
