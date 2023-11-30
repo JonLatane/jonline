@@ -1268,7 +1268,7 @@ Curently, the `optional` counts below are *never* returned by the API.
 | ----- | ---- | ----- | ----------- |
 | allows_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_rsvps`, if set, for this instance. |
 | allows_anonymous_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. |
-| max_attendees | [uint32](#uint32) | optional |  |
+| max_attendees | [uint32](#uint32) | optional | Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported. |
 | going_rsvps | [uint32](#uint32) | optional |  |
 | going_attendees | [uint32](#uint32) | optional |  |
 | interested_rsvps | [uint32](#uint32) | optional |  |
@@ -1284,7 +1284,7 @@ Curently, the `optional` counts below are *never* returned by the API.
 <a name="jonline-GetEventAttendancesRequest"></a>
 
 ### GetEventAttendancesRequest
-
+Request to get RSVP data for an event.
 
 
 | Field | Type | Label | Description |

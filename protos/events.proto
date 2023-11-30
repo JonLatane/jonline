@@ -143,7 +143,7 @@ message EventInstanceRsvpInfo {
   // Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance.
   optional bool allows_anonymous_rsvps = 2;
 
-  
+  // Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported.
   optional uint32 max_attendees = 3;
 
   optional uint32 going_rsvps = 4;
@@ -173,6 +173,7 @@ enum AttendanceStatus {
   NOT_GOING = 3;
 }
 
+// Request to get RSVP data for an event.
 message GetEventAttendancesRequest {
   string event_instance_id = 1;
   optional string anonymous_attendee_auth_token = 2;
