@@ -71,10 +71,12 @@ jobs:
     - run: npm install --global yarn
 
     - name: Get yarn cache directory path
+      working-directory: frontends/tamagui
       id: yarn-cache-dir-path
       run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
     - uses: actions/cache@v3
+      name: Manage Yarn Cache (${{ steps.yarn-cache-dir-path.outputs.dir }})
       id: yarn-cache
       with:
         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -167,10 +169,12 @@ jobs:
     - run: npm install --global yarn
 
     - name: Get yarn cache directory path
+      working-directory: frontends/tamagui
       id: yarn-cache-dir-path
       run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
     - uses: actions/cache@v3
+      name: Manage Yarn Cache (${{ steps.yarn-cache-dir-path.outputs.dir }})
       id: yarn-cache
       with:
         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}

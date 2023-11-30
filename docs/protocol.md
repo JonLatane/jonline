@@ -1176,7 +1176,7 @@ Could be called an &#34;RSVP.&#34; Describes the attendance of a user at an `Eve
 | inviting_user_id | [string](#string) | optional | User who invited the attendee. (Not yet used.) |
 | private_note | [string](#string) |  | Public note for everyone who can see the event to see. |
 | public_note | [string](#string) |  | Private note for the event owner. |
-| moderation | [Moderation](#jonline-Moderation) |  |  |
+| moderation | [Moderation](#jonline-Moderation) |  | Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
 
@@ -1378,9 +1378,9 @@ Wire-identical to [Author](#author), but with a different name to avoid confusio
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| user_id | [string](#string) |  |  |
-| username | [string](#string) | optional |  |
-| avatar | [MediaReference](#jonline-MediaReference) | optional |  |
+| user_id | [string](#string) |  | The user ID of the attendee. |
+| username | [string](#string) | optional | The username of the attendee. |
+| avatar | [MediaReference](#jonline-MediaReference) | optional | The attendee&#39;s user avatar. |
 
 
 

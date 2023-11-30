@@ -209,6 +209,7 @@ message EventAttendance {
   string private_note = 8;
   // Private note for the event owner.
   string public_note = 9;
+  // Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable).
   Moderation moderation = 10;
   google.protobuf.Timestamp created_at = 11;
   optional google.protobuf.Timestamp updated_at = 12;
@@ -233,7 +234,10 @@ message AnonymousAttendee {
 
 // Wire-identical to [Author](#author), but with a different name to avoid confusion.
 message UserAttendee {
+  // The user ID of the attendee.
   string user_id = 1;
+  // The username of the attendee.
   optional string username = 2;
+  // The attendee's user avatar.
   optional MediaReference avatar = 3;
 }
