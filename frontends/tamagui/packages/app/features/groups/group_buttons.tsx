@@ -74,7 +74,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
         // href={`/g/${group.shortname}`}
         transparent={!selected}
         // backgroundColor={selected ? navColor : undefined}
-        {...themedButtonBackground(selected ? navColor : undefined, undefined, disabled ? 0.5 : 1)}
+        {...themedButtonBackground(selected ? navColor : undefined, undefined, (disabled && !extraListItemChrome) ? 0.5 : 1)}
         // size="$8"
         // disabled={appSection == AppSection.HOME}
         disabled={disabled}

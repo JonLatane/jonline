@@ -45,7 +45,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const instanceTokenSeparator = '-';
   // [instanceId, authToken][]
   const anonymousAuthTokens = (_queryAnonAuthToken ?? '').split(tokenPairSeparator)
-    .map(t => t.trim().split(instanceTokenSeparator)) as [string, string][];
+    .map(t => t.trim().split(instanceTokenSeparator))
+    .filter(t => t[0] && t[0].length > 0) as [string, string][];
   function setAnonymousAuthToken(token: string) {
     if (!token) {
       removeAnonymousAuthToken();
@@ -377,14 +378,17 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   }
 
   return showRsvpSection
-    ? <YStack space={isPreview ? '$1' : '$2'} mt={0} p='$3' pb='$2' className={className}
+    ? <YStack mt={0} p='$3' pb='$2' className={className}
       backgroundColor='$backgroundStrong' borderRadius='$5'
     // pt={attendances.length === 0 ? 0 : undefined}
     >
       {/* {isPreview
         ? <></>
         :  */}
-      <XStack className={topButtonsClassName} space='$1' w='100%'>
+      <XStack className={topButtonsClassName} space='$1' //w='100%'
+        borderTopLeftRadius='$5' borderTopRightRadius='$5' backgroundColor='$backgroundHover'
+         mx='$2'
+      >
         {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
           ? <Button disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
             transparent={newRsvpMode != 'user'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'user' ? undefined : 'user')}>
@@ -447,10 +451,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       <AnimatePresence>
         {newRsvpMode !== undefined
           ? <YStack className={formClassName} key='rsvp-section' space='$2'
-            backgroundColor='$backgroundHover' borderRadius='$4'
+            backgroundColor='$backgroundHover' borderRadius={0}
             p='$2'
-            pb={0}
-            mb='$2'
+            mx='$2'
+            pb='$2'
+            // mb='$2'
             animation='standard' {...standardAnimation}>
             {newRsvpMode === 'anonymous'
               ? <>
@@ -770,7 +775,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           : undefined}
         <Button key='rsvp-card-toggle'
           className={showRsvpCardsButtonClassName}
-          mt={isPreview ? undefined : '$2'}
+          // mt={isPreview ? undefined : '$2'}
+          mt='$1'
           h='auto'
           // {hasPendingAttendances
           //   ? (mediaQuery.gtXxxxs ? '$10' : '$15')
@@ -821,7 +827,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           </XStack>
         </Button>
         {showRsvpCards
-          ? <YStack key='attendance-cards' mt='$2' space='$2' animation='standard' {...standardAnimation}>
+          ? <YStack key='attendance-cards' mt='$1' space='$2' animation='standard' borderBottomLeftRadius='$5' borderBottomRightRadius='$5' backgroundColor='$backgroundHover' mx='$2' {...standardAnimation}>
             <AnimatePresence>
               {loadFailed
                 ? <AlertTriangle key='error' />
