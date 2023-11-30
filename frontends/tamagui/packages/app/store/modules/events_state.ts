@@ -240,7 +240,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
 });
 
 const mergeEvent = (state: EventsState, event: Event) => {
-  console.log('merging event', event);
+  // console.log('merging event', event);
   const oldEvent = selectEventById(state, event.id);
   let instances = event.instances;
   for (const instance of instances) {

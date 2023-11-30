@@ -131,10 +131,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   }, [newRsvpMode]);
 
   useEffect(() => {
-    if (instance && !loaded && !loading) {
+    if (instance && !loading && !loaded) {
       setLoading(true);
       setTimeout(async () => {
         try {
+          console.log('loading attendance data with auth token', anonymousAuthToken);
           const client = await getCredentialClient(accountOrServer);
           const data = await client.getEventAttendances({
             eventInstanceId: instance?.id,
@@ -152,7 +153,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
       // setLoaded(true);
     }
-  }, [accountOrServerId(accountOrServer), event?.id, instance?.id, loading, loaded]);
+  }, [accountOrServerId(accountOrServer), event?.id, instance?.id, loading, anonymousAuthToken]);
+
+  useEffect(() => {
+    setLoaded(false);
+  }, [accountOrServerId(accountOrServer), anonymousAuthToken, event?.id, instance?.id]);
 
   const [rsvpStatus, setRsvpStatus] = useState(AttendanceStatus.INTERESTED);
   const [anonymousRsvpName, setAnonymousRsvpName] = useState('');

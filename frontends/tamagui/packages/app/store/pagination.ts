@@ -152,7 +152,7 @@ function getGroupEventsPage(state: RootState, groupId: string, timeFilter: strin
 function instancesToEvents(events: EventsState, instanceIds: string[]) {
   return instanceIds.map(instanceId => {
     const eventId = events.instanceEvents[instanceId];
-    console.log('eventId', eventId, events.instanceEvents)
+    // console.log('eventId', eventId, events.instanceEvents)
     if (!eventId) return undefined;
 
     const event = selectEventById(events, eventId)
