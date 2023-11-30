@@ -255,7 +255,10 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     .filter(a => a.status === AttendanceStatus.GOING)
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
   const [interestedRsvpCount, interestedAttendeeCount] = nonPendingAttendances
-    .filter(a => [AttendanceStatus.INTERESTED, AttendanceStatus.REQUESTED].includes(a.status))
+    .filter(a => a.status === AttendanceStatus.INTERESTED)
+    .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
+  const [invitedRsvpCount, invitedAttendeeCount] = nonPendingAttendances
+    .filter(a => a.status === AttendanceStatus.REQUESTED)
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
 
 
@@ -703,14 +706,25 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   // ? <Paragraph size='$1' ml='auto'>{goingRsvpCount} {goingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {goingAttendeeCount} {goingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
                   : <Paragraph size='$1' ml='auto'>...</Paragraph>}
               </XStack>
-              <XStack w='100%' flexWrap="wrap">
-                <Paragraph size='$1' color={navAnchorColor}>Maybe</Paragraph>
-                {loaded
-                  ? <Paragraph size='$1' ml='auto'>
-                    {formatCount(interestedRsvpCount, interestedAttendeeCount)}
-                  </Paragraph>
-                  : <Paragraph size='$1' ml='auto'>...</Paragraph>}
-              </XStack>
+              {interestedRsvpCount > 0
+                ? <XStack w='100%' flexWrap="wrap">
+                  <Paragraph size='$1' color={navAnchorColor}>Interested</Paragraph>
+                  {loaded
+                    ? <Paragraph size='$1' ml='auto'>
+                      {formatCount(interestedRsvpCount, interestedAttendeeCount)}
+                    </Paragraph>
+                    : <Paragraph size='$1' ml='auto'>...</Paragraph>}
+                </XStack> : undefined}
+              {invitedRsvpCount > 0
+                ? <XStack w='100%' flexWrap="wrap">
+                  <Paragraph size='$1' color={navAnchorColor}>Invited</Paragraph>
+                  {loaded
+                    ? <Paragraph size='$1' ml='auto'>
+                      {formatCount(invitedRsvpCount, invitedAttendeeCount)}
+                    </Paragraph>
+                    : <Paragraph size='$1' ml='auto'>...</Paragraph>}
+                </XStack>
+                : undefined}
             </YStack>
             <XStack animation='quick' my='auto' ml='$2' rotate={showRsvpCards ? '90deg' : '0deg'}>
               <ChevronRight />
