@@ -2,8 +2,8 @@ import { accountOrServerId, getCredentialClient, useCredentialDispatch, useLocal
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from "@jonline/ui";
-import { AlertTriangle, Check, ChevronDown, ChevronRight, Edit, Plus } from "@tamagui/lucide-icons";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, XStack, YStack, ZStack, standardAnimation, useDebounce, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
+import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
@@ -40,9 +40,42 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const { account } = accountOrServer;
   const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
 
-  const [queryAnonAuthToken, setQueryAnonAuthToken] = useParam('anonymousAuthToken');
+  const [_queryAnonAuthToken, _setQueryAnonAuthToken] = useParam('anonymousAuthToken');
+  const tokenPairSeparator = '--';
+  const instanceTokenSeparator = '-';
+  // [instanceId, authToken][]
+  const anonymousAuthTokens = (_queryAnonAuthToken ?? '').split(tokenPairSeparator)
+    .map(t => t.trim().split(instanceTokenSeparator)) as [string, string][];
+  function setAnonymousAuthToken(token: string) {
+    if (!token) {
+      removeAnonymousAuthToken();
+      return;
+    };
+
+    const updatedTokens = [
+      ...anonymousAuthTokens.filter(t => t[0] != instance.id)
+        .map(t => t.join(instanceTokenSeparator)),
+      `${instance.id}${instanceTokenSeparator}${token}`
+    ];
+    _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
+  }
+  function removeAnonymousAuthToken() {
+    const updatedTokens = anonymousAuthTokens.filter(t => instance.id && t[0] === instance.id);
+    _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
+  }
   const [querySection, setQuerySection] = useParam('section');
-  const anonymousAuthToken = queryAnonAuthToken ?? '';
+  const firstAuthToken = anonymousAuthTokens[0];
+  useEffect(() => {
+    // console.log("firstAuthToken", firstAuthToken);
+    if (firstAuthToken && firstAuthToken[0].length > 0 && !firstAuthToken[1]) {
+      const updatedTokens = [
+        `${instance.id}${instanceTokenSeparator}${firstAuthToken[0]}`,
+        ...anonymousAuthTokens.slice(1).map(t => t.join(instanceTokenSeparator)),
+      ];
+      _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
+    }
+  }, [firstAuthToken]);
+  const anonymousAuthToken = anonymousAuthTokens.find(t => t[0] === instance.id)?.[1];
 
   const [selfNewRsvpMode, setSelfNewRsvpMode] = useState(undefined as RsvpMode);
   const [newRsvpMode, setNewRsvpMode] = [
@@ -59,8 +92,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     a => account !== undefined && a.userAttendee?.userId === account.user?.id
   );
   const currentAnonRsvp = attendances.find(
-    a => queryAnonAuthToken && queryAnonAuthToken !== '' && a.anonymousAttendee
-      && a.anonymousAttendee?.authToken === queryAnonAuthToken
+    a => anonymousAuthToken && anonymousAuthToken !== '' && a.anonymousAttendee
+      && a.anonymousAttendee?.authToken === anonymousAuthToken
   );
 
   const editingRsvp = newRsvpMode === 'anonymous' ? currentAnonRsvp
@@ -71,6 +104,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [creatingRsvp, setCreatingRsvp] = useState(false);
+  console.log('creatingRsvp', creatingRsvp)
   const [previewingRsvp, setPreviewingRsvp] = useState(false);
 
   const numberOfGuestsOptions = [...Array(52).keys()];
@@ -116,13 +150,13 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     }
   }, [querySection, loaded]);
   useEffect(() => {
-    if (!isPreview && queryAnonAuthToken && queryAnonAuthToken !== '') {
+    if (!isPreview && anonymousAuthToken && anonymousAuthToken !== '') {
       setTimeout(() => {
         setNewRsvpMode?.('anonymous');
       },
         1000)
     }
-  }, [queryAnonAuthToken]);
+  }, [anonymousAuthToken]);
 
   useEffect(() => {
     if (newRsvpMode !== undefined && !isPreview) {
@@ -165,7 +199,20 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const [privateNote, setPrivateNote] = useState('');
   const [numberOfGuests, setNumberOfGuests] = useState(1);
 
-  const canRsvp = (newRsvpMode === 'user' && account?.user) || anonymousRsvpName.length > 0;
+  const hasModifiedRsvp = !!editingRsvp && (
+    editingRsvp?.status != rsvpStatus ||
+    editingRsvp?.numberOfGuests != numberOfGuests ||
+    editingRsvp?.publicNote != publicNote ||
+    editingRsvp?.privateNote != privateNote ||
+    (newRsvpMode === 'anonymous'
+      && currentAnonRsvp !== undefined && anonymousRsvpName !== currentAnonRsvp?.anonymousAttendee?.name));
+  ;
+  const canRsvpWhenStatusSet = ((newRsvpMode === 'user' && account?.user) || anonymousRsvpName.length > 0)
+  const rsvpValid = canRsvpWhenStatusSet
+    && [AttendanceStatus.GOING, AttendanceStatus.INTERESTED, AttendanceStatus.REQUESTED, AttendanceStatus.NOT_GOING,]
+      .includes(editingRsvp?.status ?? AttendanceStatus.UNRECOGNIZED);
+  const canRsvp = editingRsvp
+    && rsvpValid;
 
   const upsertableAttendance = instance ? {
     eventInstanceId: instance.id,
@@ -183,23 +230,44 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   } : undefined;
 
   const [upserting, setUpserting] = useState(false);
+  const [upsertSuccess, setUpsertSuccess] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const toast = useToastController();
   async function upsertRsvp(attendance?: EventAttendance) {
+    // console.log('upserting rsvp', attendance ?? upsertableAttendance);
+    // toast.show('Upserting rsvp');
+    // if (!rsvpValid) {
+    //   toast.show('Please fill out all required fields.', { type: 'error' });
+    //   return
+    // };
+
     setUpserting(true);
+    setUpsertSuccess(false);
 
     console.log('upsert status', (attendance ?? upsertableAttendance)?.status)
     const client = await getCredentialClient(accountOrServer);
     client.upsertEventAttendance((attendance ?? upsertableAttendance)!, client.credential).then((result) => {
+      setUpserting(false);
+      setUpsertSuccess(true);
       updateAttendance(result);
       toast.show('RSVP saved.', { type: 'success' });
 
       if (newRsvpMode === 'anonymous') {
-        setQueryAnonAuthToken(result.anonymousAttendee?.authToken ?? '');
+        if (result.anonymousAttendee?.authToken) {
+          setAnonymousAuthToken(result.anonymousAttendee.authToken);
+        }
       } else {
-        setNewRsvpMode?.(undefined);
+        // setNewRsvpMode?.(undefined);
       }
     }).finally(() => setUpserting(false));
   }
+
+  const pendingUpsertableAttendance = useDebounceValue(upsertableAttendance, 800)
+  useEffect(() => {
+    if (hasModifiedRsvp && !upserting && !deleting && canRsvp) {
+      upsertRsvp();
+    }
+  }, [pendingUpsertableAttendance]);
 
   function updateAttendance(attendance: EventAttendance) {
     setAttendances([
@@ -209,7 +277,6 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   }
 
   const { browseRsvpsFromPreviews } = useLocalConfiguration();
-  const [deleting, setDeleting] = useState(false);
   async function deleteRsvp(attendance: EventAttendance) {
     setDeleting(true);
 
@@ -233,7 +300,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       ]);
       setNewRsvpMode?.(undefined);
       if (attendance.anonymousAttendee !== undefined) {
-        setQueryAnonAuthToken('');
+        removeAnonymousAuthToken();
       }
     }).finally(() => setDeleting(false));
   }
@@ -260,12 +327,6 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const [invitedRsvpCount, invitedAttendeeCount] = nonPendingAttendances
     .filter(a => a.status === AttendanceStatus.REQUESTED)
     .reduce((acc, a) => [acc[0] + 1, acc[1] + a.numberOfGuests], [0, 0]);
-
-
-
-  // const displayedNonPendingAttendances = nonPendingAttendances
-  //   .filter(a => !yourAttendances.some(b => b.id === a.id));
-
 
   const pendingAttendances = sortedAttendances.filter(a => pending(a.moderation));
   const [pendingRsvpCount, pendingAttendeeCount] = pendingAttendances
@@ -295,7 +356,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     ? `${rsvpDetailsBaseLink}&anonymousAuthToken=${currentAnonRsvp.anonymousAttendee?.authToken}`
     : rsvpDetailsBaseLink;
   const rsvpDetailsLink = useLink({ href: rsvpDetailsLinkWithToken });
-  const rsvpLink = `/event/${instance.id}?anonymousAuthToken=${queryAnonAuthToken}`;
+  const anonymousRsvpLink = `/event/${instance.id}?anonymousAuthToken=${anonymousAuthToken}`;
   const isPast = isPastInstance(instance);
 
   function formatCount(rsvpCount: number, attendeeCount: number,) {
@@ -394,7 +455,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     value={anonymousAuthToken}
                     onChange={(data) => { setQueryAnonAuthToken(data.nativeEvent.text) }} />
                   : <Paragraph size='$1' my='auto' f={1}>Invite #{anonymousAuthToken}</Paragraph>} */}
-                {queryAnonAuthToken && queryAnonAuthToken.length > 0 && !currentAnonRsvp && !isPreview
+                {anonymousAuthToken && anonymousAuthToken.length > 0 && !currentAnonRsvp
                   ? <Paragraph size='$2' mx='$4' mb='$2' als='center' ta='center'>
                     Your anonymous RSVP token was not found. Check the link you used to get here, or just create a new anonymous RSVP.
                   </Paragraph>
@@ -416,7 +477,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 ? <Heading my='auto' f={1}>{account?.user?.username}</Heading>
                 : undefined}
 
-            {newRsvpMode === 'anonymous' && !currentAnonRsvp//!queryAnonAuthToken
+            {newRsvpMode === 'anonymous' && !currentAnonRsvp//!anonymousAuthToken
               ? <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
                 Event owner approval required.
                 You will be assigned a unique RSVP link.
@@ -425,33 +486,59 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               </Paragraph>
               : undefined}
 
-            <RadioGroup aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
-              disabled={!canRsvp || creatingRsvp} opacity={!canRsvp || creatingRsvp ? 0.5 : 1}
-              onValueChange={v => {
-                setRsvpStatus(parseInt(v));
+            <XStack>
+              <RadioGroup f={1} aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
+                disabled={!canRsvpWhenStatusSet || creatingRsvp}
+                opacity={!canRsvpWhenStatusSet || creatingRsvp ? 0.5 : 1}
+                onValueChange={v => {
+                  setRsvpStatus(parseInt(v));
 
-                if (canRsvp && !upserting && !deleting) {
-                  upsertRsvp({ ...upsertableAttendance as EventAttendance, status: parseInt(v) })
-                  // setTimeout(upsertRsvp, 200);
-                }
-              }}
-              mb='$1'
-              value={rsvpStatus.toString()} name="form" >
-              <XStack alignItems="center" space="$2" flexWrap="wrap" mb={isPreview ? undefined : '$2'}>
-                <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3" {...valueAndLabel(AttendanceStatus.GOING)} />
-                <RadioGroupItemWithLabel color={navAnchorColor} size="$3" {...valueAndLabel(AttendanceStatus.INTERESTED)} />
-                <RadioGroupItemWithLabel size="$3" {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
-              </XStack>
-            </RadioGroup>
+                  if (canRsvpWhenStatusSet && !upserting && !deleting) {
+                    upsertRsvp({ ...upsertableAttendance as EventAttendance, status: parseInt(v) })
+                    // setTimeout(upsertRsvp, 200);
+                  }
+                }}
+                mb='$1'
+                value={rsvpStatus.toString()} name="form" >
+                <XStack alignItems="center" space="$2" flexWrap="wrap" mb={isPreview ? undefined : '$2'}>
+                  <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3"
+                    {...valueAndLabel(AttendanceStatus.GOING)} />
+                  <RadioGroupItemWithLabel color={navAnchorColor} size="$3"
+                    {...valueAndLabel(AttendanceStatus.INTERESTED)} />
+                  <RadioGroupItemWithLabel size="$3"
+                    {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
+                </XStack>
+              </RadioGroup>
+              <ZStack w='$2' h='$2' my='auto' mx='auto'
+                jc='center' ai='center' ac='center'
+              // borderRadius='$4' backgroundColor='$backgroundStrong'
+              >
+                <XStack animation='standard' o={hasModifiedRsvp && !(upserting || loading) ? 1 : 0} mx='auto' my='auto'>
+                  <AlertCircle />
+                </XStack>
+                <XStack animation='standard' o={upserting || loading ? 1 : 0} mx='auto' my='auto'>
+                  <Spinner size='small' />
+                </XStack>
+                <XStack animation='standard' o={editingRsvp && upsertSuccess && !(hasModifiedRsvp || upserting || loading) ? 1 : 0} mx='auto' my='auto'>
+                  <CheckCircle color={primaryAnchorColor} />
+                </XStack>
+
+                <XStack animation='standard' o={editingRsvp && !passes(editingRsvp.moderation) && upsertSuccess && !(hasModifiedRsvp || upserting || loading) ? 1 : 0}
+                  mx='auto' my='auto' transform={[{ translateX: -10 }, { translateY: 10 }]}>
+                  <ShieldAlert size='$1' color={navAnchorColor} />
+                </XStack>
+
+              </ZStack>
+            </XStack>
 
             {!editingRsvp || passes(editingRsvp?.moderation) ? undefined
               : <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
                 {attendanceModerationDescription(editingRsvp.moderation)}
               </Paragraph>}
 
-            {newRsvpMode === 'anonymous' && queryAnonAuthToken && queryAnonAuthToken.length > 0 && currentAnonRsvp
+            {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0 && currentAnonRsvp
               ? <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$1' als='center' ta='center'>
-                Save <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
+                Save <Anchor href={anonymousRsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
               </Paragraph>
               : undefined}
 
@@ -538,12 +625,20 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </YStack>
                 : undefined}
             </AnimatePresence>
-            {newRsvpMode === 'anonymous' && queryAnonAuthToken && queryAnonAuthToken.length > 0
+            <XStack w='100%' space='$2'>
+              {/* {editingAttendance ?
+                <Button mb='$2' f={1} disabled={!canRsvp || upserting || deleting} opacity={canRsvp && !upserting && !deleting ? 1 : 0.5}
+                  onPress={() => upsertRsvp()} color={newRsvpMode === 'anonymous' ? navAnchorColor : primaryAnchorColor}>
+                  Save
+                </Button>
+                : undefined} */}
+
+            {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0
               ? <>
                 <Dialog>
                   <Dialog.Trigger asChild>
-                    <Button transparent mx='auto' color={primaryAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
-                      Create New Anonymous RSVP
+                    <Button f={1} transparent mx='auto' color={navAnchorColor} disabled={upserting || deleting} opacity={!upserting && !deleting ? 1 : 0.5}>
+                      New Anonymous RSVP
                     </Button>
                   </Dialog.Trigger>
                   <Dialog.Portal zi={1000011}>
@@ -577,7 +672,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                       <YStack space>
                         <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
                         <Dialog.Description>
-                          Make sure you've saved <Anchor href={rsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
+                          Make sure you've saved <Anchor href={anonymousRsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
                         </Dialog.Description>
 
                         <XStack space="$3" jc="flex-end">
@@ -587,7 +682,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                           <Dialog.Close asChild>
                             {/* <Theme inverse> */}
                             <Button color={primaryAnchorColor}
-                              onPress={() => setQueryAnonAuthToken(undefined)}>
+                              onPress={removeAnonymousAuthToken}>
                               Create
                             </Button>
                             {/* </Theme> */}
@@ -599,13 +694,6 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </Dialog>
               </>
               : undefined}
-            <XStack w='100%' space='$2'>
-              {editingAttendance ?
-                <Button mb='$2' f={1} disabled={!canRsvp || upserting || deleting} opacity={canRsvp && !upserting && !deleting ? 1 : 0.5}
-                  onPress={() => upsertRsvp()} color={newRsvpMode === 'anonymous' ? navAnchorColor : primaryAnchorColor}>
-                  Save
-                </Button>
-                : undefined}
               {editingAttendance //&& !isPreview
                 ? <Dialog>
                   <Dialog.Trigger asChild>
@@ -693,19 +781,20 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     ? <Paragraph size='$1' ml='auto'>
                       {formatCount(pendingRsvpCount, pendingAttendeeCount)}
                     </Paragraph>
-                    // ? <Paragraph size='$1' ml='auto'>{pendingRsvpCount} {pendingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {pendingAttendeeCount} {pendingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
                     : <Paragraph size='$1' ml='auto'>...</Paragraph>}
                 </XStack>
                 : undefined}
-              <XStack w='100%' flexWrap="wrap">
-                <Paragraph size='$1' color={primaryAnchorColor}>Going</Paragraph>
-                {loaded
-                  ? <Paragraph size='$1' ml='auto'>
-                    {formatCount(goingRsvpCount, goingAttendeeCount)}
-                  </Paragraph>
-                  // ? <Paragraph size='$1' ml='auto'>{goingRsvpCount} {goingRsvpCount === 1 ? 'RSVP' : 'RSVPs'} | {goingAttendeeCount} {goingAttendeeCount === 1 ? 'attendee' : 'attendees'}</Paragraph>
-                  : <Paragraph size='$1' ml='auto'>...</Paragraph>}
-              </XStack>
+              {goingRsvpCount > 0 ||
+                (!hasPendingAttendances && interestedRsvpCount === 0 && invitedRsvpCount === 0)
+                ? <XStack w='100%' flexWrap="wrap">
+                  <Paragraph size='$1' color={primaryAnchorColor}>Going</Paragraph>
+                  {loaded
+                    ? <Paragraph size='$1' ml='auto'>
+                      {formatCount(goingRsvpCount, goingAttendeeCount)}
+                    </Paragraph>
+                    : <Paragraph size='$1' ml='auto'>...</Paragraph>}
+                </XStack>
+                : undefined}
               {interestedRsvpCount > 0
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' color={navAnchorColor}>Interested</Paragraph>
@@ -790,7 +879,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 />;
               })}
 
-              {displayedOthersAttendances.length > 0 && (account || queryAnonAuthToken)
+              {displayedOthersAttendances.length > 0 && (account || anonymousAuthToken)
                 ? <Heading size='$6' mx='auto' key='other-rsvps'
                   animation='standard' pb='$1'
                   {...standardAnimation}>Others' RSVPs</Heading>
@@ -825,13 +914,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     : <></>;
 };
 
+let _key = 1;
 export function RadioGroupItemWithLabel(props: {
   size: SizeTokens
   value: string
   label: string
   color?: string
 }) {
-  const id = `radiogroup-${props.value}`
+  const [id] = useState(() => `radio-group-item-${_key++}`);
   return (
     <XStack f={1} alignItems="center" space="$2">
       <RadioGroup.Item value={props.value} id={id} size={props.size}>
