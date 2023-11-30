@@ -69,6 +69,19 @@ jobs:
         node-version: 18.x
 
     - run: npm install --global yarn
+
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      run: 'echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT'
+
+    - uses: actions/cache@v3
+      id: yarn-cache
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
     - working-directory: frontends/tamagui
       run: yarn install
     - working-directory: frontends/tamagui
@@ -108,8 +121,8 @@ jobs:
       with:
         workspaces: ./backend -> target
         # default key
-        key: jonline-${{ runner.OS }}-github-runner
-        shared-key: jonline-${{ runner.OS }}-github-runner
+        key: jonline-${{ runner.OS }}-github-build
+        shared-key: jonline-${{ runner.OS }}-github-build
 
     - working-directory: backend
       run: cargo build --release
@@ -131,6 +144,13 @@ jobs:
           toolchain: stable
       - uses: arduino/setup-protoc@v2
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          # default key
+          key: jonline-${{ runner.OS }}-github-test
+          shared-key: jonline-${{ runner.OS }}-github-test
       - working-directory: backend
         run: cargo test --all-features
       - working-directory: backend
@@ -145,6 +165,19 @@ jobs:
       with:
         node-version: 18.x
     - run: npm install --global yarn
+
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      run: 'echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT'
+
+    - uses: actions/cache@v3
+      id: yarn-cache
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
     - working-directory: frontends/tamagui
       run: yarn install
     - working-directory: frontends/tamagui
