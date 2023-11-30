@@ -321,13 +321,11 @@ jobs:
   deploy_to_jonlineio:
     name: Deploy to Jonline.io
     if: github.ref == 'refs/heads/main'
-
     needs: 
       - test_rust_server
       - test_flutter_ui
       - test_tamagui_ui
       - build_and_deliver_server
-      - build_and_deliver_preview_generator
     runs-on: ubuntu-latest
 
     steps:
@@ -349,17 +347,11 @@ jobs:
     - name: Save DigitalOcean kubeconfig with short-lived credentials
       run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    - name: Deploy to Server via DigitalOcean Kubernetes
+    - name: Deploy to Jonline.io via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/server.yaml -n jonline
 
     - name: Verify Server deployment
       run: kubectl rollout status deployment/jonline -n jonline
-
-    - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|' deploys/k8s/preview_generator.yaml
-    - name: Deploy to Jonline.io via DigitalOcean Kubernetes
-      run: kubectl apply -f deploys/k8s/preview_generator.yaml -n jonline
-
 
 
   # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server.yaml
@@ -389,17 +381,11 @@ jobs:
     - name: Save DigitalOcean kubeconfig with short-lived credentials
       run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    - name: Deploy to Server via DigitalOcean Kubernetes
+    - name: Deploy to Bull City Social via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/server.yaml -n bullcitysocial
 
     - name: Verify Server deployment
       run: kubectl rollout status deployment/jonline -n bullcitysocial
-
-    - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|' deploys/k8s/preview_generator.yaml
-
-    - name: Deploy Preview Generator
-      run: kubectl apply -f deploys/k8s/preview_generator.yaml -n bullcitysocial
 
   # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server.yaml
   # have the same version number.
@@ -431,11 +417,48 @@ jobs:
     - name: Deploy to Oak City Social via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/server.yaml -n oakcitysocial
 
-    - name: Verify Oak City Social deployment
+    - name: Verify Server deployment
       run: kubectl rollout status deployment/jonline -n oakcitysocial
+
+
+  # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server.yaml
+  # have the same version number.
+  deploy_preview_generator:
+    name: Deploy Preview Generator
+    if: github.ref == 'refs/heads/main'
+
+    needs: 
+      - test_rust_server
+      - test_flutter_ui
+      - test_tamagui_ui
+      - build_and_deliver_server
+      - build_and_deliver_preview_generator
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Extract Versioning Data
+      id: vars
+      run: |-
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    - uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
     - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|' deploys/k8s/preview_generator.yaml
 
-    - name: Deploy Preview Generator
+    - name: Save DigitalOcean kubeconfig with short-lived credentials
+      run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+
+    - name: Deploy to Jonline.io via DigitalOcean Kubernetes
+      run: kubectl apply -f deploys/k8s/preview_generator.yaml -n jonline
+
+    - name: Deploy to Bull City Social via DigitalOcean Kubernetes
+      run: kubectl apply -f deploys/k8s/preview_generator.yaml -n bullcitysocial
+
+    - name: Deploy to Oak City Social via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/preview_generator.yaml -n oakcitysocial
