@@ -428,10 +428,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     needs: 
-      - test_rust_server
-      - test_flutter_ui
-      - test_tamagui_ui
-      - build_and_deliver_server
+      - deploy_to_jonlineio
       - build_and_deliver_preview_generator
     runs-on: ubuntu-latest
 
