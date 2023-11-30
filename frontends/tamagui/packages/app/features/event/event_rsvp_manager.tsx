@@ -2,7 +2,7 @@ import { accountOrServerId, getCredentialClient, useCredentialDispatch, useLocal
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, XStack, YStack, ZStack, standardAnimation, useDebounce, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounce, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
@@ -387,7 +387,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
         :  */}
       <XStack className={topButtonsClassName} space='$1' //w='100%'
         borderTopLeftRadius='$5' borderTopRightRadius='$5' backgroundColor='$backgroundHover'
-         mx='$2'
+        mx='$2'
       >
         {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
           ? <Button disabled={upserting || loading} opacity={upserting || loading ? 0.5 : 1}
@@ -522,32 +522,46 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
                 </XStack>
               </RadioGroup>
-              <ZStack w='$2' h='$2' my='auto' mx='auto'
-                jc='center' ai='center' ac='center'
-              // borderRadius='$4' backgroundColor='$backgroundStrong'
-              >
-                <XStack animation='standard' o={hasModifiedRsvp && !(upserting || loading) ? 1 : 0} mx='auto' my='auto'>
-                  <AlertCircle />
-                </XStack>
-                <XStack animation='standard' o={upserting || loading ? 1 : 0} mx='auto' my='auto'>
-                  <Spinner size='small' />
-                </XStack>
-                <XStack animation='standard' o={editingRsvp && upsertSuccess && !(hasModifiedRsvp || upserting || loading) ? 1 : 0} mx='auto' my='auto'>
-                  <CheckCircle color={primaryAnchorColor} />
-                </XStack>
+              <Tooltip>
+                <Tooltip.Trigger>
+                  <ZStack w='$2' h='$2' my='auto' mx='auto'
+                    jc='center' ai='center' ac='center'
+                  // borderRadius='$4' backgroundColor='$backgroundStrong'
+                  >
+                    <XStack animation='standard' o={hasModifiedRsvp && !(upserting || loading) ? 1 : 0} mx='auto' my='auto'>
+                      <AlertCircle />
+                    </XStack>
+                    <XStack animation='standard' o={upserting || loading ? 1 : 0} mx='auto' my='auto'>
+                      <Spinner size='small' />
+                    </XStack>
+                    <XStack animation='standard' o={editingRsvp && upsertSuccess && !(hasModifiedRsvp || upserting || loading) ? 1 : 0} mx='auto' my='auto'>
+                      <CheckCircle color={primaryAnchorColor} />
+                    </XStack>
 
-                <XStack animation='standard' o={editingRsvp && !passes(editingRsvp.moderation) && upsertSuccess && !(hasModifiedRsvp || upserting || loading) ? 1 : 0}
-                  mx='auto' my='auto' transform={[{ translateX: -10 }, { translateY: 10 }]}>
-                  <ShieldAlert size='$1' color={navAnchorColor} />
-                </XStack>
+                    <XStack animation='standard' o={editingRsvp && !passes(editingRsvp.moderation) && upsertSuccess && !(hasModifiedRsvp || upserting || loading) ? 1 : 0}
+                      mx='auto' my='auto' transform={[{ translateX: -10 }, { translateY: 10 }]}>
+                      <ShieldAlert size='$1' color={navAnchorColor} />
+                    </XStack>
 
-              </ZStack>
+                  </ZStack>
+                </Tooltip.Trigger>
+                {hasModifiedRsvp || (upsertSuccess && editingRsvp)
+                  ? <Tooltip.Content>
+                    <Paragraph>
+                      {hasModifiedRsvp ? 'RSVP has unsaved changes.' :
+                        upsertSuccess && editingRsvp ?
+                          (passes(editingRsvp.moderation) ? 'RSVP saved.' : 'RSVP saved. Hidden from others until event owner approves.')
+                          : undefined}
+                    </Paragraph>
+                  </Tooltip.Content>
+                  : undefined}
+              </Tooltip>
             </XStack>
 
-            {!editingRsvp || passes(editingRsvp?.moderation) ? undefined
+            {/* {!editingRsvp || passes(editingRsvp?.moderation) ? undefined
               : <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
                 {attendanceModerationDescription(editingRsvp.moderation)}
-              </Paragraph>}
+              </Paragraph>} */}
 
             {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0 && currentAnonRsvp
               ? <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$1' als='center' ta='center'>
@@ -575,9 +589,6 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
                       <Select.Value w='100%' placeholder="Choose Visibility" />
                     </Select.Trigger>
-
-
-
 
                     <Select.Content zIndex={200000}>
                       <Select.Viewport minWidth={200} w='100%'>

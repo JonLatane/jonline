@@ -128,7 +128,6 @@ jobs:
     - working-directory: backend
       run: cargo build --release
 
-
     - uses: actions/cache/save@v3
       id: rust-app-cache
       with:
