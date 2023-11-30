@@ -34,17 +34,24 @@ message GetEventsRequest {
   // If set, only return events for which the current user's attendance status matches one of the given statuses. If `attendee_id` is also set,
   // only returns events where the given user's status matches one of the given statuses.
   repeated AttendanceStatus attendance_statuses = 7;
+  // The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   EventListingType listing_type = 10;
 }
 
-// Time filter that simply works on the starts_at and ends_at fields.
+// Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
+// API currently only supports `ends_after`.
 message TimeFilter {
+  // Filter to events that start after the given time.
   optional google.protobuf.Timestamp starts_after = 1;
+  // Filter to events that end after the given time.
   optional google.protobuf.Timestamp ends_after = 2;
+  // Filter to events that start before the given time.
   optional google.protobuf.Timestamp starts_before = 3;
+  // Filter to events that end before the given time.
   optional google.protobuf.Timestamp ends_before = 4;
 }
 
+// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
 enum EventListingType {
   // Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible.
   ALL_ACCESSIBLE_EVENTS = 0;
@@ -54,10 +61,12 @@ enum EventListingType {
   MY_GROUPS_EVENTS = 2;
   // Returns `DIRECT` events that are directly addressed to the user.
   DIRECT_EVENTS = 3;
+  // Returns `SERVER_PUBLIC` and `GLOBAL_PUBLIC` that need moderation.
   EVENTS_PENDING_MODERATION = 4;
 
   // group_id parameter is required for these.
   GROUP_EVENTS = 10;
+  // Returns `LIMITED`, `SERVER_PUBLIC`, and `GLOBAL_PUBLIC` that need moderation.
   GROUP_EVENTS_PENDING_MODERATION = 11;
 }
 
@@ -94,19 +103,29 @@ message Event {
 // To be used for ticketing, RSVPs, etc.
 // Stored as JSON in the database.
 message EventInfo {
+  // Whether to allow RSVPs for the event.
   optional bool allows_rsvps = 1;
+  // Whether to allow anonymous RSVPs for the event.
   optional bool allows_anonymous_rsvps = 2;
-  // No effect unless `allows_rsvps` is true.
+  // Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported.
   optional uint32 max_attendees = 3;
 }
 
+// The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
+// a `Location`, and an optional `Post` (and discussion thread) specific to this particular
+// `EventInstance` in addition to the parent `Event`.
 message EventInstance {
   string id = 1;
   string event_id = 2;
+  // Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`.
   optional Post post = 3;
+  // Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`.
   EventInstanceInfo info = 4;
+  // The time the event starts (UTC/Timestamp format).
   google.protobuf.Timestamp starts_at = 5;
+  // The time the event ends (UTC/Timestamp format).
   google.protobuf.Timestamp ends_at = 6;
+  // The location of the event.
   optional Location location = 7;
 }
 
@@ -116,6 +135,8 @@ message EventInstanceInfo {
   optional EventInstanceRsvpInfo rsvp_info = 1;
 }
 
+// Consolidated type for RSVP info for an `EventInstance`.
+// Curently, the `optional` counts below are *never* returned by the API.
 message EventInstanceRsvpInfo {
   // Overrides `EventInfo.allows_rsvps`, if set, for this instance.
   optional bool allows_rsvps = 1;

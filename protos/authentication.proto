@@ -66,5 +66,6 @@ message AccessTokenResponse {
   // their indicated expiration.
   // See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
   optional ExpirableToken refresh_token = 1;
+  // The new access token.
   ExpirableToken access_token = 2;
 }

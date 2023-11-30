@@ -751,7 +751,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>access_token</td>
           <td><a href="#jonline-ExpirableToken">ExpirableToken</a></td>
           <td></td>
-          <td></td>
+          <td>The new access token.</td>
         </tr>
       </tbody>
     </table>
@@ -2854,24 +2854,29 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>allows_rsvps</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Whether to allow RSVPs for the event.</td>
         </tr>
         <tr>
           <td>allows_anonymous_rsvps</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Whether to allow anonymous RSVPs for the event.</td>
         </tr>
         <tr>
           <td>max_attendees</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td>No effect unless <code>allows_rsvps</code> is true.</td>
+          <td>Limit the max number of attendees. No effect unless <code>allows_rsvps</code> is true. Not yet supported.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-EventInstance"></a></p>
     <h3 id="eventinstance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstance"><span class="octicon octicon-link"></span></a>EventInstance</h3>
+    <p>
+      The time-based component of an <code>Event</code>. Has a <code>starts_at</code> and <code>ends_at</code> time,
+      a <code>Location</code>, and an optional <code>Post</code> (and discussion thread) specific to this particular
+      <code>EventInstance</code> in addition to the parent <code>Event</code>.
+    </p>
     <table>
       <thead>
         <tr>
@@ -2898,31 +2903,31 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>post</td>
           <td><a href="#jonline-Post">Post</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Optional <code>Post</code> containing alternate name/link/description for this particular instance. Its <code>PostContext</code> should be <code>EVENT_INSTANCE</code>.</td>
         </tr>
         <tr>
           <td>info</td>
           <td><a href="#jonline-EventInstanceInfo">EventInstanceInfo</a></td>
           <td></td>
-          <td></td>
+          <td>Additional configuration for this instance of this <code>EventInstance</code> beyond the <code>EventInfo</code> in its parent <code>Event</code>.</td>
         </tr>
         <tr>
           <td>starts_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td></td>
+          <td>The time the event starts (UTC/Timestamp format).</td>
         </tr>
         <tr>
           <td>ends_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td></td>
+          <td>The time the event ends (UTC/Timestamp format).</td>
         </tr>
         <tr>
           <td>location</td>
           <td><a href="#jonline-Location">Location</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The location of the event.</td>
         </tr>
       </tbody>
     </table>
@@ -2952,6 +2957,10 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-EventInstanceRsvpInfo"></a></p>
     <h3 id="eventinstancersvpinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventinstancersvpinfo"><span class="octicon octicon-link"></span></a>EventInstanceRsvpInfo</h3>
+    <p>
+      Consolidated type for RSVP info for an <code>EventInstance</code>.
+      Curently, the <code>optional</code> counts below are <em>never</em> returned by the API.
+    </p>
     <table>
       <thead>
         <tr>
@@ -3114,7 +3123,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>listing_type</td>
           <td><a href="#jonline-EventListingType">EventListingType</a></td>
           <td></td>
-          <td></td>
+          <td>The listing type, e.g. <code>ALL_ACCESSIBLE_EVENTS</code>, <code>FOLLOWING_EVENTS</code>, <code>MY_GROUPS_EVENTS</code>, <code>DIRECT_EVENTS</code>, <code>GROUP_EVENTS</code>, <code>GROUP_EVENTS_PENDING_MODERATION</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -3153,7 +3162,10 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-TimeFilter"></a></p>
     <h3 id="timefilter"><a class="anchor" aria-hidden="true" tabindex="-1" href="#timefilter"><span class="octicon octicon-link"></span></a>TimeFilter</h3>
-    <p>Time filter that simply works on the starts_at and ends_at fields.</p>
+    <p>
+      Time filter that works on the <code>starts_at</code> and <code>ends_at</code> fields of <code>EventInstance</code>.
+      API currently only supports <code>ends_after</code>.
+    </p>
     <table>
       <thead>
         <tr>
@@ -3168,25 +3180,25 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>starts_after</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Filter to events that start after the given time.</td>
         </tr>
         <tr>
           <td>ends_after</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Filter to events that end after the given time.</td>
         </tr>
         <tr>
           <td>starts_before</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Filter to events that start before the given time.</td>
         </tr>
         <tr>
           <td>ends_before</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Filter to events that end before the given time.</td>
         </tr>
       </tbody>
     </table>
@@ -3270,6 +3282,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-EventListingType"></a></p>
     <h3 id="eventlistingtype"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventlistingtype"><span class="octicon octicon-link"></span></a>EventListingType</h3>
+    <p>The listing type, e.g. <code>ALL_ACCESSIBLE_EVENTS</code>, <code>FOLLOWING_EVENTS</code>, <code>MY_GROUPS_EVENTS</code>, <code>DIRECT_EVENTS</code>, <code>GROUP_EVENTS</code>, <code>GROUP_EVENTS_PENDING_MODERATION</code>.</p>
     <table>
       <thead>
         <tr>
@@ -3302,7 +3315,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>EVENTS_PENDING_MODERATION</td>
           <td>4</td>
-          <td></td>
+          <td>Returns <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> that need moderation.</td>
         </tr>
         <tr>
           <td>GROUP_EVENTS</td>
@@ -3312,7 +3325,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>GROUP_EVENTS_PENDING_MODERATION</td>
           <td>11</td>
-          <td></td>
+          <td>Returns <code>LIMITED</code>, <code>SERVER_PUBLIC</code>, and <code>GLOBAL_PUBLIC</code> that need moderation.</td>
         </tr>
       </tbody>
     </table>

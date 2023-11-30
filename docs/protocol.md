@@ -258,7 +258,7 @@ Returned when requesting access tokens.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | refresh_token | [ExpirableToken](#jonline-ExpirableToken) | optional | If a refresh token is returned, it should be stored. Old refresh tokens may expire *before* their indicated expiration. See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation |
-| access_token | [ExpirableToken](#jonline-ExpirableToken) |  |  |
+| access_token | [ExpirableToken](#jonline-ExpirableToken) |  | The new access token. |
 
 
 
@@ -1209,9 +1209,9 @@ Stored as JSON in the database.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| allows_rsvps | [bool](#bool) | optional |  |
-| allows_anonymous_rsvps | [bool](#bool) | optional |  |
-| max_attendees | [uint32](#uint32) | optional | No effect unless `allows_rsvps` is true. |
+| allows_rsvps | [bool](#bool) | optional | Whether to allow RSVPs for the event. |
+| allows_anonymous_rsvps | [bool](#bool) | optional | Whether to allow anonymous RSVPs for the event. |
+| max_attendees | [uint32](#uint32) | optional | Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported. |
 
 
 
@@ -1221,18 +1221,20 @@ Stored as JSON in the database.
 <a name="jonline-EventInstance"></a>
 
 ### EventInstance
-
+The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
+a `Location`, and an optional `Post` (and discussion thread) specific to this particular
+`EventInstance` in addition to the parent `Event`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
 | event_id | [string](#string) |  |  |
-| post | [Post](#jonline-Post) | optional |  |
-| info | [EventInstanceInfo](#jonline-EventInstanceInfo) |  |  |
-| starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| location | [Location](#jonline-Location) | optional |  |
+| post | [Post](#jonline-Post) | optional | Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`. |
+| info | [EventInstanceInfo](#jonline-EventInstanceInfo) |  | Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`. |
+| starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
+| ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
+| location | [Location](#jonline-Location) | optional | The location of the event. |
 
 
 
@@ -1258,7 +1260,8 @@ Stored as JSON in the database.
 <a name="jonline-EventInstanceRsvpInfo"></a>
 
 ### EventInstanceRsvpInfo
-
+Consolidated type for RSVP info for an `EventInstance`.
+Curently, the `optional` counts below are *never* returned by the API.
 
 
 | Field | Type | Label | Description |
@@ -1316,7 +1319,7 @@ Valid GetEventsRequest formats:
 | time_filter | [TimeFilter](#jonline-TimeFilter) | optional | Filters returned `EventInstance`s by time. |
 | attendee_id | [string](#string) | optional | If set, only returns events that the given user is attending. If `attendance_statuses` is also set, returns events where that user&#39;s status is one of the given statuses. |
 | attendance_statuses | [AttendanceStatus](#jonline-AttendanceStatus) | repeated | If set, only return events for which the current user&#39;s attendance status matches one of the given statuses. If `attendee_id` is also set, only returns events where the given user&#39;s status matches one of the given statuses. |
-| listing_type | [EventListingType](#jonline-EventListingType) |  |  |
+| listing_type | [EventListingType](#jonline-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
 
 
 
@@ -1351,15 +1354,16 @@ effectively &#34;compacts&#34; all response into its own internal Events store, 
 <a name="jonline-TimeFilter"></a>
 
 ### TimeFilter
-Time filter that simply works on the starts_at and ends_at fields.
+Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
+API currently only supports `ends_after`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| starts_after | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
-| ends_after | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
-| starts_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
-| ends_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| starts_after | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Filter to events that start after the given time. |
+| ends_after | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Filter to events that end after the given time. |
+| starts_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Filter to events that start before the given time. |
+| ends_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Filter to events that end before the given time. |
 
 
 
@@ -1407,7 +1411,7 @@ in any direction, but:
 <a name="jonline-EventListingType"></a>
 
 ### EventListingType
-
+The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -1415,9 +1419,9 @@ in any direction, but:
 | FOLLOWING_EVENTS | 1 | Returns events from users the user is following. |
 | MY_GROUPS_EVENTS | 2 | Returns events from any group the user is a member of. |
 | DIRECT_EVENTS | 3 | Returns `DIRECT` events that are directly addressed to the user. |
-| EVENTS_PENDING_MODERATION | 4 |  |
+| EVENTS_PENDING_MODERATION | 4 | Returns `SERVER_PUBLIC` and `GLOBAL_PUBLIC` that need moderation. |
 | GROUP_EVENTS | 10 | group_id parameter is required for these. |
-| GROUP_EVENTS_PENDING_MODERATION | 11 |  |
+| GROUP_EVENTS_PENDING_MODERATION | 11 | Returns `LIMITED`, `SERVER_PUBLIC`, and `GLOBAL_PUBLIC` that need moderation. |
 
 
  
