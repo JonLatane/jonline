@@ -78,9 +78,9 @@ jobs:
       id: yarn-cache
       with:
         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-jonline-tamagui-build-${{ hashFiles('**/yarn.lock') }}
+        key: jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-jonline-tamagui-build-${{ hashFiles('**/yarn.lock') }}
+          jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
     - working-directory: frontends/tamagui
       run: yarn install
@@ -174,9 +174,9 @@ jobs:
       id: yarn-cache
       with:
         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-jonline-tamagui-test-${{ hashFiles('**/yarn.lock') }}
+        key: jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-jonline-tamagui-test-${{ hashFiles('**/yarn.lock') }}
+          jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
     - working-directory: frontends/tamagui
       run: yarn install
