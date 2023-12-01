@@ -3,7 +3,7 @@ import { Moon, Sun } from '@tamagui/lucide-icons';
 import { setDarkMode, setDarkModeAuto, useAppDispatch, useLocalConfiguration } from 'app/store';
 import React from 'react';
 
-const doesPlatformPreferDarkMode = () =>
+export const doesPlatformPreferDarkMode = () =>
   window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 export function DarkModeToggle({ }) {
