@@ -48,8 +48,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     givenSetNewRsvpMode ?? setSelfNewRsvpMode
   ];
 
-  const showRsvpSection = event?.info?.allowsRsvps &&
-    (event?.info?.allowsAnonymousRsvps || hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS));
+  const showRsvpSection = event?.info?.allowsRsvps;// &&
+    //(event?.info?.allowsAnonymousRsvps || hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS));
 
   // const [newRsvpMode, setNewRsvpMode] = useState(undefined as RsvpMode);
   const [attendances, setAttendances] = useState([] as EventAttendance[]);
@@ -272,10 +272,6 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     }).finally(() => setDeleting(false));
   }
 
-  if (!instance) {
-    return <></>;
-  }
-
   const yourAttendances = [currentAnonRsvp, currentRsvp]
     .filter(a => a !== undefined).map(a => a as EventAttendance);
 
@@ -335,8 +331,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     </>;
   }
 
+  if (!instance) {
+    return <></>;
+  }
+
   return showRsvpSection
-    ? <YStack mt={0} p='$3' pb='$2' className={className}
+    ? <YStack mt={0} px='$1' py='$1' className={className}
       backgroundColor='$backgroundStrong' borderRadius='$5'
     // pt={attendances.length === 0 ? 0 : undefined}
     >
@@ -345,7 +345,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
         :  */}
       <XStack className={topButtonsClassName} space='$1' //w='100%'
         borderTopLeftRadius='$5' borderTopRightRadius='$5' backgroundColor='$backgroundHover'
-        mx='$2'
+        mx='$1'
       >
         {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
           ? <Button disabled={busy} opacity={busy ? 0.5 : 1}
@@ -411,7 +411,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           ? <YStack className={formClassName} key='rsvp-section' space='$2'
             backgroundColor='$backgroundHover' borderRadius={0}
             p='$2'
-            mx='$2'
+            mx='$1'
             pb='$2'
             // mb='$2'
             animation='standard' {...standardAnimation}>
@@ -773,7 +773,10 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           </XStack>
         </Button>
         {showRsvpCards
-          ? <YStack key='attendance-cards' mt='$1' space='$2' animation='standard' borderBottomLeftRadius='$5' borderBottomRightRadius='$5' backgroundColor='$backgroundHover' mx='$2' {...standardAnimation}>
+          ? <YStack key='attendance-cards' mt='$1' space='$2' animation='standard' 
+          borderBottomLeftRadius='$5' borderBottomRightRadius='$5' backgroundColor='$backgroundHover' 
+          mx='$1' pt='$1' px='$1'
+           {...standardAnimation}>
             <AnimatePresence>
               {loadFailed
                 ? <AlertTriangle key='error' />

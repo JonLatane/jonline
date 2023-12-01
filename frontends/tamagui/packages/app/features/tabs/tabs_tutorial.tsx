@@ -81,16 +81,6 @@ export function TabsTutorial({ }) {
         </XStack>
         <XStack w='100%' ai='center' space='$2' mt={-4}>
           <YStack my='auto' ai='center' space='$2' mt='$5'>
-            {/* <Tooltip>
-              <Tooltip.Trigger>
-                <HelpCircle size='$2' />
-              </Tooltip.Trigger>
-              <Tooltip.Content>
-                <Paragraph size='$2'>
-                  
-                </Paragraph>
-              </Tooltip.Content>
-            </Tooltip> */}
             <Button ml='$2' {...themedButtonBackground(navColor, navTextColor)} size='$3' p='$1' onPress={gotIt}>
               <Heading size='$1' color={navTextColor}>
                 {hidingStarted ? 'Yes, okay' : 'Got it!'}
@@ -112,11 +102,6 @@ export function TabsTutorial({ }) {
           <Paragraph size='$2'>)</Paragraph>
           <XStack pb='$5' mb='$2' mr={circularAccountsSheet ? '$5' : '$10'}><CornerRightUp size='$4' /></XStack>
         </XStack>
-        {/* <XStack h='100%'>
-          <Button my='auto' ml='$2' {...themedButtonBackground(navColor, navTextColor)} size='$3' p='$1' onPress={() => setShowHelp(false)}>
-            Got it!
-          </Button>
-        </XStack> */}
       </ZStack>
       : undefined}
   </AnimatePresence>;

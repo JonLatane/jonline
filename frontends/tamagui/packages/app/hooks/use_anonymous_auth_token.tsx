@@ -50,7 +50,9 @@ export function useAnonymousAuthToken(eventInstanceId: string) {
       _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
     }
   }, [firstAuthToken]);
-  const anonymousAuthToken = anonymousAuthTokens.find(t => t[0] === eventInstanceId)?.[1];
+
+  const token = anonymousAuthTokens.find(t => t[0] === eventInstanceId)?.[1];
+  const anonymousAuthToken = token && token.length > 0 ? token : undefined;
 
   return { anonymousAuthToken, setAnonymousAuthToken, removeAnonymousAuthToken };
 }

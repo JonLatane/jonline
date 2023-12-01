@@ -50,7 +50,7 @@ export const RsvpCard: React.FC<Props> = ({
     {...standardAnimation}
     key={`attendance-card-${attendance.id}`}
     margin='$0'
-    mx="$2"
+    mx="$1"
     scale={1}
     // opacity={1}
     y={0}

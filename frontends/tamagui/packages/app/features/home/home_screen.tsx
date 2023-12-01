@@ -70,7 +70,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
   // console.log("BaseHomeScreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
 
-  const eventCardWidth = media.gtSm ? 400 : 310;
+  const eventCardWidth = media.gtSm ? 400 : 323;
   return (
     <TabsNavigation
       customHomeAction={selectedGroup ? undefined : onHomePressed}

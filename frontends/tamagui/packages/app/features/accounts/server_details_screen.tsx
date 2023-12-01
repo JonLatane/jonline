@@ -475,7 +475,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     Jonline servers can federate with each other, which surfaces to community users
                     as "recommended servers" in the account section of their UI. In this way, servers
                     don't really need to talk to each other much; the federation sits mostly on the client-side
-                    and is backed solely by DNS names and DNS-based security.
+                    and is backed solely by DNS names and DNS-based security{window.location.toString().startsWith('https') ? ' (along with TLS, of course)' : ''}.
                   </Paragraph>
                   {(recommendedHosts?.length ?? 0) === 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
                     No recommended servers.
