@@ -61,7 +61,7 @@ export const RsvpCard: React.FC<Props> = ({
         <YStack f={1}>
           {anonymousAttendee
             ? <>
-              <Paragraph size='$1'>Anonymous Attendee</Paragraph>
+              <Paragraph size='$1'>Anonymous</Paragraph>
               <Heading size='$7'>{anonymousAttendee.name}</Heading>
             </>
             : <>
