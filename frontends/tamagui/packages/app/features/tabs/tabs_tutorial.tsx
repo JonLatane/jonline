@@ -81,7 +81,7 @@ export function TabsTutorial({ }) {
         </XStack>
         <XStack w='100%' ai='center' space='$2' mt={-4}>
           <YStack my='auto' ai='center' space='$2' mt='$5'>
-            <Button ml='$2' {...themedButtonBackground(navColor, navTextColor)} size='$3' p='$1' onPress={gotIt}>
+            <Button ml='$3' {...themedButtonBackground(navColor, navTextColor)} size='$3' p='$1' onPress={gotIt}>
               <Heading size='$1' color={navTextColor}>
                 {hidingStarted ? 'Yes, okay' : 'Got it!'}
               </Heading>
