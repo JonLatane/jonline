@@ -247,7 +247,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                 mr='$2'
                 placeholder={`Group Name (required)`}
                 disabled={savingEdits} opacity={savingEdits || editedName == '' ? 0.5 : 1}
-                autoCapitalize='words'
+                // autoCapitalize='words'
                 value={editedName}
                 onChange={(data) => { setEditedName(data.nativeEvent.text) }} />
               : <Heading my='auto' f={1}>{displayedGroupName}</Heading>}

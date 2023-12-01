@@ -86,7 +86,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           mr='$2'
           placeholder={`Username (required)`}
           disabled={editingDisabled} opacity={editingDisabled || username == '' ? 0.5 : 1}
-          autoCapitalize='words'
+          // autoCapitalize='words'
           value={username}
           onChange={(data) => { setUsername(data.nativeEvent.text) }} />
         :

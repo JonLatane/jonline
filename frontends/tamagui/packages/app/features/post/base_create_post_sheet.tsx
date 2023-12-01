@@ -291,7 +291,7 @@ export function BaseCreatePostSheet({
                     <Input textContentType="name" placeholder={`${entityName} Title (required)`}
                       disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
                       onFocus={() => setShowSettings(false)}
-                      autoCapitalize='words'
+                      // autoCapitalize='words'
                       value={title}
                       onChange={(data) => { setTitle(data.nativeEvent.text) }} />
                     {additionalFields?.(previewPost, group)}

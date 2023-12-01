@@ -284,7 +284,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                       textContentType="name" placeholder={`Group Name (required)`}
                       disabled={disableInputs} opacity={disableInputs || name == '' ? 0.5 : 1}
                       // onFocus={() => setShowSettings(false)}
-                      autoCapitalize='words'
+                      // autoCapitalize='words'
                       value={name}
                       onChange={(data) => { setName(data.nativeEvent.text) }} />
                     <Button p='$0'

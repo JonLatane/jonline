@@ -427,8 +427,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   <Input textContentType="name" f={1}
                     my='$1'
                     placeholder={`Anonymous Guest Name (required)`}
-                    disabled={busy} o={busy || anonymousRsvpName == '' ? 0.5 : 1}
-                    autoCapitalize='words'
+                    /*disabled={busy}*/ o={/*busy ||*/ anonymousRsvpName == '' ? 0.5 : 1}
+                    // autoCapitalize='words'
                     value={anonymousRsvpName}
                     onChange={(data) => { setAnonymousRsvpName(data.nativeEvent.text) }} />
                 </XStack>
@@ -581,13 +581,13 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   </Select>
 
                   <TextArea f={1} pt='$2' my='$1' value={publicNote}
-                    disabled={busy} opacity={busy || publicNote == '' ? 0.5 : 1}
+                    /*disabled={busy}*/ opacity={/*busy ||*/ publicNote == '' ? 0.5 : 1}
                     h={(publicNote?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
                     onChangeText={setPublicNote}
                     placeholder={`Public note (optional). Markdown is supported.`} />
 
                   <TextArea f={1} pt='$2' my='$1' value={privateNote}
-                    disabled={busy} opacity={busy || privateNote == '' ? 0.5 : 1}
+                    /*disabled={busy}*/ opacity={/*busy ||*/ privateNote == '' ? 0.5 : 1}
                     h={(privateNote?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
                     onChangeText={setPrivateNote}
                     placeholder={`Private note (optional). Markdown is supported.`} />

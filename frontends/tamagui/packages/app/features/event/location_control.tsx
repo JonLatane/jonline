@@ -176,7 +176,7 @@ export const LocationControl: React.FC<Props> = ({
   return <XStack space='$1' w='100%'>
     <Input f={1} textContentType="fullStreetAddress" placeholder={`Location (optional)`}
       disabled={disabled} opacity={disabled || '' ? 0.5 : 1}
-      autoCapitalize='words'
+      // autoCapitalize='words'
       value={value}
       onChange={(data) => {
         setCandidateAddress(data.nativeEvent.text);

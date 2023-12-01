@@ -360,7 +360,7 @@ export const EventCard: React.FC<Props> = ({
   const headerLinksEdit = <YStack f={1} space='$2' key='header-links-edit'>
     <Input textContentType="name" placeholder={`Event Title (required)`}
       disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
-      autoCapitalize='words'
+      // autoCapitalize='words'
       value={editedTitle}
       onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
     {postLinkView}
