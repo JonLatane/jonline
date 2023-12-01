@@ -1,7 +1,7 @@
 import { AnimatePresence, Button, ButtonProps, Heading, Paragraph, Tooltip, XStack, YStack, ZStack, standardAnimation, useForceUpdate, useMedia } from "@jonline/ui";
 import { CornerRightUp, HelpCircle, MoveUp } from '@tamagui/lucide-icons';
 import { DarkModeToggle, doesPlatformPreferDarkMode } from "app/components/dark_mode_toggle";
-import { setShowHelp, useAppDispatch, useLocalConfiguration, useServerTheme } from "app/store";
+import { setShowHelp, useAccount, useAccountOrServer, useAppDispatch, useLocalConfiguration, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useEffect, useState } from "react";
 import { GestureResponderEvent } from "react-native";
@@ -25,6 +25,7 @@ export function TabsTutorial({ }) {
   const showHelp = config.showHelp ?? true;
   const dispatch = useAppDispatch();
   const focueUpdate = useForceUpdate();
+  const account = useAccount();
   const [hidingStarted, setHidingStarted] = useState(false);
   const startHidingHelp = () => {
     reallyHideHelp = true;
@@ -48,6 +49,7 @@ export function TabsTutorial({ }) {
   const { primaryColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme();
 
   const circularAccountsSheet = !mediaQuery.gtSm;
+  const accountSheetMarginRight = circularAccountsSheet ? (account?.user?.avatar ? '$5' : '$3') : '$10';
 
   const stackGroupsBelow = true;
 
@@ -104,7 +106,7 @@ export function TabsTutorial({ }) {
               : <DarkModeToggle />}
           </XStack>
           <Paragraph size='$2' fontWeight='bold'>)</Paragraph>
-          <XStack pb='$5' mb='$2' mr={circularAccountsSheet ? '$5' : '$10'}><CornerRightUp size='$4' /></XStack>
+          <XStack pb='$5' mb='$2' mr={accountSheetMarginRight}><CornerRightUp size='$4' /></XStack>
         </XStack>
       </ZStack>
       : undefined}
