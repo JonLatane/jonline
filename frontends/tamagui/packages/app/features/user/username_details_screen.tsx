@@ -1,9 +1,11 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
-import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useServerTheme, useRootSelector, userSaved } from 'app/store';
+import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useRootSelector, useServerTheme } from 'app/store';
 import { pending } from 'app/utils/moderation_utils';
 import { hasAdminPermission } from 'app/utils/permission_utils';
+import { setDocumentTitle } from 'app/utils/set_title';
+import { themedButtonBackground } from 'app/utils/themed_button_background';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { createParam } from 'solito';
@@ -16,7 +18,6 @@ import { AppSection } from '../tabs/features_navigation';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PermissionsEditor, PermissionsEditorProps } from './permissions_editor';
 import { UserCard, useFullAvatarHeight } from './user_card';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 const { useParam } = createParam<{ username: string }>()
 
@@ -151,6 +152,14 @@ export function UsernameDetailsScreen() {
   const [saving, setSaving] = useState(false);
   //= useRootSelector((state: RootState) => state.users.successMessage == userSaved);
   const toast = useToastController()
+
+  useEffect(() => {
+    const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
+    const realName = (user?.realName?.length ?? 0) > 0 ? user?.realName : undefined;
+    let title = realName ?? username ?? 'User';
+    title += ` | Profile | ${serverName}`;
+    setDocumentTitle(title)
+  }, [user, username]);
 
   async function saveUser() {
     if (!canEdit && !user) return;

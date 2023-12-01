@@ -14,6 +14,7 @@ export function TutorialToggle(props: ButtonProps) {
     dispatch(setShowHelp(true));
     reallyHideHelp = false;
     parentOnPress?.(event);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   return <Button {...rest} onPress={onPress} size='$3' p='$1' circular icon={HelpCircle} />;
 }
