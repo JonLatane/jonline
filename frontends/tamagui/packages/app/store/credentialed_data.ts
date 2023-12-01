@@ -21,7 +21,10 @@ export type CredentialDispatch = {
   accountOrServer: AccountOrServer;
 };
 export function useCredentialDispatch(): CredentialDispatch {
-  return { dispatch: useAppDispatch(), accountOrServer: useAccountOrServer() };
+  return {
+    dispatch: useAppDispatch(),
+    accountOrServer: useAccountOrServer()
+  };
 }
 
 let _accessFetchLock = false;

@@ -1,8 +1,8 @@
 import { Group, WebUserInterface } from "@jonline/api";
-import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
-import { Home as HomeIcon } from '@tamagui/lucide-icons';
+import { AnimatePresence, Button, Paragraph, ScrollView, Theme, ToastViewport, XStack, YStack, ZStack, standardAnimation, useMedia } from "@jonline/ui";
+import { CornerRightUp, Home as HomeIcon } from '@tamagui/lucide-icons';
 import { JonlineServer, RootState, markGroupVisit, useServerTheme, useAppDispatch, useRootSelector } from "app/store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { serverID } from '../../store';
@@ -11,6 +11,8 @@ import { GroupContextProvider } from "../groups/group_context";
 import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
+import { DarkModeToggle } from "app/components/dark_mode_toggle";
+import { TabsTutorial } from "./tabs_tutorial";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -74,7 +76,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrinkHomeButton;
   const hasEmoji = serverNameEmoji && serverNameEmoji !== '';
 
-  const testValue = '100%';
+  const circularAccountsSheet = !mediaQuery.gtSm;
 
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <ToastViewport multipleToasts left={0} right={0} bottom={11} />
@@ -87,6 +89,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
             <XStack space="$1" marginVertical={5}>
               <XStack w={5} />
               <Button //size="$4"
+                className="home-button"
                 py={0}
                 px={
                   shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
@@ -105,7 +108,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   : undefined}
               </Button>
               {!scrollGroupsSheet
-                ? <XStack space='$2' ml='$1' my='auto'>
+                ? <XStack space='$2' ml='$1' my='auto' className='main-groups-button'>
                   <GroupsSheet key='main' selectedGroup={selectedGroup}
                     groupPageForwarder={groupPageForwarder} />
                 </XStack>
@@ -117,14 +120,16 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
                   </>
                   : <>
                     <XStack w={1} />
-                    <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                    <XStack className='main-groups-button'>
+                      <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                    </XStack>
                     <XStack w={3} />
                   </>
                 }
                 <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
               </ScrollView>
               <XStack f={1} />
-              <AccountsSheet size='$4' circular={!mediaQuery.gtSm} onlyShowServer={onlyShowServer} />
+              <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} />
               <XStack w={5} />
             </XStack>
 
@@ -132,6 +137,7 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
         </StickyBox>
 
         <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>
+          <TabsTutorial />
           {children}
         </YStack>
       </YStack>

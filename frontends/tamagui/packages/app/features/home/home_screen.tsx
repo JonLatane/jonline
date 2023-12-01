@@ -12,6 +12,7 @@ import PostCard from '../post/post_card';
 import { TabsNavigation } from '../tabs/tabs_navigation';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
+import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -85,7 +86,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
         {eventsLoaded && postsLoaded
           ? <XStack w='100%' px='$3'>
-            <Button onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
+            <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
               <Heading size='$6'>Upcoming Events</Heading>
               <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
                 <ChevronRight />
@@ -101,6 +102,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               {/* <ChevronRight color={navTextColor} /> */}
               {/* </XStack> */}
             </Button>
+            {/* <XStack my='auto'><DarkModeToggle /></XStack> */}
           </XStack>
           : undefined}
         <AnimatePresence>
@@ -124,7 +126,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                   w='100%'>
                   <XStack w={eventCardWidth} space='$2' mx='$2' my='auto'>
                     {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`}
-                     event={event} isPreview horizontal xs />)}
+                      event={event} isPreview horizontal xs />)}
                     <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
                       <YStack ai='center' py='$3' jc='center'>
                         <Heading size='$4'>More</Heading>

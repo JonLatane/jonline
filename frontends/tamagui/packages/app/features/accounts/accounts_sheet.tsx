@@ -1,7 +1,8 @@
 import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Plus, RefreshCw, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineAccount, JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, resetCredentialedData, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, upsertServer, useLoadingCredentialedData, useLocalConfiguration, useServerTheme, useAppDispatch, useRootSelector } from 'app/store';
+import { JonlineAccount, JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setDarkMode, setDarkModeAuto, setViewingRecommendedServers, upsertServer, useAppDispatch, useLoadingCredentialedData, useLocalConfiguration, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils/themed_button_background';
 import React, { useEffect, useState } from 'react';
 import { Platform, TextInput } from 'react-native';
@@ -15,6 +16,7 @@ import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
+import { TutorialToggle } from '../tabs/tabs_tutorial';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -24,6 +26,8 @@ export type AccountsSheetProps = {
   // and should only show accounts for that server.
   onlyShowServer?: JonlineServer;
 }
+const doesPlatformPreferDarkMode = () =>
+  window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }: AccountsSheetProps) {
   const mediaQuery = useMedia();
@@ -193,6 +197,19 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
 
   const userIcon = account ? UserIcon : LogIn;
+  const { darkMode, darkModeAuto } = useLocalConfiguration();
+  const isInDarkMode = darkModeAuto ? doesPlatformPreferDarkMode() : darkMode;
+  const toggleDarkMode = () => {
+    if (darkModeAuto) {
+      dispatch(setDarkModeAuto(false));
+      dispatch(setDarkMode(!doesPlatformPreferDarkMode()));
+    } else if (darkMode == doesPlatformPreferDarkMode()) {
+      dispatch(setDarkModeAuto(true));
+    } else {
+      dispatch(setDarkMode(!darkMode));
+    }
+  }
+  // const darkMode = useLocalConfiguration().darkMode;
   return (
     <>
       {circular && avatarUrl && avatarUrl != ''
@@ -275,10 +292,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
-
-            <Button size='$3' icon={RefreshCw} circular
-              // disabled={isLoadingCredentialedData} opacity={isLoadingCredentialedData ? 0.5 : 1}
-              onPress={resetCredentialedData} />
+            <TutorialToggle onPress={() => setOpen(false)} />
+            <Button size='$3' circular opacity={0} disabled />
             <XStack f={1} />
             <Button
               alignSelf='center'
@@ -287,8 +302,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               icon={ChevronDown}
               onPress={() => setOpen(false)} />
             <XStack f={1} />
+            <DarkModeToggle />
             <SettingsSheet size='$3' />
-
           </XStack>
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center'>
