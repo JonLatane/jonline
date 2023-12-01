@@ -601,7 +601,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   <Dialog>
                     <Dialog.Trigger asChild>
                       <Button f={1} transparent mx='auto' color={navAnchorColor} disabled={busy} opacity={!busy ? 1 : 0.5}>
-                        New Anonymous RSVP
+                        New RSVP
                       </Button>
                     </Dialog.Trigger>
                     <Dialog.Portal zi={1000011}>
@@ -633,7 +633,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                         y={0}
                       >
                         <YStack space>
-                          <Dialog.Title>Create New Anonymous RSVP</Dialog.Title>
+                          <Dialog.Title>New Anonymous RSVP</Dialog.Title>
                           <Dialog.Description>
                             Make sure you've saved <Anchor href={anonymousRsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
                           </Dialog.Description>
