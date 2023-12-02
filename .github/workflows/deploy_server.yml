@@ -447,6 +447,9 @@ jobs:
     needs: 
       - test_rust_binaries
       - push_preview_generator
+      - deploy_to_jonlineio
+      - deploy_to_bullcitysocial
+      - deploy_to_oakcitysocial
     runs-on: ubuntu-latest
 
     steps:
