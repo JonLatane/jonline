@@ -5,6 +5,7 @@
 | ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
 
 - [Jonline Backend](#jonline-backend)
+  - [gRPC implementation](#grpc-implementation)
   - [Build and release management](#build-and-release-management)
   - [Architecture \& Data](#architecture--data)
     - [Marshaling Data](#marshaling-data)
@@ -23,6 +24,9 @@
 
 
 The backend of Jonline is built in Rust, with [Tonic](https://github.com/hyperium/tonic), [Rocket](http://rocket.rs), and [Diesel](https://diesel.rs), atop PostreSQL. A Tonic thread serves up the Jonline gRPC backend on port 27707, while Rocket threads serve up the Flutter Web frontend on ports 80, 8000, and 443 if TLS is configured.
+
+## gRPC implementation
+Jonline's BE uses [Tonic](https://github.com/hyperium/tonic), which uses [Prost](https://github.com/tokio-rs/prost) for Protobuf codegen. The BE implementation is unique from the FE implementations in that the BE codebase does *not* include the generated client/structs/traits/etc. Instead, the `.proto` files themselves integrate into the Cargo build system to essentially function as `.rs` source files to the build system. (In contrast, Flutter/Dart client code is generated into `frontends/flutter/lib/generated`, while TypeScript client code is generated into `frontends/tamagui/packages/api/generated`.)
 
 ## Build and release management
 Most of the high-level Jonline backend build management lives in `../Makefile`.

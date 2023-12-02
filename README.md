@@ -1,46 +1,7 @@
-# Jonline
+# Jonline [![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml) [![Proto Consistency](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)
 Jonline is an open-source, community-scale social network designed to be capable of "federating" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Tamagui/React app, the Flutter app, and Media endpoints - use localStorage (or system storage, for native Flutter apps) and neither set nor read cookies at all. A demo instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)).
 
-## Statuses
-### Deployments
-These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
-| Name                                                                                                                | Purpose                          | Links                                                                                                                                           |
-| ------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Jonline <br> ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                          | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                |
-| [Bull City Social <br> ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page        | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) |
-| [Oak City Social <br> ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    |
-
-### Native App Releases
-| Workflow Status                                                                                                                                                                        | Stable Release | Beta Release                                             | Notes                                                                           |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
-
-### DockerHub
-[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
-[![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
-
-### Continuous Delivery
-| Workflow Status                                                                                        | Information                                                                                                                                                             |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg) | [Server Build Results](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml)  (includes Rust, Flutter Web, and Tamagui Web build and test coverage) |
-
-### Continuous Integration
-| Workflow Status                                                                                                          | Information                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| ![Proto Consistency Check Badge](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg) | [Proto Consistency Check Results](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml) |
-| ![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)             | [Flutter iOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)             |
-| ![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)     | [Flutter Android Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)     |
-| ![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)         | [Flutter macOS Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)         |
-| ![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)     | [Flutter Windows Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)     |
-| ![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)         | [Flutter Linux Build Results](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)         |
-
-- [Jonline](#jonline)
-  - [Statuses](#statuses)
-    - [Deployments](#deployments)
-    - [Native App Releases](#native-app-releases)
-    - [DockerHub](#dockerhub)
-    - [Continuous Delivery](#continuous-delivery)
-    - [Continuous Integration](#continuous-integration)
+- [Jonline  ](#jonline--)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
@@ -54,6 +15,14 @@ These badges link to the communities' "About" pages. The versions, names, and/or
     - [Events](#events)
   - [Documentation](#documentation)
     - [Protocol Documentation](#protocol-documentation)
+  - [Components](#components)
+    - [Deploys](#deploys)
+      - [Continuous Delivery](#continuous-delivery)
+      - [DockerHub](#dockerhub)
+    - [Rust Backend](#rust-backend)
+    - [Flutter Frontend](#flutter-frontend)
+      - [App Store Releases](#app-store-releases)
+      - [CI For iOS, Android, macOS, Windows, and Linux](#ci-for-ios-android-macos-windows-and-linux)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deploying to other namespaces](#deploying-to-other-namespaces)
     - [Validating your deployment](#validating-your-deployment)
@@ -67,7 +36,7 @@ These badges link to the communities' "About" pages. The versions, names, and/or
   - [Future features](#future-features)
 
 ## What is Jonline?
-Jonline is a network of, and a protocol for, social networks. Use cases include:
+Jonline is a network of, and a protocol for, social networks. It aims to be something like [Plex](https://www.plex.tv/), but as a social network released under the [AGPL](https://fossa.com/blog/open-source-software-licenses-101-agpl-license/) (and also, Kubernetes/LetsEncrypt/CertManager-friendly). Use cases include:
 
 * Neighborhoods, communities, or cities
 * (Ex-)Coworkers wanting a private channel to chat
@@ -154,6 +123,43 @@ Jonline documentation consists of Markdown in the [`docs/` directory](https://gi
 
 ### Protocol Documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their documentation (for example, [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol)).
+
+## Components
+### Deploys
+These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
+| Name                                                                                                                | Purpose                          | Links                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Jonline <br> ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                          | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                |
+| [Bull City Social <br> ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page        | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) |
+| [Oak City Social <br> ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    |
+
+#### Continuous Delivery
+| Workflow Status                                                                                        | Information                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg) | [Server Build Results](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml)  (includes Rust, Flutter Web, and Tamagui Web build and test coverage) |
+
+#### DockerHub
+[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
+[![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+
+### Rust Backend
+The [Rust backend, in `backend/`](https://github.com/JonLatane/jonline/tree/main/backend), is built with [Diesel](https://diesel.rs) and [Tonic](https://github.com/hyperium/tonic).
+
+### Flutter Frontend
+The [Flutter frontend, in `frontends/flutter`](https://github.com/JonLatane/jonline/tree/main/frontends/flutter), is built with vanilla Flutter, [Provider](https://pub.dev/packages/provider), [`auto_route`](https://pub.dev/packages/auto_route), and [`protoc_plugin`](https://pub.dev/packages/protoc_plugin), among others.
+
+#### App Store Releases
+| Workflow Status                                                                                                                                                                        | Stable Release | Beta Release                                             | Notes                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
+
+#### CI For iOS, Android, macOS, Windows, and Linux
+[![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
+[![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
+[![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)
+[![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
+[![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)
+
 
 ## Quick deploy to your own cluster
 If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) First make sure `kubectl` is setup correctly and your instance has the `jonline` namespace available with `kubectl get services` and `kubectl get namespace jonline`:

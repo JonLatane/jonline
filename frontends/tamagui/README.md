@@ -1,13 +1,36 @@
 # Jonline Tamagui FE
 
-| CI Status | Information |
-|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| CI Status                                                                                                    | Information                                                                                         |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | ![Tamagui Web Build Badge](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml/badge.svg) | [Tamagui Web Build Results](https://github.com/jonlatane/jonline/actions/workflows/tamagui_web.yml) |
+
+- [Jonline Tamagui FE](#jonline-tamagui-fe)
+  - [gRPC implementation](#grpc-implementation)
+  - [Adding new routes/pages](#adding-new-routespages)
+- [Tamagui Monorepo info](#tamagui-monorepo-info)
+  - [🔦 About](#-about)
+  - [📦 Included packages](#-included-packages)
+  - [🗂 Folder layout](#-folder-layout)
+  - [🏁 Start the app](#-start-the-app)
+  - [Developing](#developing)
+  - [UI Kit](#ui-kit)
+  - [🆕 Add new dependencies](#-add-new-dependencies)
+    - [Pure JS dependencies](#pure-js-dependencies)
+    - [Native dependencies](#native-dependencies)
 
 The Tamagui FE was chosen for Jonline's web UI because it is performant and supports
 both React Native and React Web ergonomically. It should become an alternative FE to the
 existing Flutter one, to provide multiple options for the best user experience against any
 Jonline server.
+
+## gRPC implementation
+Jonline's Tamagui FE uses the "protos" target in `package.json`, atop/along with
+[ts-proto](https://github.com/stephenh/ts-proto) and [nice-grpc](https://github.com/deeplay-io/nice-grpc),
+to generate the `packages/api` package, a gRPC-web TypeScript client for Jonline.
+
+It would be quite straightforward to push `packages/api` (i.e. `@jonline/api`) to NPM.
+This would make it incredibly easy for any external developer to create an external web FE for Jonline,
+using any framework they want. This would be a welcome contribution from any such dev!
 
 ## Adding new routes/pages
 Suppose we want to add the page `events/fancy_thing/[:id]`.
@@ -17,6 +40,7 @@ Suppose we want to add the page `events/fancy_thing/[:id]`.
 * Add config to `packages/app/provider/navigation/index.tsx`.
 * Please contribute: get the Expo (iOS/Android React Native) app working as well!
 
+# Tamagui Monorepo info
 ## 🔦 About
 
 This monorepo is a starter for an Expo + Next.js + Tamagui + Solito app.
@@ -39,6 +63,7 @@ The main apps are:
 - `next` (web)
 
 - `packages` shared packages across apps
+  - `api` contains the generated Jonline gRPC APIs (see the "protos" target in `package.json`, and/or [ts-proto](https://github.com/stephenh/ts-proto) and [nice-grpc](https://github.com/deeplay-io/nice-grpc) for the API generation implementation)
   - `ui` includes your custom UI kit that will be optimized by Tamagui
   - `app` you'll be importing most files from `app/`
     - `features` (don't use a `screens` folder. organize by feature.)
