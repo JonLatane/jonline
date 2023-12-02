@@ -445,7 +445,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     needs: 
-      # - deploy_to_jonlineio
+      - test_rust_server
       - build_and_deliver_preview_generator
     runs-on: ubuntu-latest
 
