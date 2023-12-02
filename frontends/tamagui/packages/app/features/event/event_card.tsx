@@ -7,7 +7,7 @@ import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, P
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, History, Link, Menu, Repeat, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
-import { AuthorInfo, postBackgroundSize, PostMediaManager, PostMediaRenderer, postVisibilityDescription, TamaguiMarkdown } from "app/features/post";
+import { AuthorInfo, LinkProps, postBackgroundSize, PostMediaManager, PostMediaRenderer, postVisibilityDescription, TamaguiMarkdown } from "app/features/post";
 import { useForceUpdate, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
@@ -209,7 +209,7 @@ export const EventCard: React.FC<Props> = ({
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
 
-  const eventLink = useLink({
+  const eventLink: LinkProps = useLink({
     href: primaryInstance ?
       groupContext
         ? `/g/${groupContext.shortname}/e/${primaryInstance.id}`
@@ -237,7 +237,7 @@ export const EventCard: React.FC<Props> = ({
     maxTotalContentHeight! / numContentSections
     : undefined;
 
-  const detailsLink = isPreview ? eventLink : undefined;
+  const detailsLink: LinkProps | undefined = isPreview ? eventLink : undefined;
   const postLink = post.link ? useLink({ href: post.link }) : undefined;
   const authorLinkProps = post.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;
@@ -705,12 +705,11 @@ export const EventCard: React.FC<Props> = ({
                         key='media-view'
                         smallPreview={horizontal && isPreview}
                         xsPreview={xs && isPreview}
-                        {...{
-                          post: {
-                            ...post,
-                            media,
-                            embedLink
-                          }, isPreview, groupContext, hasBeenVisible
+                        {...{ detailsLink, isPreview, groupContext, hasBeenVisible }}
+                        post={{
+                          ...post,
+                          media,
+                          embedLink
                         }} />}
                   </YStack>
                   <YStack key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>

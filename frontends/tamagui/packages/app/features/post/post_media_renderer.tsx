@@ -10,14 +10,23 @@ import { useLink } from "solito/link";
 import { MediaRenderer } from "../media/media_renderer";
 import { FadeInView } from '../../components/fade_in_view';
 import { postBackgroundSize } from "./post_card";
+import { MouseEvent } from 'react';
+import { GestureResponderEvent } from "react-native";
 
-interface PostMediaRendererProps {
+export interface PostMediaRendererProps {
   post: Post;
   isPreview?: boolean;
   groupContext?: Group;
   hasBeenVisible?: boolean;
   smallPreview?: boolean;
   xsPreview?: boolean;
+  detailsLink?: LinkProps;
+}
+
+export type LinkProps = {
+  accessibilityRole: "link";
+  onPress: (e?: any) => void;
+  href: string;
 }
 
 export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
@@ -26,15 +35,17 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   groupContext,
   hasBeenVisible = true,
   smallPreview,
-  xsPreview
+  xsPreview,
+  detailsLink: parentDetailsLink
 }) => {
   const mediaQuery = useMedia();
   const { primaryColor } = useServerTheme();
-  const detailsLink = useLink({
+  const postDetailsLink = useLink({
     href: groupContext
       ? `/g/${groupContext.shortname}/p/${post.id}`
       : `/post/${post.id}`,
   });
+  const detailsLink: LinkProps = parentDetailsLink ?? postDetailsLink;
 
   const embedSupported = post.embedLink && post.link && post.link.length;
   let embedComponent: React.ReactNode | undefined = undefined;

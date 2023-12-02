@@ -11,7 +11,7 @@ import { isPastInstance } from "app/utils/time";
 import { createParam } from "solito";
 import { useLink } from "solito/link";
 import { useGroupContext } from "../groups/group_context";
-import RsvpCard from "./rsvp_card";
+import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
 
 export interface EventRsvpManagerProps {
   event: Event;
@@ -49,7 +49,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   ];
 
   const showRsvpSection = event?.info?.allowsRsvps;// &&
-    //(event?.info?.allowsAnonymousRsvps || hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS));
+  //(event?.info?.allowsAnonymousRsvps || hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS));
 
   // const [newRsvpMode, setNewRsvpMode] = useState(undefined as RsvpMode);
   const [attendances, setAttendances] = useState([] as EventAttendance[]);
@@ -335,6 +335,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     return <></>;
   }
 
+  const editingRsvpPasses = passes(editingRsvp?.moderation);
+  const editingRsvpRejected = rejected(editingRsvp?.moderation);
+
   return showRsvpSection
     ? <YStack mt={0} px='$1' py='$1' className={className}
       backgroundColor='$backgroundStrong' borderRadius='$5'
@@ -479,18 +482,18 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     <XStack animation='standard' o={busy ? 1 : 0} mx='auto' my='auto'>
                       <Spinner size='small' />
                     </XStack>
-                    <XStack animation='standard' o={editingRsvp && upsertSuccess && !(hasModifiedRsvp || busy) ? 1 : 0} mx='auto' my='auto'>
+                    <XStack animation='standard' o={editingRsvp && editingRsvpPasses && !editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0} mx='auto' my='auto'>
                       <CheckCircle color={primaryAnchorColor} />
                     </XStack>
 
-                    <XStack animation='standard' o={editingRsvp && !passes(editingRsvp.moderation) && upsertSuccess && !(hasModifiedRsvp || busy) ? 1 : 0}
-                      mx='auto' my='auto' transform={[{ translateX: -10 }, { translateY: 10 }]}>
-                      <ShieldAlert size='$1' color={navAnchorColor} />
-                    </XStack>
-
-                    <XStack animation='standard' o={editingRsvp && !passes(editingRsvp.moderation) && !upsertSuccess && !(hasModifiedRsvp || busy) ? 1 : 0}
+                    <XStack animation='standard' o={editingRsvp && !editingRsvpPasses && !editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0}
                       mx='auto' my='auto'>
                       <ShieldAlert color={navAnchorColor} />
+                    </XStack>
+
+                    <XStack animation='standard' o={editingRsvp && editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0}
+                      mx='auto' my='auto'>
+                      <AlertTriangle color={undefined} />
                     </XStack>
 
                   </ZStack>
@@ -500,21 +503,21 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     <Paragraph>
                       {hasModifiedRsvp
                         ? 'RSVP has unsaved changes.'
-                        : passes(editingRsvp.moderation)
+                        : editingRsvpPasses
                           ? 'RSVP saved.'
-                          : upsertSuccess
-                            ? 'RSVP saved. Hidden from others until event owner approves.'
-                            : 'Hidden from others until event owner approves.'}
+                          : editingRsvpRejected
+                            ? 'RSVP rejected by event owner. Please update your RSVP to re-submit for approval.'
+                            : 'RSVP saved. Hidden from others until event owner approves.'}
                     </Paragraph>
                   </Tooltip.Content>
                   : undefined}
               </Tooltip>
             </XStack>
 
-            {/* {!editingRsvp || passes(editingRsvp?.moderation) ? undefined
-              : <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
-                {attendanceModerationDescription(editingRsvp.moderation)}
-              </Paragraph>} */}
+            {editingRsvpRejected ? <Paragraph size='$3' mx='auto' my='$1' ta='left' maw={500} fontWeight='bold'>
+              {attendanceModerationDescription(editingRsvp!.moderation)}
+            </Paragraph>
+              : undefined}
 
             {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0 && currentAnonRsvp
               ? <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$1' als='center' ta='center'>
@@ -773,10 +776,10 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           </XStack>
         </Button>
         {showRsvpCards
-          ? <YStack key='attendance-cards' mt='$1' space='$2' animation='standard' 
-          borderBottomLeftRadius='$5' borderBottomRightRadius='$5' backgroundColor='$backgroundHover' 
-          mx='$1' pt='$1' px='$1'
-           {...standardAnimation}>
+          ? <YStack key='attendance-cards' mt='$1' space='$2' animation='standard'
+            borderBottomLeftRadius='$5' borderBottomRightRadius='$5' backgroundColor='$backgroundHover'
+            mx='$1' pt='$1' px='$1'
+            {...standardAnimation}>
             <AnimatePresence>
               {loadFailed
                 ? <AlertTriangle key='error' />
