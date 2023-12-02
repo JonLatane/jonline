@@ -62,7 +62,10 @@ export function TabsTutorial({ }) {
   const groupsButtonWidth = measuredGroupsButtonWidth > 0 ? measuredGroupsButtonWidth : 0;
 
   const gotIt = () => {
-    if (!hidingStarted) {
+    console.log('got it')
+    if (nextPhase()) {
+      console.log('moved to next phase, skipping hiding')
+    } else if (!hidingStarted) {
       setHidingStarted(true);
     } else {
       dispatch(setShowHelp(false));
@@ -71,19 +74,44 @@ export function TabsTutorial({ }) {
 
 
   const { darkMode, darkModeAuto } = useLocalConfiguration();
+  const multiphase = !mediaQuery.gtXxxs;
+  const [showPhase1, setShowPhase1] = useState(true);
+  const [showPhase2, setShowPhase2] = useState(false);
+  useEffect(() => {
+    if (multiphase) {
+      setShowPhase1(true);
+      setShowPhase2(false);
+    } else {
+      // Display all phases
+      setShowPhase1(true);
+      setShowPhase2(true);
+    }
+  }, [multiphase, showHelp]);
+  function nextPhase(): boolean {
+    if (multiphase) {
+      if (showPhase1) {
+        console.log('moving to phase 2')
+        setShowPhase1(false);
+        setShowPhase2(true);
+        return true;
+      }
+    }
+    console.log('no phase shift')
+    return false;
+  }
 
   const isInDarkMode = darkModeAuto ? doesPlatformPreferDarkMode() : darkMode;
   return <AnimatePresence>
     {showHelp
       ? <ZStack w='100%' h={height} animation='standard' {...standardAnimation} mt='$3' pt='$2'>
-        <XStack w='100%' ai='center' space='$2' animation='standard' o={hidingStarted ? 0 : 1}>
+        <XStack w='100%' ai='center' space='$2' animation='standard' o={hidingStarted ? 0 : showPhase1 ? 1 : 0}>
           <YStack space='$1' ai='center' jc='center' ac='center' ml={homeButtonWidth + ((groupsButtonWidth - 20) / 2) - 5} >
-            <XStack ml='$1'><MoveUp size='$5' opacity={mediaQuery.gtXxxs ? 1 : 0.25} /></XStack>
-            <Paragraph mt='$1' size='$2' fontWeight='bold'>Groups</Paragraph>
+            <XStack ml='$1'><MoveUp size='$5' opacity={multiphase && showPhase2 ? 0.25 : 1} /></XStack>
+            <Paragraph mt='$1' size='$2' fontWeight='bold' transform={[{ translateX: -12 }]}>Groups</Paragraph>
           </YStack>
           <YStack space='$1' ai='center' ml={-20 + (groupsButtonWidth - 20) / 2}>
-            <MoveUp size='$5' opacity={mediaQuery.gtXxs ? 1 : 0.25} />
-            <Paragraph mt='$1' size='$2' fontWeight='bold'>Features/Sections</Paragraph>
+            <MoveUp size='$5' opacity={!mediaQuery.gtXxs && showPhase2 ? 0.25 : 1} />
+            <Paragraph mt='$1' size='$2' fontWeight='bold' transform={[{ translateX: 37 }]}>Features/Sections</Paragraph>
           </YStack>
         </XStack>
         <XStack w='100%' ai='center' space='$2' mt={-4}>
@@ -95,19 +123,19 @@ export function TabsTutorial({ }) {
             </Button>
           </YStack>
           <XStack f={1} />
-          <Paragraph size='$2' textAlign="right" fontWeight='bold'>
+          <Paragraph size='$2' textAlign="right" fontWeight='bold' o={showPhase2 || hidingStarted ? 1 : 0}>
             {hidingStarted
               ? 'View this again later'
               : 'Accounts and Settings'}
           </Paragraph>
-          <Paragraph size='$2' fontWeight='bold'>(</Paragraph>
-          <XStack mb='$1' opacity={hidingStarted ? 1 : 0.8} animation='standard'>
+          <Paragraph size='$2' fontWeight='bold' o={showPhase2 || hidingStarted ? 1 : 0}>(</Paragraph>
+          <XStack mb='$1' opacity={hidingStarted ? 1 : 0.8} animation='standard' o={showPhase2 || hidingStarted ? 1 : 0}>
             {hidingStarted
               ? <TutorialToggle onPress={() => setHidingStarted(false)} />
               : <DarkModeToggle />}
           </XStack>
-          <Paragraph size='$2' fontWeight='bold'>)</Paragraph>
-          <XStack pb='$5' mb='$2' mr={accountSheetMarginRight}><CornerRightUp size='$4' /></XStack>
+          <Paragraph size='$2' fontWeight='bold' o={showPhase2 || hidingStarted ? 1 : 0}>)</Paragraph>
+          <XStack pb='$5' mb='$2' mr={accountSheetMarginRight} o={showPhase2 || hidingStarted ? 1 : 0}><CornerRightUp size='$4' /></XStack>
         </XStack>
       </ZStack>
       : undefined}
