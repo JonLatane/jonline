@@ -131,6 +131,12 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `
 may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
 one in client storage.)
 
+##### Micro-Federation
+Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
+Jonline only has client-server APIs. The idea is that *all* of the federation logic to Jonline really lives in the [ServerInfo.recommended_server_hosts](#serverinfo).
+Servers can recommend other hosts. (Eventually, this will affect CORS policies.) Clients can do what they will with that information.
+The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
+
 ##### HTTP-based client host negotiation (for external CDNs)
 When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
 to connect to `jonline.io` via gRPC on 27707/443, the client

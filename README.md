@@ -1,7 +1,15 @@
-# Jonline [![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml) [![Proto Consistency](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)
+# Jonline
 Jonline is an open-source, community-scale social network designed to be capable of "federating" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Tamagui/React app, the Flutter app, and Media endpoints - use localStorage (or system storage, for native Flutter apps) and neither set nor read cookies at all. A demo instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)).
 
-- [Jonline  ](#jonline--)
+[![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml) [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+
+| Deployment                                                                                                                | Purpose                          | Links                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                          | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                |
+| [![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page        | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) |
+| [![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    |
+
+- [Jonline](#jonline)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
@@ -16,9 +24,11 @@ Jonline is an open-source, community-scale social network designed to be capable
   - [Documentation](#documentation)
     - [Protocol Documentation](#protocol-documentation)
   - [Components](#components)
+    - [Documentation](#documentation-1)
+    - [gRPC APIs](#grpc-apis)
     - [Deploys](#deploys)
-      - [Continuous Delivery](#continuous-delivery)
-      - [DockerHub](#dockerhub)
+      - [Generated Certs](#generated-certs)
+    - [CI/CD](#cicd)
     - [Rust Backend](#rust-backend)
     - [Flutter Frontend](#flutter-frontend)
       - [App Store Releases](#app-store-releases)
@@ -32,7 +42,7 @@ Jonline is an open-source, community-scale social network designed to be capable
     - [Securing your deployment](#securing-your-deployment)
     - [Deleting your deployment](#deleting-your-deployment)
   - [Motivations](#motivations)
-    - [Scaling Social Software via Federation](#scaling-social-software-via-federation)
+    - [Scaling Social Software via Micro-Federation](#scaling-social-software-via-micro-federation)
   - [Future features](#future-features)
 
 ## What is Jonline?
@@ -74,7 +84,11 @@ The goal of all this is to make it as easy as possible for local businesses to:
     * Example: make it easy for Kathy to share her band's show with the folks at her yoga studio, by cross-posting it to her yoga studio profile
 
 #### Jonline as a protocol vs. ActivityPub
-Jonline is also a protocol, much like ActivityPub. While ActivityPub is defined using HTTP(S) and JSON, Jonline is defined with gRPC (on port 27707, with optional TLS), using HTTP(S) for media and CDN-based host negotiation only (no JSON, anywhere). Broadly speaking, Jonline may be called "more opinionated" than ActivityPub as a social networking protocol, and covers more things than just social activity (including things like user-facing server configuration data, privacy policy, etc.).
+Jonline is also a protocol, much like ActivityPub. It's worth skimming both the [ActivityPub Protocol Docs](https://www.w3.org/TR/activitypub/) and the [Jonline Protocol Docs](https://jonline.io/docs/protocol), but this is a brief breakdown.
+
+Notably, while ActivityPub specifies a server-to-server federation protocol, Jonline simply lets servers "recommend" other servers by hostname, with the "federation" done on the client side by communicating with the recommended servers based on user authorization. (Yes, this could barely defined as "federation" at all - but it's cheaper and effectively the same to users. The Jonline protocol simply calls this [Micro-Federation](https://jonline.io/docs/protocol#micro-federation).)
+
+While ActivityPub is defined using HTTP(S) and JSON, Jonline is defined with gRPC (on port 27707, with optional TLS), using HTTP(S) for media and CDN-based host negotiation only (no JSON, anywhere). Broadly speaking, Jonline may be called "more opinionated" than ActivityPub as a social networking protocol, and covers more things than just social activity (including things like user-facing server configuration data, privacy policy, etc.).
 
 Whereas ActivityPub has a flexible Activity model capable of holding varied metadata, Jonline's API definitions deliberately avoid allowing for metadata, and focus on statically-typed, specific models for Posts and Events. The Jonline data model is designed using composition, with Events' titles, descriptions, moderation, etc. belonging to a Post owned by them, over inheritance (i.e. making Event "extend" Post in OOP). Jonline leverages this to implement visibility and moderation controls for Posts and Events across the system all in one place.
 
@@ -125,22 +139,32 @@ Jonline documentation consists of Markdown in the [`docs/` directory](https://gi
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their documentation (for example, [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol)).
 
 ## Components
+The following components are *literally* just a "nice to read" breakdown of the overall directory structure of this repository. Nonetheless, this should be a useful first pass for anyone hoping to contribute to Jonline.
+
+### Documentation
+The [Documentation root is in `docs/`](https://github.com/JonLatane/jonline/tree/main/docs). Note that `docs/protocol.md` is generated from the [gRPC APIs](#grpc-apis), and `docs/protocol.html` is generated from `docs/protocol.md` (to make the generated HTML as friendly as possible).
+
+### gRPC APIs
+The [gRPC APIs are defined in `protos/`](https://github.com/JonLatane/jonline/tree/main/protos).
+
 ### Deploys
-These badges link to the communities' "About" pages. The versions, names, and/or themes may be out of date due to how GitHub caches the images.
-| Name                                                                                                                | Purpose                          | Links                                                                                                                                           |
-| ------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Jonline <br> ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                          | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                |
-| [Bull City Social <br> ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page        | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) |
-| [Oak City Social <br> ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    |
+[Deployment management logic lives in `deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys). Essentially this is some readable `Makefile` stuff built atop `kubectl`.
 
-#### Continuous Delivery
-| Workflow Status                                                                                        | Information                                                                                                                                                             |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Server CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg) | [Server Build Results](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml)  (includes Rust, Flutter Web, and Tamagui Web build and test coverage) |
+#### Generated Certs
+[Generated certs live in `deploys/generated_certs`](https://github.com/JonLatane/jonline/tree/main/deploys/generated_certs). Generally, if  you want to deploy to your own Kubernetes cluster, and secure it with TLS, you should take a look at these docs. Cert-Manager for DigitalOcean with DigitalOcean DNS is done. It should be possible to do this for other hosts with Cert-Manager support.
 
-#### DockerHub
-[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags)
-[![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+### CI/CD
+[CI/CD logic is defined in `.github/workflows/`](https://github.com/JonLatane/jonline/tree/main/.github/workflows). If you can set up a Kubernetes deployment with the instructions in [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), hooking into the Server
+
+Here's, like, *all* the badges:
+
+[![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml)
+[![Proto Consistency](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)
+[![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
+[![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
+[![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)
+[![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
+[![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)
 
 ### Rust Backend
 The [Rust backend, in `backend/`](https://github.com/JonLatane/jonline/tree/main/backend), is built with [Diesel](https://diesel.rs) and [Tonic](https://github.com/hyperium/tonic).
@@ -322,12 +346,14 @@ There isn't an open federated protocol like email for a complete posts+events+me
 
 So, Jonline is a shot at implementing federated, open social media, in a way that is easy for developers to modify and, perhaps most importantly, for *users to understand*.
 
-### Scaling Social Software via Federation
-At the same time as the closed source/private server model has grown due to its profitability, software complexity has grown immensely to handle scaling these "modern" applications. We have ETLs, data lakes, statistics, and near-infinite ways of easily creating "trillions of points"-size data sets that require hundreds of thousands of dollars' worth of computing power and leveraging them for any number of rarely-publicly-disclosed purposes.
+### Scaling Social Software via Micro-Federation
+At the same time as the closed source/private server model has grown due to its profitability, software complexity has grown immensely to handle scaling these "modern" applications. We have ETLs, data lakes, statistics, and near-infinite ways of easily creating "trillions of points"-size data sets that require hundreds of thousands of dollars' worth of computing power, and leveraging them for any number of rarely-publicly-disclosed purposes (mostly "make money").
 
-But is scaling social media applications in this way *necessary for what people use these applications for*? Or is it *the best way to keep data available for marketing and other private use*? Or more simply: are we optimizing for profit, or for actual computer performance? There are many legitimate applications for, say, MapReduce across a huge privately-owned cluster, like making the entire Internet searchable. But for communicating with a network of friends you know in real life, I don't really think it's necessary.
+But is scaling social media applications in this way *necessary for people to socially interact, sharing pictures and videos with friends and their favorite celebrities and arists*? Or is it *the best way to keep data available for marketing and other private use*? Or more simply: are we optimizing for profit, or for actual computer performance? There are many legitimate applications for, say, MapReduce across a huge privately-owned cluster, like making the entire Internet searchable. But for communicating with a network of friends you know in real life, and artists/actors/academics/poets/etc., it's not really necessary.
 
 Jonline is a federated social network. The general idea is that it should provide a functional network with a single server, but that you should be able to communicate with users on other servers from a single account. This is handled via sharing of OAuth2 auth tokens between servers.
+
+A next step in Jonline's [micro-federation](https://jonline.io/docs/protocol#micro-federation) model *might* be credential management for external Jonline servers. I.E., letting users store a Refresh token for `bullcity.social` in their `oakcity.social` user data, so you they can directly comment on `bullcity.social` Posts and Events from `oakcity.social`. But is this *necessary*? Even with the existing protocols, with *no* server-to-server communication, it should be easy to integrate *viewing* federated servers, and letting me interact as a user on both `bullcity.social` and `oakcity.social`. And in fact, the web *already* defines CORS protocols which give the owners and users a great deal of control and security. So ultimately, being a client-server *only* federated network - or micro-federated network - makes more sense for Jonline.
 
 ## Future features
 Potential future features include:
