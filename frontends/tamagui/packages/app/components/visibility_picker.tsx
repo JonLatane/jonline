@@ -1,6 +1,7 @@
 import { Visibility } from "@jonline/api";
 import { Heading, Label, Paragraph, Select, Tooltip, XStack, YStack } from "@jonline/ui";
 import { Check, ChevronDown } from "@tamagui/lucide-icons";
+import { useComponentKey } from "app/hooks";
 import { useState } from "react";
 
 export type VisibilityPickerProps = {
@@ -55,7 +56,7 @@ export function VisibilityPicker({
     </Tooltip>
   }
 
-  const [name] = useState(() => `visibility-${_key++}`);
+  const name = useComponentKey('visibility');
 
   return <YStack w='100%' maw={350}>
     {/* <style>

@@ -8,7 +8,7 @@ import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, History, 
 import { FadeInView, ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, postBackgroundSize, PostMediaManager, PostMediaRenderer, postVisibilityDescription, TamaguiMarkdown } from "app/features/post";
-import { useForceUpdate, useMediaUrl } from "app/hooks";
+import { useComponentKey, useForceUpdate, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -277,9 +277,13 @@ export const EventCard: React.FC<Props> = ({
   const showBackgroundPreview = !!imagePreview;
   //  && isPreview
   ;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
-  const backgroundSize = isPreview && horizontal
-    ? (mediaQuery.gtSm ? 400 : 310)
-    : postBackgroundSize(mediaQuery);
+
+  const componentKey = useComponentKey('event-card');
+  const backgroundSize = document.getElementById(componentKey)?.clientWidth ?? (
+    isPreview && horizontal
+      ? (mediaQuery.gtSm ? 400 : 310)
+      : postBackgroundSize(mediaQuery)
+  );
   const foregroundSize = backgroundSize * 0.7;
 
   const author = post.author;
@@ -573,7 +577,7 @@ export const EventCard: React.FC<Props> = ({
   return (
     <>
       <YStack w='100%' key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}>
-        <Card theme="dark" elevate size="$4" bordered
+        <Card theme="dark" elevate size="$4" bordered id={componentKey}
           key='event-card'
           margin='$0'
           marginBottom='$3'

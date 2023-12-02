@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
-import { useAnonymousAuthToken } from "app/hooks";
+import { useAnonymousAuthToken, useComponentKey } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
@@ -879,7 +879,7 @@ export function RadioGroupItemWithLabel(props: {
   label: string
   color?: string
 }) {
-  const [id] = useState(() => `radio-group-item-${_key++}`);
+  const id = useComponentKey('radio-group-item');
   return (
     <XStack f={1} alignItems="center" space="$2">
       <RadioGroup.Item value={props.value} id={id} size={props.size}>

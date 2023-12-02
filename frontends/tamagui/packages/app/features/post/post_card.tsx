@@ -19,6 +19,7 @@ import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
 import { PostMediaRenderer } from "./post_media_renderer";
 import { ShareableToggle } from "app/components/shareable_toggle";
+import { useComponentKey } from "app/hooks";
 
 interface PostCardProps {
   post: Post;
@@ -190,7 +191,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   const previewUrl = useMediaUrl(imagePreview?.id);
 
   const showBackgroundPreview = !!imagePreview;
-  const backgroundSize = postBackgroundSize(mediaQuery);
+
+
+  const componentKey = useComponentKey('post-card');
+  const backgroundSize = document.getElementById(componentKey)?.clientWidth ??  postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
   return (
@@ -201,7 +205,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
 
           <Theme inverse={selectedPostId == previewParent.id}>
-            <Card f={1} theme="dark" elevate size="$1" bordered
+            <Card f={1} theme="dark" elevate size="$1" bordered id={componentKey}
               margin='$0'
               // marginBottom={replyPostIdPath ? '$0' : '$3'}
               // marginTop={replyPostIdPath ? '$0' : '$3'}
@@ -237,6 +241,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* <Theme inverse={selectedPostId == post.id}> */}
       <Card elevate size="$4" bordered
         // theme="dark"
+        
         margin='$1'
         backgroundColor={selectedPostId == post.id ? '$backgroundFocus' : undefined}
         marginBottom={replyPostIdPath ? '$0' : '$3'}

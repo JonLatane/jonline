@@ -1,4 +1,5 @@
-import { Heading, Label, Paragraph, Switch, XStack, YStack } from '@jonline/ui';
+import { Label, Paragraph, Switch, YStack } from '@jonline/ui';
+import { useComponentKey } from 'app/hooks';
 import { useAccount, useAppDispatch } from 'app/store';
 import React from 'react';
 
@@ -21,7 +22,7 @@ export function ShareableToggle({
 }: ShareableToggleProps) {
   const dispatch = useAppDispatch();
   const value = !!optionalValue;
-  const [name] = React.useState(() => `shareable-${_key++}`);
+  const name = useComponentKey('shareable');
 
   const label = value ? 'Shareable' : 'Not Shareable';
 
