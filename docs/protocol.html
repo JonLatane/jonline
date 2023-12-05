@@ -172,6 +172,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <li><a href="#jonline-ExpirableToken">ExpirableToken</a></li>
           <li><a href="#jonline-LoginRequest">LoginRequest</a></li>
           <li><a href="#jonline-RefreshTokenResponse">RefreshTokenResponse</a></li>
+          <li><a href="#jonline-ResetPasswordRequest">ResetPasswordRequest</a></li>
         </ul>
       </li>
       <li><a href="#visibility_moderation-proto">visibility_moderation.proto</a>
@@ -393,8 +394,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h5 id="micro-federation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#micro-federation"><span class="octicon octicon-link"></span></a>Micro-Federation</h5>
     <p>
       Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
-      Jonline only has client-server APIs. The idea is that <em>all</em> of the federation logic to Jonline really lives in the <a href="#serverinfo">ServerInfo.recommended_server_hosts</a>.
-      Servers can recommend other hosts. (Eventually, this will affect CORS policies.) Clients can do what they will with that information.
+      Jonline only has client-server APIs. The idea is that <em>all</em> of the federation data for a given Jonline server is simply the value of
+      <a href="#serverinfo">ServerInfo.recommended_server_hosts</a>.
+    </p>
+    <p>
+      That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
+      (Eventually, this will affect CORS policies for added security.)
       The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
     </p>
     <h5 id="http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs)</h5>
@@ -498,6 +503,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td><a href="#jonline-User">User</a></td>
           <td>Gets the current user. <em>Authenticated.</em></td>
+        </tr>
+        <tr>
+          <td>ResetPassword</td>
+          <td><a href="#jonline-ResetPasswordRequest">ResetPasswordRequest</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Resets the current user's - or, for admins, a given user's - password. <em>Authenticated.</em></td>
         </tr>
         <tr>
           <td>GetMedia</td>
@@ -915,6 +926,33 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-User">User</a></td>
           <td></td>
           <td>The user associated with the account that was created/logged into.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-ResetPasswordRequest"></a></p>
+    <h3 id="resetpasswordrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#resetpasswordrequest"><span class="octicon octicon-link"></span></a>ResetPasswordRequest</h3>
+    <p>Request to reset a password.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>If not set, use the current user of the request.</td>
+        </tr>
+        <tr>
+          <td>password</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The new password to set.</td>
         </tr>
       </tbody>
     </table>

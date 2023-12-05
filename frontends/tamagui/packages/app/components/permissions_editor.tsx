@@ -2,6 +2,7 @@ import { Permission, permissionToJSON } from '@jonline/api';
 import { Adapt, Button, Heading, Paragraph, Select, Sheet, XStack, YStack } from '@jonline/ui';
 import { LinearGradient } from "@tamagui/linear-gradient";
 import { Check, ChevronDown, ChevronUp, Plus } from '@tamagui/lucide-icons';
+import { useComponentKey } from 'app/hooks';
 import React from 'react';
 
 export type PermissionsEditorProps = {
@@ -43,13 +44,14 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
       .map(k => Permission[k as any]! as unknown as Permission)
       .filter(p => p != Permission.PERMISSION_UNKNOWN && p != Permission.UNRECOGNIZED);
   const addablePermissions = allPermissions.filter(p => !selectedPermissions.includes(p));
-  return <YStack w='100%'>
-    <Heading size='$3' marginVertical='auto' o={editMode ? 1 : 0.5}>
+  const componentKey = useComponentKey('permissions-editor');
+  return <YStack w='100%' key={componentKey}>
+    <Heading key='permissions-editor-heading' size='$3' marginVertical='auto' o={editMode ? 1 : 0.5}>
       {label ?? 'Permissions'}
     </Heading>
-    <XStack w='100%' space='$2' flexWrap='wrap'>
+    <XStack key='permissions-editor-permissions' w='100%' space='$2' flexWrap='wrap'>
       {selectedPermissions.map((p: Permission) =>
-        <Button disabled={!editMode} onPress={() => deselectPermission(p)} mb='$2'>
+        <Button key={`permission-${p}`} disabled={!editMode} onPress={() => deselectPermission(p)} mb='$2'>
           <XStack>
             <Paragraph size='$2'>{permissionName(p)}</Paragraph>
           </XStack>
@@ -62,7 +64,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
           }
         }}
         value={undefined}>
-        <Select.Trigger height='$2' f={1} maw={350} opacity={disabled ? 0.5 : 1} iconAfter={Plus} {...{ disabled }}>
+        <Select.Trigger key='permission-selector' height='$2' f={1} maw={350} opacity={disabled ? 0.5 : 1} iconAfter={Plus} {...{ disabled }}>
           <Select.Value placeholder="Add a Permission..." />
         </Select.Trigger>
 
@@ -78,7 +80,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
         </Adapt> */}
 
         <Select.Content zIndex={200000}>
-          <Select.ScrollUpButton ai="center" jc="center" pos="relative" w="100%" h="$3">
+          {/* <Select.ScrollUpButton ai="center" jc="center" pos="relative" w="100%" h="$3">
             <YStack zi={10}>
               <ChevronUp size={20} />
             </YStack>
@@ -89,11 +91,11 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
               colors={['$background', '$backgroundTransparent']}
               br="$4"
             />
-          </Select.ScrollUpButton>
+          </Select.ScrollUpButton> */}
 
           <Select.Viewport minWidth={200}>
             <XStack>
-              <Select.Group space="$0" w='100%'>
+              <Select.Group key='permissions-editor' space="$0" w='100%'>
                 <Select.Label>{'Available Permissions'}</Select.Label>
                 <Select.Item disabled index={0} key='placeholder' value={Permission.PERMISSION_UNKNOWN.toString()}>
                   <Select.ItemText>
@@ -122,7 +124,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
                   )
                 })}
               </Select.Group>
-              <YStack
+              <YStack key='chevron-down'
                 position="absolute"
                 right={0}
                 top={0}
@@ -137,7 +139,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
             </XStack>
           </Select.Viewport>
 
-          <Select.ScrollDownButton ai="center" jc="center" pos="relative" w="100%" h="$3">
+          {/* <Select.ScrollDownButton ai="center" jc="center" pos="relative" w="100%" h="$3">
             <YStack zi={10}>
               <Plus size={20} />
             </YStack>
@@ -148,7 +150,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
               colors={['$backgroundTransparent', '$background']}
               br="$4"
             />
-          </Select.ScrollDownButton>
+          </Select.ScrollDownButton> */}
         </Select.Content>
       </Select> : undefined}
 

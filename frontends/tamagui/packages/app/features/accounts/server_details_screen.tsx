@@ -1,27 +1,23 @@
-import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api'
-import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui'
-import { BadgeInfo, Code, Cog, Container, Github, Heart, Info, Palette, Server, Delete, ChevronUp, ChevronDown, Binary, ChevronRight, CheckCircle, TabletSmartphone, Network } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useServerTheme, useAppDispatch, useRootSelector } from 'app/store'
-import React, { useEffect, useState } from 'react'
-import { HexColorPicker } from "react-colorful"
-import StickyBox from "react-sticky-box"
-import { createParam } from 'solito'
-import { useLink } from 'solito/link'
-import { colorMeta } from '../../store'
-import { TamaguiMarkdown } from '../post/tamagui_markdown'
-import { AppSection } from '../tabs/features_navigation'
-import { TabsNavigation } from '../tabs/tabs_navigation'
-import { PermissionsEditor, PermissionsEditorProps } from '../user/permissions_editor'
-import ServerCard from './server_card'
-import { SingleMediaChooser } from './single_media_chooser'
-import { MediaRenderer } from '../media/media_renderer'
-import { themedButtonBackground } from '../../utils/themed_button_background';
-import { hasAdminPermission } from 'app/utils/permission_utils'
-import { MediaRef } from '../media/media_chooser'
-import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
-import RecommendedServer from './recommended_server';
-import { SubnavButton } from 'app/components/subnav_button';
-import { setDocumentTitle } from 'app/utils/set_title';
+import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api';
+import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
+import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
+import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
+import { colorMeta, useAppDispatch } from 'app/hooks';
+import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
+import React, { useEffect, useState } from 'react';
+import { HexColorPicker } from "react-colorful";
+import StickyBox from "react-sticky-box";
+import { createParam } from 'solito';
+import { useLink } from 'solito/link';
+import { MediaRef } from '../media/media_chooser';
+import { MediaRenderer } from '../media/media_renderer';
+import { AppSection } from '../navigation/features_navigation';
+import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
+import { TabsNavigation } from '../navigation/tabs_navigation';
+import { RecommendedServer } from './recommended_server';
+import ServerCard from './server_card';
+import { SingleMediaChooser } from './single_media_chooser';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 
@@ -271,19 +267,22 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           <YStack mb='$2' w='100%' jc="center" ai="center" >
             <ScrollView w='100%'>
               <YStack space='$2' w='100%' maw={800} paddingHorizontal='$3' als='center' marginHorizontal='auto'>
-                {serverIsSelected ? undefined : <>
-                  <Heading mt='$3' size='$3' als='center' color={warningAnchorColor} ta='center'>Currently browsing on a different server</Heading>
+                {serverIsSelected ? undefined : <XStack>
+                  <XStack my='auto'><AlertTriangle /></XStack>
+                  <YStack my='auto' f={1}>
+                    <Heading mt='$3' size='$3' als='center' ta='center'>Currently browsing on a different server</Heading>
 
-                  <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center' color={warningAnchorColor} opacity={selectedServer?.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>
-                    {selectedServer?.serverConfiguration?.serverInfo?.name || 'Unnamed'}
-                  </Heading>
-                  <Heading size='$3' als='center' marginTop='$2' color={warningAnchorColor}>
-                    {selectedServer?.host}
-                  </Heading>
-                  <Button onPress={() => dispatch(selectServer(server))} mt='$3' theme='active' size='$3'>
-                    Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
-                  </Button>
-                </>}
+                    <Heading whiteSpace="nowrap" maw={200} overflow='hidden' als='center' opacity={selectedServer?.serverConfiguration?.serverInfo?.name ? 1 : 0.5}>
+                      {selectedServer?.serverConfiguration?.serverInfo?.name || 'Unnamed'}
+                    </Heading>
+                    <Heading size='$3' als='center' marginTop='$2'>
+                      {selectedServer?.host}
+                    </Heading>
+                    <Button onPress={() => dispatch(selectServer(server))} mt='$3' theme='active' size='$3'>
+                      Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
+                    </Button>
+                  </YStack>
+                </XStack>}
                 {section === 'about' ? <>
                   <Heading size='$9' als='center' mt='$3'>About {specificServer ? 'Community' : 'Server'}</Heading>
                   <ServerCard server={{ ...server, serverConfiguration: updatedConfiguration }} disableHeightLimit />

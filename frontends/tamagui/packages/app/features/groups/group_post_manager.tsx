@@ -1,22 +1,36 @@
-import { createGroupPost, deleteGroupPost, loadPostGroupPosts, markGroupVisit, RootState, useAccountOrServer, useCredentialDispatch, useServer, useServerTheme, useRootSelector } from "app/store";
+import { useCredentialDispatch, useLocalConfiguration, useServer } from 'app/hooks';
+import { RootState, createGroupPost, deleteGroupPost, loadPostGroupPosts, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
-import { View } from "react-native";
 
 import { Group, GroupPost, Permission, Post, PostContext } from "@jonline/api";
-import { Button, Separator, Spinner, Text, XStack, YStack } from '@jonline/ui';
+import { Button, Spinner, Text, XStack, YStack } from '@jonline/ui';
 
 
-import { useGroupContext } from "./group_context";
-import { GroupsSheet } from './groups_sheet';
-import { AuthorInfo } from "../post/author_info";
-import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useLink } from "solito/link";
+import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
+import { AuthorInfo } from "../post/author_info";
+import { useGroupContext } from "./group_context";
+import { GroupsSheet } from './groups_sheet';
 
 interface Props {
   post: Post;
   createViewHref?: (group: Group) => string;
   isVisible?: boolean;
+}
+
+export function useMostRecentGroup(groups: Group[]) {
+  const server = useServer();
+  const recentGroupIds = server
+    ? useLocalConfiguration().serverRecentGroups[serverID(server)] ?? []
+    : [];
+
+  for (const groupId of recentGroupIds) {
+    const group = groups.find(g => g.id == groupId);
+    if (group) return group;
+  }
+
+  return groups[0];
 }
 
 export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisible = true }) => {
@@ -71,7 +85,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
       </Text>
       : undefined}
     <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
-      {sharedToSelectedGroup === true || singleSharedGroup? 'In ' : undefined}
+      {sharedToSelectedGroup === true || singleSharedGroup ? 'In ' : undefined}
       {sharedToSelectedGroup === false ? 'Not shared to ' : undefined}
     </Text>
     {loading && errorCount < maxErrors ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}

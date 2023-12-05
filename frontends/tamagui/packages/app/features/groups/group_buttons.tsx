@@ -1,14 +1,14 @@
 import { Group } from '@jonline/api';
-import { Button, Text, Image, Heading, Paragraph, Separator, XStack, YStack, useMedia } from '@jonline/ui';
-import { RootState, isGroupLocked, joinLeaveGroup, useAccountOrServer, useServerTheme, useAppDispatch, useRootSelector } from 'app/store';
+import { Button, Heading, Image, Paragraph, Separator, Text, XStack, YStack, useMedia } from '@jonline/ui';
+import { Info, Users2 } from '@tamagui/lucide-icons';
+import { useAccountOrServer, useAppDispatch, useCredentialDispatch, useMediaUrl, } from 'app/hooks';
+import { RootState, isGroupLocked, joinLeaveGroup, useRootSelector, useServerTheme } from 'app/store';
+import { themedButtonBackground } from 'app/utils';
 import React from 'react';
 import { useLink } from 'solito/link';
-import { passes, pending } from '../../utils/moderation_utils';
+import { passes, pending } from 'app/utils';
 import { } from '../post/post_card';
-import { Info, Users2 } from '@tamagui/lucide-icons';
-import { useMediaUrl } from 'app/hooks';
-import { splitOnFirstEmoji } from '../tabs/server_name_and_logo';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
+import { splitOnFirstEmoji } from '../navigation/server_name_and_logo';
 
 export type GroupButtonProps = {
   group: Group;
@@ -27,9 +27,9 @@ export type GroupButtonProps = {
 }
 
 export function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome, hideLeaveButton }: GroupButtonProps) {
-  const accountOrServer = useAccountOrServer();
+  const { dispatch, accountOrServer } = useCredentialDispatch();
   const { account } = accountOrServer;
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
   const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
     useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
   const media = useMedia();

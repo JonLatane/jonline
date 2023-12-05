@@ -1,8 +1,9 @@
 import { Group, User, UserListingType } from "@jonline/api";
 import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
 import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 } from "@tamagui/lucide-icons";
-import { RootState, getUsersPage, loadUsersPage, useAccount, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from 'app/store';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
+import { useAccountOrServer, useCredentialDispatch, useLocalConfiguration } from "app/hooks";
+import { RootState, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
+import { themedButtonBackground } from 'app/utils';
 import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
 
@@ -118,7 +119,7 @@ export type FeaturesNavigationProps = {
 };
 
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, groupPageForwarder }: FeaturesNavigationProps) {
-  const account = useAccount();
+  const { account, server } = useAccountOrServer();
   const mediaQuery = useMedia();
   const { primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
 
@@ -160,7 +161,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const followRequests: User[] | undefined = useRootSelector((state: RootState) =>
     getUsersPage(state.users, UserListingType.FOLLOW_REQUESTS, 0));
   const followRequestCount = followRequests?.length ?? 0;
-  const followPageStatus = useRootSelector((state: RootState) => state.users.pagesStatus);
+  const followPageStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [loadingUsers, setLoadingUsers] = useState(false);

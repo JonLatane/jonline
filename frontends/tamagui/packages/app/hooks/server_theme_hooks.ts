@@ -1,6 +1,7 @@
 import { useTheme } from "@jonline/ui";
-import { RootState, useRootSelector } from "./store";
-import { JonlineServer } from './types';
+import { RootState, useRootSelector } from "../store/store";
+import { JonlineServer } from '../store/types';
+import { Server } from '@tamagui/lucide-icons';
 
 export type ServerTheme = {
   server?: JonlineServer;
@@ -28,6 +29,10 @@ export type ServerTheme = {
 }
 export function useServerTheme(): ServerTheme {
   const server = useRootSelector((state: RootState) => state.servers.server);
+  const theme = useTheme();
+  return getServerTheme(server, theme);
+}
+export function getServerTheme(server?: JonlineServer, theme?: any): ServerTheme {
   const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;
 
@@ -45,8 +50,7 @@ export function useServerTheme(): ServerTheme {
   } = colorIntMeta(navColorInt);
 
 
-  const theme = useTheme();
-  const backgroundColor = theme.background.val;
+  const backgroundColor = theme?.background?.val ?? '#FFFFFF';
   const { luma: themeBgLuma, textColor } = colorMeta(backgroundColor);
   const darkMode = themeBgLuma <= 0.5;
   const primaryBgColor = darkMode ? primaryDarkColor : primaryLightColor;
@@ -54,7 +58,8 @@ export function useServerTheme(): ServerTheme {
   const navAnchorColor = !darkMode ? navDarkColor : navLightColor;
   const navBgColor = !darkMode ? navDarkColor : navLightColor;
 
-  const warningAnchorColor = !darkMode ? '#d1c504' : '#EBDF1C';
+
+  const warningAnchorColor = !darkMode ? '#bf6d00' : '#EBDF1C';
   // debugger;
   return {
     server,
@@ -183,7 +188,7 @@ function shadeColor(color: string, percent: number) {
 
   // console.log('encoding', [R1, G1, B1]);
 
-  const result =  encodeAsColor(R1, G1, B1);
+  const result = encodeAsColor(R1, G1, B1);
 
   if (!_shades[color]) {
     _shades[color] = new Map<number, string>();
@@ -196,7 +201,7 @@ function shadeColor(color: string, percent: number) {
 // Input bounds: 0-255
 function encodeAsColor(r: number, g: number, b: number) {
 
-  const [RR, GG, BB] = [r,g,b]
+  const [RR, GG, BB] = [r, g, b]
     .map(n => n.toString(16))
     .map(n => (n.length == 1) ? "0" + n : n) as [string, string, string];
 

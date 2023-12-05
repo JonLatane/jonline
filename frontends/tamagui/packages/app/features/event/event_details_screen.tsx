@@ -1,17 +1,16 @@
-import { EventInstance } from '@jonline/api'
-import { Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui'
-import { RootState, loadEventByInstance, selectEventById, selectGroupById, selectPostById, serverID, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from 'app/store'
-import { setDocumentTitle } from 'app/utils/set_title'
-import React, { useEffect, useState } from 'react'
-import { createParam } from 'solito'
-import EventCard from '../event/event_card'
-import { ConversationContextProvider, ConversationManager, useStatefulConversationContext } from '../post'
-import { ReplyArea } from '../post/reply_area'
-import { AppSection } from '../tabs/features_navigation'
-import { TabsNavigation } from '../tabs/tabs_navigation'
-import { RsvpMode } from './event_rsvp_manager'
-import moment from 'moment'
-import { isPastInstance } from 'app/utils/time'
+import { EventInstance } from '@jonline/api';
+import { Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui';
+import { useCredentialDispatch, useLocalConfiguration } from 'app/hooks';
+import { RootState, loadEventByInstance, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { isPastInstance, setDocumentTitle } from 'app/utils';
+import React, { useEffect, useState } from 'react';
+import { createParam } from 'solito';
+import EventCard from '../event/event_card';
+import { ConversationContextProvider, ConversationManager, useStatefulConversationContext } from '../post';
+import { ReplyArea } from '../post/reply_area';
+import { AppSection } from '../navigation/features_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
+import { RsvpMode } from './event_rsvp_manager';
 
 const { useParam, useUpdateParams } = createParam<{ eventId: string, instanceId: string, shortname: string | undefined }>()
 
@@ -83,7 +82,7 @@ export function EventDetailsScreen() {
 
   const failedToLoadEvent = instanceId != undefined &&
     eventsState.failedInstanceIds.includes(instanceId!);
-  console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
+  // console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
 
   function onEventInstancesUpdated(instances: EventInstance[]) {
     if (!instances.some(i => i.id == instanceId)) {
@@ -98,11 +97,11 @@ export function EventDetailsScreen() {
     if (instanceId) {
       if ((!subjectEvent || !loadedEvent) && !loadingEvent) {
         setLoadingEvent(true);
-        console.log('loadEventByInstance', instanceId!)
+        // console.log('loadEventByInstance', instanceId!)
         setTimeout(() =>
           dispatch(loadEventByInstance({ ...accountOrServer, instanceId: instanceId! }))
             .then((action) => {
-              console.log('loadEventByInstance.then', action.payload)
+              // console.log('loadEventByInstance.then', action.payload)
               setLoadedEvent(true)
             }));
       } else if (subjectPost && loadingEvent) {

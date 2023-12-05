@@ -1,16 +1,17 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Text, TextArea, XStack, YStack, useMedia } from '@jonline/ui';
 import { ChevronDown, Settings } from '@tamagui/lucide-icons';
-import { RootState, clearPostAlerts, createEvent, createGroupPost, loadEventsPage, loadGroupEventsPage, selectAllAccounts, selectAllServers, serverID, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
+import { RootState, clearPostAlerts, createEvent, createGroupPost, loadEventsPage, loadGroupEventsPage, selectAllAccounts, selectAllServers, serverID, useServerTheme, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
 import moment from 'moment';
-import { VisibilityPicker } from '../../components/visibility_picker';
+import { VisibilityPicker } from 'app/components';
 import EventCard from './event_card';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
 import { LocationControl } from './location_control';
+import { useCredentialDispatch } from 'app/hooks';
 
 export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
@@ -24,32 +25,32 @@ export const toProtoISOString = (localDateTimeInput: string) =>
 
 export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
   const [duration, _setDuration] = useState(0);
 
   const canPublishLocally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_LOCALLY);
   const canPublishGlobally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_GLOBALLY);
 
   useEffect(() => {
-    if (startTime && endTime) {
-      const start = moment(startTime);
-      const end = moment(endTime);
+    if (startsAt && endsAt) {
+      const start = moment(startsAt);
+      const end = moment(endsAt);
       _setDuration(end.diff(start, 'minutes'));
     }
-  }, [endTime]);
+  }, [endsAt]);
   useEffect(() => {
-    if (startTime && duration) {
-      const start = moment(startTime);
+    if (startsAt && duration) {
+      const start = moment(startsAt);
       const end = start.add(duration, 'minutes');
-      setEndTime(supportDateInput(end));
+      setEndsAt(supportDateInput(end));
     }
-  }, [startTime]);
+  }, [startsAt]);
 
 
   const [location, setLocation] = useState(Location.create({}));
 
-  const endDateInvalid = !moment(endTime).isAfter(moment(startTime));
+  const endDateInvalid = !moment(endsAt).isAfter(moment(startsAt));
   const invalid = endDateInvalid;
 
   function previewEvent(post: Post) {
@@ -58,8 +59,8 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
       instances: [
         EventInstance.create({
           location,
-          startsAt: toProtoISOString(startTime),
-          endsAt: toProtoISOString(endTime)
+          startsAt: toProtoISOString(startsAt),
+          endsAt: toProtoISOString(endsAt)
         }),
       ],
     });
@@ -73,8 +74,8 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   ) {
     function doReset() {
       resetPost();
-      setStartTime('');
-      setEndTime('');
+      setStartsAt('');
+      setEndsAt('');
     }
 
     dispatch(createEvent({ ...previewEvent(post), ...accountOrServer })).then((action) => {
@@ -106,20 +107,20 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
     feedPreview={(post, group) => <EventCard event={previewEvent(post)} isPreview hideEditControls />}
 
     onFreshOpen={() => {
-      setStartTime(supportDateInput(moment()));
-      setEndTime(supportDateInput(moment().add(1, 'hour')));
+      setStartsAt(supportDateInput(moment()));
+      setEndsAt(supportDateInput(moment().add(1, 'hour')));
     }}
     additionalFields={(post, group) => <>
       <XStack mx='$2'>
         <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
         <Text fontSize='$2' fontFamily='$body'>
-          <input type='datetime-local' min={supportDateInput(moment(0))} value={startTime} onChange={(v) => setStartTime(v.target.value)} style={{ padding: 10 }} />
+          <input type='datetime-local' min={supportDateInput(moment(0))} value={startsAt} onChange={(v) => setStartsAt(v.target.value)} style={{ padding: 10 }} />
         </Text>
       </XStack>
       <XStack mx='$2'>
         <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
         <Text fontSize='$2' fontFamily='$body'>
-          <input type='datetime-local' value={endTime} min={startTime} onChange={(v) => setEndTime(v.target.value)} style={{ padding: 10 }} />
+          <input type='datetime-local' value={endsAt} min={startsAt} onChange={(v) => setEndsAt(v.target.value)} style={{ padding: 10 }} />
         </Text>
       </XStack>
 

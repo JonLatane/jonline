@@ -1,13 +1,14 @@
 import { User, UserListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { RootState, getUsersPage, loadUsersPage, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
+import { useCredentialDispatch } from 'app/hooks';
+import { RootState, federatedEntity, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
+import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
-import { setDocumentTitle } from 'app/utils/set_title';
-import { AppSection, AppSubsection } from '../tabs/features_navigation';
-import { TabsNavigation } from '../tabs/tabs_navigation';
-import { UserCard } from '../user/user_card';
 import { HomeScreenProps } from '../home/home_screen';
+import { AppSection, AppSubsection } from '../navigation/features_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
+import { UserCard } from '../user/user_card';
 
 export function FollowRequestsScreen() {
   return <BasePeopleScreen listingType={UserListingType.FOLLOW_REQUESTS} />;
@@ -43,6 +44,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const dimensions = useWindowDimensions();
 
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const userPagesStatus = getFederated(usersState.pagesStatus, server);
   useEffect(() => {
     if (users == undefined && !loadingUsers) {
       if (!accountOrServer.server) return;
@@ -50,7 +52,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       console.log("Loading users...");
       setLoadingUsers(true);
       reloadUsers();
-    } else if (usersState.pagesStatus == 'loaded' && loadingUsers) {
+    } else if (userPagesStatus == 'loaded' && loadingUsers) {
       setLoadingUsers(false);
       dismissScrollPreserver(setShowScrollPreserver);
     }
@@ -78,9 +80,10 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     <TabsNavigation appSection={selectedGroup ? AppSection.MEMBERS : AppSection.PEOPLE} selectedGroup={selectedGroup}
       appSubsection={listingType == UserListingType.FOLLOW_REQUESTS ? AppSubsection.FOLLOW_REQUESTS : undefined}
       groupPageForwarder={(group) => `/g/${group.shortname}/members`}
+      withServerPinning
     // customHomeAction={onHomePressed}
     >
-      {usersState.pagesStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+      {userPagesStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
             top={dimensions.height / 2 - 50}
@@ -89,7 +92,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
         {users && users.length == 0
-          ? usersState.pagesStatus != 'loading' && usersState.pagesStatus != 'unloaded'
+          ? userPagesStatus != 'loading' && userPagesStatus != 'unloaded'
             ? listingType == UserListingType.FOLLOW_REQUESTS ?
               <YStack width='100%' maw={600} jc="center" ai="center">
                 <Heading size='$5' mb='$3'>No follow requests found.</Heading>
@@ -102,7 +105,8 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
             : undefined
           : <>
             {users?.map((user) => {
-              return <YStack w='100%' mb='$3' key={`user-${user.id}`}><UserCard user={user} isPreview /></YStack>;
+              const federatedUser = federatedEntity(user, server);
+              return <YStack w='100%' mb='$3' key={`user-${user.id}`}><UserCard user={federatedUser} isPreview /></YStack>;
             })}
             {showScrollPreserver ? <YStack h={100000} /> : undefined}
           </>}

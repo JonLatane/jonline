@@ -1,19 +1,17 @@
 import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
+import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, clearPostAlerts, createGroup, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
+import { useCredentialDispatch } from 'app/hooks';
+import { JonlineServer, RootState, clearPostAlerts, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 // import { PostMediaManager } from '../posts/post_media_manager';
+import { PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker } from 'app/components';
 import { useMediaUrl } from 'app/hooks';
-import { pending } from 'app/utils/moderation_utils';
+import { actionFailed } from 'app/store';
+import { pending, themedButtonBackground } from 'app/utils';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
-import { VisibilityPicker } from '../../components/visibility_picker';
-import { ToggleRow } from '../../components/toggle_row';
-import { actionFailed } from '../../store/store';
-import { PermissionsEditor, PermissionsEditorProps } from '../user/permissions_editor';
 import { groupUserPermissions } from './group_details_sheet';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export type CreateGroupSheetProps = {
   // selectedGroup?: Group;
@@ -289,7 +287,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                       onChange={(data) => { setName(data.nativeEvent.text) }} />
                     <Button p='$0'
                       ml='$2'
-                      {...themedButtonBackground(showMedia ? navColor : undefined, showMedia ? navTextColor : undefined, )}
+                      {...themedButtonBackground(showMedia ? navColor : undefined, showMedia ? navTextColor : undefined,)}
                       onPress={() => setShowMedia(!showMedia)}
                       height={hasAvatarUrl ? fullAvatarHeight : undefined}
                     >
@@ -305,7 +303,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                           source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
                           borderRadius={10} />
                         : <XStack px='$2'>
-                          <FileImage color={showMedia ? navTextColor : undefined}/>
+                          <FileImage color={showMedia ? navTextColor : undefined} />
                         </XStack>}
                     </Button>
                   </XStack>
@@ -315,55 +313,55 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                       : showSettings
                         ? mediaQuery.gtXs ? 215 : 230
                         : 0}> */}
-                    {/* <AnimatePresence> */}
-                      {showSettings
-                        ? <YStack key='create-group-settings'
-                          animation='standard'
-                          p='$2'
-                          backgroundColor='$backgroundHover'
-                          borderRadius='$5'
-                          // touch={showSettings}
+                  {/* <AnimatePresence> */}
+                  {showSettings
+                    ? <YStack key='create-group-settings'
+                      animation='standard'
+                      p='$2'
+                      backgroundColor='$backgroundHover'
+                      borderRadius='$5'
+                      // touch={showSettings}
 
-                          {...standardAnimation}
-                        >
-                          <XStack mx='auto'>
-                            <VisibilityPicker
-                              label='Group Visibility'
-                              visibility={visibility}
-                              disabled={disableInputs}
-                              onChange={setVisibility}
-                              visibilityDescription={v => groupVisibilityDescription(v, server)} />
-                          </XStack>
-                          <ToggleRow name='Require Membership Moderation'
-                            value={pending(defaultMembershipModeration)}
-                            setter={(v) => setDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                            disabled={disableInputs} />
-                          <ToggleRow name='Require Post Moderation'
-                            description='Hide all Posts shared to this Group until approved by a moderator.'
-                            value={pending(defaultPostModeration)}
-                            setter={(v) => setDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                            disabled={disableInputs} />
-                          <ToggleRow name='Require Event Moderation'
-                            description='Hide all Events shared to this Group until approved by a moderator.'
-                            value={pending(defaultEventModeration)}
-                            setter={(v) => setDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                            disabled={disableInputs} />
-                          <PermissionsEditor label='Default Member Permissions'
-                            {...membershipPermissionsEditorProps} />
-                          <PermissionsEditor label='Non-Member Permissions'
-                            {...nonMemberPermissionsEditorProps} />
-                        </YStack>
-                        : undefined}
-                    {/* </AnimatePresence> */}
-                    {/* {showMediaContainer
+                      {...standardAnimation}
+                    >
+                      <XStack mx='auto'>
+                        <VisibilityPicker
+                          label='Group Visibility'
+                          visibility={visibility}
+                          disabled={disableInputs}
+                          onChange={setVisibility}
+                          visibilityDescription={v => groupVisibilityDescription(v, server)} />
+                      </XStack>
+                      <ToggleRow name='Require Membership Moderation'
+                        value={pending(defaultMembershipModeration)}
+                        setter={(v) => setDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                        disabled={disableInputs} />
+                      <ToggleRow name='Require Post Moderation'
+                        description='Hide all Posts shared to this Group until approved by a moderator.'
+                        value={pending(defaultPostModeration)}
+                        setter={(v) => setDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                        disabled={disableInputs} />
+                      <ToggleRow name='Require Event Moderation'
+                        description='Hide all Events shared to this Group until approved by a moderator.'
+                        value={pending(defaultEventModeration)}
+                        setter={(v) => setDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                        disabled={disableInputs} />
+                      <PermissionsEditor label='Default Member Permissions'
+                        {...membershipPermissionsEditorProps} />
+                      <PermissionsEditor label='Non-Member Permissions'
+                        {...nonMemberPermissionsEditorProps} />
+                    </YStack>
+                    : undefined}
+                  {/* </AnimatePresence> */}
+                  {/* {showMediaContainer
                       ? <AnimatePresence> */}
-                        {showMedia
-                          ? <SingleMediaChooser key='create-group-avatar-chooser'
-                            disabled={!showMedia}
-                            selectedMedia={avatar} setSelectedMedia={setAvatar} />
-                          : undefined}
+                  {showMedia
+                    ? <SingleMediaChooser key='create-group-avatar-chooser'
+                      disabled={!showMedia}
+                      selectedMedia={avatar} setSelectedMedia={setAvatar} />
+                    : undefined}
 
-                      {/* </AnimatePresence>
+                  {/* </AnimatePresence>
                       : undefined}
                   </ZStack> */}
                   <TextArea f={1} pt='$2' value={description} ref={textAreaRef}

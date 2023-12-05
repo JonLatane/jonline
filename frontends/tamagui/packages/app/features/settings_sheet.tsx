@@ -1,6 +1,7 @@
 import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDarkMode, setDarkModeAuto, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useAppDispatch, useRootSelector } from 'app/store';
+import { useAppDispatch } from 'app/hooks';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector } from 'app/store';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 

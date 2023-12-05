@@ -1,29 +1,42 @@
-import { loadUser, RootState, selectUserById, useCredentialDispatch, useServerTheme, useRootSelector } from "app/store";
+import { RootState, loadUser, selectUserById, useRootSelector } from "app/store";
 import React, { useEffect, useState } from "react";
 
-import { Permission, Post } from "@jonline/api";
-import { Anchor, Avatar, DateViewer, Heading, Image, useMedia, XStack, YStack } from "@jonline/ui";
+import { Author, Permission, Post } from "@jonline/api";
+import { Anchor, DateViewer, Heading, Image, XStack, YStack, useMedia } from "@jonline/ui";
 import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
+import { useCredentialDispatch, useServer } from "app/hooks";
 import { useMediaUrl } from "app/hooks/use_media_url";
+import { federateId, federatedIDPair } from "app/store/federation";
+import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
 import { View } from "react-native";
 import { useLink } from "solito/link";
-import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
 
 export type AuthorInfoProps = {
-  post: Post;
+  author?: Author;
+  post?: Post;
   detailsMargins?: number;
   disableLink?: boolean;
   isVisible?: boolean;
 }
-export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVisible = true }: AuthorInfoProps) => {
-  const authorId = post.author?.userId;
-  const authorName = post.author?.username;
+export const AuthorInfo = ({ post, author: inputAuthor = post?.author, disableLink = false, detailsMargins = 0, isVisible = true }: AuthorInfoProps) => {
+  if ((!post && !inputAuthor)) {
+    // throw new Error('AuthorInfo requires either a post or an author');
+  }
+  if (post && inputAuthor && post.author?.userId !== inputAuthor.userId) {
+    // throw new Error('Post author and author props do not match');
+  }
+  const author = inputAuthor as Author;
+  const server = useServer();
+  const authorId = federatedIDPair(author.userId, server);
+  const serverAuthorId = author?.userId;
+  const federatedAuthorId = serverAuthorId && federateId(serverAuthorId, server);
+  const authorName = author?.username;
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { server, primaryColor, navColor } = useServerTheme();
+  // const { server, primaryColor, navColor } = useServerTheme();
   const media = useMedia();
-  const author = useRootSelector((state: RootState) => authorId ? selectUserById(state.users, authorId) : undefined);
+  const authorUser = useRootSelector((state: RootState) => federatedAuthorId ? selectUserById(state.users, federatedAuthorId) : undefined);
   // const authorAvatar = useRootSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
-  const authorLoadFailed = useRootSelector((state: RootState) => authorId ? state.users.failedUserIds.includes(authorId) : false);
+  const authorLoadFailed = useRootSelector((state: RootState) => federatedAuthorId ? state.users.failedUserIds.includes(federatedAuthorId) : false);
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   const authorLink = useLink({
@@ -31,9 +44,9 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
       ? `/${authorName}`
       : author
         ? `/${author.username}`
-        : `/user/${authorId}`
+        : `/user/${serverAuthorId}`
   });
-  const authorLinkProps = author ? authorLink : undefined;
+  const authorLinkProps = authorLink;
   if (authorLinkProps) {
     const authorOnPress = authorLinkProps.onPress;
     authorLinkProps.onPress = (event) => {
@@ -41,18 +54,20 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
       authorOnPress?.(event);
     }
   }
+  console.log
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
   useEffect(() => {
-    if (authorId && isVisible) {
-      if (!loadingAuthor && !author && !authorLoadFailed) {
-        dispatch(loadUser({ id: authorId, ...accountOrServer }));
+    if (serverAuthorId && isVisible) {
+      if (!loadingAuthor && !authorUser && !authorLoadFailed) {
+        console.log('loading author')
+        dispatch(loadUser({ userId: serverAuthorId, ...accountOrServer }));
         setLoadingAuthor(true);
       } else if (loadingAuthor && author) {
         setLoadingAuthor(false);
       }
     }
-  }, [authorId, isVisible]);
+  }, [serverAuthorId, isVisible]);
   const avatarUrl = useMediaUrl(author?.avatar?.id);
   const avatarImage = <XStack p={0} w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
     <Image
@@ -99,11 +114,13 @@ export const AuthorInfo = ({ post, disableLink = false, detailsMargins = 0, isVi
       </XStack>
       <XStack>
         <XStack mr='$2'>
-          <DateViewer date={post.createdAt} updatedDate={post.updatedAt} />
+          {post
+            ? <DateViewer date={post.createdAt} updatedDate={post.updatedAt} />
+            : undefined}
         </XStack>
-        {author && hasAdminPermission(author)
+        {author && hasAdminPermission(authorUser)
           ? <PermissionIndicator permission={Permission.ADMIN} /> : undefined}
-        {author && hasPermission(author, Permission.RUN_BOTS)
+        {author && hasPermission(authorUser, Permission.RUN_BOTS)
           ? <PermissionIndicator permission={Permission.RUN_BOTS} /> : undefined}
       </XStack>
     </YStack>

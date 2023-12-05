@@ -1,4 +1,4 @@
-import { Empty, Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, User, UserListingType } from "@jonline/api";
+import { Empty, Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, ResetPasswordRequest, User, UserListingType } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -20,27 +20,27 @@ export const loadUsersPage: AsyncThunk<GetUsersResponse, LoadUsersRequest, any> 
   }
 );
 
-export type LoadUser = { id: string } & AccountOrServer;
+export type LoadUser = { userId: string } & AccountOrServer;
 const _loadingUserIds = new Set<string>();
 export const loadUser: AsyncThunk<User, LoadUser, any> = createAsyncThunk<User, LoadUser>(
   "users/loadById",
   async (request) => {
     let user: User | undefined = undefined;
-    if (_loadingUserIds.has(request.id)) {
+    if (_loadingUserIds.has(request.userId)) {
       throw 'Already loading user...';
     }
     // while (_loadingUserIds.has(request.id)) {
     //   await new Promise(resolve => setTimeout(resolve, 100));
     //   user = usersAdapter.getSelectors().selectById(store.getState().users, request.id);
     // }
-    if (store.getState().users.failedUserIds.includes(request.id)) {
+    if (store.getState().users.failedUserIds.includes(request.userId)) {
       throw 'User not found';
     }
     if (!user) {
-      _loadingUserIds.add(request.id);
+      _loadingUserIds.add(request.userId);
       const client = await getCredentialClient(request);
-      const response = await client.getUsers(GetUsersRequest.create({ userId: request.id }), client.credential);
-      _loadingUserIds.delete(request.id);
+      const response = await client.getUsers(GetUsersRequest.create({ userId: request.userId }), client.credential);
+      _loadingUserIds.delete(request.userId);
       if (response.users.length == 0) throw 'User not found';
 
       user = response.users[0]!;
@@ -150,5 +150,15 @@ export const deleteUser: AsyncThunk<void, DeleteUser, any> = createAsyncThunk<vo
     const client = await getCredentialClient(request);
     const updatedUser = { ...request };
     await client.deleteUser(updatedUser, client.credential);
+  }
+);
+
+export type ResetPassword = ResetPasswordRequest & AccountOrServer;
+export const resetPassword: AsyncThunk<void, ResetPassword, any> = createAsyncThunk<void, ResetPassword>(
+  "users/resetPassword",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const rpcRequest = { ...request };
+    await client.resetPassword(rpcRequest, client.credential);
   }
 );

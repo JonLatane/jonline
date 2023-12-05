@@ -548,6 +548,7 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ExpirableToken ensureRefreshToken() => $_ensure(0);
 
+  /// The new access token.
   @$pb.TagNumber(2)
   ExpirableToken get accessToken => $_getN(1);
   @$pb.TagNumber(2)
@@ -558,6 +559,73 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   void clearAccessToken() => clearField(2);
   @$pb.TagNumber(2)
   ExpirableToken ensureAccessToken() => $_ensure(1);
+}
+
+/// Request to reset a password.
+class ResetPasswordRequest extends $pb.GeneratedMessage {
+  factory ResetPasswordRequest({
+    $core.String? userId,
+    $core.String? password,
+  }) {
+    final $result = create();
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (password != null) {
+      $result.password = password;
+    }
+    return $result;
+  }
+  ResetPasswordRequest._() : super();
+  factory ResetPasswordRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ResetPasswordRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ResetPasswordRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..aOS(3, _omitFieldNames ? '' : 'password')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ResetPasswordRequest clone() => ResetPasswordRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ResetPasswordRequest copyWith(void Function(ResetPasswordRequest) updates) => super.copyWith((message) => updates(message as ResetPasswordRequest)) as ResetPasswordRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ResetPasswordRequest create() => ResetPasswordRequest._();
+  ResetPasswordRequest createEmptyInstance() => create();
+  static $pb.PbList<ResetPasswordRequest> createRepeated() => $pb.PbList<ResetPasswordRequest>();
+  @$core.pragma('dart2js:noInline')
+  static ResetPasswordRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ResetPasswordRequest>(create);
+  static ResetPasswordRequest? _defaultInstance;
+
+  /// If not set, use the current user of the request.
+  @$pb.TagNumber(1)
+  $core.String get userId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set userId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUserId() => clearField(1);
+
+  /// The new password to set.
+  @$pb.TagNumber(3)
+  $core.String get password => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set password($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasPassword() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearPassword() => clearField(3);
 }
 
 

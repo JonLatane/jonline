@@ -39,6 +39,7 @@ class PostListingType extends $pb.ProtobufEnum {
   const PostListingType._($core.int v, $core.String n) : super(v, n);
 }
 
+/// Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic.
 class PostContext extends $pb.ProtobufEnum {
   static const PostContext POST = PostContext._(0, _omitEnumNames ? '' : 'POST');
   static const PostContext REPLY = PostContext._(1, _omitEnumNames ? '' : 'REPLY');

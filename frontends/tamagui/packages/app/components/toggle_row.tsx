@@ -1,5 +1,5 @@
 import { Heading, Label, Paragraph, Switch, XStack, YStack } from '@jonline/ui';
-import { useAppDispatch } from 'app/store';
+import { useAppDispatch } from 'app/hooks';
 import React from 'react';
 
 

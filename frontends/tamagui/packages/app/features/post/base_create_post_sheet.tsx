@@ -1,15 +1,15 @@
-import { Group, MediaReference, Permission, Post, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
-import { ChevronDown, Cog, Image as ImageIcon, Unlock } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
+import { Group, MediaReference, Post, Visibility } from '@jonline/api';
+import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
+import { ChevronDown, Cog, Image as ImageIcon } from '@tamagui/lucide-icons';
+import { ToggleRow, VisibilityPicker } from 'app/components';
+import { useCredentialDispatch } from 'app/hooks';
+import { JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { GroupsSheet } from '../groups/groups_sheet';
-import { ToggleRow } from '../../components/toggle_row';
 import { PostMediaManager } from './post_media_manager';
-import { VisibilityPicker } from '../../components/visibility_picker';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
 
 export type BaseCreatePostSheetProps = {
   selectedGroup?: Group;

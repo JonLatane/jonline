@@ -1,8 +1,7 @@
-import { Event, EventInstance, EventListingType, Group, GroupListingType, Post, PostListingType } from "@jonline/api";
-import { EventsState, GroupsState, PostsState, selectEventById, selectGroupById, selectPostById, serializeTimeFilter } from "./modules";
-import { RootState } from "./store";
+import { Event, EventListingType, Group, GroupListingType, Post, PostListingType } from "@jonline/api";
 import { Dictionary } from "@reduxjs/toolkit";
-import { TimeFilter } from '../../api/generated/events';
+import { EventsState, GroupsState, PostsState, selectEventById, selectGroupById, selectPostById } from "./modules";
+import { RootState } from "./store";
 
 
 /**

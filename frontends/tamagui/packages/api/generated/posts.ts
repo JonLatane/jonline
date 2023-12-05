@@ -90,10 +90,15 @@ export function postListingTypeToJSON(object: PostListingType): string {
   }
 }
 
+/** Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic. */
 export enum PostContext {
+  /** POST - "Standard" Post. */
   POST = 0,
+  /** REPLY - Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`. */
   REPLY = 1,
+  /** EVENT - An "Event" Post. The Events table should have a row for this Post. */
   EVENT = 2,
+  /** EVENT_INSTANCE - An "Event Instance" Post. The EventInstances table should have a row for this Post. */
   EVENT_INSTANCE = 3,
   UNRECOGNIZED = -1,
 }

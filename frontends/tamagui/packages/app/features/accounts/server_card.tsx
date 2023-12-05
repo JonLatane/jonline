@@ -1,9 +1,10 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation } from "@jonline/ui";
 import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { store, JonlineServer, removeAccount, removeServer, RootState, selectAccount, selectAllAccounts, selectServer, serverID, useAppDispatch, useRootSelector, accountId, moveServerUp, moveServerDown, colorMeta } from "app/store";
+import { colorMeta, useAppDispatch } from "app/hooks";
+import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, store, useRootSelector } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
-import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
+import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
 interface Props {
   server: JonlineServer;
@@ -49,7 +50,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
   function doRemoveServer() {
     accounts.forEach(account => {
       if (account.server.host == server.host) {
-        dispatch(removeAccount(accountId(account)!));
+        dispatch(removeAccount(accountID(account)!));
       }
     });
     dispatch(removeServer(server));

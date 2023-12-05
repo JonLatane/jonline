@@ -62,13 +62,6 @@ export function useRootSelector<T>(selector: (state: RootState) => T): T {
 }
 
 export type AppDispatch = ThunkDispatch<RootState, any, AnyAction>;
-export function useAppDispatch(): AppDispatch {
-  return useDispatch<AppDispatch>()
-};
-
-export function useLocalConfiguration(): LocalAppConfiguration {
-  return useTypedSelector((state: RootState) => state.app);
-}
 
 export type AppStore = Omit<Store<RootState, AnyAction>, "dispatch"> & {
   dispatch: AppDispatch;

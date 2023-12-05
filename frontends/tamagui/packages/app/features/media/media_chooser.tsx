@@ -1,5 +1,6 @@
 import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
-import { RootState, deleteMedia, selectMediaById, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
+import { useAccount, useCredentialDispatch } from 'app/hooks';
+import { RootState, deleteMedia, selectMediaById, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 import { Media, MediaReference } from '@jonline/api';
@@ -7,7 +8,6 @@ import { overlayAnimation } from '@jonline/ui';
 
 import { Image as ImageIcon, Trash, Wand2 } from '@tamagui/lucide-icons';
 
-import { useAccount } from 'app/store';
 import { MediaRenderer } from './media_renderer';
 import { useMediaPage } from './media_screen';
 import { MediaUploader } from './media_uploader';

@@ -1,18 +1,21 @@
 import { AnimatePresence, Button, ButtonProps, Heading, Paragraph, Tooltip, XStack, YStack, ZStack, standardAnimation, useForceUpdate, useMedia } from "@jonline/ui";
 import { CornerRightUp, HelpCircle, MoveUp } from '@tamagui/lucide-icons';
 import { DarkModeToggle, doesPlatformPreferDarkMode } from "app/components/dark_mode_toggle";
-import { setShowHelp, useAccount, useAccountOrServer, useAppDispatch, useLocalConfiguration, useServerTheme } from "app/store";
+import { useComponentKey, useAccount, useAccountOrServer, useAppDispatch, useLocalConfiguration } from "app/hooks";
+import { setShowHelp, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
+import moment, { Moment } from "moment";
 import { useEffect, useState } from "react";
 import { GestureResponderEvent } from "react-native";
 
-let reallyHideHelp = false;
+// let reallyHideHelp = false;
+let lastHideTime: Moment | undefined = undefined;
 export function TutorialToggle(props: ButtonProps) {
   const { onPress: parentOnPress, ...rest } = props;
   const dispatch = useAppDispatch();
   const onPress = (event: GestureResponderEvent) => {
     dispatch(setShowHelp(true));
-    reallyHideHelp = false;
+    lastHideTime = undefined;
     parentOnPress?.(event);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -27,13 +30,14 @@ export function TabsTutorial({ }) {
   const dispatch = useAppDispatch();
   const focueUpdate = useForceUpdate();
   const account = useAccount();
-  const [hidingStarted, setHidingStarted] = useState(false);
+  const [hidingStarted, setHidingStarted] = useState(undefined as Moment | undefined);
+
   const startHidingHelp = () => {
-    reallyHideHelp = true;
-    setHidingStarted(true);
+    lastHideTime = moment();
+    setHidingStarted(lastHideTime);
   }
   useEffect(() => {
-    setHidingStarted(false);
+    setHidingStarted(undefined);
     if (showHelp) {
       setTimeout(startHidingHelp, 15000);
     }
@@ -41,7 +45,7 @@ export function TabsTutorial({ }) {
   useEffect(() => {
     if (hidingStarted) {
       setTimeout(() => {
-        if (reallyHideHelp) {
+        if (hidingStarted && hidingStarted === lastHideTime) {
           dispatch(setShowHelp(false))
         }
       }, 5000);
@@ -66,7 +70,7 @@ export function TabsTutorial({ }) {
     if (nextPhase()) {
       console.log('moved to next phase, skipping hiding')
     } else if (!hidingStarted) {
-      setHidingStarted(true);
+      startHidingHelp();
     } else {
       dispatch(setShowHelp(false));
     }
@@ -122,16 +126,18 @@ export function TabsTutorial({ }) {
               </Heading>
             </Button>
           </YStack>
-          <XStack f={1} />
-          <Paragraph size='$2' textAlign="right" fontWeight='bold' o={showPhase2 || hidingStarted ? 1 : 0}>
-            {hidingStarted
-              ? 'View this again later'
-              : 'Accounts and Settings'}
-          </Paragraph>
+          <ZStack h='100%' f={1} animation='standard' o={showPhase2 || hidingStarted ? 1 : 0}>
+            <Paragraph my='auto' size='$2' textAlign="right" fontWeight='bold' o={hidingStarted ? 1 : 0}>
+              View this again later
+            </Paragraph>
+            <Paragraph my='auto' size='$2' textAlign="right" fontWeight='bold' animation='standard' o={showPhase2 && !hidingStarted ? 1 : 0}>
+              Accounts and Settings
+            </Paragraph>
+          </ZStack>
           <Paragraph size='$2' fontWeight='bold' o={showPhase2 || hidingStarted ? 1 : 0}>(</Paragraph>
           <XStack mb='$1' opacity={hidingStarted ? 1 : 0.8} animation='standard' o={showPhase2 || hidingStarted ? 1 : 0}>
             {hidingStarted
-              ? <TutorialToggle onPress={() => setHidingStarted(false)} />
+              ? <TutorialToggle onPress={() => setHidingStarted(undefined)} />
               : <DarkModeToggle />}
           </XStack>
           <Paragraph size='$2' fontWeight='bold' o={showPhase2 || hidingStarted ? 1 : 0}>)</Paragraph>

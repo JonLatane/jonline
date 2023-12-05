@@ -1,12 +1,13 @@
 import { Permission, Post } from '@jonline/api'
 import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack, isClient, isWeb, useWindowDimensions } from '@jonline/ui'
 import { ChevronRight, Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
-import { RootState, confirmReplySent, replyToPost, selectPostById, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store'
+import { TamaguiMarkdown } from 'app/components'
+import { useCredentialDispatch } from 'app/hooks'
+import { RootState, confirmReplySent, replyToPost, selectPostById, useRootSelector, useServerTheme } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
 import StickyBox from 'react-sticky-box'
 import { AddAccountSheet } from '../accounts/add_account_sheet'
-import { TamaguiMarkdown } from './tamagui_markdown'
 import { MediaRef } from '../media/media_chooser'
 import { PostMediaManager } from './post_media_manager'
 import { PostMediaRenderer } from './post_media_renderer'
@@ -16,10 +17,6 @@ interface ReplyAreaProps {
   hidden?: boolean;
   onStopReplying?: () => void;
 }
-
-// let _replyTextFocused = false;
-
-// export const isReplyTextFocused = () => _replyTextFocused;
 
 export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, onStopReplying }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -123,7 +120,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         {replyingToPath.length > 1
           ? <XStack w='100%'>
             <Heading size='$1' f={1}>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
-            {onStopReplying ? <Button size='$1' onPress={onStopReplying}>Cancel</Button>: undefined}
+            {onStopReplying ? <Button size='$1' onPress={onStopReplying}>Cancel</Button> : undefined}
             <XStack f={1} />
           </XStack>
           : undefined}

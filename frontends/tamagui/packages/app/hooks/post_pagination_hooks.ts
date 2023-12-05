@@ -1,5 +1,6 @@
 import { Post, PostListingType } from "@jonline/api";
-import { RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostPages, loadGroupPostsPage, loadPostsPage, useCredentialDispatch, useRootSelector } from "app/store";
+import { useCredentialDispatch } from "app/hooks";
+import { RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostPages, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 
 export type PostPageParams = { onLoaded?: () => void };

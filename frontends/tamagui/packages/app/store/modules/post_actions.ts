@@ -87,7 +87,7 @@ export type LoadPostReplies = AccountOrServer & {
 export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any> = createAsyncThunk<GetPostsResponse, LoadPostReplies>(
   "posts/loadReplies",
   async (repliesRequest) => {
-    console.log("loadPostReplies:", repliesRequest)
+    // console.log("loadPostReplies:", repliesRequest)
     const getPostsRequest = GetPostsRequest.create({
       postId: repliesRequest.postIdPath.at(-1),
       replyDepth: 2,

@@ -1,10 +1,10 @@
-import { accountOrServerId, getCredentialClient, useCredentialDispatch, useLocalConfiguration, useServerTheme } from "app/store";
+import { accountOrServerId, getCredentialClient, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
-import { useAnonymousAuthToken, useComponentKey } from "app/hooks";
+import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useLocalConfiguration } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
@@ -131,7 +131,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       setLoading(true);
       setTimeout(async () => {
         try {
-          console.log('loading attendance data with auth token', anonymousAuthToken);
+          // console.log('loading attendance data with auth token', anonymousAuthToken);
           const client = await getCredentialClient(accountOrServer);
           const data = await client.getEventAttendances({
             eventInstanceId: instance?.id,

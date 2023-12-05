@@ -64,6 +64,7 @@ pub fn update_post(
                     .any(|s| s == existing_post.context)
                 {
                     existing_post.title = request.title.to_owned();
+                    existing_post.link = request.link.to_owned();
                 }
                 existing_post.content = request.content.to_owned();
                 existing_post.media = request

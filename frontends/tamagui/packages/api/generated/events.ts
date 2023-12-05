@@ -9,6 +9,7 @@ import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_m
 
 export const protobufPackage = "jonline";
 
+/** The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. */
 export enum EventListingType {
   /** ALL_ACCESSIBLE_EVENTS - Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible. */
   ALL_ACCESSIBLE_EVENTS = 0,
@@ -18,9 +19,11 @@ export enum EventListingType {
   MY_GROUPS_EVENTS = 2,
   /** DIRECT_EVENTS - Returns `DIRECT` events that are directly addressed to the user. */
   DIRECT_EVENTS = 3,
+  /** EVENTS_PENDING_MODERATION - Returns `SERVER_PUBLIC` and `GLOBAL_PUBLIC` that need moderation. */
   EVENTS_PENDING_MODERATION = 4,
   /** GROUP_EVENTS - group_id parameter is required for these. */
   GROUP_EVENTS = 10,
+  /** GROUP_EVENTS_PENDING_MODERATION - Returns `LIMITED`, `SERVER_PUBLIC`, and `GLOBAL_PUBLIC` that need moderation. */
   GROUP_EVENTS_PENDING_MODERATION = 11,
   UNRECOGNIZED = -1,
 }
@@ -177,14 +180,28 @@ export interface GetEventsRequest {
    * only returns events where the given user's status matches one of the given statuses.
    */
   attendanceStatuses: AttendanceStatus[];
+  /** The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. */
   listingType: EventListingType;
 }
 
-/** Time filter that simply works on the starts_at and ends_at fields. */
+/**
+ * Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
+ * API currently only supports `ends_after`.
+ */
 export interface TimeFilter {
-  startsAfter?: string | undefined;
-  endsAfter?: string | undefined;
-  startsBefore?: string | undefined;
+  /** Filter to events that start after the given time. */
+  startsAfter?:
+    | string
+    | undefined;
+  /** Filter to events that end after the given time. */
+  endsAfter?:
+    | string
+    | undefined;
+  /** Filter to events that start before the given time. */
+  startsBefore?:
+    | string
+    | undefined;
+  /** Filter to events that end before the given time. */
   endsBefore?: string | undefined;
 }
 
@@ -231,21 +248,43 @@ export interface Event {
  * Stored as JSON in the database.
  */
 export interface EventInfo {
-  allowsRsvps?: boolean | undefined;
+  /** Whether to allow RSVPs for the event. */
+  allowsRsvps?:
+    | boolean
+    | undefined;
+  /** Whether to allow anonymous RSVPs for the event. */
   allowsAnonymousRsvps?:
     | boolean
     | undefined;
-  /** No effect unless `allows_rsvps` is true. */
+  /** Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported. */
   maxAttendees?: number | undefined;
 }
 
+/**
+ * The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
+ * a `Location`, and an optional `Post` (and discussion thread) specific to this particular
+ * `EventInstance` in addition to the parent `Event`.
+ */
 export interface EventInstance {
   id: string;
   eventId: string;
-  post?: Post | undefined;
-  info: EventInstanceInfo | undefined;
-  startsAt: string | undefined;
-  endsAt: string | undefined;
+  /** Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`. */
+  post?:
+    | Post
+    | undefined;
+  /** Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`. */
+  info:
+    | EventInstanceInfo
+    | undefined;
+  /** The time the event starts (UTC/Timestamp format). */
+  startsAt:
+    | string
+    | undefined;
+  /** The time the event ends (UTC/Timestamp format). */
+  endsAt:
+    | string
+    | undefined;
+  /** The location of the event. */
   location?: Location | undefined;
 }
 
@@ -257,13 +296,20 @@ export interface EventInstanceInfo {
   rsvpInfo?: EventInstanceRsvpInfo | undefined;
 }
 
+/**
+ * Consolidated type for RSVP info for an `EventInstance`.
+ * Curently, the `optional` counts below are *never* returned by the API.
+ */
 export interface EventInstanceRsvpInfo {
   /** Overrides `EventInfo.allows_rsvps`, if set, for this instance. */
   allowsRsvps?:
     | boolean
     | undefined;
   /** Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. */
-  allowsAnonymousRsvps?: boolean | undefined;
+  allowsAnonymousRsvps?:
+    | boolean
+    | undefined;
+  /** Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported. */
   maxAttendees?: number | undefined;
   goingRsvps?: number | undefined;
   goingAttendees?: number | undefined;
@@ -273,6 +319,7 @@ export interface EventInstanceRsvpInfo {
   invitedAttendees?: number | undefined;
 }
 
+/** Request to get RSVP data for an event. */
 export interface GetEventAttendancesRequest {
   eventInstanceId: string;
   anonymousAttendeeAuthToken?: string | undefined;
@@ -313,6 +360,7 @@ export interface EventAttendance {
   privateNote: string;
   /** Private note for the event owner. */
   publicNote: string;
+  /** Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable). */
   moderation: Moderation;
   createdAt: string | undefined;
   updatedAt?: string | undefined;
@@ -340,8 +388,13 @@ export interface AnonymousAttendee {
 
 /** Wire-identical to [Author](#author), but with a different name to avoid confusion. */
 export interface UserAttendee {
+  /** The user ID of the attendee. */
   userId: string;
-  username?: string | undefined;
+  /** The username of the attendee. */
+  username?:
+    | string
+    | undefined;
+  /** The attendee's user avatar. */
   avatar?: MediaReference | undefined;
 }
 

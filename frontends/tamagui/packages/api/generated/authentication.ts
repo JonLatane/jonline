@@ -81,8 +81,21 @@ export interface AccessTokenResponse {
    * their indicated expiration.
    * See: https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
    */
-  refreshToken?: ExpirableToken | undefined;
+  refreshToken?:
+    | ExpirableToken
+    | undefined;
+  /** The new access token. */
   accessToken: ExpirableToken | undefined;
+}
+
+/** Request to reset a password. */
+export interface ResetPasswordRequest {
+  /** If not set, use the current user of the request. */
+  userId?:
+    | string
+    | undefined;
+  /** The new password to set. */
+  password: string;
 }
 
 function createBaseCreateAccountRequest(): CreateAccountRequest {
@@ -664,6 +677,80 @@ export const AccessTokenResponse = {
     message.accessToken = (object.accessToken !== undefined && object.accessToken !== null)
       ? ExpirableToken.fromPartial(object.accessToken)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseResetPasswordRequest(): ResetPasswordRequest {
+  return { userId: undefined, password: "" };
+}
+
+export const ResetPasswordRequest = {
+  encode(message: ResetPasswordRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.userId !== undefined) {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.password !== "") {
+      writer.uint32(26).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ResetPasswordRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResetPasswordRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ResetPasswordRequest {
+    return {
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+    };
+  },
+
+  toJSON(message: ResetPasswordRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== undefined) {
+      obj.userId = message.userId;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ResetPasswordRequest>, I>>(base?: I): ResetPasswordRequest {
+    return ResetPasswordRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ResetPasswordRequest>, I>>(object: I): ResetPasswordRequest {
+    const message = createBaseResetPasswordRequest();
+    message.userId = object.userId ?? undefined;
+    message.password = object.password ?? "";
     return message;
   },
 };

@@ -1,24 +1,19 @@
-import { Empty, GetGroupsRequest, Group, Moderation, Permission, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Image, Paragraph, Sheet, Theme, useMedia, XStack, YStack, Text, standardAnimation, Separator, ZStack, Dialog, ListItemText, YGroup, ListItem, TextArea, Anchor, AnimatePresence } from '@jonline/ui';
-import { Boxes, Calendar, ChevronDown, Cloud, Cog, Delete, Edit, Eye, FileImage, Info, MessageSquare, Moon, Save, Search, Star, Sun, Users, Users2, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, isGroupLocked, deleteGroup, updateGroup, joinLeaveGroup, selectAllGroups, serverID, loadGroupsPage, useAccount, useAccountOrServer, useCredentialDispatch, useServerTheme, useAppDispatch, useRootSelector, DeleteGroup, actionFailed } from 'app/store';
-import React, { createRef, useEffect, useState } from 'react';
-import { FlatList, GestureResponderEvent, Settings, TextInput, View } from 'react-native';
-import { useLink } from 'solito/link';
-import { } from '../post/post_card';
-import { TamaguiMarkdown } from '../post/tamagui_markdown';
-import { passes, pending } from '../../utils/moderation_utils';
-import { CreateGroupSheet, groupVisibilityDescription } from './create_group_sheet';
-import { GroupButton, GroupJoinLeaveButton } from './group_buttons';
-import { SingleMediaChooser } from '../accounts/single_media_chooser';
-import { useMediaUrl } from 'app/hooks';
-import { EditingContextProvider, SaveButtonGroup, useEditableState, useStatefulEditingContext } from '../../components/save_button_group';
+import { Group, Moderation, Permission, Visibility } from '@jonline/api';
+import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextArea, XStack, YStack, standardAnimation } from '@jonline/ui';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { VisibilityPicker } from 'app/components/visibility_picker';
-import { ToggleRow } from 'app/components/toggle_row';
-import { splitOnFirstEmoji } from '../tabs/server_name_and_logo';
+import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
+import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
+import { useCredentialDispatch, useMediaUrl } from 'app/hooks';
+import { RootState, deleteGroup, updateGroup, useRootSelector, useServerTheme } from 'app/store';
+import { passes, pending } from 'app/utils';
+import React, { useState } from 'react';
 import { createParam } from 'solito';
-import { PermissionsEditorProps, PermissionsEditor } from '../user/permissions_editor';
+import { useLink } from 'solito/link';
+import { SingleMediaChooser } from '../accounts/single_media_chooser';
+import { } from '../post/post_card';
+import { splitOnFirstEmoji } from '../navigation/server_name_and_logo';
+import { groupVisibilityDescription } from './create_group_sheet';
+import { GroupJoinLeaveButton } from './group_buttons';
 
 
 export const groupUserPermissions = [
@@ -348,7 +343,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                   disabled={disableInputs} />
                 <ToggleRow name='Require Event Moderation'
                   description='Hide all Events shared to this Group until approved by a moderator.'
-                   value={pending(defaultEventModeration)}
+                  value={pending(defaultEventModeration)}
                   setter={(v) => setEditedDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
                   disabled={disableInputs} />
 

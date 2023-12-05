@@ -1,22 +1,17 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, Trash } from '@tamagui/lucide-icons';
-import { RootState, clearUserAlerts, deleteUser, loadUserPosts, loadUsername, selectUserById, updateUser, useAccount, useCredentialDispatch, useRootSelector, useServerTheme } from 'app/store';
-import { pending } from 'app/utils/moderation_utils';
-import { hasAdminPermission } from 'app/utils/permission_utils';
-import { setDocumentTitle } from 'app/utils/set_title';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
+import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
+import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
+import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
+import { useAccount, useCredentialDispatch } from 'app/hooks';
+import { RootState, deleteUser, getFederated, loadUserPosts, loadUsername, resetPassword, selectUserById, updateUser, useRootSelector, useServerTheme } from 'app/store';
+import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
-import { ToggleRow } from '../../components/toggle_row';
-import { VisibilityPicker } from '../../components/visibility_picker';
-import PostCard from '../post/post_card';
-import { TamaguiMarkdown } from '../post/tamagui_markdown';
-import { AppSection } from '../tabs/features_navigation';
-import { TabsNavigation } from '../tabs/tabs_navigation';
-import { PermissionsEditor, PermissionsEditorProps } from './permissions_editor';
+import { PostCard } from '../post/post_card';
+import { AppSection } from '../navigation/features_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
 import { UserCard, useFullAvatarHeight } from './user_card';
 
 const { useParam } = createParam<{ username: string }>()
@@ -33,7 +28,7 @@ export function UsernameDetailsScreen() {
   const usersState = useRootSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
-  const userLoadFailed = usersState.failedUsernames.includes(inputUsername!);
+  const userLoadFailed = getFederated(usersState.failedUsernames, server).includes(inputUsername!);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user?.id;
   const isAdmin = hasAdminPermission(accountOrServer.account?.user);
   const canEdit = isCurrentUser || isAdmin;
@@ -111,11 +106,11 @@ export function UsernameDetailsScreen() {
       resetFormData();
     }
   }, [user, username]);
-  useEffect(() => {
-    if (dirtyData && successSaving) {
-      dispatch(clearUserAlerts!());
-    }
-  }, [dirtyData, successSaving]);
+  // useEffect(() => {
+  //   if (dirtyData && successSaving) {
+  //     dispatch(clearUserAlerts!());
+  //   }
+  // }, [dirtyData, successSaving]);
   useEffect(() => {
     if (editMode && !canEdit) setEditMode(false);
   }, [editMode, canEdit]);
@@ -136,13 +131,13 @@ export function UsernameDetailsScreen() {
   // }
 
   useEffect(() => {
-    if (inputUsername && !loadingUser && (!user || usersState.status == 'unloaded') && !userLoadFailed) {
+    if (inputUsername && !loadingUser && (!user /*|| usersState.status == 'unloaded'*/) && !userLoadFailed) {
       setLoadingUser(true);
       setTimeout(() => dispatch(loadUsername({ ...accountOrServer, username: inputUsername! })));
     } else if (loadingUser && (user || userLoadFailed)) {
       setLoadingUser(false);
     }
-  }, [inputUsername, loadingUser, user, usersState.status, userLoadFailed]);
+  }, [inputUsername, loadingUser, user, /*usersState.status,*/ userLoadFailed]);
   useEffect(() => {
     if (user && userPosts && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
@@ -188,8 +183,10 @@ export function UsernameDetailsScreen() {
     });
   }
   const postsState = useRootSelector((state: RootState) => state.posts);
-  const loading = usersState.status == 'loading' || usersState.status == 'unloaded'
-    || postsState.status == 'loading' || postsState.status == 'unloaded';
+  const loading = loadingUser || loadingUserPosts || loadingUserEvents;
+
+  // const loading = usersState.status == 'loading' || usersState.status == 'unloaded'
+  //   || postsState.status == 'loading' || postsState.status == 'unloaded';
 
   return (
     <TabsNavigation appSection={AppSection.PROFILE}>
@@ -309,7 +306,7 @@ export function UsernameDetailsScreen() {
         </>
           : userLoadFailed
             ? <YStack width='100%' maw={800} jc="center" ai="center">
-              <Heading size='$5' mb='$3'>The profile for <Text fontFamily='$body' fontSize='$7'>{username}</Text> could not be loaded.</Heading>
+              <Heading size='$5' mb='$3'>The profile for <Text fontFamily='$body' fontSize='$7'>{inputUsername}</Text> could not be loaded.</Heading>
               <Heading size='$3' ta='center'>They may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : <Heading size='$3'>Loading{username ? ` ${username}` : ''}</Heading>}
@@ -333,6 +330,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { server } = accountOrServer;
   const media = useMedia();
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const account = useAccount();
   const isCurrentUser = account && account?.user?.id == user.id;
   const isAdmin = hasAdminPermission(account?.user);
@@ -342,6 +340,17 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
   function doDeleteUser() {
     dispatch(deleteUser({ ...user!, ...accountOrServer }))
       .then(() => window.location.replace('/'));
+  }
+
+  const [resetUserPassword, setResetUserPassword] = useState('');
+  const [confirmUserPassword, setConfirmUserPassword] = useState('');
+  const [showPasswordPlaintext, setShowPasswordPlaintext] = useState(false);
+  const toast = useToastController();
+  const resetPasswordValid = resetUserPassword.length >= 8 && resetUserPassword == confirmUserPassword;
+  const confirmPasswordInvalid = resetUserPassword.length >= 8 && resetUserPassword !== confirmUserPassword;
+  function doResetPassword() {
+    dispatch(resetPassword({ userId: user.id, password: resetUserPassword, ...accountOrServer }))
+      .then(() => toast.show('Password reset.'));
   }
 
   return <AnimatePresence>
@@ -388,60 +397,149 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
       <XStack h='$1' />
       <PermissionsEditor {...permissionsEditorProps} />
       {isCurrentUser || isAdmin ?
-        <Dialog>
-          <Dialog.Trigger asChild>
-            <Button icon={<Trash />} color="red" mb='$3'>
-              Delete Account
-            </Button>
-          </Dialog.Trigger>
-          <Dialog.Portal zi={1000011}>
-            <Dialog.Overlay
-              key="overlay"
-              animation="quick"
-              o={0.5}
-              enterStyle={{ o: 0 }}
-              exitStyle={{ o: 0 }}
-            />
-            <Dialog.Content
-              bordered
-              elevate
-              key="content"
-              animation={[
-                'quick',
-                {
-                  opacity: {
-                    overshootClamping: true,
-                  },
-                },
-              ]}
-              m='$3'
-              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-              x={0}
-              scale={1}
-              opacity={1}
-              y={0}
-            >
-              <YStack space>
-                <Dialog.Title>Delete Account</Dialog.Title>
-                <Dialog.Description>
-                  Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
-                </Dialog.Description>
+        <>
 
-                <XStack space="$3" jc="flex-end">
-                  <Dialog.Close asChild>
-                    <Button>Cancel</Button>
-                  </Dialog.Close>
-                  {/* <Dialog.Action asChild> */}
-                  <Theme inverse>
-                    <Button onPress={doDeleteUser}>Delete</Button>
-                  </Theme>
-                  {/* </Dialog.Action> */}
-                </XStack>
-              </YStack>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog> : undefined}
+          <Dialog>
+            <Dialog.Trigger asChild>
+              <Button icon={<SquareAsterisk />} mb='$2'>
+                Reset Password
+              </Button>
+            </Dialog.Trigger>
+            <Dialog.Portal zi={1000011}>
+              <Dialog.Overlay
+                key="overlay"
+                animation="quick"
+                o={0.5}
+                enterStyle={{ o: 0 }}
+                exitStyle={{ o: 0 }}
+              />
+              <Dialog.Content
+                bordered
+                elevate
+                key="content"
+                animation={[
+                  'quick',
+                  {
+                    opacity: {
+                      overshootClamping: true,
+                    },
+                  },
+                ]}
+                m='$3'
+                enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                x={0}
+                scale={1}
+                opacity={1}
+                y={0}
+              >
+                <YStack space>
+                  <Dialog.Title>Reset Password</Dialog.Title>
+                  <Dialog.Description>
+                    <YStack space='$2'>
+                      <Paragraph size="$2">New Password:</Paragraph>
+                      <XStack space='$2'>
+                        <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Updated password (min 8 characters)`}
+                          value={resetUserPassword}
+                          onChange={(data) => { setResetUserPassword(data.nativeEvent.text) }} />
+                        <Button circular icon={showPasswordPlaintext ? SquareAsterisk : Eye}
+                          onPress={() => setShowPasswordPlaintext(!showPasswordPlaintext)} />
+                        {/* <Text fontFamily='$body'>weeks</Text> */}
+
+                      </XStack>
+                      <Paragraph size="$2">Confirm Password:</Paragraph>
+                      <XStack>
+                        <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Confirm password`}
+                          value={confirmUserPassword}
+                          onChange={(data) => { setConfirmUserPassword(data.nativeEvent.text) }} />
+
+                        <ZStack w='$2' h='$2' my='auto' ml='$4' mr='$2' pr='$2'>
+                          <XStack m='auto' animation='standard' pr='$1'
+                            o={resetPasswordValid ? 1 : 0}>
+                            <CheckCircle color={navColor} />
+                          </XStack>
+                          <XStack m='auto' animation='standard' pr='$1'
+                            o={confirmPasswordInvalid ? 1 : 0}>
+                            <XCircle />
+                          </XStack>
+                        </ZStack>
+                        {/* <Text fontFamily='$body'>weeks</Text> */}
+                      </XStack>
+                    </YStack>
+                  </Dialog.Description>
+
+                  <XStack space="$3" jc="flex-end">
+                    <Dialog.Close asChild>
+                      <Button>Cancel</Button>
+                    </Dialog.Close>
+                    {/* <Theme inverse> */}
+                    <Dialog.Close asChild>
+
+                      <Button onPress={doResetPassword}
+                        {...themedButtonBackground(primaryColor, primaryTextColor)}
+                        opacity={resetPasswordValid ? 1 : 0.5}
+                        disabled={!resetPasswordValid}>Reset Password</Button>
+                    </Dialog.Close>
+
+                    {/* </Theme> */}
+                  </XStack>
+                </YStack>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog>
+          <Dialog>
+            <Dialog.Trigger asChild>
+              <Button icon={<Trash />} color="red" mb='$3'>
+                Delete Account
+              </Button>
+            </Dialog.Trigger>
+            <Dialog.Portal zi={1000011}>
+              <Dialog.Overlay
+                key="overlay"
+                animation="quick"
+                o={0.5}
+                enterStyle={{ o: 0 }}
+                exitStyle={{ o: 0 }}
+              />
+              <Dialog.Content
+                bordered
+                elevate
+                key="content"
+                animation={[
+                  'quick',
+                  {
+                    opacity: {
+                      overshootClamping: true,
+                    },
+                  },
+                ]}
+                m='$3'
+                enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                x={0}
+                scale={1}
+                opacity={1}
+                y={0}
+              >
+                <YStack space>
+                  <Dialog.Title>Delete Account</Dialog.Title>
+                  <Dialog.Description>
+                    Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
+                  </Dialog.Description>
+
+                  <XStack space="$3" jc="flex-end">
+                    <Dialog.Close asChild>
+                      <Button>Cancel</Button>
+                    </Dialog.Close>
+                    <Theme inverse>
+                      <Button onPress={doDeleteUser}>Delete</Button>
+                    </Theme>
+                  </XStack>
+                </YStack>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog>
+        </> : undefined}
     </YStack> : undefined}
   </AnimatePresence>;
 }

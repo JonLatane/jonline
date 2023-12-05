@@ -1,13 +1,12 @@
 import { Permission } from "@jonline/api";
 import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia, useTheme } from "@jonline/ui";
-
 import { AlertCircle, Bot, ChevronDown, ChevronUp, Delete, Shield, User as UserIcon } from "@tamagui/lucide-icons";
-import { useMediaUrl } from "app/hooks/use_media_url";
-import { JonlineAccount, accountId, colorMeta, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, serverID, store, useCredentialDispatch, useRootSelector } from "app/store";
+import { colorMeta, useCredentialDispatch, useMediaUrl } from "app/hooks";
+import { JonlineAccount, accountID, getServerTheme, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, serverID, store, useRootSelector } from "app/store";
+import { hasAdminPermission, hasPermission } from 'app/utils';
 import React from "react";
 import { useLink } from "solito/link";
-import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
-import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
+import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
 interface Props {
   account: JonlineAccount;
@@ -17,22 +16,24 @@ interface Props {
 
 const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate }) => {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
-  let selected = accountId(store.getState().accounts.account) == accountId(account);
+  let selected = accountID(store.getState().accounts.account) == accountID(account);
 
-  const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
-  const navColorInt = account.server.serverConfiguration?.serverInfo?.colors?.navigation;
-  const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
+  // const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
+  // const navColorInt = account.server.serverConfiguration?.serverInfo?.colors?.navigation;
+  // const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
   const profileLinkProps = useLink({ href: `/${account.user.username}` });
-  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || '424242'}`;
-  const primaryColorMeta = colorMeta(navColor);
-  const navColorMeta = colorMeta(navColor);
+  // const navColor = `#${(navColorInt)?.toString(16).slice(-6) || '424242'}`;
+  // const primaryColorMeta = colorMeta(navColor);
+  // const navColorMeta = colorMeta(navColor);
 
   const theme = useTheme();
+  const { primaryColor, navColor, primaryAnchorColor, navTextColor, navAnchorColor } = getServerTheme(account.server, theme);
+
   const backgroundColor = theme.background.val;
   const { luma: themeBgLuma } = colorMeta(backgroundColor);
   const darkMode = themeBgLuma <= 0.5;
-  const primaryAnchorColor = !darkMode ? primaryColorMeta.darkColor : primaryColorMeta.lightColor;
-  const navAnchorColor = !darkMode ? navColorMeta.darkColor : navColorMeta.lightColor;
+  // const primaryAnchorColor = !darkMode ? primaryColorMeta.darkColor : primaryColorMeta.lightColor;
+  // const navAnchorColor = !darkMode ? navColorMeta.darkColor : navColorMeta.lightColor;
 
   const currentServer = currentAccountOrServer.server;
   const isCurrentServer = currentServer &&
@@ -53,18 +54,18 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
     dispatch(selectAccount(undefined));
   }
   function moveUp() {
-    dispatch(moveAccountUp(accountId(account)!));
+    dispatch(moveAccountUp(accountID(account)!));
   }
   function moveDown() {
-    dispatch(moveAccountDown(accountId(account)!));
+    dispatch(moveAccountDown(accountID(account)!));
   }
   const accountIds = useRootSelector(state => state.accounts.ids);
-  const canMoveUp = accountIds.indexOf(accountId(account)!) > 0;
-  const canMoveDown = accountIds.indexOf(accountId(account)!) < accountIds.length - 1;
+  const canMoveUp = accountIds.indexOf(accountID(account)!) > 0;
+  const canMoveDown = accountIds.indexOf(accountID(account)!) < accountIds.length - 1;
   const avatarUrl = useMediaUrl(account.user.avatar?.id, { account, server: account.server });
   const mediaQuery = useMedia();
 
-  const textColor = selected ? navColorMeta.textColor : undefined;
+  const textColor = selected ? navTextColor : undefined;
 
   const authenticationRequired = <XStack space='$2'>
     <YStack my='auto'><AlertCircle color={navAnchorColor} /></YStack>
@@ -195,7 +196,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
                       </Dialog.Close>
                       {/* <Dialog.Action asChild> */}
                       <Theme inverse>
-                        <Button onPress={() => dispatch(removeAccount(accountId(account)!))}>Remove</Button>
+                        <Button onPress={() => dispatch(removeAccount(accountID(account)!))}>Remove</Button>
                       </Theme>
                       {/* </Dialog.Action> */}
                     </XStack>

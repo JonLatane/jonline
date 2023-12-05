@@ -1,11 +1,12 @@
 import { Anchor, Button, H2, H4, Heading, isClient, ListItem, needsScrollPreservers, Paragraph, Text, useWindowDimensions, XStack, YStack } from '@jonline/ui';
-import { RootState, selectAllPosts, useCredentialDispatch, useRootSelector } from 'app/store';
+import { RootState, selectAllPosts, useRootSelector } from 'app/store';
+import { useCredentialDispatch } from 'app/hooks';
 import React, { useEffect, useState } from 'react';
 import { Linking, Platform } from 'react-native';
-import { TabsNavigation } from '../tabs/tabs_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
 import { Container, Github } from '@tamagui/lucide-icons';
-import { AppSection } from '../tabs/features_navigation';
-import { setDocumentTitle } from 'app/utils/set_title';
+import { AppSection } from '../navigation/features_navigation';
+import { setDocumentTitle } from 'app/utils';
 
 const quotes = [
   'I read about it Jonline',

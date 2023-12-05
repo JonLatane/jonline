@@ -1,7 +1,8 @@
 import { Group, Permission } from '@jonline/api';
 import { Button, Heading, XStack, YStack, isWeb } from '@jonline/ui';
 import { Send as SendIcon } from '@tamagui/lucide-icons';
-import { selectEventById, useCredentialDispatch, useServerTheme } from 'app/store';
+import { useCredentialDispatch } from 'app/hooks';
+import { useServerTheme } from 'app/store';
 import React from 'react';
 import StickyBox from 'react-sticky-box';
 import { AddAccountSheet } from '../accounts/add_account_sheet';

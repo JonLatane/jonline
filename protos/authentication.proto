@@ -69,3 +69,11 @@ message AccessTokenResponse {
   // The new access token.
   ExpirableToken access_token = 2;
 }
+
+// Request to reset a password.
+message ResetPasswordRequest {
+  // If not set, use the current user of the request.
+  optional string user_id = 1;
+  // The new password to set.
+  string password = 3;
+}

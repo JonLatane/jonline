@@ -1,17 +1,15 @@
-import { useAccount, useCredentialDispatch, useServerTheme } from "app/store";
+import { useServerTheme } from "app/store";
 import React from "react";
 
 import { Group, Post } from "@jonline/api";
-import { Anchor, Image, ScrollView, Spinner, TamaguiMediaState, useMedia, useTheme, XStack, YStack } from '@jonline/ui';
-import { useMediaUrl } from "app/hooks/use_media_url";
+import { Anchor, Image, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
+import { useMediaUrl } from "app/hooks";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 
+import { FadeInView } from 'app/components';
 import { MediaRenderer } from "../media/media_renderer";
-import { FadeInView } from '../../components/fade_in_view';
 import { postBackgroundSize } from "./post_card";
-import { MouseEvent } from 'react';
-import { GestureResponderEvent } from "react-native";
 
 export interface PostMediaRendererProps {
   post: Post;

@@ -13,6 +13,7 @@
     - [ExpirableToken](#jonline-ExpirableToken)
     - [LoginRequest](#jonline-LoginRequest)
     - [RefreshTokenResponse](#jonline-RefreshTokenResponse)
+    - [ResetPasswordRequest](#jonline-ResetPasswordRequest)
   
 - [visibility_moderation.proto](#visibility_moderation-proto)
     - [Moderation](#jonline-Moderation)
@@ -133,8 +134,11 @@ one in client storage.)
 
 ##### Micro-Federation
 Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
-Jonline only has client-server APIs. The idea is that *all* of the federation logic to Jonline really lives in the [ServerInfo.recommended_server_hosts](#serverinfo).
-Servers can recommend other hosts. (Eventually, this will affect CORS policies.) Clients can do what they will with that information.
+Jonline only has client-server APIs. The idea is that *all* of the federation data for a given Jonline server is simply the value of
+[ServerInfo.recommended_server_hosts](#serverinfo).
+
+That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
+(Eventually, this will affect CORS policies for added security.)
 The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
 
 ##### HTTP-based client host negotiation (for external CDNs)
@@ -193,6 +197,7 @@ approach to predictable atomicity.
 | Login | [LoginRequest](#jonline-LoginRequest) | [RefreshTokenResponse](#jonline-RefreshTokenResponse) | Logs in a user and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.* |
 | AccessToken | [AccessTokenRequest](#jonline-AccessTokenRequest) | [AccessTokenResponse](#jonline-AccessTokenResponse) | Gets a new `access_token` (and possibly a new `refresh_token`, which should replace the old one in client storage), given a `refresh_token`. *Publicly accessible.* |
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#jonline-User) | Gets the current user. *Authenticated.* |
+| ResetPassword | [ResetPasswordRequest](#jonline-ResetPasswordRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Resets the current user&#39;s - or, for admins, a given user&#39;s - password. *Authenticated.* |
 | GetMedia | [GetMediaRequest](#jonline-GetMediaRequest) | [GetMediaResponse](#jonline-GetMediaResponse) | Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media). |
 | DeleteMedia | [Media](#jonline-Media) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users&#39; media requires `ADMIN` permissions. |
 | GetUsers | [GetUsersRequest](#jonline-GetUsersRequest) | [GetUsersResponse](#jonline-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility. |
@@ -337,6 +342,22 @@ Returned when creating an account or logging in.
 | refresh_token | [ExpirableToken](#jonline-ExpirableToken) |  | The persisted token the device should store and associate with the account. Used to request new access tokens. |
 | access_token | [ExpirableToken](#jonline-ExpirableToken) |  | An initial access token provided for convenience. |
 | user | [User](#jonline-User) |  | The user associated with the account that was created/logged into. |
+
+
+
+
+
+
+<a name="jonline-ResetPasswordRequest"></a>
+
+### ResetPasswordRequest
+Request to reset a password.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| user_id | [string](#string) | optional | If not set, use the current user of the request. |
+| password | [string](#string) |  | The new password to set. |
 
 
 

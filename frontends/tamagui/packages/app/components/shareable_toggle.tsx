@@ -1,6 +1,6 @@
 import { Label, Paragraph, Switch, YStack } from '@jonline/ui';
 import { useComponentKey } from 'app/hooks';
-import { useAccount, useAppDispatch } from 'app/store';
+import { useAccount, useAppDispatch } from 'app/hooks';
 import React from 'react';
 
 

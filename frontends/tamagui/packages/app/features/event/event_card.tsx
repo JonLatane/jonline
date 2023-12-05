@@ -1,14 +1,14 @@
 import { useIsVisible } from 'app/hooks/use_is_visible';
-import { deleteEvent, updateEvent, useAccount, useCredentialDispatch, useServerTheme } from "app/store";
+import { deleteEvent, updateEvent, useServerTheme } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Group, Location } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, reverseStandardAnimation, ScrollView, Select, standardAnimation, standardHorizontalAnimation, TamaguiElement, Text, TextArea, Theme, Tooltip, useMedia, useWindowDimensions, XStack, YStack, ZStack } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from "@jonline/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, History, Link, Menu, Repeat, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
-import { AuthorInfo, LinkProps, postBackgroundSize, PostMediaManager, PostMediaRenderer, postVisibilityDescription, TamaguiMarkdown } from "app/features/post";
-import { useComponentKey, useForceUpdate, useMediaUrl } from "app/hooks";
+import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
+import { useAccount, useComponentKey, useCredentialDispatch, useForceUpdate, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -40,7 +40,7 @@ let newEventId = 0;
 
 export const EventCard: React.FC<Props> = ({
   event,
-  selectedInstance,
+  selectedInstance = event.instances.find(isNotPastInstance) ?? event.instances[0],
   isPreview,
   groupContext,
   horizontal,
@@ -66,6 +66,7 @@ export const EventCard: React.FC<Props> = ({
   const [savingEdits, setSavingEdits] = useState(false);
 
   const [editedTitle, setEditedTitle] = useState(post.title);
+  const [editedLink, setEditedLink] = useState(post.link);
   const [editedContent, setEditedContent] = useState(post.content);
   const [editedMedia, setEditedMedia] = useState(post.media);
   const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
@@ -87,36 +88,8 @@ export const EventCard: React.FC<Props> = ({
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
 
-  const [startTime, endTime] = [editingInstance?.startsAt, editingInstance?.endsAt]
-  function setEndTime(value: string) {
-    if (!editingInstance) {
-      return;
-    }
-    const updatedInstance = { ...editingInstance, endsAt: toProtoISOString(value) };
-    updateEditingInstance(updatedInstance);
-  }
-  function setStartTime(value: string) {
-    if (!editingInstance) {
-      return;
-    }
-    const updatedInstance = { ...editingInstance, startsAt: toProtoISOString(value) };
-    updateEditingInstance(updatedInstance);
-  }
-  const [duration, _setDuration] = useState(0);
-  useEffect(() => {
-    if (startTime && endTime) {
-      const start = moment(startTime);
-      const end = moment(endTime);
-      _setDuration(end.diff(start, 'minutes'));
-    }
-  }, [endTime]);
-  useEffect(() => {
-    if (startTime && duration) {
-      const start = moment(startTime);
-      const end = start.add(duration, 'minutes');
-      setEndTime(supportDateInput(end));
-    }
-  }, [startTime]);
+  const { setStartTime, setEndTime } = useStartAndEndTime(editingInstance, updateEditingInstance);
+
   const [repeatWeeks, setRepeatWeeks] = useState(1);
 
   const endDateInvalid = editingInstance && !moment(editingInstance.endsAt).isAfter(moment(editingInstance.startsAt));
@@ -146,6 +119,7 @@ export const EventCard: React.FC<Props> = ({
       post: {
         ...post,
         title: editedTitle,
+        link: editedLink,
         content: editedContent,
         media: editedMedia,
         visibility: editedVisibility,
@@ -306,13 +280,13 @@ export const EventCard: React.FC<Props> = ({
 
 
   useEffect(() => {
-    if (!isPreview && !scrollInstancesVertically) {
+    if (!isPreview /*&& !scrollInstancesVertically*/) {
       setTimeout(() =>
         document.querySelectorAll('.highlighted-instance-time')
           .forEach(e => e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })),
-        300);
+        scrollInstancesVertically ? 800 : 500);
     }
-  }, [selectedInstance?.id, editingInstance?.id]);
+  }, [selectedInstance?.id, editingInstance?.id, showPastInstances]);
   useEffect(() => {
     if (!isPreview && !scrollInstancesVertically) {
       document.querySelectorAll('.highlighted-instance-time')
@@ -321,17 +295,63 @@ export const EventCard: React.FC<Props> = ({
   }, [scrollInstancesVertically]);
 
   const postLinkView = postLink
-    ? <Anchor key='post-link' textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
-      <XStack>
-        <YStack my='auto' mr='$1'>
-          <Link size='$1' color={navAnchorColor} />
-        </YStack>
-        <YStack f={1} my='auto'>
-          <Paragraph size="$2" color={navAnchorColor} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">{post.link}</Paragraph>
-        </YStack>
-      </XStack>
-    </Anchor>
+    ? editing && !previewingEdits
+      ? <>
+
+        <Input f={1} textContentType="URL" placeholder={`Event Link (required)`}
+          disabled={savingEdits} opacity={savingEdits || editedLink == '' ? 0.5 : 1}
+          value={editedLink}
+          onChange={(data) => { setEditedLink(data.nativeEvent.text) }} />
+      </>
+      : <Anchor key='post-link' textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
+        <XStack>
+          <YStack my='auto' mr='$1'>
+            <Link size='$1' color={navAnchorColor} />
+          </YStack>
+          <YStack f={1} my='auto'>
+            <Paragraph size="$2" color={navAnchorColor} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">{post.link}</Paragraph>
+          </YStack>
+        </XStack>
+      </Anchor>
     : undefined;
+
+  const instanceModeButton = canEasilySeeAllInstances
+    ? undefined
+    : <Button p='$2' onPress={() => setScrollInstancesVertically(!scrollInstancesVertically)} ml="$1">
+      <ZStack h='$1' w='$1' mx='auto' my='auto' transform={[{ translateY: -1 }]}>
+        <XStack animation='standard' o={scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
+          <ChevronRight />
+        </XStack>
+        <XStack animation='standard' o={!scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
+          <Menu />
+        </XStack>
+      </ZStack>
+    </Button>;
+  const instanceManagementButtons = <>
+    {/* <YStack key='instances-buttons' my='$2' space="$3"> */}
+    {editing
+      ? <Button my='auto' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
+      : undefined}
+    {hasPastInstances && !canEasilySeeAllPastInstances
+      ? <Tooltip placement='bottom-start'>
+        <Tooltip.Trigger>
+          <Button ml='$2' size='$3' my='auto'
+            {...showPastInstances ? themedButtonBackground(navColor, navTextColor) : {}}
+            // color={showPastInstances ? navAnchorColor : undefined}
+            circular={(displayedInstances?.length ?? 0) > 0} icon={History}
+            onPress={() => setShowPastInstances(!showPastInstances)} >
+            {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
+          </Button>
+        </Tooltip.Trigger>
+        {(displayedInstances?.length ?? 0) === 0
+          ? undefined
+          : <Tooltip.Content>
+            <Paragraph size='$1'>{showPastInstances ? 'Show' : 'Hide'} Past Instances</Paragraph>
+          </Tooltip.Content>}
+      </Tooltip>
+      : undefined}
+    {/* </YStack> */}
+  </>;
   const headerLinksView = <YStack f={1} key='header-links-view'>
     {isPreview
       ? <>
@@ -344,46 +364,47 @@ export const EventCard: React.FC<Props> = ({
         </Anchor>
         {postLinkView}
         <Anchor key='instance-link' textDecorationLine='none' {...detailsLink}>
-          {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight /> : undefined}
+          {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}
         </Anchor>
       </>
       : <>
         <XStack key='title'>
-          <YStack f={1}>
+          <YStack f={1} my='auto'>
             <Heading size="$7" marginRight='auto'>{title}</Heading>
           </YStack>
+          {instanceModeButton}
         </XStack>
         {postLinkView}
-        {primaryInstance
-          ? <InstanceTime key='instance-time' event={event} instance={primaryInstance} highlight />
-          : editing && previewingEdits
-            ? <Paragraph key='missing-instance' size='$1'>This instance no longer exists.</Paragraph>
-            : undefined}
+        <XStack w='100%' mt='$1'>
+          <YStack>
+            {primaryInstance
+              ? <InstanceTime key='instance-time' event={event} instance={primaryInstance} highlight noAutoScroll />
+              : editing && previewingEdits
+                ? <Paragraph key='missing-instance' size='$1'>This instance no longer exists.</Paragraph>
+                : undefined}
+          </YStack>
+          <XStack f={1} />
+          {instanceManagementButtons}
+        </XStack>
       </>}
   </YStack>;
   const headerLinksEdit = <YStack f={1} space='$2' key='header-links-edit'>
-    <Input textContentType="name" placeholder={`Event Title (required)`}
-      disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
-      // autoCapitalize='words'
-      value={editedTitle}
-      onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
-    {postLinkView}
+    <XStack w='100%' space='$2'>
+      <Input f={1} textContentType="name" placeholder={`Event Title (required)`}
+        disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
+        value={editedTitle}
+        onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
+      {instanceModeButton}
+    </XStack>
+    <XStack w='100%'>
+      {postLinkView}
+      <XStack f={1} />
+      {instanceManagementButtons}
+    </XStack>
   </YStack>;
 
   const headerLinks = <XStack w='100%'>
     {editing && !previewingEdits ? headerLinksEdit : headerLinksView}
-    {canEasilySeeAllInstances
-      ? undefined
-      : <Button p='$2' onPress={() => setScrollInstancesVertically(!scrollInstancesVertically)} ml="$1">
-        <ZStack h='$1' w='$1' mx='auto' my='auto' transform={[{ translateY: -1 }]}>
-          <XStack animation='standard' o={scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
-            <ChevronRight />
-          </XStack>
-          <XStack animation='standard' o={!scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
-            <Menu />
-          </XStack>
-        </ZStack>
-      </Button>}
   </XStack>;
 
   const contentView = editing || (post.content && post.content) != ''
@@ -564,7 +585,7 @@ export const EventCard: React.FC<Props> = ({
     </YStack>;
 
     if (editing) {
-      result = <YStack ml='$1' h={100} mb='$1'
+      result = <YStack ml='$1' h={100} mb='$1' key={`instance-${i.id}-wrapper`}
         padding='$2'
         borderRadius='$3' backgroundColor='$backgroundStrong'>
         {result}
@@ -578,10 +599,11 @@ export const EventCard: React.FC<Props> = ({
     <>
       <YStack w='100%' key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}>
         <Card theme="dark" elevate size="$4" bordered id={componentKey}
-          key='event-card'
+          key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
           margin='$0'
           marginBottom='$3'
           marginTop='$3'
+          padding={0}
           f={isPreview ? undefined : 1}
           ref={ref!}
           scale={1}
@@ -590,43 +612,23 @@ export const EventCard: React.FC<Props> = ({
         >
           {post.link || post.title
             ? <Card.Header p={0}>
-              <YStack w='100%' padding='$4' paddingBottom={0}>
-                {headerLinks}
+              <YStack key='primary-header' w='100%' pt='$4' pb={0}>
+                <YStack key='header-links' w='100%' px='$4'>
+                  {headerLinks}
+                </YStack>
                 {!isPreview && (instances.length > 1 || editing)
-                  ? <XStack key='instances' w='100%' mt='$2' ml='$4' space>
-                    <YStack key='instances-buttons' my='$2' space="$3">
-                      {hasPastInstances && !canEasilySeeAllPastInstances
-                        ? <Tooltip placement='bottom-start'>
-                          <Tooltip.Trigger>
-                            <Button mr={-7} size='$3'
-                              {...showPastInstances ? themedButtonBackground(navColor, navTextColor) : {}}
-                              // color={showPastInstances ? navAnchorColor : undefined}
-                              circular={(displayedInstances?.length ?? 0) > 0} icon={History}
-                              onPress={() => setShowPastInstances(!showPastInstances)} >
-                              {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
-                            </Button>
-                          </Tooltip.Trigger>
-                          {(displayedInstances?.length ?? 0) === 0
-                            ? undefined
-                            : <Tooltip.Content>
-                              <Paragraph size='$1'>{showPastInstances ? 'Show' : 'Hide'} Past Instances</Paragraph>
-                            </Tooltip.Content>}
-                        </Tooltip>
-                        : undefined}
-                      {editing
-                        ? <Button mt='$2' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
-                        : undefined}
-                    </YStack>
+                  ? <XStack key='instances' w='100%' mt='$2' space>
+
 
                     {scrollInstancesVertically
-                      ? <XStack key='instance-display' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
+                      ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
                         <AnimatePresence>
                           {displayedInstances?.map((i) => renderInstance(i))}
                         </AnimatePresence>
                       </XStack>
                       : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
-                        <XStack mt='$1'>
-                          <AnimatePresence>
+                        <XStack mt='$1' px='$3' key='instance-scroller-list'>
+                          <AnimatePresence key='instance-scroll-animator'>
                             {displayedInstances?.map((i) => renderInstance(i))}
                           </AnimatePresence>
                         </XStack>
@@ -675,25 +677,14 @@ export const EventCard: React.FC<Props> = ({
                 </YStack>
 
               </YStack>
-              {/*!isPreview && primaryInstance && (!isPreview || hasBeenVisible)
-                ? <YStack maw={800} w='100%' px='$1' mx='auto'>
-                  <EventRsvpManager
-                    key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
-                    event={event!}
-                    instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
-                </YStack>
-                    : undefined*/}
             </Card.Header>
             : undefined}
           <Card.Footer p={0} paddingTop='$2' >
             {deleted
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%'>
-                <YStack px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'/*{mediaQuery.gtXs ? '$3' : '$1'}*/
-                >
-                  <YStack
-                    mah={maxContentSectionHeight} overflow='hidden'
-                  >
+                <YStack key='event-content' px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
+                  <YStack key='media-manager' mah={maxContentSectionHeight} overflow='hidden'>
                     {editing && !previewingEdits
                       ? <PostMediaManager
                         key='media-edit'
@@ -730,14 +721,14 @@ export const EventCard: React.FC<Props> = ({
 
                 </YStack>
                 {primaryInstance && (!isPreview || hasBeenVisible)
-                  ? <YStack maw={800} w='100%' px='$1' mx='auto'>
+                  ? <YStack key='rsvp-manager' maw={800} w='100%' px='$1' mx='auto' mt='$1'>
                     <EventRsvpManager
                       key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
                       event={event!}
                       instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                   </YStack>
                   : undefined}
-                <XStack space='$2' px='$3' py='$2' pt={0} flexWrap="wrap" key='save-buttons' /*pr={mediaQuery.gtXs ? '$3' : '$1'}*/>
+                <XStack key='save-buttons' space='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
                   {showEdit
                     ? editing
                       ? <>
@@ -765,9 +756,9 @@ export const EventCard: React.FC<Props> = ({
                           Edit
                         </Button>
 
-                        <Dialog key='delete-button'>
+                        <Dialog key='delete-button-dialog'>
                           <Dialog.Trigger asChild>
-                            <Button my='auto' size='$2' icon={Delete} transparent
+                            <Button key='delete-button' my='auto' size='$2' icon={Delete} transparent
                               disabled={deleting} o={deleting ? 0.5 : 1}>
                               Delete
                             </Button>
@@ -811,11 +802,9 @@ export const EventCard: React.FC<Props> = ({
                                   <Dialog.Close asChild>
                                     <Button>Cancel</Button>
                                   </Dialog.Close>
-                                  {/* <Dialog.Action asChild> */}
                                   <Theme inverse>
                                     <Button onPress={doDeletePost}>Delete</Button>
                                   </Theme>
-                                  {/* </Dialog.Action> */}
                                 </XStack>
                               </YStack>
                             </Dialog.Content>
@@ -824,7 +813,7 @@ export const EventCard: React.FC<Props> = ({
                       </>
                     : undefined}
 
-                  <XStack space='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
+                  <XStack key='visibility-etc' space='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
                     <XStack key='visibility-edit' my='auto' ml='auto'>
                       <VisibilityPicker
                         id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
@@ -840,7 +829,7 @@ export const EventCard: React.FC<Props> = ({
                         setter={setEditedShareable}
                         readOnly={!editing || previewingEdits} />
                     </XStack>
-                    <XStack my='auto' maw='100%' ml='auto'>
+                    <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
                       <GroupPostManager post={post} isVisible={isVisible}
                         createViewHref={createGroupEventViewHref} />
                     </XStack>
@@ -849,9 +838,11 @@ export const EventCard: React.FC<Props> = ({
 
                 <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
                   <AuthorInfo key='author-details' {...{ post, isVisible }} />
-                  <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                    <YStack h='100%'>
-                      <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                  <Anchor key='author-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                    <YStack key='author-anchor-root' h='100%'>
+                      <Button key='comments-link-button'
+                        opacity={isPreview ? 1 : 0.9}
+                        transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
                         disabled={true}
                         marginVertical='auto'
                         px='$2'
@@ -861,9 +852,6 @@ export const EventCard: React.FC<Props> = ({
                             <Paragraph size="$1" ta='right'>
                               {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
                             </Paragraph>
-                            {/* {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Paragraph size="$1" ta='right'>
-                              {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                            </Paragraph> : undefined} */}
                             {isPreview || post.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
                               {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
                             </Paragraph>}
@@ -901,3 +889,39 @@ export const EventCard: React.FC<Props> = ({
 };
 
 export default EventCard;
+
+
+function useStartAndEndTime(instance: EventInstance | undefined, setInstance: (instance: EventInstance) => void) {
+  const [startTime, endTime] = [instance?.startsAt, instance?.endsAt]
+  function setEndTime(value: string) {
+    if (!instance) {
+      return;
+    }
+    const updatedInstance = { ...instance, endsAt: toProtoISOString(value) };
+    setInstance(updatedInstance);
+  }
+  function setStartTime(value: string) {
+    if (!instance) {
+      return;
+    }
+    const updatedInstance = { ...instance, startsAt: toProtoISOString(value) };
+    setInstance(updatedInstance);
+  }
+  const [duration, _setDuration] = useState(0);
+  useEffect(() => {
+    if (startTime && endTime) {
+      const start = moment(startTime);
+      const end = moment(endTime);
+      _setDuration(end.diff(start, 'minutes'));
+    }
+  }, [endTime]);
+  useEffect(() => {
+    if (startTime && duration) {
+      const start = moment(startTime);
+      const end = start.add(duration, 'minutes');
+      setEndTime(supportDateInput(end));
+    }
+  }, [startTime]);
+
+  return { startTime, setStartTime, endTime, setEndTime };
+}

@@ -1,25 +1,21 @@
-import { deletePost, loadPostReplies, RootState, updatePost, useAccount, useCredentialDispatch, useServerTheme, useRootSelector } from "app/store";
+import { RootState, deletePost, loadPostReplies, updatePost, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
-import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, useMedia, XStack, YStack } from '@jonline/ui';
+import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, useMedia } from '@jonline/ui';
 import { ChevronRight, Delete, Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
-import { useIsVisible } from 'app/hooks/use_is_visible';
-import { useMediaUrl } from "app/hooks/use_media_url";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 import { AuthorInfo } from "./author_info";
-import { TamaguiMarkdown } from "./tamagui_markdown";
+import { TamaguiMarkdown } from "../../components/tamagui_markdown";
 
-import { FadeInView } from '../../components/fade_in_view';
-import { VisibilityPicker } from "../../components/visibility_picker";
+import { ShareableToggle, FadeInView, VisibilityPicker } from "app/components";
+import { useAccount, useComponentKey, useCredentialDispatch, useIsVisible, useMediaUrl } from "app/hooks";
 import { GroupPostManager } from '../groups/group_post_manager';
 import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
 import { PostMediaRenderer } from "./post_media_renderer";
-import { ShareableToggle } from "app/components/shareable_toggle";
-import { useComponentKey } from "app/hooks";
 
 interface PostCardProps {
   post: Post;
@@ -194,9 +190,25 @@ export const PostCard: React.FC<PostCardProps> = ({
 
 
   const componentKey = useComponentKey('post-card');
-  const backgroundSize = document.getElementById(componentKey)?.clientWidth ??  postBackgroundSize(mediaQuery);
+  const backgroundSize = document.getElementById(componentKey)?.clientWidth ?? postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
+  const contentArea = <YStack maxHeight={isPreview
+    ? (showScrollableMediaPreviews) ? 150 : 300
+    : editing && !previewingEdits ? backgroundSize * (media.length > 0 ? 0.6 : 0.8) : undefined} overflow='hidden'
+  >
+    {
+      editing && !previewingEdits
+        ? <TextArea f={1} pt='$2' value={editedContent}
+          disabled={savingEdits} opacity={savingEdits || editedContent == '' ? 0.5 : 1}
+          h={(editedContent?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
+          onChangeText={setEditedContent}
+          placeholder={`Text content (optional). Markdown is supported.`} />
+        : content && content != ''
+          ? <TamaguiMarkdown text={content} disableLinks={isPreview} />
+          : undefined
+    }
+  </YStack>;
   return (
     <YStack w='100%' ref={ref!} key={`post-card-${post.id}-${isPreview ? '-preview' : ''}`}>
       {previewParent && post.replyToPostId
@@ -241,7 +253,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* <Theme inverse={selectedPostId == post.id}> */}
       <Card elevate size="$4" bordered
         // theme="dark"
-        
+
         margin='$1'
         backgroundColor={selectedPostId == post.id ? '$backgroundFocus' : undefined}
         marginBottom={replyPostIdPath ? '$0' : '$3'}
@@ -291,25 +303,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                       }, isPreview, groupContext, hasBeenVisible
                     }} />}
                 </YStack>
-
-                <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                  <YStack maxHeight={isPreview
-                    ? (showScrollableMediaPreviews) ? 150 : 300
-                    : editing && !previewingEdits ? backgroundSize * (media.length > 0 ? 0.6 : 0.8) : undefined} overflow='hidden'
-                  >
-                    {
-                      editing && !previewingEdits
-                        ? <TextArea f={1} pt='$2' value={editedContent}
-                          disabled={savingEdits} opacity={savingEdits || editedContent == '' ? 0.5 : 1}
-                          h={(editedContent?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
-                          onChangeText={setEditedContent}
-                          placeholder={`Text content (optional). Markdown is supported.`} />
-                        : content && content != ''
-                          ? <TamaguiMarkdown text={content} disableLinks={isPreview} />
-                          : undefined
-                    }
-                  </YStack>
-                </Anchor>
+                {isPreview
+                  ? <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                    {contentArea}
+                  </Anchor>
+                  : contentArea}
                 <XStack space='$2' flexWrap="wrap" py='$2'>
                   {showEdit
                     ? editing

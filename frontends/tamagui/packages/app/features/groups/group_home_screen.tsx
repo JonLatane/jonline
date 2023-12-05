@@ -1,6 +1,7 @@
 import { GetGroupsRequest, Group } from '@jonline/api'
 import { Spinner, YStack, useWindowDimensions } from '@jonline/ui'
-import { RootState, selectGroupById, loadGroupsPage, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store'
+import { useCredentialDispatch } from 'app/hooks'
+import { RootState, loadGroupsPage, selectGroupById, useRootSelector, useServerTheme } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { BaseHomeScreen } from '../home/home_screen'

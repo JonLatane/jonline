@@ -3,29 +3,8 @@ import moment from "moment";
 import { Metadata } from "nice-grpc-web";
 import 'react-native-get-random-values';
 import { accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers } from ".";
-import { AppDispatch, RootState, store, useAppDispatch, useRootSelector } from "./store";
+import { store } from "./store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient } from "./types";
-
-export const useAccount = () => useRootSelector((state: RootState) => state.accounts.account);
-export const useServer = () => useRootSelector((state: RootState) => state.servers.server);
-
-export function useAccountOrServer(): AccountOrServer {
-  return {
-    account: useAccount(),
-    server: useServer()
-  };
-}
-
-export type CredentialDispatch = {
-  dispatch: AppDispatch;
-  accountOrServer: AccountOrServer;
-};
-export function useCredentialDispatch(): CredentialDispatch {
-  return {
-    dispatch: useAppDispatch(),
-    accountOrServer: useAccountOrServer()
-  };
-}
 
 let _accessFetchLock = false;
 let _newAccessToken: ExpirableToken | undefined = undefined;
@@ -122,12 +101,6 @@ export async function getCredentialClient(accountOrServer: AccountOrServer): Pro
     // setCookie('jonline_access_token', account.accessToken.token);
     return { ...client, credential: { metadata } };
   }
-}
-
-export function useLoadingCredentialedData() {
-  return useRootSelector((state: RootState) => state.posts.status == 'loading'
-    || state.groups.status == 'loading'
-    || state.users.status == 'loading');
 }
 
 // Reset store data that depends on selected server/account.

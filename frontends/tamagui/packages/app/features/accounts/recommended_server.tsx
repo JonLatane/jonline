@@ -1,9 +1,10 @@
 import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
 import { ExternalLink } from "@tamagui/lucide-icons";
-import { RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, setBrowsingServers, upsertServer, useLocalConfiguration, useAppDispatch, useRootSelector } from 'app/store';
+import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
+import { RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, setBrowsingServers, upsertServer, useRootSelector } from 'app/store';
 import React, { useEffect } from "react";
 import { useLink } from "solito/link";
-import { ServerNameAndLogo } from "../tabs/server_name_and_logo";
+import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
 interface Props {
   host: string;

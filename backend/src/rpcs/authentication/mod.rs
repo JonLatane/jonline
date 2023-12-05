@@ -10,3 +10,6 @@ pub use access_token::access_token;
 
 mod get_current_user;
 pub use get_current_user::get_current_user;
+
+mod reset_password;
+pub use reset_password::reset_password;

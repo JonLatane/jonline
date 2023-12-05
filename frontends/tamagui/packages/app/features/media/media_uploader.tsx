@@ -1,7 +1,8 @@
 import { Button, Heading, Progress, Text, XStack, YStack, isTouchable, isWebTouchable, useWindowDimensions } from '@jonline/ui';
 import { Upload } from '@tamagui/lucide-icons';
-import { getCredentialClient, serverUrl, useAccountOrServer, useServerTheme } from 'app/store';
-import React, { useEffect, useState } from 'react';
+import { useAccountOrServer } from 'app/hooks';
+import { getCredentialClient, serverUrl, useServerTheme } from 'app/store';
+import React, { useState } from 'react';
 import { FileUploader } from "react-drag-drop-files";
 import { useReloadMedia } from './media_hooks';
 import { resizeImage } from './resize_media';

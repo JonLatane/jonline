@@ -48,7 +48,9 @@ export interface ServersState {
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
-  // Current server the app is pointing to.
+  // Current "root" server the app is pointing to.
+  // On web, if this doesn't match the location.host, we'll show a warning in the
+  // AccountsSheet.
   server?: JonlineServer;
   ids: EntityId[];
   entities: Dictionary<JonlineServer>;

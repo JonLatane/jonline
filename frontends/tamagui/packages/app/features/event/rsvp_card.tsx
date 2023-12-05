@@ -1,14 +1,15 @@
-import { getCredentialClient, useAccountOrServer, useCredentialDispatch, useServerTheme } from "app/store";
+import { useCredentialDispatch } from "app/hooks";
+import { getCredentialClient, useServerTheme } from "app/store";
 import React, { useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Moderation, Post } from "@jonline/api";
-import { Button, Card, Heading, Paragraph, useMedia, XStack, YStack } from "@jonline/ui";
+import { Button, Card, Heading, Paragraph, XStack, YStack, useMedia } from "@jonline/ui";
 import { Edit } from "@tamagui/lucide-icons";
-import { AuthorInfo } from "../post/author_info";
-import { TamaguiMarkdown } from "../post/tamagui_markdown";
 import { ModerationPicker } from "app/components/moderation_picker";
 import { passes } from "app/utils/moderation_utils";
 import { standardAnimation } from '../../../ui/src/animations';
+import { AuthorInfo } from "../post/author_info";
+import { TamaguiMarkdown } from "../../components/tamagui_markdown";
 
 interface Props {
   event: Event;

@@ -174,6 +174,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.List<AttendanceStatus> get attendanceStatuses => $_getList(6);
 
+  /// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   @$pb.TagNumber(10)
   EventListingType get listingType => $_getN(7);
   @$pb.TagNumber(10)
@@ -184,7 +185,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   void clearListingType() => clearField(10);
 }
 
-/// Time filter that simply works on the starts_at and ends_at fields.
+/// Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
+/// API currently only supports `ends_after`.
 class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter({
     $9.Timestamp? startsAfter,
@@ -240,6 +242,7 @@ class TimeFilter extends $pb.GeneratedMessage {
   static TimeFilter getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TimeFilter>(create);
   static TimeFilter? _defaultInstance;
 
+  /// Filter to events that start after the given time.
   @$pb.TagNumber(1)
   $9.Timestamp get startsAfter => $_getN(0);
   @$pb.TagNumber(1)
@@ -251,6 +254,7 @@ class TimeFilter extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $9.Timestamp ensureStartsAfter() => $_ensure(0);
 
+  /// Filter to events that end after the given time.
   @$pb.TagNumber(2)
   $9.Timestamp get endsAfter => $_getN(1);
   @$pb.TagNumber(2)
@@ -262,6 +266,7 @@ class TimeFilter extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $9.Timestamp ensureEndsAfter() => $_ensure(1);
 
+  /// Filter to events that start before the given time.
   @$pb.TagNumber(3)
   $9.Timestamp get startsBefore => $_getN(2);
   @$pb.TagNumber(3)
@@ -273,6 +278,7 @@ class TimeFilter extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $9.Timestamp ensureStartsBefore() => $_ensure(2);
 
+  /// Filter to events that end before the given time.
   @$pb.TagNumber(4)
   $9.Timestamp get endsBefore => $_getN(3);
   @$pb.TagNumber(4)
@@ -490,6 +496,7 @@ class EventInfo extends $pb.GeneratedMessage {
   static EventInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInfo>(create);
   static EventInfo? _defaultInstance;
 
+  /// Whether to allow RSVPs for the event.
   @$pb.TagNumber(1)
   $core.bool get allowsRsvps => $_getBF(0);
   @$pb.TagNumber(1)
@@ -499,6 +506,7 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearAllowsRsvps() => clearField(1);
 
+  /// Whether to allow anonymous RSVPs for the event.
   @$pb.TagNumber(2)
   $core.bool get allowsAnonymousRsvps => $_getBF(1);
   @$pb.TagNumber(2)
@@ -508,7 +516,7 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAllowsAnonymousRsvps() => clearField(2);
 
-  /// No effect unless `allows_rsvps` is true.
+  /// Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported.
   @$pb.TagNumber(3)
   $core.int get maxAttendees => $_getIZ(2);
   @$pb.TagNumber(3)
@@ -519,6 +527,9 @@ class EventInfo extends $pb.GeneratedMessage {
   void clearMaxAttendees() => clearField(3);
 }
 
+/// The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
+/// a `Location`, and an optional `Post` (and discussion thread) specific to this particular
+/// `EventInstance` in addition to the parent `Event`.
 class EventInstance extends $pb.GeneratedMessage {
   factory EventInstance({
     $core.String? id,
@@ -607,6 +618,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearEventId() => clearField(2);
 
+  /// Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`.
   @$pb.TagNumber(3)
   $7.Post get post => $_getN(2);
   @$pb.TagNumber(3)
@@ -618,6 +630,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $7.Post ensurePost() => $_ensure(2);
 
+  /// Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`.
   @$pb.TagNumber(4)
   EventInstanceInfo get info => $_getN(3);
   @$pb.TagNumber(4)
@@ -629,6 +642,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   EventInstanceInfo ensureInfo() => $_ensure(3);
 
+  /// The time the event starts (UTC/Timestamp format).
   @$pb.TagNumber(5)
   $9.Timestamp get startsAt => $_getN(4);
   @$pb.TagNumber(5)
@@ -640,6 +654,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $9.Timestamp ensureStartsAt() => $_ensure(4);
 
+  /// The time the event ends (UTC/Timestamp format).
   @$pb.TagNumber(6)
   $9.Timestamp get endsAt => $_getN(5);
   @$pb.TagNumber(6)
@@ -651,6 +666,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $9.Timestamp ensureEndsAt() => $_ensure(5);
 
+  /// The location of the event.
   @$pb.TagNumber(7)
   $12.Location get location => $_getN(6);
   @$pb.TagNumber(7)
@@ -717,6 +733,8 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   EventInstanceRsvpInfo ensureRsvpInfo() => $_ensure(0);
 }
 
+/// Consolidated type for RSVP info for an `EventInstance`.
+/// Curently, the `optional` counts below are *never* returned by the API.
 class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   factory EventInstanceRsvpInfo({
     $core.bool? allowsRsvps,
@@ -817,6 +835,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAllowsAnonymousRsvps() => clearField(2);
 
+  /// Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported.
   @$pb.TagNumber(3)
   $core.int get maxAttendees => $_getIZ(2);
   @$pb.TagNumber(3)
@@ -881,6 +900,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   void clearInvitedAttendees() => clearField(9);
 }
 
+/// Request to get RSVP data for an event.
 class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   factory GetEventAttendancesRequest({
     $core.String? eventInstanceId,
@@ -1197,6 +1217,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   void clearPublicNote() => clearField(9);
 
+  /// Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable).
   @$pb.TagNumber(10)
   $10.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
@@ -1362,6 +1383,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   static UserAttendee getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UserAttendee>(create);
   static UserAttendee? _defaultInstance;
 
+  /// The user ID of the attendee.
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -1371,6 +1393,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUserId() => clearField(1);
 
+  /// The username of the attendee.
   @$pb.TagNumber(2)
   $core.String get username => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -1380,6 +1403,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUsername() => clearField(2);
 
+  /// The attendee's user avatar.
   @$pb.TagNumber(3)
   $5.MediaReference get avatar => $_getN(2);
   @$pb.TagNumber(3)

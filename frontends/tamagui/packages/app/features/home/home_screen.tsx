@@ -1,18 +1,17 @@
 import { EventListingType, Group, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks';
-import { RootState, setShowEventsOnLatest, useServerTheme, useAppDispatch, useRootSelector } from 'app/store';
-import { setDocumentTitle } from 'app/utils/set_title';
+import { useAppDispatch, useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks';
+import { RootState, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
+import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
 import PostCard from '../post/post_card';
-import { TabsNavigation } from '../tabs/tabs_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
-import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;

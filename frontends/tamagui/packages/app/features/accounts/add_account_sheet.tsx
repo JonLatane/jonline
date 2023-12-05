@@ -1,11 +1,12 @@
 import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
-import { accountId, clearAccountAlerts, createAccount, JonlineAccount, login, RootState, selectAllAccounts, serverID, useServerTheme, useAppDispatch, useRootSelector } from 'app/store';
+import { TamaguiMarkdown } from 'app/components';
+import { useAppDispatch } from 'app/hooks';
+import { accountID, clearAccountAlerts, createAccount, JonlineAccount, login, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import { TamaguiMarkdown } from '../post/tamagui_markdown';
-import AccountCard from './account_card';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
 import { TextInput } from 'react-native';
+import AccountCard from './account_card';
 
 export type AddAccountSheetProps = {
   // primaryServer?: JonlineServer;
@@ -248,7 +249,7 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                 : accountsOnServer.length > 0 ? <>
                   {/* <Heading size="$7" paddingVertical='$2'>Choose Account</Heading> */}
                   {accountsOnServer.map((account) =>
-                    <AccountCard account={account} key={accountId(account)} totalAccounts={accountsOnServer.length}
+                    <AccountCard account={account} key={accountID(account)} totalAccounts={accountsOnServer.length}
                       onReauthenticate={reauthenticateAccount} />)}
                 </>
                   : undefined}

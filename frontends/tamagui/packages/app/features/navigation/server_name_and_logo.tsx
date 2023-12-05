@@ -1,8 +1,9 @@
 import { Media } from "@jonline/api";
-import { Heading, Paragraph, XStack, YStack, isSafari, useMedia } from "@jonline/ui";
-import { JonlineServer, useServer } from "app/store";
-import { MediaRenderer } from "../media/media_renderer";
+import { Heading, Paragraph, XStack, YStack, useMedia } from "@jonline/ui";
 import { Home } from "@tamagui/lucide-icons";
+import { useServer } from "app/hooks";
+import { JonlineServer } from "app/store";
+import { MediaRenderer } from "../media/media_renderer";
 
 export type ServerNameAndLogoProps = {
   shrinkToSquare?: boolean;

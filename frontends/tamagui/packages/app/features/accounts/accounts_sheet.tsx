@@ -1,22 +1,23 @@
-import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, ChevronRight, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon, AlertTriangle } from '@tamagui/lucide-icons';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
+import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineAccount, JonlineServer, RootState, accountId, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setDarkMode, setDarkModeAuto, setViewingRecommendedServers, upsertServer, useAppDispatch, useLoadingCredentialedData, useLocalConfiguration, useRootSelector, useServerTheme } from 'app/store';
-import { themedButtonBackground } from 'app/utils/themed_button_background';
+import { JonlineAccount, JonlineServer, RootState, accountID, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setDarkMode, setDarkModeAuto, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import { Platform, TextInput } from 'react-native';
+import { Alert, Platform, TextInput } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
 import { physicallyHostingServerId } from '../about/about_screen';
-import { TamaguiMarkdown } from '../post/tamagui_markdown';
+import { TamaguiMarkdown } from 'app/components';
 import { SettingsSheet } from '../settings_sheet';
-import { ServerNameAndLogo } from '../tabs/server_name_and_logo';
+import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
+import { TutorialToggle } from '../navigation/tabs_tutorial';
 import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
-import { TutorialToggle } from '../tabs/tabs_tutorial';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -43,7 +44,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
 
   const dispatch = useAppDispatch();
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
+  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
   const serversState = useRootSelector((state: RootState) => state.servers);
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers));
   const allowServerSelection = allowServerSelectionSetting || servers.length > 1;
@@ -107,9 +108,11 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     ...servers.filter(s => s.host != server?.host)
       .flatMap(s => s.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])
   ])];
-  const recommendedServerHosts = browsingServers
+  const recommendedServerHostsUnfiltered = browsingServers
     ? allRecommendableServerHosts
     : [...new Set(server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])];
+  const recommendedServerHosts = recommendedServerHostsUnfiltered
+    .filter(host => !currentServerHosts.includes(host));
   //?.filter(host => !currentServerHosts.includes(host)) ?? [];
   // const recommendedServerHostList = recommendableServerHosts;//?.filter(host => !currentServerHosts.includes(host)) ?? [];
   // const recommendedServerHosts = [...new Set(recommendedServerHostList)];
@@ -141,7 +144,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const disableLoginMethodButtons = newAccountUser == '';
   const disableAccountInputs = accountsLoading || forceDisableAccountButtons;
   const disableAccountButtons = accountsLoading || !newAccountValid || forceDisableAccountButtons;
-  const isLoadingCredentialedData = useLoadingCredentialedData();
+
   useEffect(() => {
     if (accountsLoading && !forceDisableAccountButtons) {
       setForceDisableAccountButtons(true);
@@ -196,7 +199,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const account = accountsState.account;
   const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
 
-  const userIcon = account ? UserIcon : LogIn;
+  const userIcon = serversDiffer || browsingOnDiffers
+    ? AlertTriangle :
+    account ? UserIcon : LogIn;
   const { darkMode, darkModeAuto } = useLocalConfiguration();
   const isInDarkMode = darkModeAuto ? doesPlatformPreferDarkMode() : darkMode;
   const toggleDarkMode = () => {
@@ -213,39 +218,56 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   return (
     <>
       {circular && avatarUrl && avatarUrl != ''
-        ? <Anchor
+        ?
+        <Anchor
           my='auto'
           px={0}
           // mr={-10}
           transform={[{ translateX: 5 }]}
           ml='$1'
           onPress={() => setOpen((x) => !x)}>
-          <XStack w={48} h={48}
-            ml={-5}
-            mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
-            <Image
-              pos="absolute"
-              width={48}
-              // opacity={0.25}
-              height={48}
-              borderRadius={24}
-              // mr={-5}
-              resizeMode="cover"
-              als="flex-start"
-              source={{ uri: avatarUrl, width: 48, height: 48 }}
-            // blurRadius={1.5}
-            // borderRadius={5}
-            />
-          </XStack>
+          <ZStack w={48} h={48}>
+            <XStack w={48} h={48}
+              o={serversDiffer || browsingOnDiffers ? 0.6 : 1}
+              ml={-5}
+              mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
+              <Image
+                pos="absolute"
+                width={48}
+                // opacity={0.25}
+                height={48}
+                borderRadius={24}
+                // mr={-5}
+                resizeMode="cover"
+                als="flex-start"
+                source={{ uri: avatarUrl, width: 48, height: 48 }}
+              // blurRadius={1.5}
+              // borderRadius={5}
+              />
+            </XStack>
+            {serversDiffer || browsingOnDiffers
+              ? <XStack pointerEvents='none' transform={[{ translateX: -15 }, { translateY: 25 }]}>
+                <AlertTriangle color={primaryTextColor} />
+              </XStack>
+              : undefined}
+          </ZStack>
         </Anchor>
         : <Button
           my='auto'
           size={size}
           icon={
-            circular ? userIcon : open ? XIcon : avatarUrl && avatarUrl != '' ? undefined : ChevronDown
+            circular
+              ? userIcon
+              : open
+                ? XIcon
+                : serversDiffer || browsingOnDiffers
+                  ? AlertTriangle
+                  : avatarUrl && avatarUrl != ''
+                    ? undefined
+                    : ChevronDown
           }
           circular={circular}
-          color={serversDiffer || browsingOnDiffers ? warningAnchorColor : undefined}
+          // color={serversDiffer || browsingOnDiffers ? warningAnchorColor : undefined}
           onPress={() => setOpen((x) => !x)}
 
         >
@@ -293,7 +315,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
             <TutorialToggle onPress={() => setOpen(false)} />
-            <Button size='$3' circular opacity={0} disabled />
+            <DarkModeToggle />
             <XStack f={1} />
             <Button
               alignSelf='center'
@@ -302,7 +324,28 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               icon={ChevronDown}
               onPress={() => setOpen(false)} />
             <XStack f={1} />
-            <DarkModeToggle />
+            <Button size='$3' circular p={0}
+              onPress={() => dispatch(setBrowsingServers(!browsingServers))}
+              animation='standard'
+              opacity={allowServerSelection || servers.length > 1 ? 1 : 0}
+              disabled={!(allowServerSelection || servers.length > 1)} >
+              <ZStack w='$2' h='$2'>
+                <XStack m='auto' animation='standard' o={!browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
+                  <ChevronUp size='$1' />
+                </XStack>
+                <XStack m='auto' animation='standard' o={browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
+                  <Server size='$1' />
+                </XStack>
+                <Theme inverse>
+                  <XStack m='auto' animation='standard' px='$1' borderRadius='$3'
+                    transform={[{ translateX: 15 }, { translateY: 10 }]}
+                    backgroundColor={textColor}
+                    o={browsingServers || servers.length === 0 ? 0 : 1} >
+                    <Paragraph size='$1'>{servers.length}</Paragraph>
+                  </XStack>
+                </Theme>
+              </ZStack>
+            </Button>
             <SettingsSheet size='$3' />
           </XStack>
           <Sheet.ScrollView p="$4" space>
@@ -376,7 +419,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     </YStack>
                   </Sheet.Frame>
                 </Sheet>
-                {allowServerSelection || servers.length > 1
+                {/* {allowServerSelection || servers.length > 1
                   ? <Button
                     size="$3"
                     ml={browsingServers ? '$2' : 'auto'}
@@ -388,13 +431,16 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     onPress={() => dispatch(setBrowsingServers(!browsingServers))} >
                     {browsingServers ? 'Back' : `My Servers (${servers.length})`}
                   </Button>
-                  : undefined}
+                  : undefined} */}
               </XStack>
 
               {onlyShowServer
-                ? <Heading size='$3' marginTop='$2' color={warningAnchorColor} textAlign='center'>
-                  Viewing server configuration
-                </Heading>
+                ? <XStack mx='auto' space='$2'>
+                  <XStack my='auto'><Info /></XStack>
+                  <Heading my='auto' f={1} size='$3' textAlign='center'>
+                    Viewing server configuration
+                  </Heading>
+                </XStack>
                 : undefined}
               {onlyShowServer && serversDiffer
                 ? undefined
@@ -477,7 +523,14 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                             return <>
                               {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
                                 ? <XStack key='separator' my='auto'>
-                                  <SeparatorHorizontal size='$5' />
+                                  <Tooltip>
+                                    <Tooltip.Trigger>
+                                      <SeparatorHorizontal size='$5' />
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content>
+                                      <Paragraph size='$1'>Servers to the right are recommended by servers other than {server?.serverConfiguration?.serverInfo?.name}.</Paragraph>
+                                    </Tooltip.Content>
+                                  </Tooltip>
                                 </XStack>
                                 : undefined}
                               <XStack my='auto' key={`recommended-server-${host}`}>
@@ -502,18 +555,26 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 : undefined}
               {serversDiffer
                 ? <>
-                  <Heading color={warningAnchorColor} whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>
-                    {primaryServer?.serverConfiguration?.serverInfo?.name}
-                  </Heading>
-                  <Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
-                    Viewing server configuration for {onlyShowServer.host}
-                  </Heading>
+                  <XStack>
+                    <XStack my='auto'><AlertTriangle /></XStack>
+                    <YStack my='auto' f={1}>
+                      {/* <Heading whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>
+                        {primaryServer?.serverConfiguration?.serverInfo?.name}
+                      </Heading> */}
+                      <Heading size='$3' als='center' marginTop='$2' textAlign='center'>
+                        Viewing server configuration for {onlyShowServer.host}
+                      </Heading>
+                    </YStack>
+                  </XStack>
                 </>
                 : undefined}
               {browsingOnDiffers
-                ? <><Heading color={warningAnchorColor} size='$3' als='center' marginTop='$2' textAlign='center'>
-                  Browsing via {browsingOn}
-                </Heading>
+                ? <><XStack mx='auto' space='$2'>
+                  <XStack my='auto'><AlertTriangle /></XStack>
+                  <Heading size='$3' my='auto' als='center' textAlign='center'>
+                    Browsing via {browsingOn}
+                  </Heading>
+                </XStack>
                 </>
                 // : browsingServers && Platform.OS == 'web'
                 //   ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
@@ -657,7 +718,7 @@ to evaluate support options.
                 ? <>
                   {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on {primaryServer?.host}.</Heading> : undefined}
                   {accountsOnPrimaryServer.map((account) =>
-                    <AccountCard key={accountId(account)}
+                    <AccountCard key={accountID(account)}
                       account={account}
                       onReauthenticate={reauthenticate}
                       totalAccounts={accountsOnPrimaryServer.length} />)}
@@ -665,7 +726,7 @@ to evaluate support options.
                     ? <>
                       <Heading>Accounts Elsewhere</Heading>
                       {accountsElsewhere.map((account) =>
-                        <AccountCard key={accountId(account)}
+                        <AccountCard key={accountID(account)}
                           account={account}
                           onReauthenticate={reauthenticate}
                           totalAccounts={accountsOnPrimaryServer.length} />)}
@@ -676,7 +737,7 @@ to evaluate support options.
                 : <>
                   {displayedAccounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
                   {displayedAccounts.map((account) =>
-                    <AccountCard key={accountId(account)}
+                    <AccountCard key={accountID(account)}
                       account={account}
                       onReauthenticate={reauthenticate}
                       totalAccounts={displayedAccounts.length} />)}
@@ -684,7 +745,7 @@ to evaluate support options.
             </YStack>
           </Sheet.ScrollView>
         </Sheet.Frame>
-      </Sheet>
+      </Sheet >
     </>
   )
 }

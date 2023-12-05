@@ -1,12 +1,12 @@
 import { Media } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { RootState, getMediaPage, loadMediaPage, useAccountOrServer, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
+import { useAccountOrServer, useCredentialDispatch } from 'app/hooks';
+import { RootState, getMediaPage, loadMediaPage, useRootSelector, useServerTheme } from 'app/store';
+import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
-// import { StickyCreateButton } from '../post/create_post_sheet';
-import { setDocumentTitle } from 'app/utils/set_title';
-import { AppSection } from '../tabs/features_navigation';
-import { TabsNavigation } from '../tabs/tabs_navigation';
+import { AppSection } from '../navigation/features_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
 import { MediaCard } from './media_card';
 import { MediaUploader } from './media_uploader';
 
@@ -15,7 +15,7 @@ export function MediaScreen() {
 
   const mediaState = useRootSelector((state: RootState) => state.media);
   const accountOrServer = useAccountOrServer();
-  const {account} = accountOrServer;
+  const { account } = accountOrServer;
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();

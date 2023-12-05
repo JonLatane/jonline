@@ -1,5 +1,6 @@
 import { Group, Permission, Post } from '@jonline/api';
-import { createGroupPost, createPost, useCredentialDispatch } from 'app/store';
+import { useCredentialDispatch } from 'app/hooks';
+import { createGroupPost, createPost } from 'app/store';
 import React from 'react';
 import { BaseCreatePostSheet } from './base_create_post_sheet';
 import PostCard from './post_card';

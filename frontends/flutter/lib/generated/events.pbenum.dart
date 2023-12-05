@@ -13,6 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
 class EventListingType extends $pb.ProtobufEnum {
   static const EventListingType ALL_ACCESSIBLE_EVENTS = EventListingType._(0, _omitEnumNames ? '' : 'ALL_ACCESSIBLE_EVENTS');
   static const EventListingType FOLLOWING_EVENTS = EventListingType._(1, _omitEnumNames ? '' : 'FOLLOWING_EVENTS');

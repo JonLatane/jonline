@@ -1,10 +1,10 @@
 import { Button, Paragraph, YStack } from '@jonline/ui'
 import { ChevronLeft } from '@tamagui/lucide-icons'
-import { useCredentialDispatch } from 'app/store'
+import { useCredentialDispatch } from 'app/hooks'
 import React from 'react'
 import { createParam } from 'solito'
 import { useLink } from 'solito/link'
-import { TabsNavigation } from '../tabs/tabs_navigation'
+import { TabsNavigation } from '../navigation/tabs_navigation'
 
 const { useParam } = createParam<{ id: string }>()
 

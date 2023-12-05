@@ -113,6 +113,10 @@ impl Jonline for JonlineService {
         auth_rpc!(self, rpcs::access_token, request)
     }
 
+    async fn reset_password(&self, request: Request<ResetPasswordRequest>) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::reset_password, request)
+    }
+
     async fn get_current_user(&self, request: Request<()>) -> Result<Response<User>, Status> {
         authenticated_rpc!(self, rpcs::get_current_user, request)
     }

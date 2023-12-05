@@ -1,18 +1,18 @@
 import { Group, WebUserInterface } from "@jonline/api";
-import { AnimatePresence, Button, Paragraph, ScrollView, Theme, ToastViewport, XStack, YStack, ZStack, standardAnimation, useMedia } from "@jonline/ui";
-import { CornerRightUp, Home as HomeIcon } from '@tamagui/lucide-icons';
-import { JonlineServer, RootState, markGroupVisit, useServerTheme, useAppDispatch, useRootSelector } from "app/store";
-import { useEffect, useState } from "react";
+import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
+import { Home as HomeIcon } from '@tamagui/lucide-icons';
+import { useAppDispatch } from "app/hooks";
+import { JonlineServer, RootState, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
+import { useEffect } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
-import { serverID } from '../../store';
 import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupContextProvider } from "../groups/group_context";
 import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
-import { DarkModeToggle } from "app/components/dark_mode_toggle";
 import { TabsTutorial } from "./tabs_tutorial";
+import { PinnedServerSelector } from "./pinned_server_selector";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -25,9 +25,20 @@ export type TabsNavigationProps = {
   // But, for instance, post pages can link to /g/:shortname/p/:id.
   groupPageForwarder?: (group: Group) => string;
   groupPageExiter?: () => void;
+  withServerPinning?: boolean;
 };
 
-export function TabsNavigation({ children, onlyShowServer, appSection = AppSection.HOME, appSubsection, selectedGroup, customHomeAction, groupPageForwarder, groupPageExiter }: TabsNavigationProps) {
+export function TabsNavigation({
+  children,
+  onlyShowServer,
+  appSection = AppSection.HOME,
+  appSubsection,
+  selectedGroup,
+  customHomeAction,
+  groupPageForwarder,
+  groupPageExiter,
+  withServerPinning
+}: TabsNavigationProps) {
   const mediaQuery = useMedia()
   const server = useRootSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;
@@ -54,8 +65,11 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
-  const shrinkHomeButton = !mediaQuery.gtMd && (selectedGroup != undefined ||
-    appSubsection == AppSubsection.FOLLOW_REQUESTS);
+  const shrinkHomeButton = !mediaQuery.gtMd && (
+    selectedGroup != undefined ||
+    appSubsection == AppSubsection.FOLLOW_REQUESTS ||
+    (app.inlineFeatureNavigation === true && !mediaQuery.gtSm)
+  );
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
   const showHomeIcon = serverNameEmoji == undefined && !canUseLogo && shrinkHomeButton;
   const renderHomeButtonChildren = !shrinkHomeButton || serverNameEmoji || canUseLogo;
@@ -135,8 +149,8 @@ export function TabsNavigation({ children, onlyShowServer, appSection = AppSecti
 
           </YStack>
         </StickyBox>
-
         <TabsTutorial />
+        <PinnedServerSelector show={withServerPinning} />
         <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>
           {children}
         </YStack>

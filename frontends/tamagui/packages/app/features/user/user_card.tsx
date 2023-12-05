@@ -1,10 +1,12 @@
 import { Permission, User } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, useMedia, XStack, YStack } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
 import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
+import { useCredentialDispatch, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { followUnfollowUser, isUserLocked, respondToFollowRequest, RootState, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from "app/store";
+import { RootState, followUnfollowUser, isUserLocked, respondToFollowRequest, useRootSelector, useServerTheme } from "app/store";
+import { FederatedEntity } from "app/store/federation";
 import { passes, pending } from "app/utils/moderation_utils";
 import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
 import React from "react";
@@ -15,7 +17,7 @@ import { MediaRef } from "../media/media_chooser";
 import { postBackgroundSize } from "../post/post_card";
 
 interface Props {
-  user: User;
+  user: FederatedEntity<User>;
   isPreview?: boolean;
   username?: string;
   setUsername?: (username: string) => void;

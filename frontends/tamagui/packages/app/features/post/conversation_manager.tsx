@@ -1,11 +1,12 @@
-import { Post } from '@jonline/api'
-import { Button, Heading, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui'
-import { ListEnd } from '@tamagui/lucide-icons'
-import { RootState, loadPostReplies, setDiscussionChatUI, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from 'app/store'
-import moment, { Moment } from 'moment'
-import React, { useEffect, useReducer, useState } from 'react'
-import { useConversationContext } from './conversation_context'
-import PostCard from './post_card'
+import { Post } from '@jonline/api';
+import { Button, Heading, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { ListEnd } from '@tamagui/lucide-icons';
+import { useCredentialDispatch, useLocalConfiguration, } from 'app/hooks';
+import { RootState, loadPostReplies, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store';
+import moment, { Moment } from 'moment';
+import React, { useEffect, useReducer, useState } from 'react';
+import { useConversationContext } from './conversation_context';
+import PostCard from './post_card';
 
 interface ConversationManagerProps {
   post: Post;
@@ -74,20 +75,8 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
           }, intervalSeconds * 1000);
         });
       }, 1);
-      // if (wasAtBottom) {
-      //   setTimeout(() => {
-      //     if (chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
-      //       scrollToBottom();
-      //     }
-      //   }, 1000);
-      // }
-      // _nextChatReplyRefresh = moment().add(intervalSeconds, 'second');
-      // setTimeout(() => {
-      //   forceUpdate();
-      // }, intervalSeconds * 1000);
     }
   }
-  // const [replyPostIdPath, setReplyPostIdPath] = useState<string[]>(post.id ? [post.id] : []);
 
   const failedToLoadPost = post.id != undefined &&
     postsState.failedPostIds.includes(post.id!);
@@ -96,16 +85,6 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     if (replyPostIdPath.length == 0) {
       setReplyPostIdPath([post.id]);
     }
-    // if ((!post || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
-    //   setLoadingPost(true);
-    //   // useEffect(() => {
-    //   console.log('loadPost', post.id!)
-    //   setTimeout(() =>
-    //     dispatch(loadPost({ ...accountOrServer, id: post.id! })));
-    //   // });
-    // } else if (post && loadingPost) {
-    //   setLoadingPost(false);
-    // }
     if (post && postsState.status != 'loading' && post.replyCount > 0 &&
       post.replies.length == 0 && !loadingReplies) {
       setLoadingReplies(true);

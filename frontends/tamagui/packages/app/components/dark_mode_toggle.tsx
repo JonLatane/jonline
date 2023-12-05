@@ -1,6 +1,7 @@
 import { Button, Paragraph, XStack, ZStack } from '@jonline/ui';
 import { Moon, Sun } from '@tamagui/lucide-icons';
-import { setDarkMode, setDarkModeAuto, useAppDispatch, useLocalConfiguration } from 'app/store';
+import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
+import { setDarkMode, setDarkModeAuto, } from 'app/store';
 import React from 'react';
 
 export const doesPlatformPreferDarkMode = () =>

@@ -2,12 +2,12 @@ import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { useGroupPostPages, usePostPages } from 'app/hooks/post_pagination_hooks';
 import { RootState, useServerTheme, useRootSelector } from 'app/store';
-import { setDocumentTitle } from 'app/utils/set_title';
+import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import PostCard from '../post/post_card';
-import { AppSection } from '../tabs/features_navigation';
-import { TabsNavigation } from '../tabs/tabs_navigation';
+import { AppSection } from '../navigation/features_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
@@ -56,7 +56,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
           />
         </YStack>
       </StickyBox> : undefined}
-      <YStack f={1} w='100%' jc="center" ai="center" p="$0" px='$3' mt='$3' mr={-10} maw={800} space>
+      <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' mt='$3' maw={800} space>
         {firstPageLoaded
           ? posts.length == 0
             ? <YStack width='100%' maw={600} jc="center" ai="center">

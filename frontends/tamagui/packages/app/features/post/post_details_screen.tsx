@@ -1,15 +1,15 @@
 import { Heading, ScrollView, Spinner, XStack, YStack } from '@jonline/ui'
-import { RootState, loadPost, selectGroupById, selectPostById, useCredentialDispatch, useLocalConfiguration, useServerTheme, useRootSelector } from 'app/store'
+import { useCredentialDispatch, useLocalConfiguration, } from 'app/hooks'
+import { RootState, loadPost, selectGroupById, selectPostById, useRootSelector, useServerTheme } from 'app/store'
+import { setDocumentTitle } from 'app/utils'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
-import { AppSection } from '../tabs/features_navigation'
-import { TabsNavigation } from '../tabs/tabs_navigation'
+import { AppSection } from '../navigation/features_navigation'
+import { TabsNavigation } from '../navigation/tabs_navigation'
 import { ConversationContextProvider, useStatefulConversationContext } from './conversation_context'
 import { ConversationManager } from './conversation_manager'
-
 import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
-import { setDocumentTitle } from 'app/utils/set_title'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -42,7 +42,7 @@ export function PostDetailsScreen() {
     if (postId) {
       if ((!subjectPost || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
         setLoadingPost(true);
-        console.log('loadPost', postId!)
+        // console.log('loadPost', postId!)
         setTimeout(() =>
           dispatch(loadPost({ ...accountOrServer, id: postId! })));
       } else if (subjectPost && loadingPost) {
@@ -84,8 +84,8 @@ export function PostDetailsScreen() {
             <ScrollView w='100%'>
               <XStack w='100%' paddingHorizontal='$3'>
                 <PostCard key={`post-card-main-${postId}`}
-                post={subjectPost} 
-                onEditingChange={editHandler(subjectPost.id)} />
+                  post={subjectPost}
+                  onEditingChange={editHandler(subjectPost.id)} />
               </XStack>
               <ConversationManager post={subjectPost} />
             </ScrollView>

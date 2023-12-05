@@ -1,9 +1,7 @@
 import { Media } from '@jonline/api';
-import { RootState, getMediaPage, loadMediaPage, useAccountOrServer, useCredentialDispatch, useRootSelector } from 'app/store';
+import { useAccountOrServer, useCredentialDispatch } from 'app/hooks';
+import { RootState, getMediaPage, loadMediaPage, useRootSelector } from 'app/store';
 import { useEffect, useState } from 'react';
-// import { StickyCreateButton } from '../post/create_post_sheet';
-
-
 
 export function useMediaPage(userId: string | undefined, page: number, onLoaded?: () => void) {
   const accountOrServer = useAccountOrServer();

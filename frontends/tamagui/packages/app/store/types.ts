@@ -1,6 +1,6 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { ExpirableToken, GetServiceVersionResponse, ServerConfiguration, User } from "@jonline/api";
-import { accountId, serverID } from "./modules";
+import { accountID, serverID } from "./modules";
 import { CallOptions } from "nice-grpc-web";
 import { JonlineClient } from "@jonline/api/generated/jonline";
 
@@ -22,7 +22,7 @@ export type JonlineAccount = {
   lastSyncFailed?: boolean;
 }
 
-// Note that this is inclusive-or
+// Note that this is inclusive-or. The account, if provided, should always have the same server as the server field.
 export type AccountOrServer = {
   account?: JonlineAccount;
   server?: JonlineServer;
@@ -30,7 +30,7 @@ export type AccountOrServer = {
 
 export function accountOrServerId(accountOrServer: AccountOrServer) {
   if (accountOrServer.account) {
-    return `account-${accountId(accountOrServer.account)}`;
+    return `account-${accountID(accountOrServer.account)}`;
   }
   return `server-${serverID(accountOrServer.server!)}`;
 }

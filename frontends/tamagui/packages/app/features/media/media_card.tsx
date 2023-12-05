@@ -1,13 +1,12 @@
 import React from "react";
-import { View } from "react-native";
 
 import { Media, Permission } from "@jonline/api";
-import { AlertDialog, Button, Card, Heading, Paragraph, Theme, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
-import { TamaguiMarkdown } from "../post/tamagui_markdown";
-import { MediaRenderer } from "./media_renderer";
-import { DateViewer } from "@jonline/ui";
-import { deleteMedia, useAccountOrServer, useCredentialDispatch, useServerTheme } from "app/store";
+import { AlertDialog, Button, Card, DateViewer, Heading, Theme, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
 import { Trash } from '@tamagui/lucide-icons';
+import { TamaguiMarkdown } from "app/components";
+import { useCredentialDispatch } from "app/hooks";
+import { deleteMedia, useServerTheme } from "app/store";
+import { MediaRenderer } from "./media_renderer";
 
 interface Props {
   media: Media;

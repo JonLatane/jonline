@@ -83,7 +83,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       if (action.payload.id) {
         postsAdapter.upsertOne(state, action.payload);
       }
-      // if (accountId(state.account) === accountId(action.payload)) {
+      // if (accountID(state.account) === accountID(action.payload)) {
       //   state.account = action.payload;
       // }
     },
@@ -253,7 +253,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(loadPostReplies.fulfilled, (state, action) => {
       state.status = "loaded";
-      console.log('loaded post replies', action.payload)
+      // console.log('loaded post replies', action.payload)
       // Load the replies into the post tree.
       const postIdPath = action.meta.arg.postIdPath;
       const basePost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);

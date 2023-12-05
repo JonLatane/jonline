@@ -1,8 +1,8 @@
-import { JonlineServer, RootState, loadMedia, selectMediaById, serverUrl, useCredentialDispatch, useServerTheme, useRootSelector } from "app/store";
-import React, { useState, useEffect } from 'react';
+import { useCredentialDispatch } from "app/hooks";
+import { JonlineServer, RootState, loadMedia, selectMediaById, useRootSelector, useServerTheme } from "app/store";
+import React, { useEffect } from 'react';
 
-import { Media, MediaReference } from "@jonline/api";
-import { Anchor, Image, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
+import { Anchor, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
 import ReactPlayer from 'react-player/lazy';
 import { useMediaUrl } from '../../hooks/use_media_url';
 import { MediaRef } from "./media_chooser";

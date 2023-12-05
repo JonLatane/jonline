@@ -117,7 +117,6 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
         setTimeout(() => {
           console.log("upserting post", event.post);
           store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
-
         }, 1);
       }
       setTimeout(() => {
@@ -198,12 +197,12 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       event.instances.forEach(instance => {
         state.instanceEvents[instance.id] = event.id;
       });
-      // if (event.post) {
-      //   setTimeout(() => {
-      //     console.log("upserting event's post", event.post);
-      //     store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
-      //   }, 1);
-      // }
+      if (event.post) {
+        setTimeout(() => {
+          // console.log("upserting event's post", event.post);
+          store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
+        }, 1);
+      }
     };
     builder.addCase(loadEvent.fulfilled, saveSingleEvent);
     builder.addCase(loadEventByInstance.fulfilled, saveSingleEvent);

@@ -6,6 +6,7 @@ import {
   CreateAccountRequest,
   LoginRequest,
   RefreshTokenResponse,
+  ResetPasswordRequest,
 } from "./authentication";
 import {
   Event,
@@ -52,6 +53,15 @@ export const protobufPackage = "jonline";
  * then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `AccessToken` RPC
  * may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
  * one in client storage.)
+ *
+ * ##### Micro-Federation
+ * Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
+ * Jonline only has client-server APIs. The idea is that *all* of the federation data for a given Jonline server is simply the value of
+ * [ServerInfo.recommended_server_hosts](#serverinfo).
+ *
+ * That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
+ * (Eventually, this will affect CORS policies for added security.)
+ * The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
  *
  * ##### HTTP-based client host negotiation (for external CDNs)
  * When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
@@ -157,6 +167,15 @@ export const JonlineDefinition = {
       requestType: Empty,
       requestStream: false,
       responseType: User,
+      responseStream: false,
+      options: {},
+    },
+    /** Resets the current user's - or, for admins, a given user's - password. *Authenticated.* */
+    resetPassword: {
+      name: "ResetPassword",
+      requestType: ResetPasswordRequest,
+      requestStream: false,
+      responseType: Empty,
       responseStream: false,
       options: {},
     },
@@ -544,6 +563,8 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
   ): Promise<DeepPartial<AccessTokenResponse>>;
   /** Gets the current user. *Authenticated.* */
   getCurrentUser(request: Empty, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
+  /** Resets the current user's - or, for admins, a given user's - password. *Authenticated.* */
+  resetPassword(request: ResetPasswordRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
   /** Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media). */
   getMedia(request: GetMediaRequest, context: CallContext & CallContextExt): Promise<DeepPartial<GetMediaResponse>>;
   /**
@@ -704,6 +725,8 @@ export interface JonlineClient<CallOptionsExt = {}> {
   ): Promise<AccessTokenResponse>;
   /** Gets the current user. *Authenticated.* */
   getCurrentUser(request: DeepPartial<Empty>, options?: CallOptions & CallOptionsExt): Promise<User>;
+  /** Resets the current user's - or, for admins, a given user's - password. *Authenticated.* */
+  resetPassword(request: DeepPartial<ResetPasswordRequest>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
   /** Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media). */
   getMedia(request: DeepPartial<GetMediaRequest>, options?: CallOptions & CallOptionsExt): Promise<GetMediaResponse>;
   /**

@@ -9,4 +9,4 @@ export * from './post_details_screen';
 export * from './post_media_manager';
 export * from './post_media_renderer';
 export * from './reply_area';
-export * from './tamagui_markdown';
+export * from 'app/components';

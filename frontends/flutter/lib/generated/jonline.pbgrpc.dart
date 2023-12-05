@@ -53,6 +53,10 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/GetCurrentUser',
       ($0.Empty value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $4.User.fromBuffer(value));
+  static final _$resetPassword = $grpc.ClientMethod<$3.ResetPasswordRequest, $0.Empty>(
+      '/jonline.Jonline/ResetPassword',
+      ($3.ResetPasswordRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$getMedia = $grpc.ClientMethod<$5.GetMediaRequest, $5.GetMediaResponse>(
       '/jonline.Jonline/GetMedia',
       ($5.GetMediaRequest value) => value.writeToBuffer(),
@@ -218,6 +222,10 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$4.User> getCurrentUser($0.Empty request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getCurrentUser, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> resetPassword($3.ResetPasswordRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$resetPassword, request, options: options);
   }
 
   $grpc.ResponseFuture<$5.GetMediaResponse> getMedia($5.GetMediaRequest request, {$grpc.CallOptions? options}) {
@@ -404,6 +412,13 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.Empty.fromBuffer(value),
         ($4.User value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$3.ResetPasswordRequest, $0.Empty>(
+        'ResetPassword',
+        resetPassword_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $3.ResetPasswordRequest.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$5.GetMediaRequest, $5.GetMediaResponse>(
         'GetMedia',
         getMedia_Pre,
@@ -668,6 +683,10 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return getCurrentUser(call, await request);
   }
 
+  $async.Future<$0.Empty> resetPassword_Pre($grpc.ServiceCall call, $async.Future<$3.ResetPasswordRequest> request) async {
+    return resetPassword(call, await request);
+  }
+
   $async.Future<$5.GetMediaResponse> getMedia_Pre($grpc.ServiceCall call, $async.Future<$5.GetMediaRequest> request) async {
     return getMedia(call, await request);
   }
@@ -810,6 +829,7 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$3.RefreshTokenResponse> login($grpc.ServiceCall call, $3.LoginRequest request);
   $async.Future<$3.AccessTokenResponse> accessToken($grpc.ServiceCall call, $3.AccessTokenRequest request);
   $async.Future<$4.User> getCurrentUser($grpc.ServiceCall call, $0.Empty request);
+  $async.Future<$0.Empty> resetPassword($grpc.ServiceCall call, $3.ResetPasswordRequest request);
   $async.Future<$5.GetMediaResponse> getMedia($grpc.ServiceCall call, $5.GetMediaRequest request);
   $async.Future<$0.Empty> deleteMedia($grpc.ServiceCall call, $5.Media request);
   $async.Future<$4.GetUsersResponse> getUsers($grpc.ServiceCall call, $4.GetUsersRequest request);

@@ -1,13 +1,14 @@
 import { GetGroupsRequest, Group, Permission } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Theme, XStack, YStack } from '@jonline/ui';
 import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
-import { RootState, loadGroupsPage, selectAllGroups, serverID, useCredentialDispatch, useServerTheme, useRootSelector } from 'app/store';
+import { useCredentialDispatch } from 'app/hooks';
+import { RootState, loadGroupsPage, selectAllGroups, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { hasPermission } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
 import { GroupDetailsSheet } from './group_details_sheet';
-import { hasPermission } from 'app/utils/permission_utils';
 
 export type GroupsSheetProps = {
   selectedGroup?: Group;

@@ -13,6 +13,7 @@ interface Props {
   instance: EventInstance;
   linkToInstance?: boolean;
   highlight?: boolean;
+  noAutoScroll?: boolean;
 }
 
 export const createInstanceLink = (event: Event, instance: EventInstance, group?: Group) => ({
@@ -21,7 +22,7 @@ export const createInstanceLink = (event: Event, instance: EventInstance, group?
     : `/event/${instance!.id}`
 });
 
-export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false }) => {
+export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false, noAutoScroll }) => {
   const { startsAt, endsAt } = instance;
   const { server, primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = useServerTheme();
   const group = useGroupContext();
@@ -58,10 +59,10 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
   const opacity = linkToInstance || highlight ? undefined : 0.8;
   const mainView = (startsAtDate == endsAtDate)
     ? <YStack key={key}
-      className={highlight ? 'highlighted-instance-time' : undefined}
+      className={highlight && !noAutoScroll ? 'highlighted-instance-time' : undefined}
       backgroundColor={linkToInstance ? undefined : themeBgColor}
       opacity={opacity}
-      px='$2' borderRadius='$3'>
+      px='$1' borderRadius='$3'>
       <Paragraph size="$2" color={color} fontWeight='800' mx={mx} lineHeight={lh}>
         {startsAtDay}
       </Paragraph>

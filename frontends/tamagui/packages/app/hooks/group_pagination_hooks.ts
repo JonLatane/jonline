@@ -1,6 +1,7 @@
 import { Group, GroupListingType } from "@jonline/api";
-import { RootState, getGroupPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, useCredentialDispatch, useRootSelector } from "app/store";
+import { RootState, getGroupPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
+import { useCredentialDispatch } from "./account_and_server_hooks";
 import { finishPagination } from './post_pagination_hooks';
 
 export type GroupPageParams = { onLoaded?: () => void };

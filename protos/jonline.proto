@@ -103,6 +103,8 @@ service Jonline {
   rpc AccessToken(AccessTokenRequest) returns (AccessTokenResponse) {}
   // Gets the current user. *Authenticated.*
   rpc GetCurrentUser(google.protobuf.Empty) returns (User) {}
+  // Resets the current user's - or, for admins, a given user's - password. *Authenticated.*
+  rpc ResetPassword(ResetPasswordRequest) returns (google.protobuf.Empty) {}
 
   // Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media).
   rpc GetMedia(GetMediaRequest) returns (GetMediaResponse) {}
