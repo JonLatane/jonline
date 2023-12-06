@@ -41,9 +41,12 @@ export function useCurrentAndPinnedServers(): AccountOrServer[] {
   return [accountOrServer, ...pinnedServers];
 }
 
-export function useFederatedAccountOrServer<T extends HasIdFromServer>(entity: FederatedEntity<T>): AccountOrServer {
+export function useFederatedAccountOrServer<T extends HasIdFromServer>(entity: FederatedEntity<T> | string | undefined): AccountOrServer {
   const currentAndPinnedServers = useCurrentAndPinnedServers();
-  const hostname = entity.serverHost;
+  const currentAccountOrServer = useAccountOrServer();
+  if (!entity) return currentAccountOrServer;
+
+  const hostname = typeof entity === 'string' ? entity : entity.serverHost;
   return currentAndPinnedServers.find(aos => aos.server?.host === hostname) ?? {};
 }
 
@@ -55,5 +58,12 @@ export function useCredentialDispatch(): CredentialDispatch {
   return {
     dispatch: useAppDispatch(),
     accountOrServer: useAccountOrServer()
+  };
+}
+
+export function useFederatedDispatch<T extends HasIdFromServer>(entity: FederatedEntity<T> | string | undefined): CredentialDispatch {
+  return {
+    dispatch: useAppDispatch(),
+    accountOrServer: useFederatedAccountOrServer(entity)
   };
 }

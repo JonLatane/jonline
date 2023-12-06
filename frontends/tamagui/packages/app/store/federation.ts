@@ -59,10 +59,10 @@ export function federatedEntity<T extends HasIdFromServer>(entity: T, server: Ha
 /**
  * Get the server-aware ID of an entity.
  * @param entity Any ServerEntity
- * @returns a server-host-specific entity ID, e.g. "jonline.io-a" or "localhost-a"
+ * @returns a server-host-specific entity ID, e.g. "jonline.io@@a" or "localhost@@a"
  */
 export function federatedId<T extends HasIdFromServer>(entity: FederatedEntity<T>): string {
-  return `${entity.serverHost}-${entity.id}`;
+  return `${entity.serverHost}@@${entity.id}`;
 }
 
 /**

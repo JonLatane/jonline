@@ -3,7 +3,7 @@ import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Inpu
 import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
-import { useAccountOrServer, useAppDispatch, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
+import { useAccountOrServer, useAppDispatch, useCurrentAndPinnedServers, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { FederatedUser, RootState, followUnfollowUser, getServerTheme, isUserLocked, respondToFollowRequest, useRootSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation_utils";
@@ -38,6 +38,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const dispatch = useAppDispatch();
   const accountOrServer = useFederatedAccountOrServer(user);
   const isPrimaryServer = useAccountOrServer().server?.host === user.serverHost;
+  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
   const { account, server } = accountOrServer;
   const media = useMedia();
   const app = useLocalConfiguration();
@@ -55,7 +57,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const followsCurrentUser = passes(user.targetCurrentUserFollow?.targetUserModeration);
   const followRequestReceived = user.targetCurrentUserFollow && !followsCurrentUser;
   const isLocked = useRootSelector((state: RootState) => isUserLocked(state.users, user.id));
-  const userLink = useLink({ href: `/${user.username}` });
+  const userLink = useLink({ href: isPrimaryServer ? `/${user.username}` : `/${user.username}@${user.serverHost}` });
   const fullAvatarHeight = useFullAvatarHeight();
 
   const requiresPermissionToFollow = pending(user.defaultFollowModeration);
@@ -100,11 +102,11 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         :
         <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>}
     </YStack>
-    {isPrimaryServer ? undefined : <>
-      <XStack my='auto' w={mediaQuery.gtXs ? undefined : '$4'} h={mediaQuery.gtXs ? undefined : '$4'}>
-        <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXs}/>
+    {showServerInfo
+      ? <XStack my='auto' w={mediaQuery.gtXs ? undefined : '$4'} h={mediaQuery.gtXs ? undefined : '$4'}>
+        <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXs} />
       </XStack>
-    </>}
+      : undefined}
   </XStack>;
 
 
@@ -203,7 +205,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         y={0}
       >
         <Card.Header>
-          <XStack w='100%' space='$1'>
+          <XStack w='100%' space='$1' ai='center'>
             {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
                 {usernameRegion}

@@ -2,30 +2,36 @@ import { Moderation, Permission, User, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
-import { useAccount, useCredentialDispatch } from 'app/hooks';
-import { RootState, deleteUser, getFederated, loadUserPosts, loadUsername, resetPassword, selectUserById, updateUser, useRootSelector, useServerTheme } from 'app/store';
+import { useAccount, useCredentialDispatch, useFederatedDispatch } from 'app/hooks';
+import { RootState, deleteUser, getFederated, getServerTheme, loadUserPosts, loadUsername, resetPassword, selectAllServers, selectUserById, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
-import { PostCard } from '../post/post_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
+import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
 
 const { useParam } = createParam<{ username: string, serverHost?: string }>()
 
 export function UsernameDetailsScreen() {
-  const [inputServerHost] = useParam('serverHost');
-  const [inputUsername] = useParam('username');
+  const [pathUsername] = useParam('username');
+  const [inputUsername, inputServerHost] = (pathUsername ?? '').split('@');
+
+  const { dispatch, accountOrServer } = useFederatedDispatch(inputServerHost);
+
+  const server = inputServerHost
+    ? useRootSelector((state: RootState) => selectAllServers(state.servers).find(s => s.host == inputServerHost))
+    : useRootSelector((state: RootState) => state.servers.server);
+
   const linkProps = useLink({ href: '/' });
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
   const paramUserId: string | undefined = useRootSelector((state: RootState) => inputUsername ? state.users.usernameIds[inputUsername] : undefined);
   const [userId, setUserId] = useState(paramUserId);
   const user = useRootSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
-  const { dispatch, accountOrServer } = useCredentialDispatch();
   const usersState = useRootSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
