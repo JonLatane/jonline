@@ -26,7 +26,6 @@ export type TabsNavigationProps = {
   groupPageForwarder?: (group: Group) => string;
   groupPageExiter?: () => void;
   withServerPinning?: boolean;
-  serverPinningEntity?: string;
 };
 
 export function TabsNavigation({
@@ -39,7 +38,6 @@ export function TabsNavigation({
   groupPageForwarder,
   groupPageExiter,
   withServerPinning,
-  serverPinningEntity
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
   const server = useRootSelector((state: RootState) => state.servers.server);
@@ -152,7 +150,7 @@ export function TabsNavigation({
             </XStack>
 
 
-            <PinnedServerSelector serverPinningEntity={serverPinningEntity} show={showPinnedServers && withServerPinning} />
+            <PinnedServerSelector show={showPinnedServers && withServerPinning} />
           </YStack>
         </StickyBox>
         <TabsTutorial />
