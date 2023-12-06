@@ -12,16 +12,28 @@ interface Props {
   account: JonlineAccount;
   totalAccounts: number;
   onReauthenticate?: (account: JonlineAccount) => void;
+  onProfileOpen?: () => void;
 }
 
-const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate }) => {
+const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate, onProfileOpen }) => {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   let selected = accountID(store.getState().accounts.account) == accountID(account);
 
   // const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
   // const navColorInt = account.server.serverConfiguration?.serverInfo?.colors?.navigation;
   // const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  const profileLinkProps = useLink({ href: `/${account.user.username}` });
+  const profileLink = useLink({ href: `/${account.user.username}` });
+  const profileLinkProps = {
+    ...profileLink,
+    onPress: (e) => {
+      if (account.needsReauthentication) {
+        e.stopPropagation();
+      }
+      profileLink.onPress?.(e);
+      onProfileOpen?.();
+    }
+  };
+
   // const navColor = `#${(navColorInt)?.toString(16).slice(-6) || '424242'}`;
   // const primaryColorMeta = colorMeta(navColor);
   // const navColorMeta = colorMeta(navColor);

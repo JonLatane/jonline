@@ -718,6 +718,7 @@ to evaluate support options.
                     <AccountCard key={accountID(account)}
                       account={account}
                       onReauthenticate={reauthenticate}
+                      onProfileOpen={() => setOpen(false)}
                       totalAccounts={accountsOnPrimaryServer.length} />)}
                   {accountsElsewhere.length > 0 && !onlyShowServer
                     ? <>
