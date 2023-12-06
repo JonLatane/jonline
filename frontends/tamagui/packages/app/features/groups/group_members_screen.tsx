@@ -8,6 +8,6 @@ import { UserListingType } from '@jonline/api/index';
 export function GroupMembersScreen() {
   return <BaseGroupHomeScreen
     screenComponent={
-      (group) => <BasePeopleScreen key={group.id} listingType={UserListingType.EVERYONE} selectedGroup={group} />
+      (group) => <BasePeopleScreen key={group.id} selectedGroup={group} />
     } />;
 }

@@ -99,7 +99,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
           />
         </YStack>
       </StickyBox> : undefined}
-      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
+      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' maw={800} space>
         {users && users.length == 0
           ? userPagesStatus != 'loading' && userPagesStatus != 'unloaded'
             ? listingType == UserListingType.FOLLOW_REQUESTS ?

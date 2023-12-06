@@ -39,7 +39,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const accountOrServer = useFederatedAccountOrServer(user);
   const isPrimaryServer = useAccountOrServer().server?.host === user.serverHost;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
-  const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
+  const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
   const { account, server } = accountOrServer;
   const media = useMedia();
   const app = useLocalConfiguration();
@@ -80,7 +80,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     {hasAvatarUrl ? <Image
       width={50}
       height={50}
-      mr='$2'
+      mr='$2'  my='auto'
       borderRadius={25}
       resizeMode="cover"
       als="flex-start"
@@ -198,7 +198,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       <Card theme="dark" elevate size="$4" bordered
         animation='standard'
         // scale={0.9}
-        pl='$3'
+        pl='$2'
         margin='$0'
         width={'100%'}
         scale={1}
@@ -267,7 +267,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               : undefined}
 
             <XStack h='100%'>
-              <YStack h='100%' w={10}
+              <YStack h='100%' w={8}
                 borderTopLeftRadius={20} borderBottomLeftRadius={20}
                 backgroundColor={primaryColor} />
               <YStack h='100%' w={3}

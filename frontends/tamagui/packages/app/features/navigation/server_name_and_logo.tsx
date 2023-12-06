@@ -1,5 +1,5 @@
 import { Media } from "@jonline/api";
-import { Heading, Paragraph, XStack, YStack, useMedia } from "@jonline/ui";
+import { Heading, Paragraph, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
 import { Home } from "@tamagui/lucide-icons";
 import { useServer } from "app/hooks";
 import { JonlineServer } from "app/store";
@@ -75,21 +75,58 @@ export function ServerNameAndLogo({
   const imageLogoSize = enlargeSmallText ? '$6' : '$3';
   const serverEmojiFontSize = enlargeSmallText ? '$10' : '$8';
 
+  const serverNameBreakdown = <YStack my='auto' f={1}
+    ml='$1'
+  // space={enlargeSmallText ? '$2' : '$0'}
+  >
+    <Heading my='auto'
+      fontSize={largeServername
+        ? enlargeSmallText ? '$9' : '$8'
+        : enlargeSmallText ? '$8' : '$3'}
+      m={0}
+      p={0}
+      color={textColor}
+      lineHeight={largeServername || enlargeSmallText ? '$1' : 12}
+    // whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis"
+    >
+      {serverNameBeforeEmoji}{useSquareLogo && hasEmoji && serverNameEmoji != '|' ? ` ${serverNameEmoji}` : undefined}
+    </Heading>
+    {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername || true)
+      ? <Paragraph
+        color={textColor}
+        size={enlargeSmallText
+          ? serverNameAfterEmoji.length > 10 ? '$3' : '$7'
+          : '$1'
+        }
+        lineHeight={enlargeSmallText ? '$1' : 12}
+      >
+        {serverNameAfterEmoji}
+      </Paragraph>
+      : undefined}
+  </YStack>;
+
   return shrinkToSquare
-    ? useSquareLogo
-      ? <XStack h='100%'
-        w='100%'
-        scale={1.1}
-        transform={[
-          // { translateY: 1.5 },
-          // { translateX: isSafari() ? 8.0 : 2.0 }
-        ]} >
-        <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
-      </XStack>
-      : <XStack h={'100%'} maw={maxWidthAfterServerName}>
-        <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
-        {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
-      </XStack>
+    ? <Tooltip>
+      <Tooltip.Trigger>
+        {useSquareLogo
+          ? <XStack h='100%'
+            w='100%'
+            scale={1.1}
+            transform={[
+              // { translateY: 1.5 },
+              // { translateX: isSafari() ? 8.0 : 2.0 }
+            ]} >
+            <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+          </XStack>
+          : <XStack h={'100%'} maw={maxWidthAfterServerName}>
+            <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+            {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
+          </XStack>}
+      </Tooltip.Trigger >
+      <Tooltip.Content>
+        {serverNameBreakdown}
+      </Tooltip.Content>
+    </Tooltip>
     : <XStack
       mr={'$2'}
       h={'100%'} w='100%'
@@ -98,9 +135,16 @@ export function ServerNameAndLogo({
       maw={maxWidth}
     >
       {useWideLogo
-        ? <XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
-          <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.wideMediaId })} failQuietly />
-        </XStack>
+        ?
+        <Tooltip>
+          <Tooltip.Trigger><XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
+            <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.wideMediaId })} failQuietly />
+          </XStack>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            {serverNameBreakdown}
+          </Tooltip.Content>
+        </Tooltip>
         : <>
           {useSquareLogo
             ? <XStack
@@ -115,35 +159,8 @@ export function ServerNameAndLogo({
               : fallbackToHomeIcon
                 ? <XStack my='auto' mr='$1'><Home size={enlargeSmallText ? '$5' : '$2'} /> </XStack>
                 : undefined}
-          <YStack my='auto' f={1}
-            ml='$1'
-          // space={enlargeSmallText ? '$2' : '$0'}
-          >
-            <Heading my='auto'
-              fontSize={largeServername
-                ? enlargeSmallText ? '$9' : '$8'
-                : enlargeSmallText ? '$8' : '$3'}
-              m={0}
-              p={0}
-              color={textColor}
-              lineHeight={largeServername || enlargeSmallText ? '$1' : 12}
-            // whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis"
-            >
-              {serverNameBeforeEmoji}{useSquareLogo && hasEmoji && serverNameEmoji != '|' ? ` ${serverNameEmoji}` : undefined}
-            </Heading>
-            {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername || true)
-              ? <Paragraph
-                color={textColor}
-                size={enlargeSmallText
-                  ? serverNameAfterEmoji.length > 10 ? '$3' : '$7'
-                  : '$1'
-                }
-                lineHeight={enlargeSmallText ? '$1' : 12}
-              >
-                {serverNameAfterEmoji}
-              </Paragraph>
-              : undefined}
-          </YStack>
+
+          {serverNameBreakdown}
         </>}
     </XStack>;
 }
