@@ -101,7 +101,7 @@ export function TabsNavigation({
 
       <YStack backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
         <StickyBox style={{ zIndex: 10, width: '100%' }} className="blur">
-          <YStack space="$1" backgroundColor={backgroundColor} opacity={0.92}>
+          <YStack backgroundColor={backgroundColor} opacity={0.92}>
             <XStack space="$1" marginVertical={5}>
               <XStack w={5} />
               <Button //size="$4"
@@ -149,11 +149,13 @@ export function TabsNavigation({
               <XStack w={5} />
             </XStack>
 
+            <YStack backgroundColor='$background'>
+              <TabsTutorial />
+            </YStack>
 
             <PinnedServerSelector show={showPinnedServers && withServerPinning} />
           </YStack>
         </StickyBox>
-        <TabsTutorial />
         <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>
           {children}
         </YStack>
