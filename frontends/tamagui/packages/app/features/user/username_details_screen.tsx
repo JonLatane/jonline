@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView,
 import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
 import { useAccount, useCredentialDispatch, useFederatedDispatch } from 'app/hooks';
-import { RootState, deleteUser, getFederated, getServerTheme, loadUserPosts, loadUsername, resetPassword, selectAllServers, selectUserById, updateUser, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, deleteUser, getFederated, getServerTheme, loadUserPosts, loadUsername, resetPassword, selectAllServers, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -13,6 +13,7 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
+import { useAppSelector } from '../../hooks/store_hooks';
 
 const { useParam } = createParam<{ username: string, serverHost?: string }>()
 
@@ -29,9 +30,14 @@ export function UsernameDetailsScreen() {
   const linkProps = useLink({ href: '/' });
 
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
-  const paramUserId: string | undefined = useRootSelector((state: RootState) => inputUsername ? state.users.usernameIds[inputUsername] : undefined);
-  const [userId, setUserId] = useState(paramUserId);
+  const usernameIds = useAppSelector(state => getFederated(state.users.usernameIds, server));
+  const userId: string | undefined = useRootSelector((state: RootState) =>
+    inputUsername
+      ? usernameIds[inputUsername]
+      : undefined);
+  // const [userId, setUserId] = useState(paramUserId);
   const user = useRootSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
+  console.log('pathUsername', pathUsername, inputUsername, 'server', server, 'user', user);
   const usersState = useRootSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
@@ -104,22 +110,8 @@ export function UsernameDetailsScreen() {
 
   const [successSaving, setSuccessSaving] = useState(false);
   useEffect(() => {
-    if (paramUserId != userId) {
-      setUserId(paramUserId);
-      resetFormData();
-    }
-  }, [paramUserId, userId]);
-  useEffect(() => {
-    if (user && !username) {
-      setUserId(paramUserId);
-      resetFormData();
-    }
-  }, [user, username]);
-  // useEffect(() => {
-  //   if (dirtyData && successSaving) {
-  //     dispatch(clearUserAlerts!());
-  //   }
-  // }, [dirtyData, successSaving]);
+    resetFormData();
+  }, [userId, pathUsername, server ? serverID(server) : undefined]);
   useEffect(() => {
     if (editMode && !canEdit) setEditMode(false);
   }, [editMode, canEdit]);

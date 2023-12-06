@@ -109,7 +109,9 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       builder.addCase(loader.fulfilled, (state, action) => {
         const user = action.payload;
         usersAdapter.upsertOne(state, federatedEntity(user, action));
-        state.usernameIds[action.payload.username] = federatedEntityId(user, action);
+        const usernameIds = getFederated(state.usernameIds, action);
+        usernameIds[action.payload.username] = federatedEntityId(user, action);
+        setFederated(state.usernameIds, action, usernameIds);
 
         // Update the user in any relevant accounts.
         const server = action.meta.arg.server!;
