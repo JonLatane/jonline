@@ -33,6 +33,8 @@ enum Permission {
   // Allow the user to (potentially request to) join groups of `SERVER_PUBLIC` or higher
   // visibility.
   JOIN_GROUPS = 15;
+  // Allow the user to invite other users to groups. Only applicable as a Group permission (not at the User level).
+  INVITE_GROUP_MEMBERS = 16;
 
   // In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
   // or higher visibility. In the context of group permissions, allow the user to view `GroupPost`s whose `Post`s have `LIMITED`

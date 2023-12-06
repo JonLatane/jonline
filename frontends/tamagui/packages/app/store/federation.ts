@@ -33,7 +33,7 @@ export type Federated<T> = {
   defaultValue: T,
 };
 
-type HasIdFromServer = { id: string };
+export type HasIdFromServer = { id: string };
 
 /**
  * Used to convert Jonline entities to server-specific entities for use in Redux/Thunk entity adapters.
@@ -44,7 +44,7 @@ export type FederatedEntity<T extends HasIdFromServer> = T & {
 
 export type FederatedAction = PayloadAction<any, any, { arg: AccountOrServer }>;
 
-type HasServer = FederatedAction | JonlineServer | undefined;
+export type HasServer = FederatedAction | JonlineServer | undefined;
 
 /**
  * Make an entity server-/federation-aware.
@@ -108,7 +108,10 @@ export function createFederatedValue<T>(defaultValue: T): Federated<T> {
 }
 
 export function getFederated<T>(federated: Federated<T>, server: HasServer): T {
-  return federated.values[serverHost(server)] ?? federated.defaultValue;
+  const defaultValue = Array.isArray(federated.defaultValue)
+    ? [...federated.defaultValue] as T
+    : { ...federated.defaultValue } as T;
+  return federated.values[serverHost(server)] ?? defaultValue;
 }
 
 /**

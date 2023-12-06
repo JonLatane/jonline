@@ -1,7 +1,7 @@
-import { User, UserListingType } from '@jonline/api';
+import { UserListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { useCredentialDispatch } from 'app/hooks';
-import { RootState, federatedEntity, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
+import { useCredentialDispatch, useCurrentAndPinnedServers } from 'app/hooks';
+import { FederatedUser, RootState, federatedId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -27,15 +27,11 @@ export type PeopleScreenProps = HomeScreenProps & {
 export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, selectedGroup }) => {
   const isForGroupMembers = listingType === undefined;
 
-  // function BasePeopleScreen(listingType: UserListingType = UserListingType.EVERYONE) {
-  const serversState = useRootSelector((state: RootState) => state.servers);
-  const usersState = useRootSelector((state: RootState) => state.users);
-  const app = useRootSelector((state: RootState) => state.app);
-
-  const users: User[] | undefined = useRootSelector((state: RootState) =>
+  const servers = useCurrentAndPinnedServers();
+  const users: FederatedUser[] | undefined = useRootSelector((state: RootState) =>
     isForGroupMembers
-      ? []
-      : getUsersPage(state.users, listingType, 0));
+      ? [] //TODO! Get group members
+      : getUsersPage(state.users, listingType, 0, servers));
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
@@ -44,26 +40,39 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const dimensions = useWindowDimensions();
 
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const userPagesStatus = getFederated(usersState.pagesStatus, server);
-  useEffect(() => {
-    if (users == undefined && !loadingUsers) {
-      if (!accountOrServer.server) return;
+  const userPagesStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 
-      console.log("Loading users...");
-      setLoadingUsers(true);
-      reloadUsers();
-    } else if (userPagesStatus == 'loaded' && loadingUsers) {
-      setLoadingUsers(false);
-      dismissScrollPreserver(setShowScrollPreserver);
-    }
+  useEffect(() => {
     let title = isForGroupMembers ? 'Members' :
       listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';
     title += ` | ${server?.serverConfiguration?.serverInfo?.name || '...'}`;
     setDocumentTitle(title)
-  });
+  }, [isForGroupMembers, listingType, server?.serverConfiguration?.serverInfo?.name]);
+
+
+  useEffect(() => {
+    if (users == undefined && !loadingUsers) {
+      // if (!accountOrServer.server) return;
+
+      console.log("Loading users...");
+      setLoadingUsers(true);
+      reloadUsers();
+    }
+  }, [users, loadingUsers]);
+
+  useEffect(() => {
+    if (users !== undefined && showScrollPreserver) {
+      dismissScrollPreserver(setShowScrollPreserver);
+    }
+  }, [users, showScrollPreserver])
 
   function reloadUsers() {
-    dispatch(loadUsersPage({ listingType, ...accountOrServer }));
+    Promise.all(servers.map(pinnedServer =>
+      dispatch(loadUsersPage({ listingType, ...pinnedServer })))).then((results) => {
+        console.log("Loaded users", results);
+        dismissScrollPreserver(setShowScrollPreserver);
+        setLoadingUsers(false);
+      });
   }
 
   function onHomePressed() {
@@ -74,16 +83,16 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     }
   }
 
-  console.log('selectedGroup', selectedGroup)
+  // console.log('selectedGroup', selectedGroup)
 
   return (
     <TabsNavigation appSection={selectedGroup ? AppSection.MEMBERS : AppSection.PEOPLE} selectedGroup={selectedGroup}
       appSubsection={listingType == UserListingType.FOLLOW_REQUESTS ? AppSubsection.FOLLOW_REQUESTS : undefined}
       groupPageForwarder={(group) => `/g/${group.shortname}/members`}
-      withServerPinning
+      withServerPinning={!isForGroupMembers} serverPinningEntity='People'
     // customHomeAction={onHomePressed}
     >
-      {userPagesStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+      {loadingUsers ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
             top={dimensions.height / 2 - 50}
@@ -105,8 +114,9 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
             : undefined
           : <>
             {users?.map((user) => {
-              const federatedUser = federatedEntity(user, server);
-              return <YStack w='100%' mb='$3' key={`user-${user.id}`}><UserCard user={federatedUser} isPreview /></YStack>;
+              return <YStack w='100%' mb='$3' key={`user-${federatedId(user)}`}>
+                <UserCard user={user} isPreview />
+              </YStack>;
             })}
             {showScrollPreserver ? <YStack h={100000} /> : undefined}
           </>}

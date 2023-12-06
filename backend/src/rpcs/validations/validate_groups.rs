@@ -23,13 +23,14 @@ pub fn validate_group(group: &Group) -> Result<(), Status> {
     };
     for permission in group.default_membership_permissions.to_proto_permissions() {
         match permission {
-            Permission::ViewPosts
+            Permission::ViewUsers
+            | Permission::ModerateUsers
+            | Permission::ViewPosts
             | Permission::CreatePosts
             | Permission::ModeratePosts
             | Permission::ViewEvents
             | Permission::CreateEvents
             | Permission::ModerateEvents
-            | Permission::ModerateUsers
             | Permission::Admin => (),
             permission => {
                 return Err(Status::new(

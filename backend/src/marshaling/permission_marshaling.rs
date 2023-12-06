@@ -1,40 +1,36 @@
 use std::mem::transmute;
 
 use crate::itertools::Itertools;
-use crate::protos::*;
 use crate::protos::Permission::*;
+use crate::protos::*;
 
-pub const ALL_PERMISSIONS: [Permission; 28] = [
+pub const ALL_PERMISSIONS: [Permission; 29] = [
     Unknown,
-
     ViewUsers,
     PublishUsersLocally,
     PublishUsersGlobally,
     ModerateUsers,
     FollowUsers,
     GrantBasicPermissions,
-    
     ViewGroups,
     CreateGroups,
     PublishGroupsLocally,
     PublishGroupsGlobally,
     ModerateGroups,
     JoinGroups,
-
+    InviteGroupMembers,
     ViewPosts,
     CreatePosts,
     PublishPostsLocally,
     PublishPostsGlobally,
     ModeratePosts,
     ReplyToPosts,
-
     ViewEvents,
     CreateEvents,
     PublishEventsLocally,
     PublishEventsGlobally,
     ModerateEvents,
     RsvpToEvents,
-
     RunBots,
     Admin,
     ViewPrivateContactMethods,
@@ -147,6 +143,8 @@ pub trait ToStringPermissions {
 }
 impl ToStringPermissions for Vec<Permission> {
     fn to_string_permissions(&self) -> Vec<String> {
-        self.iter().map(|v| v.to_string_permission()).collect::<Vec<String>>()
+        self.iter()
+            .map(|v| v.to_string_permission())
+            .collect::<Vec<String>>()
     }
 }

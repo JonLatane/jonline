@@ -1,10 +1,10 @@
 import { Group, Moderation, Permission, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextArea, XStack, YStack, standardAnimation } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextArea, XStack, YStack, standardAnimation, useToastController } from '@jonline/ui';
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
 import { useCredentialDispatch, useMediaUrl } from 'app/hooks';
-import { RootState, deleteGroup, updateGroup, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, actionFailed, deleteGroup, updateGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending } from 'app/utils';
 import React, { useState } from 'react';
 import { createParam } from 'solito';
@@ -56,7 +56,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { account, server } = accountOrServer;
 
-  const [shortname] = useParam('shortname');
+  const [queryShortname] = useParam('shortname');
   const updateParams = useUpdateParams();
 
   const infoRenderingGroup = infoGroup ?? selectedGroup;
@@ -77,7 +77,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
       // actionFailed
       return action;
     }).then(() => {
-      if (shortname !== undefined && shortname.length > 0 && shortname === infoRenderingGroup?.shortname) {
+      if (queryShortname !== undefined && queryShortname.length > 0 && queryShortname === infoRenderingGroup?.shortname) {
         window.location.replace('/');
       }
     });
@@ -107,14 +107,24 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
     nonMemberPermissions,
   };
 
+  const toast = useToastController();
   function doUpdateGroup() {
     dispatch(updateGroup(updatedGroup)).then((action: PayloadAction<Group, any, any>) => {
       setSavingEdits(false);
       setEditing(false);
       setPreviewingEdits(false);
 
+      if (actionFailed(action)) {
+        toast.show('Failed to update group.');
+        console.error('Failed to update group', action);
+        return action;
+      }
+
+      const updatedShortname = action.payload.shortname;
+
       // console.log('shortname', shortname, 'infoRenderingGroup?.shortname', infoRenderingGroup?.shortname);
-      if (shortname !== undefined && shortname.length > 0 && shortname === infoRenderingGroup?.shortname) {
+      if (queryShortname !== undefined && queryShortname.length > 0 && updatedShortname.length > 0
+        && queryShortname === infoRenderingGroup?.shortname && queryShortname !== updatedShortname) {
         console.log('replacing shortname')
         updateParams({ shortname: action.payload.shortname }, { web: { replace: true } });
       }

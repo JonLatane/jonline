@@ -1,7 +1,7 @@
 import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowPinnedServers, setShowUserIds, setShrinkFeatureNavigation, useRootSelector } from 'app/store';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 
@@ -108,6 +108,10 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
               <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
 
+              <Heading size='$3' mt='$3'>Micro-Federation (Early Development)</Heading>
+              <ToggleRow name='Show Pinned Server UI' value={app.showPinnedServers} setter={setShowPinnedServers} autoDispatch
+              description='Show pinned servers where supported (currently, the People screen, and only partially).'
+               />
               {/* <Heading size='$3' mt='$3'>Colors (Testing)</Heading>
               <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />
               <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch /> */}

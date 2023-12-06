@@ -1,7 +1,7 @@
 import { Group, WebUserInterface } from "@jonline/api";
 import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
-import { useAppDispatch } from "app/hooks";
+import { useAppDispatch, useLocalConfiguration } from "app/hooks";
 import { JonlineServer, RootState, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import { useEffect } from "react";
 import StickyBox from "react-sticky-box";
@@ -26,6 +26,7 @@ export type TabsNavigationProps = {
   groupPageForwarder?: (group: Group) => string;
   groupPageExiter?: () => void;
   withServerPinning?: boolean;
+  serverPinningEntity?: string;
 };
 
 export function TabsNavigation({
@@ -37,7 +38,8 @@ export function TabsNavigation({
   customHomeAction,
   groupPageForwarder,
   groupPageExiter,
-  withServerPinning
+  withServerPinning,
+  serverPinningEntity
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
   const server = useRootSelector((state: RootState) => state.servers.server);
@@ -92,8 +94,10 @@ export function TabsNavigation({
 
   const circularAccountsSheet = !mediaQuery.gtSm;
 
+  const { showPinnedServers } = useLocalConfiguration();
+
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
-    <ToastViewport multipleToasts left={0} right={0} bottom={11} />
+    <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 
     <GroupContextProvider value={selectedGroup}>
 
@@ -147,10 +151,11 @@ export function TabsNavigation({
               <XStack w={5} />
             </XStack>
 
+
+            <PinnedServerSelector serverPinningEntity={serverPinningEntity} show={showPinnedServers && withServerPinning} />
           </YStack>
         </StickyBox>
         <TabsTutorial />
-        <PinnedServerSelector show={withServerPinning} />
         <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>
           {children}
         </YStack>

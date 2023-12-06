@@ -26,6 +26,7 @@ export type LocalAppConfiguration = {
   shrinkFeatureNavigation: boolean;
   browseRsvpsFromPreviews: boolean;
   showHelp: boolean;
+  showPinnedServers: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -47,6 +48,7 @@ const initialState: LocalAppConfiguration = {
   shrinkFeatureNavigation: false,
   browseRsvpsFromPreviews: true,
   showHelp: true,
+  showPinnedServers: false,
 };
 
 export const localAppSlice = createSlice({
@@ -116,8 +118,12 @@ export const localAppSlice = createSlice({
       state.browseRsvpsFromPreviews = action.payload;
     },
     setShowHelp: (state, action: PayloadAction<boolean>) => {
-      console.log("setShowHelp", action.payload)
+      // console.log("setShowHelp", action.payload)
       state.showHelp = action.payload;
+    },
+    setShowPinnedServers: (state, action: PayloadAction<boolean>) => {
+      console.log("setShowHelp", action.payload)
+      state.showPinnedServers = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -128,7 +134,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setSeparateAccountsByServer, setShowBetaNavigation, resetLocalConfiguration, setDiscussionChatUI,
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
-  setShowHelp
+  setShowHelp, setShowPinnedServers
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

@@ -12,13 +12,15 @@ import {
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
 import { AccountOrServer, PaginatedIds, notifyUserDeleted, store, upsertUserData } from "..";
-import { Federated, FederatedAction, FederatedEntity, createFederatedValue, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, setFederated } from '../federation';
+import { Federated, FederatedAction, FederatedEntity, HasServer, createFederatedValue, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, setFederated } from '../federation';
 import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser } from "./user_actions";
+import { useAccountOrServer } from "app/hooks";
 
+export type FederatedUser = FederatedEntity<User>;
 export interface UsersState {
   pagesStatus: Federated<"unloaded" | "loading" | "loaded" | "errored">;
   ids: EntityId[];
-  entities: Dictionary<FederatedEntity<User>>;
+  entities: Dictionary<FederatedUser>;
   usernameIds: Federated<Dictionary<string>>;
   failedUsernames: Federated<string[]>;
   failedUserIds: string[];
@@ -33,11 +35,12 @@ export interface UsersState {
   mutatingUserIds: string[];
 }
 
+
 export interface UsersSlice {
   adapter: EntityAdapter<User>;
 }
 
-export const usersAdapter: EntityAdapter<FederatedEntity<User>> = createEntityAdapter<FederatedEntity<User>>({
+export const usersAdapter: EntityAdapter<FederatedUser> = createEntityAdapter<FederatedUser>({
   selectId: (user) => federatedId(user),
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
@@ -84,8 +87,10 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       const page = action.meta.arg.page ?? 0;
       const listingType = action.meta.arg.listingType ?? defaultUserListingType;
 
-      if (!state.userPages[listingType]) state.userPages[listingType] = [];
-      state.userPages[listingType]![page] = userIds;
+      const userPages = getFederated(state.userPages, action);
+      if (!userPages[listingType]) userPages[listingType] = [];
+      userPages[listingType]![page] = userIds;
+      setFederated(state.userPages, action, userPages);
 
       // Update the users in any relevant accounts.
       const server = action.meta.arg.server!;
@@ -117,7 +122,8 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
           ? federateId((action.meta.arg as LoadUser).userId, action)
           : undefined;
         if (loader === loadUsername) {
-          const updatedFailedUsernames = [...getFederated(state.failedUsernames, action), (action.meta.arg as LoadUsername).username];
+          const failedUsernames = getFederated(state.failedUsernames, action);
+          const updatedFailedUsernames = [...failedUsernames, (action.meta.arg as LoadUsername).username];
           setFederated(state.failedUsernames, action, updatedFailedUsernames);
         } else if (requestUserId && !state.failedUserIds.includes(requestUserId)) {
           state.failedUserIds = [...state.failedUserIds, requestUserId];
@@ -229,12 +235,25 @@ export const { selectAll: selectAllUsers, selectById: selectUserById } = selecto
 export const usersReducer = usersSlice.reducer;
 export default usersReducer;
 
-export function getUsersPage(state: UsersState, listingType: UserListingType, page: number): User[] | undefined {
-  const pagePostIds: string[] | undefined = (state.userPages[listingType] ?? {})[page];
-  if (!pagePostIds) return undefined;
+export function getUsersPage(
+  state: UsersState,
+  listingType: UserListingType,
+  page: number,
+  pinnedServers?: AccountOrServer[]
+): FederatedUser[] | undefined {
+  const servers = pinnedServers ?? [useAccountOrServer()];
+  const users = [] as FederatedUser[];
+  for (const { server } of servers) {
+    const federatedPages = getFederated(state.userPages, server);
+    const serverUserIds: string[] | undefined = (federatedPages[listingType] ?? [])[page];
+    if (serverUserIds === undefined) {
+      return undefined;
+    }
+    const serverUsers = serverUserIds.map(id => selectUserById(state, id)).filter(u => u) as User[];
+    users.push(...federatedEntities(serverUsers, server));
+  }
 
-  const pagePosts = pagePostIds.map(id => selectUserById(state, id)).filter(p => p) as User[];
-  return pagePosts;
+  return users;
 }
 
 function lockUser(state: UsersState, userId: string) {

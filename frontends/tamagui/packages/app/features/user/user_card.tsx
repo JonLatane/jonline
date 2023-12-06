@@ -1,12 +1,11 @@
-import { Permission, User } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
+import { Permission } from "@jonline/api";
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, useMedia, useTheme } from '@jonline/ui';
 import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
-import { useCredentialDispatch, useLocalConfiguration } from 'app/hooks';
+import { useAccountOrServer, useAppDispatch, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { RootState, followUnfollowUser, isUserLocked, respondToFollowRequest, useRootSelector, useServerTheme } from "app/store";
-import { FederatedEntity } from "app/store/federation";
+import { FederatedUser, RootState, followUnfollowUser, getServerTheme, isUserLocked, respondToFollowRequest, useRootSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation_utils";
 import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
 import React from "react";
@@ -15,9 +14,10 @@ import { useLink } from 'solito/link';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { MediaRef } from "../media/media_chooser";
 import { postBackgroundSize } from "../post/post_card";
+import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
 interface Props {
-  user: FederatedEntity<User>;
+  user: FederatedUser;
   isPreview?: boolean;
   username?: string;
   setUsername?: (username: string) => void;
@@ -33,16 +33,22 @@ export function useFullAvatarHeight(): number {
 }
 
 export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: inputUsername, setUsername, avatar: inputAvatar, setAvatar, editable, editingDisabled }) => {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  // const { dispatch, accountOrServer } = useCredentialDispatch();
+  const mediaQuery = useMedia();
+  const dispatch = useAppDispatch();
+  const accountOrServer = useFederatedAccountOrServer(user);
+  const isPrimaryServer = useAccountOrServer().server?.host === user.serverHost;
+  const { account, server } = accountOrServer;
   const media = useMedia();
   const app = useLocalConfiguration();
 
   const [username, avatar] = editable ? [inputUsername, inputAvatar]
     : [user.username, user.avatar];
 
-  const isAdmin = hasAdminPermission(accountOrServer?.account?.user);
-  const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user.id;
-  const { server, primaryColor, navColor, primaryTextColor, navTextColor, textColor } = useServerTheme();
+  const isAdmin = hasAdminPermission(account?.user);
+  const isCurrentUser = account && account?.user?.id == user.id;
+  const theme = useTheme();
+  const { primaryColor, navColor, primaryTextColor, navTextColor, textColor } = getServerTheme(server, theme);
 
   const following = passes(user.currentUserFollow?.targetUserModeration);
   const followRequested = user.currentUserFollow && !following;
@@ -64,7 +70,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     e.stopPropagation();
     dispatch(respondToFollowRequest({ userId: user.id, accept, ...accountOrServer }))
   };
-  const avatarUrl = useMediaUrl(avatar?.id);
+  const avatarUrl = useMediaUrl(avatar?.id, accountOrServer);
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
   const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatar && !editingDisabled;
 
@@ -94,6 +100,11 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         :
         <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>}
     </YStack>
+    {isPrimaryServer ? undefined : <>
+      <XStack my='auto' w={mediaQuery.gtXs ? undefined : '$4'} h={mediaQuery.gtXs ? undefined : '$4'}>
+        <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXs}/>
+      </XStack>
+    </>}
   </XStack>;
 
 
@@ -192,7 +203,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         y={0}
       >
         <Card.Header>
-          <XStack w='100%'>
+          <XStack w='100%' space='$1'>
             {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
                 {usernameRegion}
@@ -244,7 +255,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               height={backgroundSize}
               opacity={0.25}
               resizeMode="cover"
-              als="flex-start"
+              als="center"
               source={{ uri: avatarUrl, height: backgroundSize, width: backgroundSize }}
               blurRadius={1.5}
               borderBottomRightRadius={5}

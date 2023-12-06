@@ -14,9 +14,10 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { UserCard, useFullAvatarHeight } from './user_card';
 
-const { useParam } = createParam<{ username: string }>()
+const { useParam } = createParam<{ username: string, serverHost?: string }>()
 
 export function UsernameDetailsScreen() {
+  const [inputServerHost] = useParam('serverHost');
   const [inputUsername] = useParam('username');
   const linkProps = useLink({ href: '/' });
 
@@ -28,7 +29,9 @@ export function UsernameDetailsScreen() {
   const usersState = useRootSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
-  const userLoadFailed = getFederated(usersState.failedUsernames, server).includes(inputUsername!);
+  const failedUsernames = getFederated(usersState.failedUsernames, server);
+  // debugger;
+  const userLoadFailed = failedUsernames.includes(inputUsername!);
   const isCurrentUser = accountOrServer.account && accountOrServer.account?.user?.id == user?.id;
   const isAdmin = hasAdminPermission(accountOrServer.account?.user);
   const canEdit = isCurrentUser || isAdmin;
