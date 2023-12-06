@@ -113,9 +113,6 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     : [...new Set(server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])];
   const recommendedServerHosts = recommendedServerHostsUnfiltered
     .filter(host => !currentServerHosts.includes(host));
-  //?.filter(host => !currentServerHosts.includes(host)) ?? [];
-  // const recommendedServerHostList = recommendableServerHosts;//?.filter(host => !currentServerHosts.includes(host)) ?? [];
-  // const recommendedServerHosts = [...new Set(recommendedServerHostList)];
   const [authError, setAuthError] = useState(undefined as string | undefined);
   function loginToServer() {
     dispatch(clearAccountAlerts());

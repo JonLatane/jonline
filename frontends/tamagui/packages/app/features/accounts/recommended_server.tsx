@@ -14,11 +14,12 @@ interface Props {
   disableHeightLimit?: boolean;
 }
 
+const recommendedServerCache = new Map<string, any>();
+
 export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit, tiny = false }) => {
   const dispatch = useAppDispatch();
   const existingServer = useRootSelector(
-    (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host
-    );
+    (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host);
   const prototypeServer = {
     host,
     secure: true,
@@ -29,16 +30,23 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
   useEffect(() => {
     if (!existingServer && !pendingServer && !loadingPendingServer && !loadedPendingServer) {
       setLoadingPendingServer(true);
-      getServerClient(
-        prototypeServer,
-        {
-          skipUpsert: true,
-          onServerConfigured: setPendingServer
-        }).then(_client => {
-          // console.log("Got pending server", _client);
-          setLoadedPendingServer(true);
-          setLoadingPendingServer(false);
-        });
+      if (recommendedServerCache.has(host)) {
+        setPendingServer(recommendedServerCache.get(host));
+      } else {
+        getServerClient(
+          prototypeServer,
+          {
+            skipUpsert: true,
+            onServerConfigured: (server) => {
+              recommendedServerCache.set(host, server);
+              setPendingServer(server);
+            }
+          }).then(_client => {
+            // console.log("Got pending server", _client);
+            setLoadedPendingServer(true);
+            setLoadingPendingServer(false);
+          });
+      }
     }
   }, [existingServer === undefined, pendingServer === undefined, loadingPendingServer, loadedPendingServer]);
 
