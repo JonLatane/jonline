@@ -10,9 +10,9 @@ import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupContextProvider } from "../groups/group_context";
 import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
+import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { TabsTutorial } from "./tabs_tutorial";
-import { PinnedServerSelector } from "./pinned_server_selector";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
