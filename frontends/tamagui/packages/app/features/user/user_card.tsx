@@ -1,5 +1,5 @@
 import { Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, useMedia, useTheme } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, useMedia, useTheme } from '@jonline/ui';
 import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
@@ -13,8 +13,8 @@ import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { MediaRef } from "../media/media_chooser";
-import { postBackgroundSize } from "../post/post_card";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
+import { postBackgroundSize } from "../post/post_card";
 
 interface Props {
   user: FederatedUser;
@@ -198,6 +198,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       <Card theme="dark" elevate size="$4" bordered
         animation='standard'
         // scale={0.9}
+        pl='$3'
         margin='$0'
         width={'100%'}
         scale={1}
@@ -249,20 +250,30 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           </YStack>
         </Card.Footer>
         <Card.Background>
-          {(isPreview && hasAvatarUrl) ?
-            <Image
-              mr={0}
-              o={0.15}
-              width={backgroundSize}
-              height={backgroundSize}
-              opacity={0.25}
-              resizeMode="cover"
-              als="center"
-              source={{ uri: avatarUrl, height: backgroundSize, width: backgroundSize }}
-              blurRadius={1.5}
-              borderBottomRightRadius={5}
-            />
-            : undefined}
+          <ZStack w='100%' h='100%'>
+            {(isPreview && hasAvatarUrl) ?
+              <Image
+                mr={0}
+                o={0.10}
+                width={backgroundSize}
+                height={backgroundSize}
+                opacity={0.25}
+                resizeMode="cover"
+                als="center"
+                source={{ uri: avatarUrl, height: backgroundSize, width: backgroundSize }}
+                blurRadius={1.5}
+                borderBottomRightRadius={5}
+              />
+              : undefined}
+
+            <XStack h='100%'>
+              <YStack h='100%' w={10}
+                borderTopLeftRadius={20} borderBottomLeftRadius={20}
+                backgroundColor={primaryColor} />
+              <YStack h='100%' w={3}
+                backgroundColor={navColor} />
+            </XStack>
+          </ZStack>
         </Card.Background>
       </Card>
     </Theme>
