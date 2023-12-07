@@ -609,6 +609,7 @@ export const EventCard: React.FC<Props> = ({
           scale={1}
           opacity={1}
           y={0}
+          // borderColor={primaryAnchorColor}
         >
           {post.link || post.title
             ? <Card.Header p={0}>
@@ -663,15 +664,17 @@ export const EventCard: React.FC<Props> = ({
                     : undefined}
                   {primaryInstance
                     ?
-                    <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
-                      readOnly={!editing || previewingEdits}
-                      preview={isPreview && horizontal}
-                      link={isPreview ? eventLink : undefined}
-                      setLocation={(location: Location) => {
-                        if (editingInstance) {
-                          updateEditingInstance({ ...editingInstance, location });
-                        }
-                      }} />
+                    <XStack mx='$3' mt='$1'>
+                      <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
+                        readOnly={!editing || previewingEdits}
+                        preview={isPreview && horizontal}
+                        link={isPreview ? eventLink : undefined}
+                        setLocation={(location: Location) => {
+                          if (editingInstance) {
+                            updateEditingInstance({ ...editingInstance, location });
+                          }
+                        }} />
+                    </XStack>
                     : undefined}
 
                 </YStack>

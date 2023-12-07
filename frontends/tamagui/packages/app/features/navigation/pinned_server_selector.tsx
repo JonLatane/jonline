@@ -25,7 +25,7 @@ export function PinnedServerSelector({ show }: PinnedServerSelectorProps) {
       .filter(server => (!currentServer || serverID(server) != serverID(currentServer))
         // && !pinnedServers.some(s => s.serverId === serverID(server))
       ));
-  const [showDataSources, setShowDataSources] = useState(false);
+  const [showDataSources, setShowDataSources] = useState(true);
   const pinnedServerCount = availableServers
     .filter(server => pinnedServers.some(s => s.pinned && s.serverId === serverID(server)))
     .length;
@@ -46,7 +46,7 @@ export function PinnedServerSelector({ show }: PinnedServerSelectorProps) {
   const recommendedServerHosts = recommendedServerHostsUnfiltered
     .filter(host => !currentServerHosts.includes(host));
 
-    const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
+  const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
   return <YStack w='100%' h={show ? undefined : 0} backgroundColor='$backgroundHover'>
     <AnimatePresence>
       {show ? <>
