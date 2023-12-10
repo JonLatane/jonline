@@ -15,7 +15,7 @@ import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, d
 import { loadGroupEventsPage } from "./group_actions";
 import { locallyUpsertPost } from "./posts_state";
 import { loadUserEvents } from "./user_actions";
-import { PaginatedIds } from "../pagination";
+import { PaginatedIds } from "../pagination/post_pagination";
 export * from './event_actions';
 
 export interface EventsState {

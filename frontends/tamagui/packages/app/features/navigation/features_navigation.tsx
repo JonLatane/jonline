@@ -6,6 +6,7 @@ import { RootState, getFederated, getUsersPage, loadUsersPage, useRootSelector, 
 import { themedButtonBackground } from 'app/utils';
 import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
+import { useUsersPage } from '../../hooks/user_pagination_hooks';
 
 export enum AppSection {
   HOME = 'home',
@@ -158,8 +159,9 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const reorderInlineNavigation = !mediaQuery.gtMd && account;// && !menuItems.includes(appSection));
   const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
 
-  const followRequests: User[] | undefined = useRootSelector((state: RootState) =>
-    getUsersPage(state.users, UserListingType.FOLLOW_REQUESTS, 0));
+  const { results: followRequests } = useUsersPage(UserListingType.FOLLOW_REQUESTS, 0);
+  // useRootSelector((state: RootState) =>
+  //   getUsersPage(state.users, UserListingType.FOLLOW_REQUESTS, 0));
   const followRequestCount = followRequests?.length ?? 0;
   const followPageStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 

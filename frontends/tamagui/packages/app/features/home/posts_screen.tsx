@@ -11,18 +11,22 @@ import { TabsNavigation } from '../navigation/tabs_navigation';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
+import { useCurrentAndPinnedServers } from 'app/hooks';
 
 export function PostsScreen() {
   return <BasePostsScreen />;
 }
 
 export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
+  const servers = useCurrentAndPinnedServers();
   const postsState = useRootSelector((state: RootState) => state.posts);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
 
   const dimensions = useWindowDimensions();
+
+  // const [loadingPosts, setLoadingPosts] = useState(false);
 
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
@@ -41,15 +45,16 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
     }
   }, [firstPageLoaded]);
 
-  console.log(`Current page: ${currentPage}, Total Posts: ${posts.length}`);
+  // console.log(`Current page: ${currentPage}, Total Posts: ${posts.length}`);
 
   return (
     <TabsNavigation
       appSection={AppSection.POSTS}
       selectedGroup={selectedGroup}
       groupPageForwarder={(group) => `/g/${group.shortname}/posts`}
+      withServerPinning={!selectedGroup}
     >
-      {postsState.baseStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+      {loadingPosts ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
             top={dimensions.height / 2 - 50}
@@ -67,7 +72,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               {posts.map((post) => {
                 return <PostCard key={`post-${post.id}`} post={post} isPreview />;
               })}
-              <PaginationIndicator page={currentPage} loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
+              <PaginationIndicator page={currentPage} loadingPage={loadingPosts || loadingPosts}
                 hasNextPage={hasMorePages}
                 loadNextPage={() => setCurrentPage(currentPage + 1)}
               />

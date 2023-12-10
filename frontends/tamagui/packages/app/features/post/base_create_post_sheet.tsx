@@ -1,5 +1,5 @@
 import { Group, MediaReference, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
+import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from '@jonline/ui';
 import { ChevronDown, Cog, Image as ImageIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from 'app/components';
 import { useCredentialDispatch } from 'app/hooks';
@@ -163,6 +163,7 @@ export function BaseCreatePostSheet({
   const textAreaRef = React.createRef<TextInput>();
 
   const [posting, setPosting] = useState(false);
+  const toast = useToastController();
   const serversState = useRootSelector((state: RootState) => state.servers);
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
@@ -198,7 +199,7 @@ export function BaseCreatePostSheet({
   const canEmbedLink = ['instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'twitter', 'pinterest']
     .map(x => link.includes(x)).reduce((a, b) => a || b, false);
 
-  const isPosting = posting || ['posting', 'posted'].includes(postsState.createPostStatus!);
+  const isPosting = posting;
   const disableInputs = isPosting;
   const disablePreview = disableInputs || !valid;
   const disableCreate = disableInputs || !valid;
@@ -249,8 +250,8 @@ export function BaseCreatePostSheet({
                   <Heading size='$1' color={primaryTextColor}>Create</Heading>
                 </Button>
               </XStack>
-              {postsState.createPostStatus == "errored" && postsState.errorMessage ?
-                <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined}
+              {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
+                <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
               <XStack marginHorizontal='auto' marginVertical='$3'>
                 <Button backgroundColor={showEditor ? navColor : undefined}

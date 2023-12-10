@@ -21,7 +21,7 @@ const accountsPersistConfig = {
 const postsPersistConfig = {
   key: 'posts',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'baseStatus', 'successMessage', 'errorMessage', 'error', 'previews'],
+  blacklist: ['status', 'pagesStatus', 'successMessage', 'errorMessage', 'error', 'previews'],
 }
 const usersPersistConfig = {
   key: 'users',

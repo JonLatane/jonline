@@ -21,7 +21,7 @@ export function useGroupPages(listingType: GroupListingType, throughPage: number
       setLoadingGroups(true);
       reloadGroups();
     }
-    // else if (groupsState.baseStatus == 'loaded' && loadingGroups) {
+    // else if (groupsState.pagesStatus == 'loaded' && loadingGroups) {
     //   setLoadingGroups(false);
     //   onLoaded?.();
     // }

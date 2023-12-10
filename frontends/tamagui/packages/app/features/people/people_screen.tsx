@@ -1,6 +1,6 @@
 import { UserListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { useCredentialDispatch, useCurrentAndPinnedServers } from 'app/hooks';
+import { useCredentialDispatch, useCurrentAndPinnedServers, useUsersPage } from 'app/hooks';
 import { FederatedUser, RootState, federatedId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -28,10 +28,9 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const isForGroupMembers = listingType === undefined;
 
   const servers = useCurrentAndPinnedServers();
-  const users: FederatedUser[] | undefined = useRootSelector((state: RootState) =>
-    isForGroupMembers
-      ? [] //TODO! Get group members
-      : getUsersPage(state.users, listingType, 0, servers));
+  const { results: users, loading: loadingUsers, reload: reloadUsers } = isForGroupMembers
+    ? { results: [], loading: false, reload: () => { } }
+    : useUsersPage(listingType, 0);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
@@ -39,7 +38,6 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
 
   const dimensions = useWindowDimensions();
 
-  const [loadingUsers, setLoadingUsers] = useState(false);
   const userPagesStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 
   useEffect(() => {
@@ -50,15 +48,6 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   }, [isForGroupMembers, listingType, server?.serverConfiguration?.serverInfo?.name]);
 
 
-  useEffect(() => {
-    if (users == undefined && !loadingUsers) {
-      // if (!accountOrServer.server) return;
-
-      console.log("Loading users...");
-      setLoadingUsers(true);
-      reloadUsers();
-    }
-  }, [users, loadingUsers]);
 
   useEffect(() => {
     if (users !== undefined && showScrollPreserver) {
@@ -66,14 +55,6 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     }
   }, [users, showScrollPreserver])
 
-  function reloadUsers() {
-    Promise.all(servers.map(pinnedServer =>
-      dispatch(loadUsersPage({ listingType, ...pinnedServer })))).then((results) => {
-        console.log("Loaded users", results);
-        dismissScrollPreserver(setShowScrollPreserver);
-        setLoadingUsers(false);
-      });
-  }
 
   function onHomePressed() {
     if (isClient && window.scrollY > 0) {

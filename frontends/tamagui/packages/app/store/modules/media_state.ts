@@ -10,7 +10,7 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { LoadMedia, deleteMedia, loadMedia, loadMediaPage } from './media_actions';
-import { PaginatedIds } from "../pagination";
+import { PaginatedIds } from "../pagination/post_pagination";
 export * from './media_actions';
 
 export interface MediaState {

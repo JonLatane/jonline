@@ -11,14 +11,14 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { AccountOrServer, PaginatedIds, notifyUserDeleted, store, upsertUserData } from "..";
-import { Federated, FederatedAction, FederatedEntity, HasServer, createFederatedValue, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, setFederated } from '../federation';
+import { AccountOrServer, FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus, notifyUserDeleted, store, upsertUserData } from "..";
+import { Federated, FederatedAction, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, setFederated } from '../federation';
 import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser } from "./user_actions";
 import { useAccountOrServer } from "app/hooks";
 
 export type FederatedUser = FederatedEntity<User>;
 export interface UsersState {
-  pagesStatus: Federated<"unloaded" | "loading" | "loaded" | "errored">;
+  pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
   entities: Dictionary<FederatedUser>;
   usernameIds: Federated<Dictionary<string>>;
@@ -52,14 +52,14 @@ export function federateUserId(action: FederatedAction & PayloadAction<any, any,
 export const selectors = usersAdapter.getSelectors();
 
 const initialState: UsersState = {
-  pagesStatus: createFederatedValue('unloaded'),
-  usernameIds: createFederatedValue({}),
-  failedUsernames: createFederatedValue([]),
+  pagesStatus: createFederatedPagesStatus(),
+  usernameIds: createFederated({}),
+  failedUsernames: createFederated([]),
   failedUserIds: [],
   idPosts: {},
   idReplies: {},
   idEventInstances: {},
-  userPages: createFederatedValue({}),
+  userPages: createFederated({}),
   mutatingUserIds: [],
   ...usersAdapter.getInitialState(),
 };
@@ -237,26 +237,6 @@ export const { selectAll: selectAllUsers, selectById: selectUserById } = selecto
 export const usersReducer = usersSlice.reducer;
 export default usersReducer;
 
-export function getUsersPage(
-  state: UsersState,
-  listingType: UserListingType,
-  page: number,
-  pinnedServers?: AccountOrServer[]
-): FederatedUser[] | undefined {
-  const servers = pinnedServers ?? [useAccountOrServer()];
-  const users = [] as FederatedUser[];
-  for (const { server } of servers) {
-    const federatedPages = getFederated(state.userPages, server);
-    const serverUserIds: string[] | undefined = (federatedPages[listingType] ?? [])[page];
-    if (serverUserIds === undefined) {
-      return undefined;
-    }
-    const serverUsers = serverUserIds.map(id => selectUserById(state, id)).filter(u => u) as User[];
-    users.push(...federatedEntities(serverUsers, server));
-  }
-
-  return users;
-}
 
 function lockUser(state: UsersState, userId: string) {
   state.mutatingUserIds = [userId, ...state.mutatingUserIds];

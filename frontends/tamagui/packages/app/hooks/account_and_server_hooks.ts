@@ -1,24 +1,9 @@
-
-//TODO: Move hook from app/store to here
-
 import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, accountID, selectAllAccounts, selectAllServers, serverID } from 'app/store';
 import { useAppDispatch, useAppSelector } from "./store_hooks";
 
 
-export const useAccount = () =>
-  useAppSelector(state =>
-    // pinnedServer
-    // ? selectAllAccounts(state.accounts).find(a => accountID(a) === pinnedServer.accountId)
-    // : 
-    state.accounts.account
-  );
-export const useServer = () =>
-  useAppSelector(state =>
-    // pinnedServer
-    //   ? selectAllServers(state.servers).find(s => serverID(s) === pinnedServer.serverId)
-    //   : 
-    state.servers.server
-  );
+export const useAccount = () => useAppSelector(state => state.accounts.account);
+export const useServer = () => useAppSelector(state => state.servers.server);
 export function useAccountOrServer(): AccountOrServer {
   return {
     account: useAccount(),

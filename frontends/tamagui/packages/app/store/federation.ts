@@ -57,6 +57,16 @@ export function federatedEntity<T extends HasIdFromServer>(entity: T, server: Ha
 }
 
 /**
+ * Make an entity server-/federation-aware.
+ * @param entity Any entity with a string id (User, Media, Group, Post, Event, etc.)
+ * @param action Any Redux action whose argument extends `AccountOrServer`.
+ * @returns a server-aware copy of that entity with a `serverHost` field.
+ */
+export function federatedPayload<T extends HasIdFromServer>(action: FederatedAction & PayloadAction<T, any, any>): FederatedEntity<T> {
+  return federatedEntity(action.payload, action);
+}
+
+/**
  * Get the server-aware ID of an entity.
  * @param entity Any ServerEntity
  * @returns a server-host-specific entity ID, e.g. "jonline.io@@a" or "localhost@@a"
@@ -100,7 +110,7 @@ export function federatedEntities<T extends HasIdFromServer>(entities: T[], serv
  * @param defaultValue 
  * @returns 
  */
-export function createFederatedValue<T>(defaultValue: T): Federated<T> {
+export function createFederated<T>(defaultValue: T): Federated<T> {
   return {
     values: {},
     defaultValue,

@@ -75,7 +75,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       customHomeAction={selectedGroup ? undefined : onHomePressed}
       selectedGroup={selectedGroup}
     >
-      {postsState.baseStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+      {postsState.pagesStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
             top={dimensions.height / 2 - 50}
@@ -156,7 +156,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                   return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
                 })}
                 <PaginationIndicator page={currentPostsPage}
-                  loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
+                  loadingPage={loadingPosts || postsState.pagesStatus == 'loading'}
                   hasNextPage={hasMorePages}
                   loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
                 />
