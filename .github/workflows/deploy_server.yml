@@ -5,8 +5,8 @@ name: Server CI/CD
 on:
   push:
     branches: [ "main" ]
-  # pull_request:
-  #   branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_call:
     secrets:
       DOCKERHUB_USERNAME:
