@@ -1,14 +1,11 @@
-import { AnimatePresence, Button, ButtonProps, Heading, Paragraph, ScrollView, Tooltip, XStack, YStack, ZStack, standardAnimation, useForceUpdate, useMedia, useTheme } from "@jonline/ui";
-import { ChevronRight, CornerRightUp, HelpCircle, MoveUp, SeparatorHorizontal } from '@tamagui/lucide-icons';
-import { DarkModeToggle, doesPlatformPreferDarkMode } from "app/components/dark_mode_toggle";
-import { useComponentKey, useAccount, useAccountOrServer, useAppDispatch, useLocalConfiguration, useAppSelector, useServer } from "app/hooks";
-import { JonlineServer, PinnedServer, colorMeta, getServerTheme, pinServer, selectAllServers, serverID, setShowHelp, setViewingRecommendedServers, useServerTheme } from "app/store";
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, useTheme } from "@jonline/ui";
+import { ChevronRight, SeparatorHorizontal } from '@tamagui/lucide-icons';
+import { useAppDispatch, useAppSelector, useLocalConfiguration, useServer } from "app/hooks";
+import { JonlineServer, PinnedServer, getServerTheme, pinServer, selectAllServers, serverID, setViewingRecommendedServers } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import moment, { Moment } from "moment";
-import { useEffect, useState } from "react";
-import { GestureResponderEvent } from "react-native";
-import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
+import { useState } from "react";
 import RecommendedServer from "../accounts/recommended_server";
+import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 
 
 export type PinnedServerSelectorProps = {
@@ -47,7 +44,7 @@ export function PinnedServerSelector({ show }: PinnedServerSelectorProps) {
     .filter(host => !currentServerHosts.includes(host));
 
   const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
-  return <YStack w='100%' h={show ? undefined : 0} backgroundColor='$backgroundHover'>
+  return <YStack key='pinned-server-selector' w='100%' h={show ? undefined : 0} backgroundColor='$backgroundHover'>
     <AnimatePresence>
       {show ? <>
         <Button key='pinned-server-toggle' py='$1' h='auto' onPress={() => setShowDataSources(!showDataSources)}>

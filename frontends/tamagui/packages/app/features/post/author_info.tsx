@@ -4,12 +4,13 @@ import React, { useEffect, useState } from "react";
 import { Author, Permission, Post } from "@jonline/api";
 import { Anchor, DateViewer, Heading, Image, XStack, YStack, useMedia } from "@jonline/ui";
 import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
-import { useCredentialDispatch, useServer } from "app/hooks";
+import { useAccountOrServer, useAppDispatch, useCredentialDispatch, useProvidedDispatch, useServer } from "app/hooks";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { federateId, federatedIDPair } from "app/store/federation";
 import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
 import { View } from "react-native";
 import { useLink } from "solito/link";
+import { useAccountOrServerContext } from "app/contexts";
 
 export type AuthorInfoProps = {
   author?: Author;
@@ -19,6 +20,7 @@ export type AuthorInfoProps = {
   isVisible?: boolean;
 }
 export const AuthorInfo = ({ post, author: inputAuthor = post?.author, disableLink = false, detailsMargins = 0, isVisible = true }: AuthorInfoProps) => {
+  const { dispatch, accountOrServer } = useProvidedDispatch();
   if ((!post && !inputAuthor)) {
     // throw new Error('AuthorInfo requires either a post or an author');
   }
@@ -31,7 +33,6 @@ export const AuthorInfo = ({ post, author: inputAuthor = post?.author, disableLi
   const serverAuthorId = author?.userId;
   const federatedAuthorId = serverAuthorId && federateId(serverAuthorId, server);
   const authorName = author?.username;
-  const { dispatch, accountOrServer } = useCredentialDispatch();
   // const { server, primaryColor, navColor } = useServerTheme();
   const media = useMedia();
   const authorUser = useRootSelector((state: RootState) => federatedAuthorId ? selectUserById(state.users, federatedAuthorId) : undefined);
@@ -115,7 +116,7 @@ export const AuthorInfo = ({ post, author: inputAuthor = post?.author, disableLi
       <XStack>
         <XStack mr='$2'>
           {post
-            ? <DateViewer date={post.createdAt} updatedDate={post.updatedAt} />
+            ? <DateViewer date={post.publishedAt || post.createdAt} updatedDate={post.updatedAt} />
             : undefined}
         </XStack>
         {author && hasAdminPermission(authorUser)

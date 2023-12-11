@@ -10,7 +10,7 @@ import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useLink } from "solito/link";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 import { AuthorInfo } from "../post/author_info";
-import { useGroupContext } from "./group_context";
+import { useGroupContext } from "../../contexts/group_context";
 import { GroupsSheet } from './groups_sheet';
 
 interface Props {

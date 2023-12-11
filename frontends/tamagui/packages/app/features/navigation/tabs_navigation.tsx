@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
-import { GroupContextProvider } from "../groups/group_context";
+import { GroupContextProvider } from "../../contexts/group_context";
 import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
 import { PinnedServerSelector } from "./pinned_server_selector";
@@ -153,7 +153,7 @@ export function TabsNavigation({
               <TabsTutorial />
             </YStack>
 
-            <PinnedServerSelector show={showPinnedServers && withServerPinning} />
+            <PinnedServerSelector show={showPinnedServers && withServerPinning && !selectedGroup} />
           </YStack>
         </StickyBox>
         <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>

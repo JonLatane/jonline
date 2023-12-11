@@ -10,12 +10,12 @@ import {
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
+import { PaginatedIds } from "../pagination";
 import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { locallyUpsertPost } from "./posts_state";
 import { loadUserEvents } from "./user_actions";
-import { PaginatedIds } from "../pagination/post_pagination";
 export * from './event_actions';
 
 export interface EventsState {

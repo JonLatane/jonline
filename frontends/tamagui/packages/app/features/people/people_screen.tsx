@@ -1,5 +1,5 @@
 import { UserListingType } from '@jonline/api';
-import { Heading, Spinner, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Heading, Spinner, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { useCredentialDispatch, useCurrentAndPinnedServers, useUsersPage } from 'app/hooks';
 import { FederatedUser, RootState, federatedId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
@@ -93,14 +93,14 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
                 <Heading size='$3' ta='center'>The people you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
               </YStack>
             : undefined
-          : <>
+          : <AnimatePresence>
             {users?.map((user) => {
               return <YStack w='100%' mb='$3' key={`user-${federatedId(user)}`}>
                 <UserCard user={user} isPreview />
               </YStack>;
             })}
             {showScrollPreserver ? <YStack h={100000} /> : undefined}
-          </>}
+          </AnimatePresence>}
       </YStack>
       {/* <StickyCreateButton /> */}
     </TabsNavigation>

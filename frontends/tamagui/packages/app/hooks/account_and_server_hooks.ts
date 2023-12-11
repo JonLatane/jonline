@@ -1,5 +1,7 @@
-import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, accountID, selectAllAccounts, selectAllServers, serverID } from 'app/store';
+import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, accountID, selectAllAccounts, selectAllServers, serverID } from 'app/store';
 import { useAppDispatch, useAppSelector } from "./store_hooks";
+import { useAccountOrServerContext } from 'app/contexts';
+import { Post } from '@jonline/api/index';
 
 
 export const useAccount = () => useAppSelector(state => state.accounts.account);
@@ -46,9 +48,48 @@ export function useCredentialDispatch(): CredentialDispatch {
   };
 }
 
-export function useFederatedDispatch<T extends HasIdFromServer>(entity: FederatedEntity<T> | string | undefined): CredentialDispatch {
+/**
+ * Returns 
+ * @param entity Any Federated entity
+ * @returns An AppDispatch and the appropriate AccountOrServer to view/edit the given entity
+ */
+export function useFederatedDispatch<T extends HasIdFromServer>(
+  entity: FederatedEntity<T> | string | undefined
+): CredentialDispatch {
   return {
     dispatch: useAppDispatch(),
     accountOrServer: useFederatedAccountOrServer(entity)
   };
+}
+
+/**
+ * TODO: Implementation update: Maybe this should resolve from pinned accounts when server is overridden? Current functionality doesn't need this.
+ * 
+ * @param serverOverride An optional server to use instead of the one from the AccountOrServerContext or the Redux store state.
+ * @returns 
+ */
+export function useProvidedDispatch(serverOverride?: JonlineServer): CredentialDispatch {
+  const currentAccountOrServer = useAccountOrServer();
+  const accountOrServerContext = useAccountOrServerContext();
+  const accountOrServer = accountOrServerContext ?? currentAccountOrServer;
+  const dispatch = useAppDispatch();
+  if (serverOverride) {
+    if (serverOverride.host === accountOrServer.server?.host) {
+      return { dispatch, accountOrServer };
+    } else {
+      return { dispatch, accountOrServer: { account: undefined, server: serverOverride } };
+    }
+  }
+  return { dispatch, accountOrServer };
+}
+
+export function usePostDispatch(post: Post): CredentialDispatch {
+  const currentAccountOrServer = useAccountOrServer();
+  const accountOrServerContext = useAccountOrServerContext();
+  const serverHost = 'serverHost' in post
+    ? post.serverHost as string
+    : accountOrServerContext?.server?.host ?? currentAccountOrServer.server?.host;
+  // const accountOrServer = useFederatedAccountOrServer(serverHost);
+
+  return useFederatedDispatch(serverHost);
 }

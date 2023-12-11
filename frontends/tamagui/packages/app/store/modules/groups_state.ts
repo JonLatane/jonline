@@ -16,7 +16,7 @@ import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGrou
 import { store } from "../store";
 import { passes } from "app/utils/moderation_utils";
 import { usersAdapter } from "./users_state";
-import { GroupedPages, PaginatedIds } from "../pagination/post_pagination";
+import { GroupedPages, PaginatedIds } from "../pagination";
 
 export interface GroupsState {
   status: "unloaded" | "loading" | "loaded" | "errored";

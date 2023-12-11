@@ -1,9 +1,9 @@
-import { useServerTheme } from "app/store";
+import { getServerTheme } from "app/store";
 import React from "react";
 
 import { Group, Post } from "@jonline/api";
 import { Anchor, Image, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
-import { useMediaUrl } from "app/hooks";
+import { useMediaUrl, usePostDispatch } from "app/hooks";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 
@@ -36,8 +36,9 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   xsPreview,
   detailsLink: parentDetailsLink
 }) => {
+  const { dispatch, accountOrServer } = usePostDispatch(post);
   const mediaQuery = useMedia();
-  const { primaryColor } = useServerTheme();
+  const { primaryColor, navColor } = getServerTheme(accountOrServer.server);
   const postDetailsLink = useLink({
     href: groupContext
       ? `/g/${groupContext.shortname}/p/${post.id}`

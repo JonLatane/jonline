@@ -1,5 +1,5 @@
-import { useCredentialDispatch } from "app/hooks";
-import { JonlineServer, RootState, loadMedia, selectMediaById, useRootSelector, useServerTheme } from "app/store";
+import { useCredentialDispatch, useProvidedDispatch } from "app/hooks";
+import { JonlineServer, RootState, getServerTheme, loadMedia, selectMediaById, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect } from 'react';
 
 import { Anchor, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
@@ -10,15 +10,15 @@ import { MediaRef } from "./media_chooser";
 interface Props {
   media: MediaRef;
   failQuietly?: boolean;
-  server?: JonlineServer;
+  serverOverride?: JonlineServer;
   forceImage?: boolean;
 }
 
-export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly = false, server: selectedServer, forceImage }) => {
-  const { server: primaryServer, navAnchorColor } = useServerTheme();
-  const server = selectedServer ?? primaryServer;
+export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly = false, serverOverride, forceImage }) => {
+  const { dispatch, accountOrServer } = useProvidedDispatch(serverOverride);
+  const server = accountOrServer.server;
+  const { navAnchorColor } = getServerTheme(server);
   const mediaQuery = useMedia();
-  const { dispatch, accountOrServer } = useCredentialDispatch();
   if (!server) return <></>;
 
   const ReactPlayerShim = ReactPlayer as any;

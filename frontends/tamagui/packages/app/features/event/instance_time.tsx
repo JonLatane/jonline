@@ -5,7 +5,7 @@ import { Event, EventInstance, Group } from "@jonline/api";
 import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
 import moment from "moment";
 import { useLink } from "solito/link";
-import { useGroupContext } from "../groups/group_context";
+import { useGroupContext } from "../../contexts/group_context";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 
 interface Props {

@@ -2,7 +2,7 @@ import { ExpirableToken } from "@jonline/api";
 import moment from "moment";
 import { Metadata } from "nice-grpc-web";
 import 'react-native-get-random-values';
-import { accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers } from ".";
+import { JonlineClientCreationArgs, accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers } from ".";
 import { store } from "./store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient } from "./types";
 
@@ -14,13 +14,13 @@ export function resetAccessTokens() {
   _newAccessToken = undefined;
   _newRefreshToken = undefined;
 }
-export async function getCredentialClient(accountOrServer: AccountOrServer): Promise<JonlineCredentialClient> {
+export async function getCredentialClient(accountOrServer: AccountOrServer, args?: JonlineClientCreationArgs): Promise<JonlineCredentialClient> {
   const { account: account, server } = accountOrServer;
   if (!account) {
-    return getServerClient(server!);
+    return getServerClient(server!, args);
   } else {
     let updatedAccount: JonlineAccount = account;
-    const client = await getServerClient(account.server);
+    const client = await getServerClient(account.server, args);
     const metadata = Metadata();
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     const now = moment.utc();

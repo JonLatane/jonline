@@ -80,7 +80,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     {hasAvatarUrl ? <Image
       width={50}
       height={50}
-      mr='$2'  my='auto'
+      mr='$2' my='auto'
       borderRadius={25}
       resizeMode="cover"
       als="flex-start"
@@ -196,8 +196,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   return (
     <Theme /*inverse={isCurrentUser ?? false}*/>
       <Card theme="dark" elevate size="$4" bordered
-        animation='standard'
+        animation='standard' {...standardAnimation}
         // scale={0.9}
+        borderColor={showServerInfo ? primaryColor : undefined}
         pl='$2'
         margin='$0'
         width={'100%'}

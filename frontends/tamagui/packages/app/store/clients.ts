@@ -118,6 +118,8 @@ async function doCreateClient(host: string, server: JonlineServer, args?: Jonlin
   const updatedServer = { ...server, serviceVersion, serverConfiguration };
   if (!args?.skipUpsert) {
     clients.set(serverId, client);
+    console.log("doCreateClient: upserting server", updatedServer);
+    // debugger;
     store.dispatch(upsertServer(updatedServer));
   };
   args?.onServerConfigured?.(updatedServer);

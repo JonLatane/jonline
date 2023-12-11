@@ -9,7 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
-import { Federated, FederatedEntity, createFederated, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
+import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
 import { GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { loadEvent, loadEventsPage } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
@@ -86,7 +86,8 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       // postsAdapter.upsertOne(state, action.payload);
       const reply = action.payload;
       const postIdPath = action.meta.arg.postIdPath;
-      const basePost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
+      const basePostId = federateId(postIdPath[0]!, action);
+      const basePost = postsAdapter.getSelectors().selectById(state, basePostId);
       if (!basePost) {
         console.error(`Root post ID (${postIdPath[0]}) not found.`);
         return;
@@ -112,40 +113,46 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(loadPostsPage.fulfilled, (state, action) => {
       setFederated(state.pagesStatus, action, "loaded");
-      federatedEntities(action.payload.posts, action).forEach(post => {
+      const federatedPosts = federatedEntities(action.payload.posts, action);
+      federatedPosts.forEach(post => {
         const oldPost = selectPostById(state, post.id);
         postsAdapter.upsertOne(state, { ...post, replies: oldPost?.replies ?? post.replies });
       });
 
-      const postIds = action.payload.posts.map(post => post.id);
+      const postIds = federatedPosts.map(post => federatedId(post));
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultPostListingType;
 
-      if (!state.postPages[listingType] || page === 0) state.postPages[listingType] = [];
-      const postPages: PaginatedIds = state.postPages[listingType]!;
+      const serverPostPages: GroupedPages = getFederated(state.postPages, action);
+      if (!serverPostPages[listingType] || page === 0) serverPostPages[listingType] = [];
+
+      const postPages: PaginatedIds = serverPostPages[listingType]!;
       // Sensible approach:
-      // postPages[page] = postIds;
+      postPages[page] = postIds;
 
       // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
-      let initialPage: number = 0;
-      while (action.meta.arg.page && postPages[initialPage]) {
-        initialPage++;
-      }
-      const chunkSize = 7;
-      for (let i = 0; i < postIds.length; i += chunkSize) {
-        const chunk = postIds.slice(i, i + chunkSize);
-        state.postPages[listingType]![initialPage + (i / chunkSize)] = chunk;
-      }
-      if (state.postPages[listingType]![0] == undefined) {
-        state.postPages[listingType]![0] = [];
-      }
+      // let initialPage: number = 0;
+      // while (action.meta.arg.page && postPages[initialPage]) {
+      //   initialPage++;
+      // }
+      // const chunkSize = 7;
+      // for (let i = 0; i < postIds.length; i += chunkSize) {
+      //   const chunk = postIds.slice(i, i + chunkSize);
+      //   state.postPages[listingType]![initialPage + (i / chunkSize)] = chunk;
+      // }
+      // if (state.postPages[listingType]![0] == undefined) {
+      //   state.postPages[listingType]![0] = [];
+      // }
+
+      setFederated(state.postPages, action, serverPostPages);
     });
     builder.addCase(loadPostsPage.rejected, (state, action) => {
       setFederated(state.pagesStatus, action, "errored");
     });
     builder.addCase(loadPost.fulfilled, (state, action) => {
-      const oldPost = selectPostById(state, action.payload.id);
-      postsAdapter.upsertOne(state, { ...federatedPayload(action), replies: oldPost?.replies ?? action.payload.replies });
+      const federatedPost = federatedPayload(action);
+      const oldPost = selectPostById(state, federatedId(federatedPost));
+      postsAdapter.upsertOne(state, { ...federatedPost, replies: oldPost?.replies ?? action.payload.replies });
     });
     builder.addCase(loadPost.rejected, (state, action) => {
       const failedPostIds = getFederated(state.failedPostIds, action);
@@ -155,7 +162,8 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       // console.log('loaded post replies', action.payload)
       // Load the replies into the post tree.
       const postIdPath = action.meta.arg.postIdPath;
-      const basePost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
+      const basePostId = federateId(postIdPath[0]!, action);
+      const basePost = postsAdapter.getSelectors().selectById(state, basePostId);
       if (!basePost) {
         console.error(`Root post ID (${postIdPath[0]}) not found.`);
         return;
@@ -198,7 +206,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   },
 });
 
-export const { removePost, clearPostAlerts: clearPostAlerts, confirmReplySent, resetPosts, upsertPost } = postsSlice.actions;
+export const { removePost, clearPostAlerts: clearPostAlerts, resetPosts, upsertPost } = postsSlice.actions;
 export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();
 export const postsReducer = postsSlice.reducer;
 // export const upsertPost = postRe;

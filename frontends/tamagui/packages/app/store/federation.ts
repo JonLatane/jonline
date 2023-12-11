@@ -72,7 +72,7 @@ export function federatedPayload<T extends HasIdFromServer>(action: FederatedAct
  * @returns a server-host-specific entity ID, e.g. "jonline.io@@a" or "localhost@@a"
  */
 export function federatedId<T extends HasIdFromServer>(entity: FederatedEntity<T>): string {
-  return `${entity.serverHost}@@${entity.id}`;
+  return _federatedId(entity.id, entity.serverHost);
 }
 
 /**
@@ -81,7 +81,19 @@ export function federatedId<T extends HasIdFromServer>(entity: FederatedEntity<T
  * @returns a server-host-specific entity ID, e.g. "jonline.io-a" or "localhost-a"
  */
 export function federateId(id: string, server: HasServer): string {
-  return `${serverHost(server)}-${id}`;
+  return _federatedId(id, serverHost(server));
+}
+
+const _federatedId = (id: string, serverHost: string) => `${id}@${serverHost}`;
+
+export type FederatedIDParsing = { id: string, serverHost: string };
+export function parseFederatedId(federatedId: string, defaultServerHost?: string): FederatedIDParsing {
+  const [id, serverHost] = (federatedId ?? '').split('@');
+
+  return {
+    id: id!,
+    serverHost: serverHost ?? defaultServerHost ?? 'default',
+  }
 }
 
 /**
@@ -118,9 +130,12 @@ export function createFederated<T>(defaultValue: T): Federated<T> {
 }
 
 export function getFederated<T>(federated: Federated<T>, server: HasServer): T {
-  const defaultValue = Array.isArray(federated.defaultValue)
-    ? [...federated.defaultValue] as T
-    : { ...federated.defaultValue } as T;
+  const defaultValue = typeof federated.defaultValue === 'string'
+    ? `${federated.defaultValue}` as T
+    : Array.isArray(federated.defaultValue)
+      ? [...federated.defaultValue] as T
+      : { ...federated.defaultValue } as T;
+  // debugger;
   return federated.values[serverHost(server)] ?? defaultValue;
 }
 

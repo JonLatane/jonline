@@ -1,17 +1,17 @@
 import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { useGroupPostPages, usePostPages } from 'app/hooks/post_pagination_hooks';
-import { RootState, useServerTheme, useRootSelector } from 'app/store';
+import { useCurrentAndPinnedServers } from 'app/hooks';
+import { useGroupPostPages, usePostPages } from 'app/hooks/pagination/post_pagination_hooks';
+import { RootState, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
-import PostCard from '../post/post_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
+import PostCard from '../post/post_card';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
-import { useCurrentAndPinnedServers } from 'app/hooks';
 
 export function PostsScreen() {
   return <BasePostsScreen />;
@@ -35,9 +35,14 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   });
 
   const [currentPage, setCurrentPage] = useState(0);
-  const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded } = selectedGroup
-    ? useGroupPostPages(selectedGroup.id, currentPage)
-    : usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPage);
+  const mainPostPages = usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPage);
+  const groupPostPages = useGroupPostPages(selectedGroup?.id, currentPage);
+
+  const { posts, loadingPosts, hasMorePages, firstPageLoaded } = selectedGroup
+    ? groupPostPages
+    : mainPostPages;
+
+  console.log('mainPostPages', loadingPosts, mainPostPages);
 
   useEffect(() => {
     if (firstPageLoaded) {
@@ -70,7 +75,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
             </YStack>
             : <YStack w='100%'>
               {posts.map((post) => {
-                return <PostCard key={`post-${post.id}`} post={post} isPreview />;
+                return <PostCard key={`post-${federatedId(post)}`} post={post} isPreview />;
               })}
               <PaginationIndicator page={currentPage} loadingPage={loadingPosts || loadingPosts}
                 hasNextPage={hasMorePages}

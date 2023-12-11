@@ -78,15 +78,14 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     }
   }
 
-  const failedToLoadPost = post.id != undefined &&
-    postsState.failedPostIds.includes(post.id!);
+  // const failedToLoadPost = post.id != undefined &&
+  //   postsState.failedPostIds.includes(post.id!);
 
   useEffect(() => {
     if (replyPostIdPath.length == 0) {
       setReplyPostIdPath([post.id]);
     }
-    if (post && postsState.status != 'loading' && post.replyCount > 0 &&
-      post.replies.length == 0 && !loadingReplies) {
+    if (post && post.replyCount > 0 && post.replies.length == 0 && !loadingReplies) {
       setLoadingReplies(true);
       console.log('loadReplies', post.id, post.replyCount, post.replies.length, loadingReplies);
       setTimeout(() =>

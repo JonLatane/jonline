@@ -3,8 +3,8 @@ import { useCredentialDispatch } from "app/hooks";
 
 import { RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
-import { optServerID } from '../store/modules/servers_state';
-import { PostPageParams, finishPagination } from "./post_pagination_hooks";
+import { optServerID } from '../../store/modules/servers_state';
+import { PostPageParams, onPageLoaded } from "./post_pagination_hooks";
 
 export type EventPageParams = PostPageParams & { filter?: TimeFilter };
 
@@ -30,7 +30,7 @@ export function useEventPages(listingType: EventListingType, throughPage: number
   const hasMorePages = getHasMoreEventPages(eventsState, listingType, timeFilter, throughPage);
 
   function reloadEvents() {
-    dispatch(loadEventsPage({ ...accountOrServer, listingType, filter: params?.filter })).then(finishPagination(setLoadingEvents, params?.onLoaded));
+    dispatch(loadEventsPage({ ...accountOrServer, listingType, filter: params?.filter })).then(onPageLoaded(setLoadingEvents, params?.onLoaded));
   }
 
   return { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded };
@@ -59,7 +59,7 @@ export function useGroupEventPages(groupId: string, throughPage: number, params?
 
   function reloadEvents() {
     dispatch(loadGroupEventsPage({ ...accountOrServer, groupId, filter: params?.filter }))
-      .then(finishPagination(setLoadingEvents, params?.onLoaded));
+      .then(onPageLoaded(setLoadingEvents, params?.onLoaded));
   }
 
   console.log("useGroupEventPages", groupId, throughPage, events, hasMorePages, firstPageLoaded);
