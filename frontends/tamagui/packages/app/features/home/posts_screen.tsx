@@ -42,7 +42,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
     ? groupPostPages
     : mainPostPages;
 
-  console.log('mainPostPages', loadingPosts, mainPostPages);
+  // console.log('mainPostPages', loadingPosts, mainPostPages);
 
   useEffect(() => {
     if (firstPageLoaded) {
@@ -57,7 +57,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       appSection={AppSection.POSTS}
       selectedGroup={selectedGroup}
       groupPageForwarder={(group) => `/g/${group.shortname}/posts`}
-      withServerPinning={!selectedGroup}
+      withServerPinning
     >
       {loadingPosts ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>

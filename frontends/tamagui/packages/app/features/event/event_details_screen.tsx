@@ -56,7 +56,7 @@ export function EventDetailsScreen() {
     ? selectEventById(state.events, eventId)
     : undefined);
   const subjectPost = useRootSelector((state: RootState) =>
-    selectPostById(state.posts, subjectEvent?.post?.id ?? '') ?? subjectEvent?.post);
+    selectPostById(state.posts, subjectEvent?.post?.id ?? ''));
   const postId = subjectPost?.id;
 
   const subjectInstances = subjectEvent?.instances;

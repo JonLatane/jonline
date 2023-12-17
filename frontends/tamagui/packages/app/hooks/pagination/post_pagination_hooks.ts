@@ -9,7 +9,6 @@ export type PostPageParams = { onLoaded?: () => void };
 
 export function usePostPages(listingType: PostListingType, throughPage: number, params?: PostPageParams) {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
-  // const servers = pinnedServers ?? [currentAccountOrServer];
   const servers = useCurrentAndPinnedServers();
   const postsState = useRootSelector((state: RootState) => state.posts);
   const [loadingPosts, setLoadingPosts] = useState(false);
@@ -17,20 +16,12 @@ export function usePostPages(listingType: PostListingType, throughPage: number, 
   const posts: FederatedPost[] = getPostPages(postsState, listingType, throughPage, servers);
 
   useEffect(() => {
-    console.log('usePostPages', servers.map(s => s.server?.host).join(','), someUnloaded(postsState.pagesStatus, servers));
+    // console.log('usePostPages', servers.map(s => s.server?.host).join(','), someUnloaded(postsState.pagesStatus, servers));
     if (!loadingPosts && someUnloaded(postsState.pagesStatus, servers)) {
-      // debugger;
       setLoadingPosts(true);
-      // debugger;
-      // if (!accountOrServer.server) return;
-
       console.log("Loading posts...");
       setTimeout(reloadPosts, 1);
     }
-    // else if (postsState.pagesStatus == 'loaded' && loadingPosts) {
-    //   setLoadingPosts(false);
-    //   onLoaded?.();
-    // }
   }, [loadingPosts, postsState.pagesStatus, servers.map(s => s.server?.host).join(',')]);
 
   const firstPageLoaded = getHasPostsPage(postsState, listingType, 0, servers);
@@ -40,12 +31,10 @@ export function usePostPages(listingType: PostListingType, throughPage: number, 
     console.log('Reloading posts for servers', servers.map(s => s.server?.host));
     Promise.all(servers.map(server =>
       dispatch(loadPostsPage({ ...server, listingType })))
-    )//.then(finishPagination(setLoadingPosts, params?.onLoaded))
-      .then((results) => {
-        console.log("Loaded posts", results);
-        finishPagination(setLoadingPosts, params?.onLoaded);
-      });
-    // dispatch(loadPostsPage({ ...accountOrServer, listingType })).then(finishPagination(setLoadingPosts, params?.onLoaded));
+    ).then((results) => {
+      console.log("Loaded posts", results);
+      finishPagination(setLoadingPosts, params?.onLoaded);
+    });
   }
 
   return { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded };
@@ -86,5 +75,5 @@ export function useGroupPostPages(groupId: string | undefined, throughPage: numb
     dispatch(loadGroupPostsPage({ ...accountOrServer, groupId })).then(onPageLoaded(setLoadingPosts, params?.onLoaded));
   }
 
-  return { posts: postList, loadingPosts: loadingPosts || state.groups.postPageStatus == 'loading', reloadPosts, hasMorePages, firstPageLoaded };
+  return { posts: postList, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded };
 }

@@ -32,7 +32,6 @@ function getPostsPage(posts: PostsState, listingType: PostListingType, page: num
   });
   const pagePosts = pagePostIds.map(id => selectPostById(posts, id))
     .filter(p => p) as FederatedPost[];
-  // console.log('getPostsPage', pagePostIds, pagePosts.length, pagePosts)
   return pagePosts;
 }
 
@@ -45,6 +44,7 @@ export function getHasPostsPage(posts: PostsState, listingType: PostListingType,
 export function getHasMorePostPages(posts: PostsState, listingType: PostListingType, currentPage: number, servers: AccountOrServer[]): boolean {
   return servers.some(server => ((posts.postPages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
 }
+
 
 
 function getGroupPostsPage(state: RootState, groupId: string, page: number): FederatedPost[] {

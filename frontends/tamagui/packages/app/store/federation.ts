@@ -81,7 +81,7 @@ export function federatedId<T extends HasIdFromServer>(entity: FederatedEntity<T
  * @returns a server-host-specific entity ID, e.g. "jonline.io-a" or "localhost-a"
  */
 export function federateId(id: string, server: HasServer): string {
-  return _federatedId(id, serverHost(server));
+  return _federatedId(id.split('@')[0]!, serverHost(server));
 }
 
 const _federatedId = (id: string, serverHost: string) => `${id}@${serverHost}`;

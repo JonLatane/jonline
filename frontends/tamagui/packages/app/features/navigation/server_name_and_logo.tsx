@@ -118,8 +118,8 @@ export function ServerNameAndLogo({
             ]} >
             <MediaRenderer serverOverride={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
           </XStack>
-          : <XStack h={'100%'} maw={maxWidthAfterServerName}>
-            <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+          : <XStack h={'100%'} w='100%' scale={1.1}>
+            <Heading m='auto' whiteSpace="nowrap" size='$9'>{serverNameEmoji ?? ''}</Heading>
             {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
           </XStack>}
       </Tooltip.Trigger >

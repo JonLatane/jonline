@@ -1,15 +1,15 @@
-import { EventListingType, Group, PostListingType } from '@jonline/api';
+import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { useAppDispatch, useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks';
-import { RootState, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, RootState, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
-import PostCard from '../post/post_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
+import PostCard from '../post/post_card';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
 
@@ -18,7 +18,7 @@ export function HomeScreen() {
 }
 
 export type HomeScreenProps = {
-  selectedGroup?: Group
+  selectedGroup?: FederatedGroup
 };
 
 export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => {
@@ -74,7 +74,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     <TabsNavigation
       customHomeAction={selectedGroup ? undefined : onHomePressed}
       selectedGroup={selectedGroup}
-      withServerPinning={!selectedGroup}
+      withServerPinning
     >
       {loadingPosts || loadingEvents ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
@@ -154,7 +154,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               >
                 <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
                 {posts.map((post) => {
-                  return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
+                  return <PostCard key={`post-preview-${federatedId(post)}`} post={post} isPreview />;
                 })}
                 <PaginationIndicator page={currentPostsPage}
                   loadingPage={loadingPosts}

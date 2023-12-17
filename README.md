@@ -23,6 +23,8 @@ Jonline is an open-source, community-scale social network designed to be capable
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Features Overview](#features-overview)
+    - [Jonline Usernames and IDs](#jonline-usernames-and-ids)
+      - [Technical Details](#technical-details)
     - [People, Followers and Friends](#people-followers-and-friends)
     - [Groups and Memberships](#groups-and-memberships)
     - [Media](#media)
@@ -30,6 +32,7 @@ Jonline is an open-source, community-scale social network designed to be capable
       - [GroupPost](#grouppost)
     - [Events](#events)
   - [Documentation](#documentation)
+    - [Micro-Federation](#micro-federation)
     - [Protocol Documentation](#protocol-documentation)
     - [Project Components](#project-components)
       - [Documentation](#documentation-1)
@@ -116,11 +119,36 @@ All this is to say: it should be pretty straightforward to create, say, Ruby bin
 ## Features Overview
 All of Jonline's features should be pretty familiar to most social media users. Notably, in both its web and Flutter UIs, Jonline is designed to present "My Media" as a top-level feature and let users delete and manage Media visibility independently of Posts, Events, Groups or anything else.
 
+### Jonline Usernames and IDs
+A key point of contention in the Fediverse is the notion of universal usernames and IDs. There's a lot of complex implementations around this in Mastodon and elsewhere. Since Jonline's protocols do not specify anything about server-to-server communication, none of that stuff is really necessary in the Jonline approach at all.
+
+For instance: I can claim [jonline.io/jon](https://jonline.io/jon), [bullcity.social/jon](https://bullcity.social/jon), and [oakcity.social/jon](https://oakcity.social/jon) for myself. But if you decide to start an instance at [febreze.lol/jon](https://febreze.lol/jon) and I want to make an account and share with you (I absolutely would!), I'll just have to register as [febreze.lol/jonline-jon](https://febreze.lol/jonline-jon) or my username of choice. (But, I can interlink all 4 of these profiles to make them appear as verified alternate identities across the servers!)
+
+#### Technical Details
+
+At the core of Jonline is a pretty straightforward, URL-based identification scheme atop 64-bit numerical IDs. At a high level, Jonline Usernames and IDs look like a mix between URLs and email addresses. An important feature of both Jonline Usernames and IDs is that they do not change when URL-encoded.
+
+**Jonline Usernames** are, essentially, a link to a profile. Jonline gives the top-level resource names to users; i.e., user `bob123` on [jonline.io](https://jonline.io) can be found at [jonline.io/bob123](https://jonline.io/bob123). Users can change their usernames, but User IDs are permanent (unless the server administration changes the ID offset; see below for details.) [The few usernames you can't use on Jonline are enumerated in this Rust source.](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/validations/validate_fields.rs)
+
+Example Jonline usernames:
+
+* [jonline.io/jon](https://jonline.io/jon)
+* [bullcity.social/jon](https://bullcity.social/jon)
+* [jonline.io/jon@bullcity.social](https://jonline.io/jon@bullcity.social) - a view of [bullcity.social/jon](https://bullcity.social/jon) when using [jonline.io](https://jonline.io).
+
+**Jonline IDs** are numerical IDs for any entity type on a server. We might say: *in the context of Jonline.io*, Post ID `T6S8eoDmmtb` would be expected to be found at [jonline.io/post/T6S8eoDmmtb](https://jonline.io/post/T6S8eoDmmtb). (Note that the numerical portion of the ID is literally just a 64-bit integer encoded with base58 and a server-configurable offset. The best reference for how "Jonline ID Marshaling" works would be [These <90 lines, including test coverage, of Rust code.](https://github.com/JonLatane/jonline/blob/main/backend/src/marshaling/id_marshaling.rs))
+
+Example Jonline IDs:
+
+* [jonline.io/post/T6S8eoDmmtb](https://jonline.io/post/T6S8eoDmmtb)
+* [bullcity.social/post/2g1j95Bw5gB](https://bullcity.social/post/2g1j95Bw5gB)
+* [jonline.io/post/2g1j95Bw5gB@bullcity.social](https://jonline.io/post/T6S8eoDmmtb) - a view of [bullcity.social/post/2g1j95Bw5gB](https://bullcity.social/post/2g1j95Bw5gB) when using [jonline.io](https://jonline.io).
+
 ### People, Followers and Friends
 Jonline allows users to create accounts and login with nothing but a username/password combo. Anyone can Follow anyone, but users can require approval for Follow Requests. Two users who Follow each other are Friends.
 
 ### Groups and Memberships
-Jonline users may be 
+Jonline supports Groups, which are much like Usenet groups, Facebook groups, or subreddits.
 
 ### Media
 Jonline `Media` is straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike `Post`s and `Event`s, `Media` is generally not shared directly. It is instead associated with `Post`s and `Event`s (for media listings) as well as Users and Groups (for their avatars).
@@ -143,6 +171,11 @@ linking any unique `Group` to any unique `Post`, along with the `User` who creat
 
 ## Documentation
 Jonline documentation consists of Markdown in the [`docs/` directory](https://github.com/JonLatane/jonline/tree/main/docs), starting from [`docs/README.md`](https://github.com/JonLatane/jonline/blob/main/docs/README.md).
+
+### Micro-Federation
+A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication is via "recommended servers," which will eventually also let admins enable CORS to control where users can see content and user information from their servers.
+
+This approach does not seek to be particular innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/http%3Alocalhost?section=federation) - literally nothing but a list of hosts.
 
 ### Protocol Documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their documentation (for example, [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol)).

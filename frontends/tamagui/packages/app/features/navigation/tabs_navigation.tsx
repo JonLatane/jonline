@@ -2,12 +2,12 @@ import { Group, WebUserInterface } from "@jonline/api";
 import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useLocalConfiguration } from "app/hooks";
-import { JonlineServer, RootState, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
+import { FederatedGroup, JonlineServer, RootState, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import { useEffect } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
-import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupContextProvider } from "../../contexts/group_context";
+import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
 import { PinnedServerSelector } from "./pinned_server_selector";
@@ -19,7 +19,7 @@ export type TabsNavigationProps = {
   onlyShowServer?: JonlineServer;
   appSection?: AppSection;
   appSubsection?: AppSubsection;
-  selectedGroup?: Group;
+  selectedGroup?: FederatedGroup;
   customHomeAction?: () => void;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.

@@ -2,7 +2,7 @@ import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonl
 import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
 import { useCredentialDispatch } from 'app/hooks';
-import { JonlineServer, RootState, clearGroupAlerts, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineServer, RootState, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 // import { PostMediaManager } from '../posts/post_media_manager';
@@ -113,7 +113,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
 
     setRenderType(RenderType.Edit);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    dispatch(clearGroupAlerts!());
+    // dispatch(clearGroupAlerts!());
     setPosting(false);
   }
 

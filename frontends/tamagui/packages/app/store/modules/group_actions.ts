@@ -1,10 +1,12 @@
-import { Empty, EventListingType, GetEventsResponse, GetGroupPostsRequest, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@jonline/api";
+import { Empty, EventListingType, GetEventsResponse, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupListingType, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@jonline/api";
 
 import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
 import { AccountOrServer, getCredentialClient } from "..";
+
+export const defaultGroupListingType = GroupListingType.ALL_GROUPS;
 
 export type CreateGroup = AccountOrServer & Group;
 export const createGroup: AsyncThunk<Group, CreateGroup, any> = createAsyncThunk<Group, CreateGroup>(

@@ -71,6 +71,7 @@ impl ToDbOptId for Option<&String> {
     }
 }
 
+// TODO: Eventually this should come from the ServerConfiguration.
 const OFFSET: i64 = 7;
 
 #[cfg(test)]

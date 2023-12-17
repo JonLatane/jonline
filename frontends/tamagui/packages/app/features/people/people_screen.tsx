@@ -70,7 +70,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     <TabsNavigation appSection={selectedGroup ? AppSection.MEMBERS : AppSection.PEOPLE} selectedGroup={selectedGroup}
       appSubsection={listingType == UserListingType.FOLLOW_REQUESTS ? AppSubsection.FOLLOW_REQUESTS : undefined}
       groupPageForwarder={(group) => `/g/${group.shortname}/members`}
-      withServerPinning={!isForGroupMembers}
+      withServerPinning
     // customHomeAction={onHomePressed}
     >
       {loadingUsers ? <StickyBox style={{ zIndex: 10, height: 0 }}>

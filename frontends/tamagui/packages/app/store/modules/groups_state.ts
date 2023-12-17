@@ -1,5 +1,4 @@
 import { Group, GroupPost, Membership } from "@jonline/api";
-import { formatError } from "@jonline/ui";
 
 import {
   createEntityAdapter,
@@ -10,56 +9,45 @@ import {
   EntityId,
   Slice
 } from "@reduxjs/toolkit";
-import moment from "moment";
-import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
-import { createGroup, createGroupPost, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadPostGroupPosts, respondToMembershipRequest, loadGroupsPage, updateGroup, deleteGroup } from "./group_actions";
-import { store } from "../store";
 import { passes } from "app/utils/moderation_utils";
-import { usersAdapter } from "./users_state";
-import { GroupedPages, PaginatedIds } from "../pagination";
+import moment from "moment";
+import { createFederated, Federated, federatedEntities, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, setFederated } from "../federation";
+import { createFederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
+import { store } from "../store";
+import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
+import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup } from "./group_actions";
+
+export type FederatedGroup = FederatedEntity<Group>;
 
 export interface GroupsState {
-  status: "unloaded" | "loading" | "loaded" | "errored";
-  postPageStatus: "unloaded" | "loading" | "loaded" | "errored";
-  eventPageStatus: "unloaded" | "loading" | "loaded" | "errored";
-  groupPostsStatus: undefined | "loading" | "loaded" | "errored";
-  error?: Error;
-  successMessage?: string;
-  errorMessage?: string;
-  draftGroup: Group;
+  pagesStatus: Federated<"unloaded" | "loading" | "loaded" | "errored">;
   ids: EntityId[];
-  entities: Dictionary<Group>;
+  entities: Dictionary<FederatedGroup>;
   // By GroupListingType -> page (as a number) -> groupIds
-  pages: GroupedPages;
-  shortnameIds: Dictionary<string>;
-  groupPostPages: GroupedPages;
-  groupEventPages: GroupedEventInstancePages;
-  postIdGroupPosts: Dictionary<GroupPost[]>;
-  failedShortnames: string[];
+  pages: Federated<GroupedPages>;
+  shortnameIds: Federated<Dictionary<string>>;
+  groupPostPages: Federated<GroupedPages>;
+  groupEventPages: Federated<GroupedEventInstancePages>;
+  postIdGroupPosts: Federated<Dictionary<GroupPost[]>>;
+  failedShortnames: Federated<string[]>;
   mutatingGroupIds: string[];
-  membershipPages: Dictionary<Membership[][]>;
 }
 
 
-const groupsAdapter: EntityAdapter<Group> = createEntityAdapter<Group>({
-  selectId: (group) => group.id,
+const groupsAdapter: EntityAdapter<FederatedGroup> = createEntityAdapter<FederatedGroup>({
+  selectId: (group) => federatedId(group),
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
 
 const initialState: GroupsState = {
-  status: "unloaded",
-  postPageStatus: "unloaded",
-  eventPageStatus: "unloaded",
-  groupPostsStatus: undefined,
-  draftGroup: Group.create(),
-  shortnameIds: {},
-  failedShortnames: [],
-  pages: {},
-  groupPostPages: {},
-  groupEventPages: {},
-  postIdGroupPosts: {},
+  pagesStatus: createFederatedPagesStatus(),
+  shortnameIds: createFederated({}),
+  failedShortnames: createFederated([]),
+  pages: createFederated({}),
+  groupPostPages: createFederated({}),
+  groupEventPages: createFederated({}),
+  postIdGroupPosts: createFederated({}),
   mutatingGroupIds: [],
-  membershipPages: {},
   ...groupsAdapter.getInitialState(),
 };
 
@@ -80,34 +68,27 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
     upsertGroup: groupsAdapter.upsertOne,
     removeGroup: groupsAdapter.removeOne,
     resetGroups: () => initialState,
-    clearGroupAlerts: (state) => {
-      state.errorMessage = undefined;
-      state.successMessage = undefined;
-      state.error = undefined;
-    },
   },
   extraReducers: (builder) => {
-    builder.addCase(createGroup.pending, (state) => {
-      state.status = "loading";
-      state.error = undefined;
-    });
+    // builder.addCase(createGroup.pending, (state) => {
+    //   state.status = "loading";
+    // });
     builder.addCase(createGroup.fulfilled, (state, action) => {
-      console.log("createGroup.fulfilled");
-      state.status = "loaded";
-      const group = action.payload;
+      // console.log("createGroup.fulfilled");
+      // state.status = "loaded";
+      const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
       state.shortnameIds[group.shortname] = group.id;
-      state.successMessage = `Group created.`;
     });
-    builder.addCase(createGroup.rejected, (state, action) => {
-      console.log("createGroup.rejected");
-      state.status = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
+    // builder.addCase(createGroup.rejected, (state, action) => {
+    //   console.log("createGroup.rejected");
+    //   state.status = "errored";
+    //   state.error = action.error as Error;
+    //   state.errorMessage = formatError(action.error as Error);
+    //   state.error = action.error as Error;
+    // });
     builder.addCase(updateGroup.fulfilled, (state, action) => {
-      const group = action.payload;
+      const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
       state.shortnameIds[action.meta.arg.shortname] = undefined;
       state.shortnameIds[group.shortname] = group.id;
@@ -120,23 +101,32 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
     builder.addCase(deleteGroup.fulfilled, (state, action) => {
       groupsAdapter.removeOne(state, action.meta.arg.id);
     });
-    builder.addCase(loadGroupsPage.pending, (state) => {
-      state.status = "loading";
-      state.error = undefined;
+    builder.addCase(loadGroupsPage.pending, (state, action) => {
+      setFederated(state.pagesStatus, action, "loading");
     });
     builder.addCase(loadGroupsPage.fulfilled, (state, action) => {
-      state.status = "loaded";
-      groupsAdapter.upsertMany(state, action.payload.groups);
-      action.payload.groups.forEach(g => state.shortnameIds[g.shortname] = g.id);
-      state.successMessage = `Groups loaded.`;
+      setFederated(state.pagesStatus, action, "loaded");
+      const groups = federatedEntities(action.payload.groups, action);
+      groupsAdapter.upsertMany(state, groups);
+      const shortnameIds = getFederated(state.shortnameIds, action);
+      action.payload.groups.forEach(g => shortnameIds[g.shortname] = g.id);
+      setFederated(state.shortnameIds, action, shortnameIds);
+
+      const page = action.meta.arg.page || 0;
+      const listingType = action.meta.arg.listingType ?? defaultGroupListingType;
+
+
+      const serverPages: GroupedPages = getFederated(state.pages, action);
+      if (!serverPages[listingType] || page === 0) serverPages[listingType] = [];
+
+      const pages: PaginatedIds = serverPages[listingType]!;
+      // Sensible approach:
+      pages[page] = groups.map(g => federatedId(g));
+      setFederated(state.pages, action, serverPages);
     });
     builder.addCase(loadGroupsPage.rejected, (state, action) => {
-      state.status = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
+      setFederated(state.pagesStatus, action, "errored");
     });
-
 
     builder.addCase(loadPostGroupPosts.fulfilled, (state, action) => {
       const { groupPosts } = action.payload;
@@ -162,12 +152,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
         .filter(gp => gp.groupId !== groupId);
     });
 
-    builder.addCase(loadGroupPostsPage.pending, (state) => {
-      state.postPageStatus = "loading";
-      state.error = undefined;
-    });
     builder.addCase(loadGroupPostsPage.fulfilled, (state, action) => {
-      state.postPageStatus = "loaded";
       const { posts } = action.payload;
       const postIds = posts.map(p => p.id);
 
@@ -194,22 +179,9 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       if (state.groupPostPages[groupId]![0] == undefined) {
         state.groupPostPages[groupId]![0] = [];
       }
-
-      state.successMessage = `Group Posts for ${action.meta.arg.groupId} loaded.`;
-    });
-    builder.addCase(loadGroupPostsPage.rejected, (state, action) => {
-      state.postPageStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
     });
 
-    builder.addCase(loadGroupEventsPage.pending, (state) => {
-      state.eventPageStatus = "loading";
-      state.error = undefined;
-    });
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
-      state.eventPageStatus = "loaded";
       const { events } = action.payload;
       const eventInstanceIds = events.map(e => e.instances[0]!.id);
 
@@ -240,41 +212,27 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       if (state.groupEventPages[groupId]![serializedFilter]![0] == undefined) {
         state.groupEventPages[groupId]![serializedFilter]![0] = [];
       }
+    });
+    // builder.addCase(loadGroupEventsPage.rejected, (state, action) => {
+    //   state.eventPageStatus = "errored";
+    //   state.error = action.error as Error;
+    //   state.errorMessage = formatError(action.error as Error);
+    //   state.error = action.error as Error;
+    // });
 
-      state.successMessage = `Group Events for ${action.meta.arg.groupId} loaded.`;
-    });
-    builder.addCase(loadGroupEventsPage.rejected, (state, action) => {
-      state.eventPageStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-
-    builder.addCase(loadGroup.pending, (state) => {
-      state.status = "loading";
-      state.error = undefined;
-    });
     builder.addCase(loadGroup.fulfilled, (state, action) => {
-      state.status = "loaded";
-      const group = action.payload;
+      const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
       state.shortnameIds[group.shortname] = group.id;
-      state.successMessage = `Group data loaded.`;
-    });
-    builder.addCase(loadGroup.rejected, (state, action) => {
-      state.status = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
     });
     builder.addCase(joinLeaveGroup.pending, (state, action) => {
-      lockGroup(state, action.meta.arg.groupId);
+      lockGroup(state, federateId(action.meta.arg.groupId, action));
     });
     builder.addCase(joinLeaveGroup.rejected, (state, action) => {
-      unlockGroup(state, action.meta.arg.groupId);
+      unlockGroup(state, federateId(action.meta.arg.groupId, action));
     });
     builder.addCase(joinLeaveGroup.fulfilled, (state, action) => {
-      unlockGroup(state, action.meta.arg.groupId);
+      unlockGroup(state, federateId(action.meta.arg.groupId, action));
       let group = groupsAdapter.getSelectors().selectById(state, action.meta.arg.groupId)!;
       // let currentUser = usersAdapter.getSelectors().selectById(state, action.meta.arg.account!.user.id);
       if (action.meta.arg.join) {
@@ -302,15 +260,15 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
     });
 
     builder.addCase(respondToMembershipRequest.pending, (state, action) => {
-      lockGroup(state, action.meta.arg.groupId);
+      lockGroup(state, federateId(action.meta.arg.groupId, action));
     });
     builder.addCase(respondToMembershipRequest.rejected, (state, action) => {
-      unlockGroup(state, action.meta.arg.groupId);
+      unlockGroup(state, federateId(action.meta.arg.groupId, action));
     });
     builder.addCase(respondToMembershipRequest.fulfilled, (state, action) => {
-      unlockGroup(state, action.meta.arg.groupId);
+      unlockGroup(state, federateId(action.meta.arg.groupId, action));
       const currentUserId = action.meta.arg.account?.user?.id;
-      let group: Group = groupsAdapter.getSelectors().selectById(state, action.meta.arg.groupId)!;
+      let group: FederatedGroup = groupsAdapter.getSelectors().selectById(state, action.meta.arg.groupId)!;
       if (action.meta.arg.accept) {
         const result = action.payload as Membership;
         const currentUserMembership = action.meta.arg.userId === currentUserId ? result : undefined;
@@ -324,7 +282,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
   },
 });
 
-export const { removeGroup, clearGroupAlerts, resetGroups } = groupsSlice.actions;
+export const { removeGroup, resetGroups } = groupsSlice.actions;
 
 export const { selectAll: selectAllGroups, selectById: selectGroupById } = groupsAdapter.getSelectors();
 export const groupsReducer = groupsSlice.reducer;

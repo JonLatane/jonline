@@ -11,6 +11,7 @@ import { ConversationManager } from './conversation_manager'
 import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
 import { federateId, getFederated } from '../../store/federation';
+import { AccountOrServerContextProvider } from 'app/contexts'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -91,23 +92,25 @@ export function PostDetailsScreen() {
           </>
           : <Spinner size='large' color={navColor} scale={2} />
         :
-        <ConversationContextProvider value={conversationContext}>
-          <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
-            <ScrollView w='100%'>
-              <XStack w='100%' paddingHorizontal='$3'>
-                <PostCard key={`post-card-main-${serverPostId}`}
-                  post={subjectPost}
-                  onEditingChange={editHandler(subjectPost.id)} />
-              </XStack>
-              <ConversationManager post={subjectPost} />
-            </ScrollView>
+        <AccountOrServerContextProvider value={accountOrServer}>
+          <ConversationContextProvider value={conversationContext}>
+            <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
+              <ScrollView w='100%'>
+                <XStack w='100%' paddingHorizontal='$3'>
+                  <PostCard key={`post-card-main-${serverPostId}`}
+                    post={subjectPost}
+                    onEditingChange={editHandler(subjectPost.id)} />
+                </XStack>
+                <ConversationManager post={subjectPost} />
+              </ScrollView>
 
 
-            <ReplyArea replyingToPath={replyPostIdPath}
-              onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
-              hidden={!showReplyArea} />
-          </YStack>
-        </ConversationContextProvider>
+              <ReplyArea replyingToPath={replyPostIdPath}
+                onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
+                hidden={!showReplyArea} />
+            </YStack>
+          </ConversationContextProvider>
+        </AccountOrServerContextProvider>
       }
     </TabsNavigation >
   )

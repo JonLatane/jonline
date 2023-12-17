@@ -1,15 +1,15 @@
 import { Post } from '@jonline/api';
 import { Button, Heading, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
-import { useCredentialDispatch, useLocalConfiguration, } from 'app/hooks';
-import { RootState, loadPostReplies, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store';
+import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, } from 'app/hooks';
+import { FederatedPost, RootState, federatedId, getServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store';
 import moment, { Moment } from 'moment';
 import React, { useEffect, useReducer, useState } from 'react';
 import { useConversationContext } from './conversation_context';
 import PostCard from './post_card';
 
 interface ConversationManagerProps {
-  post: Post;
+  post: FederatedPost;
 }
 
 let _nextChatReplyRefresh: Moment | undefined = undefined;
@@ -26,10 +26,11 @@ if (isClient) {
 export const ConversationManager: React.FC<ConversationManagerProps> = ({
   post,
 }) => {
+  const { dispatch, accountOrServer } = useFederatedDispatch(post);
   const { replyPostIdPath, setReplyPostIdPath, editHandler } = useConversationContext()!;
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server);
+  const rootPostId = federatedId(post);
   const app = useLocalConfiguration();
-  const { dispatch, accountOrServer } = useCredentialDispatch();
   const postsState = useRootSelector((state: RootState) => state.posts);
   // const post = useRootSelector((state: RootState) => selectPostById(state.posts, postId!));
   const [loadingPost, setLoadingPost] = useState(false);
@@ -56,40 +57,43 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  if (chatUI && (app?.autoRefreshDiscussions ?? true)) {
-    if (!_nextChatReplyRefresh || moment().isAfter(_nextChatReplyRefresh)) {
-      const intervalSeconds = app?.discussionRefreshIntervalSeconds || 6;
-      _nextChatReplyRefresh = moment().add(intervalSeconds, 'second');
-      const wasAtBottom = isClient && !showScrollPreserver &&
-        document.body.scrollHeight - _viewportHeight - window.scrollY < 100;
-      const scrollYAtBottom = window.scrollY;
-      // console.log('wasAtBottom', wasAtBottom, document.body.scrollHeight, _viewportHeight, window.scrollY)
-      setTimeout(() => {
-        dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [post.id!] })).then(() => {
-          if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
-            scrollToBottom();
-          }
-          // forceUpdate();
-          setTimeout(() => {
-            forceUpdate();
-          }, intervalSeconds * 1000);
-        });
-      }, 1);
+  const autoRefresh = app?.autoRefreshDiscussions ?? true;
+  useEffect(() => {
+    if (chatUI && autoRefresh) {
+      if (!_nextChatReplyRefresh || moment().isAfter(_nextChatReplyRefresh)) {
+        const intervalSeconds = app?.discussionRefreshIntervalSeconds || 6;
+        _nextChatReplyRefresh = moment().add(intervalSeconds, 'second');
+        const wasAtBottom = isClient && !showScrollPreserver &&
+          document.body.scrollHeight - _viewportHeight - window.scrollY < 100;
+        const scrollYAtBottom = window.scrollY;
+        // console.log('wasAtBottom', wasAtBottom, document.body.scrollHeight, _viewportHeight, window.scrollY)
+        setTimeout(() => {
+          dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] })).then(() => {
+            if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
+              scrollToBottom();
+            }
+            // forceUpdate();
+            setTimeout(() => {
+              forceUpdate();
+            }, intervalSeconds * 1000);
+          });
+        }, 1);
+      }
     }
-  }
+  });//, [chatUI, autoRefresh]);
 
-  // const failedToLoadPost = post.id != undefined &&
-  //   postsState.failedPostIds.includes(post.id!);
+  // const failedToLoadPost = rootPostId != undefined &&
+  //   postsState.failedPostIds.includes(rootPostId!);
 
   useEffect(() => {
     if (replyPostIdPath.length == 0) {
-      setReplyPostIdPath([post.id]);
+      setReplyPostIdPath([rootPostId]);
     }
     if (post && post.replyCount > 0 && post.replies.length == 0 && !loadingReplies) {
       setLoadingReplies(true);
-      console.log('loadReplies', post.id, post.replyCount, post.replies.length, loadingReplies);
+      console.log('loadReplies', rootPostId, post.replyCount, post.replies.length, loadingReplies);
       setTimeout(() =>
-        dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [post.id!] })), 1);
+        dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] })), 1);
     } else if (!post && loadingReplies) {
       setLoadingReplies(false);
     }
@@ -135,7 +139,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     }
   }
   if (post) {
-    flattenReplies(post, [post.id]);
+    flattenReplies(post, [rootPostId]);
   }
   if (chatUI) {
     flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
@@ -241,7 +245,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
               }}
               onPressReply={() => {
                 if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
-                  setReplyPostIdPath([post.id!]);
+                  setReplyPostIdPath([rootPostId!]);
                 } else {
                   setReplyPostIdPath(postIdPath);
                 }
@@ -250,7 +254,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
               onPressParentPreview={() => {
                 const parentPostIdPath = postIdPath.slice(0, -1);
                 if (replyPostIdPath[replyPostIdPath.length - 1] == parentPostIdPath[parentPostIdPath.length - 1]) {
-                  setReplyPostIdPath([post.id!]);
+                  setReplyPostIdPath([rootPostId!]);
                 } else {
                   setReplyPostIdPath(parentPostIdPath);
                 }

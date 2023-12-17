@@ -10,8 +10,9 @@ import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 
 export type PinnedServerSelectorProps = {
   show?: boolean;
+  transparent?: boolean;
 };
-export function PinnedServerSelector({ show }: PinnedServerSelectorProps) {
+export function PinnedServerSelector({ show, transparent }: PinnedServerSelectorProps) {
   const dispatch = useAppDispatch();
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
 
@@ -44,7 +45,8 @@ export function PinnedServerSelector({ show }: PinnedServerSelectorProps) {
     .filter(host => !currentServerHosts.includes(host));
 
   const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
-  return <YStack key='pinned-server-selector' w='100%' h={show ? undefined : 0} backgroundColor='$backgroundHover'>
+  return <YStack className='blur' key='pinned-server-selector' w='100%' h={show ? undefined : 0} backgroundColor={transparent ? undefined : '$backgroundHover'
+  }>
     <AnimatePresence>
       {show ? <>
         <Button key='pinned-server-toggle' py='$1' h='auto' onPress={() => setShowDataSources(!showDataSources)}>
@@ -58,7 +60,7 @@ export function PinnedServerSelector({ show }: PinnedServerSelectorProps) {
           </XStack>
         </Button>
         {showDataSources
-          ? <YStack w='100%' animation='standard' {...standardAnimation}>
+          ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
             <ScrollView key='pinned-server-scroller' w='100%' horizontal>
               <XStack m='$3' ai='center' space='$2'>
                 {availableServers.map(server => {

@@ -89,7 +89,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const basePostId = federateId(postIdPath[0]!, action);
       const basePost = postsAdapter.getSelectors().selectById(state, basePostId);
       if (!basePost) {
-        console.error(`Root post ID (${postIdPath[0]}) not found.`);
+        console.error(`Root post ID (${basePostId}) not found.`);
         return;
       }
       const rootPost: Post = { ...basePost }
@@ -129,6 +129,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const postPages: PaginatedIds = serverPostPages[listingType]!;
       // Sensible approach:
       postPages[page] = postIds;
+      setFederated(state.postPages, action, serverPostPages);
 
       // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
       // let initialPage: number = 0;
@@ -144,7 +145,6 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       //   state.postPages[listingType]![0] = [];
       // }
 
-      setFederated(state.postPages, action, serverPostPages);
     });
     builder.addCase(loadPostsPage.rejected, (state, action) => {
       setFederated(state.pagesStatus, action, "errored");
@@ -159,13 +159,14 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       setFederated(state.failedPostIds, action, [...failedPostIds, (action.meta.arg as LoadPost).id]);
     });
     builder.addCase(loadPostReplies.fulfilled, (state, action) => {
-      // console.log('loaded post replies', action.payload)
+      console.log('loaded post replies', action.payload)
+      // debugger;
       // Load the replies into the post tree.
       const postIdPath = action.meta.arg.postIdPath;
       const basePostId = federateId(postIdPath[0]!, action);
       const basePost = postsAdapter.getSelectors().selectById(state, basePostId);
       if (!basePost) {
-        console.error(`Root post ID (${postIdPath[0]}) not found.`);
+        console.error(`Root post ID (${basePostId}) not found.`);
         return;
       }
       const rootPost: Post = { ...basePost }
@@ -185,6 +186,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         return { ...reply, replies: oldReply?.replies ?? reply.replies };
       });
       post.replies = mergedReplies;
+      // debugger;
       postsAdapter.upsertOne(state, federatedEntity(rootPost, action));
     });
 

@@ -74,7 +74,7 @@ export const loadPost: AsyncThunk<Post, LoadPost, any> = createAsyncThunk<Post, 
   "posts/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
-    const response = await client.getPosts(GetPostsRequest.create({ postId: request.id }), client.credential);
+    const response = await client.getPosts(GetPostsRequest.create({ postId: request.id.split('@')[0] ?? '' }), client.credential);
     if (response.posts.length == 0) throw 'Post not found';
     const post = response.posts[0]!;
     return post;
@@ -89,7 +89,7 @@ export const loadPostReplies: AsyncThunk<GetPostsResponse, LoadPostReplies, any>
   async (repliesRequest) => {
     // console.log("loadPostReplies:", repliesRequest)
     const getPostsRequest = GetPostsRequest.create({
-      postId: repliesRequest.postIdPath.at(-1),
+      postId: repliesRequest.postIdPath.at(-1)?.split('@')[0] ?? '',
       replyDepth: 2,
     })
 

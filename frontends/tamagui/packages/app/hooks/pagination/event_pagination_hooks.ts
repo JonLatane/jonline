@@ -63,5 +63,5 @@ export function useGroupEventPages(groupId: string, throughPage: number, params?
   }
 
   console.log("useGroupEventPages", groupId, throughPage, events, hasMorePages, firstPageLoaded);
-  return { events, loadingEvents: loadingEvents || state.groups.eventPageStatus == 'loading', reloadEvents, hasMorePages, firstPageLoaded };
+  return { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded };
 }

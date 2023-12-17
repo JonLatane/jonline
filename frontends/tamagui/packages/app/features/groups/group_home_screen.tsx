@@ -1,7 +1,7 @@
 import { GetGroupsRequest, Group } from '@jonline/api'
 import { Spinner, YStack, useWindowDimensions } from '@jonline/ui'
 import { useCredentialDispatch } from 'app/hooks'
-import { RootState, loadGroupsPage, selectGroupById, useRootSelector, useServerTheme } from 'app/store'
+import { FederatedGroup, RootState, loadGroupsPage, selectGroupById, useRootSelector, useServerTheme } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { BaseHomeScreen } from '../home/home_screen'
@@ -9,7 +9,7 @@ import { BaseHomeScreen } from '../home/home_screen'
 const { useParam } = createParam<{ shortname: string }>()
 
 export type GroupHomeScreenProps = {
-  screenComponent: (group: Group) => React.JSX.Element;
+  screenComponent: (group: FederatedGroup) => React.JSX.Element;
 }
 
 export function GroupHomeScreen() {

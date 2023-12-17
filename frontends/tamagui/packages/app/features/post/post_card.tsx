@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
-import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, useMedia } from '@jonline/ui';
+import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, useMedia, useTheme } from '@jonline/ui';
 import { ChevronRight, Delete, Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
@@ -56,15 +56,17 @@ export const PostCard: React.FC<PostCardProps> = ({
   onEditingChange
 }) => {
   const { dispatch, accountOrServer } = usePostDispatch(post);
+  const server = accountOrServer.server;
   const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
-  const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
+  const showServerInfo = ('serverHost' in post) && (!isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1));
   // console.log('PostCard', post.id, serverHost, accountOrServer?.server?.host);
   const mediaQuery = useMedia();
 
 
   const currentUser = useAccount()?.user;
-  const { server, primaryColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = getServerTheme(accountOrServer.server);
+  const theme = useTheme();
+  const { primaryColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = getServerTheme(server, theme);
   // const postsStatus = useRootSelector((state: RootState) => state.posts.status);
   const [editing, _setEditing] = useState(false);
   function setEditing(value: boolean) {
@@ -125,9 +127,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   const postLink = postHasWebLink ? useLink({
     href: post.link!,
   }) : {};
-  const detailsLinkId = showServerInfo 
-  ? federateId(post.id, accountOrServer.server) 
-  : post.id;
+  const detailsLinkId = showServerInfo
+    ? federateId(post.id, accountOrServer.server)
+    : post.id;
   const detailsLink = useLink({
     href: groupContext
       ? `/g/${groupContext.shortname}/p/${detailsLinkId}`
@@ -294,7 +296,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </Anchor>
 
                 {showServerInfo
-                  ? <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'}>
+                  ? <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} jc={mediaQuery.gtXxxs ? undefined : 'center'}>
                     <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs} />
                   </XStack>
                   : undefined}
