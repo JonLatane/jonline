@@ -3,7 +3,7 @@ import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZSt
 import { ChevronDown, Cog, Image as ImageIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from 'app/components';
 import { useCredentialDispatch } from 'app/hooks';
-import { JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
@@ -12,7 +12,7 @@ import { GroupsSheet } from '../groups/groups_sheet';
 import { PostMediaManager } from './post_media_manager';
 
 export type BaseCreatePostSheetProps = {
-  selectedGroup?: Group;
+  selectedGroup?: FederatedGroup;
   entityName?: string;
   doCreate: (
     post: Post,
@@ -113,7 +113,7 @@ export function BaseCreatePostSheet({
   const defaultVisibility = canPublishGlobally ? Visibility.GLOBAL_PUBLIC
     : canPublishLocally ? Visibility.SERVER_PUBLIC
       : Visibility.LIMITED;
-  const [group, setGroup] = useState<Group | undefined>(selectedGroup);
+  const [group, setGroup] = useState<FederatedGroup | undefined>(selectedGroup);
   const [visibility, _setVisibility] = useState(defaultVisibility);
   const [shareable, setShareable] = useState(!selectedGroup);
   const [title, setTitle] = useState('');

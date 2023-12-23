@@ -1,14 +1,14 @@
 import { User, UserListingType } from "@jonline/api";
 import { AccountOrServer, FederatedUser, getUsersPage, loadUsersPage } from "app/store";
 import { useEffect, useState } from "react";
-import { useAccountOrServer, useCurrentAndPinnedServers } from "./account_and_server_hooks";
-import { useAppDispatch, useAppSelector } from "./store_hooks";
-import { FederatedPaginationHooks } from "./pagination";
+import { useAccountOrServer, useCurrentAndPinnedServers } from "../account_and_server_hooks";
+import { useAppDispatch, useAppSelector } from "../store_hooks";
+import { PaginationResults } from ".";
 
 export function useUsersPage(
   listingType: UserListingType,
   page: number,
-): FederatedPaginationHooks<FederatedUser> {
+): PaginationResults<FederatedUser> {
   const dispatch = useAppDispatch();
   const servers = useCurrentAndPinnedServers();
 
@@ -32,9 +32,10 @@ export function useUsersPage(
   }, [users, loadingUsers]);
 
   return {
-    results: users,
+    results: users ?? [],
     loading: loadingUsers,
     reload: reloadUsers,
+    firstPageLoaded: users !== undefined,
   };
 }
 

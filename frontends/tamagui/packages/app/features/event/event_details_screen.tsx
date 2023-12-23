@@ -1,7 +1,7 @@
 import { EventInstance } from '@jonline/api';
 import { Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui';
-import { useCredentialDispatch, useLocalConfiguration } from 'app/hooks';
-import { RootState, loadEventByInstance, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
+import { RootState, getFederated, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { isPastInstance, setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
@@ -34,18 +34,20 @@ export function EventDetailsScreen() {
   const [pathEventId] = useParam('eventId');
   const [pathInstanceId] = useParam('instanceId');
   const [shortname] = useParam('shortname');
+  const currentServer = useServer();
+  const { id: serverInstanceId, serverHost } = parseFederatedId(pathInstanceId ?? '', currentServer?.host);
+  const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
 
   const updateParams = useUpdateParams();
 
   const instanceId = pathInstanceId && pathInstanceId.length > 0 ? pathInstanceId : pathEventId;
 
-  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
+  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
   const groupId = useRootSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
   const group = useRootSelector((state: RootState) =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
-  const { dispatch, accountOrServer } = useCredentialDispatch();
   const eventsState = useRootSelector((state: RootState) => state.events);
   const postsState = useRootSelector((state: RootState) => state.posts);
 
@@ -80,8 +82,10 @@ export function EventDetailsScreen() {
   const showReplyArea = subjectEvent != undefined && editingPosts.length == 0
     && (newRsvpMode === undefined);
 
-  const failedToLoadEvent = instanceId != undefined &&
-    eventsState.failedInstanceIds.includes(instanceId!);
+  // const failedToLoadEvent = instanceId != undefined &&
+  //   eventsState.failedInstanceIds.includes(instanceId!);
+  const failedToLoadEvent = instanceId && getFederated(eventsState.failedInstanceIds, server).includes(serverInstanceId!);
+
   // console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
 
   function onEventInstancesUpdated(instances: EventInstance[]) {

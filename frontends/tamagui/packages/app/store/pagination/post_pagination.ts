@@ -1,9 +1,8 @@
-import { Event, EventListingType, Group, GroupListingType, Post, PostListingType } from "@jonline/api";
-import { Dictionary } from "@reduxjs/toolkit";
-import { EventsState, FederatedPost, GroupsState, PostsState, selectEventById, selectGroupById, selectPostById } from "../modules";
+import { PostListingType } from "@jonline/api";
+import { getFederated } from "../federation";
+import { FederatedPost, GroupsState, PostsState, selectPostById } from "../modules";
 import { RootState } from "../store";
 import { AccountOrServer } from "../types";
-import { getFederated } from "../federation";
 
 
 
@@ -21,7 +20,6 @@ export function getPostPages(posts: PostsState, listingType: PostListingType, th
     const pagePosts = getPostsPage(posts, listingType, page, servers);
     result.push(...pagePosts);
   }
-  // debugger;
   return result;
 }
 
@@ -42,10 +40,8 @@ export function getHasPostsPage(posts: PostsState, listingType: PostListingType,
   });
 }
 export function getHasMorePostPages(posts: PostsState, listingType: PostListingType, currentPage: number, servers: AccountOrServer[]): boolean {
-  return servers.some(server => ((posts.postPages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
+  return servers.some(server => server.server && ((posts.postPages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
 }
-
-
 
 function getGroupPostsPage(state: RootState, groupId: string, page: number): FederatedPost[] {
   const { posts, groups } = state;

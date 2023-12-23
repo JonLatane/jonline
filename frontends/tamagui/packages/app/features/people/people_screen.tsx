@@ -28,8 +28,8 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const isForGroupMembers = listingType === undefined;
 
   const servers = useCurrentAndPinnedServers();
-  const { results: users, loading: loadingUsers, reload: reloadUsers } = isForGroupMembers
-    ? { results: [], loading: false, reload: () => { } }
+  const { results: users, loading: loadingUsers, reload: reloadUsers, firstPageLoaded } = isForGroupMembers
+    ? { results: [], loading: false, reload: () => { }, firstPageLoaded: true }
     : useUsersPage(listingType, 0);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
@@ -50,28 +50,16 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
 
 
   useEffect(() => {
-    if (users !== undefined && showScrollPreserver) {
+    if (firstPageLoaded && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
     }
-  }, [users, showScrollPreserver])
-
-
-  function onHomePressed() {
-    if (isClient && window.scrollY > 0) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      reloadUsers();
-    }
-  }
-
-  // console.log('selectedGroup', selectedGroup)
+  }, [firstPageLoaded, showScrollPreserver])
 
   return (
     <TabsNavigation appSection={selectedGroup ? AppSection.MEMBERS : AppSection.PEOPLE} selectedGroup={selectedGroup}
       appSubsection={listingType == UserListingType.FOLLOW_REQUESTS ? AppSubsection.FOLLOW_REQUESTS : undefined}
       groupPageForwarder={(group) => `/g/${group.shortname}/members`}
       withServerPinning
-    // customHomeAction={onHomePressed}
     >
       {loadingUsers ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>

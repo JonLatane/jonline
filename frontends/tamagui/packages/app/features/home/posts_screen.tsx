@@ -18,8 +18,8 @@ export function PostsScreen() {
 }
 
 export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
-  const servers = useCurrentAndPinnedServers();
-  const postsState = useRootSelector((state: RootState) => state.posts);
+  // const servers = useCurrentAndPinnedServers();
+  // const postsState = useRootSelector((state: RootState) => state.posts);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
@@ -38,7 +38,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   const mainPostPages = usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPage);
   const groupPostPages = useGroupPostPages(selectedGroup?.id, currentPage);
 
-  const { posts, loadingPosts, hasMorePages, firstPageLoaded } = selectedGroup
+  const { results: posts, loading: loadingPosts, hasMorePages, firstPageLoaded } = selectedGroup
     ? groupPostPages
     : mainPostPages;
 

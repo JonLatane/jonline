@@ -1,5 +1,5 @@
 import { useIsVisible } from 'app/hooks/use_is_visible';
-import { deleteEvent, updateEvent, useServerTheme } from "app/store";
+import { FederatedEvent, deleteEvent, updateEvent, useServerTheme } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Group, Location } from "@jonline/api";
@@ -23,7 +23,7 @@ import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
 
 interface Props {
-  event: Event;
+  event: FederatedEvent;
   selectedInstance?: EventInstance;
   isPreview?: boolean;
   groupContext?: Group;

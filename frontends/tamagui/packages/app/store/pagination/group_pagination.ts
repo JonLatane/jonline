@@ -35,6 +35,6 @@ export function getHasGroupsPage(groups: GroupsState, listingType: GroupListingT
   // return (groups.pages[listingType] ?? {})[page] != undefined;
 }
 export function getHasMoreGroupPages(groups: GroupsState, listingType: GroupListingType, currentPage: number, servers: AccountOrServer[]): boolean {
-  return servers.some(server => ((groups.pages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
+  return servers.some(server => server.server && ((groups.pages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
   // return ((groups.pages[listingType] ?? {})[currentPage]?.length ?? 0) > 0;
 }

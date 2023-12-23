@@ -1,10 +1,10 @@
 
-// export function is
+import { FederatedEntity } from "app/store";
 
-import { Federated, FederatedEntity, HasIdFromServer } from "app/store";
-
-export type FederatedPaginationHooks<F extends FederatedEntity<any>> = {
-  results: F[] | undefined;
+export type PaginationResults<F extends FederatedEntity<any>> = {
+  results: F[];
   loading: boolean;
   reload: () => void;
+  hasMorePages?: boolean;
+  firstPageLoaded?: boolean;
 };

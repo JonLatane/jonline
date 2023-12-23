@@ -12,7 +12,7 @@ import {
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
 import { createFederated, Federated, federatedEntities, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, setFederated } from "../federation";
-import { createFederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
+import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
 import { store } from "../store";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
 import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup } from "./group_actions";
@@ -20,7 +20,7 @@ import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, del
 export type FederatedGroup = FederatedEntity<Group>;
 
 export interface GroupsState {
-  pagesStatus: Federated<"unloaded" | "loading" | "loaded" | "errored">;
+  pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
   entities: Dictionary<FederatedGroup>;
   // By GroupListingType -> page (as a number) -> groupIds

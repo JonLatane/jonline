@@ -1,67 +1,81 @@
 import { Event, EventListingType, TimeFilter } from "@jonline/api";
-import { useCredentialDispatch } from "app/hooks";
+import { useCredentialDispatch, useCurrentAndPinnedServers } from "app/hooks";
 
-import { RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, useRootSelector } from "app/store";
+import { FederatedEvent, RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
 import { PostPageParams, onPageLoaded } from "./post_pagination_hooks";
+import { PaginationResults } from "./pagination_hooks";
 
 export type EventPageParams = PostPageParams & { filter?: TimeFilter };
 
-export function useEventPages(listingType: EventListingType, throughPage: number, params?: EventPageParams) {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+export function useEventPages(
+  listingType: EventListingType,
+  throughPage: number,
+  params?: EventPageParams
+): PaginationResults<FederatedEvent> {
+  const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
+  const servers = useCurrentAndPinnedServers();
   const eventsState = useRootSelector((state: RootState) => state.events);
-  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [loading, setLoadingEvents] = useState(false);
 
   const timeFilter = serializeTimeFilter(params?.filter);
 
-  const events: Event[] = getEventPages(eventsState, listingType, timeFilter, throughPage);
+  const results: FederatedEvent[] = getEventPages(eventsState, listingType, timeFilter, throughPage, servers);
 
-  const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0);
+  const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0, servers);
   useEffect(() => {
-    if (!firstPageLoaded && eventsState.loadStatus !== 'loading' && !loadingEvents) {
-      if (!accountOrServer.server) return;
-
-      console.log("Loading events...");
+    if (!loading && someUnloaded(eventsState.pagesStatus, servers)) {
       setLoadingEvents(true);
-      reloadEvents();
+      console.log("Loading events...");
+      reload();
     }
-  });
-  const hasMorePages = getHasMoreEventPages(eventsState, listingType, timeFilter, throughPage);
+  }, [loading, eventsState.pagesStatus, servers.map(s => s.server?.host).join(',')]);
+  const hasMorePages = getHasMoreEventPages(eventsState, listingType, timeFilter, throughPage, servers);
 
-  function reloadEvents() {
-    dispatch(loadEventsPage({ ...accountOrServer, listingType, filter: params?.filter })).then(onPageLoaded(setLoadingEvents, params?.onLoaded));
+  function reload() {
+    // dispatch(loadEventsPage({ ...accountOrServer, listingType, filter: params?.filter })).then(onPageLoaded(setLoadingEvents, params?.onLoaded));
+    console.log('Reloading events for servers', servers.map(s => s.server?.host));
+    Promise.all(servers.map(server =>
+      dispatch(loadEventsPage({ ...server, listingType })))
+    ).then((results) => {
+      console.log("Loaded events", results);
+      // finishPagination(setLoadingPosts, params?.onLoaded);
+      onPageLoaded(setLoadingEvents, params?.onLoaded);
+    });
   }
 
-  return { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded };
+  return { results, loading, reload, hasMorePages, firstPageLoaded };
 }
 
-export function useGroupEventPages(groupId: string, throughPage: number, params?: EventPageParams) {
+export function useGroupEventPages(groupId: string | undefined, throughPage: number, params?: EventPageParams): PaginationResults<FederatedEvent> {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const state = useRootSelector((state: RootState) => state);
-  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [loading, setLoadingEvents] = useState(false);
+
+  if (!groupId) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
 
   const timeFilter = serializeTimeFilter(params?.filter);
 
-  const events: Event[] = getGroupEventPages(state, groupId, timeFilter, throughPage);
+  const results: FederatedEvent[] = getGroupEventPages(state, groupId, timeFilter, throughPage);
 
   const firstPageLoaded = getHasGroupEventsPage(state, groupId, timeFilter, 0);
   useEffect(() => {
-    if (!firstPageLoaded && !loadingEvents) {
+    if (!firstPageLoaded && !loading) {
       if (!accountOrServer.server) return;
 
       console.log("Loading events...");
       setLoadingEvents(true);
-      reloadEvents();
+      reload();
     }
-  }, [loadingEvents, optServerID(accountOrServer.server), groupId, timeFilter]);
+  }, [loading, optServerID(accountOrServer.server), groupId, timeFilter]);
   const hasMorePages = getHasMoreGroupEventPages(state.groups, groupId, timeFilter, throughPage);
 
-  function reloadEvents() {
-    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId, filter: params?.filter }))
+  function reload() {
+    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId: groupId!, filter: params?.filter }))
       .then(onPageLoaded(setLoadingEvents, params?.onLoaded));
   }
 
-  console.log("useGroupEventPages", groupId, throughPage, events, hasMorePages, firstPageLoaded);
-  return { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded };
+  console.log("useGroupEventPages", groupId, throughPage, results, hasMorePages, firstPageLoaded);
+  return { results, loading, reload, hasMorePages, firstPageLoaded };
 }

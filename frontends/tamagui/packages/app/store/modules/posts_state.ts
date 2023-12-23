@@ -10,7 +10,7 @@ import {
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
-import { GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
+import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { loadEvent, loadEventsPage } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
 import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, locallyUpsertPost, replyToPost } from './post_actions';
@@ -19,8 +19,7 @@ export * from './post_actions';
 
 export type FederatedPost = FederatedEntity<Post>;
 export interface PostsState {
-  pagesStatus: Federated<"unloaded" | "loading" | "loaded" | "errored">;
-  draftPost: DraftPost;
+  pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
   entities: Dictionary<FederatedPost>;
   postPages: Federated<GroupedPages>;
@@ -39,9 +38,6 @@ export const postsAdapter: EntityAdapter<FederatedPost> = createEntityAdapter<Fe
 
 const initialState: PostsState = {
   pagesStatus: createFederatedPagesStatus(),
-  draftPost: {
-    newPost: Post.fromPartial({})
-  },
   failedPostIds: createFederated([]),
   postPages: createFederated({}),
   ...postsAdapter.getInitialState(),

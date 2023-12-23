@@ -1,34 +1,43 @@
 import { Event, EventListingType } from "@jonline/api";
-import { EventsState, GroupsState, selectEventById } from "../modules";
-import { RootState } from "../store";
+import { EventsState, FederatedEvent, GroupsState, selectEventById } from "../modules";
+import { RootState} from "../store";
+import { AccountOrServer } from "../types";
+import { getFederated } from "../federation";
 
 
-function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number): Event[] {
-  const pageInstanceIds: string[] = ((events.eventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
-  const pageEvents = instancesToEvents(events, pageInstanceIds);
-  return pageEvents;
-}
-
-export function getEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number): Event[] {
-  const result: Event[] = [];
+export function getEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number, servers: AccountOrServer[]): FederatedEvent[] {
+  const result: FederatedEvent[] = [];
   for (let page = 0; page <= throughPage; page++) {
-    const pageEvents = getEventsPage(events, listingType, timeFilter, page);
-    // debugger;
-    result.push(...pageEvents.filter(e => e.post?.author != undefined));
+    const pagePosts = getEventsPage(events, listingType, timeFilter, page, servers);
+    result.push(...pagePosts);
   }
   return result;
 }
 
-export function getHasEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number): boolean {
-  return ((events.eventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] != undefined;
+function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): FederatedEvent[] {
+  const pageInstanceIds: string[] = servers.flatMap(server => {
+    const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
+    return ((serverEventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
+  });
+
+  const pageEvents = instancesToEvents(events, pageInstanceIds);
+  return pageEvents;
 }
 
-export function getHasMoreEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, currentPage: number): boolean {
-  return (((events.eventInstancePages[listingType] ?? {})[timeFilter] ?? {})[currentPage]?.length ?? 0) > 0;
+export function getHasEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): boolean {
+  return !servers.some(server => {
+    const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
+    return (serverEventInstancePages[listingType] ?? {})[page] === undefined;
+  });
 }
 
-export function getGroupEventPages(state: RootState, groupId: string, timeFilter: string, throughPage: number): Event[] {
-  const result: Event[] = [];
+export function getHasMoreEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, currentPage: number, servers: AccountOrServer[]): boolean {
+  return servers.some(server => server.server && ((events.eventInstancePages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
+
+}
+
+export function getGroupEventPages(state: RootState, groupId: string, timeFilter: string, throughPage: number): FederatedEvent[] {
+  const result: FederatedEvent[] = [];
 
   for (let page = 0; page <= throughPage; page++) {
     const pageEvents = getGroupEventsPage(state, groupId, timeFilter, page);
@@ -38,7 +47,7 @@ export function getGroupEventPages(state: RootState, groupId: string, timeFilter
   return result;
 }
 
-function getGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): Event[] {
+function getGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): FederatedEvent[] {
   const { events, groups } = state;
   const pageInstanceIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
   const pageEvents = instancesToEvents(events, pageInstanceIds);
@@ -56,7 +65,7 @@ function instancesToEvents(events: EventsState, instanceIds: string[]) {
     if (!event) return undefined;
 
     return { ...event, instances: event.instances.filter(i => i.id == instanceId) };
-  }).filter(p => p).map(p => p as Event);
+  }).filter(p => p).map(p => p as FederatedEvent);
 }
 
 export function getHasGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): boolean {

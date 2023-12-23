@@ -1,6 +1,6 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post } from '@jonline/api';
 import { Heading, Paragraph, Text, XStack } from '@jonline/ui';
-import { createEvent, createGroupPost, loadEventsPage, loadGroupEventsPage } from 'app/store';
+import { FederatedGroup, createEvent, createGroupPost, federatedEntity, loadEventsPage, loadGroupEventsPage } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
@@ -13,7 +13,7 @@ import { LocationControl } from './location_control';
 export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
 export type CreateEventSheetProps = {
-  selectedGroup?: Group;
+  selectedGroup?: FederatedGroup;
 };
 
 export const supportDateInput = (m: moment.Moment) => m.local().format('YYYY-MM-DDTHH:mm');
@@ -51,7 +51,7 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   const invalid = endDateInvalid;
 
   function previewEvent(post: Post) {
-    return Event.create({
+    const event = Event.create({
       post: post,
       instances: [
         EventInstance.create({
@@ -61,7 +61,8 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
         }),
       ],
     });
-  }
+    return federatedEntity(event, accountOrServer.server);
+  };
 
   function doCreate(
     post: Post,

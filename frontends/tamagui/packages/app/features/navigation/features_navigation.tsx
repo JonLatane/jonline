@@ -6,7 +6,7 @@ import { RootState, getFederated, getUsersPage, loadUsersPage, useRootSelector, 
 import { themedButtonBackground } from 'app/utils';
 import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
-import { useUsersPage } from '../../hooks/user_pagination_hooks';
+import { useUsersPage } from '../../hooks/pagination/user_pagination_hooks';
 
 export enum AppSection {
   HOME = 'home',

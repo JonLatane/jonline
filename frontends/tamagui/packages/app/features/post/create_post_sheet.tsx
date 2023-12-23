@@ -1,12 +1,12 @@
 import { Group, Permission, Post } from '@jonline/api';
 import { useCredentialDispatch } from 'app/hooks';
-import { createGroupPost, createPost } from 'app/store';
+import { FederatedGroup, createGroupPost, createPost } from 'app/store';
 import React from 'react';
 import { BaseCreatePostSheet } from './base_create_post_sheet';
 import PostCard from './post_card';
 
 export type CreatePostSheetProps = {
-  selectedGroup?: Group;
+  selectedGroup?: FederatedGroup;
 };
 
 export function CreatePostSheet({ selectedGroup }: CreatePostSheetProps) {

@@ -16,6 +16,7 @@ import { TabsNavigation } from '../navigation/tabs_navigation';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
+import { someUnloaded } from '../../store/pagination/federated_pages_status';
 
 const { useParam } = createParam<{ endsAfter: string }>()
 export function EventsScreen() {
@@ -51,9 +52,13 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   });
 
   const [currentPage, setCurrentPage] = useState(0);
-  const { events, loadingEvents, reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
-    ? useGroupEventPages(selectedGroup.id, currentPage, { filter: timeFilter })
-    : useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, currentPage, { filter: timeFilter });
+  const mainEventPages = useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, currentPage);
+  const groupEventPages = useGroupEventPages(selectedGroup?.id, currentPage);
+
+  const { results: events, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
+    ? groupEventPages
+    : mainEventPages;
+
 
   useEffect(() => {
     if (firstPageLoaded) {
@@ -141,7 +146,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
           </AnimatePresence>
         </YStack>
       </StickyBox>
-      {eventsState.loadStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+      {loadingEvents ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
             top={dimensions.height / 2 - 50}
@@ -167,7 +172,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 </XStack>
                 <PaginationIndicator
                   page={currentPage}
-                  loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
+                  loadingPage={loadingEvents}
                   hasNextPage={hasMorePages}
                   loadNextPage={() => setCurrentPage(currentPage + 1)} />
               </YStack>
@@ -177,7 +182,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 })}
                 <PaginationIndicator
                   page={currentPage}
-                  loadingPage={loadingEvents || eventsState.loadStatus == 'loading'}
+                  loadingPage={loadingEvents}
                   hasNextPage={hasMorePages}
                   loadNextPage={() => setCurrentPage(currentPage + 1)} />
               </YStack>

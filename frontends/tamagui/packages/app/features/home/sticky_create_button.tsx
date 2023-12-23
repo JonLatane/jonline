@@ -1,8 +1,8 @@
-import { Group, Permission } from '@jonline/api';
+import { Permission } from '@jonline/api';
 import { Button, Heading, XStack, YStack, isWeb } from '@jonline/ui';
 import { Send as SendIcon } from '@tamagui/lucide-icons';
 import { useCredentialDispatch } from 'app/hooks';
-import { useServerTheme } from 'app/store';
+import { FederatedGroup, useServerTheme } from 'app/store';
 import React from 'react';
 import StickyBox from 'react-sticky-box';
 import { AddAccountSheet } from '../accounts/add_account_sheet';
@@ -12,7 +12,7 @@ import { CreateEventSheet } from '../event/create_event_sheet';
 import { CreatePostSheet } from '../post/create_post_sheet';
 
 interface StickyCreateButtonProps {
-  selectedGroup?: Group;
+  selectedGroup?: FederatedGroup;
   showPosts?: boolean;
   showEvents?: boolean;
   // replyingToPath: string[];

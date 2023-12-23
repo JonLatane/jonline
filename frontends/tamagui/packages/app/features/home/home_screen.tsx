@@ -43,12 +43,12 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
   const [currentPostsPage, setCurrentPostsPage] = useState(0);
 
-  const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } = selectedGroup
+  const { results: posts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } = selectedGroup
     ? useGroupPostPages(selectedGroup.id, currentPostsPage)
     : usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPostsPage);
 
   // Only load the first page of events on this screen.
-  const { events, loadingEvents, reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
+  const { results: events, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
     ? useGroupEventPages(selectedGroup.id, 0)
     : useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, 0);
 
@@ -117,7 +117,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             >
               {events.length == 0
                 ? eventsLoaded
-                  ? <YStack width='100%' maw={600} jc="center" ai="center">
+                  ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
                     <Heading size='$5' mb='$3'>No events found.</Heading>
                     <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                   </YStack>
