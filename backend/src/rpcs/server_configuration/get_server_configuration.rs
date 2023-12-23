@@ -18,13 +18,14 @@ pub fn get_server_configuration(
     Ok(result)
 }
 
+/// Provides access to the Jonline instance's server configuration in gRPC format.
 pub fn get_server_configuration_proto(
     conn: &mut PgPooledConnection,
 ) -> Result<protos::ServerConfiguration, Status> {
     Ok(get_server_configuration_model(conn)?.to_proto())
 }
 
-
+/// Provides access to the Jonline instance's server configuration as loaded by Diesel from Postgres (so JSON is unstructured).
 pub fn get_server_configuration_model(
     conn: &mut PgPooledConnection,
 ) -> Result<models::ServerConfiguration, Status> {
