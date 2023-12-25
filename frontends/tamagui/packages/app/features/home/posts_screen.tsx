@@ -1,6 +1,6 @@
 import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { useCurrentAndPinnedServers } from 'app/hooks';
+import { useCurrentAndPinnedServers, usePaginatedRendering } from 'app/hooks';
 import { useGroupPostPages, usePostPages } from 'app/hooks/pagination/post_pagination_hooks';
 import { RootState, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
@@ -38,9 +38,12 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   const mainPostPages = usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPage);
   const groupPostPages = useGroupPostPages(selectedGroup?.id, currentPage);
 
-  const { results: posts, loading: loadingPosts, hasMorePages, firstPageLoaded } = selectedGroup
+  const { results: allPosts, loading: loadingPosts, hasMorePages, firstPageLoaded } = selectedGroup
     ? groupPostPages
     : mainPostPages;
+
+  const pagination = usePaginatedRendering(allPosts, 10);
+  const paginatedPosts = pagination.results;
 
   // console.log('mainPostPages', loadingPosts, mainPostPages);
 
@@ -68,19 +71,16 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' mt='$3' maw={800} space>
         {firstPageLoaded
-          ? posts.length == 0
+          ? allPosts.length == 0
             ? <YStack width='100%' maw={600} jc="center" ai="center">
               <Heading size='$5' mb='$3'>No posts found.</Heading>
               <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : <YStack w='100%'>
-              {posts.map((post) => {
+              {paginatedPosts.map((post) => {
                 return <PostCard key={`post-${federatedId(post)}`} post={post} isPreview />;
               })}
-              <PaginationIndicator page={currentPage} loadingPage={loadingPosts || loadingPosts}
-                hasNextPage={hasMorePages}
-                loadNextPage={() => setCurrentPage(currentPage + 1)}
-              />
+              <PaginationIndicator {...pagination}/>
             </YStack>
           : undefined
         }

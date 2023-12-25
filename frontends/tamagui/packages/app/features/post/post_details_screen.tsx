@@ -46,7 +46,7 @@ export function PostDetailsScreen() {
   // const [chatUI, setChatUI] = useState(false);
   const showReplyArea = subjectPost != undefined && editingPosts.length == 0;
 
-  const failedToLoadPost = serverPostId && getFederated(postsState.failedPostIds, server).includes(serverPostId!);
+  const failedToLoadPost = serverPostId && postsState.failedPostIds.includes(federateId(serverPostId, server));
 
   useEffect(() => {
     if (serverPostId && server) {

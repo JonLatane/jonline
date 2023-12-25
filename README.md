@@ -5,9 +5,6 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 
 [![Buy me a coffee!](https://img.shields.io/badge/🙏%20buy%20me%20a%20coffee%20☕️-venmo-information?style=for-the-badge&labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
 
-**November 2023 Server Costs:**
-![November 2023 Server Costs](docs/digitalocean-invoice-2023-nov.png)
-
 ## Deployments
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
@@ -27,6 +24,7 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
+    - [Cost of Operation](#cost-of-operation)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Features Overview](#features-overview)
     - [Jonline Usernames and IDs](#jonline-usernames-and-ids)
@@ -115,6 +113,11 @@ In addition to Users, Posts, and Events, which could all be "described" by Activ
 The hope is to build more useful business objects - yes, your boring SalesForce/NetSuite/SAP type stuff - into this social protocol. So Jonline Payments, Products, Subscriptions, and who knows what else could, eventually, be gradually implemented atop the Jonline protocol, with all the same clear, concise, documentation, cross-language portability, and other benefits it offers.
 
 All this is to say: it should be pretty straightforward to create, say, Ruby bindings for Jonline, and use them in Mastodon to make it work as a no-Events-support, no-Media-support Jonline instance. Or vice versa. This is back burner research, though. Get in contact if you're interested in contributing/learning to do this type of work!
+
+### Cost of Operation
+
+**November 2023 Server Costs:** (3 instances)
+![November 2023 Server Costs](docs/digitalocean-invoice-2023-nov.png)
 
 ### Why *not* Jonline?
 * It's not done.

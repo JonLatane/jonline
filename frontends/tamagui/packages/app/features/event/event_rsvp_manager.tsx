@@ -1,10 +1,10 @@
-import { accountOrServerId, getCredentialClient, useServerTheme } from "app/store";
+import { FederatedEvent, accountOrServerId, getCredentialClient, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
-import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useLocalConfiguration } from "app/hooks";
+import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
@@ -14,7 +14,7 @@ import { useGroupContext } from "../../contexts/group_context";
 import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
 
 export interface EventRsvpManagerProps {
-  event: Event;
+  event: FederatedEvent;
   instance: EventInstance;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
@@ -35,7 +35,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const mediaQuery = useMedia();
   const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
 
-  let { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useFederatedDispatch(event);
   const { account } = accountOrServer;
   const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
 
@@ -749,9 +749,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 (!hasPendingAttendances && interestedRsvpCount === 0 && invitedRsvpCount === 0)
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' color={primaryAnchorColor}>Going</Paragraph>
-                  <Paragraph size='$1' ml='auto'>
-                    {formatCount(goingRsvpCount, goingAttendeeCount)}
-                  </Paragraph>
+                  {loadFailed
+                    ? <XStack ml='auto' my='auto'><AlertTriangle size='$1' /></XStack>
+                    : <Paragraph size='$1' ml='auto'>
+                      {formatCount(goingRsvpCount, goingAttendeeCount)}
+                    </Paragraph>}
                 </XStack>
                 : undefined}
               {interestedRsvpCount > 0

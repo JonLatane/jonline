@@ -1,4 +1,4 @@
-import { Post } from "@jonline/api";
+import { Post, Event } from "@jonline/api";
 import {
   Dictionary,
   Draft,
@@ -11,9 +11,9 @@ import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
 import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
-import { loadEvent, loadEventsPage } from "./event_actions";
+import { createEvent, loadEvent, loadEventsPage, updateEvent } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
-import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, locallyUpsertPost, replyToPost } from './post_actions';
+import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
 import { loadUserPosts } from "./user_actions";
 export * from './post_actions';
 
@@ -23,7 +23,7 @@ export interface PostsState {
   ids: EntityId[];
   entities: Dictionary<FederatedPost>;
   postPages: Federated<GroupedPages>;
-  failedPostIds: Federated<string[]>;
+  failedPostIds: string[];
 }
 
 export interface DraftPost {
@@ -38,7 +38,7 @@ export const postsAdapter: EntityAdapter<FederatedPost> = createEntityAdapter<Fe
 
 const initialState: PostsState = {
   pagesStatus: createFederatedPagesStatus(),
-  failedPostIds: createFederated([]),
+  failedPostIds: [],
   postPages: createFederated({}),
   ...postsAdapter.getInitialState(),
 };
@@ -71,10 +71,10 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         state.postPages[defaultPostListingType][0] = [action.payload.id, ...firstPage];
       }
     });
-    builder.addCase(locallyUpsertPost.fulfilled, (state, action) => {
-      // state.status = "loaded";
-      postsAdapter.upsertOne(state, federatedPayload(action));
-    });
+    // builder.addCase(locallyUpsertPost.fulfilled, (state, action) => {
+    //   // state.status = "loaded";
+    //   postsAdapter.upsertOne(state, federatedPayload(action));
+    // });
     // builder.addCase(createPost.rejected, (state, action) => {
     //   setFederated(state.status, action, "errored");
     // });
@@ -123,24 +123,8 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       if (!serverPostPages[listingType] || page === 0) serverPostPages[listingType] = [];
 
       const postPages: PaginatedIds = serverPostPages[listingType]!;
-      // Sensible approach:
       postPages[page] = postIds;
       setFederated(state.postPages, action, serverPostPages);
-
-      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
-      // let initialPage: number = 0;
-      // while (action.meta.arg.page && postPages[initialPage]) {
-      //   initialPage++;
-      // }
-      // const chunkSize = 7;
-      // for (let i = 0; i < postIds.length; i += chunkSize) {
-      //   const chunk = postIds.slice(i, i + chunkSize);
-      //   state.postPages[listingType]![initialPage + (i / chunkSize)] = chunk;
-      // }
-      // if (state.postPages[listingType]![0] == undefined) {
-      //   state.postPages[listingType]![0] = [];
-      // }
-
     });
     builder.addCase(loadPostsPage.rejected, (state, action) => {
       setFederated(state.pagesStatus, action, "errored");
@@ -151,8 +135,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       postsAdapter.upsertOne(state, { ...federatedPost, replies: oldPost?.replies ?? action.payload.replies });
     });
     builder.addCase(loadPost.rejected, (state, action) => {
-      const failedPostIds = getFederated(state.failedPostIds, action);
-      setFederated(state.failedPostIds, action, [...failedPostIds, (action.meta.arg as LoadPost).id]);
+      state.failedPostIds.push(federateId((action.meta.arg as LoadPost).id, action));
     });
     builder.addCase(loadPostReplies.fulfilled, (state, action) => {
       console.log('loaded post replies', action.payload)
@@ -194,9 +177,13 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const { posts } = action.payload;
       upsertPosts(state, federatedEntities(posts, action));
     });
-    builder.addCase(loadEvent.fulfilled, (state, action) => {
+
+    const saveEventPost = (state: PostsState, action: PayloadAction<Event, any, any>) => {
       postsAdapter.upsertOne(state, federatedEntity(action.payload.post!, action));
-    });
+    };
+    builder.addCase(loadEvent.fulfilled, saveEventPost);
+    builder.addCase(updateEvent.fulfilled, saveEventPost);
+    builder.addCase(createEvent.fulfilled, saveEventPost);
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {
       const posts = action.payload.events.map(event => event.post!);
       upsertPosts(state, federatedEntities(posts, action));

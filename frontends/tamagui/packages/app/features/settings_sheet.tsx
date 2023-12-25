@@ -83,7 +83,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </YStack>
               </XStack>
 
-              <Heading size='$4' mt='$3'>Feature Navigation</Heading>
+              <Heading size='$4' mt='$3'>Feature Navigation UI</Heading>
               <Paragraph o={0.5} size='$1'>Posts, Events, People, Latest, etc.</Paragraph>
               <ToggleRow name='Auto Feature Navigation'
                 description='Automatically enable/disable Inline Feature Navigation based on screen size.'
@@ -100,18 +100,17 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
 
 
-              <Heading size='$3' mt='$3'>Multi-Server</Heading>
+              <Heading size='$3' mt='$3'>Federation</Heading>
+              <ToggleRow name='Show Pinned Server UI' value={app.showPinnedServers} setter={setShowPinnedServers} autoDispatch
+                description='Show pinned servers where supported (currently, the People screen, and only partially).'
+              />
               <ToggleRow name='Allow Server Selection'
-                description={serverCount !== 1 ? 'Delete other servers to disable this setting.' : undefined}
+                description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
                 disabled={serverCount !== 1}
                 value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
               <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
 
-              <Heading size='$3' mt='$3'>Micro-Federation (Early Development)</Heading>
-              <ToggleRow name='Show Pinned Server UI' value={app.showPinnedServers} setter={setShowPinnedServers} autoDispatch
-              description='Show pinned servers where supported (currently, the People screen, and only partially).'
-               />
               {/* <Heading size='$3' mt='$3'>Colors (Testing)</Heading>
               <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />
               <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch /> */}

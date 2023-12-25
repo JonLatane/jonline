@@ -115,9 +115,10 @@ async function doCreateClient(host: string, server: JonlineServer, args?: Jonlin
     console.warn("Created Jonline client with different frontend host than server host. Correcting server host.");
   }
 
+  clients.set(serverId, client);
+
   const updatedServer = { ...server, serviceVersion, serverConfiguration };
   if (!args?.skipUpsert) {
-    clients.set(serverId, client);
     console.log("doCreateClient: upserting server", updatedServer);
     // debugger;
     store.dispatch(upsertServer(updatedServer));

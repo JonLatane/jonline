@@ -32,7 +32,7 @@ export function useServerTheme(): ServerTheme {
   const theme = useTheme();
   return getServerTheme(server, theme);
 }
-export function getServerTheme(server?: JonlineServer, theme?: any): ServerTheme {
+export function getServerTheme(server: JonlineServer | undefined, theme?: any): ServerTheme {
   const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;
 

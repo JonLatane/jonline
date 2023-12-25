@@ -1,6 +1,4 @@
-export * from './pagination/event_pagination_hooks';
-export * from './pagination/post_pagination_hooks';
-export * from './pagination/group_pagination_hooks';
+export * from './pagination';
 
 export * from './use_is_visible';
 export * from './use_media_url';

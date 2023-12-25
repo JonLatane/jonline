@@ -1,12 +1,12 @@
 import { Group, WebUserInterface } from "@jonline/api";
 import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
+import { GroupContextProvider, NavigationContextProvider, NavigationContextType } from 'app/contexts';
 import { useAppDispatch, useLocalConfiguration } from "app/hooks";
 import { FederatedGroup, JonlineServer, RootState, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
-import { GroupContextProvider } from "../../contexts/group_context";
 import { AccountsSheet } from "../accounts/accounts_sheet";
 import { GroupsSheet } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
@@ -27,6 +27,7 @@ export type TabsNavigationProps = {
   groupPageExiter?: () => void;
   withServerPinning?: boolean;
 };
+
 
 export function TabsNavigation({
   children,
@@ -58,6 +59,9 @@ export function TabsNavigation({
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
   const backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}FF`;
+  const [pinnedServersHeight, setPinnedServersHeight] = useState(0);
+
+  const navigationContext: NavigationContextType = { pinnedServersHeight, setPinnedServersHeight };
 
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
@@ -97,69 +101,74 @@ export function TabsNavigation({
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 
-    <GroupContextProvider value={selectedGroup}>
+    <NavigationContextProvider value={navigationContext}>
+      <GroupContextProvider value={selectedGroup}>
 
-      <YStack backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
-        <StickyBox style={{ zIndex: 10, width: '100%' }} className="blur">
-          <YStack backgroundColor={backgroundColor} opacity={0.92}>
-            <XStack space="$1" marginVertical={5}>
-              <XStack w={5} />
-              <Button //size="$4"
-                className="home-button"
-                py={0}
-                px={
-                  shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
-                    !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
-                height={48}
-                width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
+        <YStack backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
+          <StickyBox style={{ zIndex: 10, width: '100%' }} className='blur'>
+            <YStack backgroundColor={backgroundColor} opacity={0.92}>
+              <XStack space="$1" marginVertical={5}>
+                <XStack w={5} />
+                <Button //size="$4"
+                  className="home-button"
+                  py={0}
+                  px={
+                    shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
+                      !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
+                  height={48}
+                  width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
 
-                overflow='hidden'
-                icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
-                {...homeProps}
-              >
-                {renderHomeButtonChildren
-                  ? <ServerNameAndLogo shrinkToSquare={shrinkHomeButton}
-                    fallbackToHomeIcon
-                    server={primaryServer} />
-                  : undefined}
-              </Button>
-              {!scrollGroupsSheet
-                ? <XStack space='$2' ml='$1' my='auto' className='main-groups-button'>
-                  <GroupsSheet key='main' selectedGroup={selectedGroup}
-                    groupPageForwarder={groupPageForwarder} />
-                </XStack>
-                : undefined}
-              <ScrollView horizontal>
+                  overflow='hidden'
+                  icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
+                  {...homeProps}
+                >
+                  {renderHomeButtonChildren
+                    ? <ServerNameAndLogo shrinkToSquare={shrinkHomeButton}
+                      fallbackToHomeIcon
+                      server={primaryServer} />
+                    : undefined}
+                </Button>
                 {!scrollGroupsSheet
-                  ? <>
-                    <XStack w={2} />
-                  </>
-                  : <>
-                    <XStack w={1} />
-                    <XStack className='main-groups-button'>
-                      <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
-                    </XStack>
-                    <XStack w={3} />
-                  </>
-                }
-                <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
-              </ScrollView>
-              <XStack f={1} />
-              <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} />
-              <XStack w={5} />
-            </XStack>
+                  ? <XStack space='$2' ml='$1' my='auto' className='main-groups-button'>
+                    <GroupsSheet key='main' selectedGroup={selectedGroup}
+                      groupPageForwarder={groupPageForwarder} />
+                  </XStack>
+                  : undefined}
+                <ScrollView horizontal>
+                  {!scrollGroupsSheet
+                    ? <>
+                      <XStack w={2} />
+                    </>
+                    : <>
+                      <XStack w={1} />
+                      <XStack className='main-groups-button'>
+                        <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                      </XStack>
+                      <XStack w={3} />
+                    </>
+                  }
+                  <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
+                </ScrollView>
+                <XStack f={1} />
+                <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} />
+                <XStack w={5} />
+              </XStack>
 
-            <YStack backgroundColor='$background'>
-              <TabsTutorial />
+              <YStack backgroundColor='$background'>
+                <TabsTutorial />
+              </YStack>
+
+              <XStack id='nav-pinned-server-selector'>
+                <PinnedServerSelector show={showPinnedServers && withServerPinning && !selectedGroup} />
+              </XStack>
             </YStack>
+          </StickyBox>
 
-            <PinnedServerSelector show={showPinnedServers && withServerPinning && !selectedGroup} />
+          <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>
+            {children}
           </YStack>
-        </StickyBox>
-        <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>
-          {children}
         </YStack>
-      </YStack>
-    </GroupContextProvider>
+      </GroupContextProvider>
+    </NavigationContextProvider>
   </Theme>;
 }

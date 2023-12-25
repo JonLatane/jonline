@@ -1,5 +1,5 @@
 import { useIsVisible } from 'app/hooks/use_is_visible';
-import { FederatedEvent, deleteEvent, updateEvent, useServerTheme } from "app/store";
+import { FederatedEvent, deleteEvent, federateId, getServerTheme, updateEvent } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Group, Location } from "@jonline/api";
@@ -8,7 +8,7 @@ import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, History, 
 import { FadeInView, ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
-import { useAccount, useComponentKey, useCredentialDispatch, useForceUpdate, useMediaUrl } from "app/hooks";
+import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useFederatedDispatch, useForceUpdate, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -17,6 +17,8 @@ import { useLink } from "solito/link";
 // import { PostMediaRenderer } from "../post/post_media_renderer";
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ShareableToggle } from 'app/components/shareable_toggle';
+import { AccountOrServerContextProvider } from 'app/contexts';
+import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
@@ -51,12 +53,17 @@ export const EventCard: React.FC<Props> = ({
   setNewRsvpMode,
   onInstancesUpdated,
 }) => {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useFederatedDispatch(event);
+  const server = accountOrServer.server;
+  const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
+  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
+
   const mediaQuery = useMedia();
   const currentUser = useAccount()?.user;
   const post = event.post!;
 
-  const { server, textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor } = useServerTheme();
+  const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor } = getServerTheme(server);
   const [editing, _setEditing] = useState(false);
   function setEditing(value: boolean) {
     _setEditing(value);
@@ -183,11 +190,15 @@ export const EventCard: React.FC<Props> = ({
   const authorId = post.author?.userId;
   const authorName = post.author?.username;
 
+  const primaryInstanceIdString = primaryInstance?.id ?? 'no-primary-instance';
+  const detailsLinkId = showServerInfo
+    ? federateId(primaryInstanceIdString, accountOrServer.server)
+    : primaryInstanceIdString;
   const eventLink: LinkProps = useLink({
     href: primaryInstance ?
       groupContext
-        ? `/g/${groupContext.shortname}/e/${primaryInstance.id}`
-        : `/event/${primaryInstance!.id}`
+        ? `/g/${groupContext.shortname}/e/${detailsLinkId}`
+        : `/event/${detailsLinkId}`
       : '.'
   });
   const authorLink = useLink({
@@ -196,7 +207,7 @@ export const EventCard: React.FC<Props> = ({
       : `/user/${authorId}`
   });
   const createGroupEventViewHref = (group: Group) => primaryInstance
-    ? `/g/${group.shortname}/e/${primaryInstance!.id}`
+    ? `/g/${group.shortname}/e/${detailsLinkId}`
     : `.`;
 
   const maxTotalContentHeight = isPreview
@@ -595,11 +606,14 @@ export const EventCard: React.FC<Props> = ({
     return result;
   }
 
+  const shrinkServerInfo = isPreview || !mediaQuery.gtXxxs;
+
   return (
-    <>
+    <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w='100%' key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}>
         <Card theme="dark" elevate size="$4" bordered id={componentKey}
           key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
+          borderColor={showServerInfo ? primaryColor : undefined}
           margin='$0'
           marginBottom='$3'
           marginTop='$3'
@@ -609,77 +623,85 @@ export const EventCard: React.FC<Props> = ({
           scale={1}
           opacity={1}
           y={0}
-          // borderColor={primaryAnchorColor}
+        // borderColor={primaryAnchorColor}
         >
           {post.link || post.title
             ? <Card.Header p={0}>
-              <YStack key='primary-header' w='100%' pt='$4' pb={0}>
-                <YStack key='header-links' w='100%' px='$4'>
-                  {headerLinks}
-                </YStack>
-                {!isPreview && (instances.length > 1 || editing)
-                  ? <XStack key='instances' w='100%' mt='$2' space>
+              <XStack ai='center' w='100%'>
+                <YStack key='primary-header' f={1} pt='$4' pb={0}>
+                  <YStack key='header-links' w='100%' px='$4'>
+                    {headerLinks}
+                  </YStack>
+                  {!isPreview && (instances.length > 1 || editing)
+                    ? <XStack key='instances' w='100%' mt='$2' space>
 
 
-                    {scrollInstancesVertically
-                      ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
-                        <AnimatePresence>
-                          {displayedInstances?.map((i) => renderInstance(i))}
-                        </AnimatePresence>
-                      </XStack>
-                      : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
-                        <XStack mt='$1' px='$3' key='instance-scroller-list'>
-                          <AnimatePresence key='instance-scroll-animator'>
+                      {scrollInstancesVertically
+                        ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
+                          <AnimatePresence>
                             {displayedInstances?.map((i) => renderInstance(i))}
                           </AnimatePresence>
                         </XStack>
-                      </ScrollView>}
+                        : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
+                          <XStack mt='$1' px='$3' key='instance-scroller-list'>
+                            <AnimatePresence key='instance-scroll-animator'>
+                              {displayedInstances?.map((i) => renderInstance(i))}
+                            </AnimatePresence>
+                          </XStack>
+                        </ScrollView>}
 
-                  </XStack>
-                  : undefined
-                }
-                <YStack w='100%' maw={800} mx='auto'>
-                  {editingInstance && editing && !previewingEdits
-                    ? <>
-                      <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
-                        <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
-                        <Text fontSize='$2' fontFamily='$body'>
-                          <input type='datetime-local' style={{ padding: 10 }}
-                            min={supportDateInput(moment(0))}
-                            value={supportDateInput(moment(editingInstance.startsAt))}
-                            onChange={(v) => setStartTime(v.target.value)} />
-                        </Text>
-                      </XStack>
-                      <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
-                        <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
-                        <Text fontSize='$2' fontFamily='$body' color={textColor}>
-                          <input type='datetime-local' style={{ padding: 10 }}
-                            min={editingInstance.startsAt}
-                            value={supportDateInput(moment(editingInstance.endsAt))}
-                            onChange={(v) => setEndTime(v.target.value)} />
-                        </Text>
-                      </XStack>
-                      {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
-                    </>
-                    : undefined}
-                  {primaryInstance
-                    ?
-                    <XStack mx='$3' mt='$1'>
-                      <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
-                        readOnly={!editing || previewingEdits}
-                        preview={isPreview && horizontal}
-                        link={isPreview ? eventLink : undefined}
-                        setLocation={(location: Location) => {
-                          if (editingInstance) {
-                            updateEditingInstance({ ...editingInstance, location });
-                          }
-                        }} />
                     </XStack>
-                    : undefined}
+                    : undefined
+                  }
+                  <YStack w='100%' maw={800} mx='auto'>
+                    {editingInstance && editing && !previewingEdits
+                      ? <>
+                        <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
+                          <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
+                          <Text fontSize='$2' fontFamily='$body'>
+                            <input type='datetime-local' style={{ padding: 10 }}
+                              min={supportDateInput(moment(0))}
+                              value={supportDateInput(moment(editingInstance.startsAt))}
+                              onChange={(v) => setStartTime(v.target.value)} />
+                          </Text>
+                        </XStack>
+                        <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
+                          <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
+                          <Text fontSize='$2' fontFamily='$body' color={textColor}>
+                            <input type='datetime-local' style={{ padding: 10 }}
+                              min={editingInstance.startsAt}
+                              value={supportDateInput(moment(editingInstance.endsAt))}
+                              onChange={(v) => setEndTime(v.target.value)} />
+                          </Text>
+                        </XStack>
+                        {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
+                      </>
+                      : undefined}
+                    {primaryInstance
+                      ?
+                      <XStack mx='$3' mt='$1'>
+                        <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
+                          readOnly={!editing || previewingEdits}
+                          preview={isPreview && horizontal}
+                          link={isPreview ? eventLink : undefined}
+                          setLocation={(location: Location) => {
+                            if (editingInstance) {
+                              updateEditingInstance({ ...editingInstance, location });
+                            }
+                          }} />
+                      </XStack>
+                      : undefined}
+
+                  </YStack>
 
                 </YStack>
 
-              </YStack>
+                {showServerInfo
+                  ? <XStack my='auto' w={shrinkServerInfo ? '$4' : undefined} h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
+                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
+                  </XStack>
+                  : undefined}
+              </XStack>
             </Card.Header>
             : undefined}
           <Card.Footer p={0} paddingTop='$2' >
@@ -832,10 +854,12 @@ export const EventCard: React.FC<Props> = ({
                         setter={setEditedShareable}
                         readOnly={!editing || previewingEdits} />
                     </XStack>
-                    <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
-                      <GroupPostManager post={post} isVisible={isVisible}
-                        createViewHref={createGroupEventViewHref} />
-                    </XStack>
+                    {isPrimaryServer
+                      ? <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
+                        <GroupPostManager post={post} isVisible={isVisible}
+                          createViewHref={createGroupEventViewHref} />
+                      </XStack>
+                      : undefined}
                   </XStack>
                 </XStack>
 
@@ -887,7 +911,7 @@ export const EventCard: React.FC<Props> = ({
           </Card.Background>
         </Card >
       </YStack>
-    </>
+    </AccountOrServerContextProvider>
   );
 };
 

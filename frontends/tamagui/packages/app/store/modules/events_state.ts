@@ -1,4 +1,4 @@
-import { Event, TimeFilter } from "@jonline/api";
+import { Event, EventInstance, TimeFilter } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   Dictionary,
@@ -14,22 +14,22 @@ import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "
 import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
-import { locallyUpsertPost } from "./posts_state";
 import { loadUserEvents } from "./user_actions";
-import { Federated, FederatedEntity, createFederated, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
+import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
 export * from './event_actions';
 
 export type FederatedEvent = FederatedEntity<Event>;
+export type FederatedEventInstance = FederatedEntity<EventInstance>;
 export interface EventsState {
   pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
   entities: Dictionary<FederatedEvent>;
   // Links instance IDs to Event IDs.
-  instanceEvents: Federated<Dictionary<string>>;
+  instanceEvents: Dictionary<string>;
   // instances: Dictionary<EventInstance>;
   eventInstancePages: Federated<GroupedEventInstancePages>;
-  failedEventIds: Federated<string[]>;
-  failedInstanceIds: Federated<string[]>;
+  failedEventIds: string[];
+  failedInstanceIds: string[];
 }
 
 // Stores pages of listed event *instances* for listing types used in the UI.
@@ -50,10 +50,10 @@ export const eventsAdapter: EntityAdapter<FederatedEvent> = createEntityAdapter<
 
 const initialState: EventsState = {
   pagesStatus: createFederatedPagesStatus(),
-  failedEventIds: createFederated([]),
-  failedInstanceIds: createFederated([]),
+  failedEventIds: [],
+  failedInstanceIds: [],
   eventInstancePages: createFederated({}),
-  instanceEvents: createFederated({}),
+  instanceEvents: {},
   ...eventsAdapter.getInitialState(),
 };
 
@@ -80,12 +80,6 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     builder.addCase(updateEvent.fulfilled, (state, action) => {
       const event = federatedPayload(action);
       eventsAdapter.upsertOne(state, event);
-      if (event.post) {
-        setTimeout(() => {
-          console.log("upserting post", event.post);
-          store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
-        }, 1);
-      }
       setTimeout(() => {
         store.dispatch(loadEventsPage({ page: 0, listingType: defaultEventListingType, filter: undefined }));
       }, 1);
@@ -98,94 +92,70 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     });
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {
       setFederated(state.pagesStatus, action, "loaded");
-      console.log('loaded events page', action.payload.events.length);
-      federatedEntities(action.payload.events, action).forEach((e) => mergeEvent(state, e));
+      // console.log('loaded events page', action.payload.events.length);
+      const events = federatedEntities(action.payload.events, action);
+      events.forEach((e) => mergeEvent(state, e, action));
 
-      const instanceIds = action.payload.events.map(event => event.instances[0]!.id);
-      // for (const instanceId of instanceIds) {
-      //   state.instanceEvents[instanceId] = action.payload.events[0]!.id;
-      // }
+      const instanceIds = action.payload.events.flatMap(event => event.instances.map(instance => federateId(instance.id, action)));
+
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
-
       const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
-      if (!state.eventInstancePages[listingType]) state.eventInstancePages[listingType] = {};
-      if (!state.eventInstancePages[listingType]![serializedFilter] || page === 0) state.eventInstancePages[listingType]![serializedFilter] = [];
-      const eventPages: string[][] = state.eventInstancePages[listingType]![serializedFilter] ?? [];
-      // Sensible approach:
-      // eventPages[page] = postIds;
 
-      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
-      let initialPage: number = 0;
-      while (action.meta.arg.page && eventPages[initialPage]) {
-        initialPage++;
-      }
-      const chunkSize = 7;
-      for (let i = 0; i < instanceIds.length; i += chunkSize) {
-        const chunk = instanceIds.slice(i, i + chunkSize);
-        state.eventInstancePages[listingType]![serializedFilter]![initialPage + (i / chunkSize)] = chunk;
-      }
-      if (state.eventInstancePages[listingType]![serializedFilter]![0] === undefined) {
-        state.eventInstancePages[listingType]![serializedFilter]![0] = [];
-      }
+      const serverEventPages = getFederated(state.eventInstancePages, action);
+      if (!serverEventPages[listingType]) serverEventPages[listingType] = {};
+      if (!serverEventPages[listingType]![serializedFilter] || page === 0) serverEventPages[listingType]![serializedFilter] = [];
+
+      const eventPages: string[][] = serverEventPages[listingType]![serializedFilter]!;
+      eventPages[page] = instanceIds;
+      setFederated(state.eventInstancePages, action, serverEventPages);
     });
     builder.addCase(loadEventsPage.rejected, (state, action) => {
       setFederated(state.pagesStatus, action, "errored");
     });
     const saveSingleEvent = (state: EventsState, action: PayloadAction<Event, any, any>) => {
       const event = federatedPayload(action);
-      eventsAdapter.upsertOne(state, event);
-      event.instances.forEach(instance => {
-        state.instanceEvents[instance.id] = event.id;
-      });
-      if (event.post) {
-        setTimeout(() => {
-          // console.log("upserting event's post", event.post);
-          store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
-        }, 1);
-      }
+      mergeEvent(state, event, action);
     };
     builder.addCase(loadEvent.fulfilled, saveSingleEvent);
     builder.addCase(loadEventByInstance.fulfilled, saveSingleEvent);
     builder.addCase(loadEvent.rejected, (state, action) => {
-      const failedEventIds = getFederated(state.failedEventIds, action);
-      setFederated(state.failedEventIds, action, [...failedEventIds, (action.meta.arg as LoadEvent).id]);
+      state.failedEventIds.push(federateId((action.meta.arg as LoadEvent).id, action));
     });
 
     builder.addCase(loadEventByInstance.rejected, (state, action) => {
-      const failedInstanceIds = getFederated(state.failedInstanceIds, action);
-      setFederated(state.failedInstanceIds, action, [...failedInstanceIds, (action.meta.arg as LoadEventByInstance).instanceId]);
+      state.failedInstanceIds.push(federateId((action.meta.arg as LoadEventByInstance).instanceId, action));
     });
 
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
       const events = federatedEntities(action.payload.events, action);
       if (!events) return;
 
-      events.forEach((e) => mergeEvent(state, e));
+      events.forEach((e) => mergeEvent(state, e, action));
       // upsertEvents(state, events);
-      events.forEach((e) => mergeEvent(state, e));
+      events.forEach((e) => mergeEvent(state, e, action));
     });
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
       const events = federatedEntities(action.payload.events, action);
       // upsertEvents(state, events);
-      events.forEach((e) => mergeEvent(state, e));
+      events.forEach((e) => mergeEvent(state, e, action));
     });
   },
 });
 
-const mergeEvent = (state: EventsState, event: FederatedEvent) => {
+const mergeEvent = (state: EventsState, event: FederatedEvent, action: HasServer) => {
   // console.log('merging event', event);
-  const oldEvent = selectEventById(state, event.id);
+  const oldEvent = selectEventById(state, federatedId(event));
   let instances = event.instances;
-  for (const instance of instances) {
-    state.instanceEvents[instance.id] = event.id;
-    // state.instances[instance.id] = instance;
-  }
+  instances.forEach(instance => {
+    state.instanceEvents[federateId(instance.id, action)] = federateId(event.id, action);
+  });
   if (oldEvent) {
     instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
   }
   eventsAdapter.upsertOne(state, { ...event, instances });
 };
+
 export const { removeEvent, resetEvents } = eventsSlice.actions;
 export const { selectAll: selectAllEvents, selectById: selectEventById } = eventsAdapter.getSelectors();
 export const eventsReducer = eventsSlice.reducer;

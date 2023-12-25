@@ -1,11 +1,11 @@
 import { EventListingType, TimeFilter } from '@jonline/api';
 import { AnimatePresence, Heading, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
-import { RootState, useServerTheme, useRootSelector } from 'app/store';
+import { RootState, useServerTheme, useRootSelector, federatedId, federateId } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
-import { useEventPages, useGroupEventPages } from 'app/hooks';
+import { useEventPages, useGroupEventPages, usePaginatedRendering } from 'app/hooks';
 import { setDocumentTitle } from 'app/utils';
 import moment from 'moment';
 import { createParam } from 'solito';
@@ -17,6 +17,8 @@ import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
+import { standardHorizontalAnimation } from '../../../ui/src/animations';
+import { useNavigationContext } from 'app/contexts';
 
 const { useParam } = createParam<{ endsAfter: string }>()
 export function EventsScreen() {
@@ -55,9 +57,13 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const mainEventPages = useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, currentPage);
   const groupEventPages = useGroupEventPages(selectedGroup?.id, currentPage);
 
-  const { results: events, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
+  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
     ? groupEventPages
     : mainEventPages;
+
+
+  const pagination = usePaginatedRendering(allEvents, 7);
+  const paginatedEvents = pagination.results;
 
 
   useEffect(() => {
@@ -114,13 +120,16 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     : undefined;
   const maxWidth = 2000;
 
+  const { pinnedServersHeight } = useNavigationContext();
+
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
       selectedGroup={selectedGroup}
       groupPageForwarder={(group) => `/g/${group.shortname}/events`}
+      withServerPinning
     >
-      <StickyBox key='filters' offsetTop={56} className='blur' style={{ width: '100%', zIndex: 10 }}>
+      <StickyBox key='filters' offsetTop={56 + pinnedServersHeight} className='blur' style={{ width: '100%', zIndex: 10 }}>
         <YStack w='100%' px='$2' key='filter-toolbar'>
 
           <XStack w='100%'>
@@ -156,35 +165,32 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' px='$3' maw={maxWidth} space>
 
         {firstPageLoaded
-          ? events.length == 0
+          ? allEvents.length == 0
             ? <YStack width='100%' maw={600} jc="center" ai="center">
               <Heading size='$5' mb='$3'>No events found.</Heading>
               <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : renderInColumns ?
               <YStack space='$2'>
-                <XStack ac='center' jc='center' space='$2' flexWrap='wrap'>
-                  {events.map((event) => {
-                    return <XStack w={eventCardWidth}>
-                      <EventCard event={event} isPreview horizontal />
-                    </XStack>;
-                  })}
+                <XStack mx='auto' space='$2' flexWrap='wrap'>
+                  <AnimatePresence>
+                    {paginatedEvents.map((event) => {
+                      return <XStack w={eventCardWidth} key={federateId(event.instances[0]?.id ?? '', server)}
+                        animation='standard' {...standardHorizontalAnimation} mx='$1'>
+                        <EventCard event={event} isPreview horizontal />
+                      </XStack>;
+                    })}
+                  </AnimatePresence>
                 </XStack>
-                <PaginationIndicator
-                  page={currentPage}
-                  loadingPage={loadingEvents}
-                  hasNextPage={hasMorePages}
-                  loadNextPage={() => setCurrentPage(currentPage + 1)} />
+                <PaginationIndicator {...pagination} />
               </YStack>
               : <YStack w='100%' ac='center' ai='center' jc='center' space='$2'>
-                {events.map((event) => {
-                  return <EventCard event={event} isPreview horizontal />;
+                {paginatedEvents.map((event) => {
+                  return <XStack animation='standard' {...standardAnimation}>
+                    <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview horizontal />;
+                  </XStack>
                 })}
-                <PaginationIndicator
-                  page={currentPage}
-                  loadingPage={loadingEvents}
-                  hasNextPage={hasMorePages}
-                  loadNextPage={() => setCurrentPage(currentPage + 1)} />
+                <PaginationIndicator {...pagination} />
               </YStack>
           : undefined}
         {showScrollPreserver ? <YStack h={100000} /> : undefined}

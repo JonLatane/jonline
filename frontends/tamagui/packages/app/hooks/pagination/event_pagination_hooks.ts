@@ -4,7 +4,7 @@ import { useCredentialDispatch, useCurrentAndPinnedServers } from "app/hooks";
 import { FederatedEvent, RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
-import { PostPageParams, onPageLoaded } from "./post_pagination_hooks";
+import { PostPageParams, finishPagination, onPageLoaded } from "./post_pagination_hooks";
 import { PaginationResults } from "./pagination_hooks";
 
 export type EventPageParams = PostPageParams & { filter?: TimeFilter };
@@ -24,6 +24,7 @@ export function useEventPages(
   const results: FederatedEvent[] = getEventPages(eventsState, listingType, timeFilter, throughPage, servers);
 
   const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0, servers);
+  // debugger;
   useEffect(() => {
     if (!loading && someUnloaded(eventsState.pagesStatus, servers)) {
       setLoadingEvents(true);
@@ -40,8 +41,7 @@ export function useEventPages(
       dispatch(loadEventsPage({ ...server, listingType })))
     ).then((results) => {
       console.log("Loaded events", results);
-      // finishPagination(setLoadingPosts, params?.onLoaded);
-      onPageLoaded(setLoadingEvents, params?.onLoaded);
+      finishPagination(setLoadingEvents, params?.onLoaded);
     });
   }
 

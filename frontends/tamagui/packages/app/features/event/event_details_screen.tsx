@@ -1,7 +1,7 @@
 import { EventInstance } from '@jonline/api';
 import { Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui';
 import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
-import { RootState, getFederated, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, federateId, getFederated, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { isPastInstance, setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
@@ -84,7 +84,7 @@ export function EventDetailsScreen() {
 
   // const failedToLoadEvent = instanceId != undefined &&
   //   eventsState.failedInstanceIds.includes(instanceId!);
-  const failedToLoadEvent = instanceId && getFederated(eventsState.failedInstanceIds, server).includes(serverInstanceId!);
+  const failedToLoadEvent = instanceId && eventsState.failedInstanceIds.includes(federateId(serverInstanceId, server));
 
   // console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
 

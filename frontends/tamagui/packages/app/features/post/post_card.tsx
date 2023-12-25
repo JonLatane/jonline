@@ -427,11 +427,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                           setter={setEditedShareable}
                           readOnly={!editing || previewingEdits} />
                       </XStack>
-                      {post?.replyToPostId
-                        ? undefined
-                        : <XStack maw='100%' mr={0} my='auto' ml='auto'>
+                      {isPrimaryServer && !post?.replyToPostId
+                        ? <XStack maw='100%' mr={0} my='auto' ml='auto'>
                           <GroupPostManager post={post} isVisible={isVisible} />
-                        </XStack>}
+                        </XStack>
+                        : undefined}
 
                     </XStack>
                   </XStack>

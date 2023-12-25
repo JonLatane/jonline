@@ -2,7 +2,8 @@ import { Event, EventListingType } from "@jonline/api";
 import { EventsState, FederatedEvent, GroupsState, selectEventById } from "../modules";
 import { RootState} from "../store";
 import { AccountOrServer } from "../types";
-import { getFederated } from "../federation";
+import { defederateId, getFederated } from "../federation";
+import moment from "moment";
 
 
 export function getEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number, servers: AccountOrServer[]): FederatedEvent[] {
@@ -21,13 +22,15 @@ function getEventsPage(events: EventsState, listingType: EventListingType, timeF
   });
 
   const pageEvents = instancesToEvents(events, pageInstanceIds);
+  pageEvents.sort((a,b) => (a.instances[0]?.startsAt ?? '').localeCompare(b.instances[0]?.startsAt ?? ''));
+  // pageEvents.sort((a, b) => moment(a.instances[0]?.startsAt).diff(b.instances[0]?.startsAt));
   return pageEvents;
 }
 
 export function getHasEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): boolean {
   return !servers.some(server => {
     const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
-    return (serverEventInstancePages[listingType] ?? {})[page] === undefined;
+    return ((serverEventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] === undefined;
   });
 }
 
@@ -58,13 +61,16 @@ function getGroupEventsPage(state: RootState, groupId: string, timeFilter: strin
 function instancesToEvents(events: EventsState, instanceIds: string[]) {
   return instanceIds.map(instanceId => {
     const eventId = events.instanceEvents[instanceId];
+    // debugger;
     // console.log('eventId', eventId, events.instanceEvents)
     if (!eventId) return undefined;
 
     const event = selectEventById(events, eventId)
     if (!event) return undefined;
 
-    return { ...event, instances: event.instances.filter(i => i.id == instanceId) };
+    const singletonInstanceEvent = { ...event, instances: event.instances.filter(i => i.id == defederateId(instanceId)) };
+    // debugger;
+    return singletonInstanceEvent;
   }).filter(p => p).map(p => p as FederatedEvent);
 }
 

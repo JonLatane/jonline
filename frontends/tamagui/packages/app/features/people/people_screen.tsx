@@ -1,11 +1,12 @@
 import { UserListingType } from '@jonline/api';
-import { AnimatePresence, Heading, Spinner, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { useCredentialDispatch, useCurrentAndPinnedServers, useUsersPage } from 'app/hooks';
-import { FederatedUser, RootState, federatedId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
+import { AnimatePresence, Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { useCredentialDispatch, useCurrentAndPinnedServers, usePaginatedRendering, useUsersPage } from 'app/hooks';
+import { RootState, federatedId, getFederated, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { HomeScreenProps } from '../home/home_screen';
+import { PaginationIndicator } from '../home/pagination_indicator';
 import { AppSection, AppSubsection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { UserCard } from '../user/user_card';
@@ -28,9 +29,12 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const isForGroupMembers = listingType === undefined;
 
   const servers = useCurrentAndPinnedServers();
-  const { results: users, loading: loadingUsers, reload: reloadUsers, firstPageLoaded } = isForGroupMembers
+  const { results: allUsers, loading: loadingUsers, reload: reloadUsers, firstPageLoaded } = isForGroupMembers
     ? { results: [], loading: false, reload: () => { }, firstPageLoaded: true }
     : useUsersPage(listingType, 0);
+
+  const pagination = usePaginatedRendering(allUsers, 10);
+  const paginatedUsers = pagination.results;
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
@@ -69,7 +73,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' maw={800} space>
-        {users && users.length == 0
+        {allUsers && allUsers.length == 0
           ? userPagesStatus != 'loading' && userPagesStatus != 'unloaded'
             ? listingType == UserListingType.FOLLOW_REQUESTS ?
               <YStack width='100%' maw={600} jc="center" ai="center">
@@ -82,11 +86,12 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
               </YStack>
             : undefined
           : <AnimatePresence>
-            {users?.map((user) => {
+            {paginatedUsers?.map((user) => {
               return <YStack w='100%' mb='$3' key={`user-${federatedId(user)}`}>
                 <UserCard user={user} isPreview />
               </YStack>;
             })}
+            <PaginationIndicator {...pagination} />
             {showScrollPreserver ? <YStack h={100000} /> : undefined}
           </AnimatePresence>}
       </YStack>

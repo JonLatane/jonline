@@ -3,16 +3,18 @@ import { ChevronRight, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, useServer } from "app/hooks";
 import { JonlineServer, PinnedServer, getServerTheme, pinServer, selectAllServers, serverID, setViewingRecommendedServers } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
+import { useNavigationContext } from "app/contexts";
 
 
 export type PinnedServerSelectorProps = {
   show?: boolean;
   transparent?: boolean;
+  affectsNavigation?: boolean;
 };
-export function PinnedServerSelector({ show, transparent }: PinnedServerSelectorProps) {
+export function PinnedServerSelector({ show, transparent, affectsNavigation }: PinnedServerSelectorProps) {
   const dispatch = useAppDispatch();
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
 
@@ -45,7 +47,14 @@ export function PinnedServerSelector({ show, transparent }: PinnedServerSelector
     .filter(host => !currentServerHosts.includes(host));
 
   const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
-  return <YStack className='blur' key='pinned-server-selector' w='100%' h={show ? undefined : 0} backgroundColor={transparent ? undefined : '$backgroundHover'
+  const navigationContext = useNavigationContext();
+  useEffect(() => {
+    if (affectsNavigation) {
+      const pinnedServersHeight = document.querySelector('#navigation-pinned-servers')?.clientHeight ?? 0;
+      navigationContext.setPinnedServersHeight(pinnedServersHeight);
+    }
+  }, [allServers, pinnedServers, currentServer, viewingRecommendedServers, browsingServers]);
+  return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined} w='100%' h={show ? undefined : 0} backgroundColor={transparent ? undefined : '$backgroundHover'
   }>
     <AnimatePresence>
       {show ? <>
@@ -62,14 +71,14 @@ export function PinnedServerSelector({ show, transparent }: PinnedServerSelector
         {showDataSources
           ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
             <ScrollView key='pinned-server-scroller' w='100%' horizontal>
-              <XStack m='$3' ai='center' space='$2'>
+              <XStack m='$3' ai='center' space='$2' key='available-servers'>
                 {availableServers.map(server => {
                   let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
                   return <PinnableServer key={serverID(server)} {...{ server, pinnedServer }} />;
                 })}
 
                 {recommendedServerHosts.length > 0
-                  ? <Button h='auto' py='$1' my='auto' size='$2' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
+                  ? <Button key='recommended-servers-button' h='auto' py='$1' my='auto' size='$2' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
                     <XStack>
                       <YStack my='auto' ai='center'>
                         <Heading size='$1'>

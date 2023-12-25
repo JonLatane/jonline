@@ -30,6 +30,7 @@ function getPostsPage(posts: PostsState, listingType: PostListingType, page: num
   });
   const pagePosts = pagePostIds.map(id => selectPostById(posts, id))
     .filter(p => p) as FederatedPost[];
+    pagePosts.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
   return pagePosts;
 }
 

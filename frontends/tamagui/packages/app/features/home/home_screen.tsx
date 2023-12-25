@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { useAppDispatch, useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks';
+import { useAppDispatch, useEventPages, useGroupEventPages, useGroupPostPages, usePaginatedRendering, usePostPages } from 'app/hooks';
 import { FederatedGroup, RootState, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -43,14 +43,20 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
   const [currentPostsPage, setCurrentPostsPage] = useState(0);
 
-  const { results: posts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } = selectedGroup
+  const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } = selectedGroup
     ? useGroupPostPages(selectedGroup.id, currentPostsPage)
     : usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPostsPage);
 
+  const postPagination = usePaginatedRendering(allPosts, 7);
+  const paginatedPosts = postPagination.results;
+
   // Only load the first page of events on this screen.
-  const { results: events, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
+  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
     ? useGroupEventPages(selectedGroup.id, 0)
     : useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, 0);
+
+  const eventPagination = usePaginatedRendering(allEvents, 7);
+  const paginatedEvents = eventPagination.results;
 
   function onHomePressed() {
     if (isClient && window.scrollY > 0) {
@@ -115,7 +121,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               animation='standard'
               {...standardAnimation}
             >
-              {events.length == 0
+              {allEvents.length == 0
                 ? eventsLoaded
                   ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
                     <Heading size='$5' mb='$3'>No events found.</Heading>
@@ -125,7 +131,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 : <ScrollView horizontal
                   w='100%'>
                   <XStack w={eventCardWidth} space='$2' mx='$2' my='auto'>
-                    {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`}
+                    {paginatedEvents.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`}
                       event={event} isPreview horizontal xs />)}
                     <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
                       <YStack ai='center' py='$3' jc='center'>
@@ -142,7 +148,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
         <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
           {eventsLoaded && postsLoaded
-            ? posts.length === 0
+            ? allPosts.length === 0
               ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}
               // animation='quick'
               // {...standardAnimation}
@@ -153,14 +159,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               : <YStack f={1} px='$3' w='100%' key={`post-list`}// animation='quick' {...standardAnimation}
               >
                 <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
-                {posts.map((post) => {
+                {paginatedPosts.map((post) => {
                   return <PostCard key={`post-preview-${federatedId(post)}`} post={post} isPreview />;
                 })}
-                <PaginationIndicator page={currentPostsPage}
-                  loadingPage={loadingPosts}
-                  hasNextPage={hasMorePages}
-                  loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
-                />
+                <PaginationIndicator {...postPagination} />
               </YStack>
             : undefined
           }
