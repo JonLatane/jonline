@@ -19,7 +19,8 @@ export interface AccountsState {
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
-  account?: JonlineAccount;
+  currentAccountId?: string;
+  // account?: JonlineAccount;
   // Allows a user to be primarily signed into the above account,
   // but view data from other servers (and accounts on those servers).
   pinnedServers: PinnedServer[];
@@ -49,23 +50,23 @@ export const accountsSlice = createSlice({
   reducers: {
     upsertAccount: (state, action: PayloadAction<JonlineAccount>) => {
       accountsAdapter.upsertOne(state, action.payload);
-      if (accountID(state.account) === accountID(action.payload)) {
-        state.account = action.payload;
-      }
+      // if (state.currentAccountId === accountID(action.payload)) {
+      //   state.account = action.payload;
+      // }
     },
     removeAccount: (state, action: PayloadAction<string>) => {
-      if (accountID(state.account) === action.payload) {
-        state.account = undefined;
+      if (state.currentAccountId === action.payload) {
+        state.currentAccountId = undefined;
       }
       accountsAdapter.removeOne(state, action);
     },
     resetAccounts: () => initialState,
     selectAccount: (state, action: PayloadAction<JonlineAccount | undefined>) => {
-      if (accountID(state.account) != accountID(action.payload)) {
+      if (state.currentAccountId != accountID(action.payload)) {
         resetCredentialedData();
       }
       resetAccessTokens();
-      state.account = action.payload;
+      state.currentAccountId = accountID(action.payload);
 
       // Verify that the account is still valid by loading the user data
       const account = action.payload;
@@ -109,8 +110,8 @@ export const accountsSlice = createSlice({
         if (serverID(accountServer) === serverID(payloadServer) && accountUser.id == payloadUser.id) {
           account.needsReauthentication = true;
           account.lastSyncFailed = true;
-          if (state.account && accountID(state.account) === accountID(account)) {
-            state.account = undefined;
+          if (state.currentAccountId === accountID(account)) {
+            state.currentAccountId = undefined;
           }
         }
       }
@@ -159,7 +160,7 @@ export const accountsSlice = createSlice({
     });
     builder.addCase(createAccount.fulfilled, (state, action) => {
       state.status = "loaded";
-      state.account = action.payload;
+      state.currentAccountId = accountID(action.payload);
       accountsAdapter.upsertOne(state, action.payload);
       state.successMessage = `Created account ${action.payload.user.username}`;
       resetCredentialedData();
@@ -176,7 +177,7 @@ export const accountsSlice = createSlice({
     });
     builder.addCase(login.fulfilled, (state, action) => {
       state.status = "loaded";
-      state.account = action.payload;
+      state.currentAccountId = accountID(action.payload);
       accountsAdapter.upsertOne(state, { ...action.payload, lastSyncFailed: false, needsReauthentication: false });
       state.successMessage = `Logged in as ${action.payload.user.username}`;
       resetCredentialedData();
@@ -203,6 +204,6 @@ export const { selectAccount, removeAccount, clearAccountAlerts,
   moveAccountUp, moveAccountDown,
   pinServer, pinAccount } = accountsSlice.actions;
 
-export const { selectAll: selectAllAccounts, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
+export const { selectAll: selectAllAccounts, selectById: selectAccountById,  selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;
 export default accountsReducer;

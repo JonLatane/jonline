@@ -1,8 +1,8 @@
 import { Group, WebUserInterface } from "@jonline/api";
 import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
 import { Home as HomeIcon } from '@tamagui/lucide-icons';
-import { GroupContextProvider, NavigationContextProvider, NavigationContextType } from 'app/contexts';
-import { useAppDispatch, useLocalConfiguration } from "app/hooks";
+import { GroupContextProvider, NavigationContextProvider, NavigationContextType, useNavigationContext, useOrCreateNavigationContext } from 'app/contexts';
+import { useAppDispatch, useLocalConfiguration, useServer } from "app/hooks";
 import { FederatedGroup, JonlineServer, RootState, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
@@ -41,7 +41,7 @@ export function TabsNavigation({
   withServerPinning,
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
-  const server = useRootSelector((state: RootState) => state.servers.server);
+  const server = useServer();// useRootSelector((state: RootState) => state.servers.server);
   const primaryServer = onlyShowServer || server;
   const webUI = server?.serverConfiguration?.serverInfo?.webUserInterface;
   const homeProps = customHomeAction ? { onPress: customHomeAction } : useLink({
@@ -59,9 +59,8 @@ export function TabsNavigation({
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
   const backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}FF`;
-  const [pinnedServersHeight, setPinnedServersHeight] = useState(0);
 
-  const navigationContext: NavigationContextType = { pinnedServersHeight, setPinnedServersHeight };
+  const navigationContext: NavigationContextType = useOrCreateNavigationContext();
 
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
@@ -110,7 +109,7 @@ export function TabsNavigation({
               <XStack space="$1" marginVertical={5}>
                 <XStack w={5} />
                 <Button //size="$4"
-                  className="home-button"
+                  id="home-button"
                   py={0}
                   px={
                     shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
@@ -129,7 +128,7 @@ export function TabsNavigation({
                     : undefined}
                 </Button>
                 {!scrollGroupsSheet
-                  ? <XStack space='$2' ml='$1' my='auto' className='main-groups-button'>
+                  ? <XStack space='$2' ml='$1' my='auto' id='main-groups-button'>
                     <GroupsSheet key='main' selectedGroup={selectedGroup}
                       groupPageForwarder={groupPageForwarder} />
                   </XStack>
@@ -159,7 +158,7 @@ export function TabsNavigation({
               </YStack>
 
               <XStack id='nav-pinned-server-selector'>
-                <PinnedServerSelector show={showPinnedServers && withServerPinning && !selectedGroup} />
+                <PinnedServerSelector show={showPinnedServers && withServerPinning && !selectedGroup} affectsNavigation />
               </XStack>
             </YStack>
           </StickyBox>

@@ -101,9 +101,9 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
 
               <Heading size='$3' mt='$3'>Federation</Heading>
-              <ToggleRow name='Show Pinned Server UI' value={app.showPinnedServers} setter={setShowPinnedServers} autoDispatch
+              {/* <ToggleRow name='Show Pinned Server UI' value={app.showPinnedServers} setter={setShowPinnedServers} autoDispatch
                 description='Show pinned servers where supported (currently, the People screen, and only partially).'
-              />
+              /> */}
               <ToggleRow name='Allow Server Selection'
                 description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
                 disabled={serverCount !== 1}

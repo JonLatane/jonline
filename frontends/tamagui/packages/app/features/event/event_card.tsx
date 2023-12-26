@@ -257,7 +257,7 @@ export const EventCard: React.FC<Props> = ({
   const imagePreview = media?.find(m => m.contentType.startsWith('image'));
   // const scrollableMediaMinCount = isPreview && hasSingleImagePreview ? 3 : 2;
   const showScrollableMediaPreviews = (media?.filter(m => !m.generated).length ?? 0) >= 2;
-  const previewUrl = useMediaUrl(imagePreview?.id);
+  const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
 
   const showBackgroundPreview = !!imagePreview;
   //  && isPreview

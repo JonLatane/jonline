@@ -214,7 +214,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
         color={primaryTextColor}
         // f={1}
         my='auto'
-        disabled={serversState.server === undefined}
+        disabled={server === undefined}
         onPress={() => setOpen(!open)}>
         <Heading size='$2' color={primaryTextColor}>Create Group</Heading>
       </Button>

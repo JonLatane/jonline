@@ -1,7 +1,7 @@
 import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
 import { ExternalLink } from "@tamagui/lucide-icons";
 import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
-import { RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, setBrowsingServers, upsertServer, useRootSelector } from 'app/store';
+import { JonlineServer, RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, setBrowsingServers, upsertServer, useRootSelector } from 'app/store';
 import React, { useEffect } from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
@@ -20,7 +20,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
   const dispatch = useAppDispatch();
   const existingServer = useRootSelector(
     (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host);
-  const prototypeServer = {
+  const prototypeServer: JonlineServer = {
     host,
     secure: true,
   };

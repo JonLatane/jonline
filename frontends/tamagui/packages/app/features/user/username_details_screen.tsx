@@ -23,9 +23,10 @@ export function UsernameDetailsScreen() {
 
   const { dispatch, accountOrServer } = useFederatedDispatch(inputServerHost);
 
-  const server = inputServerHost
-    ? useRootSelector((state: RootState) => selectAllServers(state.servers).find(s => s.host == inputServerHost))
-    : useRootSelector((state: RootState) => state.servers.server);
+  const {server, account} = accountOrServer;
+  // const server = inputServerHost
+  //   ? useRootSelector((state: RootState) => selectAllServers(state.servers).find(s => s.host == inputServerHost))
+  //   : useRootSelector((state: RootState) => state.servers.server);
 
   const linkProps = useLink({ href: '/' });
 

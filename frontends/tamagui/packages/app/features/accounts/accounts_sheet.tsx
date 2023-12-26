@@ -1,19 +1,19 @@
 import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon, AlertTriangle } from '@tamagui/lucide-icons';
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
-import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
+import { useAccount, useAppDispatch, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineAccount, JonlineServer, RootState, accountID, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setDarkMode, setDarkModeAuto, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineAccount, JonlineServer, RootState, accountID, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, TextInput } from 'react-native';
+import { Platform, TextInput } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
 import { physicallyHostingServerId } from '../about/about_screen';
-import { TamaguiMarkdown } from 'app/components';
-import { SettingsSheet } from '../settings_sheet';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { TutorialToggle } from '../navigation/tabs_tutorial';
+import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
 import RecommendedServer from './recommended_server';
@@ -45,6 +45,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
   const dispatch = useAppDispatch();
   const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
+  const account = useAccount();
   const serversState = useRootSelector((state: RootState) => state.servers);
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers));
   const allowServerSelection = allowServerSelectionSetting || servers.length > 1;
@@ -60,7 +61,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   function reauthenticate(account: JonlineAccount) {
     dispatch(clearAccountAlerts());
     dispatch(selectServer(account.server));
-    if (accountsState.account && serverID(accountsState.account.server) != serverID(account.server)) {
+    if (account && serverID(account.server) !== serverID(account.server)) {
       dispatch(selectAccount(undefined));
     }
     setAddingAccount(true);
@@ -94,7 +95,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
-  const primaryServer = onlyShowServer || serversState.server;
+  const primaryServer = onlyShowServer || server;
   const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverID(a.server) == serverID(primaryServer!)) : [];
   const accountsElsewhere = accounts.filter(a => !accountsOnPrimaryServer.includes(a));
   const displayedAccounts = onlyShowServer ? accountsOnPrimaryServer : accounts;
@@ -146,7 +147,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     if (accountsLoading && !forceDisableAccountButtons) {
       setForceDisableAccountButtons(true);
     }
-  });
+  }, [accountsLoading, !forceDisableAccountButtons]);
 
   useEffect(() => {
     if (serversState.successMessage) {
@@ -182,8 +183,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
       dispatch(setBrowsingServers(false));
     }
   }, [allowServerSelection, browsingServers]);
-  const serversDiffer = onlyShowServer && serversState.server && serverID(onlyShowServer) != serverID(serversState.server);
-  const serverId = serversState.server ? serverID(serversState.server) : undefined;
+  const serversDiffer = onlyShowServer && server && serverID(onlyShowServer) != serverID(server);
+  const serverId = server ? serverID(server) : undefined;
   // debugger;
   const currentServerInfoLink = useLink({
     href: serverId === physicallyHostingServerId() ? '/about' : `/server/${serverId!}`
@@ -193,25 +194,12 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const secureRequired = Platform.OS == 'web' && window.location.protocol == 'https';
   const disableSecureSelection = serversLoading || secureRequired;
 
-  const account = accountsState.account;
   const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
 
   const userIcon = serversDiffer || browsingOnDiffers
     ? AlertTriangle :
     account ? UserIcon : LogIn;
-  const { darkMode, darkModeAuto } = useLocalConfiguration();
-  const isInDarkMode = darkModeAuto ? doesPlatformPreferDarkMode() : darkMode;
-  const toggleDarkMode = () => {
-    if (darkModeAuto) {
-      dispatch(setDarkModeAuto(false));
-      dispatch(setDarkMode(!doesPlatformPreferDarkMode()));
-    } else if (darkMode == doesPlatformPreferDarkMode()) {
-      dispatch(setDarkModeAuto(true));
-    } else {
-      dispatch(setDarkMode(!darkMode));
-    }
-  }
-  // const darkMode = useLocalConfiguration().darkMode;
+
   return (
     <>
       {circular && avatarUrl && avatarUrl != ''
@@ -290,8 +278,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 </XStack>
                 : undefined}
               <YStack>
-                {serversState.server ? <Heading transform={[{ translateY: serversState.server ? 2 : 0 }]} size='$1'>{serversState.server.host}/</Heading> : undefined}
-                {accountsState.account ? <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{accountsState.account.user.username}</Heading> : undefined}
+                {server ? <Heading transform={[{ translateY: server ? 2 : 0 }]} size='$1'>{server.host}/</Heading> : undefined}
+                {account ? <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{account.user.username}</Heading> : undefined}
               </YStack>
             </>
           }
@@ -497,7 +485,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 </YStack> : undefined}
               {!browsingServers
                 ? <Heading size='$3' als='center' textAlign='center' mt='$1'>
-                  {serversState.server ? serversState.server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
+                  {server ? server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
                 </Heading>
                 : undefined}
               {recommendedServerHosts.length > 0
@@ -586,7 +574,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                   <Button
                     size="$3"
                     icon={Plus}
-                    disabled={serversState.server === undefined}
+                    disabled={server === undefined}
                     {...themedButtonBackground(primaryColor, primaryTextColor)}
                     onPress={() => setAddingAccount((x) => !x)}
                   >

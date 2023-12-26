@@ -1,8 +1,8 @@
-import { FederatedEvent, accountOrServerId, getCredentialClient, useServerTheme } from "app/store";
+import { FederatedEvent, accountOrServerId, getCredentialClient, getServerTheme, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useTheme, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
 import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
@@ -33,10 +33,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   isPreview,
 }) => {
   const mediaQuery = useMedia();
-  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
-
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
-  const { account } = accountOrServer;
+  const { account, server } = accountOrServer;
+  const theme = useTheme();
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(server, theme);
+
   const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
 
   const { anonymousAuthToken, setAnonymousAuthToken, removeAnonymousAuthToken } = useAnonymousAuthToken(instance.id);

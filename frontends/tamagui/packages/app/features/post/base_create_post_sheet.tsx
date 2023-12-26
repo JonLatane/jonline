@@ -209,7 +209,7 @@ export function BaseCreatePostSheet({
   return (
     <>
       <Button {...themedButtonBackground(primaryColor)} f={1}
-        disabled={serversState.server === undefined}
+        disabled={server === undefined}
         onPress={() => setOpen(!open)}>
         <Heading size='$2' color={primaryTextColor}>Create {entityName}</Heading>
       </Button>

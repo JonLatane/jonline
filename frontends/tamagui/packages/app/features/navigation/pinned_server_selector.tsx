@@ -49,13 +49,24 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation }: P
   const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
   const navigationContext = useNavigationContext();
   useEffect(() => {
-    if (affectsNavigation) {
+    if (navigationContext && affectsNavigation) {
       const pinnedServersHeight = document.querySelector('#navigation-pinned-servers')?.clientHeight ?? 0;
       navigationContext.setPinnedServersHeight(pinnedServersHeight);
     }
-  }, [allServers, pinnedServers, currentServer, viewingRecommendedServers, browsingServers]);
-  return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined} w='100%' h={show ? undefined : 0} backgroundColor={transparent ? undefined : '$backgroundHover'
-  }>
+  },
+    [
+      allServers.map(serverID).toString(),
+      pinnedServers.map(p => p.serverId).toString(),
+      currentServer ? serverID(currentServer) : undefined, 
+      viewingRecommendedServers,
+      browsingServers, 
+      showDataSources
+    ]
+  );
+  return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
+    w='100%' h={show ? undefined : 0}
+    backgroundColor={transparent ? undefined : '$backgroundHover'}
+  >
     <AnimatePresence>
       {show ? <>
         <Button key='pinned-server-toggle' py='$1' h='auto' onPress={() => setShowDataSources(!showDataSources)}>

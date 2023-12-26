@@ -1,11 +1,11 @@
-import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, accountID, selectAllAccounts, selectAllServers, serverID } from 'app/store';
-import { useAppDispatch, useAppSelector } from "./store_hooks";
-import { useAccountOrServerContext } from 'app/contexts';
 import { Post } from '@jonline/api/index';
+import { useAccountOrServerContext } from 'app/contexts';
+import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, accountID, selectAccountById, selectAllAccounts, selectAllServers, selectServerById, serverID } from 'app/store';
+import { useAppDispatch, useAppSelector } from "./store_hooks";
 
 
-export const useAccount = () => useAppSelector(state => state.accounts.account);
-export const useServer = () => useAppSelector(state => state.servers.server);
+export const useAccount = () => useAppSelector(state => state.accounts.currentAccountId ? selectAccountById(state.accounts, state.accounts.currentAccountId) : undefined);
+export const useServer = () => useAppSelector(state => state.servers.currentServerId ? selectServerById(state.servers, state.servers.currentServerId) : undefined);
 export function useAccountOrServer(): AccountOrServer {
   return {
     account: useAccount(),

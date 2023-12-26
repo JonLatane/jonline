@@ -1,6 +1,6 @@
 import { Anchor, Button, H2, H4, Heading, isClient, ListItem, needsScrollPreservers, Paragraph, Text, useWindowDimensions, XStack, YStack } from '@jonline/ui';
 import { RootState, selectAllPosts, useRootSelector } from 'app/store';
-import { useCredentialDispatch } from 'app/hooks';
+import { useCredentialDispatch, useServer } from 'app/hooks';
 import React, { useEffect, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import { TabsNavigation } from '../navigation/tabs_navigation';
@@ -22,9 +22,10 @@ export function AboutJonlineScreen() {
   const posts = useRootSelector((state: RootState) => selectAllPosts(state.posts));
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();
-  let primaryColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.primary;
+  const server = useServer();
+  let primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary;
   let primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  let navColorInt = serversState.server?.serverConfiguration?.serverInfo?.colors?.navigation;
+  let navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation;
   let navColor = `#${(navColorInt)?.toString(16).slice(-6) || 'fff'}`;
   const dimensions = useWindowDimensions();
   const [quote] = useState(quotes[Math.floor(Math.random() * quotes.length)]);
