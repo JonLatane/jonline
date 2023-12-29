@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { useAppDispatch, useEventPages, useGroupEventPages, useGroupPostPages, usePaginatedRendering, usePostPages } from 'app/hooks';
+import { useAppDispatch, useEventPages, useGroupPostPages, usePaginatedRendering, usePostPages, useServerPostPages } from 'app/hooks';
 import { FederatedGroup, RootState, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -41,19 +41,15 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     setDocumentTitle(`Latest | ${title}`)
   });
 
-  const [currentPostsPage, setCurrentPostsPage] = useState(0);
-
-  const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } = selectedGroup
-    ? useGroupPostPages(selectedGroup.id, currentPostsPage)
-    : usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPostsPage);
+  const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } =
+    usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, selectedGroup);
 
   const postPagination = usePaginatedRendering(allPosts, 7);
   const paginatedPosts = postPagination.results;
 
   // Only load the first page of events on this screen.
-  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
-    ? useGroupEventPages(selectedGroup.id, 0)
-    : useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, 0);
+  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
+    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup);
 
   const eventPagination = usePaginatedRendering(allEvents, 7);
   const paginatedEvents = eventPagination.results;

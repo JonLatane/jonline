@@ -1,17 +1,30 @@
 import { Post, PostListingType } from "@jonline/api";
 import { useCredentialDispatch, useForceUpdate } from "app/hooks";
-import { FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostPages, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
+import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostPages, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { useCurrentAndPinnedServers } from '../account_and_server_hooks';
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
 import { PaginationResults } from "./pagination_hooks";
 
-export type PostPageParams = { onLoaded?: () => void };
+export type PostPageParams = {};
 
 export function usePostPages(
   listingType: PostListingType,
-  throughPage: number,
-  params?: PostPageParams
+  selectedGroup: FederatedGroup | undefined,
+): PaginationResults<FederatedPost> {
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const mainPostPages = useServerPostPages(listingType, currentPage);
+  const groupPostPages = useGroupPostPages(selectedGroup, currentPage);
+
+  return selectedGroup
+    ? groupPostPages
+    : mainPostPages;
+}
+
+export function useServerPostPages(
+  listingType: PostListingType,
+  throughPage: number
 ): PaginationResults<FederatedPost> {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   const servers = useCurrentAndPinnedServers();
@@ -38,7 +51,7 @@ export function usePostPages(
       dispatch(loadPostsPage({ ...server, listingType })))
     ).then((results) => {
       console.log("Loaded posts", results);
-      finishPagination(setLoadingPosts, params?.onLoaded);
+      finishPagination(setLoadingPosts);
     });
   }
 
@@ -55,19 +68,18 @@ export function finishPagination(setLoading: (v: boolean) => void, onLoaded?: ()
 }
 
 export function useGroupPostPages(
-  groupId: string | undefined,
-  throughPage: number,
-  params?: PostPageParams
+  group: FederatedGroup | undefined,
+  throughPage: number
 ): PaginationResults<FederatedPost> {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const state = useRootSelector((state: RootState) => state);
   const [loading, setLoadingPosts] = useState(false);
 
-  if (!groupId) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
+  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: true };
 
-  const results: FederatedPost[] = getGroupPostPages(state, groupId, throughPage);
+  const results: FederatedPost[] = getGroupPostPages(state, group, throughPage);
 
-  const firstPageLoaded = getHasGroupPostsPage(state.groups, groupId, 0);
+  const firstPageLoaded = getHasGroupPostsPage(state.groups, group, 0);
   useEffect(() => {
     if (!firstPageLoaded && !loading) {
       if (!accountOrServer.server) return;
@@ -78,10 +90,10 @@ export function useGroupPostPages(
     }
   });
 
-  const hasMorePages = getHasMoreGroupPostPages(state.groups, groupId, throughPage);
+  const hasMorePages = getHasMoreGroupPostPages(state.groups, group, throughPage);
 
   const reload = () => {
-    dispatch(loadGroupPostsPage({ ...accountOrServer, groupId })).then(onPageLoaded(setLoadingPosts, params?.onLoaded));
+    dispatch(loadGroupPostsPage({ ...accountOrServer, groupId: group.id })).then(onPageLoaded(setLoadingPosts));
   }
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };

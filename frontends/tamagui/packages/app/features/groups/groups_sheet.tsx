@@ -15,7 +15,7 @@ export type GroupsSheetProps = {
   selectedGroup?: FederatedGroup;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (group: FederatedGroup) => string;
+  groupPageForwarder?: (groupIdentifier: string) => string;
 
   noGroupSelectedText?: string;
   onGroupSelected?: (group: FederatedGroup) => void;

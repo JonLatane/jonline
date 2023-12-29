@@ -15,7 +15,7 @@ export type GroupButtonProps = {
   onShowInfo: () => void;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (group: Group) => string;
+  groupPageForwarder?: (groupIdentifier: string) => string;
   onGroupSelected?: (group: Group) => void;
   disabled?: boolean;
   hideInfoButton?: boolean;
@@ -33,8 +33,9 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
   const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
   // const dispatch = useAppDispatch();
+  const groupIdentifier = isPrimaryServer ? group.shortname : `${group.shortname}@${group.serverHost}`;
   const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
-    useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
+    useLink({ href: groupPageForwarder ? groupPageForwarder(groupIdentifier) : `/g/${groupIdentifier}` });
   const media = useMedia();
   const onPress = link.onPress;
   link.onPress = (e) => {

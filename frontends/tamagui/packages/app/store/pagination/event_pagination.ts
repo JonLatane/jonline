@@ -1,9 +1,8 @@
-import { Event, EventListingType } from "@jonline/api";
-import { EventsState, FederatedEvent, GroupsState, selectEventById } from "../modules";
-import { RootState} from "../store";
+import { EventListingType } from "@jonline/api";
+import { defederateId, federatedId, getFederated } from "../federation";
+import { EventsState, FederatedEvent, FederatedGroup, GroupsState, selectEventById } from "../modules";
+import { RootState } from "../store";
 import { AccountOrServer } from "../types";
-import { defederateId, getFederated } from "../federation";
-import moment from "moment";
 
 
 export function getEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number, servers: AccountOrServer[]): FederatedEvent[] {
@@ -22,7 +21,7 @@ function getEventsPage(events: EventsState, listingType: EventListingType, timeF
   });
 
   const pageEvents = instancesToEvents(events, pageInstanceIds);
-  pageEvents.sort((a,b) => (a.instances[0]?.startsAt ?? '').localeCompare(b.instances[0]?.startsAt ?? ''));
+  pageEvents.sort((a, b) => (a.instances[0]?.startsAt ?? '').localeCompare(b.instances[0]?.startsAt ?? ''));
   // pageEvents.sort((a, b) => moment(a.instances[0]?.startsAt).diff(b.instances[0]?.startsAt));
   return pageEvents;
 }
@@ -39,23 +38,35 @@ export function getHasMoreEventPages(events: EventsState, listingType: EventList
 
 }
 
-export function getGroupEventPages(state: RootState, groupId: string, timeFilter: string, throughPage: number): FederatedEvent[] {
+export function getGroupEventPages(state: RootState, group: FederatedGroup, timeFilter: string, throughPage: number): FederatedEvent[] {
   const result: FederatedEvent[] = [];
 
   for (let page = 0; page <= throughPage; page++) {
-    const pageEvents = getGroupEventsPage(state, groupId, timeFilter, page);
+    const pageEvents = getGroupEventsPage(state, group, timeFilter, page);
     // debugger;
     result.push(...pageEvents);
   }
   return result;
 }
 
-function getGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): FederatedEvent[] {
+function getGroupEventsPage(state: RootState, group: FederatedGroup, timeFilter: string, page: number): FederatedEvent[] {
+  const groupId = federatedId(group);
   const { events, groups } = state;
   const pageInstanceIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
   const pageEvents = instancesToEvents(events, pageInstanceIds);
   console.log('pageInstanceIds.length', pageInstanceIds.length, pageInstanceIds, 'pageEvents.length', pageEvents.length);
   return pageEvents;
+}
+export function getHasGroupEventsPage(state: RootState, group: FederatedGroup, timeFilter: string, page: number): boolean {
+  const { events, groups } = state;
+  const groupId = federatedId(group);
+  const data = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page];
+  return data != undefined// && instancesToEvents(events, data).length > 0;
+}
+
+export function getHasMoreGroupEventPages(groups: GroupsState, group: FederatedGroup, timeFilter: string, currentPage: number): boolean {
+  const groupId = federatedId(group);
+  return (((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[currentPage]?.length ?? 0) > 0;
 }
 
 function instancesToEvents(events: EventsState, instanceIds: string[]) {
@@ -73,14 +84,3 @@ function instancesToEvents(events: EventsState, instanceIds: string[]) {
     return singletonInstanceEvent;
   }).filter(p => p).map(p => p as FederatedEvent);
 }
-
-export function getHasGroupEventsPage(state: RootState, groupId: string, timeFilter: string, page: number): boolean {
-  const { events, groups } = state;
-  const data = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page];
-  return data != undefined// && instancesToEvents(events, data).length > 0;
-}
-
-export function getHasMoreGroupEventPages(groups: GroupsState, groupId: string, timeFilter: string, currentPage: number): boolean {
-  return (((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[currentPage]?.length ?? 0) > 0;
-}
-

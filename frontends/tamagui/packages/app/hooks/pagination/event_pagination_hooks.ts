@@ -1,7 +1,7 @@
 import { Event, EventListingType, TimeFilter } from "@jonline/api";
 import { useCredentialDispatch, useCurrentAndPinnedServers } from "app/hooks";
 
-import { FederatedEvent, RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
+import { FederatedEvent, FederatedGroup, RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
 import { PostPageParams, finishPagination, onPageLoaded } from "./post_pagination_hooks";
@@ -10,6 +10,20 @@ import { PaginationResults } from "./pagination_hooks";
 export type EventPageParams = PostPageParams & { filter?: TimeFilter };
 
 export function useEventPages(
+  listingType: EventListingType,
+  selectedGroup: FederatedGroup | undefined,
+): PaginationResults<FederatedEvent> {
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const mainPostPages = useServerEventPages(listingType, currentPage);
+  const groupPostPages = useGroupEventPages(selectedGroup, currentPage);
+
+  return selectedGroup
+    ? groupPostPages
+    : mainPostPages;
+}
+
+export function useServerEventPages(
   listingType: EventListingType,
   throughPage: number,
   params?: EventPageParams
@@ -41,25 +55,29 @@ export function useEventPages(
       dispatch(loadEventsPage({ ...server, listingType })))
     ).then((results) => {
       console.log("Loaded events", results);
-      finishPagination(setLoadingEvents, params?.onLoaded);
+      finishPagination(setLoadingEvents);
     });
   }
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }
 
-export function useGroupEventPages(groupId: string | undefined, throughPage: number, params?: EventPageParams): PaginationResults<FederatedEvent> {
+export function useGroupEventPages(
+  group: FederatedGroup | undefined,
+    throughPage: number, 
+  params?: EventPageParams
+  ): PaginationResults<FederatedEvent> {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const state = useRootSelector((state: RootState) => state);
   const [loading, setLoadingEvents] = useState(false);
 
-  if (!groupId) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
+  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
 
   const timeFilter = serializeTimeFilter(params?.filter);
 
-  const results: FederatedEvent[] = getGroupEventPages(state, groupId, timeFilter, throughPage);
+  const results: FederatedEvent[] = getGroupEventPages(state, group, timeFilter, throughPage);
 
-  const firstPageLoaded = getHasGroupEventsPage(state, groupId, timeFilter, 0);
+  const firstPageLoaded = getHasGroupEventsPage(state, group, timeFilter, 0);
   useEffect(() => {
     if (!firstPageLoaded && !loading) {
       if (!accountOrServer.server) return;
@@ -68,14 +86,14 @@ export function useGroupEventPages(groupId: string | undefined, throughPage: num
       setLoadingEvents(true);
       reload();
     }
-  }, [loading, optServerID(accountOrServer.server), groupId, timeFilter]);
-  const hasMorePages = getHasMoreGroupEventPages(state.groups, groupId, timeFilter, throughPage);
+  }, [loading, optServerID(accountOrServer.server), group, timeFilter]);
+  const hasMorePages = getHasMoreGroupEventPages(state.groups, group, timeFilter, throughPage);
 
-  function reload() {
-    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId: groupId!, filter: params?.filter }))
-      .then(onPageLoaded(setLoadingEvents, params?.onLoaded));
+  const reload = () => {
+    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId: group.id!, filter: params?.filter }))
+      .then(onPageLoaded(setLoadingEvents));
   }
 
-  console.log("useGroupEventPages", groupId, throughPage, results, hasMorePages, firstPageLoaded);
+  console.log("useGroupEventPages", group, throughPage, results, hasMorePages, firstPageLoaded);
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }

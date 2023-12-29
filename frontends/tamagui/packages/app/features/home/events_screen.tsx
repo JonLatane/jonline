@@ -6,7 +6,7 @@ import StickyBox from "react-sticky-box";
 // import { StickyCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
 import { NavigationContextConsumer } from 'app/contexts';
-import { useEventPages, useGroupEventPages, usePaginatedRendering } from 'app/hooks';
+import { useEventPages, usePaginatedRendering } from 'app/hooks';
 import { setDocumentTitle } from 'app/utils';
 import moment from 'moment';
 import { createParam } from 'solito';
@@ -52,14 +52,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     setDocumentTitle(`Events | ${title}`)
   });
 
-  const [currentPage, setCurrentPage] = useState(0);
-  const mainEventPages = useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, currentPage);
-  const groupEventPages = useGroupEventPages(selectedGroup?.id, currentPage);
-
-  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } = selectedGroup
-    ? groupEventPages
-    : mainEventPages;
-
+  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
+    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup);
 
   const pagination = usePaginatedRendering(allEvents, 7);
   const paginatedEvents = pagination.results;
@@ -124,7 +118,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     <TabsNavigation
       appSection={AppSection.EVENTS}
       selectedGroup={selectedGroup}
-      groupPageForwarder={(group) => `/g/${group.shortname}/events`}
+      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/events`}
       withServerPinning
     >
       <NavigationContextConsumer>

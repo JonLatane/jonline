@@ -18,18 +18,20 @@ import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
 import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup } from "./group_actions";
 
 export type FederatedGroup = FederatedEntity<Group>;
-
+export function federatedShortname(group: FederatedGroup): string {
+  return `${group.shortname}@${group.serverHost}`;
+}
 export interface GroupsState {
   pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
   entities: Dictionary<FederatedGroup>;
   // By GroupListingType -> page (as a number) -> groupIds
   pages: Federated<GroupedPages>;
-  shortnameIds: Federated<Dictionary<string>>;
-  groupPostPages: Federated<GroupedPages>;
-  groupEventPages: Federated<GroupedEventInstancePages>;
-  postIdGroupPosts: Federated<Dictionary<GroupPost[]>>;
-  failedShortnames: Federated<string[]>;
+  shortnameIds: Dictionary<string>;
+  groupPostPages: GroupedPages;
+  groupEventPages: GroupedEventInstancePages;
+  postIdGroupPosts: Dictionary<GroupPost[]>;
+  failedShortnames: string[];
   mutatingGroupIds: string[];
 }
 
@@ -41,12 +43,12 @@ const groupsAdapter: EntityAdapter<FederatedGroup> = createEntityAdapter<Federat
 
 const initialState: GroupsState = {
   pagesStatus: createFederatedPagesStatus(),
-  shortnameIds: createFederated({}),
-  failedShortnames: createFederated([]),
+  shortnameIds: {},
+  failedShortnames: [],
   pages: createFederated({}),
-  groupPostPages: createFederated({}),
-  groupEventPages: createFederated({}),
-  postIdGroupPosts: createFederated({}),
+  groupPostPages: {},
+  groupEventPages: {},
+  postIdGroupPosts: {},
   mutatingGroupIds: [],
   ...groupsAdapter.getInitialState(),
 };
@@ -70,28 +72,15 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
     resetGroups: () => initialState,
   },
   extraReducers: (builder) => {
-    // builder.addCase(createGroup.pending, (state) => {
-    //   state.status = "loading";
-    // });
     builder.addCase(createGroup.fulfilled, (state, action) => {
-      // console.log("createGroup.fulfilled");
-      // state.status = "loaded";
       const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
-      state.shortnameIds[group.shortname] = group.id;
+      state.shortnameIds[federatedShortname(group)] = federatedId(group);
     });
-    // builder.addCase(createGroup.rejected, (state, action) => {
-    //   console.log("createGroup.rejected");
-    //   state.status = "errored";
-    //   state.error = action.error as Error;
-    //   state.errorMessage = formatError(action.error as Error);
-    //   state.error = action.error as Error;
-    // });
     builder.addCase(updateGroup.fulfilled, (state, action) => {
       const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
-      state.shortnameIds[action.meta.arg.shortname] = undefined;
-      state.shortnameIds[group.shortname] = group.id;
+      state.shortnameIds[federatedShortname(group)] = federatedId(group);
       setTimeout(() => {
         // TODO: Use separate dispatch to delete old shortname/ID link.
         //
@@ -108,9 +97,7 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
       setFederated(state.pagesStatus, action, "loaded");
       const groups = federatedEntities(action.payload.groups, action);
       groupsAdapter.upsertMany(state, groups);
-      const shortnameIds = getFederated(state.shortnameIds, action);
-      action.payload.groups.forEach(g => shortnameIds[g.shortname] = g.id);
-      setFederated(state.shortnameIds, action, shortnameIds);
+      groups.forEach(group => state.shortnameIds[federatedShortname(group)] = federatedId(group));
 
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultGroupListingType;
@@ -131,7 +118,6 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
     builder.addCase(loadPostGroupPosts.fulfilled, (state, action) => {
       const { groupPosts } = action.payload;
       state.postIdGroupPosts[action.meta.arg.postId] = groupPosts;
-      // state.successMessage = `${groupPosts.length} Group Posts loaded for PostID=${action.meta.arg.postId}.`;
     });
 
     builder.addCase(createGroupPost.fulfilled, (state, action) => {
@@ -154,71 +140,29 @@ export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice
 
     builder.addCase(loadGroupPostsPage.fulfilled, (state, action) => {
       const { posts } = action.payload;
-      const postIds = posts.map(p => p.id);
+      const postIds = posts.map(p => federateId(p.id, action));
 
-      // NOTE: PostsState adds the post data from this same response
-      // on loadGroupPostsPage.fulfilled.
-
-      const groupId = action.meta.arg.groupId;
-      const page = action.meta.arg.page;
+      const groupId = federateId(action.meta.arg.groupId, action);
+      const page = action.meta.arg.page ?? 0;
       if (!state.groupPostPages[groupId] || page === 0) state.groupPostPages[groupId] = [];
-      const postPages: PaginatedIds = state.groupPostPages[groupId]!;
-      // Sensible approach:
-      // postPages[page] = postIds;
-
-      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
-      let initialPage: number = 0;
-      while (action.meta.arg.page && postPages[initialPage]) {
-        initialPage++;
-      }
-      const chunkSize = 7;
-      for (let i = 0; i < postIds.length; i += chunkSize) {
-        const chunk = postIds.slice(i, i + chunkSize);
-        state.groupPostPages[groupId]![initialPage + (i / chunkSize)] = chunk;
-      }
-      if (state.groupPostPages[groupId]![0] == undefined) {
-        state.groupPostPages[groupId]![0] = [];
-      }
+      state.groupPostPages[groupId]![page] = postIds;
     });
 
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
       const { events } = action.payload;
-      const eventInstanceIds = events.map(e => e.instances[0]!.id);
+      const eventInstanceIds = events.map(e => federateId(e.instances[0]!.id, action));
 
       // NOTE: EventsState adds the post data from this same response
       // on loadGroupPostsPage.fulfilled.
 
-      const groupId = action.meta.arg.groupId;
-      const page = action.meta.arg.page;
+      const groupId = federateId(action.meta.arg.groupId, action);
+      const page = action.meta.arg.page ?? 0;
 
       const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
       if (!state.groupEventPages[groupId]) state.groupEventPages[groupId] = {};
       if (!state.groupEventPages[groupId]![serializedFilter] || page === 0) state.groupEventPages[groupId]![serializedFilter] = [];
-
-      const eventPages: string[][] = state.groupEventPages[groupId]![serializedFilter]!;
-      // Sensible approach:
-      // postPages[page] = postIds;
-
-      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
-      let initialPage: number = 0;
-      while (action.meta.arg.page && eventPages[initialPage]) {
-        initialPage++;
-      }
-      const chunkSize = 7;
-      for (let i = 0; i < eventInstanceIds.length; i += chunkSize) {
-        const chunk = eventInstanceIds.slice(i, i + chunkSize);
-        state.groupEventPages[groupId]![serializedFilter]![initialPage + (i / chunkSize)] = chunk;
-      }
-      if (state.groupEventPages[groupId]![serializedFilter]![0] == undefined) {
-        state.groupEventPages[groupId]![serializedFilter]![0] = [];
-      }
+      state.groupEventPages[groupId]![serializedFilter]![page] = eventInstanceIds;
     });
-    // builder.addCase(loadGroupEventsPage.rejected, (state, action) => {
-    //   state.eventPageStatus = "errored";
-    //   state.error = action.error as Error;
-    //   state.errorMessage = formatError(action.error as Error);
-    //   state.error = action.error as Error;
-    // });
 
     builder.addCase(loadGroup.fulfilled, (state, action) => {
       const group = federatedPayload(action);

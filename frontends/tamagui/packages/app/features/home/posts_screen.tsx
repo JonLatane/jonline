@@ -1,7 +1,7 @@
 import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { useCurrentAndPinnedServers, usePaginatedRendering } from 'app/hooks';
-import { useGroupPostPages, usePostPages } from 'app/hooks/pagination/post_pagination_hooks';
+import { useGroupPostPages, usePostPages, useServerPostPages } from 'app/hooks/pagination/post_pagination_hooks';
 import { RootState, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -34,13 +34,8 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
     setDocumentTitle(`Posts | ${title}`);
   });
 
-  const [currentPage, setCurrentPage] = useState(0);
-  const mainPostPages = usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPage);
-  const groupPostPages = useGroupPostPages(selectedGroup?.id, currentPage);
-
-  const { results: allPosts, loading: loadingPosts, hasMorePages, firstPageLoaded } = selectedGroup
-    ? groupPostPages
-    : mainPostPages;
+  const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded } =
+    usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, selectedGroup);
 
   const pagination = usePaginatedRendering(allPosts, 10);
   const paginatedPosts = pagination.results;
@@ -59,7 +54,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
     <TabsNavigation
       appSection={AppSection.POSTS}
       selectedGroup={selectedGroup}
-      groupPageForwarder={(group) => `/g/${group.shortname}/posts`}
+      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/posts`}
       withServerPinning
     >
       {loadingPosts ? <StickyBox style={{ zIndex: 10, height: 0 }}>

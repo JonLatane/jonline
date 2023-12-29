@@ -23,7 +23,7 @@ export type TabsNavigationProps = {
   customHomeAction?: () => void;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (group: Group) => string;
+  groupPageForwarder?: (groupIdentifier: string) => string;
   groupPageExiter?: () => void;
   withServerPinning?: boolean;
 };

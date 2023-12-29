@@ -17,6 +17,10 @@ import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfol
 import { useAccountOrServer } from "app/hooks";
 
 export type FederatedUser = FederatedEntity<User>;
+export function federatedUsername(user: FederatedUser): string {
+  return `${user.username}@${user.serverHost}`;
+}
+
 export interface UsersState {
   pagesStatus: FederatedPagesStatus;
   ids: EntityId[];

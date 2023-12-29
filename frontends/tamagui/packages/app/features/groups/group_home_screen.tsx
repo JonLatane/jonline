@@ -1,7 +1,7 @@
 import { GetGroupsRequest, Group } from '@jonline/api'
 import { Spinner, YStack, useWindowDimensions } from '@jonline/ui'
-import { useCredentialDispatch } from 'app/hooks'
-import { FederatedGroup, RootState, loadGroupsPage, selectGroupById, useRootSelector, useServerTheme } from 'app/store'
+import { useCredentialDispatch, useFederatedDispatch, useServer } from 'app/hooks'
+import { FederatedGroup, RootState, federateId, loadGroupsPage, parseFederatedId, selectGroupById, useRootSelector, useServerTheme } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { BaseHomeScreen } from '../home/home_screen'
@@ -20,9 +20,13 @@ export function GroupHomeScreen() {
 }
 
 export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComponent }: GroupHomeScreenProps) => {
-  const [shortname] = useParam('shortname');
-  const { dispatch, accountOrServer } = useCredentialDispatch();
-  const groupId = useRootSelector((state: RootState) => state.groups.shortnameIds[shortname!]);
+  const [inputShortname] = useParam('shortname');
+  const currentServer = useServer();
+  const { id: shortname, serverHost } = parseFederatedId(inputShortname ?? '', currentServer?.host);
+  const federatedShortname = federateId(shortname, serverHost);
+  const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
+  const shortnameIds = useRootSelector((state: RootState) => state.groups.shortnameIds);
+  const groupId = shortnameIds[federatedShortname!];
   const group = useRootSelector((state: RootState) =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
   const [loadingGroups, setLoadingGroups] = useState(false);

@@ -62,13 +62,14 @@ export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage
     const { groupId } = request;
     const client = await getCredentialClient(request);
     const result = await client.getPosts({ groupId, listingType: PostListingType.GROUP_POSTS }, client.credential);
+    // debugger;
     return result;
   }
 );
 
 export type LoadGroupEventsPage = AccountOrServer & { groupId: string, page?: number, filter?: TimeFilter };
 export const loadGroupEventsPage: AsyncThunk<GetEventsResponse, LoadGroupEventsPage, any> = createAsyncThunk<GetEventsResponse, LoadGroupEventsPage>(
-  "groups/loadGroupEventsPage",
+  "groups/loadEventsPage",
   async (request) => {
     const { groupId, filter } = request;
     const client = await getCredentialClient(request);

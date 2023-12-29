@@ -1,6 +1,6 @@
 import { PostListingType } from "@jonline/api";
-import { getFederated } from "../federation";
-import { FederatedPost, GroupsState, PostsState, selectPostById } from "../modules";
+import { federatedId, getFederated } from "../federation";
+import { FederatedGroup, FederatedPost, GroupsState, PostsState, selectPostById } from "../modules";
 import { RootState } from "../store";
 import { AccountOrServer } from "../types";
 
@@ -30,7 +30,7 @@ function getPostsPage(posts: PostsState, listingType: PostListingType, page: num
   });
   const pagePosts = pagePostIds.map(id => selectPostById(posts, id))
     .filter(p => p) as FederatedPost[];
-    pagePosts.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+  pagePosts.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
   return pagePosts;
 }
 
@@ -44,27 +44,31 @@ export function getHasMorePostPages(posts: PostsState, listingType: PostListingT
   return servers.some(server => server.server && ((posts.postPages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
 }
 
-function getGroupPostsPage(state: RootState, groupId: string, page: number): FederatedPost[] {
-  const { posts, groups } = state;
-  const pagePostIds: string[] = (groups.groupPostPages[groupId] ?? {})[page] ?? [];
-  const pagePosts = pagePostIds.map(id => selectPostById(posts, id)).filter(p => p) as FederatedPost[];
-  return pagePosts;
-}
-
-export function getGroupPostPages(state: RootState, groupId: string, throughPage: number): FederatedPost[] {
+export function getGroupPostPages(state: RootState, group: FederatedGroup, throughPage: number): FederatedPost[] {
   const result: FederatedPost[] = [];
-  console.log('getGroupPostPages', groupId, throughPage);
+  console.log('getGroupPostPages', group, throughPage);
   for (let page = 0; page <= throughPage; page++) {
-    const pagePosts = getGroupPostsPage(state, groupId, page);
+    const pagePosts = getGroupPostsPage(state, group, page);
     result.push(...pagePosts);
   }
   return result;
 }
 
-export function getHasGroupPostsPage(groups: GroupsState, groupId: string, page: number): boolean {
+function getGroupPostsPage(state: RootState, group: FederatedGroup, page: number): FederatedPost[] {
+  const groupId = federatedId(group);
+  const { posts, groups } = state;
+  const pagePostIds: string[] = (groups.groupPostPages[groupId] ?? {})[page] ?? [];
+  const pagePosts = pagePostIds.map(id => selectPostById(posts, id)).filter(p => p) as FederatedPost[];
+  debugger;
+  return pagePosts;
+}
+
+export function getHasGroupPostsPage(groups: GroupsState, group: FederatedGroup, page: number): boolean {
+  const groupId = federatedId(group);
   return (groups.groupPostPages[groupId] ?? {})[page] != undefined;
 }
 
-export function getHasMoreGroupPostPages(groups: GroupsState, groupId: string, currentPage: number): boolean {
+export function getHasMoreGroupPostPages(groups: GroupsState, group: FederatedGroup, currentPage: number): boolean {
+  const groupId = federatedId(group);
   return ((groups.groupPostPages[groupId] ?? {})[currentPage]?.length ?? 0) > 0;
 }
