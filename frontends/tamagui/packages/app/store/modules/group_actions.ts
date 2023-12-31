@@ -60,7 +60,9 @@ export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage
   "groups/loadPostsPage",
   async (request) => {
     const { groupId } = request;
+    // debugger;
     const client = await getCredentialClient(request);
+    // debugger;
     const result = await client.getPosts({ groupId, listingType: PostListingType.GROUP_POSTS }, client.credential);
     // debugger;
     return result;

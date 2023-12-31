@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
-import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { useAppDispatch, useEventPages, useGroupPostPages, usePaginatedRendering, usePostPages, useServerPostPages } from 'app/hooks';
+import { useAppDispatch, useEventPages, usePaginatedRendering, usePostPages } from 'app/hooks';
 import { FederatedGroup, RootState, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -86,7 +86,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
-        {eventsLoaded && postsLoaded
+        {(eventsLoaded && postsLoaded) || allEvents.length > 0
           ? <XStack w='100%' px='$3'>
             <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
               <Heading size='$6'>Upcoming Events</Heading>
@@ -108,12 +108,12 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </XStack>
           : undefined}
         <AnimatePresence>
-          {showEventsOnLatest && eventsLoaded && postsLoaded ?
+          {showEventsOnLatest && ((eventsLoaded && postsLoaded) || allEvents.length > 0) ?
             <YStack
               key='latest-events'
               w='100%'
-              h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
-              overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
+              // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
+              // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
               animation='standard'
               {...standardAnimation}
             >
@@ -127,8 +127,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 : <ScrollView horizontal
                   w='100%'>
                   <XStack w={eventCardWidth} space='$2' mx='$2' my='auto'>
-                    {paginatedEvents.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`}
-                      event={event} isPreview horizontal xs />)}
+                    {paginatedEvents.map((event) =>
+                      <XStack key={`event-preview-${event.id}-${event.instances[0]!.id}`} animation='standard' {...standardHorizontalAnimation}>
+                        <EventCard event={event} isPreview horizontal xs />
+                      </XStack>)}
                     <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
                       <YStack ai='center' py='$3' jc='center'>
                         <Heading size='$4'>More</Heading>
@@ -143,7 +145,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         </AnimatePresence>
 
         <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
-          {eventsLoaded && postsLoaded
+          {(eventsLoaded && postsLoaded) || (allPosts.length > 0 || allEvents.length > 0)
             ? allPosts.length === 0
               ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}
               // animation='quick'

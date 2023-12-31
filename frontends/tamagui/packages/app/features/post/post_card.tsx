@@ -225,7 +225,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   </YStack>;
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
-      <YStack w='100%' ref={ref!} key={`post-card-${post.id}-${isPreview ? '-preview' : ''}`}>
+      <YStack w='100%' ref={ref!}>
         {previewParent && post.replyToPostId
           ? <XStack w='100%'>
             {mediaQuery.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}

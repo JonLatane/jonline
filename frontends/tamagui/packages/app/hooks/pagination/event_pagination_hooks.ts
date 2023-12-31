@@ -1,11 +1,11 @@
-import { Event, EventListingType, TimeFilter } from "@jonline/api";
-import { useCredentialDispatch, useCurrentAndPinnedServers } from "app/hooks";
+import { EventListingType, TimeFilter } from "@jonline/api";
+import { useCredentialDispatch, useCurrentAndPinnedServers, useFederatedDispatch } from "app/hooks";
 
 import { FederatedEvent, FederatedGroup, RootState, getEventPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
-import { PostPageParams, finishPagination, onPageLoaded } from "./post_pagination_hooks";
 import { PaginationResults } from "./pagination_hooks";
+import { PostPageParams, finishPagination, onPageLoaded } from "./post_pagination_hooks";
 
 export type EventPageParams = PostPageParams & { filter?: TimeFilter };
 
@@ -64,14 +64,15 @@ export function useServerEventPages(
 
 export function useGroupEventPages(
   group: FederatedGroup | undefined,
-    throughPage: number, 
+  throughPage: number,
   params?: EventPageParams
-  ): PaginationResults<FederatedEvent> {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+): PaginationResults<FederatedEvent> {
+  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
+
+  const { dispatch, accountOrServer } = useFederatedDispatch(group);
   const state = useRootSelector((state: RootState) => state);
   const [loading, setLoadingEvents] = useState(false);
 
-  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
 
   const timeFilter = serializeTimeFilter(params?.filter);
 
@@ -94,6 +95,7 @@ export function useGroupEventPages(
       .then(onPageLoaded(setLoadingEvents));
   }
 
+  // debugger;
   console.log("useGroupEventPages", group, throughPage, results, hasMorePages, firstPageLoaded);
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }

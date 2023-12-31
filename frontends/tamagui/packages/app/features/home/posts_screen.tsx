@@ -65,7 +65,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' mt='$3' maw={800} space>
-        {firstPageLoaded
+        {firstPageLoaded || allPosts.length > 0
           ? allPosts.length == 0
             ? <YStack width='100%' maw={600} jc="center" ai="center">
               <Heading size='$5' mb='$3'>No posts found.</Heading>
@@ -75,7 +75,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               {paginatedPosts.map((post) => {
                 return <PostCard key={`post-${federatedId(post)}`} post={post} isPreview />;
               })}
-              <PaginationIndicator {...pagination}/>
+              <PaginationIndicator {...pagination} />
             </YStack>
           : undefined
         }

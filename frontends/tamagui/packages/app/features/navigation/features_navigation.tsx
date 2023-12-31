@@ -2,7 +2,7 @@ import { Group, User, UserListingType } from "@jonline/api";
 import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
 import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 } from "@tamagui/lucide-icons";
 import { useAccountOrServer, useCredentialDispatch, useLocalConfiguration } from "app/hooks";
-import { RootState, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, RootState, federateId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
@@ -113,32 +113,35 @@ export function useInlineFeatureNavigation() {
 export type FeaturesNavigationProps = {
   appSection?: AppSection;
   appSubsection?: AppSubsection;
-  selectedGroup?: Group;
-  // Forwarder to link to a group page. Defaults to /g/:shortname.
-  // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (group: Group) => string;
+  selectedGroup?: FederatedGroup;
 };
 
-export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, groupPageForwarder }: FeaturesNavigationProps) {
+export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup }: FeaturesNavigationProps) {
   const { account, server } = useAccountOrServer();
   const mediaQuery = useMedia();
   const { primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
 
+  const groupIdentifier = selectedGroup
+    ? (selectedGroup?.serverHost === server?.host
+      ? selectedGroup.shortname
+      : federateId(selectedGroup.shortname, selectedGroup.serverHost))
+    : undefined;
+
   const latestLink = useLink({
     href:
-      selectedGroup == undefined ? '/' : `/g/${selectedGroup.shortname}`
+      selectedGroup === undefined ? '/' : `/g/${groupIdentifier}`
   });
   const postsLink = useLink({
     href:
-      selectedGroup == undefined ? '/posts' : `/g/${selectedGroup.shortname}/posts`
+      selectedGroup === undefined ? '/posts' : `/g/${groupIdentifier}/posts`
   });
   const eventsLink = useLink({
     href:
-      selectedGroup == undefined ? '/events' : `/g/${selectedGroup.shortname}/events`
+      selectedGroup === undefined ? '/events' : `/g/${groupIdentifier}/events`
   });
   const peopleLink = useLink({
     href:
-      selectedGroup == undefined ? '/people' : `/g/${selectedGroup.shortname}/members`
+      selectedGroup === undefined ? '/people' : `/g/${groupIdentifier}/members`
   });
   const followRequestsLink = useLink({ href: '/people/follow_requests' });
   const myMediaLink = useLink({ href: '/media' });

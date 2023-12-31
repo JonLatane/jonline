@@ -7,7 +7,7 @@ import {
   PayloadAction
 } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
-import { deleteClient, getServerClient, resetCredentialedData, store } from "..";
+import { deleteClient, getServerClient, pinServer, resetCredentialedData, store } from "..";
 import { JonlineServer } from "../types";
 
 export function optServerID(server: JonlineServer | undefined): string | undefined {
@@ -130,11 +130,10 @@ function initializeWithServer(initialServer: JonlineServer) {
 
       // debugger;
       (server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? []).forEach(host => {
-        const recommendedServer = {
-          host: host,
-          secure: true,
-        };
-        getServerClient(recommendedServer);
+        const recommendedServer = { host: host, secure: true };
+        const pinnedServer = { serverId: serverID(recommendedServer), pinned: true };
+        getServerClient(recommendedServer)
+          .then(() => store.dispatch(pinServer(pinnedServer)));
       });
     }
   });

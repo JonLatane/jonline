@@ -264,9 +264,10 @@ export const EventCard: React.FC<Props> = ({
   ;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
 
   const componentKey = useComponentKey('event-card');
+  const recommendedHorizontalSize = (mediaQuery.gtSm ? 400 : 310);
   const backgroundSize = document.getElementById(componentKey)?.clientWidth ?? (
     isPreview && horizontal
-      ? (mediaQuery.gtSm ? 400 : 310)
+      ? recommendedHorizontalSize
       : postBackgroundSize(mediaQuery)
   );
   const foregroundSize = backgroundSize * 0.7;
@@ -610,9 +611,10 @@ export const EventCard: React.FC<Props> = ({
 
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
-      <YStack w='100%' key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}>
+      <YStack w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
         <Card theme="dark" elevate size="$4" bordered id={componentKey}
-          key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
+          // key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
+          animation='standard'
           borderColor={showServerInfo ? primaryColor : undefined}
           margin='$0'
           marginBottom='$3'

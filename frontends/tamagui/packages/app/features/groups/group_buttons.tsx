@@ -44,19 +44,6 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
   }
   const { textColor, primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
 
-  const joined = passes(group.currentUserMembership?.userModeration)
-    && passes(group.currentUserMembership?.groupModeration);
-  const membershipRequested = group.currentUserMembership && !joined && passes(group.currentUserMembership?.userModeration);
-  const invited = group.currentUserMembership && !joined && passes(group.currentUserMembership?.groupModeration)
-  const requiresPermissionToJoin = pending(group.defaultMembershipModeration);
-  const isLocked = useRootSelector((state: RootState) => isGroupLocked(state.groups, federatedId(group)));
-
-  const onJoinPressed = () => {
-    // e.stopPropagation();
-    const join = !(joined || membershipRequested || invited);
-    dispatch(joinLeaveGroup({ groupId: group.id, join, ...accountOrServer }));
-  };
-
   const avatarUrl = useMediaUrl(group.avatar?.id);
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
   const [groupNameBeforeEmoji, groupNameEmoji, groupNameAfterEmoji] = splitOnFirstEmoji(group.name);
@@ -167,26 +154,6 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
     </XStack>
     <XStack flexWrap='wrap' w='100%'>
       <GroupJoinLeaveButton group={group} hideLeaveButton={hideLeaveButton} />
-      {/* {accountOrServer.account && (!hideLeaveButton || !joined)
-        ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
-          <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
-            // {...standardAnimation} animation='quick'
-            mb='$2'
-            p='$3'
-            disabled={isLocked} opacity={isLocked ? 0.5 : 1}
-            onPress={onJoinPressed}>
-            <YStack jc='center' ac='center'>
-              <Heading jc='center' ta='center' size='$2' color={!joined && !membershipRequested ? primaryTextColor : textColor}>
-                {!joined && !membershipRequested ? requiresPermissionToJoin ? 'Join Request' : 'Join'
-                  : joined ? 'Leave' : 'Cancel Request'}
-              </Heading>
-              {requiresPermissionToJoin && joined ? <Paragraph size='$1'>
-                Permission required to re-join
-              </Paragraph>
-                : undefined}
-            </YStack>
-          </Button>
-        </XStack> : undefined} */}
       {extraListItemChrome?.(group)}
     </XStack>
     {accountOrServer.account || extraListItemChrome
@@ -201,11 +168,10 @@ export type GroupJoinLeaveButtonProps = {
 }
 
 export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveButtonProps) {
-  const accountOrServer = useAccountOrServer();
+  const { dispatch, accountOrServer } = useFederatedDispatch(group);
   const { account } = accountOrServer;
-  const dispatch = useAppDispatch();
-
-  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const server = accountOrServer.server;
+  const { textColor, primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
 
   const joined = passes(group.currentUserMembership?.userModeration)
     && passes(group.currentUserMembership?.groupModeration);

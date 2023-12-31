@@ -1,9 +1,9 @@
-import { Post, PostListingType } from "@jonline/api";
-import { useCredentialDispatch, useForceUpdate } from "app/hooks";
+import { PostListingType } from "@jonline/api";
+import { useCredentialDispatch } from "app/hooks";
 import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostPages, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
-import { useCurrentAndPinnedServers } from '../account_and_server_hooks';
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
+import { useCurrentAndPinnedServers, useFederatedDispatch } from '../account_and_server_hooks';
 import { PaginationResults } from "./pagination_hooks";
 
 export type PostPageParams = {};
@@ -71,11 +71,12 @@ export function useGroupPostPages(
   group: FederatedGroup | undefined,
   throughPage: number
 ): PaginationResults<FederatedPost> {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: true };
+
+  const { dispatch, accountOrServer } = useFederatedDispatch(group);
   const state = useRootSelector((state: RootState) => state);
   const [loading, setLoadingPosts] = useState(false);
 
-  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: true };
 
   const results: FederatedPost[] = getGroupPostPages(state, group, throughPage);
 

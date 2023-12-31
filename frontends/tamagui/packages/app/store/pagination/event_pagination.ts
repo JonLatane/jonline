@@ -53,6 +53,7 @@ function getGroupEventsPage(state: RootState, group: FederatedGroup, timeFilter:
   const groupId = federatedId(group);
   const { events, groups } = state;
   const pageInstanceIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
+  // debugger;
   const pageEvents = instancesToEvents(events, pageInstanceIds);
   console.log('pageInstanceIds.length', pageInstanceIds.length, pageInstanceIds, 'pageEvents.length', pageEvents.length);
   return pageEvents;

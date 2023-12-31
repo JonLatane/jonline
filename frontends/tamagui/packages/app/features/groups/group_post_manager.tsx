@@ -1,16 +1,16 @@
-import { useCredentialDispatch, useLocalConfiguration, useServer } from 'app/hooks';
-import { RootState, createGroupPost, deleteGroupPost, loadPostGroupPosts, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
+import { useCredentialDispatch, useFederatedAccountOrServer, useLocalConfiguration, useServer } from 'app/hooks';
+import { FederatedGroup, RootState, createGroupPost, deleteGroupPost, getServerTheme, loadPostGroupPosts, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { Group, GroupPost, Permission, Post, PostContext } from "@jonline/api";
-import { Button, Spinner, Text, XStack, YStack } from '@jonline/ui';
+import { Button, Spinner, Text, XStack, YStack, useTheme } from '@jonline/ui';
 
 
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useLink } from "solito/link";
+import { useGroupContext } from "../../contexts/group_context";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 import { AuthorInfo } from "../post/author_info";
-import { useGroupContext } from "../../contexts/group_context";
 import { GroupsSheet } from './groups_sheet';
 
 interface Props {
@@ -130,14 +130,15 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
 
 
 interface GroupPostChromeProps {
-  group: Group,
+  group: FederatedGroup,
   groupPost: GroupPost | undefined;
   post: Post;
   createViewHref?: (group: Group) => string;
 }
 
 export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPost, post, createViewHref, }) => {
-  const server = useServer();
+  const { server } = useFederatedAccountOrServer(group);
+  const isPrimaryServer = server?.host === useServer()?.host;
   const shared = groupPost != undefined;
   const authorData = groupPost ? Post.fromPartial({
     createdAt: groupPost.createdAt,
@@ -147,7 +148,7 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
   }) : undefined;
   // const accountOrServer = useAccountOrServer();
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { navColor, navTextColor, primaryAnchorColor } = useServerTheme();
+  const { navColor, navTextColor, primaryAnchorColor } = getServerTheme(server, useTheme());
 
   const canShare = !shared && hasPermission(group.currentUserMembership, Permission.CREATE_POSTS);
   const canUnshare = shared && (groupPost.userId === accountOrServer.account?.user?.id || hasAdminPermission(accountOrServer.account?.user) || hasAdminPermission(group.currentUserMembership));
@@ -174,7 +175,7 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
       <XStack f={1}>
         <XStack mx='auto'>
           <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
-            {shared ? "Shared by" : 'Not yet shared.'}
+            {shared ? "Shared by" : isPrimaryServer ? 'Not yet shared.' : 'Not shareable to other servers.'}
           </Text>
           {shared ? <AuthorInfo post={authorData!} /> : undefined}
         </XStack>

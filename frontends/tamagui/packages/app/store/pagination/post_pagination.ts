@@ -59,7 +59,7 @@ function getGroupPostsPage(state: RootState, group: FederatedGroup, page: number
   const { posts, groups } = state;
   const pagePostIds: string[] = (groups.groupPostPages[groupId] ?? {})[page] ?? [];
   const pagePosts = pagePostIds.map(id => selectPostById(posts, id)).filter(p => p) as FederatedPost[];
-  debugger;
+  // debugger;
   return pagePosts;
 }
 

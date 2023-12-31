@@ -1,7 +1,7 @@
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, useTheme } from "@jonline/ui";
 import { ChevronRight, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, useServer } from "app/hooks";
-import { JonlineServer, PinnedServer, getServerTheme, pinServer, selectAllServers, serverID, setViewingRecommendedServers } from "app/store";
+import { FederatedPagesStatus, JonlineServer, PinnedServer, getServerTheme, pinServer, selectAllServers, serverID, setViewingRecommendedServers } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useEffect, useState } from "react";
 import RecommendedServer from "../accounts/recommended_server";
@@ -13,8 +13,9 @@ export type PinnedServerSelectorProps = {
   show?: boolean;
   transparent?: boolean;
   affectsNavigation?: boolean;
+  pagesStatuses?: FederatedPagesStatus[];
 };
-export function PinnedServerSelector({ show, transparent, affectsNavigation }: PinnedServerSelectorProps) {
+export function PinnedServerSelector({ show, transparent, affectsNavigation, pagesStatuses }: PinnedServerSelectorProps) {
   const dispatch = useAppDispatch();
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
 
@@ -57,9 +58,9 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation }: P
     [
       allServers.map(serverID).toString(),
       pinnedServers.map(p => p.serverId).toString(),
-      currentServer ? serverID(currentServer) : undefined, 
+      currentServer ? serverID(currentServer) : undefined,
       viewingRecommendedServers,
-      browsingServers, 
+      browsingServers,
       showDataSources
     ]
   );
