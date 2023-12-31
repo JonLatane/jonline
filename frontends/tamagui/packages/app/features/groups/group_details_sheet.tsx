@@ -4,7 +4,7 @@ import { PayloadAction } from '@reduxjs/toolkit';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
 import { useAccountOrServer, useCredentialDispatch, useCurrentAndPinnedServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
-import { FederatedGroup, RootState, actionFailed, deleteGroup, updateGroup, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, RootState, actionFailed, deleteGroup, getServerTheme, updateGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending } from 'app/utils';
 import React, { useState } from 'react';
 import { createParam } from 'solito';
@@ -72,7 +72,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   const editingContext = useStatefulEditingContext(canEditGroup);
   const { editing, setEditing, previewingEdits, setPreviewingEdits, savingEdits, setSavingEdits, deleting, setDeleting } = editingContext;
 
-  const { textColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
+  const { textColor, navColor, navTextColor, navAnchorColor } = getServerTheme(server);
 
   const homeLink = useLink({ href: '/' });
 
