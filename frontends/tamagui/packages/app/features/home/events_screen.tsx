@@ -181,7 +181,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               : <YStack w='100%' ac='center' ai='center' jc='center' space='$2'>
                 {paginatedEvents.map((event) => {
                   return <XStack animation='standard' {...standardAnimation}>
-                    <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview horizontal />;
+                    <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview />
                   </XStack>
                 })}
                 <PaginationIndicator {...pagination} />

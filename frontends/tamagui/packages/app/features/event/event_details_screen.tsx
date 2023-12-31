@@ -1,37 +1,22 @@
 import { EventInstance } from '@jonline/api';
 import { Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui';
-import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
-import { RootState, federateId, getFederated, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
+import { RootState, federateId, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
 import { isPastInstance, setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
 import EventCard from '../event/event_card';
-import { ConversationContextProvider, ConversationManager, useStatefulConversationContext } from '../post';
-import { ReplyArea } from '../post/reply_area';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
+import { ConversationContextProvider, ConversationManager, useStatefulConversationContext } from '../post';
+import { ReplyArea } from '../post/reply_area';
 import { RsvpMode } from './event_rsvp_manager';
 
-const { useParam, useUpdateParams } = createParam<{ eventId: string, instanceId: string, shortname: string | undefined }>()
+const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortname: string | undefined }>()
 
-// Legacy parameter format (loading event by eventId):
-// /event/:eventId/i/:instanceId
-//
-// Current parameter format (loading event by instanceId):
-// /event/:instanceId
-//
-// Legacy parameter format is still supported for backwards compatibility, but
-// the :eventId parameter is ignored.
-//
-// Legacy /event/:eventId format is no longer supported.
-//  *There is no longer a way to access the event details screen by eventId alone.*
-// This could prove confusing in some editing scenarios, but optimizations
-// to the UpdateEvent RPC can mitigate this if it's ever actually a problem (preserving the last InstanceID).
-//
 // In terms of the web app's URL structure, "/event" corresponds to
 // EventInstances, not Events.
 export function EventDetailsScreen() {
-  const [pathEventId] = useParam('eventId');
   const [pathInstanceId] = useParam('instanceId');
   const [shortname] = useParam('shortname');
   const currentServer = useServer();
@@ -40,7 +25,7 @@ export function EventDetailsScreen() {
 
   const updateParams = useUpdateParams();
 
-  const instanceId = pathInstanceId && pathInstanceId.length > 0 ? pathInstanceId : pathEventId;
+  const instanceId = federateId(serverInstanceId, serverHost);
 
   const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
@@ -58,7 +43,8 @@ export function EventDetailsScreen() {
     ? selectEventById(state.events, eventId)
     : undefined);
   const subjectPost = useRootSelector((state: RootState) =>
-    selectPostById(state.posts, subjectEvent?.post?.id ?? ''));
+    selectPostById(state.posts, federateId(subjectEvent?.post?.id ?? '', serverHost)));
+
   const postId = subjectPost?.id;
 
   const subjectInstances = subjectEvent?.instances;
@@ -84,26 +70,26 @@ export function EventDetailsScreen() {
 
   // const failedToLoadEvent = instanceId != undefined &&
   //   eventsState.failedInstanceIds.includes(instanceId!);
-  const failedToLoadEvent = instanceId && eventsState.failedInstanceIds.includes(federateId(serverInstanceId, server));
+  const failedToLoadEvent = instanceId && eventsState.failedInstanceIds.includes(instanceId);
 
   // console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
 
   function onEventInstancesUpdated(instances: EventInstance[]) {
     if (!instances.some(i => i.id == instanceId)) {
       updateParams({
-        eventId: instances.find(i => !isPastInstance(i))?.id
+        instanceId: instances.find(i => !isPastInstance(i))?.id
           ?? instances[0]!.id
       }, { web: { replace: true } });
     }
   }
 
   useEffect(() => {
-    if (instanceId) {
+    if (instanceId && serverInstanceId) {
       if ((!subjectEvent || !loadedEvent) && !loadingEvent) {
         setLoadingEvent(true);
         // console.log('loadEventByInstance', instanceId!)
         setTimeout(() =>
-          dispatch(loadEventByInstance({ ...accountOrServer, instanceId: instanceId! }))
+          dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId! }))
             .then((action) => {
               // console.log('loadEventByInstance.then', action.payload)
               setLoadedEvent(true)
@@ -140,7 +126,7 @@ export function EventDetailsScreen() {
 
   return (
     <TabsNavigation appSection={AppSection.EVENT} selectedGroup={group}>
-      {!subjectEvent
+      {!subjectEvent || !subjectPost
         ? failedToLoadEvent
           ? <>
             <Heading size='$5'>Event not found.</Heading>
