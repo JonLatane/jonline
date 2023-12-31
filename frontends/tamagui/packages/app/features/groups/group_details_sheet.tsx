@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextA
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
-import { useCredentialDispatch, useMediaUrl } from 'app/hooks';
+import { useAccountOrServer, useCredentialDispatch, useCurrentAndPinnedServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
 import { FederatedGroup, RootState, actionFailed, deleteGroup, updateGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending } from 'app/utils';
 import React, { useState } from 'react';
@@ -11,7 +11,7 @@ import { createParam } from 'solito';
 import { useLink } from 'solito/link';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { } from '../post/post_card';
-import { splitOnFirstEmoji } from '../navigation/server_name_and_logo';
+import { ServerNameAndLogo, splitOnFirstEmoji } from '../navigation/server_name_and_logo';
 import { groupVisibilityDescription } from './create_group_sheet';
 import { GroupJoinLeaveButton } from './group_buttons';
 
@@ -52,10 +52,16 @@ const { useParam, useUpdateParams } = createParam<{ shortname: string | undefine
 export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInfoOpen, hideLeaveButtons }: GroupDetailsSheetProps) {
   const infoGroup = useRootSelector((state: RootState) =>
     infoGroupId ? state.groups.entities[infoGroupId] : undefined);
-    // debugger;
+  // debugger;
   const [position, setPosition] = useState(0);
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useFederatedDispatch(infoGroup);
   const { account, server } = accountOrServer;
+  // const server = accountOrServer.server;
+  const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
+  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
+
+
 
   const [queryShortname] = useParam('shortname');
   const updateParams = useUpdateParams();
@@ -300,6 +306,11 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                     {groupNameEmoji}
                   </Heading>
                   : undefined}
+            {showServerInfo
+              ? <XStack my='auto' w={'$4'} h={'$4'} jc='center'>
+                <ServerNameAndLogo server={server} shrinkToSquare />
+              </XStack>
+              : undefined}
             {infoRenderingGroup
               ? <GroupJoinLeaveButton group={infoRenderingGroup} hideLeaveButton={hideLeaveButtons} />
               : undefined}
