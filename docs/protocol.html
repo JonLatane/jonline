@@ -336,6 +336,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
             <p><a href="#jonline-FeatureSettings">FeatureSettings</a></p>
           </li>
           <li>
+            <p><a href="#jonline-FederatedServer">FederatedServer</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-FederationInfo">FederationInfo</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-PostSettings">PostSettings</a></p>
           </li>
           <li>
@@ -1118,6 +1124,11 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>JOIN_GROUPS</td>
           <td>15</td>
           <td>Allow the user to (potentially request to) join groups of <code>SERVER_PUBLIC</code> or higher visibility.</td>
+        </tr>
+        <tr>
+          <td>INVITE_GROUP_MEMBERS</td>
+          <td>16</td>
+          <td>Allow the user to invite other users to groups. Only applicable as a Group permission (not at the User level).</td>
         </tr>
         <tr>
           <td>VIEW_POSTS</td>
@@ -3471,6 +3482,52 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-FederatedServer"></a></p>
+    <h3 id="federatedserver"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federatedserver"><span class="octicon octicon-link"></span></a>FederatedServer</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>host</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>default</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Indicates to UI clients that they should enable the indicated server by default.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-FederationInfo"></a></p>
+    <h3 id="federationinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federationinfo"><span class="octicon octicon-link"></span></a>FederationInfo</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>servers</td>
+          <td><a href="#jonline-FederatedServer">FederatedServer</a></td>
+          <td>repeated</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-PostSettings"></a></p>
     <h3 id="postsettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postsettings"><span class="octicon octicon-link"></span></a>PostSettings</h3>
     <table>
@@ -3578,6 +3635,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-ServerInfo">ServerInfo</a></td>
           <td>optional</td>
           <td>The name, description, logo, color scheme, etc. of the server.</td>
+        </tr>
+        <tr>
+          <td>federation_info</td>
+          <td><a href="#jonline-FederationInfo">FederationInfo</a></td>
+          <td>optional</td>
+          <td></td>
         </tr>
         <tr>
           <td>anonymous_user_permissions</td>
@@ -3705,7 +3768,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>recommended_server_hosts</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td></td>
+          <td><strong>Deprecated.</strong> This will be replaced with FederationInfo soon.</td>
         </tr>
       </tbody>
     </table>

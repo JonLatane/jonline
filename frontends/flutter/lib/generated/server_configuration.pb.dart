@@ -23,6 +23,7 @@ export 'server_configuration.pbenum.dart';
 class ServerConfiguration extends $pb.GeneratedMessage {
   factory ServerConfiguration({
     ServerInfo? serverInfo,
+    FederationInfo? federationInfo,
     $core.Iterable<$11.Permission>? anonymousUserPermissions,
     $core.Iterable<$11.Permission>? defaultUserPermissions,
     $core.Iterable<$11.Permission>? basicUserPermissions,
@@ -38,6 +39,9 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     final $result = create();
     if (serverInfo != null) {
       $result.serverInfo = serverInfo;
+    }
+    if (federationInfo != null) {
+      $result.federationInfo = federationInfo;
     }
     if (anonymousUserPermissions != null) {
       $result.anonymousUserPermissions.addAll(anonymousUserPermissions);
@@ -80,6 +84,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerConfiguration', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ServerInfo>(1, _omitFieldNames ? '' : 'serverInfo', subBuilder: ServerInfo.create)
+    ..aOM<FederationInfo>(2, _omitFieldNames ? '' : 'federationInfo', subBuilder: FederationInfo.create)
     ..pc<$11.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
     ..pc<$11.Permission>(11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
     ..pc<$11.Permission>(12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
@@ -127,11 +132,22 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ServerInfo ensureServerInfo() => $_ensure(0);
 
+  @$pb.TagNumber(2)
+  FederationInfo get federationInfo => $_getN(1);
+  @$pb.TagNumber(2)
+  set federationInfo(FederationInfo v) { setField(2, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasFederationInfo() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearFederationInfo() => clearField(2);
+  @$pb.TagNumber(2)
+  FederationInfo ensureFederationInfo() => $_ensure(1);
+
   /// Permissions for a user who isn't logged in to the server. Allows
   /// admins to disable certain features for anonymous users. Valid values are
   /// `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`.
   @$pb.TagNumber(10)
-  $core.List<$11.Permission> get anonymousUserPermissions => $_getList(1);
+  $core.List<$11.Permission> get anonymousUserPermissions => $_getList(2);
 
   /// Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also
   /// grant/revoke these permissions for others. Valid values are
@@ -140,7 +156,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`,
   /// `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(11)
-  $core.List<$11.Permission> get defaultUserPermissions => $_getList(2);
+  $core.List<$11.Permission> get defaultUserPermissions => $_getList(3);
 
   /// Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are
   /// `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`,
@@ -148,72 +164,72 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`,
   /// `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(12)
-  $core.List<$11.Permission> get basicUserPermissions => $_getList(3);
+  $core.List<$11.Permission> get basicUserPermissions => $_getList(4);
 
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_USERS_GLOBALLY`.
   @$pb.TagNumber(20)
-  FeatureSettings get peopleSettings => $_getN(4);
+  FeatureSettings get peopleSettings => $_getN(5);
   @$pb.TagNumber(20)
   set peopleSettings(FeatureSettings v) { setField(20, v); }
   @$pb.TagNumber(20)
-  $core.bool hasPeopleSettings() => $_has(4);
+  $core.bool hasPeopleSettings() => $_has(5);
   @$pb.TagNumber(20)
   void clearPeopleSettings() => clearField(20);
   @$pb.TagNumber(20)
-  FeatureSettings ensurePeopleSettings() => $_ensure(4);
+  FeatureSettings ensurePeopleSettings() => $_ensure(5);
 
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_GROUPS_GLOBALLY`.
   @$pb.TagNumber(21)
-  FeatureSettings get groupSettings => $_getN(5);
+  FeatureSettings get groupSettings => $_getN(6);
   @$pb.TagNumber(21)
   set groupSettings(FeatureSettings v) { setField(21, v); }
   @$pb.TagNumber(21)
-  $core.bool hasGroupSettings() => $_has(5);
+  $core.bool hasGroupSettings() => $_has(6);
   @$pb.TagNumber(21)
   void clearGroupSettings() => clearField(21);
   @$pb.TagNumber(21)
-  FeatureSettings ensureGroupSettings() => $_ensure(5);
+  FeatureSettings ensureGroupSettings() => $_ensure(6);
 
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_POSTS_GLOBALLY`.
   @$pb.TagNumber(22)
-  PostSettings get postSettings => $_getN(6);
+  PostSettings get postSettings => $_getN(7);
   @$pb.TagNumber(22)
   set postSettings(PostSettings v) { setField(22, v); }
   @$pb.TagNumber(22)
-  $core.bool hasPostSettings() => $_has(6);
+  $core.bool hasPostSettings() => $_has(7);
   @$pb.TagNumber(22)
   void clearPostSettings() => clearField(22);
   @$pb.TagNumber(22)
-  PostSettings ensurePostSettings() => $_ensure(6);
+  PostSettings ensurePostSettings() => $_ensure(7);
 
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(23)
-  FeatureSettings get eventSettings => $_getN(7);
+  FeatureSettings get eventSettings => $_getN(8);
   @$pb.TagNumber(23)
   set eventSettings(FeatureSettings v) { setField(23, v); }
   @$pb.TagNumber(23)
-  $core.bool hasEventSettings() => $_has(7);
+  $core.bool hasEventSettings() => $_has(8);
   @$pb.TagNumber(23)
   void clearEventSettings() => clearField(23);
   @$pb.TagNumber(23)
-  FeatureSettings ensureEventSettings() => $_ensure(7);
+  FeatureSettings ensureEventSettings() => $_ensure(8);
 
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(24)
-  FeatureSettings get mediaSettings => $_getN(8);
+  FeatureSettings get mediaSettings => $_getN(9);
   @$pb.TagNumber(24)
   set mediaSettings(FeatureSettings v) { setField(24, v); }
   @$pb.TagNumber(24)
-  $core.bool hasMediaSettings() => $_has(8);
+  $core.bool hasMediaSettings() => $_has(9);
   @$pb.TagNumber(24)
   void clearMediaSettings() => clearField(24);
   @$pb.TagNumber(24)
-  FeatureSettings ensureMediaSettings() => $_ensure(8);
+  FeatureSettings ensureMediaSettings() => $_ensure(9);
 
   ///  If set, enables External CDN support for the server. This means that the
   ///  non-secure HTTP server (on port 80) will *not* redirect to the secure server,
@@ -223,30 +239,30 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   ///
   ///  See ExternalCDNConfig for more details on securing this setup.
   @$pb.TagNumber(90)
-  ExternalCDNConfig get externalCdnConfig => $_getN(9);
+  ExternalCDNConfig get externalCdnConfig => $_getN(10);
   @$pb.TagNumber(90)
   set externalCdnConfig(ExternalCDNConfig v) { setField(90, v); }
   @$pb.TagNumber(90)
-  $core.bool hasExternalCdnConfig() => $_has(9);
+  $core.bool hasExternalCdnConfig() => $_has(10);
   @$pb.TagNumber(90)
   void clearExternalCdnConfig() => clearField(90);
   @$pb.TagNumber(90)
-  ExternalCDNConfig ensureExternalCdnConfig() => $_ensure(9);
+  ExternalCDNConfig ensureExternalCdnConfig() => $_ensure(10);
 
   /// Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   @$pb.TagNumber(100)
-  PrivateUserStrategy get privateUserStrategy => $_getN(10);
+  PrivateUserStrategy get privateUserStrategy => $_getN(11);
   @$pb.TagNumber(100)
   set privateUserStrategy(PrivateUserStrategy v) { setField(100, v); }
   @$pb.TagNumber(100)
-  $core.bool hasPrivateUserStrategy() => $_has(10);
+  $core.bool hasPrivateUserStrategy() => $_has(11);
   @$pb.TagNumber(100)
   void clearPrivateUserStrategy() => clearField(100);
 
   /// (TODO) Allows admins to enable/disable creating accounts and logging in.
   /// Eventually, external auth too hopefully!
   @$pb.TagNumber(101)
-  $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(11);
+  $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(12);
 }
 
 /// Useful for setting your Jonline instance up to run underneath a CDN.
@@ -622,6 +638,7 @@ class ServerInfo extends $pb.GeneratedMessage {
     WebUserInterface? webUserInterface,
     ServerColors? colors,
     $core.String? mediaPolicy,
+  @$core.Deprecated('This field is deprecated.')
     $core.Iterable<$core.String>? recommendedServerHosts,
   }) {
     final $result = create();
@@ -650,6 +667,7 @@ class ServerInfo extends $pb.GeneratedMessage {
       $result.mediaPolicy = mediaPolicy;
     }
     if (recommendedServerHosts != null) {
+      // ignore: deprecated_member_use_from_same_package
       $result.recommendedServerHosts.addAll(recommendedServerHosts);
     }
     return $result;
@@ -769,6 +787,8 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearMediaPolicy() => clearField(8);
 
+  /// This will be replaced with FederationInfo soon.
+  @$core.Deprecated('This field is deprecated.')
   @$pb.TagNumber(9)
   $core.List<$core.String> get recommendedServerHosts => $_getList(8);
 }
@@ -975,6 +995,115 @@ class ServerColors extends $pb.GeneratedMessage {
   $core.bool hasModerator() => $_has(4);
   @$pb.TagNumber(5)
   void clearModerator() => clearField(5);
+}
+
+class FederationInfo extends $pb.GeneratedMessage {
+  factory FederationInfo({
+    $core.Iterable<FederatedServer>? servers,
+  }) {
+    final $result = create();
+    if (servers != null) {
+      $result.servers.addAll(servers);
+    }
+    return $result;
+  }
+  FederationInfo._() : super();
+  factory FederationInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FederationInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederationInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<FederatedServer>(1, _omitFieldNames ? '' : 'servers', $pb.PbFieldType.PM, subBuilder: FederatedServer.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  FederationInfo clone() => FederationInfo()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  FederationInfo copyWith(void Function(FederationInfo) updates) => super.copyWith((message) => updates(message as FederationInfo)) as FederationInfo;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FederationInfo create() => FederationInfo._();
+  FederationInfo createEmptyInstance() => create();
+  static $pb.PbList<FederationInfo> createRepeated() => $pb.PbList<FederationInfo>();
+  @$core.pragma('dart2js:noInline')
+  static FederationInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederationInfo>(create);
+  static FederationInfo? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<FederatedServer> get servers => $_getList(0);
+}
+
+class FederatedServer extends $pb.GeneratedMessage {
+  factory FederatedServer({
+    $core.String? host,
+    $core.bool? default_2,
+  }) {
+    final $result = create();
+    if (host != null) {
+      $result.host = host;
+    }
+    if (default_2 != null) {
+      $result.default_2 = default_2;
+    }
+    return $result;
+  }
+  FederatedServer._() : super();
+  factory FederatedServer.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FederatedServer.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'host')
+    ..aOB(2, _omitFieldNames ? '' : 'default')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  FederatedServer clone() => FederatedServer()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  FederatedServer copyWith(void Function(FederatedServer) updates) => super.copyWith((message) => updates(message as FederatedServer)) as FederatedServer;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FederatedServer create() => FederatedServer._();
+  FederatedServer createEmptyInstance() => create();
+  static $pb.PbList<FederatedServer> createRepeated() => $pb.PbList<FederatedServer>();
+  @$core.pragma('dart2js:noInline')
+  static FederatedServer getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederatedServer>(create);
+  static FederatedServer? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get host => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set host($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasHost() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearHost() => clearField(1);
+
+  /// Indicates to UI clients that they should enable the indicated server by default.
+  @$pb.TagNumber(2)
+  $core.bool get default_2 => $_getBF(1);
+  @$pb.TagNumber(2)
+  set default_2($core.bool v) { $_setBool(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasDefault_2() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDefault_2() => clearField(2);
 }
 
 

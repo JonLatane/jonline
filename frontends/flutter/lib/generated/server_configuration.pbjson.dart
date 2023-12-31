@@ -67,6 +67,7 @@ const ServerConfiguration$json = {
   '1': 'ServerConfiguration',
   '2': [
     {'1': 'server_info', '3': 1, '4': 1, '5': 11, '6': '.jonline.ServerInfo', '9': 0, '10': 'serverInfo', '17': true},
+    {'1': 'federation_info', '3': 2, '4': 1, '5': 11, '6': '.jonline.FederationInfo', '9': 1, '10': 'federationInfo', '17': true},
     {'1': 'anonymous_user_permissions', '3': 10, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'anonymousUserPermissions'},
     {'1': 'default_user_permissions', '3': 11, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'defaultUserPermissions'},
     {'1': 'basic_user_permissions', '3': 12, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'basicUserPermissions'},
@@ -75,12 +76,13 @@ const ServerConfiguration$json = {
     {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'postSettings'},
     {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'eventSettings'},
     {'1': 'media_settings', '3': 24, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'mediaSettings'},
-    {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 1, '10': 'externalCdnConfig', '17': true},
+    {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 2, '10': 'externalCdnConfig', '17': true},
     {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.jonline.PrivateUserStrategy', '10': 'privateUserStrategy'},
     {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.jonline.AuthenticationFeature', '10': 'authenticationFeatures'},
   ],
   '8': [
     {'1': '_server_info'},
+    {'1': '_federation_info'},
     {'1': '_external_cdn_config'},
   ],
 };
@@ -88,22 +90,24 @@ const ServerConfiguration$json = {
 /// Descriptor for `ServerConfiguration`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decode(
     'ChNTZXJ2ZXJDb25maWd1cmF0aW9uEjkKC3NlcnZlcl9pbmZvGAEgASgLMhMuam9ubGluZS5TZX'
-    'J2ZXJJbmZvSABSCnNlcnZlckluZm+IAQESUQoaYW5vbnltb3VzX3VzZXJfcGVybWlzc2lvbnMY'
-    'CiADKA4yEy5qb25saW5lLlBlcm1pc3Npb25SGGFub255bW91c1VzZXJQZXJtaXNzaW9ucxJNCh'
-    'hkZWZhdWx0X3VzZXJfcGVybWlzc2lvbnMYCyADKA4yEy5qb25saW5lLlBlcm1pc3Npb25SFmRl'
-    'ZmF1bHRVc2VyUGVybWlzc2lvbnMSSQoWYmFzaWNfdXNlcl9wZXJtaXNzaW9ucxgMIAMoDjITLm'
-    'pvbmxpbmUuUGVybWlzc2lvblIUYmFzaWNVc2VyUGVybWlzc2lvbnMSQQoPcGVvcGxlX3NldHRp'
-    'bmdzGBQgASgLMhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDnBlb3BsZVNldHRpbmdzEj8KDm'
-    'dyb3VwX3NldHRpbmdzGBUgASgLMhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDWdyb3VwU2V0'
-    'dGluZ3MSOgoNcG9zdF9zZXR0aW5ncxgWIAEoCzIVLmpvbmxpbmUuUG9zdFNldHRpbmdzUgxwb3'
-    'N0U2V0dGluZ3MSPwoOZXZlbnRfc2V0dGluZ3MYFyABKAsyGC5qb25saW5lLkZlYXR1cmVTZXR0'
-    'aW5nc1INZXZlbnRTZXR0aW5ncxI/Cg5tZWRpYV9zZXR0aW5ncxgYIAEoCzIYLmpvbmxpbmUuRm'
-    'VhdHVyZVNldHRpbmdzUg1tZWRpYVNldHRpbmdzEk8KE2V4dGVybmFsX2Nkbl9jb25maWcYWiAB'
-    'KAsyGi5qb25saW5lLkV4dGVybmFsQ0ROQ29uZmlnSAFSEWV4dGVybmFsQ2RuQ29uZmlniAEBEl'
-    'AKFXByaXZhdGVfdXNlcl9zdHJhdGVneRhkIAEoDjIcLmpvbmxpbmUuUHJpdmF0ZVVzZXJTdHJh'
-    'dGVneVITcHJpdmF0ZVVzZXJTdHJhdGVneRJXChdhdXRoZW50aWNhdGlvbl9mZWF0dXJlcxhlIA'
-    'MoDjIeLmpvbmxpbmUuQXV0aGVudGljYXRpb25GZWF0dXJlUhZhdXRoZW50aWNhdGlvbkZlYXR1'
-    'cmVzQg4KDF9zZXJ2ZXJfaW5mb0IWChRfZXh0ZXJuYWxfY2RuX2NvbmZpZw==');
+    'J2ZXJJbmZvSABSCnNlcnZlckluZm+IAQESRQoPZmVkZXJhdGlvbl9pbmZvGAIgASgLMhcuam9u'
+    'bGluZS5GZWRlcmF0aW9uSW5mb0gBUg5mZWRlcmF0aW9uSW5mb4gBARJRChphbm9ueW1vdXNfdX'
+    'Nlcl9wZXJtaXNzaW9ucxgKIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblIYYW5vbnltb3VzVXNl'
+    'clBlcm1pc3Npb25zEk0KGGRlZmF1bHRfdXNlcl9wZXJtaXNzaW9ucxgLIAMoDjITLmpvbmxpbm'
+    'UuUGVybWlzc2lvblIWZGVmYXVsdFVzZXJQZXJtaXNzaW9ucxJJChZiYXNpY191c2VyX3Blcm1p'
+    'c3Npb25zGAwgAygOMhMuam9ubGluZS5QZXJtaXNzaW9uUhRiYXNpY1VzZXJQZXJtaXNzaW9ucx'
+    'JBCg9wZW9wbGVfc2V0dGluZ3MYFCABKAsyGC5qb25saW5lLkZlYXR1cmVTZXR0aW5nc1IOcGVv'
+    'cGxlU2V0dGluZ3MSPwoOZ3JvdXBfc2V0dGluZ3MYFSABKAsyGC5qb25saW5lLkZlYXR1cmVTZX'
+    'R0aW5nc1INZ3JvdXBTZXR0aW5ncxI6Cg1wb3N0X3NldHRpbmdzGBYgASgLMhUuam9ubGluZS5Q'
+    'b3N0U2V0dGluZ3NSDHBvc3RTZXR0aW5ncxI/Cg5ldmVudF9zZXR0aW5ncxgXIAEoCzIYLmpvbm'
+    'xpbmUuRmVhdHVyZVNldHRpbmdzUg1ldmVudFNldHRpbmdzEj8KDm1lZGlhX3NldHRpbmdzGBgg'
+    'ASgLMhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDW1lZGlhU2V0dGluZ3MSTwoTZXh0ZXJuYW'
+    'xfY2RuX2NvbmZpZxhaIAEoCzIaLmpvbmxpbmUuRXh0ZXJuYWxDRE5Db25maWdIAlIRZXh0ZXJu'
+    'YWxDZG5Db25maWeIAQESUAoVcHJpdmF0ZV91c2VyX3N0cmF0ZWd5GGQgASgOMhwuam9ubGluZS'
+    '5Qcml2YXRlVXNlclN0cmF0ZWd5UhNwcml2YXRlVXNlclN0cmF0ZWd5ElcKF2F1dGhlbnRpY2F0'
+    'aW9uX2ZlYXR1cmVzGGUgAygOMh4uam9ubGluZS5BdXRoZW50aWNhdGlvbkZlYXR1cmVSFmF1dG'
+    'hlbnRpY2F0aW9uRmVhdHVyZXNCDgoMX3NlcnZlcl9pbmZvQhIKEF9mZWRlcmF0aW9uX2luZm9C'
+    'FgoUX2V4dGVybmFsX2Nkbl9jb25maWc=');
 
 @$core.Deprecated('Use externalCDNConfigDescriptor instead')
 const ExternalCDNConfig$json = {
@@ -188,7 +192,14 @@ const ServerInfo$json = {
     {'1': 'web_user_interface', '3': 6, '4': 1, '5': 14, '6': '.jonline.WebUserInterface', '9': 5, '10': 'webUserInterface', '17': true},
     {'1': 'colors', '3': 7, '4': 1, '5': 11, '6': '.jonline.ServerColors', '9': 6, '10': 'colors', '17': true},
     {'1': 'media_policy', '3': 8, '4': 1, '5': 9, '9': 7, '10': 'mediaPolicy', '17': true},
-    {'1': 'recommended_server_hosts', '3': 9, '4': 3, '5': 9, '10': 'recommendedServerHosts'},
+    {
+      '1': 'recommended_server_hosts',
+      '3': 9,
+      '4': 3,
+      '5': 9,
+      '8': {'3': true},
+      '10': 'recommendedServerHosts',
+    },
   ],
   '8': [
     {'1': '_name'},
@@ -210,10 +221,10 @@ final $typed_data.Uint8List serverInfoDescriptor = $convert.base64Decode(
     'ABKAsyEy5qb25saW5lLlNlcnZlckxvZ29IBFIEbG9nb4gBARJMChJ3ZWJfdXNlcl9pbnRlcmZh'
     'Y2UYBiABKA4yGS5qb25saW5lLldlYlVzZXJJbnRlcmZhY2VIBVIQd2ViVXNlckludGVyZmFjZY'
     'gBARIyCgZjb2xvcnMYByABKAsyFS5qb25saW5lLlNlcnZlckNvbG9yc0gGUgZjb2xvcnOIAQES'
-    'JgoMbWVkaWFfcG9saWN5GAggASgJSAdSC21lZGlhUG9saWN5iAEBEjgKGHJlY29tbWVuZGVkX3'
-    'NlcnZlcl9ob3N0cxgJIAMoCVIWcmVjb21tZW5kZWRTZXJ2ZXJIb3N0c0IHCgVfbmFtZUINCgtf'
-    'c2hvcnRfbmFtZUIOCgxfZGVzY3JpcHRpb25CEQoPX3ByaXZhY3lfcG9saWN5QgcKBV9sb2dvQh'
-    'UKE193ZWJfdXNlcl9pbnRlcmZhY2VCCQoHX2NvbG9yc0IPCg1fbWVkaWFfcG9saWN5');
+    'JgoMbWVkaWFfcG9saWN5GAggASgJSAdSC21lZGlhUG9saWN5iAEBEjwKGHJlY29tbWVuZGVkX3'
+    'NlcnZlcl9ob3N0cxgJIAMoCUICGAFSFnJlY29tbWVuZGVkU2VydmVySG9zdHNCBwoFX25hbWVC'
+    'DQoLX3Nob3J0X25hbWVCDgoMX2Rlc2NyaXB0aW9uQhEKD19wcml2YWN5X3BvbGljeUIHCgVfbG'
+    '9nb0IVChNfd2ViX3VzZXJfaW50ZXJmYWNlQgkKB19jb2xvcnNCDwoNX21lZGlhX3BvbGljeQ==');
 
 @$core.Deprecated('Use serverLogoDescriptor instead')
 const ServerLogo$json = {
@@ -266,4 +277,31 @@ final $typed_data.Uint8List serverColorsDescriptor = $convert.base64Decode(
     'EhkKBWFkbWluGAQgASgNSANSBWFkbWluiAEBEiEKCW1vZGVyYXRvchgFIAEoDUgEUgltb2Rlcm'
     'F0b3KIAQFCCgoIX3ByaW1hcnlCDQoLX25hdmlnYXRpb25CCQoHX2F1dGhvckIICgZfYWRtaW5C'
     'DAoKX21vZGVyYXRvcg==');
+
+@$core.Deprecated('Use federationInfoDescriptor instead')
+const FederationInfo$json = {
+  '1': 'FederationInfo',
+  '2': [
+    {'1': 'servers', '3': 1, '4': 3, '5': 11, '6': '.jonline.FederatedServer', '10': 'servers'},
+  ],
+};
+
+/// Descriptor for `FederationInfo`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List federationInfoDescriptor = $convert.base64Decode(
+    'Cg5GZWRlcmF0aW9uSW5mbxIyCgdzZXJ2ZXJzGAEgAygLMhguam9ubGluZS5GZWRlcmF0ZWRTZX'
+    'J2ZXJSB3NlcnZlcnM=');
+
+@$core.Deprecated('Use federatedServerDescriptor instead')
+const FederatedServer$json = {
+  '1': 'FederatedServer',
+  '2': [
+    {'1': 'host', '3': 1, '4': 1, '5': 9, '10': 'host'},
+    {'1': 'default', '3': 2, '4': 1, '5': 8, '10': 'default'},
+  ],
+};
+
+/// Descriptor for `FederatedServer`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List federatedServerDescriptor = $convert.base64Decode(
+    'Cg9GZWRlcmF0ZWRTZXJ2ZXISEgoEaG9zdBgBIAEoCVIEaG9zdBIYCgdkZWZhdWx0GAIgASgIUg'
+    'dkZWZhdWx0');
 

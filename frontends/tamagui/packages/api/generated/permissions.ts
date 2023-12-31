@@ -42,6 +42,8 @@ export enum Permission {
    * visibility.
    */
   JOIN_GROUPS = 15,
+  /** INVITE_GROUP_MEMBERS - Allow the user to invite other users to groups. Only applicable as a Group permission (not at the User level). */
+  INVITE_GROUP_MEMBERS = 16,
   /**
    * VIEW_POSTS - In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
    * or higher visibility. In the context of group permissions, allow the user to view `GroupPost`s whose `Post`s have `LIMITED`
@@ -131,6 +133,9 @@ export function permissionFromJSON(object: any): Permission {
     case 15:
     case "JOIN_GROUPS":
       return Permission.JOIN_GROUPS;
+    case 16:
+    case "INVITE_GROUP_MEMBERS":
+      return Permission.INVITE_GROUP_MEMBERS;
     case 20:
     case "VIEW_POSTS":
       return Permission.VIEW_POSTS;
@@ -226,6 +231,8 @@ export function permissionToJSON(object: Permission): string {
       return "MODERATE_GROUPS";
     case Permission.JOIN_GROUPS:
       return "JOIN_GROUPS";
+    case Permission.INVITE_GROUP_MEMBERS:
+      return "INVITE_GROUP_MEMBERS";
     case Permission.VIEW_POSTS:
       return "VIEW_POSTS";
     case Permission.CREATE_POSTS:
