@@ -52,6 +52,7 @@ const { useParam, useUpdateParams } = createParam<{ shortname: string | undefine
 export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInfoOpen, hideLeaveButtons }: GroupDetailsSheetProps) {
   const infoGroup = useRootSelector((state: RootState) =>
     infoGroupId ? state.groups.entities[infoGroupId] : undefined);
+    // debugger;
   const [position, setPosition] = useState(0);
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { account, server } = accountOrServer;

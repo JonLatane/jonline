@@ -203,7 +203,7 @@ export function GroupsSheet({
                           onGroupSelected={onGroupSelected}
                           selected={group.id == selectedGroup?.id}
                           onShowInfo={() => {
-                            setInfoGroupId(group.id);
+                            setInfoGroupId(federatedId(group));
                             setInfoOpen(true);
                           }}
                           setOpen={setOpen}
@@ -228,7 +228,7 @@ export function GroupsSheet({
                           onGroupSelected={onGroupSelected}
                           selected={group.id == selectedGroup?.id}
                           onShowInfo={() => {
-                            setInfoGroupId(group.id);
+                            setInfoGroupId(federatedId(group));
                             setInfoOpen(true);
                           }}
                           setOpen={setOpen}
@@ -255,7 +255,7 @@ export function GroupsSheet({
                             onGroupSelected={onGroupSelected}
                             selected={group.id == selectedGroup?.id}
                             onShowInfo={() => {
-                              setInfoGroupId(group.id);
+                              setInfoGroupId(federatedId(group));
                               setInfoOpen(true);
                             }}
                             setOpen={setOpen}
@@ -282,7 +282,7 @@ export function GroupsSheet({
             <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto'
               ml={infoMarginLeft}
               onPress={() => {
-                setInfoGroupId(selectedGroup.id);
+                setInfoGroupId(federatedId(selectedGroup));
                 setInfoOpen((x) => !x)
               }} />
           </Theme>

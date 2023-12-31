@@ -117,7 +117,8 @@ macro_rules! select_events_instancewise {
                 instance_posts,
                 instance_users
             ))
-            .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
+            .filter(posts::user_id.is_not_null())
+            // .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
             .filter(event_instances::ends_at.gt(ends_after))
             .order(event_instances::starts_at)
     }};
@@ -300,7 +301,8 @@ macro_rules! select_group_events_instancewise {
                     .field(group_posts::group_id)
                     .eq($group_id)),
             )
-            .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
+            .filter(posts::user_id.is_not_null())
+            // .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
             .filter(event_instances::ends_at.gt(ends_after))
             .order(event_instances::starts_at)
     }};
