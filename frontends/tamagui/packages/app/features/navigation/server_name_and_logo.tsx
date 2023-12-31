@@ -116,10 +116,10 @@ export function ServerNameAndLogo({
               // { translateY: 1.5 },
               // { translateX: isSafari() ? 8.0 : 2.0 }
             ]} >
-            <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+            <MediaRenderer serverOverride={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
           </XStack>
-          : <XStack h={'100%'} maw={maxWidthAfterServerName}>
-            <Heading my='auto' whiteSpace="nowrap">{serverNameEmoji ?? ''}</Heading>
+          : <XStack h={'100%'} w='100%' scale={1.1}>
+            <Heading m='auto' whiteSpace="nowrap" size='$9'>{serverNameEmoji ?? ''}</Heading>
             {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
           </XStack>}
       </Tooltip.Trigger >
@@ -138,7 +138,7 @@ export function ServerNameAndLogo({
         ?
         <Tooltip>
           <Tooltip.Trigger><XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
-            <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.wideMediaId })} failQuietly />
+            <MediaRenderer serverOverride={server} forceImage media={Media.create({ id: logo?.wideMediaId })} failQuietly />
           </XStack>
           </Tooltip.Trigger>
           <Tooltip.Content>
@@ -150,7 +150,7 @@ export function ServerNameAndLogo({
             ? <XStack
               w={imageLogoSize}
               h={imageLogoSize} ml='$2' mr='$1' my='auto'>
-              <MediaRenderer server={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+              <MediaRenderer serverOverride={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
             </XStack>
             : hasEmoji
               ? <Heading size={serverEmojiFontSize}

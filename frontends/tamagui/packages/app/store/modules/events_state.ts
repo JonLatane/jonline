@@ -1,4 +1,4 @@
-import { Event, TimeFilter } from "@jonline/api";
+import { Event, EventInstance, TimeFilter } from "@jonline/api";
 import { formatError } from "@jonline/ui";
 import {
   Dictionary,
@@ -10,28 +10,24 @@ import {
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
+import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
-import { locallyUpsertPost } from "./posts_state";
 import { loadUserEvents } from "./user_actions";
-import { PaginatedIds } from "../pagination";
+import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
 export * from './event_actions';
 
+export type FederatedEvent = FederatedEntity<Event>;
+export type FederatedEventInstance = FederatedEntity<EventInstance>;
 export interface EventsState {
-  loadStatus: "unloaded" | "loading" | "loaded" | "errored";
-  createStatus: "creating" | "created" | "errored" | undefined;
-  updateStatus: "updating" | "updated" | "errored" | undefined;
-  deleteStatus: "deleting" | "deleted" | "errored" | undefined;
-  error?: Error;
-  successMessage?: string;
-  errorMessage?: string;
+  pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
-  entities: Dictionary<Event>;
+  entities: Dictionary<FederatedEvent>;
   // Links instance IDs to Event IDs.
   instanceEvents: Dictionary<string>;
   // instances: Dictionary<EventInstance>;
-  eventInstancePages: GroupedEventInstancePages;
+  eventInstancePages: Federated<GroupedEventInstancePages>;
   failedEventIds: string[];
   failedInstanceIds: string[];
 }
@@ -47,20 +43,16 @@ export function serializeTimeFilter(filter: TimeFilter | undefined): string {
   return JSON.stringify(TimeFilter.toJSON(filter ?? TimeFilter.create()));
 };
 
-export const eventsAdapter: EntityAdapter<Event> = createEntityAdapter<Event>({
-  selectId: (event) => event.id,
+export const eventsAdapter: EntityAdapter<FederatedEvent> = createEntityAdapter<FederatedEvent>({
+  selectId: (event) => federatedId(event),
   sortComparer: (a, b) => moment.utc(b.post!.createdAt).unix() - moment.utc(a.post!.createdAt).unix(),
 });
 
 const initialState: EventsState = {
-  loadStatus: "unloaded",
-  createStatus: undefined,
-  updateStatus: undefined,
-  deleteStatus: undefined,
+  pagesStatus: createFederatedPagesStatus(),
   failedEventIds: [],
   failedInstanceIds: [],
-  eventInstancePages: {},
-  // instances: {},
+  eventInstancePages: createFederated({}),
   instanceEvents: {},
   ...eventsAdapter.getInitialState(),
 };
@@ -72,186 +64,99 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     upsertEvent: eventsAdapter.upsertOne,
     removeEvent: eventsAdapter.removeOne,
     resetEvents: () => initialState,
-    clearEventAlerts: (state) => {
-      state.errorMessage = undefined;
-      state.successMessage = undefined;
-      state.error = undefined;
-      state.createStatus = undefined;
-      state.updateStatus = undefined;
-    }
   },
   extraReducers: (builder) => {
-    builder.addCase(createEvent.pending, (state, action) => {
-      state.createStatus = "creating";
-      state.error = undefined;
-      console.log('creating event', action.meta.arg);
-    });
     builder.addCase(createEvent.fulfilled, (state, action) => {
-      state.createStatus = "created";
-      eventsAdapter.upsertOne(state, action.payload);
-      console.log('created event from server', action.payload);
+      const payload = federatedPayload(action);
+      eventsAdapter.upsertOne(state, payload);
+      console.log('created event from server', payload);
       if (publicVisibility(action.payload.post?.visibility)) {
         state.eventInstancePages[defaultEventListingType] = state.eventInstancePages[defaultEventListingType] || {};
         state.eventInstancePages[defaultEventListingType][unfilteredTime] = state.eventInstancePages[defaultEventListingType][unfilteredTime] || [];
         const firstPage = state.eventInstancePages[defaultEventListingType][unfilteredTime][0] || [];
         state.eventInstancePages[defaultEventListingType][unfilteredTime][0] = [action.payload.id, ...firstPage];
       }
-      state.successMessage = `Event created.`;
-    });
-    builder.addCase(createEvent.rejected, (state, action) => {
-      state.createStatus = "errored";
-      state.error = action.error as Error;
-      console.error("Error creating event", action.error);
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(updateEvent.pending, (state) => {
-      state.updateStatus = "updating";
-      state.error = undefined;
     });
     builder.addCase(updateEvent.fulfilled, (state, action) => {
-      state.updateStatus = "updated";
-      const event = action.payload;
+      const event = federatedPayload(action);
       eventsAdapter.upsertOne(state, event);
-      if (event.post) {
-        setTimeout(() => {
-          console.log("upserting post", event.post);
-          store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
-        }, 1);
-      }
       setTimeout(() => {
         store.dispatch(loadEventsPage({ page: 0, listingType: defaultEventListingType, filter: undefined }));
       }, 1);
     });
-    builder.addCase(updateEvent.rejected, (state, action) => {
-      state.updateStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(deleteEvent.pending, (state) => {
-      state.deleteStatus = "deleting";
-      state.error = undefined;
-    });
     builder.addCase(deleteEvent.fulfilled, (state, action) => {
-      state.deleteStatus = "deleted";
-      eventsAdapter.upsertOne(state, action.payload);
+      eventsAdapter.upsertOne(state, federatedPayload(action));
     });
-    builder.addCase(deleteEvent.rejected, (state, action) => {
-      state.deleteStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(loadEventsPage.pending, (state) => {
-      state.loadStatus = "loading";
-      state.error = undefined;
+    builder.addCase(loadEventsPage.pending, (state, action) => {
+      setFederated(state.pagesStatus, action, "loading");
     });
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {
-      state.loadStatus = "loaded";
-      console.log('loaded events page', action.payload.events.length);
-      action.payload.events.forEach((e) => mergeEvent(state, e));
+      setFederated(state.pagesStatus, action, "loaded");
+      // console.log('loaded events page', action.payload.events.length);
+      const events = federatedEntities(action.payload.events, action);
+      events.forEach((e) => mergeEvent(state, e, action));
 
-      const instanceIds = action.payload.events.map(event => event.instances[0]!.id);
-      // for (const instanceId of instanceIds) {
-      //   state.instanceEvents[instanceId] = action.payload.events[0]!.id;
-      // }
+      const instanceIds = action.payload.events.flatMap(event => event.instances.map(instance => federateId(instance.id, action)));
+
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
-
       const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
-      if (!state.eventInstancePages[listingType]) state.eventInstancePages[listingType] = {};
-      if (!state.eventInstancePages[listingType]![serializedFilter] || page === 0) state.eventInstancePages[listingType]![serializedFilter] = [];
-      const eventPages: string[][] = state.eventInstancePages[listingType]![serializedFilter] ?? [];
-      // Sensible approach:
-      // eventPages[page] = postIds;
 
-      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
-      let initialPage: number = 0;
-      while (action.meta.arg.page && eventPages[initialPage]) {
-        initialPage++;
-      }
-      const chunkSize = 7;
-      for (let i = 0; i < instanceIds.length; i += chunkSize) {
-        const chunk = instanceIds.slice(i, i + chunkSize);
-        state.eventInstancePages[listingType]![serializedFilter]![initialPage + (i / chunkSize)] = chunk;
-      }
-      if (state.eventInstancePages[listingType]![serializedFilter]![0] === undefined) {
-        state.eventInstancePages[listingType]![serializedFilter]![0] = [];
-      }
+      const serverEventPages = getFederated(state.eventInstancePages, action);
+      if (!serverEventPages[listingType]) serverEventPages[listingType] = {};
+      if (!serverEventPages[listingType]![serializedFilter] || page === 0) serverEventPages[listingType]![serializedFilter] = [];
 
-      state.successMessage = `Events loaded.`;
+      const eventPages: string[][] = serverEventPages[listingType]![serializedFilter]!;
+      eventPages[page] = instanceIds;
+      setFederated(state.eventInstancePages, action, serverEventPages);
     });
     builder.addCase(loadEventsPage.rejected, (state, action) => {
-      state.loadStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(loadEvent.pending, (state) => {
-      state.error = undefined;
+      setFederated(state.pagesStatus, action, "errored");
     });
     const saveSingleEvent = (state: EventsState, action: PayloadAction<Event, any, any>) => {
-      const event = action.payload;
-      eventsAdapter.upsertOne(state, event);
-      event.instances.forEach(instance => {
-        state.instanceEvents[instance.id] = event.id;
-      });
-      if (event.post) {
-        setTimeout(() => {
-          // console.log("upserting event's post", event.post);
-          store.dispatch(locallyUpsertPost({ ...action.meta.arg, ...event.post! }));
-        }, 1);
-      }
+      const event = federatedPayload(action);
+      mergeEvent(state, event, action);
     };
     builder.addCase(loadEvent.fulfilled, saveSingleEvent);
     builder.addCase(loadEventByInstance.fulfilled, saveSingleEvent);
     builder.addCase(loadEvent.rejected, (state, action) => {
-      // state.loadStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-      state.failedEventIds = [...state.failedEventIds, (action.meta.arg as LoadEvent).id];
+      state.failedEventIds.push(federateId((action.meta.arg as LoadEvent).id, action));
     });
 
     builder.addCase(loadEventByInstance.rejected, (state, action) => {
-      // state.loadStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-      state.failedInstanceIds = [...state.failedInstanceIds, (action.meta.arg as LoadEventByInstance).instanceId];
+      state.failedInstanceIds.push(federateId((action.meta.arg as LoadEventByInstance).instanceId, action));
     });
 
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
-      const { events } = action.payload;
+      const events = federatedEntities(action.payload.events, action);
       if (!events) return;
 
-      action.payload.events.forEach((e) => mergeEvent(state, e));
+      events.forEach((e) => mergeEvent(state, e, action));
       // upsertEvents(state, events);
-      events.forEach((e) => mergeEvent(state, e));
+      events.forEach((e) => mergeEvent(state, e, action));
     });
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
-      const { events } = action.payload;
+      const events = federatedEntities(action.payload.events, action);
       // upsertEvents(state, events);
-      events.forEach((e) => mergeEvent(state, e));
+      events.forEach((e) => mergeEvent(state, e, action));
     });
   },
 });
 
-const mergeEvent = (state: EventsState, event: Event) => {
+const mergeEvent = (state: EventsState, event: FederatedEvent, action: HasServer) => {
   // console.log('merging event', event);
-  const oldEvent = selectEventById(state, event.id);
+  const oldEvent = selectEventById(state, federatedId(event));
   let instances = event.instances;
-  for (const instance of instances) {
-    state.instanceEvents[instance.id] = event.id;
-    // state.instances[instance.id] = instance;
-  }
+  instances.forEach(instance => {
+    state.instanceEvents[federateId(instance.id, action)] = federateId(event.id, action);
+  });
   if (oldEvent) {
     instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
   }
   eventsAdapter.upsertOne(state, { ...event, instances });
 };
-export const { removeEvent, clearEventAlerts, resetEvents } = eventsSlice.actions;
+
+export const { removeEvent, resetEvents } = eventsSlice.actions;
 export const { selectAll: selectAllEvents, selectById: selectEventById } = eventsAdapter.getSelectors();
 export const eventsReducer = eventsSlice.reducer;
 export const upsertEvent = eventsAdapter.upsertOne;

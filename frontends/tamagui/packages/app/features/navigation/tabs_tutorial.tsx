@@ -1,8 +1,8 @@
-import { AnimatePresence, Button, ButtonProps, Heading, Paragraph, Tooltip, XStack, YStack, ZStack, standardAnimation, useForceUpdate, useMedia } from "@jonline/ui";
+import { AnimatePresence, Button, ButtonProps, Heading, Paragraph, XStack, YStack, ZStack, standardAnimation, useForceUpdate, useMedia } from "@jonline/ui";
 import { CornerRightUp, HelpCircle, MoveUp } from '@tamagui/lucide-icons';
 import { DarkModeToggle, doesPlatformPreferDarkMode } from "app/components/dark_mode_toggle";
-import { useComponentKey, useAccount, useAccountOrServer, useAppDispatch, useLocalConfiguration } from "app/hooks";
-import { setShowHelp, useServerTheme } from "app/store";
+import { useAccount, useAppDispatch, useLocalConfiguration } from "app/hooks";
+import { serverID, setShowHelp, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import moment, { Moment } from "moment";
 import { useEffect, useState } from "react";
@@ -51,7 +51,7 @@ export function TabsTutorial({ }) {
       }, 5000);
     }
   }, [hidingStarted]);
-  const { primaryColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme();
+  const { server, primaryColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme();
 
   const circularAccountsSheet = !mediaQuery.gtSm;
   const accountSheetMarginRight = circularAccountsSheet ? (account?.user?.avatar ? '$5' : '$3') : '$10';
@@ -59,11 +59,19 @@ export function TabsTutorial({ }) {
   const stackGroupsBelow = true;
 
   const height = stackGroupsBelow ? '$8' : '$3';
-  const measuredHomeButtonWidth = document.querySelector('.home-button')?.clientWidth ?? 0;
-  const homeButtonWidth = measuredHomeButtonWidth > 0 ? measuredHomeButtonWidth : 0;
+  const measuredHomeButtonWidth = document.querySelector('#home-button')?.clientWidth ?? 0;
+  const homeButtonWidth = Math.max(0, measuredHomeButtonWidth);
 
-  const measuredGroupsButtonWidth = document.querySelector('.main-groups-button')?.clientWidth ?? 0;
-  const groupsButtonWidth = measuredGroupsButtonWidth > 0 ? measuredGroupsButtonWidth : 0;
+  const measuredGroupsButtonWidth = document.querySelector('#main-groups-button')?.clientWidth ?? 0;
+  const groupsButtonWidth = Math.max(0, measuredGroupsButtonWidth);
+
+  // const forceUpdate = useForceUpdate();
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     console.log('forceUpdate', server?.host, document.querySelector('#home-button')?.clientWidth, document.querySelector('#main-groups-button')?.clientWidth);
+  //     forceUpdate();
+  //   }, 1000);
+  // }, [server ? serverID(server) : undefined]);
 
   const gotIt = () => {
     console.log('got it')

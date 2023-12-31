@@ -48,7 +48,7 @@ const initialState: LocalAppConfiguration = {
   shrinkFeatureNavigation: false,
   browseRsvpsFromPreviews: true,
   showHelp: true,
-  showPinnedServers: false,
+  showPinnedServers: true,
 };
 
 export const localAppSlice = createSlice({

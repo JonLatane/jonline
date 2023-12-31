@@ -17,7 +17,7 @@ interface Props {
 
 const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate, onProfileOpen }) => {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
-  let selected = accountID(store.getState().accounts.account) == accountID(account);
+  const selected = store.getState().accounts.currentAccountId == accountID(account);
 
   // const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
   // const navColorInt = account.server.serverConfiguration?.serverInfo?.colors?.navigation;
@@ -56,7 +56,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
       onReauthenticate(account);
       return;
     }
-    if (store.getState().servers.server?.host != account.server.host) {
+    if (currentServer?.host != account.server.host) {
       dispatch(selectServer(account.server));
     }
     dispatch(selectAccount(account));

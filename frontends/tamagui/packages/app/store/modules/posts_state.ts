@@ -1,5 +1,4 @@
-import { Post, PostContext } from "@jonline/api";
-import { formatError } from "@jonline/ui";
+import { Post, Event } from "@jonline/api";
 import {
   Dictionary,
   Draft,
@@ -10,29 +9,20 @@ import {
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
+import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
+import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
+import { createEvent, loadEvent, loadEventsPage, updateEvent } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
-import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, locallyUpsertPost, replyToPost, updatePost } from './post_actions';
+import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
 import { loadUserPosts } from "./user_actions";
-import { loadEvent, loadEventsPage } from "./event_actions";
-import { GroupedPages, PaginatedIds } from "../pagination";
-import { eventsAdapter, eventsSlice } from './events_state';
-import { store } from "../store";
 export * from './post_actions';
 
+export type FederatedPost = FederatedEntity<Post>;
 export interface PostsState {
-  baseStatus: "unloaded" | "loading" | "loaded" | "errored";
-  status: "unloaded" | "loading" | "loaded" | "errored";
-  sendReplyStatus?: "sending" | "sent" | "errored";
-  createPostStatus?: "posting" | "posted" | "errored";
-  updatePostStatus?: "updating" | "updated" | "errored";
-  deletePostStatus?: "deleting" | "deleted" | "errored";
-  error?: Error;
-  successMessage?: string;
-  errorMessage?: string;
-  draftPost: DraftPost;
+  pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
-  entities: Dictionary<Post>;
-  postPages: GroupedPages;
+  entities: Dictionary<FederatedPost>;
+  postPages: Federated<GroupedPages>;
   failedPostIds: string[];
 }
 
@@ -41,20 +31,15 @@ export interface DraftPost {
   groupId?: string;
 }
 
-export const postsAdapter: EntityAdapter<Post> = createEntityAdapter<Post>({
-  selectId: (post) => post.id,
+export const postsAdapter: EntityAdapter<FederatedPost> = createEntityAdapter<FederatedPost>({
+  selectId: (post) => federatedId(post),
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
 
 const initialState: PostsState = {
-  status: "unloaded",
-  baseStatus: "unloaded",
-  draftPost: {
-    newPost: Post.fromPartial({})
-  },
-  sendReplyStatus: undefined,
+  pagesStatus: createFederatedPagesStatus(),
   failedPostIds: [],
-  postPages: {},
+  postPages: createFederated({}),
   ...postsAdapter.getInitialState(),
 };
 
@@ -64,22 +49,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
   reducers: {
     removePost: postsAdapter.removeOne,
     resetPosts: () => initialState,
-    clearPostAlerts: (state) => {
-      state.errorMessage = undefined;
-      state.successMessage = undefined;
-      state.error = undefined;
-      state.createPostStatus = undefined;
-      state.sendReplyStatus = undefined;
-    },
-    confirmReplySent: (state) => {
-      state.sendReplyStatus = undefined;
-    },
-    // upsertPost(state, action: PayloadAction<{post: Post}>) { 
-    //   if (action.payload.post.id) {
-    //     postsAdapter.upsertOne(state, action.payload.post)
-    //   }
-    // },
-    upsertPost: (state, action: PayloadAction<Post>) => {
+    upsertPost: (state, action: PayloadAction<FederatedPost>) => {
       if (action.payload.id) {
         postsAdapter.upsertOne(state, action.payload);
       }
@@ -89,73 +59,33 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(createPost.pending, (state) => {
-      state.status = "loading";
-      state.createPostStatus = "posting";
-      state.error = undefined;
+    builder.addCase(createPost.pending, (state, action) => {
+      // setFederated(state.status, action, "loading");
     });
     builder.addCase(createPost.fulfilled, (state, action) => {
-      state.status = "loaded";
-      state.createPostStatus = "posted";
-      postsAdapter.upsertOne(state, action.payload);
+      // setFederated(state.status, action, "loaded");
+      postsAdapter.upsertOne(state, federatedPayload(action));
       if (publicVisibility(action.payload.visibility)) {
         state.postPages[defaultPostListingType] = state.postPages[defaultPostListingType] || [];
         const firstPage = state.postPages[defaultPostListingType][0] || [];
         state.postPages[defaultPostListingType][0] = [action.payload.id, ...firstPage];
       }
-      state.successMessage = `Post created.`;
     });
-    builder.addCase(locallyUpsertPost.fulfilled, (state, action) => {
-      // state.status = "loaded";
-      postsAdapter.upsertOne(state, action.payload);
-    });
-    builder.addCase(createPost.rejected, (state, action) => {
-      state.status = "errored";
-      state.createPostStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(updatePost.pending, (state) => {
-      state.updatePostStatus = "updating";
-      state.error = undefined;
-    });
-    builder.addCase(updatePost.fulfilled, (state, action) => {
-      state.updatePostStatus = "updated";
-      postsAdapter.upsertOne(state, action.payload);
-    });
-    builder.addCase(updatePost.rejected, (state, action) => {
-      state.updatePostStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(deletePost.pending, (state) => {
-      state.deletePostStatus = "deleting";
-      state.error = undefined;
-    });
-    builder.addCase(deletePost.fulfilled, (state, action) => {
-      state.deletePostStatus = "deleted";
-      postsAdapter.upsertOne(state, action.payload);
-    });
-    builder.addCase(deletePost.rejected, (state, action) => {
-      state.deletePostStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(replyToPost.pending, (state) => {
-      state.sendReplyStatus = "sending";
-      state.error = undefined;
-    });
+    // builder.addCase(locallyUpsertPost.fulfilled, (state, action) => {
+    //   // state.status = "loaded";
+    //   postsAdapter.upsertOne(state, federatedPayload(action));
+    // });
+    // builder.addCase(createPost.rejected, (state, action) => {
+    //   setFederated(state.status, action, "errored");
+    // });
     builder.addCase(replyToPost.fulfilled, (state, action) => {
-      state.sendReplyStatus = "sent";
       // postsAdapter.upsertOne(state, action.payload);
       const reply = action.payload;
       const postIdPath = action.meta.arg.postIdPath;
-      const basePost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
+      const basePostId = federateId(postIdPath[0]!, action);
+      const basePost = postsAdapter.getSelectors().selectById(state, basePostId);
       if (!basePost) {
-        console.error(`Root post ID (${postIdPath[0]}) not found.`);
+        console.error(`Root post ID (${basePostId}) not found.`);
         return;
       }
       const rootPost: Post = { ...basePost }
@@ -175,90 +105,47 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         parentPost = nextPost;
       }
       parentPost.replies = [reply].concat(...parentPost.replies);
-      postsAdapter.upsertOne(state, rootPost);
-      state.successMessage = `Reply created.`;
-    });
-    builder.addCase(replyToPost.rejected, (state, action) => {
-      state.sendReplyStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(loadPostsPage.pending, (state) => {
-      state.status = "loading";
-      state.baseStatus = "loading";
-      state.error = undefined;
+      postsAdapter.upsertOne(state, federatedEntity(rootPost, action));
     });
     builder.addCase(loadPostsPage.fulfilled, (state, action) => {
-      state.status = "loaded";
-      state.baseStatus = "loaded";
-      // const loadedPosts = action.payload.posts.filter(p => p.author != undefined)
-      action.payload.posts.forEach(post => {
+      setFederated(state.pagesStatus, action, "loaded");
+      const federatedPosts = federatedEntities(action.payload.posts, action);
+      federatedPosts.forEach(post => {
         const oldPost = selectPostById(state, post.id);
         postsAdapter.upsertOne(state, { ...post, replies: oldPost?.replies ?? post.replies });
       });
 
-      const postIds = action.payload.posts.map(post => post.id);
+      const postIds = federatedPosts.map(post => federatedId(post));
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultPostListingType;
 
-      if (!state.postPages[listingType] || page === 0) state.postPages[listingType] = [];
-      const postPages: PaginatedIds = state.postPages[listingType]!;
-      // Sensible approach:
-      // postPages[page] = postIds;
+      const serverPostPages: GroupedPages = getFederated(state.postPages, action);
+      if (!serverPostPages[listingType] || page === 0) serverPostPages[listingType] = [];
 
-      // Chunked approach: (note that we re-initialize `postPages` when `page` == 0)
-      let initialPage: number = 0;
-      while (action.meta.arg.page && postPages[initialPage]) {
-        initialPage++;
-      }
-      const chunkSize = 7;
-      for (let i = 0; i < postIds.length; i += chunkSize) {
-        const chunk = postIds.slice(i, i + chunkSize);
-        state.postPages[listingType]![initialPage + (i / chunkSize)] = chunk;
-      }
-      if (state.postPages[listingType]![0] == undefined) {
-        state.postPages[listingType]![0] = [];
-      }
-
-      state.successMessage = `Posts loaded.`;
+      const postPages: PaginatedIds = serverPostPages[listingType]!;
+      postPages[page] = postIds;
+      setFederated(state.postPages, action, serverPostPages);
     });
     builder.addCase(loadPostsPage.rejected, (state, action) => {
-      state.status = "errored";
-      state.baseStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-    });
-    builder.addCase(loadPost.pending, (state) => {
-      state.status = "loading";
-      state.error = undefined;
+      setFederated(state.pagesStatus, action, "errored");
     });
     builder.addCase(loadPost.fulfilled, (state, action) => {
-      state.status = "loaded";
-      const oldPost = selectPostById(state, action.payload.id);
-      postsAdapter.upsertOne(state, { ...action.payload, replies: oldPost?.replies ?? action.payload.replies });
-      state.successMessage = `Post data loaded.`;
+      const federatedPost = federatedPayload(action);
+      const oldPost = selectPostById(state, federatedId(federatedPost));
+      postsAdapter.upsertOne(state, { ...federatedPost, replies: oldPost?.replies ?? action.payload.replies });
     });
     builder.addCase(loadPost.rejected, (state, action) => {
-      state.status = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
-      state.failedPostIds = [...state.failedPostIds, (action.meta.arg as LoadPost).id];
-    });
-    builder.addCase(loadPostReplies.pending, (state) => {
-      state.status = "loading";
-      state.error = undefined;
+      state.failedPostIds.push(federateId((action.meta.arg as LoadPost).id, action));
     });
     builder.addCase(loadPostReplies.fulfilled, (state, action) => {
-      state.status = "loaded";
-      // console.log('loaded post replies', action.payload)
+      console.log('loaded post replies', action.payload)
+      // debugger;
       // Load the replies into the post tree.
       const postIdPath = action.meta.arg.postIdPath;
-      const basePost = postsAdapter.getSelectors().selectById(state, postIdPath[0]!);
+      const basePostId = federateId(postIdPath[0]!, action);
+      const basePost = postsAdapter.getSelectors().selectById(state, basePostId);
       if (!basePost) {
-        console.error(`Root post ID (${postIdPath[0]}) not found.`);
+        console.error(`Root post ID (${basePostId}) not found.`);
         return;
       }
       const rootPost: Post = { ...basePost }
@@ -278,35 +165,33 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         return { ...reply, replies: oldReply?.replies ?? reply.replies };
       });
       post.replies = mergedReplies;
-      postsAdapter.upsertOne(state, rootPost);
-      state.successMessage = `Replies loaded.`;
-    });
-    builder.addCase(loadPostReplies.rejected, (state, action) => {
-      state.status = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = `Error loading replies: ${formatError(action.error as Error)}`;
-      state.error = action.error as Error;
+      // debugger;
+      postsAdapter.upsertOne(state, federatedEntity(rootPost, action));
     });
 
     builder.addCase(loadUserPosts.fulfilled, (state, action) => {
       const { posts } = action.payload;
-      upsertPosts(state, posts);
+      upsertPosts(state, federatedEntities(posts, action));
     });
     builder.addCase(loadGroupPostsPage.fulfilled, (state, action) => {
       const { posts } = action.payload;
-      upsertPosts(state, posts);
+      upsertPosts(state, federatedEntities(posts, action));
     });
-    builder.addCase(loadEvent.fulfilled, (state, action) => {
-      postsAdapter.upsertOne(state, action.payload.post!);
-    });
+
+    const saveEventPost = (state: PostsState, action: PayloadAction<Event, any, any>) => {
+      postsAdapter.upsertOne(state, federatedEntity(action.payload.post!, action));
+    };
+    builder.addCase(loadEvent.fulfilled, saveEventPost);
+    builder.addCase(updateEvent.fulfilled, saveEventPost);
+    builder.addCase(createEvent.fulfilled, saveEventPost);
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {
       const posts = action.payload.events.map(event => event.post!);
-      upsertPosts(state, posts);
+      upsertPosts(state, federatedEntities(posts, action));
     });
   },
 });
 
-export const { removePost, clearPostAlerts: clearPostAlerts, confirmReplySent, resetPosts, upsertPost } = postsSlice.actions;
+export const { removePost, clearPostAlerts: clearPostAlerts, resetPosts, upsertPost } = postsSlice.actions;
 export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();
 export const postsReducer = postsSlice.reducer;
 // export const upsertPost = postRe;

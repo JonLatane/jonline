@@ -27,6 +27,7 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission PUBLISH_GROUPS_GLOBALLY = Permission._(13, _omitEnumNames ? '' : 'PUBLISH_GROUPS_GLOBALLY');
   static const Permission MODERATE_GROUPS = Permission._(14, _omitEnumNames ? '' : 'MODERATE_GROUPS');
   static const Permission JOIN_GROUPS = Permission._(15, _omitEnumNames ? '' : 'JOIN_GROUPS');
+  static const Permission INVITE_GROUP_MEMBERS = Permission._(16, _omitEnumNames ? '' : 'INVITE_GROUP_MEMBERS');
   static const Permission VIEW_POSTS = Permission._(20, _omitEnumNames ? '' : 'VIEW_POSTS');
   static const Permission CREATE_POSTS = Permission._(21, _omitEnumNames ? '' : 'CREATE_POSTS');
   static const Permission PUBLISH_POSTS_LOCALLY = Permission._(22, _omitEnumNames ? '' : 'PUBLISH_POSTS_LOCALLY');
@@ -62,6 +63,7 @@ class Permission extends $pb.ProtobufEnum {
     PUBLISH_GROUPS_GLOBALLY,
     MODERATE_GROUPS,
     JOIN_GROUPS,
+    INVITE_GROUP_MEMBERS,
     VIEW_POSTS,
     CREATE_POSTS,
     PUBLISH_POSTS_LOCALLY,

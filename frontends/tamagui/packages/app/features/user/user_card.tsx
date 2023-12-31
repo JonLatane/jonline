@@ -80,7 +80,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     {hasAvatarUrl ? <Image
       width={50}
       height={50}
-      mr='$2'  my='auto'
+      mr='$2' my='auto'
       borderRadius={25}
       resizeMode="cover"
       als="flex-start"
@@ -103,8 +103,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>}
     </YStack>
     {showServerInfo
-      ? <XStack my='auto' w={mediaQuery.gtXs ? undefined : '$4'} h={mediaQuery.gtXs ? undefined : '$4'}>
-        <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXs} />
+      ? <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'}>
+        <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs} />
       </XStack>
       : undefined}
   </XStack>;
@@ -196,8 +196,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   return (
     <Theme /*inverse={isCurrentUser ?? false}*/>
       <Card theme="dark" elevate size="$4" bordered
-        animation='standard'
+        animation='standard' {...standardAnimation}
         // scale={0.9}
+        borderColor={showServerInfo ? primaryColor : undefined}
         pl='$2'
         margin='$0'
         width={'100%'}
@@ -206,7 +207,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         y={0}
       >
         <Card.Header>
-          <XStack w='100%' space='$1' ai='center'>
+          <XStack w='100%' space='$1' ai={showServerInfo ? 'center' : undefined}>
             {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
                 {usernameRegion}

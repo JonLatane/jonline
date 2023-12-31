@@ -1,15 +1,15 @@
-import { EventListingType, Group, PostListingType } from '@jonline/api';
-import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { EventListingType, PostListingType } from '@jonline/api';
+import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { useAppDispatch, useEventPages, useGroupEventPages, useGroupPostPages, usePostPages } from 'app/hooks';
-import { RootState, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
+import { useAppDispatch, useEventPages, usePaginatedRendering, usePostPages } from 'app/hooks';
+import { FederatedGroup, RootState, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
-import PostCard from '../post/post_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
+import PostCard from '../post/post_card';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
 
@@ -18,7 +18,7 @@ export function HomeScreen() {
 }
 
 export type HomeScreenProps = {
-  selectedGroup?: Group
+  selectedGroup?: FederatedGroup
 };
 
 export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => {
@@ -41,16 +41,18 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     setDocumentTitle(`Latest | ${title}`)
   });
 
-  const [currentPostsPage, setCurrentPostsPage] = useState(0);
+  const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } =
+    usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, selectedGroup);
 
-  const { posts, loadingPosts, reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } = selectedGroup
-    ? useGroupPostPages(selectedGroup.id, currentPostsPage)
-    : usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, currentPostsPage);
+  const postPagination = usePaginatedRendering(allPosts, 7);
+  const paginatedPosts = postPagination.results;
 
   // Only load the first page of events on this screen.
-  const { events, loadingEvents, reloadEvents, firstPageLoaded: eventsLoaded } = selectedGroup
-    ? useGroupEventPages(selectedGroup.id, 0)
-    : useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, 0);
+  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
+    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup);
+
+  const eventPagination = usePaginatedRendering(allEvents, 7);
+  const paginatedEvents = eventPagination.results;
 
   function onHomePressed() {
     if (isClient && window.scrollY > 0) {
@@ -74,8 +76,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     <TabsNavigation
       customHomeAction={selectedGroup ? undefined : onHomePressed}
       selectedGroup={selectedGroup}
+      withServerPinning
     >
-      {postsState.baseStatus == 'loading' ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+      {loadingPosts || loadingEvents ? <StickyBox style={{ zIndex: 10, height: 0 }}>
         <YStack space="$1" opacity={0.92}>
           <Spinner size='large' color={navColor} scale={2}
             top={dimensions.height / 2 - 50}
@@ -83,7 +86,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
-        {eventsLoaded && postsLoaded
+        {(eventsLoaded && postsLoaded) || allEvents.length > 0
           ? <XStack w='100%' px='$3'>
             <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
               <Heading size='$6'>Upcoming Events</Heading>
@@ -105,18 +108,18 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </XStack>
           : undefined}
         <AnimatePresence>
-          {showEventsOnLatest && eventsLoaded && postsLoaded ?
+          {showEventsOnLatest && ((eventsLoaded && postsLoaded) || allEvents.length > 0) ?
             <YStack
               key='latest-events'
               w='100%'
-              h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
-              overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
+              // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
+              // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
               animation='standard'
               {...standardAnimation}
             >
-              {events.length == 0
+              {allEvents.length == 0
                 ? eventsLoaded
-                  ? <YStack width='100%' maw={600} jc="center" ai="center">
+                  ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
                     <Heading size='$5' mb='$3'>No events found.</Heading>
                     <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                   </YStack>
@@ -124,8 +127,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 : <ScrollView horizontal
                   w='100%'>
                   <XStack w={eventCardWidth} space='$2' mx='$2' my='auto'>
-                    {events.map((event) => <EventCard key={`event-preview-${event.id}-${event.instances[0]!.id}`}
-                      event={event} isPreview horizontal xs />)}
+                    {paginatedEvents.map((event) =>
+                      <XStack key={`event-preview-${event.id}-${event.instances[0]!.id}`} animation='standard' {...standardHorizontalAnimation}>
+                        <EventCard event={event} isPreview horizontal xs />
+                      </XStack>)}
                     <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
                       <YStack ai='center' py='$3' jc='center'>
                         <Heading size='$4'>More</Heading>
@@ -140,8 +145,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         </AnimatePresence>
 
         <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
-          {eventsLoaded && postsLoaded
-            ? posts.length === 0
+          {(eventsLoaded && postsLoaded) || (allPosts.length > 0 || allEvents.length > 0)
+            ? allPosts.length === 0
               ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}
               // animation='quick'
               // {...standardAnimation}
@@ -152,14 +157,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               : <YStack f={1} px='$3' w='100%' key={`post-list`}// animation='quick' {...standardAnimation}
               >
                 <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
-                {posts.map((post) => {
-                  return <PostCard key={`post-preview-${post.id}`} post={post} isPreview />;
+                {paginatedPosts.map((post) => {
+                  return <PostCard key={`post-preview-${federatedId(post)}`} post={post} isPreview />;
                 })}
-                <PaginationIndicator page={currentPostsPage}
-                  loadingPage={loadingPosts || postsState.baseStatus == 'loading'}
-                  hasNextPage={hasMorePages}
-                  loadNextPage={() => setCurrentPostsPage(currentPostsPage + 1)}
-                />
+                <PaginationIndicator {...postPagination} />
               </YStack>
             : undefined
           }

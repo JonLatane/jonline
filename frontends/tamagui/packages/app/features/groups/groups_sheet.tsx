@@ -1,23 +1,24 @@
-import { GetGroupsRequest, Group, Permission } from '@jonline/api';
+import { GroupListingType, Permission } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Theme, XStack, YStack } from '@jonline/ui';
 import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
-import { useCredentialDispatch } from 'app/hooks';
-import { RootState, loadGroupsPage, selectAllGroups, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { useCredentialDispatch, useGroupPages, useLocalConfiguration } from 'app/hooks';
+import { FederatedGroup, RootState, federatedId, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { hasPermission } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
+import { PinnedServerSelector } from '../navigation/pinned_server_selector';
 import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
 import { GroupDetailsSheet } from './group_details_sheet';
 
 export type GroupsSheetProps = {
-  selectedGroup?: Group;
+  selectedGroup?: FederatedGroup;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (group: Group) => string;
+  groupPageForwarder?: (groupIdentifier: string) => string;
 
   noGroupSelectedText?: string;
-  onGroupSelected?: (group: Group) => void;
+  onGroupSelected?: (group: FederatedGroup) => void;
 
   disabled?: boolean;
   title?: string;
@@ -25,13 +26,12 @@ export type GroupsSheetProps = {
   disableSelection?: boolean;
   hideInfoButtons?: boolean;
   topGroupIds?: string[];
-  extraListItemChrome?: (group: Group) => JSX.Element | undefined;
+  extraListItemChrome?: (group: FederatedGroup) => JSX.Element | undefined;
   delayRenderingSheet?: boolean;
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
   groupNamePrefix?: string;
 }
-let isReloadingGroups = false;
 export function GroupsSheet({
   selectedGroup,
   groupPageForwarder,
@@ -64,51 +64,30 @@ export function GroupsSheet({
   const searchInputRef = React.createRef<TextInput>();
 
   const groupsState = useRootSelector((state: RootState) => state.groups);
-  const [loadingGroups, setLoadingGroups] = useState(false);
 
-  useEffect(() => {
-    if (!loadingGroups && groupsState.status == 'unloaded' && !extraListItemChrome) {
-      setLoadingGroups(true);
-      reloadGroups();
-    } else if (loadingGroups && !['unloaded', 'loading'].includes(groupsState.status)) {
-      setLoadingGroups(false);
-    }
-  });
   useEffect(() => {
     if (open && !hasRenderedSheet) {
       setHasRenderedSheet(true);
     }
   }, [open]);
 
-  function reloadGroups() {
-    if (isReloadingGroups) return;
-    if (!accountOrServer.server) return;
-
-    isReloadingGroups = true;
-    setTimeout(
-      () => dispatch(
-        loadGroupsPage({ ...accountOrServer, ...GetGroupsRequest.create() })
-      ).then(() => isReloadingGroups = false),
-      1
-    );
-  }
+  const { groups: allGroups } = useGroupPages(GroupListingType.ALL_GROUPS, 0, { disableLoading: extraListItemChrome !== undefined });
 
   const recentGroupIds = useRootSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
 
-  const allGroups = useRootSelector((state: RootState) => selectAllGroups(state.groups));
 
 
-  const matchedGroups: Group[] = allGroups.filter(g =>
+  const matchedGroups: FederatedGroup[] = allGroups.filter(g =>
     g.name.toLowerCase().includes(searchText.toLowerCase()) ||
     g.description.toLowerCase().includes(searchText.toLowerCase()));
 
-  const topGroups: Group[] = [
+  const topGroups: FederatedGroup[] = [
     ...(selectedGroup != undefined ? [selectedGroup] : []),
     ...(
       (topGroupIds ?? []).filter(id => id != selectedGroup?.id)
-        .map(id => allGroups.find(g => g.id == id)).filter(g => g != undefined) as Group[]
+        .map(id => allGroups.find(g => g.id == id)).filter(g => g != undefined) as FederatedGroup[]
     ).filter(g =>
       g.name.toLowerCase().includes(searchText.toLowerCase()) ||
       g.description.toLowerCase().includes(searchText.toLowerCase())),
@@ -119,9 +98,9 @@ export function GroupsSheet({
     .map(id => allGroups.find(g => g.id === id))
     .filter(g => g != undefined && g.id !== selectedGroup?.id
       && !topGroups.some(tg => tg.id == g.id)
-      && matchedGroups.some(mg => mg.id === g.id)) as Group[];
+      && matchedGroups.some(mg => mg.id === g.id)) as FederatedGroup[];
 
-  const sortedGroups: Group[] = [
+  const sortedGroups: FederatedGroup[] = [
     ...matchedGroups
       .filter(g => g.id !== selectedGroup?.id &&
         (!(topGroupIds || []).includes(g.id)) &&
@@ -130,9 +109,9 @@ export function GroupsSheet({
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
+  const { showPinnedServers } = useLocalConfiguration();
 
   return (
-
     <>
       <Button
         icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup && !noGroupSelectedText}
@@ -187,13 +166,16 @@ export function GroupsSheet({
               {itemTitle ? <Heading size="$7" paddingHorizontal='$3' whiteSpace='nowrap' overflow='hidden' textOverflow='ellipsis'>{itemTitle}</Heading> : undefined}
 
               <XStack space="$3" paddingHorizontal='$3'>
-                <XStack marginVertical='auto' ml='$3' mr={-44}>
-                  <Search />
-                </XStack>
                 <XStack w='100%' pr='$0'>
+                  <XStack my='auto' ml='$3' mr={-34}>
+                    <Search />
+                  </XStack>
                   <Input size="$3" f={1} placeholder='Search for Groups' textContentType='name'
                     paddingHorizontal={40} ref={searchInputRef}
-                    onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} />
+
+                    onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} >
+
+                  </Input>
                   <Button icon={XIcon} ml={-44} mr='$3'
                     onPress={() => {
                       setSearchText('');
@@ -204,6 +186,8 @@ export function GroupsSheet({
                 </XStack>
                 {/* </Input> */}
               </XStack>
+
+              <PinnedServerSelector show={showPinnedServers} transparent />
             </YStack>
             <Sheet.ScrollView p="$4" space>
               <YStack maw={600} als='center' width='100%'>
@@ -213,8 +197,8 @@ export function GroupsSheet({
                     <YStack>
                       {topGroups.map((group, index) => {
                         return <GroupButton
-                          key={`groupButton-${group.id}`}
-                          group={group}
+                        key={`groupButton-${federatedId(group)}`}
+                        group={group}
                           groupPageForwarder={groupPageForwarder}
                           onGroupSelected={onGroupSelected}
                           selected={group.id == selectedGroup?.id}
@@ -238,7 +222,7 @@ export function GroupsSheet({
                     <YStack>
                       {recentGroups.map((group, index) => {
                         return <GroupButton
-                          key={`groupButton-${group.id}`}
+                          key={`groupButton-${federatedId(group)}`}
                           group={group}
                           groupPageForwarder={groupPageForwarder}
                           onGroupSelected={onGroupSelected}
@@ -265,7 +249,7 @@ export function GroupsSheet({
                       <YStack>
                         {sortedGroups.map((group, index) => {
                           return <GroupButton
-                            key={`groupButton-${group.id}`}
+                          key={`groupButton-${federatedId(group)}`}
                             group={group}
                             groupPageForwarder={groupPageForwarder}
                             onGroupSelected={onGroupSelected}

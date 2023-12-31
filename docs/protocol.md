@@ -82,6 +82,8 @@
 - [server_configuration.proto](#server_configuration-proto)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
+    - [FederatedServer](#jonline-FederatedServer)
+    - [FederationInfo](#jonline-FederationInfo)
     - [PostSettings](#jonline-PostSettings)
     - [ServerColors](#jonline-ServerColors)
     - [ServerConfiguration](#jonline-ServerConfiguration)
@@ -449,6 +451,7 @@ Request to reset a password.
 | PUBLISH_GROUPS_GLOBALLY | 13 | Allow the user to give groups `GLOBAL_PUBLIC` visibility. |
 | MODERATE_GROUPS | 14 | The Moderate Groups permission makes a user effectively an admin of *any* group. |
 | JOIN_GROUPS | 15 | Allow the user to (potentially request to) join groups of `SERVER_PUBLIC` or higher visibility. |
+| INVITE_GROUP_MEMBERS | 16 | Allow the user to invite other users to groups. Only applicable as a Group permission (not at the User level). |
 | VIEW_POSTS | 20 | In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. In the context of group permissions, allow the user to view `GroupPost`s whose `Post`s have `LIMITED` or higher visibility. |
 | CREATE_POSTS | 21 | In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. In the context of group permissions, allow the user to create `GroupPost`s whose `Post`s have `LIMITED` or higher visibility. |
 | PUBLISH_POSTS_LOCALLY | 22 |  |
@@ -1506,6 +1509,37 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 
 
 
+<a name="jonline-FederatedServer"></a>
+
+### FederatedServer
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  |  |
+| default | [bool](#bool) |  | Indicates to UI clients that they should enable the indicated server by default. |
+
+
+
+
+
+
+<a name="jonline-FederationInfo"></a>
+
+### FederationInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| servers | [FederatedServer](#jonline-FederatedServer) | repeated |  |
+
+
+
+
+
+
 <a name="jonline-PostSettings"></a>
 
 ### PostSettings
@@ -1553,6 +1587,7 @@ Configuration for a Jonline server instance.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | server_info | [ServerInfo](#jonline-ServerInfo) | optional | The name, description, logo, color scheme, etc. of the server. |
+| federation_info | [FederationInfo](#jonline-FederationInfo) | optional |  |
 | anonymous_user_permissions | [Permission](#jonline-Permission) | repeated | Permissions for a user who isn&#39;t logged in to the server. Allows admins to disable certain features for anonymous users. Valid values are `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`. |
 | default_user_permissions | [Permission](#jonline-Permission) | repeated | Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also grant/revoke these permissions for others. Valid values are `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`. |
 | basic_user_permissions | [Permission](#jonline-Permission) | repeated | Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`. |
@@ -1588,7 +1623,7 @@ User-facing information about the server displayed on the &#34;about&#34; page.
 | web_user_interface | [WebUserInterface](#jonline-WebUserInterface) | optional |  |
 | colors | [ServerColors](#jonline-ServerColors) | optional |  |
 | media_policy | [string](#string) | optional |  |
-| recommended_server_hosts | [string](#string) | repeated |  |
+| recommended_server_hosts | [string](#string) | repeated | **Deprecated.** This will be replaced with FederationInfo soon. |
 
 
 

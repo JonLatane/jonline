@@ -1,22 +1,19 @@
-import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, Text, TextArea, XStack, YStack, useMedia } from '@jonline/ui';
-import { ChevronDown, Settings } from '@tamagui/lucide-icons';
-import { RootState, clearPostAlerts, createEvent, createGroupPost, loadEventsPage, loadGroupEventsPage, selectAllAccounts, selectAllServers, serverID, useServerTheme, useRootSelector } from 'app/store';
+import { Event, EventInstance, EventListingType, Group, Location, Permission, Post } from '@jonline/api';
+import { Heading, Paragraph, Text, XStack } from '@jonline/ui';
+import { FederatedGroup, createEvent, createGroupPost, federatedEntity, loadEventsPage, loadGroupEventsPage } from 'app/store';
 import React, { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
-import moment from 'moment';
-import { VisibilityPicker } from 'app/components';
-import EventCard from './event_card';
-import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
-import { LocationControl } from './location_control';
 import { useCredentialDispatch } from 'app/hooks';
+import moment from 'moment';
+import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
+import EventCard from './event_card';
+import { LocationControl } from './location_control';
 
 export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
 export type CreateEventSheetProps = {
-  selectedGroup?: Group;
+  selectedGroup?: FederatedGroup;
 };
 
 export const supportDateInput = (m: moment.Moment) => m.local().format('YYYY-MM-DDTHH:mm');
@@ -54,7 +51,7 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   const invalid = endDateInvalid;
 
   function previewEvent(post: Post) {
-    return Event.create({
+    const event = Event.create({
       post: post,
       instances: [
         EventInstance.create({
@@ -64,7 +61,8 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
         }),
       ],
     });
-  }
+    return federatedEntity(event, accountOrServer.server);
+  };
 
   function doCreate(
     post: Post,

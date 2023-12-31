@@ -1,17 +1,10 @@
 import { Paragraph, Spinner, TamaguiElement, XStack } from '@jonline/ui';
+import { Pagination } from 'app/hooks';
 import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useServerTheme } from 'app/store';
-import React, { useEffect, useState } from "react";
-import { View } from 'react-native';
+import React, { useEffect } from "react";
 
-interface Props {
-  page: number;
-  loadingPage: boolean;
-  hasNextPage?: boolean;
-  loadNextPage: () => void;
-}
-
-export const PaginationIndicator: React.FC<Props> = ({ page, loadingPage, hasNextPage = true, loadNextPage }) => {
+export const PaginationIndicator: React.FC<Pagination<any>> = ({ page, loadingPage, hasNextPage = true, loadNextPage }) => {
   // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const ref = React.createRef<TamaguiElement>();
   const isVisible = useIsVisible(ref);

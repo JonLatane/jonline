@@ -1,20 +1,20 @@
-import { accountOrServerId, getCredentialClient, useServerTheme } from "app/store";
+import { FederatedEvent, accountOrServerId, getCredentialClient, getServerTheme, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useTheme, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
-import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useLocalConfiguration } from "app/hooks";
+import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
 import { createParam } from "solito";
 import { useLink } from "solito/link";
-import { useGroupContext } from "../groups/group_context";
+import { useGroupContext } from "../../contexts/group_context";
 import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
 
 export interface EventRsvpManagerProps {
-  event: Event;
+  event: FederatedEvent;
   instance: EventInstance;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
@@ -33,10 +33,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   isPreview,
 }) => {
   const mediaQuery = useMedia();
-  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme();
+  const { dispatch, accountOrServer } = useFederatedDispatch(event);
+  const { account, server } = accountOrServer;
+  const theme = useTheme();
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(server, theme);
 
-  let { dispatch, accountOrServer } = useCredentialDispatch();
-  const { account } = accountOrServer;
   const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
 
   const { anonymousAuthToken, setAnonymousAuthToken, removeAnonymousAuthToken } = useAnonymousAuthToken(instance.id);
@@ -749,9 +750,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 (!hasPendingAttendances && interestedRsvpCount === 0 && invitedRsvpCount === 0)
                 ? <XStack w='100%' flexWrap="wrap">
                   <Paragraph size='$1' color={primaryAnchorColor}>Going</Paragraph>
-                  <Paragraph size='$1' ml='auto'>
-                    {formatCount(goingRsvpCount, goingAttendeeCount)}
-                  </Paragraph>
+                  {loadFailed
+                    ? <XStack ml='auto' my='auto'><AlertTriangle size='$1' /></XStack>
+                    : <Paragraph size='$1' ml='auto'>
+                      {formatCount(goingRsvpCount, goingAttendeeCount)}
+                    </Paragraph>}
                 </XStack>
                 : undefined}
               {interestedRsvpCount > 0

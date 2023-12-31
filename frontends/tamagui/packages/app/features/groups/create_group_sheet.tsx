@@ -2,7 +2,7 @@ import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonl
 import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
 import { useCredentialDispatch } from 'app/hooks';
-import { JonlineServer, RootState, clearPostAlerts, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineServer, RootState, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 // import { PostMediaManager } from '../posts/post_media_manager';
@@ -113,7 +113,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
 
     setRenderType(RenderType.Edit);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    dispatch(clearPostAlerts!());
+    // dispatch(clearGroupAlerts!());
     setPosting(false);
   }
 
@@ -147,6 +147,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   };
 
   function doCreate() {
+    setIsCreating(true);
     const group = Group.create({
       name,
       description,
@@ -161,28 +162,14 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
     setError(undefined);
     dispatch(createGroup({ ...group, ...accountOrServer }))
       .then((action) => {
-        action?.type
-        // console.log('result', action)
-        // debugger;
+        setIsCreating(false);
         if (actionFailed(action)) {
           setError('Error creating group.');
         } else {
           resetGroup();
           setOpen(false);
-
         }
-        // if (action.type == createGroup.fulfilled.type) {
-        // const post = action.payload as Post;
-        // // if (group) {
-        // //   dispatch(createGroupPost({ groupId: group.id, postId: (post).id, ...accountOrServer }))
-        // //     .then(resetPost);
-        // // } else {
-        // //   resetPost();
-        // // }
-        // } else {
-        //   onComplete();
-        // }
-      });
+      }).finally(() => setIsCreating(false))
   }
 
   const textAreaRef = React.createRef<TextInput>();
@@ -211,7 +198,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
     }
   }, [open]);
 
-  const isCreating = posting || ['posting', 'posted'].includes(postsState.createPostStatus!);
+  const [isCreating, setIsCreating] = useState(false);
   const disableInputs = isCreating;
   const disableCreate = disableInputs || !valid;
 
@@ -227,7 +214,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
         color={primaryTextColor}
         // f={1}
         my='auto'
-        disabled={serversState.server === undefined}
+        disabled={server === undefined}
         onPress={() => setOpen(!open)}>
         <Heading size='$2' color={primaryTextColor}>Create Group</Heading>
       </Button>
@@ -270,8 +257,8 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                 </Button>
               </XStack>
               {error ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{error}</Heading> : undefined}
-              {postsState.createPostStatus == "errored" && postsState.errorMessage ?
-                <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined}
+              {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
+                <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
               <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
                 <YStack space="$2" w='100%'>

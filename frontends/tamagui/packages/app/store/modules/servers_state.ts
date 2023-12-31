@@ -6,12 +6,11 @@ import {
   EntityId,
   PayloadAction
 } from "@reduxjs/toolkit";
-import { deleteClient, getServerClient, resetCredentialedData, store } from "..";
 import { Platform } from 'react-native';
+import { deleteClient, getServerClient, pinServer, resetCredentialedData, store } from "..";
 import { JonlineServer } from "../types";
-import { GetServiceVersionResponse } from "@jonline/api";
 
-export function optServerID(server: JonlineServer | undefined): string | undefined{
+export function optServerID(server: JonlineServer | undefined): string | undefined {
   return server ? serverID(server) : undefined;
 }
 
@@ -51,7 +50,8 @@ export interface ServersState {
   // Current "root" server the app is pointing to.
   // On web, if this doesn't match the location.host, we'll show a warning in the
   // AccountsSheet.
-  server?: JonlineServer;
+  currentServerId?: string;
+  // server?: JonlineServer;
   ids: EntityId[];
   entities: Dictionary<JonlineServer>;
 }
@@ -90,7 +90,7 @@ setTimeout(async () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  if (!store.getState().servers.server) {
+  if (!store.getState().servers.currentServerId) {
     let initialServer: JonlineServer;
     if (Platform.OS == 'web' && globalThis.window?.location) {
       const domain = //backendHost && backendHost != ''
@@ -107,16 +107,34 @@ setTimeout(async () => {
         secure: true,
       };
     }
+
     initializeWithServer(initialServer);
   }
 }, 1);
 
 function initializeWithServer(initialServer: JonlineServer) {
-  getServerClient(initialServer).then(() => {
-    const serversState = store.getState().servers;
-    if (serversState.server = undefined) {
-      const server = serversState.entities[serverID(initialServer)];
+  getServerClient(initialServer).then(async () => {
+    // debugger;
+    const getServersState = () => store.getState().servers;
+    if (!getServersState().currentServerId) {
+      let server = getServersState().entities[serverID(initialServer)];
+      while (!server) {
+        server = getServersState().entities[serverID(initialServer)];
+        if (!server) {
+          console.warn('polling for initial server configuration');
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+      // debugger;
       store.dispatch(selectServer(server));
+
+      // debugger;
+      (server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? []).forEach(host => {
+        const recommendedServer = { host: host, secure: true };
+        const pinnedServer = { serverId: serverID(recommendedServer), pinned: true };
+        getServerClient(recommendedServer)
+          .then(() => store.dispatch(pinServer(pinnedServer)));
+      });
     }
   });
 }
@@ -124,7 +142,7 @@ function initializeWithServer(initialServer: JonlineServer) {
 const initialState: ServersState = {
   status: "unloaded",
   error: undefined,
-  server: undefined,
+  currentServerId: undefined,
   ...serversAdapter.getInitialState(),
 };
 
@@ -134,9 +152,9 @@ export const serversSlice = createSlice({
   reducers: {
     upsertServer: serversAdapter.upsertOne,
     removeServer: (state, action: PayloadAction<JonlineServer>) => {
-      if (state.server && serverID(state.server) == serverID(action.payload)) {
-        state.server = serversAdapter.getSelectors().selectAll(state)
-          .filter(s => serverID(s) != serverID(action.payload))[0];
+      if (state.currentServerId == serverID(action.payload)) {
+        state.currentServerId = serversAdapter.getSelectors().selectAll(state)
+          .filter(s => serverID(s) != serverID(action.payload)).map(serverID)[0];
         //[serverID(action.payload)];//serversAdapter(state, serverID(action.payload));
       }
       deleteClient(action.payload);
@@ -149,11 +167,11 @@ export const serversSlice = createSlice({
       state.error = undefined;
     },
     selectServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
-      let currentUrl = state.server ? serverID(state.server) : undefined;
-      if (currentUrl != serverID(action.payload!)) {
+
+      if (state.currentServerId != serverID(action.payload!)) {
         resetCredentialedData();
       }
-      state.server = action.payload;
+      state.currentServerId = serverID(action.payload!);
     },
     moveServerUp: (state, action: PayloadAction<string>) => {
       const index = state.ids.indexOf(action.payload);
@@ -177,11 +195,11 @@ export const serversSlice = createSlice({
     });
     builder.addCase(upsertServer.fulfilled, (state, action) => {
       state.status = "loaded";
-      let server = action.payload;
+      // let server = action.payload;
       serversAdapter.upsertOne(state, action.payload);
-      if (!state.server || serverID(server) == serverID(state.server!)) {
-        state.server = server;
-      }
+      // if (!state.server || serverID(server) == serverID(state.server!)) {
+      //   state.currentServerId = serverId(server);
+      // }
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`);
       state.successMessage = `Server added.`;
     });

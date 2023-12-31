@@ -10,6 +10,8 @@ message ServerConfiguration {
   // The name, description, logo, color scheme, etc. of the server.
   optional ServerInfo server_info = 1;
 
+  optional FederationInfo federation_info = 2;
+
   // Permissions for a user who isn't logged in to the server. Allows
   // admins to disable certain features for anonymous users. Valid values are 
   // `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`.
@@ -162,7 +164,8 @@ message ServerInfo {
   optional WebUserInterface web_user_interface = 6;
   optional ServerColors colors = 7;
   optional string media_policy = 8;
-  repeated string recommended_server_hosts = 9;
+  // This will be replaced with FederationInfo soon.
+  repeated string recommended_server_hosts = 9 [deprecated = true];
 }
 
 
@@ -195,4 +198,14 @@ message ServerColors {
   optional uint32 admin = 4;
   // Color used on author for moderator posts.
   optional uint32 moderator = 5;
+}
+
+message FederationInfo {
+  repeated FederatedServer servers = 1;
+}
+
+message FederatedServer {
+  string host = 1;
+  // Indicates to UI clients that they should enable the indicated server by default.
+  bool default = 2;
 }

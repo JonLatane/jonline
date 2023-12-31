@@ -1,23 +1,21 @@
 import { Group } from '@jonline/api';
 import { Button, Heading, Image, Paragraph, Separator, Text, XStack, YStack, useMedia } from '@jonline/ui';
 import { Info, Users2 } from '@tamagui/lucide-icons';
-import { useAccountOrServer, useAppDispatch, useCredentialDispatch, useMediaUrl, } from 'app/hooks';
-import { RootState, isGroupLocked, joinLeaveGroup, useRootSelector, useServerTheme } from 'app/store';
-import { themedButtonBackground } from 'app/utils';
+import { useAccountOrServer, useAppDispatch, useCurrentAndPinnedServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
+import { FederatedGroup, RootState, federatedId, getServerTheme, isGroupLocked, joinLeaveGroup, useRootSelector, useServerTheme } from 'app/store';
+import { passes, pending, themedButtonBackground } from 'app/utils';
 import React from 'react';
 import { useLink } from 'solito/link';
-import { passes, pending } from 'app/utils';
-import { } from '../post/post_card';
-import { splitOnFirstEmoji } from '../navigation/server_name_and_logo';
+import { ServerNameAndLogo, splitOnFirstEmoji } from '../navigation/server_name_and_logo';
 
 export type GroupButtonProps = {
-  group: Group;
+  group: FederatedGroup;
   selected: boolean;
   setOpen: (open: boolean) => void;
   onShowInfo: () => void;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (group: Group) => string;
+  groupPageForwarder?: (groupIdentifier: string) => string;
   onGroupSelected?: (group: Group) => void;
   disabled?: boolean;
   hideInfoButton?: boolean;
@@ -27,31 +25,24 @@ export type GroupButtonProps = {
 }
 
 export function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome, hideLeaveButton }: GroupButtonProps) {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useFederatedDispatch(group);
+  const mediaQuery = useMedia();
   const { account } = accountOrServer;
+  const server = accountOrServer.server;
+  const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
+  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
   // const dispatch = useAppDispatch();
+  const groupIdentifier = isPrimaryServer ? group.shortname : `${group.shortname}@${group.serverHost}`;
   const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
-    useLink({ href: groupPageForwarder ? groupPageForwarder(group) : `/g/${group.shortname}` });
+    useLink({ href: groupPageForwarder ? groupPageForwarder(groupIdentifier) : `/g/${groupIdentifier}` });
   const media = useMedia();
   const onPress = link.onPress;
   link.onPress = (e) => {
     setOpen(false);
     onPress?.(e);
   }
-  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-
-  const joined = passes(group.currentUserMembership?.userModeration)
-    && passes(group.currentUserMembership?.groupModeration);
-  const membershipRequested = group.currentUserMembership && !joined && passes(group.currentUserMembership?.userModeration);
-  const invited = group.currentUserMembership && !joined && passes(group.currentUserMembership?.groupModeration)
-  const requiresPermissionToJoin = pending(group.defaultMembershipModeration);
-  const isLocked = useRootSelector((state: RootState) => isGroupLocked(state.groups, group.id));
-
-  const onJoinPressed = () => {
-    // e.stopPropagation();
-    const join = !(joined || membershipRequested || invited);
-    dispatch(joinLeaveGroup({ groupId: group.id, join, ...accountOrServer }));
-  };
+  const { textColor, primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
 
   const avatarUrl = useMediaUrl(group.avatar?.id);
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
@@ -68,7 +59,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
     <XStack>
       <Button
         f={1}
-        h={75}
+        h='auto'
         px='$2'
         // bordered={false}
         // href={`/g/${group.shortname}`}
@@ -80,7 +71,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
         disabled={disabled}
         {...link}
       >
-        <XStack w='100%'>
+        <XStack w='100%' ai='center'>
           <YStack w='100%' f={1} my='auto'>
             <XStack>
               <Paragraph f={1}
@@ -107,6 +98,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
               {group.description}
             </Paragraph>
           </YStack>
+
           {hasAvatarUrl
             ? <Image
               // mb='$3'
@@ -125,6 +117,14 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
                 {groupNameEmoji}
               </Heading>
               : undefined}
+          {/* {showServerInfo && (hasAvatarUrl || groupNameEmoji)
+            ? <Heading size='$7' id='server-icon-separator' mr='$2'>@</Heading>
+            : undefined} */}
+          {showServerInfo
+            ? <XStack my='auto' w={'$4'} h={'$4'} jc='center'>
+              <ServerNameAndLogo server={server} shrinkToSquare />
+            </XStack>
+            : undefined}
           <XStack o={0.6} my='auto'>
             <XStack my='auto'>
               <Users2 size='$1' color={selected ? navTextColor : undefined} />
@@ -154,26 +154,6 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
     </XStack>
     <XStack flexWrap='wrap' w='100%'>
       <GroupJoinLeaveButton group={group} hideLeaveButton={hideLeaveButton} />
-      {/* {accountOrServer.account && (!hideLeaveButton || !joined)
-        ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
-          <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
-            // {...standardAnimation} animation='quick'
-            mb='$2'
-            p='$3'
-            disabled={isLocked} opacity={isLocked ? 0.5 : 1}
-            onPress={onJoinPressed}>
-            <YStack jc='center' ac='center'>
-              <Heading jc='center' ta='center' size='$2' color={!joined && !membershipRequested ? primaryTextColor : textColor}>
-                {!joined && !membershipRequested ? requiresPermissionToJoin ? 'Join Request' : 'Join'
-                  : joined ? 'Leave' : 'Cancel Request'}
-              </Heading>
-              {requiresPermissionToJoin && joined ? <Paragraph size='$1'>
-                Permission required to re-join
-              </Paragraph>
-                : undefined}
-            </YStack>
-          </Button>
-        </XStack> : undefined} */}
       {extraListItemChrome?.(group)}
     </XStack>
     {accountOrServer.account || extraListItemChrome
@@ -183,23 +163,22 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
 }
 
 export type GroupJoinLeaveButtonProps = {
-  group: Group;
+  group: FederatedGroup;
   hideLeaveButton?: boolean;
 }
 
 export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveButtonProps) {
-  const accountOrServer = useAccountOrServer();
+  const { dispatch, accountOrServer } = useFederatedDispatch(group);
   const { account } = accountOrServer;
-  const dispatch = useAppDispatch();
-
-  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const server = accountOrServer.server;
+  const { textColor, primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
 
   const joined = passes(group.currentUserMembership?.userModeration)
     && passes(group.currentUserMembership?.groupModeration);
   const membershipRequested = group.currentUserMembership && !joined && passes(group.currentUserMembership?.userModeration);
   const invited = group.currentUserMembership && !joined && passes(group.currentUserMembership?.groupModeration)
   const requiresPermissionToJoin = pending(group.defaultMembershipModeration);
-  const isLocked = useRootSelector((state: RootState) => isGroupLocked(state.groups, group.id));
+  const isLocked = useRootSelector((state: RootState) => isGroupLocked(state.groups, federatedId(group)));
 
   const onJoinPressed = () => {
     // e.stopPropagation();

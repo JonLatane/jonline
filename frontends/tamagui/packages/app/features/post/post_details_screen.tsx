@@ -1,6 +1,6 @@
 import { Heading, ScrollView, Spinner, XStack, YStack } from '@jonline/ui'
-import { useCredentialDispatch, useLocalConfiguration, } from 'app/hooks'
-import { RootState, loadPost, selectGroupById, selectPostById, useRootSelector, useServerTheme } from 'app/store'
+import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useServer, } from 'app/hooks'
+import { RootState, getServerTheme, loadPost, parseFederatedId, selectGroupById, selectPostById, useRootSelector, useServerTheme } from 'app/store'
 import { setDocumentTitle } from 'app/utils'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
@@ -10,22 +10,33 @@ import { ConversationContextProvider, useStatefulConversationContext } from './c
 import { ConversationManager } from './conversation_manager'
 import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
+import { federateId, getFederated } from '../../store/federation';
+import { AccountOrServerContextProvider } from 'app/contexts'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
 export function PostDetailsScreen() {
-  const [postId] = useParam('postId');
+  const [pathPostId] = useParam('postId');
+  // const [postId] = useParam('postId');
+  // const [postId, erverHost] = (pathPostId ?? '').split('@');
+  const currentServer = useServer();
+  const { id: serverPostId, serverHost } = parseFederatedId(pathPostId ?? '', currentServer?.host);
+
+  const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
+  const server = accountOrServer.server;
+  console.log('PostDetailsScreen', serverPostId, serverHost, accountOrServer);
+
   const [shortname] = useParam('shortname');
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
   const groupId = useRootSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
   const group = useRootSelector((state: RootState) =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  // const { dispatch, accountOrServer } = useCredentialDispatch();
   const postsState = useRootSelector((state: RootState) => state.posts);
-  const subjectPost = useRootSelector((state: RootState) => selectPostById(state.posts, postId!));
+  const subjectPost = useRootSelector((state: RootState) => selectPostById(state.posts, federateId(serverPostId!, server)));
   const [loadingPost, setLoadingPost] = useState(false);
   const conversationContext = useStatefulConversationContext();
   const { editingPosts, replyPostIdPath, setReplyPostIdPath, editHandler } = conversationContext;
@@ -35,21 +46,23 @@ export function PostDetailsScreen() {
   // const [chatUI, setChatUI] = useState(false);
   const showReplyArea = subjectPost != undefined && editingPosts.length == 0;
 
-  const failedToLoadPost = postId != undefined &&
-    postsState.failedPostIds.includes(postId!);
+  const failedToLoadPost = serverPostId && postsState.failedPostIds.includes(federateId(serverPostId, server));
 
   useEffect(() => {
-    if (postId) {
-      if ((!subjectPost || postsState.status == 'unloaded') && postsState.status != 'loading' && !loadingPost) {
+    if (serverPostId && server) {
+      if (!subjectPost && !loadingPost) {
         setLoadingPost(true);
         // console.log('loadPost', postId!)
         setTimeout(() =>
-          dispatch(loadPost({ ...accountOrServer, id: postId! })));
+          dispatch(loadPost({ ...accountOrServer, id: serverPostId! })));
       } else if (subjectPost && loadingPost) {
         setLoadingPost(false);
       }
     }
-    const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
+  }, [serverPostId, server, subjectPost, loadingPost]);
+
+  const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
+  useEffect(() => {
     let title = '';
     if (subjectPost) {
       if (subjectPost.title && subjectPost.title.length > 0) {
@@ -67,7 +80,7 @@ export function PostDetailsScreen() {
       title += `- ${group.name}`;
     }
     setDocumentTitle(title)
-  });
+  }, [serverName, subjectPost, failedToLoadPost, shortname, group?.name]);
 
   return (
     <TabsNavigation appSection={AppSection.POST} selectedGroup={group}>
@@ -79,23 +92,25 @@ export function PostDetailsScreen() {
           </>
           : <Spinner size='large' color={navColor} scale={2} />
         :
-        <ConversationContextProvider value={conversationContext}>
-          <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
-            <ScrollView w='100%'>
-              <XStack w='100%' paddingHorizontal='$3'>
-                <PostCard key={`post-card-main-${postId}`}
-                  post={subjectPost}
-                  onEditingChange={editHandler(subjectPost.id)} />
-              </XStack>
-              <ConversationManager post={subjectPost} />
-            </ScrollView>
+        <AccountOrServerContextProvider value={accountOrServer}>
+          <ConversationContextProvider value={conversationContext}>
+            <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
+              <ScrollView w='100%'>
+                <XStack w='100%' paddingHorizontal='$3'>
+                  <PostCard key={`post-card-main-${serverPostId}`}
+                    post={subjectPost}
+                    onEditingChange={editHandler(subjectPost.id)} />
+                </XStack>
+                <ConversationManager post={subjectPost} />
+              </ScrollView>
 
 
-            <ReplyArea replyingToPath={replyPostIdPath}
-              onStopReplying={() => postId && setReplyPostIdPath([postId])}
-              hidden={!showReplyArea} />
-          </YStack>
-        </ConversationContextProvider>
+              <ReplyArea replyingToPath={replyPostIdPath}
+                onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
+                hidden={!showReplyArea} />
+            </YStack>
+          </ConversationContextProvider>
+        </AccountOrServerContextProvider>
       }
     </TabsNavigation >
   )

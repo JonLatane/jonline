@@ -1,7 +1,7 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation } from "@jonline/ui";
 import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { colorMeta, useAppDispatch } from "app/hooks";
-import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, store, useRootSelector } from "app/store";
+import { colorMeta, useAccountOrServer, useAppDispatch } from "app/hooks";
+import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
@@ -17,7 +17,8 @@ interface Props {
 
 const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerInfo = false, disableHeightLimit, disableFooter = false, disablePress = false }) => {
   const dispatch = useAppDispatch();
-  const selected = store.getState().servers.server?.host == server.host;
+  const { account: currentAccount, server: currentServer } = useAccountOrServer();
+  const selected = currentServer?.host == server.host;
   const serversState = useRootSelector((state: RootState) => state.servers);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts))
@@ -38,7 +39,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
   function doSelectServer() {
     if (selected) {
       dispatch(selectAccount(undefined));
-    } else if (accountsState.account && serverID(accountsState.account.server) != serverID(server)) {
+    } else if (currentAccount && serverID(currentAccount.server) != serverID(server)) {
       dispatch(selectAccount(undefined));
     }
     if (linkToServerInfo) {

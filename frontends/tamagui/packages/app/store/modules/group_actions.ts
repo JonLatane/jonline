@@ -1,10 +1,12 @@
-import { Empty, EventListingType, GetEventsResponse, GetGroupPostsRequest, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@jonline/api";
+import { Empty, EventListingType, GetEventsResponse, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupListingType, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@jonline/api";
 
 import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
 import { AccountOrServer, getCredentialClient } from "..";
+
+export const defaultGroupListingType = GroupListingType.ALL_GROUPS;
 
 export type CreateGroup = AccountOrServer & Group;
 export const createGroup: AsyncThunk<Group, CreateGroup, any> = createAsyncThunk<Group, CreateGroup>(
@@ -58,15 +60,18 @@ export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage
   "groups/loadPostsPage",
   async (request) => {
     const { groupId } = request;
+    // debugger;
     const client = await getCredentialClient(request);
+    // debugger;
     const result = await client.getPosts({ groupId, listingType: PostListingType.GROUP_POSTS }, client.credential);
+    // debugger;
     return result;
   }
 );
 
 export type LoadGroupEventsPage = AccountOrServer & { groupId: string, page?: number, filter?: TimeFilter };
 export const loadGroupEventsPage: AsyncThunk<GetEventsResponse, LoadGroupEventsPage, any> = createAsyncThunk<GetEventsResponse, LoadGroupEventsPage>(
-  "groups/loadGroupEventsPage",
+  "groups/loadEventsPage",
   async (request) => {
     const { groupId, filter } = request;
     const client = await getCredentialClient(request);

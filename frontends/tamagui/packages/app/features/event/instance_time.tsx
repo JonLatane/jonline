@@ -1,15 +1,16 @@
-import { useServerTheme } from "app/store";
+import { FederatedEvent, getServerTheme, useServerTheme } from "app/store";
 import React from "react";
 
 import { Event, EventInstance, Group } from "@jonline/api";
-import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
+import { Button, Heading, Paragraph, XStack, YStack, useTheme } from "@jonline/ui";
 import moment from "moment";
 import { useLink } from "solito/link";
-import { useGroupContext } from "../groups/group_context";
+import { useGroupContext } from "../../contexts/group_context";
 import { themedButtonBackground } from "app/utils/themed_button_background";
+import { useFederatedAccountOrServer } from "app/hooks";
 
 interface Props {
-  event: Event;
+  event: FederatedEvent;
   instance: EventInstance;
   linkToInstance?: boolean;
   highlight?: boolean;
@@ -24,7 +25,9 @@ export const createInstanceLink = (event: Event, instance: EventInstance, group?
 
 export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false, noAutoScroll }) => {
   const { startsAt, endsAt } = instance;
-  const { server, primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = useServerTheme();
+  const { server } = useFederatedAccountOrServer(event);
+  const theme = useTheme();
+  const { primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = getServerTheme(server, theme);
   const group = useGroupContext();
   const instanceLink = useLink(createInstanceLink(event, instance, group));
 
@@ -96,7 +99,7 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
 
   if (linkToInstance) {
     return <Button key={key}
-    {...themedButtonBackground(highlight ? '$backgroundFocus' : undefined)}
+      {...themedButtonBackground(highlight ? '$backgroundFocus' : undefined)}
       // backgroundColor={highlight ? '$backgroundFocus' : undefined}
       {...instanceLink} h='auto' mx='$2' px='$2'>
       {mainView}

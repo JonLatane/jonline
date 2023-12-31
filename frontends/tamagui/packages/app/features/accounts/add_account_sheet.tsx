@@ -98,10 +98,11 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
   } else if (accountsState.errorMessage && forceDisableAccountButtons) {
     setForceDisableAccountButtons(false);
   }
+  // console.log('rerender')
   return (
     <>
       <Button backgroundColor={primaryColor} color={primaryTextColor}
-        disabled={serversState.server === undefined}
+        disabled={server === undefined}
         onPress={() => setOpen((x) => !x)}>
         <Heading size='$2' color={primaryTextColor}>
           Login/Create Account

@@ -44,7 +44,7 @@ export type FederatedEntity<T extends HasIdFromServer> = T & {
 
 export type FederatedAction = PayloadAction<any, any, { arg: AccountOrServer }>;
 
-export type HasServer = FederatedAction | JonlineServer | undefined;
+export type HasServer = FederatedAction | JonlineServer | string | undefined;
 
 /**
  * Make an entity server-/federation-aware.
@@ -57,12 +57,22 @@ export function federatedEntity<T extends HasIdFromServer>(entity: T, server: Ha
 }
 
 /**
+ * Make an entity server-/federation-aware.
+ * @param entity Any entity with a string id (User, Media, Group, Post, Event, etc.)
+ * @param action Any Redux action whose argument extends `AccountOrServer`.
+ * @returns a server-aware copy of that entity with a `serverHost` field.
+ */
+export function federatedPayload<T extends HasIdFromServer>(action: FederatedAction & PayloadAction<T, any, any>): FederatedEntity<T> {
+  return federatedEntity(action.payload, action);
+}
+
+/**
  * Get the server-aware ID of an entity.
  * @param entity Any ServerEntity
  * @returns a server-host-specific entity ID, e.g. "jonline.io@@a" or "localhost@@a"
  */
 export function federatedId<T extends HasIdFromServer>(entity: FederatedEntity<T>): string {
-  return `${entity.serverHost}@@${entity.id}`;
+  return _federateId(entity.id, entity.serverHost);
 }
 
 /**
@@ -71,7 +81,23 @@ export function federatedId<T extends HasIdFromServer>(entity: FederatedEntity<T
  * @returns a server-host-specific entity ID, e.g. "jonline.io-a" or "localhost-a"
  */
 export function federateId(id: string, server: HasServer): string {
-  return `${serverHost(server)}-${id}`;
+  return _federateId(defederateId(id), serverHost(server));
+}
+
+export function defederateId(id: string): string {
+  return id.split('@')[0]!;
+}
+
+const _federateId = (id: string, serverHost: string) => `${id}@${serverHost}`;
+
+export type FederatedIDParsing = { id: string, serverHost: string };
+export function parseFederatedId(federatedId: string, defaultServerHost?: string): FederatedIDParsing {
+  const [id, serverHost] = (federatedId ?? '').split('@');
+
+  return {
+    id: id!,
+    serverHost: serverHost ?? defaultServerHost ?? 'default',
+  }
 }
 
 /**
@@ -100,7 +126,7 @@ export function federatedEntities<T extends HasIdFromServer>(entities: T[], serv
  * @param defaultValue 
  * @returns 
  */
-export function createFederatedValue<T>(defaultValue: T): Federated<T> {
+export function createFederated<T>(defaultValue: T): Federated<T> {
   return {
     values: {},
     defaultValue,
@@ -108,9 +134,12 @@ export function createFederatedValue<T>(defaultValue: T): Federated<T> {
 }
 
 export function getFederated<T>(federated: Federated<T>, server: HasServer): T {
-  const defaultValue = Array.isArray(federated.defaultValue)
-    ? [...federated.defaultValue] as T
-    : { ...federated.defaultValue } as T;
+  const defaultValue = typeof federated.defaultValue === 'string'
+    ? `${federated.defaultValue}` as T
+    : Array.isArray(federated.defaultValue)
+      ? [...federated.defaultValue] as T
+      : { ...federated.defaultValue } as T;
+  // debugger;
   return federated.values[serverHost(server)] ?? defaultValue;
 }
 
@@ -131,6 +160,9 @@ export function setFederated<T>(federated: Federated<T>, server: HasServer, valu
  * @returns 
  */
 function serverHost(server: HasServer): string {
+  if (typeof server === 'string') {
+    return server;
+  }
   const jonlineServer = (server && 'meta' in server)
     ? (server as FederatedAction).meta.arg.server
     : server as JonlineServer | undefined;

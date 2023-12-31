@@ -1,7 +1,7 @@
-import { Group } from "@jonline/api";
+import { FederatedGroup } from "app/store";
 import { createContext, useContext } from "react";
 
-type GroupContextType = Group | undefined;
+type GroupContextType = FederatedGroup | undefined;
 
 export const GroupContext = createContext<GroupContextType>(undefined);
 

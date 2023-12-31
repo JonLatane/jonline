@@ -154,8 +154,9 @@ export function webUserInterfaceToJSON(object: WebUserInterface): string {
 /** Configuration for a Jonline server instance. */
 export interface ServerConfiguration {
   /** The name, description, logo, color scheme, etc. of the server. */
-  serverInfo?:
-    | ServerInfo
+  serverInfo?: ServerInfo | undefined;
+  federationInfo?:
+    | FederationInfo
     | undefined;
   /**
    * Permissions for a user who isn't logged in to the server. Allows
@@ -344,7 +345,14 @@ export interface ServerInfo {
   logo?: ServerLogo | undefined;
   webUserInterface?: WebUserInterface | undefined;
   colors?: ServerColors | undefined;
-  mediaPolicy?: string | undefined;
+  mediaPolicy?:
+    | string
+    | undefined;
+  /**
+   * This will be replaced with FederationInfo soon.
+   *
+   * @deprecated
+   */
   recommendedServerHosts: string[];
 }
 
@@ -377,9 +385,20 @@ export interface ServerColors {
   moderator?: number | undefined;
 }
 
+export interface FederationInfo {
+  servers: FederatedServer[];
+}
+
+export interface FederatedServer {
+  host: string;
+  /** Indicates to UI clients that they should enable the indicated server by default. */
+  default: boolean;
+}
+
 function createBaseServerConfiguration(): ServerConfiguration {
   return {
     serverInfo: undefined,
+    federationInfo: undefined,
     anonymousUserPermissions: [],
     defaultUserPermissions: [],
     basicUserPermissions: [],
@@ -398,6 +417,9 @@ export const ServerConfiguration = {
   encode(message: ServerConfiguration, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.serverInfo !== undefined) {
       ServerInfo.encode(message.serverInfo, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.federationInfo !== undefined) {
+      FederationInfo.encode(message.federationInfo, writer.uint32(18).fork()).ldelim();
     }
     writer.uint32(82).fork();
     for (const v of message.anonymousUserPermissions) {
@@ -456,6 +478,13 @@ export const ServerConfiguration = {
           }
 
           message.serverInfo = ServerInfo.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.federationInfo = FederationInfo.decode(reader, reader.uint32());
           continue;
         case 10:
           if (tag === 80) {
@@ -586,6 +615,7 @@ export const ServerConfiguration = {
   fromJSON(object: any): ServerConfiguration {
     return {
       serverInfo: isSet(object.serverInfo) ? ServerInfo.fromJSON(object.serverInfo) : undefined,
+      federationInfo: isSet(object.federationInfo) ? FederationInfo.fromJSON(object.federationInfo) : undefined,
       anonymousUserPermissions: globalThis.Array.isArray(object?.anonymousUserPermissions)
         ? object.anonymousUserPermissions.map((e: any) => permissionFromJSON(e))
         : [],
@@ -616,6 +646,9 @@ export const ServerConfiguration = {
     const obj: any = {};
     if (message.serverInfo !== undefined) {
       obj.serverInfo = ServerInfo.toJSON(message.serverInfo);
+    }
+    if (message.federationInfo !== undefined) {
+      obj.federationInfo = FederationInfo.toJSON(message.federationInfo);
     }
     if (message.anonymousUserPermissions?.length) {
       obj.anonymousUserPermissions = message.anonymousUserPermissions.map((e) => permissionToJSON(e));
@@ -660,6 +693,9 @@ export const ServerConfiguration = {
     const message = createBaseServerConfiguration();
     message.serverInfo = (object.serverInfo !== undefined && object.serverInfo !== null)
       ? ServerInfo.fromPartial(object.serverInfo)
+      : undefined;
+    message.federationInfo = (object.federationInfo !== undefined && object.federationInfo !== null)
+      ? FederationInfo.fromPartial(object.federationInfo)
       : undefined;
     message.anonymousUserPermissions = object.anonymousUserPermissions?.map((e) => e) || [];
     message.defaultUserPermissions = object.defaultUserPermissions?.map((e) => e) || [];
@@ -1466,6 +1502,141 @@ export const ServerColors = {
     message.author = object.author ?? undefined;
     message.admin = object.admin ?? undefined;
     message.moderator = object.moderator ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFederationInfo(): FederationInfo {
+  return { servers: [] };
+}
+
+export const FederationInfo = {
+  encode(message: FederationInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.servers) {
+      FederatedServer.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FederationInfo {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFederationInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.servers.push(FederatedServer.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FederationInfo {
+    return {
+      servers: globalThis.Array.isArray(object?.servers)
+        ? object.servers.map((e: any) => FederatedServer.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: FederationInfo): unknown {
+    const obj: any = {};
+    if (message.servers?.length) {
+      obj.servers = message.servers.map((e) => FederatedServer.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FederationInfo>, I>>(base?: I): FederationInfo {
+    return FederationInfo.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FederationInfo>, I>>(object: I): FederationInfo {
+    const message = createBaseFederationInfo();
+    message.servers = object.servers?.map((e) => FederatedServer.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseFederatedServer(): FederatedServer {
+  return { host: "", default: false };
+}
+
+export const FederatedServer = {
+  encode(message: FederatedServer, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.host !== "") {
+      writer.uint32(10).string(message.host);
+    }
+    if (message.default === true) {
+      writer.uint32(16).bool(message.default);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FederatedServer {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFederatedServer();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.default = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FederatedServer {
+    return {
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      default: isSet(object.default) ? globalThis.Boolean(object.default) : false,
+    };
+  },
+
+  toJSON(message: FederatedServer): unknown {
+    const obj: any = {};
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.default === true) {
+      obj.default = message.default;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FederatedServer>, I>>(base?: I): FederatedServer {
+    return FederatedServer.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FederatedServer>, I>>(object: I): FederatedServer {
+    const message = createBaseFederatedServer();
+    message.host = object.host ?? "";
+    message.default = object.default ?? false;
     return message;
   },
 };

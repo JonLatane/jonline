@@ -2,7 +2,7 @@ import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo }
 import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
-import { colorMeta, useAppDispatch } from 'app/hooks';
+import { colorMeta, useAccountOrServer, useAppDispatch } from 'app/hooks';
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -58,8 +58,9 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const dispatch = useAppDispatch();
   const app = useRootSelector((state: RootState) => state.app);
   const server: JonlineServer | undefined = useRootSelector((state: RootState) => selectServerById(state.servers, requestedServerUrl!));
-  const selectedServer = useRootSelector((state: RootState) => state.servers.server);
-  const account = useRootSelector((state: RootState) => state.accounts.account);
+  // const selectedServer = useRootSelector((state: RootState) => state.servers.server);
+  // const account = useRootSelector((state: RootState) => state.accounts.account);
+  const { account, server: selectedServer } = useAccountOrServer();
   const serverIsSelected = server && selectedServer &&
     serverID(server) == serverID(selectedServer);
   const isAdmin = account && server && serverID(account.server) == serverID(server) &&
@@ -454,11 +455,11 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 {section === 'settings' ? <>
                   <Heading size='$9' als='center' mt='$3'>Server Settings</Heading>
                   <YStack space='$3' mt='$3'>
-                    {<PermissionsEditor label='Default User Permissions'
-                      {...defaultPermissionsEditorProps} />}
-
                     {<PermissionsEditor label='Anonymous User Permissions'
                       {...anonymousPermissionsEditorProps} />}
+
+                    {<PermissionsEditor label='Default User Permissions'
+                      {...defaultPermissionsEditorProps} />}
 
                     {<PermissionsEditor label='Basic User Permissions'
                       {...basicPermissionsEditorProps} />}

@@ -1,8 +1,9 @@
-import { useServerTheme } from "app/store";
+import { getServerTheme } from "app/store";
 import React from "react";
 
-import { Anchor, Heading, Paragraph, Text, XStack } from "@jonline/ui";
+import { Anchor, Heading, Paragraph, Text, XStack, useTheme } from "@jonline/ui";
 import ReactMarkdown from 'react-markdown';
+import { useProvidedDispatch } from "app/hooks";
 
 export type MarkdownProps = {
   text?: string;
@@ -10,7 +11,9 @@ export type MarkdownProps = {
   cleanContent?: boolean;
 }
 export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false }: MarkdownProps) => {
-  const { server, primaryColor, navAnchorColor: navColor } = useServerTheme();
+  const server = useProvidedDispatch().accountOrServer.server;
+  const theme = useTheme();
+  const { primaryColor, navAnchorColor: navColor } = getServerTheme(server, theme);
 
   const cleanedText = cleanContent ? text.replace(
     /((?!  ).)\n([^\n*])/g,

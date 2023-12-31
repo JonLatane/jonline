@@ -1,9 +1,9 @@
 import { Permission, Post } from '@jonline/api'
-import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack, isClient, isWeb, useWindowDimensions } from '@jonline/ui'
+import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack, isClient, isWeb, useToastController, useWindowDimensions } from '@jonline/ui'
 import { ChevronRight, Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from 'app/components'
 import { useCredentialDispatch } from 'app/hooks'
-import { RootState, confirmReplySent, replyToPost, selectPostById, useRootSelector, useServerTheme } from 'app/store'
+import { RootState, actionFailed, replyToPost, selectPostById, useRootSelector, useServerTheme } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
 import StickyBox from 'react-sticky-box'
@@ -46,24 +46,35 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
       setShowMedia(false);
     }
   }, [hasReplyTextFocused]);
+  const toast = useToastController();
   function sendReply() {
     setIsSendingReply(true);
+
     dispatch(replyToPost({
       ...accountOrServer,
       postIdPath: replyingToPath,
       content: replyText,
       media: media
-    })).then(() => {
+    })).then(action => {
+      setIsSendingReply(false);
+      if (actionFailed(action)) {
+        toast.show('Failed to send reply.');
+        return;
+      }
       // setIsReplying(false);
       setHasReplyTextFocused(false);
       setMedia([]);
+      setReplyText('');
+      if (chatUI && isClient) {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
     });
   }
   // const replyingToPost = 
   let pathIndex = 0;
   const rootPost = useRootSelector((state: RootState) => selectPostById(state.posts, replyingToPath[pathIndex++]!));
   const targetPostId = replyingToPath[replyingToPath.length - 1];
-  let targetPost = rootPost;
+  let targetPost = rootPost as Post | undefined;
   while (targetPost != null && targetPost?.id != targetPostId) {
     const replyId = replyingToPath[pathIndex++];
     // debugger;
@@ -71,20 +82,20 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
     // debugger;
   }
   const replyingToPost = targetPost;
-  const sendReplyStatus = useRootSelector((state: RootState) => state.posts.sendReplyStatus);
+  // const sendReplyStatus = useRootSelector((state: RootState) => state.posts.sendReplyStatus);
   useEffect(() => {
-    if (isSendingReply && sendReplyStatus == 'sent') {
-      setIsSendingReply(false);
-      setReplyText('');
-      dispatch(confirmReplySent!());
-      if (chatUI && isClient) {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-      }
-    }
+    // if (isSendingReply && sendReplyStatus == 'sent') {
+    //   setIsSendingReply(false);
+    //   setReplyText('');
+    //   dispatch(confirmReplySent!());
+    //   if (chatUI && isClient) {
+    //     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    //   }
+    // }
     if (!isSendingReply && previewReply && replyText == '' && media.length == 0) {
       setPreviewReply(false);
     }
-  });
+  }, [isSendingReply, previewReply, replyText, media.length]);
   const canSend = replyText.length > 0 || media.length > 0;
   const canComment = (accountOrServer.account?.user?.permissions?.includes(Permission.REPLY_TO_POSTS)
     || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
@@ -112,7 +123,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
                 : <PostMediaManager
                   link={''}
                   {...{ media, setMedia, embedLink, setEmbedLink }}
-                  disableInputs={sendReplyStatus == 'sending'}
+                  disableInputs={isSendingReply}
                 />
               : undefined}
           </>

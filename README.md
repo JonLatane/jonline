@@ -1,20 +1,34 @@
-# Jonline
-Jonline is an open-source, community-scale social network designed to be capable of "federating" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Tamagui/React app, the Flutter app, and Media endpoints - use localStorage (or system storage, for native Flutter apps) and neither set nor read cookies at all. A demo instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)).
+# Jonline [![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml) 
+Jonline is an open-source, community-scale social network designed to be capable of "federating" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Tamagui/React app, the Flutter app, and Media endpoints - use localStorage (or system storage, for native Flutter apps) and neither set nor read cookies at all.
 
-[![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml) [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://bullcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, it costs about $60 to run the 3 domains. (All also keep their media and HTML/CSS/JS behind CloudFlare's free CDN.)
 
-| Deployment                                                                                                                | Purpose                          | Links                                                                                                                                           |
-| ------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                          | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                |
+[![Buy me a coffee!](https://img.shields.io/badge/🙏%20buy%20me%20a%20coffee%20☕️-venmo-information?style=for-the-badge&labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
+
+## Deployments
+
+[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+
+| Deployment                                                                                    | Purpose                          | Links                                                                                                                                           |
+| --------------------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                 | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                |
 | [![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page        | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) |
-| [![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    |
+| [![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)    | Raleigh, NC Community Page       | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    |
 
-- [Jonline](#jonline)
+| Platform | Workflow Status                                                                                                                                                                        | Stable Release | Beta Release                                             | Notes                                                                           |
+|---| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| App Store (iOS, iPadOS) | [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
+
+- [Jonline ](#jonline-)
+  - [Deployments](#deployments)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
+    - [Cost of Operation](#cost-of-operation)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Features Overview](#features-overview)
+    - [Jonline Usernames and IDs](#jonline-usernames-and-ids)
+      - [Technical Details](#technical-details)
     - [People, Followers and Friends](#people-followers-and-friends)
     - [Groups and Memberships](#groups-and-memberships)
     - [Media](#media)
@@ -22,17 +36,19 @@ Jonline is an open-source, community-scale social network designed to be capable
       - [GroupPost](#grouppost)
     - [Events](#events)
   - [Documentation](#documentation)
+    - [Micro-Federation](#micro-federation)
     - [Protocol Documentation](#protocol-documentation)
-  - [Components](#components)
-    - [Documentation](#documentation-1)
-    - [gRPC APIs](#grpc-apis)
-    - [Deploys](#deploys)
-      - [Generated Certs](#generated-certs)
-    - [CI/CD](#cicd)
-    - [Rust Backend](#rust-backend)
-    - [Flutter Frontend](#flutter-frontend)
-      - [App Store Releases](#app-store-releases)
-      - [CI For iOS, Android, macOS, Windows, and Linux](#ci-for-ios-android-macos-windows-and-linux)
+    - [Project Components](#project-components)
+      - [Documentation](#documentation-1)
+      - [gRPC APIs](#grpc-apis)
+      - [Deployment Management](#deployment-management)
+        - [TLS Certificate Generation](#tls-certificate-generation)
+      - [Rust Backend](#rust-backend)
+      - [Frontends](#frontends)
+        - [Web (Tamagui/React/Next.js) Frontend](#web-tamaguireactnextjs-frontend)
+        - [Flutter Frontend](#flutter-frontend)
+      - [CI/CD (Continuous Integration and Delivery)](#cicd-continuous-integration-and-delivery)
+          - [CI For iOS, Android, macOS, Windows, and Linux](#ci-for-ios-android-macos-windows-and-linux)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deploying to other namespaces](#deploying-to-other-namespaces)
     - [Validating your deployment](#validating-your-deployment)
@@ -98,6 +114,11 @@ The hope is to build more useful business objects - yes, your boring SalesForce/
 
 All this is to say: it should be pretty straightforward to create, say, Ruby bindings for Jonline, and use them in Mastodon to make it work as a no-Events-support, no-Media-support Jonline instance. Or vice versa. This is back burner research, though. Get in contact if you're interested in contributing/learning to do this type of work!
 
+### Cost of Operation
+
+**November 2023 Server Costs:** (3 instances)
+![November 2023 Server Costs](docs/digitalocean-invoice-2023-nov.png)
+
 ### Why *not* Jonline?
 * It's not done.
 * There's near-0% test coverage.
@@ -107,11 +128,36 @@ All this is to say: it should be pretty straightforward to create, say, Ruby bin
 ## Features Overview
 All of Jonline's features should be pretty familiar to most social media users. Notably, in both its web and Flutter UIs, Jonline is designed to present "My Media" as a top-level feature and let users delete and manage Media visibility independently of Posts, Events, Groups or anything else.
 
+### Jonline Usernames and IDs
+A key point of contention in the Fediverse is the notion of universal usernames and IDs. There's a lot of complex implementations around this in Mastodon and elsewhere. Since Jonline's protocols do not specify anything about server-to-server communication, none of that stuff is really necessary in the Jonline approach at all.
+
+For instance: I can claim [jonline.io/jon](https://jonline.io/jon), [bullcity.social/jon](https://bullcity.social/jon), and [oakcity.social/jon](https://oakcity.social/jon) for myself. But if you decide to start an instance at [febreze.lol/jon](https://febreze.lol/jon) and I want to make an account and share with you (I absolutely would!), I'll just have to register as [febreze.lol/jonline-jon](https://febreze.lol/jonline-jon) or my username of choice. (But, I can interlink all 4 of these profiles to make them appear as verified alternate identities across the servers!)
+
+#### Technical Details
+
+At the core of Jonline is a pretty straightforward, URL-based identification scheme atop 64-bit numerical IDs. At a high level, Jonline Usernames and IDs look like a mix between URLs and email addresses. An important feature of both Jonline Usernames and IDs is that they do not change when URL-encoded.
+
+**Jonline Usernames** are, essentially, a link to a profile. Jonline gives the top-level resource names to users; i.e., user `bob123` on [jonline.io](https://jonline.io) can be found at [jonline.io/bob123](https://jonline.io/bob123). Users can change their usernames, but User IDs are permanent (unless the server administration changes the ID offset; see below for details.) [The few usernames you can't use on Jonline are enumerated in this Rust source.](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/validations/validate_fields.rs)
+
+Example Jonline usernames:
+
+* [jonline.io/jon](https://jonline.io/jon)
+* [bullcity.social/jon](https://bullcity.social/jon)
+* [jonline.io/jon@bullcity.social](https://jonline.io/jon@bullcity.social) - a view of [bullcity.social/jon](https://bullcity.social/jon) when using [jonline.io](https://jonline.io).
+
+**Jonline IDs** are numerical IDs for any entity type on a server. We might say: *in the context of Jonline.io*, Post ID `T6S8eoDmmtb` would be expected to be found at [jonline.io/post/T6S8eoDmmtb](https://jonline.io/post/T6S8eoDmmtb). (Note that the numerical portion of the ID is literally just a 64-bit integer encoded with base58 and a server-configurable offset. The best reference for how "Jonline ID Marshaling" works would be [These <90 lines, including test coverage, of Rust code.](https://github.com/JonLatane/jonline/blob/main/backend/src/marshaling/id_marshaling.rs))
+
+Example Jonline IDs:
+
+* [jonline.io/post/T6S8eoDmmtb](https://jonline.io/post/T6S8eoDmmtb)
+* [bullcity.social/post/2g1j95Bw5gB](https://bullcity.social/post/2g1j95Bw5gB)
+* [jonline.io/post/2g1j95Bw5gB@bullcity.social](https://jonline.io/post/T6S8eoDmmtb) - a view of [bullcity.social/post/2g1j95Bw5gB](https://bullcity.social/post/2g1j95Bw5gB) when using [jonline.io](https://jonline.io).
+
 ### People, Followers and Friends
 Jonline allows users to create accounts and login with nothing but a username/password combo. Anyone can Follow anyone, but users can require approval for Follow Requests. Two users who Follow each other are Friends.
 
 ### Groups and Memberships
-Jonline users may be 
+Jonline supports Groups, which are much like Usenet groups, Facebook groups, or subreddits.
 
 ### Media
 Jonline `Media` is straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike `Post`s and `Event`s, `Media` is generally not shared directly. It is instead associated with `Post`s and `Event`s (for media listings) as well as Users and Groups (for their avatars).
@@ -135,25 +181,59 @@ linking any unique `Group` to any unique `Post`, along with the `User` who creat
 ## Documentation
 Jonline documentation consists of Markdown in the [`docs/` directory](https://github.com/JonLatane/jonline/tree/main/docs), starting from [`docs/README.md`](https://github.com/JonLatane/jonline/blob/main/docs/README.md).
 
+### Micro-Federation
+A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication is via "recommended servers," which will eventually also let admins enable CORS to control where users can see content and user information from their servers.
+
+This approach does not seek to be particular innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/http%3Alocalhost?section=federation) - literally nothing but a list of hosts.
+
 ### Protocol Documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their documentation (for example, [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol)).
 
-## Components
+### Project Components
 The following components are *literally* just a "nice to read" breakdown of the overall directory structure of this repository. Nonetheless, this should be a useful first pass for anyone hoping to contribute to Jonline.
 
-### Documentation
+#### Documentation
+Yes, even Jonline's documentation is documented! 😅
+
 The [Documentation root is in `docs/`](https://github.com/JonLatane/jonline/tree/main/docs). Note that `docs/protocol.md` is generated from the [gRPC APIs](#grpc-apis), and `docs/protocol.html` is generated from `docs/protocol.md` (to make the generated HTML as friendly as possible).
 
-### gRPC APIs
+Additionally, the following components are *themselves* documented in `README.md` files that follow Jonline's project component structure:
+
+* [`README.md`](https://github.com/JonLatane/jonline/blob/main/README.md#documentation-1): README Documentation Root (*literally this file you're reading right now*)
+    * [`protos/README.md`](https://github.com/JonLatane/jonline/blob/main/protos/README.md): gRPC APIs
+    * [`backend/README.md`](https://github.com/JonLatane/jonline/blob/main/backend/README.md): Rust Backend
+    * [`frontends/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/README.md): General Frontend Information
+      * [`frontends/tamagui/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/README.md): Web (Tamagui/React/Next.js) Frontend
+      * [`frontends/flutter/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/README.md): Flutter Frontend
+    * [`deploys/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/README.md): Deployment Management
+        * [`deploys/generated_certs/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/README.md): TLS Certificate Generation
+    * [`.github/workflows/README.md`](https://github.com/JonLatane/jonline/blob/main/.github/workflows/README.md): CI/CD (Continuous Integration and Delivery)
+
+
+#### gRPC APIs
 The [gRPC APIs are defined in `protos/`](https://github.com/JonLatane/jonline/tree/main/protos).
 
-### Deploys
+#### Deployment Management
 [Deployment management logic lives in `deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys). Essentially this is some readable `Makefile` stuff built atop `kubectl`.
 
-#### Generated Certs
+##### TLS Certificate Generation
 [Generated certs live in `deploys/generated_certs`](https://github.com/JonLatane/jonline/tree/main/deploys/generated_certs). Generally, if  you want to deploy to your own Kubernetes cluster, and secure it with TLS, you should take a look at these docs. Cert-Manager for DigitalOcean with DigitalOcean DNS is done. It should be possible to do this for other hosts with Cert-Manager support.
 
-### CI/CD
+#### Rust Backend
+The [Rust backend, in `backend/`](https://github.com/JonLatane/jonline/tree/main/backend), is built with [Diesel](https://diesel.rs) and [Tonic](https://github.com/hyperium/tonic).
+
+#### Frontends
+[Jonline Frontends are grouped together in `frontends/`.](https://github.com/JonLatane/jonline/tree/main/frontends) Specific iOS, Android, and/or desktop frontends would be welcome contributions!
+
+##### Web (Tamagui/React/Next.js) Frontend
+The [Tamagui frontend, in `frontends/tamagui`](https://github.com/JonLatane/jonline/tree/main/frontends/tamagui), is the "public Web face" of any Jonline instance. It's built with [Tamagui](https://tamagui.dev) (a somewhat Flutter-like UI toolkit and build system built atop [yarn](https://yarnpkg.com/), [React](https://react.dev), [React Native](https://reactnative.dev), and [Next.JS](https://nextjs.org)), along with [Redux](https://redux.js.org) among others.
+
+Notably, in the future, with Tamagui, it should be possible to build iOS/Android apps from the existing Jonline source (after some effort to port less-native-friendly third-party components).
+
+##### Flutter Frontend
+The [Flutter frontend, in `frontends/flutter`](https://github.com/JonLatane/jonline/tree/main/frontends/flutter), is built with vanilla Flutter, [Provider](https://pub.dev/packages/provider), [`auto_route`](https://pub.dev/packages/auto_route), and [`protoc_plugin`](https://pub.dev/packages/protoc_plugin), among others.
+
+#### CI/CD (Continuous Integration and Delivery)
 [CI/CD logic is defined in `.github/workflows/`](https://github.com/JonLatane/jonline/tree/main/.github/workflows). If you can set up a Kubernetes deployment with the instructions in [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), hooking into the Server
 
 Here's, like, *all* the badges:
@@ -166,18 +246,7 @@ Here's, like, *all* the badges:
 [![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
 [![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)
 
-### Rust Backend
-The [Rust backend, in `backend/`](https://github.com/JonLatane/jonline/tree/main/backend), is built with [Diesel](https://diesel.rs) and [Tonic](https://github.com/hyperium/tonic).
-
-### Flutter Frontend
-The [Flutter frontend, in `frontends/flutter`](https://github.com/JonLatane/jonline/tree/main/frontends/flutter), is built with vanilla Flutter, [Provider](https://pub.dev/packages/provider), [`auto_route`](https://pub.dev/packages/auto_route), and [`protoc_plugin`](https://pub.dev/packages/protoc_plugin), among others.
-
-#### App Store Releases
-| Workflow Status                                                                                                                                                                        | Stable Release | Beta Release                                             | Notes                                                                           |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
-
-#### CI For iOS, Android, macOS, Windows, and Linux
+###### CI For iOS, Android, macOS, Windows, and Linux
 [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
 [![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
 [![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)

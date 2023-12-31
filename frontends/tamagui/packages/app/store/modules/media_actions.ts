@@ -47,7 +47,7 @@ export type LoadMedia = { id: string } & AccountOrServer;
 export const loadMedia: AsyncThunk<Media, LoadMedia, any> = createAsyncThunk<Media, LoadMedia>(
   "media/loadOne",
   async (request) => {
-    const client = await getCredentialClient(request);
+    const client = await getCredentialClient(request, { skipUpsert: true });
     const response = await client.getMedia(GetMediaRequest.create({ mediaId: request.id }), client.credential);
     if (response.media.length == 0) throw 'Media not found';
     return response.media[0]!;

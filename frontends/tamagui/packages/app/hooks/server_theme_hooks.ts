@@ -1,7 +1,6 @@
 import { useTheme } from "@jonline/ui";
-import { RootState, useRootSelector } from "../store/store";
 import { JonlineServer } from '../store/types';
-import { Server } from '@tamagui/lucide-icons';
+import { useServer } from "./account_and_server_hooks";
 
 export type ServerTheme = {
   server?: JonlineServer;
@@ -28,11 +27,12 @@ export type ServerTheme = {
   darkMode: boolean;
 }
 export function useServerTheme(): ServerTheme {
-  const server = useRootSelector((state: RootState) => state.servers.server);
+  const server = useServer();
   const theme = useTheme();
   return getServerTheme(server, theme);
 }
-export function getServerTheme(server?: JonlineServer, theme?: any): ServerTheme {
+
+export function getServerTheme(server: JonlineServer | undefined, theme?: any): ServerTheme {
   const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;
 

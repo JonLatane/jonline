@@ -1,9 +1,9 @@
 import { Group, MediaReference, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia } from '@jonline/ui';
+import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from '@jonline/ui';
 import { ChevronDown, Cog, Image as ImageIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from 'app/components';
 import { useCredentialDispatch } from 'app/hooks';
-import { JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
@@ -12,7 +12,7 @@ import { GroupsSheet } from '../groups/groups_sheet';
 import { PostMediaManager } from './post_media_manager';
 
 export type BaseCreatePostSheetProps = {
-  selectedGroup?: Group;
+  selectedGroup?: FederatedGroup;
   entityName?: string;
   doCreate: (
     post: Post,
@@ -113,7 +113,7 @@ export function BaseCreatePostSheet({
   const defaultVisibility = canPublishGlobally ? Visibility.GLOBAL_PUBLIC
     : canPublishLocally ? Visibility.SERVER_PUBLIC
       : Visibility.LIMITED;
-  const [group, setGroup] = useState<Group | undefined>(selectedGroup);
+  const [group, setGroup] = useState<FederatedGroup | undefined>(selectedGroup);
   const [visibility, _setVisibility] = useState(defaultVisibility);
   const [shareable, setShareable] = useState(!selectedGroup);
   const [title, setTitle] = useState('');
@@ -163,6 +163,7 @@ export function BaseCreatePostSheet({
   const textAreaRef = React.createRef<TextInput>();
 
   const [posting, setPosting] = useState(false);
+  const toast = useToastController();
   const serversState = useRootSelector((state: RootState) => state.servers);
 
   const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
@@ -198,7 +199,7 @@ export function BaseCreatePostSheet({
   const canEmbedLink = ['instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'twitter', 'pinterest']
     .map(x => link.includes(x)).reduce((a, b) => a || b, false);
 
-  const isPosting = posting || ['posting', 'posted'].includes(postsState.createPostStatus!);
+  const isPosting = posting;
   const disableInputs = isPosting;
   const disablePreview = disableInputs || !valid;
   const disableCreate = disableInputs || !valid;
@@ -208,7 +209,7 @@ export function BaseCreatePostSheet({
   return (
     <>
       <Button {...themedButtonBackground(primaryColor)} f={1}
-        disabled={serversState.server === undefined}
+        disabled={server === undefined}
         onPress={() => setOpen(!open)}>
         <Heading size='$2' color={primaryTextColor}>Create {entityName}</Heading>
       </Button>
@@ -249,8 +250,8 @@ export function BaseCreatePostSheet({
                   <Heading size='$1' color={primaryTextColor}>Create</Heading>
                 </Button>
               </XStack>
-              {postsState.createPostStatus == "errored" && postsState.errorMessage ?
-                <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined}
+              {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
+                <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
               <XStack marginHorizontal='auto' marginVertical='$3'>
                 <Button backgroundColor={showEditor ? navColor : undefined}
