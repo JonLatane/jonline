@@ -52,7 +52,7 @@ export function EventDetailsScreen() {
   // = subjectInstances?.find(i => i.id == instanceId);
   useEffect(() => {
     if (subjectInstances && subjectInstance?.id != instanceId) {
-      setSubjectInstance(subjectInstances?.find(i => i.id == instanceId));
+      setSubjectInstance(subjectInstances?.find(i => i.id == serverInstanceId));
     }
   }, [subjectInstances, instanceId]);
   // console.log("EventDetailsScreen.subjectInstance=", subjectInstance?.id, 'instanceId=', instanceId);
