@@ -109,7 +109,6 @@ export function GroupsSheet({
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
-  const { showPinnedServers } = useLocalConfiguration();
 
   return (
     <>
@@ -187,7 +186,7 @@ export function GroupsSheet({
                 {/* </Input> */}
               </XStack>
 
-              <PinnedServerSelector show={showPinnedServers} transparent />
+              <PinnedServerSelector transparent />
             </YStack>
             <Sheet.ScrollView p="$4" space>
               <YStack maw={600} als='center' width='100%'>

@@ -9,6 +9,7 @@ import {
 import { Platform } from 'react-native';
 import { deleteClient, getServerClient, pinServer, resetCredentialedData, store } from "..";
 import { JonlineServer } from "../types";
+import { FederatedServer } from "@jonline/api";
 
 export function optServerID(server: JonlineServer | undefined): string | undefined {
   return server ? serverID(server) : undefined;
@@ -129,11 +130,16 @@ function initializeWithServer(initialServer: JonlineServer) {
       store.dispatch(selectServer(server));
 
       // debugger;
-      (server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? []).forEach(host => {
+      const federatedServers: FederatedServer[] = server?.serverConfiguration?.federationInfo?.servers?.length ?? 0 > 0
+        ? server!.serverConfiguration!.federationInfo!.servers
+        : (server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? []).map(host => ({ host, configuredByDefault: true, pinnedByDefault: true }));
+      federatedServers.forEach(({ host, configuredByDefault, pinnedByDefault }) => {
         const recommendedServer = { host: host, secure: true };
         const pinnedServer = { serverId: serverID(recommendedServer), pinned: true };
-        getServerClient(recommendedServer)
-          .then(() => store.dispatch(pinServer(pinnedServer)));
+        if (configuredByDefault) {
+          getServerClient(recommendedServer)
+            .then(() => pinnedByDefault && store.dispatch(pinServer(pinnedServer)));
+        }
       });
     }
   });

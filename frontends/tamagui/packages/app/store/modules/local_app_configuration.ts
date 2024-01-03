@@ -33,7 +33,7 @@ const initialState: LocalAppConfiguration = {
   showIntro: true,
   darkModeAuto: true,
   darkMode: false,
-  allowServerSelection: Platform.OS != 'web',
+  allowServerSelection: Platform.OS !== 'web',
   browsingServers: false,
   viewingRecommendedServers: false,
   separateAccountsByServer: true,

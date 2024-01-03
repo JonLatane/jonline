@@ -1,7 +1,7 @@
 import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowPinnedServers, setShowUserIds, setShrinkFeatureNavigation, useRootSelector } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector } from 'app/store';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 
@@ -101,9 +101,6 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
 
               <Heading size='$3' mt='$3'>Federation</Heading>
-              {/* <ToggleRow name='Show Pinned Server UI' value={app.showPinnedServers} setter={setShowPinnedServers} autoDispatch
-                description='Show pinned servers where supported (currently, the People screen, and only partially).'
-              /> */}
               <ToggleRow name='Allow Server Selection'
                 description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
                 disabled={serverCount !== 1}

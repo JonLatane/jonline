@@ -3484,6 +3484,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-FederatedServer"></a></p>
     <h3 id="federatedserver"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federatedserver"><span class="octicon octicon-link"></span></a>FederatedServer</h3>
+    <p>A server that this server will federate with.</p>
     <table>
       <thead>
         <tr>
@@ -3498,18 +3499,25 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>host</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The DNS hostname of the server to federate with.</td>
         </tr>
         <tr>
-          <td>default</td>
+          <td>configured_by_default</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Indicates to UI clients that they should enable the indicated server by default.</td>
+          <td>Indicates to UI clients that they should enable/configure the indicated server by default.</td>
+        </tr>
+        <tr>
+          <td>pinned_by_default</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Indicates to UI clients that they should pin the indicated server by default (showing its Events and Posts alongside the "main" server).</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-FederationInfo"></a></p>
     <h3 id="federationinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federationinfo"><span class="octicon octicon-link"></span></a>FederationInfo</h3>
+    <p>The federation configuration for a Jonline server.</p>
     <table>
       <thead>
         <tr>
@@ -3524,7 +3532,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>servers</td>
           <td><a href="#jonline-FederatedServer">FederatedServer</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>A list of servers that this server will federate with.</td>
         </tr>
       </tbody>
     </table>

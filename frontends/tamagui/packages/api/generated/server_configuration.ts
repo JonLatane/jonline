@@ -385,14 +385,23 @@ export interface ServerColors {
   moderator?: number | undefined;
 }
 
+/** The federation configuration for a Jonline server. */
 export interface FederationInfo {
+  /** A list of servers that this server will federate with. */
   servers: FederatedServer[];
 }
 
+/** A server that this server will federate with. */
 export interface FederatedServer {
+  /** The DNS hostname of the server to federate with. */
   host: string;
-  /** Indicates to UI clients that they should enable the indicated server by default. */
-  default: boolean;
+  /** Indicates to UI clients that they should enable/configure the indicated server by default. */
+  configuredByDefault: boolean;
+  /**
+   * Indicates to UI clients that they should pin the indicated server by default
+   * (showing its Events and Posts alongside the "main" server).
+   */
+  pinnedByDefault: boolean;
 }
 
 function createBaseServerConfiguration(): ServerConfiguration {
@@ -1568,7 +1577,7 @@ export const FederationInfo = {
 };
 
 function createBaseFederatedServer(): FederatedServer {
-  return { host: "", default: false };
+  return { host: "", configuredByDefault: false, pinnedByDefault: false };
 }
 
 export const FederatedServer = {
@@ -1576,8 +1585,11 @@ export const FederatedServer = {
     if (message.host !== "") {
       writer.uint32(10).string(message.host);
     }
-    if (message.default === true) {
-      writer.uint32(16).bool(message.default);
+    if (message.configuredByDefault === true) {
+      writer.uint32(16).bool(message.configuredByDefault);
+    }
+    if (message.pinnedByDefault === true) {
+      writer.uint32(24).bool(message.pinnedByDefault);
     }
     return writer;
   },
@@ -1601,7 +1613,14 @@ export const FederatedServer = {
             break;
           }
 
-          message.default = reader.bool();
+          message.configuredByDefault = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.pinnedByDefault = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1615,7 +1634,8 @@ export const FederatedServer = {
   fromJSON(object: any): FederatedServer {
     return {
       host: isSet(object.host) ? globalThis.String(object.host) : "",
-      default: isSet(object.default) ? globalThis.Boolean(object.default) : false,
+      configuredByDefault: isSet(object.configuredByDefault) ? globalThis.Boolean(object.configuredByDefault) : false,
+      pinnedByDefault: isSet(object.pinnedByDefault) ? globalThis.Boolean(object.pinnedByDefault) : false,
     };
   },
 
@@ -1624,8 +1644,11 @@ export const FederatedServer = {
     if (message.host !== "") {
       obj.host = message.host;
     }
-    if (message.default === true) {
-      obj.default = message.default;
+    if (message.configuredByDefault === true) {
+      obj.configuredByDefault = message.configuredByDefault;
+    }
+    if (message.pinnedByDefault === true) {
+      obj.pinnedByDefault = message.pinnedByDefault;
     }
     return obj;
   },
@@ -1636,7 +1659,8 @@ export const FederatedServer = {
   fromPartial<I extends Exact<DeepPartial<FederatedServer>, I>>(object: I): FederatedServer {
     const message = createBaseFederatedServer();
     message.host = object.host ?? "";
-    message.default = object.default ?? false;
+    message.configuredByDefault = object.configuredByDefault ?? false;
+    message.pinnedByDefault = object.pinnedByDefault ?? false;
     return message;
   },
 };

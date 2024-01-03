@@ -11,6 +11,7 @@ impl ToDbServerConfiguration for ServerConfiguration {
     fn to_db(&self) -> NewServerConfiguration {
         NewServerConfiguration {
             server_info: serde_json::to_value(self.server_info.to_owned()).unwrap(),
+            federation_info: serde_json::to_value(self.federation_info.to_owned()).unwrap(),
             anonymous_user_permissions: self.anonymous_user_permissions.to_json_permissions(),
             default_user_permissions: self.default_user_permissions.to_json_permissions(),
             basic_user_permissions: self.basic_user_permissions.to_json_permissions(),
@@ -36,6 +37,8 @@ pub trait ToProtoServerConfiguration {
 impl ToProtoServerConfiguration for models::ServerConfiguration {
     fn to_proto(&self) -> ServerConfiguration {
         let server_info: ServerInfo = serde_json::from_value(self.server_info.to_owned()).unwrap();
+        let federation_info: FederationInfo =
+            serde_json::from_value(self.federation_info.to_owned()).unwrap();
         let group_settings: FeatureSettings =
             serde_json::from_value(self.group_settings.to_owned()).unwrap();
         let people_settings: FeatureSettings =
@@ -51,7 +54,7 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
 
         ServerConfiguration {
             server_info: Some(server_info),
-            federation_info: None,
+            federation_info: Some(federation_info),
             anonymous_user_permissions: self.anonymous_user_permissions.to_i32_permissions(),
             default_user_permissions: self.default_user_permissions.to_i32_permissions(),
             basic_user_permissions: self.basic_user_permissions.to_i32_permissions(),

@@ -1,5 +1,5 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api';
-import { Anchor, AnimatePresence, Button, Heading, Input, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
 import { colorMeta, useAccountOrServer, useAppDispatch } from 'app/hooks';
@@ -102,10 +102,14 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const [externalCdnConfig, setExternalCdnConfig] = useState(serverExternalCdnConfig);
 
   const serverRecommendedHosts = serverConfiguration?.serverInfo?.recommendedServerHosts;
-  const [recommendedHosts, setRecommendedHosts] = useState(serverRecommendedHosts);
+  const serverFederatedServers = serverConfiguration?.federationInfo?.servers?.length ?? 0 > 0
+    ? serverConfiguration?.federationInfo?.servers
+    : serverRecommendedHosts?.map(host => ({ host, configuredByDefault: true, pinnedByDefault: true }));
+  console.log('serverFederatedServers', serverFederatedServers);
+  const [federatedServers, setFederatedServers] = useState(serverFederatedServers);
   const [newRecommendedHostName, setNewRecommendedHostName] = useState('');
   const isNewRecommendedHostNameValid = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/.test(newRecommendedHostName)
-    && !recommendedHosts?.includes(newRecommendedHostName)
+    && !federatedServers?.some(s => s.host === newRecommendedHostName)
     && server?.host !== newRecommendedHostName;
   // if (defaultClientDomain && name != serverName && name == undefined) {
   //   setName(serverName);
@@ -151,7 +155,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     setBasicPermissions(serverBasicPermissions);
     setPrimaryColorHex(primaryColor);
     setNavColorHex(navColor);
-    setRecommendedHosts(serverRecommendedHosts);
+    // setRecommendedHosts(serverRecommendedHosts);
+    setFederatedServers(serverFederatedServers);
 
   }, [serverConfiguration]);
 
@@ -201,7 +206,10 @@ export function BaseServerDetailsScreen(specificServer?: string) {
         ...serverConfiguration?.serverInfo?.colors,
         primary: newPrimaryColorInt, navigation: newNavColorInt
       },
-      recommendedServerHosts: recommendedHosts ?? [],
+      recommendedServerHosts: federatedServers?.map(s => s.host) ?? [],
+    },
+    federationInfo: {
+      servers: federatedServers ?? [],
     },
     defaultUserPermissions: defaultPermissions,
     anonymousUserPermissions: anonymousPermissions,
@@ -247,10 +255,13 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   }
   const cloudflareLink = useLink({ href: 'https://cloudflare.com' });
   function recommendServer() {
-    setRecommendedHosts([...(recommendedHosts ?? []), newRecommendedHostName.toLowerCase()]);
+    setFederatedServers([
+      ...(federatedServers ?? []),
+      { host: newRecommendedHostName.toLowerCase(), configuredByDefault: false, pinnedByDefault: false }
+    ]);
     setNewRecommendedHostName('');
   }
-  // const recommendedHostServers = useRootSelector((state: RootState) => state.servers!.enti);// recommendedHosts?.map(host => ({ host }));
+
   return (
     <TabsNavigation appSection={AppSection.INFO} onlyShowServer={server}>
       <StickyBox offsetTop={56} className='blur' style={{ width: '100%', zIndex: 10 }}>
@@ -477,45 +488,65 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     don't really need to talk to each other much; the federation sits mostly on the client-side
                     and is backed solely by DNS names and DNS-based security{window.location.toString().startsWith('https') ? ' (along with TLS, of course)' : ''}.
                   </Paragraph>
-                  {(recommendedHosts?.length ?? 0) === 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
-                    No recommended servers.
+                  {(federatedServers?.length ?? 0) === 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
+                    No federated servers.
                   </Paragraph> : undefined}
-                  {recommendedHosts?.map((host, index) => <YStack key={`recommendedServer-${host}`} w='100%' my='$2' alignContent='center' ai='center'>
-                    <XStack ml='$3' mb='$2' w='100%' space='$1'>
+                  {federatedServers?.map((server, index) => <YStack key={`recommendedServer-${server.host}`} w='100%' my='$2' alignContent='center' ai='center'>
+                    <XStack ml='$3' mb='$2' w='100%' space='$2'>
                       <Text my='auto' fontFamily='$body' fontSize='$3' mr='$2'>{`${index + 1}.`}</Text>
-                      <Heading my='auto' f={1} fontFamily='$body' size='$1' >{host}</Heading>
+                      <Heading my='auto' f={1} fontFamily='$body' size='$1' >{server.host}</Heading>
                       {isAdmin
                         ? <>
-                          <Button my='auto' icon={ChevronUp} size='$2'
+                          <Button my='auto' mr='$1' icon={ChevronUp} size='$2'
                             disabled={index === 0}
                             o={index === 0 ? 0.5 : 1}
                             onPress={() => {
-                              const data = [...recommendedHosts];
-                              // const index = data.indexOf(host);
+                              const data = [...federatedServers];
                               if (index > 0) {
                                 const element = data.splice(index, 1)[0]!;
                                 data.splice(index - 1, 0, element);
                               }
-                              setRecommendedHosts(data);
+                              setFederatedServers(data);
                             }} />
-                          <Button my='auto' icon={ChevronDown} size='$2'
-                            disabled={index === recommendedHosts.length - 1}
-                            o={index === recommendedHosts.length - 1 ? 0.5 : 1}
+                          <Button my='auto' mr='$1' icon={ChevronDown} size='$2'
+                            disabled={index === federatedServers.length - 1}
+                            o={index === federatedServers.length - 1 ? 0.5 : 1}
                             onPress={() => {
-                              const data = [...recommendedHosts];
+                              const data = [...federatedServers];
                               // const index = data.indexOf(host);
                               if (index > 0) {
                                 const element = data.splice(index, 1)[0]!;
                                 data.splice(index + 1, 0, element);
                               }
-                              setRecommendedHosts(data);
+                              setFederatedServers(data);
                             }} />
-                          <Button my='auto' icon={Delete} size='$2' onPress={() => setRecommendedHosts(recommendedHosts?.filter(h => h != host))} />
+                          <Button my='auto' icon={Delete} size='$2' onPress={() => setFederatedServers(federatedServers?.filter(s => s.host !== server.host))} />
                         </>
                         : undefined}
                     </XStack>
-                    <RecommendedServer host={host} />
-                    {/* <ServerCard server={Ser{ host: recommendedHosts }} /> */}
+                    <RecommendedServer host={server.host} />
+                    <XStack ai="center" space="$4">
+                      <XStack ai="center" space="$4">
+                        <Label pr="$0" miw={90} jc="flex-end" size='$2'
+                          htmlFor={`${server.host}-add-by-default`}>
+                          Configure By Default
+                        </Label>
+                        <Switch id={`${server.host}-add-by-default`} size='$2' defaultChecked={server.configuredByDefault} checked={server.configuredByDefault} value={server.configuredByDefault.toString()} disabled={!isAdmin}
+                          onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, configuredByDefault: checked, pinnedByDefault: checked && s.pinnedByDefault } : s))}>
+                          <Switch.Thumb animation="standard" backgroundColor='black'/>
+                        </Switch>
+                      </XStack>
+                      <XStack ai="center" space="$4">
+                        <Label pr="$0" miw={90} jc="flex-end" size='$2'
+                          htmlFor={`${server.host}-pin-by-default`}>
+                          Pin By Default
+                        </Label>
+                        <Switch id={`${server.host}-pin-by-default`} size='$2' defaultChecked={server.pinnedByDefault} checked={server.pinnedByDefault} value={server.pinnedByDefault.toString()} disabled={!isAdmin}
+                          onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, pinnedByDefault: checked, configuredByDefault: checked || s.configuredByDefault } : s))}>
+                          <Switch.Thumb animation="standard" backgroundColor='black'/>
+                        </Switch>
+                      </XStack>
+                    </XStack>
                   </YStack>)}
                   {isAdmin
                     ? <>

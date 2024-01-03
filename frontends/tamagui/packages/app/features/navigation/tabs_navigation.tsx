@@ -95,8 +95,6 @@ export function TabsNavigation({
 
   const circularAccountsSheet = !mediaQuery.gtSm;
 
-  const { showPinnedServers } = useLocalConfiguration();
-
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 
@@ -158,7 +156,7 @@ export function TabsNavigation({
               </YStack>
 
               <XStack id='nav-pinned-server-selector'>
-                <PinnedServerSelector show={showPinnedServers && withServerPinning && !selectedGroup} affectsNavigation />
+                <PinnedServerSelector show={withServerPinning && !selectedGroup} affectsNavigation />
               </XStack>
             </YStack>
           </StickyBox>

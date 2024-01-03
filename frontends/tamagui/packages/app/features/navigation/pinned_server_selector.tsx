@@ -1,7 +1,7 @@
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, useTheme } from "@jonline/ui";
 import { ChevronRight, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, useServer } from "app/hooks";
-import { FederatedPagesStatus, JonlineServer, PinnedServer, getServerTheme, pinServer, selectAllServers, serverID, setViewingRecommendedServers } from "app/store";
+import { FederatedPagesStatus, JonlineServer, PinnedServer, getServerTheme, pinServer, selectAllServers, serverID, setShowPinnedServers, setViewingRecommendedServers } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useEffect, useState } from "react";
 import RecommendedServer from "../accounts/recommended_server";
@@ -26,12 +26,12 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
       .filter(server => (!currentServer || serverID(server) != serverID(currentServer))
         // && !pinnedServers.some(s => s.serverId === serverID(server))
       ));
-  const [showDataSources, setShowDataSources] = useState(true);
+  // const [showDataSources, setShowDataSources] = useState(true);
   const pinnedServerCount = availableServers
     .filter(server => pinnedServers.some(s => s.pinned && s.serverId === serverID(server)))
     .length;
   const totalServerCount = availableServers.length;
-  const { viewingRecommendedServers, browsingServers } = useLocalConfiguration();
+  const { showPinnedServers, viewingRecommendedServers, browsingServers } = useLocalConfiguration();
 
 
   const currentServerRecommendedHosts = currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
@@ -61,7 +61,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
       currentServer ? serverID(currentServer) : undefined,
       viewingRecommendedServers,
       browsingServers,
-      showDataSources
+      showPinnedServers
     ]
   );
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
@@ -70,17 +70,17 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   >
     <AnimatePresence>
       {show ? <>
-        <Button key='pinned-server-toggle' py='$1' h='auto' onPress={() => setShowDataSources(!showDataSources)}>
+        <Button key='pinned-server-toggle' py='$1' h='auto' onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))}>
           <XStack mr='auto'>
             <Paragraph my='auto' size='$1'>
               From {shortServerName} and {pinnedServerCount} of {totalServerCount} other {totalServerCount === 1 ? 'server' : 'servers'}
             </Paragraph>
-            <XStack my='auto' animation='standard' rotate={showDataSources ? '90deg' : '0deg'}>
+            <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
               <ChevronRight size='$1' />
             </XStack>
           </XStack>
         </Button>
-        {showDataSources
+        {showPinnedServers
           ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
             <ScrollView key='pinned-server-scroller' w='100%' horizontal>
               <XStack m='$3' ai='center' space='$2' key='available-servers'>

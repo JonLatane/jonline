@@ -296,12 +296,14 @@ const FederatedServer$json = {
   '1': 'FederatedServer',
   '2': [
     {'1': 'host', '3': 1, '4': 1, '5': 9, '10': 'host'},
-    {'1': 'default', '3': 2, '4': 1, '5': 8, '10': 'default'},
+    {'1': 'configured_by_default', '3': 2, '4': 1, '5': 8, '10': 'configuredByDefault'},
+    {'1': 'pinned_by_default', '3': 3, '4': 1, '5': 8, '10': 'pinnedByDefault'},
   ],
 };
 
 /// Descriptor for `FederatedServer`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List federatedServerDescriptor = $convert.base64Decode(
-    'Cg9GZWRlcmF0ZWRTZXJ2ZXISEgoEaG9zdBgBIAEoCVIEaG9zdBIYCgdkZWZhdWx0GAIgASgIUg'
-    'dkZWZhdWx0');
+    'Cg9GZWRlcmF0ZWRTZXJ2ZXISEgoEaG9zdBgBIAEoCVIEaG9zdBIyChVjb25maWd1cmVkX2J5X2'
+    'RlZmF1bHQYAiABKAhSE2NvbmZpZ3VyZWRCeURlZmF1bHQSKgoRcGlubmVkX2J5X2RlZmF1bHQY'
+    'AyABKAhSD3Bpbm5lZEJ5RGVmYXVsdA==');
 

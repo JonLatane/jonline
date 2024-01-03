@@ -997,6 +997,7 @@ class ServerColors extends $pb.GeneratedMessage {
   void clearModerator() => clearField(5);
 }
 
+/// The federation configuration for a Jonline server.
 class FederationInfo extends $pb.GeneratedMessage {
   factory FederationInfo({
     $core.Iterable<FederatedServer>? servers,
@@ -1037,21 +1038,27 @@ class FederationInfo extends $pb.GeneratedMessage {
   static FederationInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederationInfo>(create);
   static FederationInfo? _defaultInstance;
 
+  /// A list of servers that this server will federate with.
   @$pb.TagNumber(1)
   $core.List<FederatedServer> get servers => $_getList(0);
 }
 
+/// A server that this server will federate with.
 class FederatedServer extends $pb.GeneratedMessage {
   factory FederatedServer({
     $core.String? host,
-    $core.bool? default_2,
+    $core.bool? configuredByDefault,
+    $core.bool? pinnedByDefault,
   }) {
     final $result = create();
     if (host != null) {
       $result.host = host;
     }
-    if (default_2 != null) {
-      $result.default_2 = default_2;
+    if (configuredByDefault != null) {
+      $result.configuredByDefault = configuredByDefault;
+    }
+    if (pinnedByDefault != null) {
+      $result.pinnedByDefault = pinnedByDefault;
     }
     return $result;
   }
@@ -1061,7 +1068,8 @@ class FederatedServer extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'host')
-    ..aOB(2, _omitFieldNames ? '' : 'default')
+    ..aOB(2, _omitFieldNames ? '' : 'configuredByDefault')
+    ..aOB(3, _omitFieldNames ? '' : 'pinnedByDefault')
     ..hasRequiredFields = false
   ;
 
@@ -1086,6 +1094,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   static FederatedServer getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederatedServer>(create);
   static FederatedServer? _defaultInstance;
 
+  /// The DNS hostname of the server to federate with.
   @$pb.TagNumber(1)
   $core.String get host => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -1095,15 +1104,26 @@ class FederatedServer extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearHost() => clearField(1);
 
-  /// Indicates to UI clients that they should enable the indicated server by default.
+  /// Indicates to UI clients that they should enable/configure the indicated server by default.
   @$pb.TagNumber(2)
-  $core.bool get default_2 => $_getBF(1);
+  $core.bool get configuredByDefault => $_getBF(1);
   @$pb.TagNumber(2)
-  set default_2($core.bool v) { $_setBool(1, v); }
+  set configuredByDefault($core.bool v) { $_setBool(1, v); }
   @$pb.TagNumber(2)
-  $core.bool hasDefault_2() => $_has(1);
+  $core.bool hasConfiguredByDefault() => $_has(1);
   @$pb.TagNumber(2)
-  void clearDefault_2() => clearField(2);
+  void clearConfiguredByDefault() => clearField(2);
+
+  /// Indicates to UI clients that they should pin the indicated server by default
+  /// (showing its Events and Posts alongside the "main" server).
+  @$pb.TagNumber(3)
+  $core.bool get pinnedByDefault => $_getBF(2);
+  @$pb.TagNumber(3)
+  set pinnedByDefault($core.bool v) { $_setBool(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasPinnedByDefault() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPinnedByDefault() => clearField(3);
 }
 
 
