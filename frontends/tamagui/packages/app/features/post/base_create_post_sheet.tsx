@@ -240,12 +240,11 @@ export function BaseCreatePostSheet({
               />
               <XStack als='center' w='100%' px='$5' mb='$2' maw={800}>
                 <Heading marginVertical='auto' f={1} size='$7'>Create {entityName}</Heading>
-                <Button backgroundColor={showSettings ? navColor : undefined}
-                  hoverStyle={{ backgroundColor: showSettings ? navColor : undefined }}
+                <Button {...themedButtonBackground(showSettings ? navColor : undefined)}
                   onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
                   <Cog color={showSettings ? navTextColor : textColor} />
                 </Button>
-                <Button backgroundColor={primaryColor} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
+                <Button {...themedButtonBackground(primaryColor, primaryTextColor)} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
                   onPress={() => doCreate(previewPost, group, resetPost, () => setPosting(false))}>
                   <Heading size='$1' color={primaryTextColor}>Create</Heading>
                 </Button>

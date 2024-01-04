@@ -183,7 +183,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
       </YStack>
         : <YStack w='100%' opacity={.92} p='$3' backgroundColor='$background' alignContent='center'>
           {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
-            Login or Create Account to Comment
+            Login or Sign Up to Comment
           </Button> */}
           <AddAccountSheet operation={chatUI ? 'Chat' : 'Comment'} />
         </YStack>}

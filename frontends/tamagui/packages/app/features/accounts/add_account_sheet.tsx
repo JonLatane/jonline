@@ -101,11 +101,11 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
   // console.log('rerender')
   return (
     <>
-      <Button backgroundColor={primaryColor} color={primaryTextColor}
+      <Button {...themedButtonBackground(primaryColor, primaryTextColor)}
         disabled={server === undefined}
         onPress={() => setOpen((x) => !x)}>
         <Heading size='$2' color={primaryTextColor}>
-          Login/Create Account
+          Login/Sign Up
         </Heading>
         <Heading size='$1' color={primaryTextColor}>
           to {operation}
@@ -232,13 +232,13 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                         disabled={disableAccountButtons}
                         opacity={disableAccountButtons ? 0.5 : 1}
                       >
-                        {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Create Account'}
+                        {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Sign Up'}
                       </Button>
                     </XStack>
                     : <XStack space='$1'>
                       <Button flex={2} marginRight='$1' onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
                         disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
-                        Create Account
+                        Sign Up
                       </Button>
                       <Button flex={1} {...themedButtonBackground(primaryColor, primaryTextColor)}
                         onPress={() => setLoginMethod(LoginMethod.Login)}

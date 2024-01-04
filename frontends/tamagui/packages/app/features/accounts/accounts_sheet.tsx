@@ -578,7 +578,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                     {...themedButtonBackground(primaryColor, primaryTextColor)}
                     onPress={() => setAddingAccount((x) => !x)}
                   >
-                    Login/Create
+                    Login/Sign Up
                   </Button>
                   <Sheet
                     modal
@@ -605,7 +605,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                       <Heading size="$9">
                         {reauthenticating ? 'Re-Enter Password'
                           : loginMethod === 'login' ? 'Login'
-                            : loginMethod === 'create_account' ? 'Create Account'
+                            : loginMethod === 'create_account' ? 'Sign Up'
                               : 'Add Account'}
                       </Heading>
                       <Heading size="$4">{primaryServer?.host}/</Heading>
@@ -674,7 +674,7 @@ to evaluate support options.
                                   createServerAccount();
                                 }
                               }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                                {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Create Account'}
+                                {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Sign Up'}
                               </Button>
                             </XStack>
                             : <XStack>
