@@ -284,9 +284,9 @@ export function BaseCreatePostSheet({
               {/* <AnimatePresence> */}
               {/* </AnimatePresence> */}
               {/* <Sheet.ScrollView> */}
-              <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
+              <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center'>
                 {showEditor
-                  ? <YStack space="$2" w='100%'>
+                  ? <YStack space="$2" w='100%' px="$5">
                     {/* <Heading size="$6">{server?.host}/</Heading> */}
                     <Input textContentType="name" placeholder={`${entityName} Title (required)`}
                       disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
@@ -371,12 +371,12 @@ export function BaseCreatePostSheet({
                   : undefined}
                 {showFullPreview
                   ? <Sheet.ScrollView>
-                    <YStack w='100%' my='auto'>{preview(previewPost, group)}</YStack>
+                    <YStack w='100%' my='auto' p='$5'>{preview(previewPost, group)}</YStack>
                   </Sheet.ScrollView>
                   : undefined}
                 {showShortPreview
                   ? <Sheet.ScrollView>
-                    <YStack w='100%' my='auto'>{feedPreview(previewPost, group)}</YStack>
+                    <YStack w='100%' my='auto' p='$5'>{feedPreview(previewPost, group)}</YStack>
                   </Sheet.ScrollView>
                   : undefined}
               </XStack>
