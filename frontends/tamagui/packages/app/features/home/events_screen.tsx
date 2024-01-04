@@ -166,12 +166,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             </YStack>
             : renderInColumns ?
               <YStack space='$2'>
-                <XStack mx='auto' space='$2' flexWrap='wrap'>
+                <XStack mx='auto' space='$2' flexWrap='wrap' jc='center'>
                   <AnimatePresence>
                     {paginatedEvents.map((event) => {
                       return <XStack w={eventCardWidth} key={federateId(event.instances[0]?.id ?? '', server)}
                         animation='standard' {...standardHorizontalAnimation} mx='$1'>
-                        <EventCard event={event} isPreview horizontal />
+                        <EventCard event={event} isPreview />
                       </XStack>;
                     })}
                   </AnimatePresence>

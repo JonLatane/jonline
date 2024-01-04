@@ -130,7 +130,7 @@ export function TabsTutorial({ }) {
           <YStack my='auto' ai='center' space='$2' mt='$4'>
             <Button ml='$3' {...themedButtonBackground(navColor, navTextColor)} size='$3' py='$1' px='$2' onPress={gotIt}>
               <Heading size='$1' color={navTextColor}>
-                {hidingStarted ? 'Yes, okay' : 'Got it!'}
+                {hidingStarted ? 'Okay' : 'Got it!'}
               </Heading>
             </Button>
           </YStack>

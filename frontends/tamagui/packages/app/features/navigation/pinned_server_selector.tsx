@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, useTheme } from "@jonline/ui";
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useTheme } from "@jonline/ui";
 import { ChevronRight, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, useServer } from "app/hooks";
 import { FederatedPagesStatus, JonlineServer, PinnedServer, getServerTheme, pinServer, selectAllServers, serverID, setShowPinnedServers, setViewingRecommendedServers } from "app/store";
@@ -84,53 +84,59 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
           ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
             <ScrollView key='pinned-server-scroller' w='100%' horizontal>
               <XStack m='$3' ai='center' space='$2' key='available-servers'>
-                {availableServers.map(server => {
-                  let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
-                  return <PinnableServer key={serverID(server)} {...{ server, pinnedServer }} />;
-                })}
+                <AnimatePresence>
+                  {availableServers.map(server => {
+                    let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
+                    return <XStack key={serverID(server)} animation='standard' {...standardHorizontalAnimation} mr='$2'>
+                      <PinnableServer {...{ server, pinnedServer }} />
+                    </XStack>;
+                  })}
 
-                {recommendedServerHosts.length > 0
-                  ? <Button key='recommended-servers-button' h='auto' py='$1' my='auto' size='$2' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
-                    <XStack>
-                      <YStack my='auto' ai='center'>
-                        <Heading size='$1'>
-                          Recommended
-                        </Heading>
-                        {recommendedServerHosts.length > 0
-                          ? <Heading size='$1'>({recommendedServerHosts.length})</Heading>
-                          : undefined}
-                      </YStack>
-                      <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
-                        <ChevronRight size='$1' />
-                      </XStack>
-                    </XStack>
-                  </Button>
-                  : undefined}
-
-                {viewingRecommendedServers ?
-                  recommendedServerHosts.map((host, index) => {
-                    const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
-                    // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
-                    return <>
-                      {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
-                        ? <XStack key='separator' my='auto'>
-                          <Tooltip>
-                            <Tooltip.Trigger>
-                              <SeparatorHorizontal size='$5' />
-                            </Tooltip.Trigger>
-                            <Tooltip.Content>
-                              <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
-                            </Tooltip.Content>
-                          </Tooltip>
+                  {recommendedServerHosts.length > 0
+                    ? <Button key='recommended-servers-button' h='auto' py='$1' my='auto' mr='$2' size='$2' animation='standard' {...standardHorizontalAnimation}
+                      onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
+                      <XStack>
+                        <YStack my='auto' ai='center'>
+                          <Heading size='$1'>
+                            Recommended
+                          </Heading>
+                          {recommendedServerHosts.length > 0
+                            ? <Heading size='$1'>({recommendedServerHosts.length})</Heading>
+                            : undefined}
+                        </YStack>
+                        <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
+                          <ChevronRight size='$1' />
                         </XStack>
-                        : undefined}
-                      <XStack my='auto' key={`recommended-server-${host}`}>
-                        <RecommendedServer host={host} tiny />
                       </XStack>
-                    </>;
-                  })
-                  : undefined}
+                    </Button>
+                    : undefined}
 
+                  {viewingRecommendedServers ?
+                    <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
+                      {recommendedServerHosts.map((host, index) => {
+                        const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
+                        // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
+                        return <>
+                          {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
+                            ? <XStack key='separator' my='auto'>
+                              <Tooltip>
+                                <Tooltip.Trigger>
+                                  <SeparatorHorizontal size='$5' />
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
+                                </Tooltip.Content>
+                              </Tooltip>
+                            </XStack>
+                            : undefined}
+                          <XStack my='auto' key={`recommended-server-${host}`}>
+                            <RecommendedServer host={host} tiny />
+                          </XStack>
+                        </>;
+                      })}
+                    </XStack>
+                    : undefined}
+                </AnimatePresence>
               </XStack>
             </ScrollView>
           </YStack>

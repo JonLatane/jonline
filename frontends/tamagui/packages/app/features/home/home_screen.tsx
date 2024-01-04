@@ -124,11 +124,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                     <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                   </YStack>
                   : undefined
-                : <ScrollView horizontal
-                  w='100%'>
-                  <XStack w={eventCardWidth} space='$2' mx='$2' my='auto'>
+                : <ScrollView horizontal w='100%'>
+                  <XStack w={eventCardWidth} space='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
                     {paginatedEvents.map((event) =>
-                      <XStack key={`event-preview-${event.id}-${event.instances[0]!.id}`} animation='standard' {...standardHorizontalAnimation}>
+                      <XStack key={`event-preview-${event.id}-${event.instances[0]!.id}`} pb='$5' animation='standard' {...standardHorizontalAnimation}>
                         <EventCard event={event} isPreview horizontal xs />
                       </XStack>)}
                     <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
@@ -154,8 +153,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 <Heading size='$5' mb='$3'>No posts found.</Heading>
                 <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
               </YStack>
-              : <YStack f={1} px='$3' w='100%' key={`post-list`}// animation='quick' {...standardAnimation}
-              >
+              : <YStack f={1} px='$3' w='100%' key={`post-list`}>
                 <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
                 {paginatedPosts.map((post) => {
                   return <PostCard key={`post-preview-${federatedId(post)}`} post={post} isPreview />;
