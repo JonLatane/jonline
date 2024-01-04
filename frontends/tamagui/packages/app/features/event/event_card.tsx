@@ -629,81 +629,82 @@ export const EventCard: React.FC<Props> = ({
         >
           {post.link || post.title
             ? <Card.Header p={0}>
-              <XStack ai='center' w='100%'>
-                <YStack key='primary-header' f={1} pt='$4' pb={0}>
-                  <YStack key='header-links' w='100%' px='$4'>
-                    {headerLinks}
+              <YStack w='100%'>
+                <XStack ai='center' w='100%'>
+                  <YStack key='primary-header' f={1} pt='$4' pb={0}>
+                    <YStack key='header-links' w='100%' px='$4'>
+                      {headerLinks}
+                    </YStack>
                   </YStack>
-                  {!isPreview && (instances.length > 1 || editing)
-                    ? <XStack key='instances' w='100%' mt='$2' space>
+
+                  {showServerInfo
+                    ? <XStack my='auto' w={shrinkServerInfo ? '$4' : undefined} h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
+                      <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
+                    </XStack>
+                    : undefined}
+                </XStack>
+                {!isPreview && (instances.length > 1 || editing)
+                  ? <XStack key='instances' w='100%' mt='$2' space>
 
 
-                      {scrollInstancesVertically
-                        ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
-                          <AnimatePresence>
+                    {scrollInstancesVertically
+                      ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
+                        <AnimatePresence>
+                          {displayedInstances?.map((i) => renderInstance(i))}
+                        </AnimatePresence>
+                      </XStack>
+                      : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
+                        <XStack mt='$1' px='$3' key='instance-scroller-list'>
+                          <AnimatePresence key='instance-scroll-animator'>
                             {displayedInstances?.map((i) => renderInstance(i))}
                           </AnimatePresence>
                         </XStack>
-                        : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
-                          <XStack mt='$1' px='$3' key='instance-scroller-list'>
-                            <AnimatePresence key='instance-scroll-animator'>
-                              {displayedInstances?.map((i) => renderInstance(i))}
-                            </AnimatePresence>
-                          </XStack>
-                        </ScrollView>}
+                      </ScrollView>}
 
-                    </XStack>
-                    : undefined
-                  }
-                  <YStack w='100%' maw={800} mx='auto'>
-                    {editingInstance && editing && !previewingEdits
-                      ? <>
-                        <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
-                          <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
-                          <Text fontSize='$2' fontFamily='$body'>
-                            <input type='datetime-local' style={{ padding: 10 }}
-                              min={supportDateInput(moment(0))}
-                              value={supportDateInput(moment(editingInstance.startsAt))}
-                              onChange={(v) => setStartTime(v.target.value)} />
-                          </Text>
-                        </XStack>
-                        <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
-                          <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
-                          <Text fontSize='$2' fontFamily='$body' color={textColor}>
-                            <input type='datetime-local' style={{ padding: 10 }}
-                              min={editingInstance.startsAt}
-                              value={supportDateInput(moment(editingInstance.endsAt))}
-                              onChange={(v) => setEndTime(v.target.value)} />
-                          </Text>
-                        </XStack>
-                        {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
-                      </>
-                      : undefined}
-                    {primaryInstance
-                      ?
-                      <XStack mx='$3' mt='$1'>
-                        <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
-                          readOnly={!editing || previewingEdits}
-                          preview={isPreview && horizontal}
-                          link={isPreview ? eventLink : undefined}
-                          setLocation={(location: Location) => {
-                            if (editingInstance) {
-                              updateEditingInstance({ ...editingInstance, location });
-                            }
-                          }} />
+                  </XStack>
+                  : undefined
+                }
+                <YStack w='100%' maw={800} mx='auto'>
+                  {editingInstance && editing && !previewingEdits
+                    ? <>
+                      <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
+                        <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
+                        <Text fontSize='$2' fontFamily='$body'>
+                          <input type='datetime-local' style={{ padding: 10 }}
+                            min={supportDateInput(moment(0))}
+                            value={supportDateInput(moment(editingInstance.startsAt))}
+                            onChange={(v) => setStartTime(v.target.value)} />
+                        </Text>
                       </XStack>
-                      : undefined}
-
-                  </YStack>
+                      <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
+                        <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
+                        <Text fontSize='$2' fontFamily='$body' color={textColor}>
+                          <input type='datetime-local' style={{ padding: 10 }}
+                            min={editingInstance.startsAt}
+                            value={supportDateInput(moment(editingInstance.endsAt))}
+                            onChange={(v) => setEndTime(v.target.value)} />
+                        </Text>
+                      </XStack>
+                      {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
+                    </>
+                    : undefined}
 
                 </YStack>
-
-                {showServerInfo
-                  ? <XStack my='auto' w={shrinkServerInfo ? '$4' : undefined} h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
-                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
+                {primaryInstance
+                  ?
+                  <XStack mx='$3' mt='$1'>
+                    <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
+                      readOnly={!editing || previewingEdits}
+                      preview={isPreview && horizontal}
+                      link={isPreview ? eventLink : undefined}
+                      setLocation={(location: Location) => {
+                        if (editingInstance) {
+                          updateEditingInstance({ ...editingInstance, location });
+                        }
+                      }} />
                   </XStack>
                   : undefined}
-              </XStack>
+              </YStack>
             </Card.Header>
             : undefined}
           <Card.Footer p={0} paddingTop='$2' >
