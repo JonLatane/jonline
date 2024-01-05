@@ -4,7 +4,7 @@ Jonline is an open-source, community-scale social network designed to be capable
 The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://oakcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, it costs about $60 to run the 3 domains. (All also keep their media and HTML/CSS/JS behind CloudFlare's free CDN.)
 
 [![Buy me a coffee!](https://img.shields.io/badge/🙏%20buy%20me%20a%20coffee%20☕️-venmo-information?style=for-the-badge&labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
-[![Buy me a sandwich!](https://img.shields.io/badge/🙏%20buy%20me%20a%20coffee%20☕️-paypal-information?style=for-the-badge&labelColor={}&color={})](https://paypal.me/JLatane)
+[![Buy me a sandwich!](https://img.shields.io/badge/🙏%20buy%20me%20a%sandwich%20🥪-paypal-information?style=for-the-badge&labelColor={}&color={})](https://paypal.me/JLatane)
 
 ## Deployments
 
