@@ -26,7 +26,6 @@ lazy_static! {
         tamagui_about_jonline,
         tamagui_post,
         tamagui_event,
-        tamagui_event_instance,
         tamagui_user,
         tamagui_people,
         tamagui_follow_requests,
@@ -36,7 +35,6 @@ lazy_static! {
         tamagui_group_post,
         tamagui_group_events,
         tamagui_group_event,
-        tamagui_group_event_instance,
         tamagui_group_members,
         tamagui_group_member,
         tamagui_favicon,
@@ -163,12 +161,7 @@ rscfn!(
     "about_jonline.html"
 );
 rscfn!(tamagui_post, "/post/<_..>", "post/[postId].html");
-rscfn!(tamagui_event, "/event/<_>", "event/[eventId].html");
-rscfn!(
-    tamagui_event_instance,
-    "/event/<_>/i/<_..>",
-    "event/[eventId]/i/[instanceId].html"
-);
+rscfn!(tamagui_event, "/event/<_>", "event/[instanceId].html");
 rscfn!(tamagui_user, "/user/<_>", "user/[id].html");
 rscfn!(tamagui_people, "/people", "people.html");
 rscfn!(
@@ -195,12 +188,7 @@ rscfn!(
 rscfn!(
     tamagui_group_event,
     "/g/<_>/e/<_>",
-    "g/[shortname]/e/[eventId].html"
-);
-rscfn!(
-    tamagui_group_event_instance,
-    "/g/<_>/e/<_>/i/<_..>",
-    "g/[shortname]/e/[eventId]/i/[instanceId].html"
+    "g/[shortname]/e/[instanceId].html"
 );
 rscfn!(
     tamagui_group_members,

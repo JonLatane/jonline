@@ -27,8 +27,7 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
     - [Cost of Operation](#cost-of-operation)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Features Overview](#features-overview)
-    - [Jonline Usernames and IDs](#jonline-usernames-and-ids)
-      - [Technical Details](#technical-details)
+    - [Jonline Identifiers: Usernames, Group Names, and IDs](#jonline-identifiers-usernames-group-names-and-ids)
     - [People, Followers and Friends](#people-followers-and-friends)
     - [Groups and Memberships](#groups-and-memberships)
     - [Media](#media)
@@ -128,30 +127,36 @@ All this is to say: it should be pretty straightforward to create, say, Ruby bin
 ## Features Overview
 All of Jonline's features should be pretty familiar to most social media users. Notably, in both its web and Flutter UIs, Jonline is designed to present "My Media" as a top-level feature and let users delete and manage Media visibility independently of Posts, Events, Groups or anything else.
 
-### Jonline Usernames and IDs
-A key point of contention in the Fediverse is the notion of universal usernames and IDs. There's a lot of complex implementations around this in Mastodon and elsewhere. Since Jonline's protocols do not specify anything about server-to-server communication, none of that stuff is really necessary in the Jonline approach at all.
+### Jonline Identifiers: Usernames, Group Names, and IDs
+A key point of contention in the Fediverse is the notion of universal usernames and IDs. Jonline also supports Groups and Group Names (which work much like subreddits or Facebook groups). There's a lot of complex implementations around this in Mastodon and elsewhere. Since Jonline's protocols do not specify anything about server-to-server communication, none of that stuff is really necessary in the Jonline approach at all! At a high level, Jonline Usernames, Group Names, and IDs look like a mix between URLs and email addresses. An important feature of both Jonline Usernames and IDs is that they do not change when URL-encoded.
 
-For instance: I can claim [jonline.io/jon](https://jonline.io/jon), [bullcity.social/jon](https://bullcity.social/jon), and [oakcity.social/jon](https://oakcity.social/jon) for myself. But if you decide to start an instance at [febreze.lol/jon](https://febreze.lol/jon) and I want to make an account and share with you (I absolutely would!), I'll just have to register as [febreze.lol/jonline-jon](https://febreze.lol/jonline-jon) or my username of choice. (But, I can interlink all 4 of these profiles to make them appear as verified alternate identities across the servers!)
-
-#### Technical Details
-
-At the core of Jonline is a pretty straightforward, URL-based identification scheme atop 64-bit numerical IDs. At a high level, Jonline Usernames and IDs look like a mix between URLs and email addresses. An important feature of both Jonline Usernames and IDs is that they do not change when URL-encoded.
+For instance: I can claim [jonline.io/jon](https://jonline.io/jon), [bullcity.social/jon](https://bullcity.social/jon), and [oakcity.social/jon](https://oakcity.social/jon) for myself. But if you decide to start an instance at [febreze.lol/jon](https://febreze.lol/jon) and I want to make an account and share with you (I absolutely would!), I'll just have to register as [febreze.lol/jonline-jon](https://febreze.lol/jonline-jon) or my username of choice to interact on there. (But, in the future, I will be able to interlink all 4 of these profiles to make them appear as verified alternate identities across the servers!)
 
 **Jonline Usernames** are, essentially, a link to a profile. Jonline gives the top-level resource names to users; i.e., user `bob123` on [jonline.io](https://jonline.io) can be found at [jonline.io/bob123](https://jonline.io/bob123). Users can change their usernames, but User IDs are permanent (unless the server administration changes the ID offset; see below for details.) [The few usernames you can't use on Jonline are enumerated in this Rust source.](https://github.com/JonLatane/jonline/blob/main/backend/src/rpcs/validations/validate_fields.rs)
 
 Example Jonline usernames:
 
-* [jonline.io/jon](https://jonline.io/jon)
-* [bullcity.social/jon](https://bullcity.social/jon)
-* [jonline.io/jon@bullcity.social](https://jonline.io/jon@bullcity.social) - a view of [bullcity.social/jon](https://bullcity.social/jon) when using [jonline.io](https://jonline.io).
+* [jonline.io/jon](https://jonline.io/jon): A user on [jonline.io](https://jonline.io).
+* [bullcity.social/jon](https://bullcity.social/jon): A user on [bullcity.social](https://bullcity.social).
+* [jonline.io/jon@bullcity.social](https://jonline.io/jon@bullcity.social): A view of [bullcity.social/jon](https://bullcity.social/jon) when using [jonline.io](https://jonline.io). (Note that [bullcity.social](https://bullcity.social) must permit [jonline.io](https://jonline.io) via CORS for loading to work.)
 
-**Jonline IDs** are numerical IDs for any entity type on a server. We might say: *in the context of Jonline.io*, Post ID `T6S8eoDmmtb` would be expected to be found at [jonline.io/post/T6S8eoDmmtb](https://jonline.io/post/T6S8eoDmmtb). (Note that the numerical portion of the ID is literally just a 64-bit integer encoded with base58 and a server-configurable offset. The best reference for how "Jonline ID Marshaling" works would be [These <90 lines, including test coverage, of Rust code.](https://github.com/JonLatane/jonline/blob/main/backend/src/marshaling/id_marshaling.rs))
+**Jonline Group Names** work much like usernames, but for groups. They are automatically derived from the actual group name (they are the field `Group.shortname`, derived from `Group.name` by removing non-word characters).
+
+Example Jonline Group Names:
+
+* [jonline.io/g/Fitness](https://jonline.io/g/Fitness): A group on [jonline.io](https://jonline.io).
+* [bullcity.social/g/Running](https://bullcity.social/g/Running): A group on [bullcity.social](https://bullcity.social).
+* [jonline.io/g/Running@bullcity.social](https://jonline.io/g/Running@bullcity.social) - a view of [bullcity.social/g/Running](https://bullcity.social/g/Running) when using [jonline.io](https://jonline.io). (Note that [bullcity.social](https://bullcity.social) must permit [jonline.io](https://jonline.io) via CORS for loading to work.)
+
+**Jonline IDs** are numerical IDs for any entity type on a server. We might say: *in the context of Jonline.io*, Post ID `T6S8eoDmmtb` would be expected to be found at [jonline.io/post/T6S8eoDmmtb](https://jonline.io/post/T6S8eoDmmtb). (Note that the numerical portion of the ID is literally just a 64-bit integer encoded with base58 and a server-configurable offset. The best reference for how "Jonline ID Marshaling" works would be [these <90 lines, including test coverage, of Rust code.](https://github.com/JonLatane/jonline/blob/main/backend/src/marshaling/id_marshaling.rs))
 
 Example Jonline IDs:
 
-* [jonline.io/post/T6S8eoDmmtb](https://jonline.io/post/T6S8eoDmmtb)
-* [bullcity.social/post/2g1j95Bw5gB](https://bullcity.social/post/2g1j95Bw5gB)
-* [jonline.io/post/2g1j95Bw5gB@bullcity.social](https://jonline.io/post/T6S8eoDmmtb) - a view of [bullcity.social/post/2g1j95Bw5gB](https://bullcity.social/post/2g1j95Bw5gB) when using [jonline.io](https://jonline.io).
+* [jonline.io/post/T6S8eoDmmtb](https://jonline.io/post/T6S8eoDmmtb): A Post on [jonline.io](https://jonline.io).
+* [bullcity.social/post/2g1j95Bw5gB](https://bullcity.social/post/2g1j95Bw5gB): A Post on [bullcity.social](https://bullcity.social).
+* [jonline.io/post/2g1j95Bw5gB@bullcity.social](https://jonline.io/post/T6S8eoDmmtb): A view of [bullcity.social/post/2g1j95Bw5gB](https://bullcity.social/post/2g1j95Bw5gB) when using [jonline.io](https://jonline.io). (Note that [bullcity.social](https://bullcity.social) must permit [jonline.io](https://jonline.io) via CORS for loading to work.)
+* [bullcity.social/event/4rAfoSKAuJo](https://bullcity.social/event/4rAfoSKAuJo): An Event on [bullcity.social](https://bullcity.social).
+* [jonline.io/event/4rAfoSKAuJo@bullcity.social](https://jonline.io/event/4rAfoSKAuJo@bullcity.social) - a view of [bullcity.social/event/4rAfoSKAuJo](https://bullcity.social/event/4rAfoSKAuJo) when using [jonline.io](https://jonline.io). (Note that [bullcity.social](https://bullcity.social) must permit [jonline.io](https://jonline.io) via CORS for loading to work.)
 
 ### People, Followers and Friends
 Jonline allows users to create accounts and login with nothing but a username/password combo. Anyone can Follow anyone, but users can require approval for Follow Requests. Two users who Follow each other are Friends.
