@@ -10,18 +10,20 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
-| Deployment                                                                                    | Purpose                          | Links                                                                                                                                           |
-| --------------------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                 | Flagship demo/informational site | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                |
-| [![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page        | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) |
-| [![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)    | Raleigh, NC Community Page       | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    |
+| Deployment                                                                                    | Purpose                          | Federated Servers/Default Data Sources | Links                                                                                                                                           | Deployment Version |
+| --------------------------------------------------------------------------------------------- | -------------------------------- | --|----------------------------------------------------------------------------------------------------------------------------------------------- |-- |
+| [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page        | [OakCity.Social (pinned), Jonline.io (recommended/unpinned)](https://bullcity.social/about?section=federation) | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) | "Stable" |
+| [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)    | Raleigh, NC Community Page       | [BullCity.Social (pinned), Jonline.io (recommended/unpinned)](https://OakCity.Social/about?section=federation) | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | "Stable" |
+| [Jonline.io ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                 | Flagship demo/informational site | [BullCity.Social (pinned), OakCity.Social (pinned)](https://jonline.io/about?section=federation) | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                | Development |
 
+### Native Builds
 | Platform | Workflow Status                                                                                                                                                                        | Stable Release | Beta Release                                             | Notes                                                                           |
 |---| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | App Store (iOS, iPadOS) | [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
 
 - [Jonline ](#jonline-)
   - [Deployments](#deployments)
+    - [Native Builds](#native-builds)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)

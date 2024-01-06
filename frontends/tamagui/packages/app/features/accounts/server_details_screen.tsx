@@ -1,6 +1,6 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api';
-import { Anchor, AnimatePresence, Button, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
+import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
+import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, SeparatorHorizontal, SeparatorVertical, TabletSmartphone } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
 import { colorMeta, useAccountOrServer, useAppDispatch } from 'app/hooks';
 import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useRootSelector, useServerTheme } from 'app/store';
@@ -484,70 +484,94 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <Heading size='$4' mt='$3'>Federated Servers</Heading>
                   <Paragraph size='$1'>
                     Jonline servers can federate (really, it could be called "micro-federation") with each other, which surfaces to community users
-                    as "recommended servers" in the account section of their UI. In this way, servers
+                    as "recommended servers," "servers" (or "added servers"), and "pinned servers" in the account section of their UI. In this way, servers
                     don't really need to talk to each other much; the federation sits mostly on the client-side
-                    and is backed solely by DNS names and DNS-based security{window.location.toString().startsWith('https') ? ' (along with TLS, of course)' : ''}.
+                    and is backed solely by DNS names and DNS-based security{window.location.toString().startsWith('https') ? ' (along with TLS, of course)' : ''},
+                    along with CORS (though strict CORS is not yet implemented;{' '}
+                    <Anchor ai='center' size='$1' href='https://github.com/JonLatane/jonline/issues/2' color={navAnchorColor}>
+                      this is a good first issue for new GitHub/FOSS contributors
+                    </Anchor>.)
                   </Paragraph>
                   {(federatedServers?.length ?? 0) === 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
                     No federated servers.
                   </Paragraph> : undefined}
-                  {federatedServers?.map((server, index) => <YStack key={`recommendedServer-${server.host}`} w='100%' my='$2' alignContent='center' ai='center'>
-                    <XStack ml='$3' mb='$2' w='100%' space='$2'>
+                  {federatedServers?.map((server, index) =>
+
+
+                    <XStack ml='$3' mb='$2' w='100%' space='$2' ai='center'>
                       <Text my='auto' fontFamily='$body' fontSize='$3' mr='$2'>{`${index + 1}.`}</Text>
-                      <Heading my='auto' f={1} fontFamily='$body' size='$1' >{server.host}</Heading>
-                      {isAdmin
-                        ? <>
-                          <Button my='auto' mr='$1' icon={ChevronUp} size='$2'
-                            disabled={index === 0}
-                            o={index === 0 ? 0.5 : 1}
-                            onPress={() => {
-                              const data = [...federatedServers];
-                              if (index > 0) {
-                                const element = data.splice(index, 1)[0]!;
-                                data.splice(index - 1, 0, element);
-                              }
-                              setFederatedServers(data);
-                            }} />
-                          <Button my='auto' mr='$1' icon={ChevronDown} size='$2'
-                            disabled={index === federatedServers.length - 1}
-                            o={index === federatedServers.length - 1 ? 0.5 : 1}
-                            onPress={() => {
-                              const data = [...federatedServers];
-                              // const index = data.indexOf(host);
-                              if (index > 0) {
-                                const element = data.splice(index, 1)[0]!;
-                                data.splice(index + 1, 0, element);
-                              }
-                              setFederatedServers(data);
-                            }} />
-                          <Button my='auto' icon={Delete} size='$2' onPress={() => setFederatedServers(federatedServers?.filter(s => s.host !== server.host))} />
-                        </>
-                        : undefined}
+                      <Card elevate bordered f={1} px='$3'>
+                        <YStack key={`recommendedServer-${server.host}`} w='100%' my='$2' alignContent='center' ai='center'>
+
+                          <XStack mb='$2' w='100%' space='$2' ai='center'>
+                            <Heading f={1} fontFamily='$body' size='$1' >{server.host}</Heading>
+                            {isAdmin
+                              ? <>
+                                <Button mr='$1' icon={ChevronUp} size='$2'
+                                  disabled={index === 0}
+                                  o={index === 0 ? 0.5 : 1}
+                                  onPress={() => {
+                                    const data = [...federatedServers];
+                                    if (index > 0) {
+                                      const element = data.splice(index, 1)[0]!;
+                                      data.splice(index - 1, 0, element);
+                                    }
+                                    setFederatedServers(data);
+                                  }} />
+                                <Button mr='$1' icon={ChevronDown} size='$2'
+                                  disabled={index === federatedServers.length - 1}
+                                  o={index === federatedServers.length - 1 ? 0.5 : 1}
+                                  onPress={() => {
+                                    const data = [...federatedServers];
+                                    // const index = data.indexOf(host);
+                                    if (index > 0) {
+                                      const element = data.splice(index, 1)[0]!;
+                                      data.splice(index + 1, 0, element);
+                                    }
+                                    setFederatedServers(data);
+                                  }} />
+                                <Button icon={Delete} size='$2' onPress={() => setFederatedServers(federatedServers?.filter(s => s.host !== server.host))} />
+                              </>
+                              : undefined}
+                          </XStack>
+                          <RecommendedServer host={server.host} />
+                          <YStack ai="center" space="$1" opacity={isAdmin ? 1 : 0.5}>
+                            <XStack ai="center" space="$4">
+                              <Label pr="$0" miw={90} jc="flex-end" size='$2'
+                                o={!server.configuredByDefault ? 1 : 0.5}
+                                htmlFor={`${server.host}-add-by-default`}>
+                                Recommend Only
+                              </Label>
+                              <Switch id={`${server.host}-add-by-default`} size='$2' defaultChecked={server.configuredByDefault}
+                                checked={server.configuredByDefault} value={server.configuredByDefault.toString()}
+                                disabled={!isAdmin}
+                                onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, configuredByDefault: checked, pinnedByDefault: checked && s.pinnedByDefault } : s))}>
+                                <Switch.Thumb animation="standard" backgroundColor='black' />
+                              </Switch>
+                              <Label pr="$0" miw={90} jc="flex-end" size='$2'
+                                o={server.configuredByDefault ? 1 : 0.5}
+                                htmlFor={`${server.host}-add-by-default`}>
+                                Add By Default
+                              </Label>
+                            </XStack>
+                            {/* <SeparatorHorizontal /> */}
+                            <XStack ai="center" space="$4">
+                              <Switch id={`${server.host}-pin-by-default`} size='$2' defaultChecked={server.pinnedByDefault}
+                                checked={server.pinnedByDefault} value={server.pinnedByDefault.toString()}
+                                disabled={!isAdmin}
+                                onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, pinnedByDefault: checked, configuredByDefault: checked || s.configuredByDefault } : s))}>
+                                <Switch.Thumb animation="standard" backgroundColor='black' />
+                              </Switch>
+                              <Label pr="$0" miw={90} jc="flex-end" size='$2' o={server.pinnedByDefault ? 1 : 0.5}
+                                htmlFor={`${server.host}-pin-by-default`}>
+                                Pin By Default
+                              </Label>
+                            </XStack>
+                          </YStack>
+                        </YStack>
+                      </Card>
                     </XStack>
-                    <RecommendedServer host={server.host} />
-                    <XStack ai="center" space="$4">
-                      <XStack ai="center" space="$4">
-                        <Label pr="$0" miw={90} jc="flex-end" size='$2'
-                          htmlFor={`${server.host}-add-by-default`}>
-                          Configure By Default
-                        </Label>
-                        <Switch id={`${server.host}-add-by-default`} size='$2' defaultChecked={server.configuredByDefault} checked={server.configuredByDefault} value={server.configuredByDefault.toString()} disabled={!isAdmin}
-                          onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, configuredByDefault: checked, pinnedByDefault: checked && s.pinnedByDefault } : s))}>
-                          <Switch.Thumb animation="standard" backgroundColor='black'/>
-                        </Switch>
-                      </XStack>
-                      <XStack ai="center" space="$4">
-                        <Label pr="$0" miw={90} jc="flex-end" size='$2'
-                          htmlFor={`${server.host}-pin-by-default`}>
-                          Pin By Default
-                        </Label>
-                        <Switch id={`${server.host}-pin-by-default`} size='$2' defaultChecked={server.pinnedByDefault} checked={server.pinnedByDefault} value={server.pinnedByDefault.toString()} disabled={!isAdmin}
-                          onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, pinnedByDefault: checked, configuredByDefault: checked || s.configuredByDefault } : s))}>
-                          <Switch.Thumb animation="standard" backgroundColor='black'/>
-                        </Switch>
-                      </XStack>
-                    </XStack>
-                  </YStack>)}
+                  )}
                   {isAdmin
                     ? <>
                       <Input value={newRecommendedHostName ?? ''} opacity={newRecommendedHostName && newRecommendedHostName != '' ? 1 : 0.5}
