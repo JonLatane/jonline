@@ -1,4 +1,4 @@
-# Jonline [![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml) 
+# Jonline [![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml) 
 Jonline is an open-source, community-scale social network designed to be capable of "federating" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Tamagui/React app, the Flutter app, and Media endpoints - use localStorage (or system storage, for native Flutter apps) and neither set nor read cookies at all.
 
 The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://oakcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, [it costs about $60 to run the 3 domains](#cost-of-operation). (All also keep their media and HTML/CSS/JS behind CloudFlare's free CDN.)
@@ -246,7 +246,7 @@ The [Flutter frontend, in `frontends/flutter`](https://github.com/JonLatane/jonl
 
 Here's, like, *all* the badges:
 
-[![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml)
+[![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/deploy_server.yml)
 [![Proto Consistency](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)
 [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
 [![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
