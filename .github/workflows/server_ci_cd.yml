@@ -301,11 +301,11 @@ jobs:
 
     # If you haven't already integrated with your registry and only want workloads in a particular namespace to be able to pull 
     # from your registry, uncomment the next two commands.
-    - name: Upload credentials of your registry to your DigitalOcean Kubernetes cluster
-      run: doctl registry kubernetes-manifest | kubectl apply -f -
+    # - name: Upload credentials of your registry to your DigitalOcean Kubernetes cluster
+    #   run: doctl registry kubernetes-manifest | kubectl apply -f -
       
-    - name: Reference the secret you just uploaded as an imagePullSecrets
-      run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
+    # - name: Reference the secret you just uploaded as an imagePullSecrets
+    #   run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
 
     - name: Deploy to Jonline.io via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/server.yaml -n jonline
