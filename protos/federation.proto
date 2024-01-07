@@ -6,54 +6,19 @@ message GetServiceVersionResponse {
   string version = 1;
 }
 
-// Asks the Jonline instance the request is sent to federate your account with one at `server`.
-// By default, a simple FederationRequest of `{server:, username:}` will create an account with
-// the username on the server, generate a permanent auth token, and use it. If you want Jonline
-// to store the remote Jonline account password, use `stored_credentials`. If you want to get the
-// password and/or auth token for the remote account yourself, use `returned_credentials`.
-message FederateRequest {
-  // The remote server to federate accounts with.
-  string server = 1;
-  // Indicates whether the account already exists on the remote server.
-  // When false, the instance will attempt to create the account on the remote server.
-  bool preexisting_account = 2;
-  // The username of the account on the remote server.
-  string username = 3;
-  // When preexisting_account = true, will attempt to federate using that password.
-  // When preexisting_account = false, will create a new account using that password.
-  optional string password = 4;
-  // When preexisting_account = true, will attempt to federate using that password.
-  // When preexisting_account = false, will create a new account using that password.
-  optional string refresh_token = 5;
-  // Request whether to store only the auth token, or the auth token and password.
-  FederationCredentials stored_credentials = 6;
-  // Request whether to return nothing, the auth token, or the auth token and password.
-  optional FederationCredentials returned_credentials = 7;
+// The federation configuration for a Jonline server.
+message FederationInfo {
+  // A list of servers that this server will federate with.
+  repeated FederatedServer servers = 1;
 }
 
-message FederateResponse {
-  optional string refresh_token = 1;
-  optional string password = 2;
-}
-
-message GetFederatedAccountsRequest {
-  optional FederationCredentials returned_credentials = 1;
-}
-
-message GetFederatedAccountsResponse {
-  repeated FederatedAccount federated_accounts = 1;
-}
-
-message FederatedAccount {
-  string id = 1;
-  string server = 2;
-  string username = 3;
-  optional string password = 4;
-  optional string refresh_token = 5;
-}
-
-
-enum FederationCredentials {
-  REFRESH_TOKEN_ONLY = 0;
-  REFRESH_TOKEN_AND_PASSWORD = 1;
+// A server that this server will federate with.
+message FederatedServer {
+  // The DNS hostname of the server to federate with.
+  string host = 1;
+  // Indicates to UI clients that they should enable/configure the indicated server by default.
+  bool configured_by_default = 2;
+  // Indicates to UI clients that they should pin the indicated server by default
+  // (showing its Events and Posts alongside the "main" server).
+  bool pinned_by_default = 3;
 }

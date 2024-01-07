@@ -13,6 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+import 'federation.pb.dart' as $1;
 import 'permissions.pbenum.dart' as $11;
 import 'server_configuration.pbenum.dart';
 import 'visibility_moderation.pbenum.dart' as $10;
@@ -23,7 +24,7 @@ export 'server_configuration.pbenum.dart';
 class ServerConfiguration extends $pb.GeneratedMessage {
   factory ServerConfiguration({
     ServerInfo? serverInfo,
-    FederationInfo? federationInfo,
+    $1.FederationInfo? federationInfo,
     $core.Iterable<$11.Permission>? anonymousUserPermissions,
     $core.Iterable<$11.Permission>? defaultUserPermissions,
     $core.Iterable<$11.Permission>? basicUserPermissions,
@@ -84,7 +85,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerConfiguration', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ServerInfo>(1, _omitFieldNames ? '' : 'serverInfo', subBuilder: ServerInfo.create)
-    ..aOM<FederationInfo>(2, _omitFieldNames ? '' : 'federationInfo', subBuilder: FederationInfo.create)
+    ..aOM<$1.FederationInfo>(2, _omitFieldNames ? '' : 'federationInfo', subBuilder: $1.FederationInfo.create)
     ..pc<$11.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
     ..pc<$11.Permission>(11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
     ..pc<$11.Permission>(12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
@@ -133,15 +134,15 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   ServerInfo ensureServerInfo() => $_ensure(0);
 
   @$pb.TagNumber(2)
-  FederationInfo get federationInfo => $_getN(1);
+  $1.FederationInfo get federationInfo => $_getN(1);
   @$pb.TagNumber(2)
-  set federationInfo(FederationInfo v) { setField(2, v); }
+  set federationInfo($1.FederationInfo v) { setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasFederationInfo() => $_has(1);
   @$pb.TagNumber(2)
   void clearFederationInfo() => clearField(2);
   @$pb.TagNumber(2)
-  FederationInfo ensureFederationInfo() => $_ensure(1);
+  $1.FederationInfo ensureFederationInfo() => $_ensure(1);
 
   /// Permissions for a user who isn't logged in to the server. Allows
   /// admins to disable certain features for anonymous users. Valid values are
@@ -995,135 +996,6 @@ class ServerColors extends $pb.GeneratedMessage {
   $core.bool hasModerator() => $_has(4);
   @$pb.TagNumber(5)
   void clearModerator() => clearField(5);
-}
-
-/// The federation configuration for a Jonline server.
-class FederationInfo extends $pb.GeneratedMessage {
-  factory FederationInfo({
-    $core.Iterable<FederatedServer>? servers,
-  }) {
-    final $result = create();
-    if (servers != null) {
-      $result.servers.addAll(servers);
-    }
-    return $result;
-  }
-  FederationInfo._() : super();
-  factory FederationInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederationInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederationInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<FederatedServer>(1, _omitFieldNames ? '' : 'servers', $pb.PbFieldType.PM, subBuilder: FederatedServer.create)
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  FederationInfo clone() => FederationInfo()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  FederationInfo copyWith(void Function(FederationInfo) updates) => super.copyWith((message) => updates(message as FederationInfo)) as FederationInfo;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static FederationInfo create() => FederationInfo._();
-  FederationInfo createEmptyInstance() => create();
-  static $pb.PbList<FederationInfo> createRepeated() => $pb.PbList<FederationInfo>();
-  @$core.pragma('dart2js:noInline')
-  static FederationInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederationInfo>(create);
-  static FederationInfo? _defaultInstance;
-
-  /// A list of servers that this server will federate with.
-  @$pb.TagNumber(1)
-  $core.List<FederatedServer> get servers => $_getList(0);
-}
-
-/// A server that this server will federate with.
-class FederatedServer extends $pb.GeneratedMessage {
-  factory FederatedServer({
-    $core.String? host,
-    $core.bool? configuredByDefault,
-    $core.bool? pinnedByDefault,
-  }) {
-    final $result = create();
-    if (host != null) {
-      $result.host = host;
-    }
-    if (configuredByDefault != null) {
-      $result.configuredByDefault = configuredByDefault;
-    }
-    if (pinnedByDefault != null) {
-      $result.pinnedByDefault = pinnedByDefault;
-    }
-    return $result;
-  }
-  FederatedServer._() : super();
-  factory FederatedServer.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederatedServer.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'host')
-    ..aOB(2, _omitFieldNames ? '' : 'configuredByDefault')
-    ..aOB(3, _omitFieldNames ? '' : 'pinnedByDefault')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  FederatedServer clone() => FederatedServer()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  FederatedServer copyWith(void Function(FederatedServer) updates) => super.copyWith((message) => updates(message as FederatedServer)) as FederatedServer;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static FederatedServer create() => FederatedServer._();
-  FederatedServer createEmptyInstance() => create();
-  static $pb.PbList<FederatedServer> createRepeated() => $pb.PbList<FederatedServer>();
-  @$core.pragma('dart2js:noInline')
-  static FederatedServer getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederatedServer>(create);
-  static FederatedServer? _defaultInstance;
-
-  /// The DNS hostname of the server to federate with.
-  @$pb.TagNumber(1)
-  $core.String get host => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set host($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasHost() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearHost() => clearField(1);
-
-  /// Indicates to UI clients that they should enable/configure the indicated server by default.
-  @$pb.TagNumber(2)
-  $core.bool get configuredByDefault => $_getBF(1);
-  @$pb.TagNumber(2)
-  set configuredByDefault($core.bool v) { $_setBool(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasConfiguredByDefault() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearConfiguredByDefault() => clearField(2);
-
-  /// Indicates to UI clients that they should pin the indicated server by default
-  /// (showing its Events and Posts alongside the "main" server).
-  @$pb.TagNumber(3)
-  $core.bool get pinnedByDefault => $_getBF(2);
-  @$pb.TagNumber(3)
-  set pinnedByDefault($core.bool v) { $_setBool(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasPinnedByDefault() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearPinnedByDefault() => clearField(3);
 }
 
 

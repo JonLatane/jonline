@@ -336,12 +336,6 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
             <p><a href="#jonline-FeatureSettings">FeatureSettings</a></p>
           </li>
           <li>
-            <p><a href="#jonline-FederatedServer">FederatedServer</a></p>
-          </li>
-          <li>
-            <p><a href="#jonline-FederationInfo">FederationInfo</a></p>
-          </li>
-          <li>
             <p><a href="#jonline-PostSettings">PostSettings</a></p>
           </li>
           <li>
@@ -365,6 +359,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <li>
             <p><a href="#jonline-WebUserInterface">WebUserInterface</a></p>
           </li>
+        </ul>
+      </li>
+      <li><a href="#federation-proto">federation.proto</a>
+        <ul>
+          <li><a href="#jonline-FederatedServer">FederatedServer</a></li>
+          <li><a href="#jonline-FederationInfo">FederationInfo</a></li>
+          <li><a href="#jonline-GetServiceVersionResponse">GetServiceVersionResponse</a></li>
         </ul>
       </li>
       <li><a href="#scalar-value-types">Scalar Value Types</a></li>
@@ -3482,60 +3483,6 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         </tr>
       </tbody>
     </table>
-    <p><a name="jonline-FederatedServer"></a></p>
-    <h3 id="federatedserver"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federatedserver"><span class="octicon octicon-link"></span></a>FederatedServer</h3>
-    <p>A server that this server will federate with.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>host</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td>The DNS hostname of the server to federate with.</td>
-        </tr>
-        <tr>
-          <td>configured_by_default</td>
-          <td><a href="#bool">bool</a></td>
-          <td></td>
-          <td>Indicates to UI clients that they should enable/configure the indicated server by default.</td>
-        </tr>
-        <tr>
-          <td>pinned_by_default</td>
-          <td><a href="#bool">bool</a></td>
-          <td></td>
-          <td>Indicates to UI clients that they should pin the indicated server by default (showing its Events and Posts alongside the "main" server).</td>
-        </tr>
-      </tbody>
-    </table>
-    <p><a name="jonline-FederationInfo"></a></p>
-    <h3 id="federationinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federationinfo"><span class="octicon octicon-link"></span></a>FederationInfo</h3>
-    <p>The federation configuration for a Jonline server.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>servers</td>
-          <td><a href="#jonline-FederatedServer">FederatedServer</a></td>
-          <td>repeated</td>
-          <td>A list of servers that this server will federate with.</td>
-        </tr>
-      </tbody>
-    </table>
     <p><a name="jonline-PostSettings"></a></p>
     <h3 id="postsettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postsettings"><span class="octicon octicon-link"></span></a>PostSettings</h3>
     <table>
@@ -3900,6 +3847,83 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>REACT_TAMAGUI</td>
           <td>2</td>
           <td>React UI using Tamagui (a React Native UI library).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="federation-proto"></a></p>
+    <p align="right"><a href="#top">Top</a></p>
+    <h2 id="federationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federationproto"><span class="octicon octicon-link"></span></a>federation.proto</h2>
+    <p><a name="jonline-FederatedServer"></a></p>
+    <h3 id="federatedserver"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federatedserver"><span class="octicon octicon-link"></span></a>FederatedServer</h3>
+    <p>A server that this server will federate with.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>host</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The DNS hostname of the server to federate with.</td>
+        </tr>
+        <tr>
+          <td>configured_by_default</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Indicates to UI clients that they should enable/configure the indicated server by default.</td>
+        </tr>
+        <tr>
+          <td>pinned_by_default</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Indicates to UI clients that they should pin the indicated server by default (showing its Events and Posts alongside the "main" server).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-FederationInfo"></a></p>
+    <h3 id="federationinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federationinfo"><span class="octicon octicon-link"></span></a>FederationInfo</h3>
+    <p>The federation configuration for a Jonline server.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>servers</td>
+          <td><a href="#jonline-FederatedServer">FederatedServer</a></td>
+          <td>repeated</td>
+          <td>A list of servers that this server will federate with.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetServiceVersionResponse"></a></p>
+    <h3 id="getserviceversionresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getserviceversionresponse"><span class="octicon octicon-link"></span></a>GetServiceVersionResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>version</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td></td>
         </tr>
       </tbody>
     </table>

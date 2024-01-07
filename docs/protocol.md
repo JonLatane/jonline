@@ -82,8 +82,6 @@
 - [server_configuration.proto](#server_configuration-proto)
     - [ExternalCDNConfig](#jonline-ExternalCDNConfig)
     - [FeatureSettings](#jonline-FeatureSettings)
-    - [FederatedServer](#jonline-FederatedServer)
-    - [FederationInfo](#jonline-FederationInfo)
     - [PostSettings](#jonline-PostSettings)
     - [ServerColors](#jonline-ServerColors)
     - [ServerConfiguration](#jonline-ServerConfiguration)
@@ -93,6 +91,11 @@
     - [AuthenticationFeature](#jonline-AuthenticationFeature)
     - [PrivateUserStrategy](#jonline-PrivateUserStrategy)
     - [WebUserInterface](#jonline-WebUserInterface)
+  
+- [federation.proto](#federation-proto)
+    - [FederatedServer](#jonline-FederatedServer)
+    - [FederationInfo](#jonline-FederationInfo)
+    - [GetServiceVersionResponse](#jonline-GetServiceVersionResponse)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -1509,38 +1512,6 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 
 
 
-<a name="jonline-FederatedServer"></a>
-
-### FederatedServer
-A server that this server will federate with.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  | The DNS hostname of the server to federate with. |
-| configured_by_default | [bool](#bool) |  | Indicates to UI clients that they should enable/configure the indicated server by default. |
-| pinned_by_default | [bool](#bool) |  | Indicates to UI clients that they should pin the indicated server by default (showing its Events and Posts alongside the &#34;main&#34; server). |
-
-
-
-
-
-
-<a name="jonline-FederationInfo"></a>
-
-### FederationInfo
-The federation configuration for a Jonline server.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| servers | [FederatedServer](#jonline-FederatedServer) | repeated | A list of servers that this server will federate with. |
-
-
-
-
-
-
 <a name="jonline-PostSettings"></a>
 
 ### PostSettings
@@ -1688,6 +1659,69 @@ Offers a choice of web UIs. All
 | HANDLEBARS_TEMPLATES | 1 | Uses Handlebars templates. Deprecated; will revert to Tamagui UI if chosen. |
 | REACT_TAMAGUI | 2 | React UI using Tamagui (a React Native UI library). |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="federation-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## federation.proto
+
+
+
+<a name="jonline-FederatedServer"></a>
+
+### FederatedServer
+A server that this server will federate with.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | The DNS hostname of the server to federate with. |
+| configured_by_default | [bool](#bool) |  | Indicates to UI clients that they should enable/configure the indicated server by default. |
+| pinned_by_default | [bool](#bool) |  | Indicates to UI clients that they should pin the indicated server by default (showing its Events and Posts alongside the &#34;main&#34; server). |
+
+
+
+
+
+
+<a name="jonline-FederationInfo"></a>
+
+### FederationInfo
+The federation configuration for a Jonline server.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| servers | [FederatedServer](#jonline-FederatedServer) | repeated | A list of servers that this server will federate with. |
+
+
+
+
+
+
+<a name="jonline-GetServiceVersionResponse"></a>
+
+### GetServiceVersionResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  |  |
+
+
+
+
+
+ 
 
  
 

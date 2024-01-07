@@ -1,5 +1,6 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
+import { FederationInfo } from "./federation";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
 import {
   Moderation,
@@ -383,25 +384,6 @@ export interface ServerColors {
     | undefined;
   /** Color used on author for moderator posts. */
   moderator?: number | undefined;
-}
-
-/** The federation configuration for a Jonline server. */
-export interface FederationInfo {
-  /** A list of servers that this server will federate with. */
-  servers: FederatedServer[];
-}
-
-/** A server that this server will federate with. */
-export interface FederatedServer {
-  /** The DNS hostname of the server to federate with. */
-  host: string;
-  /** Indicates to UI clients that they should enable/configure the indicated server by default. */
-  configuredByDefault: boolean;
-  /**
-   * Indicates to UI clients that they should pin the indicated server by default
-   * (showing its Events and Posts alongside the "main" server).
-   */
-  pinnedByDefault: boolean;
 }
 
 function createBaseServerConfiguration(): ServerConfiguration {
@@ -1511,156 +1493,6 @@ export const ServerColors = {
     message.author = object.author ?? undefined;
     message.admin = object.admin ?? undefined;
     message.moderator = object.moderator ?? undefined;
-    return message;
-  },
-};
-
-function createBaseFederationInfo(): FederationInfo {
-  return { servers: [] };
-}
-
-export const FederationInfo = {
-  encode(message: FederationInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.servers) {
-      FederatedServer.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): FederationInfo {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFederationInfo();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.servers.push(FederatedServer.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): FederationInfo {
-    return {
-      servers: globalThis.Array.isArray(object?.servers)
-        ? object.servers.map((e: any) => FederatedServer.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: FederationInfo): unknown {
-    const obj: any = {};
-    if (message.servers?.length) {
-      obj.servers = message.servers.map((e) => FederatedServer.toJSON(e));
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<FederationInfo>, I>>(base?: I): FederationInfo {
-    return FederationInfo.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<FederationInfo>, I>>(object: I): FederationInfo {
-    const message = createBaseFederationInfo();
-    message.servers = object.servers?.map((e) => FederatedServer.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseFederatedServer(): FederatedServer {
-  return { host: "", configuredByDefault: false, pinnedByDefault: false };
-}
-
-export const FederatedServer = {
-  encode(message: FederatedServer, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.host !== "") {
-      writer.uint32(10).string(message.host);
-    }
-    if (message.configuredByDefault === true) {
-      writer.uint32(16).bool(message.configuredByDefault);
-    }
-    if (message.pinnedByDefault === true) {
-      writer.uint32(24).bool(message.pinnedByDefault);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): FederatedServer {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFederatedServer();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.host = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.configuredByDefault = reader.bool();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.pinnedByDefault = reader.bool();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): FederatedServer {
-    return {
-      host: isSet(object.host) ? globalThis.String(object.host) : "",
-      configuredByDefault: isSet(object.configuredByDefault) ? globalThis.Boolean(object.configuredByDefault) : false,
-      pinnedByDefault: isSet(object.pinnedByDefault) ? globalThis.Boolean(object.pinnedByDefault) : false,
-    };
-  },
-
-  toJSON(message: FederatedServer): unknown {
-    const obj: any = {};
-    if (message.host !== "") {
-      obj.host = message.host;
-    }
-    if (message.configuredByDefault === true) {
-      obj.configuredByDefault = message.configuredByDefault;
-    }
-    if (message.pinnedByDefault === true) {
-      obj.pinnedByDefault = message.pinnedByDefault;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<FederatedServer>, I>>(base?: I): FederatedServer {
-    return FederatedServer.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<FederatedServer>, I>>(object: I): FederatedServer {
-    const message = createBaseFederatedServer();
-    message.host = object.host ?? "";
-    message.configuredByDefault = object.configuredByDefault ?? false;
-    message.pinnedByDefault = object.pinnedByDefault ?? false;
     return message;
   },
 };

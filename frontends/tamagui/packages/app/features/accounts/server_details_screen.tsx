@@ -482,14 +482,14 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 {section === 'federation' ? <>
                   <Heading size='$9' als='center' mt='$3'>Federation</Heading>
                   <Heading size='$4' mt='$3'>Federated Servers</Heading>
-                  <Paragraph size='$1'>
-                    Jonline servers can federate (really, it could be called "micro-federation") with each other, which surfaces to community users
-                    as "recommended servers," "servers" (or "added servers"), and "pinned servers" in the account section of their UI. In this way, servers
-                    don't really need to talk to each other much; the federation sits mostly on the client-side
-                    and is backed solely by DNS names and DNS-based security{window.location.toString().startsWith('https') ? ' (along with TLS, of course)' : ''},
-                    along with CORS (though strict CORS is not yet implemented;{' '}
+                  <Paragraph size='$1' mb='$3'>
+                    Jonline servers can federate with each other (via a particular pattern I'm dubbing "micro-federation" that means "no server-to-server needed").
+                    This surfaces to users as "recommended servers," "servers" (or "added servers"), and "pinned servers" in the navigation (for pinned servers) and the account section of their UI. 
+                    Jonline as a protocol is designed so that servers don't really need to talk to each other much; the federation sits mostly on the client-side
+                    and is backed by DNS{window.location.toString().startsWith('https') ? ', TLS, ' : ' '},
+                    and CORS. (Strict CORS is not yet implemented for Jonline's Tonic/gRPC or Rocket/HTTP servers; this would be{' '}
                     <Anchor ai='center' size='$1' href='https://github.com/JonLatane/jonline/issues/2' color={navAnchorColor}>
-                      this is a good first issue for new GitHub/FOSS contributors
+                      a good first issue for new GitHub/FOSS contributors
                     </Anchor>.)
                   </Paragraph>
                   {(federatedServers?.length ?? 0) === 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>

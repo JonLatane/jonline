@@ -13,10 +13,6 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'federation.pbenum.dart';
-
-export 'federation.pbenum.dart';
-
 class GetServiceVersionResponse extends $pb.GeneratedMessage {
   factory GetServiceVersionResponse({
     $core.String? version,
@@ -67,57 +63,23 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   void clearVersion() => clearField(1);
 }
 
-/// Asks the Jonline instance the request is sent to federate your account with one at `server`.
-/// By default, a simple FederationRequest of `{server:, username:}` will create an account with
-/// the username on the server, generate a permanent auth token, and use it. If you want Jonline
-/// to store the remote Jonline account password, use `stored_credentials`. If you want to get the
-/// password and/or auth token for the remote account yourself, use `returned_credentials`.
-class FederateRequest extends $pb.GeneratedMessage {
-  factory FederateRequest({
-    $core.String? server,
-    $core.bool? preexistingAccount,
-    $core.String? username,
-    $core.String? password,
-    $core.String? refreshToken,
-    FederationCredentials? storedCredentials,
-    FederationCredentials? returnedCredentials,
+/// The federation configuration for a Jonline server.
+class FederationInfo extends $pb.GeneratedMessage {
+  factory FederationInfo({
+    $core.Iterable<FederatedServer>? servers,
   }) {
     final $result = create();
-    if (server != null) {
-      $result.server = server;
-    }
-    if (preexistingAccount != null) {
-      $result.preexistingAccount = preexistingAccount;
-    }
-    if (username != null) {
-      $result.username = username;
-    }
-    if (password != null) {
-      $result.password = password;
-    }
-    if (refreshToken != null) {
-      $result.refreshToken = refreshToken;
-    }
-    if (storedCredentials != null) {
-      $result.storedCredentials = storedCredentials;
-    }
-    if (returnedCredentials != null) {
-      $result.returnedCredentials = returnedCredentials;
+    if (servers != null) {
+      $result.servers.addAll(servers);
     }
     return $result;
   }
-  FederateRequest._() : super();
-  factory FederateRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederateRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  FederationInfo._() : super();
+  factory FederationInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FederationInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederateRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'server')
-    ..aOB(2, _omitFieldNames ? '' : 'preexistingAccount')
-    ..aOS(3, _omitFieldNames ? '' : 'username')
-    ..aOS(4, _omitFieldNames ? '' : 'password')
-    ..aOS(5, _omitFieldNames ? '' : 'refreshToken')
-    ..e<FederationCredentials>(6, _omitFieldNames ? '' : 'storedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
-    ..e<FederationCredentials>(7, _omitFieldNames ? '' : 'returnedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederationInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<FederatedServer>(1, _omitFieldNames ? '' : 'servers', $pb.PbFieldType.PM, subBuilder: FederatedServer.create)
     ..hasRequiredFields = false
   ;
 
@@ -125,118 +87,55 @@ class FederateRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  FederateRequest clone() => FederateRequest()..mergeFromMessage(this);
+  FederationInfo clone() => FederationInfo()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  FederateRequest copyWith(void Function(FederateRequest) updates) => super.copyWith((message) => updates(message as FederateRequest)) as FederateRequest;
+  FederationInfo copyWith(void Function(FederationInfo) updates) => super.copyWith((message) => updates(message as FederationInfo)) as FederationInfo;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static FederateRequest create() => FederateRequest._();
-  FederateRequest createEmptyInstance() => create();
-  static $pb.PbList<FederateRequest> createRepeated() => $pb.PbList<FederateRequest>();
+  static FederationInfo create() => FederationInfo._();
+  FederationInfo createEmptyInstance() => create();
+  static $pb.PbList<FederationInfo> createRepeated() => $pb.PbList<FederationInfo>();
   @$core.pragma('dart2js:noInline')
-  static FederateRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederateRequest>(create);
-  static FederateRequest? _defaultInstance;
+  static FederationInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederationInfo>(create);
+  static FederationInfo? _defaultInstance;
 
-  /// The remote server to federate accounts with.
+  /// A list of servers that this server will federate with.
   @$pb.TagNumber(1)
-  $core.String get server => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set server($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasServer() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearServer() => clearField(1);
-
-  /// Indicates whether the account already exists on the remote server.
-  /// When false, the instance will attempt to create the account on the remote server.
-  @$pb.TagNumber(2)
-  $core.bool get preexistingAccount => $_getBF(1);
-  @$pb.TagNumber(2)
-  set preexistingAccount($core.bool v) { $_setBool(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasPreexistingAccount() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearPreexistingAccount() => clearField(2);
-
-  /// The username of the account on the remote server.
-  @$pb.TagNumber(3)
-  $core.String get username => $_getSZ(2);
-  @$pb.TagNumber(3)
-  set username($core.String v) { $_setString(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasUsername() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearUsername() => clearField(3);
-
-  /// When preexisting_account = true, will attempt to federate using that password.
-  /// When preexisting_account = false, will create a new account using that password.
-  @$pb.TagNumber(4)
-  $core.String get password => $_getSZ(3);
-  @$pb.TagNumber(4)
-  set password($core.String v) { $_setString(3, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasPassword() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearPassword() => clearField(4);
-
-  /// When preexisting_account = true, will attempt to federate using that password.
-  /// When preexisting_account = false, will create a new account using that password.
-  @$pb.TagNumber(5)
-  $core.String get refreshToken => $_getSZ(4);
-  @$pb.TagNumber(5)
-  set refreshToken($core.String v) { $_setString(4, v); }
-  @$pb.TagNumber(5)
-  $core.bool hasRefreshToken() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearRefreshToken() => clearField(5);
-
-  /// Request whether to store only the auth token, or the auth token and password.
-  @$pb.TagNumber(6)
-  FederationCredentials get storedCredentials => $_getN(5);
-  @$pb.TagNumber(6)
-  set storedCredentials(FederationCredentials v) { setField(6, v); }
-  @$pb.TagNumber(6)
-  $core.bool hasStoredCredentials() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearStoredCredentials() => clearField(6);
-
-  /// Request whether to return nothing, the auth token, or the auth token and password.
-  @$pb.TagNumber(7)
-  FederationCredentials get returnedCredentials => $_getN(6);
-  @$pb.TagNumber(7)
-  set returnedCredentials(FederationCredentials v) { setField(7, v); }
-  @$pb.TagNumber(7)
-  $core.bool hasReturnedCredentials() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearReturnedCredentials() => clearField(7);
+  $core.List<FederatedServer> get servers => $_getList(0);
 }
 
-class FederateResponse extends $pb.GeneratedMessage {
-  factory FederateResponse({
-    $core.String? refreshToken,
-    $core.String? password,
+/// A server that this server will federate with.
+class FederatedServer extends $pb.GeneratedMessage {
+  factory FederatedServer({
+    $core.String? host,
+    $core.bool? configuredByDefault,
+    $core.bool? pinnedByDefault,
   }) {
     final $result = create();
-    if (refreshToken != null) {
-      $result.refreshToken = refreshToken;
+    if (host != null) {
+      $result.host = host;
     }
-    if (password != null) {
-      $result.password = password;
+    if (configuredByDefault != null) {
+      $result.configuredByDefault = configuredByDefault;
+    }
+    if (pinnedByDefault != null) {
+      $result.pinnedByDefault = pinnedByDefault;
     }
     return $result;
   }
-  FederateResponse._() : super();
-  factory FederateResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederateResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  FederatedServer._() : super();
+  factory FederatedServer.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FederatedServer.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederateResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'refreshToken')
-    ..aOS(2, _omitFieldNames ? '' : 'password')
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'host')
+    ..aOB(2, _omitFieldNames ? '' : 'configuredByDefault')
+    ..aOB(3, _omitFieldNames ? '' : 'pinnedByDefault')
     ..hasRequiredFields = false
   ;
 
@@ -244,240 +143,53 @@ class FederateResponse extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  FederateResponse clone() => FederateResponse()..mergeFromMessage(this);
+  FederatedServer clone() => FederatedServer()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  FederateResponse copyWith(void Function(FederateResponse) updates) => super.copyWith((message) => updates(message as FederateResponse)) as FederateResponse;
+  FederatedServer copyWith(void Function(FederatedServer) updates) => super.copyWith((message) => updates(message as FederatedServer)) as FederatedServer;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static FederateResponse create() => FederateResponse._();
-  FederateResponse createEmptyInstance() => create();
-  static $pb.PbList<FederateResponse> createRepeated() => $pb.PbList<FederateResponse>();
+  static FederatedServer create() => FederatedServer._();
+  FederatedServer createEmptyInstance() => create();
+  static $pb.PbList<FederatedServer> createRepeated() => $pb.PbList<FederatedServer>();
   @$core.pragma('dart2js:noInline')
-  static FederateResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederateResponse>(create);
-  static FederateResponse? _defaultInstance;
+  static FederatedServer getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederatedServer>(create);
+  static FederatedServer? _defaultInstance;
 
+  /// The DNS hostname of the server to federate with.
   @$pb.TagNumber(1)
-  $core.String get refreshToken => $_getSZ(0);
+  $core.String get host => $_getSZ(0);
   @$pb.TagNumber(1)
-  set refreshToken($core.String v) { $_setString(0, v); }
+  set host($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
-  $core.bool hasRefreshToken() => $_has(0);
+  $core.bool hasHost() => $_has(0);
   @$pb.TagNumber(1)
-  void clearRefreshToken() => clearField(1);
+  void clearHost() => clearField(1);
 
+  /// Indicates to UI clients that they should enable/configure the indicated server by default.
   @$pb.TagNumber(2)
-  $core.String get password => $_getSZ(1);
+  $core.bool get configuredByDefault => $_getBF(1);
   @$pb.TagNumber(2)
-  set password($core.String v) { $_setString(1, v); }
+  set configuredByDefault($core.bool v) { $_setBool(1, v); }
   @$pb.TagNumber(2)
-  $core.bool hasPassword() => $_has(1);
+  $core.bool hasConfiguredByDefault() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPassword() => clearField(2);
-}
+  void clearConfiguredByDefault() => clearField(2);
 
-class GetFederatedAccountsRequest extends $pb.GeneratedMessage {
-  factory GetFederatedAccountsRequest({
-    FederationCredentials? returnedCredentials,
-  }) {
-    final $result = create();
-    if (returnedCredentials != null) {
-      $result.returnedCredentials = returnedCredentials;
-    }
-    return $result;
-  }
-  GetFederatedAccountsRequest._() : super();
-  factory GetFederatedAccountsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetFederatedAccountsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetFederatedAccountsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..e<FederationCredentials>(1, _omitFieldNames ? '' : 'returnedCredentials', $pb.PbFieldType.OE, defaultOrMaker: FederationCredentials.REFRESH_TOKEN_ONLY, valueOf: FederationCredentials.valueOf, enumValues: FederationCredentials.values)
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetFederatedAccountsRequest clone() => GetFederatedAccountsRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetFederatedAccountsRequest copyWith(void Function(GetFederatedAccountsRequest) updates) => super.copyWith((message) => updates(message as GetFederatedAccountsRequest)) as GetFederatedAccountsRequest;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static GetFederatedAccountsRequest create() => GetFederatedAccountsRequest._();
-  GetFederatedAccountsRequest createEmptyInstance() => create();
-  static $pb.PbList<GetFederatedAccountsRequest> createRepeated() => $pb.PbList<GetFederatedAccountsRequest>();
-  @$core.pragma('dart2js:noInline')
-  static GetFederatedAccountsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetFederatedAccountsRequest>(create);
-  static GetFederatedAccountsRequest? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  FederationCredentials get returnedCredentials => $_getN(0);
-  @$pb.TagNumber(1)
-  set returnedCredentials(FederationCredentials v) { setField(1, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasReturnedCredentials() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearReturnedCredentials() => clearField(1);
-}
-
-class GetFederatedAccountsResponse extends $pb.GeneratedMessage {
-  factory GetFederatedAccountsResponse({
-    $core.Iterable<FederatedAccount>? federatedAccounts,
-  }) {
-    final $result = create();
-    if (federatedAccounts != null) {
-      $result.federatedAccounts.addAll(federatedAccounts);
-    }
-    return $result;
-  }
-  GetFederatedAccountsResponse._() : super();
-  factory GetFederatedAccountsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetFederatedAccountsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetFederatedAccountsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<FederatedAccount>(1, _omitFieldNames ? '' : 'federatedAccounts', $pb.PbFieldType.PM, subBuilder: FederatedAccount.create)
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  GetFederatedAccountsResponse clone() => GetFederatedAccountsResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  GetFederatedAccountsResponse copyWith(void Function(GetFederatedAccountsResponse) updates) => super.copyWith((message) => updates(message as GetFederatedAccountsResponse)) as GetFederatedAccountsResponse;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static GetFederatedAccountsResponse create() => GetFederatedAccountsResponse._();
-  GetFederatedAccountsResponse createEmptyInstance() => create();
-  static $pb.PbList<GetFederatedAccountsResponse> createRepeated() => $pb.PbList<GetFederatedAccountsResponse>();
-  @$core.pragma('dart2js:noInline')
-  static GetFederatedAccountsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetFederatedAccountsResponse>(create);
-  static GetFederatedAccountsResponse? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $core.List<FederatedAccount> get federatedAccounts => $_getList(0);
-}
-
-class FederatedAccount extends $pb.GeneratedMessage {
-  factory FederatedAccount({
-    $core.String? id,
-    $core.String? server,
-    $core.String? username,
-    $core.String? password,
-    $core.String? refreshToken,
-  }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (server != null) {
-      $result.server = server;
-    }
-    if (username != null) {
-      $result.username = username;
-    }
-    if (password != null) {
-      $result.password = password;
-    }
-    if (refreshToken != null) {
-      $result.refreshToken = refreshToken;
-    }
-    return $result;
-  }
-  FederatedAccount._() : super();
-  factory FederatedAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederatedAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOS(2, _omitFieldNames ? '' : 'server')
-    ..aOS(3, _omitFieldNames ? '' : 'username')
-    ..aOS(4, _omitFieldNames ? '' : 'password')
-    ..aOS(5, _omitFieldNames ? '' : 'refreshToken')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  FederatedAccount clone() => FederatedAccount()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  FederatedAccount copyWith(void Function(FederatedAccount) updates) => super.copyWith((message) => updates(message as FederatedAccount)) as FederatedAccount;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static FederatedAccount create() => FederatedAccount._();
-  FederatedAccount createEmptyInstance() => create();
-  static $pb.PbList<FederatedAccount> createRepeated() => $pb.PbList<FederatedAccount>();
-  @$core.pragma('dart2js:noInline')
-  static FederatedAccount getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederatedAccount>(create);
-  static FederatedAccount? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $core.String get id => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearId() => clearField(1);
-
-  @$pb.TagNumber(2)
-  $core.String get server => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set server($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasServer() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearServer() => clearField(2);
-
+  /// Indicates to UI clients that they should pin the indicated server by default
+  /// (showing its Events and Posts alongside the "main" server).
   @$pb.TagNumber(3)
-  $core.String get username => $_getSZ(2);
+  $core.bool get pinnedByDefault => $_getBF(2);
   @$pb.TagNumber(3)
-  set username($core.String v) { $_setString(2, v); }
+  set pinnedByDefault($core.bool v) { $_setBool(2, v); }
   @$pb.TagNumber(3)
-  $core.bool hasUsername() => $_has(2);
+  $core.bool hasPinnedByDefault() => $_has(2);
   @$pb.TagNumber(3)
-  void clearUsername() => clearField(3);
-
-  @$pb.TagNumber(4)
-  $core.String get password => $_getSZ(3);
-  @$pb.TagNumber(4)
-  set password($core.String v) { $_setString(3, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasPassword() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearPassword() => clearField(4);
-
-  @$pb.TagNumber(5)
-  $core.String get refreshToken => $_getSZ(4);
-  @$pb.TagNumber(5)
-  set refreshToken($core.String v) { $_setString(4, v); }
-  @$pb.TagNumber(5)
-  $core.bool hasRefreshToken() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearRefreshToken() => clearField(5);
+  void clearPinnedByDefault() => clearField(3);
 }
 
 

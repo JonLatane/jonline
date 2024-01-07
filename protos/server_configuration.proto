@@ -4,6 +4,7 @@ package jonline;
 
 import "visibility_moderation.proto";
 import "permissions.proto";
+import "federation.proto";
 
 // Configuration for a Jonline server instance.
 message ServerConfiguration {
@@ -198,21 +199,4 @@ message ServerColors {
   optional uint32 admin = 4;
   // Color used on author for moderator posts.
   optional uint32 moderator = 5;
-}
-
-// The federation configuration for a Jonline server.
-message FederationInfo {
-  // A list of servers that this server will federate with.
-  repeated FederatedServer servers = 1;
-}
-
-// A server that this server will federate with.
-message FederatedServer {
-  // The DNS hostname of the server to federate with.
-  string host = 1;
-  // Indicates to UI clients that they should enable/configure the indicated server by default.
-  bool configured_by_default = 2;
-  // Indicates to UI clients that they should pin the indicated server by default
-  // (showing its Events and Posts alongside the "main" server).
-  bool pinned_by_default = 3;
 }

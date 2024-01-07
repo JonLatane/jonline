@@ -232,6 +232,7 @@ class AppState extends State<MyApp> {
 
   // This is detected using the JS method getJonlineServerHost.
   String primaryServerHost = "jonline.io";
+  final otherServerHosts = ["jonline.io", "bullcity.social", "oakcity.social"];
 
   @override
   void initState() {
@@ -259,6 +260,15 @@ class AppState extends State<MyApp> {
           await server.saveNew(atBeginning: true);
           JonlineServer.selectedServer = server;
         }
+
+        otherServerHosts
+            .where((h) => h != primaryServerHost)
+            .forEach((h) async {
+          final JonlineServer server = JonlineServer(h);
+          if (!servers.contains(server)) {
+            await server.saveNew(atBeginning: false);
+          }
+        });
       }
       updatingUsers.addListener(() {
         if (updatingUsers.value) errorUpdatingUsers.value = false;
