@@ -1,6 +1,6 @@
 # Jonline GitHub Workflows
 ## Server CI
-The `deploy_server.yml` workflow a multi-phase CI/CD process:
+The `server_ci_cd.yml` workflow a multi-phase CI/CD process:
 
 1. Built the Tamagui Web (React), Flutter Web, and Rust server binaries concurrently in different jobs and cache their outputs.
    * Also, start tests here. But do not block step 2.
