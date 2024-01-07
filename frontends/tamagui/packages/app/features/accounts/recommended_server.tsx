@@ -12,11 +12,12 @@ interface Props {
   isPreview?: boolean;
   linkToServerInfo?: boolean;
   disableHeightLimit?: boolean;
+  pinAfterAdding?: boolean;
 }
 
 const recommendedServerCache = new Map<string, any>();
 
-export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit, tiny = false }) => {
+export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit = false, tiny = false, pinAfterAdding = false }) => {
   const dispatch = useAppDispatch();
   const existingServer = useRootSelector(
     (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host);
@@ -50,23 +51,26 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
     }
   }, [existingServer === undefined, pendingServer === undefined, loadingPendingServer, loadedPendingServer]);
 
-  const [loadingClient, setLoadingClient] = React.useState(false);
+  const [addingServer, setAddingServer] = React.useState(false);
 
   const { allowServerSelection, browsingServers } = useLocalConfiguration();
   async function addServer() {
-    setLoadingClient(true);
+    if (addingServer) return;
+
+    setAddingServer(true);
     if (!allowServerSelection) {
       dispatch(setAllowServerSelection(true));
     }
     if (!browsingServers) {
       dispatch(setBrowsingServers(true));
     }
-    dispatch(upsertServer(prototypeServer)).then(async () => {
-      await getServerClient(prototypeServer).then(_client => {
-        console.log("Got server client", _client);
-        setLoadingClient(false);
-      });
+    // dispatch(upsertServer(prototypeServer)).then(async () => {
+    // debugger;
+    await getServerClient(prototypeServer, { skipUpsert: false }).then(_client => {
+      console.log("Got server client", _client);
+      setAddingServer(false);
     });
+    // });
   }
 
   const externalLink = useLink({ href: `https://${host}` });
@@ -86,7 +90,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
         disableHeightLimit={disableHeightLimit} disableFooter disablePress />
     } */}
     {existingServer ? undefined
-      : <Button mt='$2' disabled={loadingClient} o={loadingClient ? 0.5 : 1}
+      : <Button mt='$2' disabled={addingServer} o={addingServer ? 0.5 : 1}
         backgroundColor={buttonBackgroundColor} color={buttonTextColor}
         hoverStyle={{ backgroundColor: buttonBackgroundColor }}
         onPress={addServer}>

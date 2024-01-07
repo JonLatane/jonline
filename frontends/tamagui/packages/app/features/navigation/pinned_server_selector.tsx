@@ -93,22 +93,24 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
                   })}
 
                   {recommendedServerHosts.length > 0
-                    ? <Button key='recommended-servers-button' h='auto' py='$1' my='auto' mr='$2' size='$2' animation='standard' {...standardHorizontalAnimation}
-                      onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
-                      <XStack>
-                        <YStack my='auto' ai='center'>
-                          <Heading size='$1'>
-                            Recommended
-                          </Heading>
-                          {recommendedServerHosts.length > 0
-                            ? <Heading size='$1'>({recommendedServerHosts.length})</Heading>
-                            : undefined}
-                        </YStack>
-                        <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
-                          <ChevronRight size='$1' />
+                    ? <XStack key='recommended-servers-button' animation='standard' {...standardAnimation}>
+                      <Button h='auto' py='$1' mr={viewingRecommendedServers ? '$2' : '$10'} size='$2'
+                        onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
+                        <XStack>
+                          <YStack my='auto' ai='center'>
+                            <Heading size='$1'>
+                              Recommended
+                            </Heading>
+                            {recommendedServerHosts.length > 0
+                              ? <Heading size='$1'>({recommendedServerHosts.length})</Heading>
+                              : undefined}
+                          </YStack>
+                          <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
+                            <ChevronRight size='$1' />
+                          </XStack>
                         </XStack>
-                      </XStack>
-                    </Button>
+                      </Button>
+                    </XStack>
                     : undefined}
 
                   {viewingRecommendedServers ?

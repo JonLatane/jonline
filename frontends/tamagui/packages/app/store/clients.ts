@@ -3,8 +3,14 @@ import { store } from "./store";
 import { JonlineServer } from "./types";
 import { createChannel, createClient } from 'nice-grpc-web';
 import { JonlineDefinition, JonlineClient } from "@jonline/api/generated/jonline";
+import { GetServiceVersionResponse, ServerConfiguration } from "@jonline/api";
 
-const clients = new Map<string, JonlineClient>();
+type ConfiguredClient = {
+  client: JonlineClient;
+  serviceVersion: GetServiceVersionResponse;
+  serverConfiguration: ServerConfiguration
+};
+const clients = new Map<string, ConfiguredClient>();
 const loadingClients = new Set<string>();
 
 export function deleteClient(server: JonlineServer) {
@@ -56,7 +62,15 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
     }
   }
 
-  return clients.get(serverId)!;
+  const { client, serviceVersion, serverConfiguration } = clients.get(serverId)!;
+  const updatedServer = { ...server, serviceVersion, serverConfiguration };
+  if (!args?.skipUpsert && (server.serviceVersion != serviceVersion || server.serverConfiguration != serverConfiguration)) {
+    console.log("getServerClient: upserting server", updatedServer);
+    store.dispatch(upsertServer(updatedServer));
+  };
+  args?.onServerConfigured?.(updatedServer);
+
+  return client;
 }
 
 async function clientForServer(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClient | undefined> {
@@ -115,15 +129,8 @@ async function doCreateClient(host: string, server: JonlineServer, args?: Jonlin
     console.warn("Created Jonline client with different frontend host than server host. Correcting server host.");
   }
 
-  clients.set(serverId, client);
+  clients.set(serverId, {client, serviceVersion, serverConfiguration});
 
-  const updatedServer = { ...server, serviceVersion, serverConfiguration };
-  if (!args?.skipUpsert) {
-    console.log("doCreateClient: upserting server", updatedServer);
-    // debugger;
-    store.dispatch(upsertServer(updatedServer));
-  };
-  args?.onServerConfigured?.(updatedServer);
   return client;
 }
 

@@ -100,14 +100,15 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
 
 
-              <Heading size='$3' mt='$3'>Federation</Heading>
+              <Heading size='$3' mt='$3'>Accounts</Heading>
+              <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
+
+              <Heading size='$3' mt='$3'>Testing</Heading>
               <ToggleRow name='Allow Server Selection'
                 description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
                 disabled={serverCount !== 1}
                 value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
-              <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
-
               {/* <Heading size='$3' mt='$3'>Colors (Testing)</Heading>
               <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />
               <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch /> */}

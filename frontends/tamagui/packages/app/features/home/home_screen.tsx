@@ -86,31 +86,30 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         </YStack>
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
-        {(eventsLoaded && postsLoaded) || allEvents.length > 0
-          ? <XStack w='100%' px='$3'>
-            <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
-              <Heading size='$6'>Upcoming Events</Heading>
-              <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
-                <ChevronRight />
-              </XStack>
-            </Button>
-            {/* <XStack f={1} /> */}
-            <Button ml='auto' transparent backgroundColor={navColor}
-              hoverStyle={{ backgroundColor: navColor }}
-              {...eventsLink}>
-              {/* <ChevronRight color={navTextColor} /> */}
-              <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
-              {/* <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}> */}
-              {/* <ChevronRight color={navTextColor} /> */}
-              {/* </XStack> */}
-            </Button>
-            {/* <XStack my='auto'><DarkModeToggle /></XStack> */}
-          </XStack>
-          : undefined}
         <AnimatePresence>
+          {(eventsLoaded && postsLoaded) || allEvents.length > 0
+            ? <XStack key='latest-events-header' w='100%' px='$3'>
+              <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
+                <Heading size='$6'>Upcoming Events</Heading>
+                <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
+                  <ChevronRight />
+                </XStack>
+              </Button>
+              {/* <XStack f={1} /> */}
+              <Button ml='auto' transparent backgroundColor={navColor}
+                hoverStyle={{ backgroundColor: navColor }}
+                {...eventsLink}>
+                {/* <ChevronRight color={navTextColor} /> */}
+                <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
+                {/* <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}> */}
+                {/* <ChevronRight color={navTextColor} /> */}
+                {/* </XStack> */}
+              </Button>
+              {/* <XStack my='auto'><DarkModeToggle /></XStack> */}
+            </XStack>
+            : undefined}
           {showEventsOnLatest && ((eventsLoaded && postsLoaded) || allEvents.length > 0) ?
-            <YStack
-              key='latest-events'
+            <YStack key='latest-events'
               w='100%'
               // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
               // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
