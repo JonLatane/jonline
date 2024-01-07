@@ -300,7 +300,7 @@ jobs:
       run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
     - name: Deploy to Jonline.io via DigitalOcean Kubernetes
-      run: kubectl apply -f deploys/k8s/server.yaml -n jonline --validate=false
+      run: kubectl apply -f deploys/k8s/server.yaml -n jonline
 
     - name: Verify Server deployment
       run: kubectl rollout status deployment/jonline -n jonline
