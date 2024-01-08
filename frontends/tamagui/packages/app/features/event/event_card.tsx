@@ -219,7 +219,7 @@ export const EventCard: React.FC<Props> = ({
   const numContentSections = ((content?.length ?? 0) > 0 ? 1 : 0)
     + (embedLink || media.length > 0 ? 1 : 0);
   const maxContentSectionHeight = isPreview ?
-    maxTotalContentHeight! / numContentSections
+    (maxTotalContentHeight! - (maxTotalContentHeight! * (2 - numContentSections) * 0.25)) / numContentSections
     : undefined;
 
   const detailsLink: LinkProps | undefined = isPreview ? eventLink : undefined;

@@ -180,7 +180,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               </YStack>
               : <YStack w='100%' ac='center' ai='center' jc='center' space='$2'>
                 {paginatedEvents.map((event) => {
-                  return <XStack animation='standard' {...standardAnimation}>
+                  return <XStack animation='standard' {...standardAnimation} w='100%'>
                     <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview />
                   </XStack>
                 })}

@@ -71,7 +71,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
     w='100%' h={show ? undefined : 0}
     backgroundColor={transparent ? undefined : '$backgroundHover'}
   >
-    <AnimatePresence>
+    {/* <AnimatePresence> */}
       {show ? <>
         <Button key='pinned-server-toggle' py='$1' h='auto' borderRadius={0} onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))}>
           <XStack mr='auto'>
@@ -149,7 +149,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
           </YStack>
           : undefined}
       </> : undefined}
-    </AnimatePresence>
+    {/* </AnimatePresence> */}
   </YStack >;
 }
 
