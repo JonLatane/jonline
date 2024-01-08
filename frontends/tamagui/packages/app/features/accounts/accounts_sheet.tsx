@@ -44,7 +44,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
 
   const dispatch = useAppDispatch();
-  const { server, textColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
+  const { server, textColor, backgroundColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
   const account = useAccount();
   const serversState = useRootSelector((state: RootState) => state.servers);
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers));
@@ -312,8 +312,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
             <Button size='$3' circular p={0}
               onPress={() => dispatch(setBrowsingServers(!browsingServers))}
               animation='standard'
-              opacity={allowServerSelection || servers.length > 1 ? 1 : 0}
-              disabled={!(allowServerSelection || servers.length > 1)} >
+              // opacity={allowServerSelection || servers.length > 1 ? 1 : 0}
+              // disabled={!(allowServerSelection || servers.length > 1)} 
+              >
               <ZStack w='$2' h='$2'>
                 <XStack m='auto' animation='standard' o={!browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
                   <ChevronUp size='$1' />
@@ -324,9 +325,8 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 <Theme inverse>
                   <XStack m='auto' animation='standard' px='$1' borderRadius='$3'
                     transform={[{ translateX: 15 }, { translateY: 10 }]}
-                    backgroundColor={textColor}
-                    o={browsingServers || servers.length === 0 ? 0 : 1} >
-                    <Paragraph size='$1'>{servers.length}</Paragraph>
+                    backgroundColor={textColor}>
+                    <Paragraph size='$1' color={backgroundColor} mx='$1' fontWeight='bold'>{servers.length}</Paragraph>
                   </XStack>
                 </Theme>
               </ZStack>

@@ -106,7 +106,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <Heading size='$3' mt='$3'>Testing</Heading>
               <ToggleRow name='Allow Server Selection'
                 description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
-                disabled={serverCount !== 1}
+                // disabled={serverCount !== 1}
                 value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
               {/* <Heading size='$3' mt='$3'>Colors (Testing)</Heading>

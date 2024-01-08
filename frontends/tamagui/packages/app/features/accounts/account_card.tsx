@@ -1,7 +1,7 @@
 import { Permission } from "@jonline/api";
 import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, ChevronDown, ChevronUp, Delete, Shield, User as UserIcon } from "@tamagui/lucide-icons";
-import { colorMeta, useCredentialDispatch, useMediaUrl } from "app/hooks";
+import { colorMeta, useAppSelector, useCredentialDispatch, useMediaUrl } from "app/hooks";
 import { JonlineAccount, accountID, getServerTheme, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, serverID, store, useRootSelector } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
 import React from "react";
@@ -13,11 +13,15 @@ interface Props {
   totalAccounts: number;
   onReauthenticate?: (account: JonlineAccount) => void;
   onProfileOpen?: () => void;
+  onPress?: () => void;
+  selectedAccount?: JonlineAccount;
 }
 
-const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate, onProfileOpen }) => {
+const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate, onProfileOpen, onPress, selectedAccount }) => {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
-  const selected = store.getState().accounts.currentAccountId == accountID(account);
+  const currentAccountId = useAppSelector(state => state.accounts.currentAccountId);
+  const selectedAccountId = selectedAccount ? accountID(selectedAccount) : currentAccountId;
+  const selected = selectedAccountId == accountID(account);
 
   // const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
   // const navColorInt = account.server.serverConfiguration?.serverInfo?.colors?.navigation;
@@ -93,8 +97,8 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
       backgroundColor={selected ? navColor : undefined}
       scale={0.9}
       // hoverStyle={{ scale: 0.925 }}
-      // pressStyle={{ scale: 0.875 }}
-      onPress={doSelectAccount}
+      pressStyle={{ scale: 0.925 }}
+      onPress={onPress ?? doSelectAccount}
     >
       <Card.Header>
         <XStack>
@@ -151,10 +155,10 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
               <Paragraph size='$1' color={textColor} alignSelf="center">{account.user.id}</Paragraph>
             </YStack>
             <YStack f={1} />
-            {selected
+            {selected && !onPress
               ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$2'>Logout</Button>
               : undefined}
-            {totalAccounts > 1 && (!selected || mediaQuery.gtXxxs)
+            {totalAccounts > 1 && (!selected || onPress || mediaQuery.gtXxxs)
               ? <XStack my='auto' space='$2' mr='$2'>
                 <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
                 <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />

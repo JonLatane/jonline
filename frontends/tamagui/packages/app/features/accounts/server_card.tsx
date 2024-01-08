@@ -1,6 +1,6 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation } from "@jonline/ui";
 import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { colorMeta, useAccountOrServer, useAppDispatch } from "app/hooks";
+import { colorMeta, useAccountOrServer, useAppDispatch, useLocalConfiguration } from "app/hooks";
 import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector } from "app/store";
 import React from "react";
 import { useLink } from "solito/link";
@@ -62,6 +62,12 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
   const serverIsExternal = server.host != browserHost;
   const textColor = selected ? primaryColorMeta.textColor : undefined;
 
+  const { allowServerSelection } = useLocalConfiguration();
+  const pressParams = allowServerSelection || server.host === window?.location?.host ? {
+    pressStyle: { scale: 0.95 },
+    onPress: disablePress ? undefined : doSelectServer
+  } : {}
+
   return (
     // <Theme inverse={selected}>
     <Card theme="dark" elevate size="$4" bordered
@@ -70,9 +76,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
       scale={0.9}
       backgroundColor={selected ? primaryColor : undefined}
       width={isPreview ? 280 : '100%'}
-      // hoverStyle={{ scale: 0.925 }}
-      pressStyle={{ scale: 0.95 }}
-      onPress={disablePress ? undefined : doSelectServer}>
+      {...pressParams}>
       <Card.Header>
         <XStack w='100%'>
           <YStack f={1} overflow="hidden">

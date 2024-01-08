@@ -1,23 +1,26 @@
 import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
-import { useAppDispatch } from 'app/hooks';
-import { accountID, clearAccountAlerts, createAccount, JonlineAccount, login, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { useAppDispatch, useServer } from 'app/hooks';
+import { accountID, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import AccountCard from './account_card';
 
 export type AddAccountSheetProps = {
-  // primaryServer?: JonlineServer;
-  operation: string;
+  server?: JonlineServer;
+  operation?: string;
+  button?: (onPress: () => void) => JSX.Element;
+  selectedAccount?: JonlineAccount;
+  onAccountSelected?: (account: JonlineAccount) => void;
 }
 
 export enum LoginMethod {
   Login = 'login',
   CreateAccount = 'create_account',
 }
-export function AddAccountSheet({ operation }: AddAccountSheetProps) {
+export function AddAccountSheet({ server: specifiedServer, operation, button, onAccountSelected, selectedAccount }: AddAccountSheetProps) {
   const media = useMedia();
   // const [open, setOpen] = useState(false);
   // const [browsingServers, setBrowsingServers] = useState(false);
@@ -36,7 +39,10 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
   const app = useRootSelector((state: RootState) => state.app);
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const currentServer = useServer();
+  const server = specifiedServer ?? currentServer;
+
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
@@ -99,18 +105,21 @@ export function AddAccountSheet({ operation }: AddAccountSheetProps) {
     setForceDisableAccountButtons(false);
   }
   // console.log('rerender')
+  const onPress = () => setOpen((x) => !x);
   return (
     <>
-      <Button {...themedButtonBackground(primaryColor, primaryTextColor)}
-        disabled={server === undefined}
-        onPress={() => setOpen((x) => !x)}>
-        <Heading size='$2' color={primaryTextColor}>
-          Login/Sign Up
-        </Heading>
-        <Heading size='$1' color={primaryTextColor}>
-          to {operation}
-        </Heading>
-      </Button>
+      {button
+        ? button(onPress)
+        : <Button {...themedButtonBackground(primaryColor, primaryTextColor)}
+          disabled={server === undefined}
+          onPress={onPress}>
+          <Heading size='$2' color={primaryTextColor}>
+            Login/Sign Up
+          </Heading>
+          {operation ? <Heading size='$1' color={primaryTextColor}>
+            to {operation}
+          </Heading> : undefined}
+        </Button>}
       <Sheet
         modal
         open={open}
@@ -251,6 +260,8 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                   {/* <Heading size="$7" paddingVertical='$2'>Choose Account</Heading> */}
                   {accountsOnServer.map((account) =>
                     <AccountCard account={account} key={accountID(account)} totalAccounts={accountsOnServer.length}
+                      selectedAccount={selectedAccount}
+                      onPress={onAccountSelected ? () => onAccountSelected(account) : undefined}
                       onReauthenticate={reauthenticateAccount} />)}
                 </>
                   : undefined}

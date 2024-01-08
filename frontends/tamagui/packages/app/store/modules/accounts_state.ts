@@ -148,7 +148,19 @@ export const accountsSlice = createSlice({
         state.pinnedServers.push({
           serverId: serverID(action.payload.server),
           accountId: accountID(action.payload),
-          pinned: false
+          pinned: true
+        });
+      }
+    },
+    unpinAccount: (state, action: PayloadAction<JonlineAccount>) => {
+      const existing = state.pinnedServers.find(s => s.serverId === serverID(action.payload.server));
+      if (existing) {
+        existing.accountId = undefined;
+      } else {
+        state.pinnedServers.push({
+          serverId: serverID(action.payload.server),
+          accountId: undefined,
+          pinned: true
         });
       }
     },
@@ -202,7 +214,7 @@ export const accountsSlice = createSlice({
 export const { selectAccount, removeAccount, clearAccountAlerts,
   resetAccounts, upsertUserData, notifyUserDeleted,
   moveAccountUp, moveAccountDown,
-  pinServer, pinAccount } = accountsSlice.actions;
+  pinServer, pinAccount, unpinAccount } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts, selectById: selectAccountById,  selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;
