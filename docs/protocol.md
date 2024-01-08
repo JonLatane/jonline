@@ -1684,8 +1684,8 @@ A server that this server will federate with.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | host | [string](#string) |  | The DNS hostname of the server to federate with. |
-| configured_by_default | [bool](#bool) |  | Indicates to UI clients that they should enable/configure the indicated server by default. |
-| pinned_by_default | [bool](#bool) |  | Indicates to UI clients that they should pin the indicated server by default (showing its Events and Posts alongside the &#34;main&#34; server). |
+| configured_by_default | [bool](#bool) | optional | Indicates to UI clients that they should enable/configure the indicated server by default. |
+| pinned_by_default | [bool](#bool) | optional | Indicates to UI clients that they should pin the indicated server by default (showing its Events and Posts alongside the &#34;main&#34; server). |
 
 
 

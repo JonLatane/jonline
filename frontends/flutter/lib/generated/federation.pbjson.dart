@@ -43,14 +43,19 @@ const FederatedServer$json = {
   '1': 'FederatedServer',
   '2': [
     {'1': 'host', '3': 1, '4': 1, '5': 9, '10': 'host'},
-    {'1': 'configured_by_default', '3': 2, '4': 1, '5': 8, '10': 'configuredByDefault'},
-    {'1': 'pinned_by_default', '3': 3, '4': 1, '5': 8, '10': 'pinnedByDefault'},
+    {'1': 'configured_by_default', '3': 2, '4': 1, '5': 8, '9': 0, '10': 'configuredByDefault', '17': true},
+    {'1': 'pinned_by_default', '3': 3, '4': 1, '5': 8, '9': 1, '10': 'pinnedByDefault', '17': true},
+  ],
+  '8': [
+    {'1': '_configured_by_default'},
+    {'1': '_pinned_by_default'},
   ],
 };
 
 /// Descriptor for `FederatedServer`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List federatedServerDescriptor = $convert.base64Decode(
-    'Cg9GZWRlcmF0ZWRTZXJ2ZXISEgoEaG9zdBgBIAEoCVIEaG9zdBIyChVjb25maWd1cmVkX2J5X2'
-    'RlZmF1bHQYAiABKAhSE2NvbmZpZ3VyZWRCeURlZmF1bHQSKgoRcGlubmVkX2J5X2RlZmF1bHQY'
-    'AyABKAhSD3Bpbm5lZEJ5RGVmYXVsdA==');
+    'Cg9GZWRlcmF0ZWRTZXJ2ZXISEgoEaG9zdBgBIAEoCVIEaG9zdBI3ChVjb25maWd1cmVkX2J5X2'
+    'RlZmF1bHQYAiABKAhIAFITY29uZmlndXJlZEJ5RGVmYXVsdIgBARIvChFwaW5uZWRfYnlfZGVm'
+    'YXVsdBgDIAEoCEgBUg9waW5uZWRCeURlZmF1bHSIAQFCGAoWX2NvbmZpZ3VyZWRfYnlfZGVmYX'
+    'VsdEIUChJfcGlubmVkX2J5X2RlZmF1bHQ=');
 

@@ -115,19 +115,23 @@ setTimeout(async () => {
 
 function initializeWithServer(initialServer: JonlineServer) {
   getServerClient(initialServer).then(async () => {
-    // debugger;
+    debugger;
     const getServersState = () => store.getState().servers;
     if (!getServersState().currentServerId) {
       let server = getServersState().entities[serverID(initialServer)];
       while (!server) {
-        server = getServersState().entities[serverID(initialServer)];
+        const entities = getServersState().entities;
+        const initialServerId = serverID(initialServer);
+        server = entities[initialServerId];
+        // debugger;
         if (!server) {
           console.warn('polling for initial server configuration');
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
       // debugger;
       store.dispatch(selectServer(server));
+      debugger;
 
       // debugger;
       const federatedServers: FederatedServer[] = server?.serverConfiguration?.federationInfo?.servers?.length ?? 0 > 0

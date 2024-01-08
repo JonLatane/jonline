@@ -543,7 +543,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                                 Recommend Only
                               </Label>
                               <Switch id={`${server.host}-add-by-default`} size='$2' defaultChecked={server.configuredByDefault}
-                                checked={server.configuredByDefault} value={server.configuredByDefault.toString()}
+                                checked={server.configuredByDefault} value={server.configuredByDefault?.toString()}
                                 disabled={!isAdmin}
                                 onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, configuredByDefault: checked, pinnedByDefault: checked && s.pinnedByDefault } : s))}>
                                 <Switch.Thumb animation="standard" backgroundColor='black' />
@@ -557,7 +557,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                             {/* <SeparatorHorizontal /> */}
                             <XStack ai="center" space="$4">
                               <Switch id={`${server.host}-pin-by-default`} size='$2' defaultChecked={server.pinnedByDefault}
-                                checked={server.pinnedByDefault} value={server.pinnedByDefault.toString()}
+                                checked={server.pinnedByDefault} value={server.pinnedByDefault?.toString()}
                                 disabled={!isAdmin}
                                 onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, pinnedByDefault: checked, configuredByDefault: checked || s.configuredByDefault } : s))}>
                                 <Switch.Thumb animation="standard" backgroundColor='black' />

@@ -1,7 +1,7 @@
 import { serverID, upsertServer } from "./modules";
 import { store } from "./store";
 import { JonlineServer } from "./types";
-import { createChannel, createClient } from 'nice-grpc-web';
+import { createChannel as createGrpcChannel, createClient as createGrpcClient } from 'nice-grpc-web';
 import { JonlineDefinition, JonlineClient } from "@jonline/api/generated/jonline";
 import { GetServiceVersionResponse, ServerConfiguration } from "@jonline/api";
 
@@ -40,16 +40,11 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
         const portIndex = (totalRetries - remainingRetries) % ports.length;
         const port = ports[portIndex]!;
         console.log(`Creating client for ${serverId} on port ${port} (${portIndex})`);
-        const client = await clientForServer(
+        await resolveHostAndCreateClient(
           server,
           port,
           args
         );
-        if (client) {
-
-          return client;
-        }
-        throw "Failed to load client";
       } catch (e) {
         if (remainingRetries-- == 0) {
           throw e;
@@ -62,7 +57,10 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
     }
   }
 
-  const { client, serviceVersion, serverConfiguration } = clients.get(serverId)!;
+  const configuredClient = clients.get(serverId);
+  if (!configuredClient) throw "Failed to load client";
+
+  const { client, serviceVersion, serverConfiguration } = configuredClient;
   const updatedServer = { ...server, serviceVersion, serverConfiguration };
   if (!args?.skipUpsert && (server.serviceVersion != serviceVersion || server.serverConfiguration != serverConfiguration)) {
     console.log("getServerClient: upserting server", updatedServer);
@@ -73,7 +71,7 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
   return client;
 }
 
-async function clientForServer(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClient | undefined> {
+async function resolveHostAndCreateClient(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClient | undefined> {
   // Resolve the actual backend server from its backend_host endpoint
   const backendHost = await window.fetch(
     `${server.secure ? 'https' : 'http'}://${server.host}/backend_host`
@@ -88,54 +86,46 @@ async function clientForServer(server: JonlineServer, port: number, args?: Jonli
 
   // Get the gRPC client
   const host = `${serverID({ ...server, host: backendHost }).replace(":", "://")}:${port}`;
-  const client = await doCreateClient(host, server, args);
+  const client = await createJonlineGrpcClient(host, server, args);
 
   return client;
 }
 
-async function doCreateClient(host: string, server: JonlineServer, args?: JonlineClientCreationArgs) {
+async function createJonlineGrpcClient(host: string, server: JonlineServer, args?: JonlineClientCreationArgs) {
   const serverId = serverID(server);
 
-  const channel = createChannel(host);
-
-  const client: JonlineClient = createClient(
+  const channel = createGrpcChannel(host);
+  const client: JonlineClient = createGrpcClient(
     JonlineDefinition,
     channel,
   );
 
   console.log(`Getting service version and server configuration for ${host}...`);
 
-  const serviceVersionFuture = async () => {
-    try {
-      return await client.getServiceVersion({});
-    } catch (e) {
-      console.error('Failed to get service version', e);
-      return 'Failed to get service version.'
+  async function timeoutFuture<T>(future: Promise<T>, name: string, timeoutMs: number): Promise<T | undefined> {
+    const clientFuture = async () => {
+      try {
+        return await future;
+      } catch (e) {
+        console.error(`Failed to get ${name}`, e);
+        return undefined;
+      }
+    };
+    const timeout = async (time: number) => {
+      await new Promise((res) => setTimeout(res, time));
+      return undefined;
     }
-  };
-  const serviceVersion = await Promise.race([
-    timeout(5000, "service version"),
-    serviceVersionFuture()
-  ]);
-  console.log('Got service version of type', typeof serviceVersion, serviceVersion);
-  if (typeof serviceVersion == 'string') throw new Error(serviceVersion);
-
-  const serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
-  console.log('Got server configuration', serverConfiguration);
-  if (typeof serverConfiguration == 'string') throw new Error(serverConfiguration);
-
-  const frontendHost = serverConfiguration.externalCdnConfig?.frontendHost;
-  if (frontendHost && frontendHost != '' && frontendHost != server.host) {
-    console.warn("Created Jonline client with different frontend host than server host. Correcting server host.");
+    return await Promise.race([timeout(5000), clientFuture()]);
   }
 
-  clients.set(serverId, {client, serviceVersion, serverConfiguration});
+  const serviceVersion = await timeoutFuture(client.getServiceVersion({}), 'service version', 5000)
+  const serverConfiguration = await timeoutFuture(client.getServerConfiguration({}), 'service version', 5000);
+
+  if (!serviceVersion || !serverConfiguration) {
+    throw ["Failed to load service version or server configuration", serviceVersion, serverConfiguration];
+  }
+
+  clients.set(serverId, { client, serviceVersion, serverConfiguration });
 
   return client;
-}
-
-
-const timeout = async (time: number, label: string) => {
-  await new Promise((res) => setTimeout(res, time));
-  return `Timed out getting ${label}.`;
 }

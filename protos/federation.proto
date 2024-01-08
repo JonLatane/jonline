@@ -17,8 +17,8 @@ message FederatedServer {
   // The DNS hostname of the server to federate with.
   string host = 1;
   // Indicates to UI clients that they should enable/configure the indicated server by default.
-  bool configured_by_default = 2;
+  optional bool configured_by_default = 2;
   // Indicates to UI clients that they should pin the indicated server by default
   // (showing its Events and Posts alongside the "main" server).
-  bool pinned_by_default = 3;
+  optional bool pinned_by_default = 3;
 }
