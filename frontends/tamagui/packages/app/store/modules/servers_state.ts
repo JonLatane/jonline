@@ -28,20 +28,10 @@ export function frontendServerUrl(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}://${host}`;
 }
 
-export function backendServerUrl(server: JonlineServer): string {
-  const host = server.serverConfiguration?.externalCdnConfig?.backendHost ?? server.host;
-  return `http${server.secure ? "s" : ""}://${host}`;
-}
-
-// Used for External CDN support.
-//
-// Provides the implicit backend host for this app. Note that it may not be the server
-// the user is currently using. But, it's assumed to be the *default* backend server
-// for the frontend a user sees in the browser. 
-export const getBackendHost = () => _backendHost;
-// Provides the implicit frontend host for this app, i.e. the host that the backend
-// thinks the frontend is running on. Provides aliasing of servers
-export const getFrontendHost = () => _frontendHost;
+// export function backendServerUrl(server: JonlineServer): string {
+//   const host = server.serverConfiguration?.externalCdnConfig?.backendHost ?? server.host;
+//   return `http${server.secure ? "s" : ""}://${host}`;
+// }
 
 export interface ServersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
