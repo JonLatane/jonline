@@ -1,7 +1,7 @@
 import { Permission } from "@jonline/api";
 import { Button, Card, Dialog, Heading, Image, Paragraph, Theme, XStack, YStack, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, ChevronDown, ChevronUp, Delete, Shield, User as UserIcon } from "@tamagui/lucide-icons";
-import { colorMeta, useAppSelector, useCredentialDispatch, useMediaUrl } from "app/hooks";
+import { colorMeta, useAppSelector, useCredentialDispatch, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { JonlineAccount, accountID, getServerTheme, moveAccountDown, moveAccountUp, removeAccount, selectAccount, selectServer, serverID, store, useRootSelector } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
 import React from "react";
@@ -39,7 +39,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
     ...profileLink,
     onPress: (e) => {
       // if (account.needsReauthentication) {
-        e.stopPropagation();
+      e.stopPropagation();
       // }
       profileLink.onPress?.(e);
       onProfileOpen?.();
@@ -59,16 +59,20 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
   // const primaryAnchorColor = !darkMode ? primaryColorMeta.darkColor : primaryColorMeta.lightColor;
   // const navAnchorColor = !darkMode ? navColorMeta.darkColor : navColorMeta.lightColor;
 
+  const { allowServerSelection } = useLocalConfiguration();
 
   function doSelectAccount() {
     if (account.needsReauthentication && onReauthenticate) {
       onReauthenticate(account);
       return;
     }
-    if (currentServer?.host != account.server.host) {
-      dispatch(selectServer(account.server));
+
+    if (isCurrentServer || allowServerSelection) {
+      if (currentServer?.host != account.server.host) {
+        dispatch(selectServer(account.server));
+      }
+      dispatch(selectAccount(account));
     }
-    dispatch(selectAccount(account));
   }
 
   function doLogout() {

@@ -1,5 +1,5 @@
 import { Button, Heading, Input, Paragraph, Sheet, standardAnimation, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
-import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
+import { ChevronDown, ChevronLeft, ExternalLink } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { useAppDispatch, useServer } from 'app/hooks';
 import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector } from 'app/store';
@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';
+import { useLink } from 'solito/link';
 
 export type AddAccountSheetProps = {
   server?: JonlineServer;
@@ -43,6 +44,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
   const currentServer = useServer();
   const server = specifiedServer ?? currentServer;
   const isCurrentServer = server?.host == currentServer?.host;
+  const serverLink = useLink({ href: server ? `http://${server.host}` : ''});
 
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
@@ -172,18 +174,20 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
         <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
-          <ZStack h='$6'>
-            <XStack ai='center' h='100%' px={mediaQuery.gtXs ? '$4' : '$1'}>
-              <ServerNameAndLogo server={server} />
-              <XStack f={1} />
+          {/* <ZStack h='$6'> */}
+          <XStack ai='center'
+            pl={mediaQuery.gtXs ? '$2' : 0}
+            pr={mediaQuery.gtXs ? '$4' : '$1'}>
+
+            <XStack f={1} ai='center'>
               {isCurrentServer
-                ? undefined
-                : <>
-                  <Paragraph size='$1' o={0.5}> via</Paragraph>
-                  <XStack o={0.5}>
-                    <ServerNameAndLogo server={currentServer} />
+                ? <ServerNameAndLogo server={server} />
+                : <Button maxWidth='100%' h='auto' ml='$1' p='$1' transparent iconAfter={ExternalLink} target='_blank' {...serverLink}>
+                  <XStack ai='center'>
+                    <ServerNameAndLogo server={server} />
                   </XStack>
-                </>}
+                </Button>
+              }
             </XStack>
             <Button
               alignSelf='center'
@@ -194,7 +198,18 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
                 setOpen(false)
               }}
             />
-          </ZStack>
+            <XStack f={1} ai='center'>
+              {isCurrentServer
+                ? undefined
+                : <>
+                  <Paragraph ml='auto' size='$1' o={0.5}> via</Paragraph>
+                  <XStack o={0.5}>
+                    <ServerNameAndLogo server={currentServer} />
+                  </XStack>
+                </>}
+            </XStack>
+          </XStack>
+          {/* </ZStack> */}
           {accountsOnServer.length > 0
             ? <XStack marginHorizontal='auto' marginVertical='$3'>
               {/* <Tooltip placement="bottom">
