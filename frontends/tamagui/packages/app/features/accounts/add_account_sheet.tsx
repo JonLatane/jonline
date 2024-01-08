@@ -70,7 +70,10 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
     setLoginMethod(undefined);
     setReauthenticating(false);
 
-    setTimeout(() => setOpen(false), 600);
+    setTimeout(() => {
+      setOpen(false);
+      dispatch(clearAccountAlerts());
+    }, 600);
 
     const accountEntities = store.getState().accounts.entities;
     const account = store.getState().accounts.ids.map((id) => accountEntities[id])
