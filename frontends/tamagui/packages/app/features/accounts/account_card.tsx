@@ -107,7 +107,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
               <YStack w={50} h={50} my='auto' jc='center' ai='center' ac='center'>
                 <ServerNameAndLogo server={account.server} shrinkToSquare />
               </YStack>
-              <Heading my='auto' mx='$2' size='$7'>/</Heading>
+              <Heading my='auto' mx='$2' size='$7' color={selected ? navTextColor : undefined}>/</Heading>
             </>}
           {(avatarUrl && avatarUrl != '') ?
 

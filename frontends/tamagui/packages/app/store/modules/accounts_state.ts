@@ -172,7 +172,9 @@ export const accountsSlice = createSlice({
     });
     builder.addCase(createAccount.fulfilled, (state, action) => {
       state.status = "loaded";
-      state.currentAccountId = accountID(action.payload);
+      if (!action.meta.arg.skipSelection) {
+        state.currentAccountId = accountID(action.payload);
+      }
       accountsAdapter.upsertOne(state, action.payload);
       state.successMessage = `Created account ${action.payload.user.username}`;
       resetCredentialedData();
@@ -189,7 +191,9 @@ export const accountsSlice = createSlice({
     });
     builder.addCase(login.fulfilled, (state, action) => {
       state.status = "loaded";
-      state.currentAccountId = accountID(action.payload);
+      if (!action.meta.arg.skipSelection) {
+        state.currentAccountId = accountID(action.payload);
+      }
       accountsAdapter.upsertOne(state, { ...action.payload, lastSyncFailed: false, needsReauthentication: false });
       state.successMessage = `Logged in as ${action.payload.user.username}`;
       resetCredentialedData();
@@ -216,6 +220,6 @@ export const { selectAccount, removeAccount, clearAccountAlerts,
   moveAccountUp, moveAccountDown,
   pinServer, pinAccount, unpinAccount } = accountsSlice.actions;
 
-export const { selectAll: selectAllAccounts, selectById: selectAccountById,  selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
+export const { selectAll: selectAllAccounts, selectById: selectAccountById, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;
 export default accountsReducer;

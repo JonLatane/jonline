@@ -8,7 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { JonlineAccount, JonlineServer, getServerClient } from "..";
 import { Metadata } from "nice-grpc-web";
 
-export type CreateAccount = JonlineServer & CreateAccountRequest;
+export type SkipSelection = { skipSelection?: boolean; }
+export type CreateAccount = JonlineServer & CreateAccountRequest & SkipSelection;
 export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
   "accounts/create",
   async (createAccountRequest) => {
@@ -23,7 +24,7 @@ export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
   }
 );
 
-export type Login = JonlineServer & LoginRequest;
+export type Login = JonlineServer & LoginRequest & SkipSelection;
 export const login = createAsyncThunk<JonlineAccount, Login>(
   "accounts/login",
   async (loginRequest) => {

@@ -2,7 +2,7 @@ import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Tooltip, XStac
 import { AtSign, ChevronRight, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, useServer } from "app/hooks";
 
-import { FederatedPagesStatus, JonlineServer, PinnedServer, getServerTheme, pinAccount, pinServer, unpinAccount, selectAccountById, selectAllServers, serverID, setShowPinnedServers, setViewingRecommendedServers } from "app/store";
+import { FederatedPagesStatus, JonlineServer, PinnedServer, getServerTheme, pinAccount, pinServer, unpinAccount, selectAccountById, selectAllServers, serverID, setShowPinnedServers, setViewingRecommendedServers, JonlineAccount } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useEffect, useState } from "react";
 import RecommendedServer from "../accounts/recommended_server";
@@ -172,10 +172,17 @@ export function PinnableServer({ server, pinnedServer }: PinnableServerProps) {
   }
 
   const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
+  const toggleAccountSelect = (account: JonlineAccount) => {
+    if (accountID(account) === accountID(pinnedAccount)) {
+      dispatch(unpinAccount(account));
+    } else {
+      dispatch(pinAccount(account));
+    }
+  };
   return <YStack maw={170}>
     <AddAccountSheet server={server}
       selectedAccount={pinnedAccount}
-      onAccountSelected={(account) => accountID(account) === accountID(pinnedAccount) ? dispatch(pinAccount(account)) : dispatch(unpinAccount(account))}
+      onAccountSelected={toggleAccountSelect}
       button={(onPress) =>
         <Button onPress={onPress} animation='standard' h='auto' px='$2'
           borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}

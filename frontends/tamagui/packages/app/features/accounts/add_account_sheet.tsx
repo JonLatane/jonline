@@ -2,7 +2,7 @@ import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YSt
 import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { useAppDispatch, useServer } from 'app/hooks';
-import { accountID, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
@@ -57,13 +57,41 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
     setOpen(true);
     setTimeout(() => passwordRef.current.focus(), 100);
   }
+  async function onAccountAdded() {
+    setAddingAccount(false);
+
+    setNewAccountUser('');
+    setNewAccountPass('');
+    setForceDisableAccountButtons(false);
+    setLoginMethod(undefined);
+    setReauthenticating(false);
+
+    setTimeout(() => setOpen(false), 600);
+
+    const accountEntities = store.getState().accounts.entities;
+    const account = store.getState().accounts.ids.map((id) => accountEntities[id])
+      .find(a => a && a.user.username === newAccountUser && a.server.host === server?.host);
+
+    if (account) {
+      if (onAccountSelected) {
+        onAccountSelected(account);
+      }
+    } else {
+      console.warn("Account not found after adding it. This is a bug.");
+    }
+  }
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
       ...server!,
       username: newAccountUser,
       password: newAccountPass,
-    }));
+      skipSelection: onAccountSelected !== undefined,
+    })).then(action => {
+      if (actionSucceeded(action)) {
+        onAccountAdded();
+      }
+    });
   }
   function createServerAccount() {
     dispatch(clearAccountAlerts());
@@ -71,7 +99,12 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
       ...server!,
       username: newAccountUser,
       password: newAccountPass,
-    }));
+      skipSelection: onAccountSelected !== undefined,
+    })).then(action => {
+      if (actionSucceeded(action)) {
+        onAccountAdded();
+      }
+    });
   }
 
   const accountsLoading = accountsState.status == 'loading';
@@ -91,14 +124,14 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
   });
   if (accountsState.successMessage) {
     setTimeout(() => {
-      setOpen(false);
+      // setOpen(false);
       setTimeout(() => {
         dispatch(clearAccountAlerts());
-        setNewAccountUser('');
-        setNewAccountPass('');
-        setForceDisableAccountButtons(false);
-        setLoginMethod(undefined);
-        setReauthenticating(false);
+        // setNewAccountUser('');
+        // setNewAccountPass('');
+        // setForceDisableAccountButtons(false);
+        // setLoginMethod(undefined);
+        // setReauthenticating(false);
       }, 1000);
     }, 1500);
   } else if (accountsState.errorMessage && forceDisableAccountButtons) {
