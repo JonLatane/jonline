@@ -1,11 +1,12 @@
-import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, Input, Paragraph, Sheet, standardAnimation, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
 import { ChevronDown, ChevronLeft } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { useAppDispatch, useServer } from 'app/hooks';
-import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector, useServerTheme } from 'app/store';
+import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
+import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';
 
 export type AddAccountSheetProps = {
@@ -21,7 +22,7 @@ export enum LoginMethod {
   CreateAccount = 'create_account',
 }
 export function AddAccountSheet({ server: specifiedServer, operation, button, onAccountSelected, selectedAccount }: AddAccountSheetProps) {
-  const media = useMedia();
+  const mediaQuery = useMedia();
   // const [open, setOpen] = useState(false);
   // const [browsingServers, setBrowsingServers] = useState(false);
   // const [addingServer, setAddingServer] = useState(false);
@@ -41,6 +42,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
 
   const currentServer = useServer();
   const server = specifiedServer ?? currentServer;
+  const isCurrentServer = server?.host == currentServer?.host;
 
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
@@ -166,15 +168,29 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
         <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
-          <Button
-            alignSelf='center'
-            size="$6"
-            circular
-            icon={ChevronDown}
-            onPress={() => {
-              setOpen(false)
-            }}
-          />
+          <ZStack h='$6'>
+            <XStack ai='center' h='100%' px={mediaQuery.gtXs ? '$4' : '$1'}>
+              <ServerNameAndLogo server={server} />
+              <XStack f={1} />
+              {isCurrentServer
+                ? undefined
+                : <>
+                  <Paragraph size='$1' o={0.5}> via</Paragraph>
+                  <XStack o={0.5}>
+                    <ServerNameAndLogo server={currentServer} />
+                  </XStack>
+                </>}
+            </XStack>
+            <Button
+              alignSelf='center'
+              size="$6"
+              circular
+              icon={ChevronDown}
+              onPress={() => {
+                setOpen(false)
+              }}
+            />
+          </ZStack>
           {accountsOnServer.length > 0
             ? <XStack marginHorizontal='auto' marginVertical='$3'>
               {/* <Tooltip placement="bottom">
