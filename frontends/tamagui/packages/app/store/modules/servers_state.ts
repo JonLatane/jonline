@@ -92,22 +92,15 @@ setTimeout(async () => {
   }
 
   if (!store.getState().servers.currentServerId) {
-    let initialServer: JonlineServer;
-    if (Platform.OS == 'web' && globalThis.window?.location) {
-      const domain = //backendHost && backendHost != ''
-        //? backendHost
-        //: 
-        window.location.hostname;
-      initialServer = {
-        host: domain,
+    const initialServer: JonlineServer = Platform.OS == 'web' && globalThis.window?.location
+      ? {
+        host: window.location.hostname,
         secure: window.location.protocol === 'https:',
       }
-    } else {
-      initialServer = {
+      : {
         host: 'jonline.io',
         secure: true,
       };
-    }
 
     initializeWithServer(initialServer);
   }
