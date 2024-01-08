@@ -126,7 +126,7 @@ function initializeWithServer(initialServer: JonlineServer) {
         // debugger;
         if (!server) {
           console.warn('polling for initial server configuration');
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
       // debugger;
