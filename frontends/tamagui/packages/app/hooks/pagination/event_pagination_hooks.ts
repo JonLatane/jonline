@@ -7,16 +7,17 @@ import { optServerID } from '../../store/modules/servers_state';
 import { PaginationResults } from "./pagination_hooks";
 import { PostPageParams, finishPagination, onPageLoaded } from "./post_pagination_hooks";
 
-export type EventPageParams = PostPageParams & { filter?: TimeFilter };
+export type EventPageParams = PostPageParams & { timeFilter?: TimeFilter };
 
 export function useEventPages(
   listingType: EventListingType,
   selectedGroup: FederatedGroup | undefined,
+  params?: EventPageParams,
 ): PaginationResults<FederatedEvent> {
   const [currentPage, setCurrentPage] = useState(0);
 
-  const mainPostPages = useServerEventPages(listingType, currentPage);
-  const groupPostPages = useGroupEventPages(selectedGroup, currentPage);
+  const mainPostPages = useServerEventPages(listingType, currentPage, params);
+  const groupPostPages = useGroupEventPages(selectedGroup, currentPage, params);
 
   return selectedGroup
     ? groupPostPages
@@ -33,12 +34,11 @@ export function useServerEventPages(
   const eventsState = useRootSelector((state: RootState) => state.events);
   const [loading, setLoadingEvents] = useState(false);
 
-  const timeFilter = serializeTimeFilter(params?.filter);
+  const timeFilter = serializeTimeFilter(params?.timeFilter);
 
   const results: FederatedEvent[] = getEventPages(eventsState, listingType, timeFilter, throughPage, servers);
 
   const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0, servers);
-  // debugger;
   useEffect(() => {
     if (!loading && someUnloaded(eventsState.pagesStatus, servers)) {
       setLoadingEvents(true);
@@ -52,7 +52,7 @@ export function useServerEventPages(
     // dispatch(loadEventsPage({ ...accountOrServer, listingType, filter: params?.filter })).then(onPageLoaded(setLoadingEvents, params?.onLoaded));
     console.log('Reloading events for servers', servers.map(s => s.server?.host));
     Promise.all(servers.map(server =>
-      dispatch(loadEventsPage({ ...server, listingType })))
+      dispatch(loadEventsPage({ ...server, listingType, filter: params?.timeFilter })))
     ).then((results) => {
       console.log("Loaded events", results);
       finishPagination(setLoadingEvents);
@@ -74,7 +74,7 @@ export function useGroupEventPages(
   const [loading, setLoadingEvents] = useState(false);
 
 
-  const timeFilter = serializeTimeFilter(params?.filter);
+  const timeFilter = serializeTimeFilter(params?.timeFilter);
 
   const results: FederatedEvent[] = getGroupEventPages(state, group, timeFilter, throughPage);
 
@@ -91,7 +91,7 @@ export function useGroupEventPages(
   const hasMorePages = getHasMoreGroupEventPages(state.groups, group, timeFilter, throughPage);
 
   const reload = () => {
-    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId: group.id!, filter: params?.filter }))
+    dispatch(loadGroupEventsPage({ ...accountOrServer, groupId: group.id!, filter: params?.timeFilter }))
       .then(onPageLoaded(setLoadingEvents));
   }
 

@@ -62,6 +62,7 @@ export function getHasGroupEventsPage(state: RootState, group: FederatedGroup, t
   const { events, groups } = state;
   const groupId = federatedId(group);
   const data = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page];
+  // debugger;
   return data != undefined// && instancesToEvents(events, data).length > 0;
 }
 

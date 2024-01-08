@@ -364,6 +364,13 @@ export const EventCard: React.FC<Props> = ({
       : undefined}
     {/* </YStack> */}
   </>;
+
+  const shrinkServerInfo = isPreview || !mediaQuery.gtXxxs;
+  const serverInfoView = showServerInfo
+    ? <XStack my='auto' w={shrinkServerInfo ? '$4' : undefined} h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
+      <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
+    </XStack>
+    : undefined;
   const headerLinksView = <YStack f={1} key='header-links-view'>
     {isPreview
       ? <>
@@ -372,6 +379,7 @@ export const EventCard: React.FC<Props> = ({
             <YStack f={1}>
               <Heading size="$7" marginRight='auto'>{title}</Heading>
             </YStack>
+            {serverInfoView}
           </XStack>
         </Anchor>
         {postLinkView}
@@ -384,6 +392,7 @@ export const EventCard: React.FC<Props> = ({
           <YStack f={1} my='auto'>
             <Heading size="$7" marginRight='auto'>{title}</Heading>
           </YStack>
+          {serverInfoView}
           {instanceModeButton}
         </XStack>
         {postLinkView}
@@ -400,12 +409,15 @@ export const EventCard: React.FC<Props> = ({
         </XStack>
       </>}
   </YStack>;
+
   const headerLinksEdit = <YStack f={1} space='$2' key='header-links-edit'>
     <XStack w='100%' space='$2'>
       <Input f={1} textContentType="name" placeholder={`Event Title (required)`}
         disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
         value={editedTitle}
         onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
+
+      {serverInfoView}
       {instanceModeButton}
     </XStack>
     <XStack w='100%'>
@@ -607,7 +619,6 @@ export const EventCard: React.FC<Props> = ({
     return result;
   }
 
-  const shrinkServerInfo = isPreview || !mediaQuery.gtXxxs;
 
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
@@ -637,11 +648,11 @@ export const EventCard: React.FC<Props> = ({
                     </YStack>
                   </YStack>
 
-                  {showServerInfo
+                  {/* {showServerInfo
                     ? <XStack my='auto' w={shrinkServerInfo ? '$4' : undefined} h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
                       <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
                     </XStack>
-                    : undefined}
+                    : undefined} */}
                 </XStack>
                 {!isPreview && (instances.length > 1 || editing)
                   ? <XStack key='instances' w='100%' mt='$2' space>

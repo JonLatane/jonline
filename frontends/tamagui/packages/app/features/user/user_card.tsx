@@ -1,5 +1,5 @@
 import { Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, useMedia, useTheme } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, standardHorizontalAnimation, useMedia, useTheme } from '@jonline/ui';
 import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
@@ -102,11 +102,13 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         :
         <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>}
     </YStack>
-    {showServerInfo
-      ? <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'}>
-        <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs} />
-      </XStack>
-      : undefined}
+    {/* {showServerInfo
+      ?  */}
+    <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} animation='standard'
+      o={showServerInfo ? 1 : 0} >
+      <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs} />
+    </XStack>
+    {/* : undefined} */}
   </XStack>;
 
 
@@ -207,7 +209,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         y={0}
       >
         <Card.Header>
-          <XStack w='100%' space='$1' ai={showServerInfo ? 'center' : undefined}>
+          <XStack w='100%' space='$1' ai='center'>
             {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
                 {usernameRegion}

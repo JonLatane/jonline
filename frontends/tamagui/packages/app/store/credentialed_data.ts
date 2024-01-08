@@ -80,8 +80,8 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
             console.log("loaded current user");
             updatedAccount = { ...account, user, lastSyncFailed: false, needsReauthentication: false };
             store.dispatch(accountsSlice.actions.upsertAccount(account));
-          }).catch(() => {
-            console.log("failed to load current user");
+          }).catch((e) => {
+            console.error("failed to load current user", account.user.username, account.accessToken.token, e);
             updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
             store.dispatch(accountsSlice.actions.upsertAccount(account));
             store.dispatch(accountsSlice.actions.selectAccount(undefined))

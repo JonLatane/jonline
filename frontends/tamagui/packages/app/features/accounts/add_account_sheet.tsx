@@ -44,7 +44,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
   const currentServer = useServer();
   const server = specifiedServer ?? currentServer;
   const isCurrentServer = server?.host == currentServer?.host;
-  const serverLink = useLink({ href: server ? `http://${server.host}` : ''});
+  const serverLink = useLink({ href: server ? `http://${server.host}` : '' });
 
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
@@ -128,11 +128,13 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
   useEffect(() => {
     if (accountsLoading && !forceDisableAccountButtons) {
       setForceDisableAccountButtons(true);
+    } else if (!accountsLoading && forceDisableAccountButtons) {
+      setForceDisableAccountButtons(false);
     }
     if (!addingAccount && accountsOnServer.length == 0) {
       setAddingAccount(true);
     }
-  });
+  }, [accountsLoading, forceDisableAccountButtons, addingAccount, accountsOnServer.length]);
   // if (accountsState.successMessage) {
   //   setTimeout(() => {
   //     // setOpen(false);
@@ -247,7 +249,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
                 </Tooltip.Content>
               </Tooltip> */}
             </XStack>
-            : <Heading size='$10' ml='$5'>Add Account</Heading>}
+            : <Heading size='$9' ml='$5'>Add Account</Heading>}
           <Sheet.ScrollView>
             <YStack space="$2" maw={600} w='100%' pb='$2' als='center' paddingHorizontal="$5">
               {addingAccount

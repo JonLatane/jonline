@@ -45,7 +45,7 @@ export const replyToPost: AsyncThunk<Post, ReplyToPost, any> = createAsyncThunk<
   async (request) => {
     const client = await getCredentialClient(request);
     const newPost: Post = Post.fromPartial({
-      replyToPostId: request.postIdPath[request.postIdPath.length - 1],
+      replyToPostId: request.postIdPath[request.postIdPath.length - 1]?.split('@')[0]!,
       content: request.content,
       media: request.media,
     });

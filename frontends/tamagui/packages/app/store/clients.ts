@@ -62,7 +62,11 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
 
   const { client, serviceVersion, serverConfiguration } = configuredClient;
   const updatedServer = { ...server, serviceVersion, serverConfiguration };
-  if (!args?.skipUpsert && (server.serviceVersion != serviceVersion || server.serverConfiguration != serverConfiguration)) {
+  const latestServer = store.getState().servers.entities[serverId];
+  if (!args?.skipUpsert && (
+    JSON.stringify(latestServer?.serviceVersion) !== JSON.stringify(serviceVersion) ||
+    JSON.stringify(latestServer?.serverConfiguration) !== JSON.stringify(serverConfiguration)
+  )) {
     console.log("getServerClient: upserting server", updatedServer);
     store.dispatch(upsertServer(updatedServer));
   };

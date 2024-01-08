@@ -22,9 +22,9 @@ export function useUsersPage(
   }
 
   const state = useAppSelector(state => state.users);
-  const users = getUsersPage(state, listingType, page, servers);
+  const {users, hadUndefinedServers} = getUsersPage(state, listingType, page, servers);
   useEffect(() => {
-    if (users == undefined && !loadingUsers) {
+    if (hadUndefinedServers && !loadingUsers) {
       console.log("Loading users...");
       setLoadingUsers(true);
       reloadUsers();
@@ -32,7 +32,7 @@ export function useUsersPage(
   }, [users, loadingUsers]);
 
   return {
-    results: users ?? [],
+    results: users,
     loading: loadingUsers,
     reload: reloadUsers,
     firstPageLoaded: users !== undefined,

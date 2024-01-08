@@ -486,7 +486,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     Jonline servers can federate with each other (via a particular pattern I'm dubbing "micro-federation" that means "no server-to-server needed").
                     This surfaces to users as "recommended servers," "servers" (or "added servers"), and "pinned servers" in the navigation (for pinned servers) and the account section of their UI. 
                     Jonline as a protocol is designed so that servers don't really need to talk to each other much; the federation sits mostly on the client-side
-                    and is backed by DNS{window.location.toString().startsWith('https') ? ', TLS, ' : ' '},
+                    and is backed by DNS{window.location.toString().startsWith('https') ? ', TLS, ' : ' '}
                     and CORS. (Strict CORS is not yet implemented for Jonline's Tonic/gRPC or Rocket/HTTP servers; this would be{' '}
                     <Anchor ai='center' size='$1' href='https://github.com/JonLatane/jonline/issues/2' color={navAnchorColor}>
                       a good first issue for new GitHub/FOSS contributors

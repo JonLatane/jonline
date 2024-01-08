@@ -98,25 +98,15 @@ setTimeout(async () => {
 
 function initializeWithServer(initialServer: JonlineServer) {
   getServerClient(initialServer).then(async () => {
-    debugger;
-    const getServersState = () => store.getState().servers;
-    if (!getServersState().currentServerId) {
-      let server = getServersState().entities[serverID(initialServer)];
-      while (!server) {
-        const entities = getServersState().entities;
-        const initialServerId = serverID(initialServer);
-        server = entities[initialServerId];
-        // debugger;
-        if (!server) {
-          console.warn('polling for initial server configuration');
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+    if (!store.getState().servers.currentServerId) {
+      const getPrimaryServer = () => store.getState().servers.entities[serverID(initialServer)];
+      while (!getPrimaryServer()) {
+        console.warn('polling for initial server configuration');
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      // debugger;
+      const server = getPrimaryServer();
       store.dispatch(selectServer(server));
-      debugger;
 
-      // debugger;
       const federatedServers: FederatedServer[] = server?.serverConfiguration?.federationInfo?.servers?.length ?? 0 > 0
         ? server!.serverConfiguration!.federationInfo!.servers
         : (server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? []).map(host => ({ host, configuredByDefault: true, pinnedByDefault: true }));

@@ -53,7 +53,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   });
 
   const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
-    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup);
+    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
   const pagination = usePaginatedRendering(allEvents, 7);
   const paginatedEvents = pagination.results;
@@ -158,7 +158,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' px='$3' maw={maxWidth} space>
 
-        {firstPageLoaded
+        {firstPageLoaded || allEvents.length > 0
           ? allEvents.length == 0
             ? <YStack width='100%' maw={600} jc="center" ai="center">
               <Heading size='$5' mb='$3'>No events found.</Heading>

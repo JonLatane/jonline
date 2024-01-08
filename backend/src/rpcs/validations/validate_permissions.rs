@@ -49,7 +49,11 @@ pub fn validate_any_group_permission(
     permissions: Vec<Permission>,
 ) -> Result<(), Status> {
     let proto_permissions = match membership {
-        Some(m) if (*m).passes() => m.permissions.to_proto_permissions(),
+        Some(m) if (*m).passes() => {
+            let mut result = m.permissions.to_proto_permissions();
+            result.append(&mut group.non_member_permissions.to_proto_permissions());
+            result
+        },
         _ => group.non_member_permissions.to_proto_permissions(),
     };
 

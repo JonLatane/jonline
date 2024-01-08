@@ -1,5 +1,5 @@
 import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
-import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useAccount, useAppDispatch, useLocalConfiguration } from 'app/hooks';
@@ -182,8 +182,10 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   useEffect(() => {
     if (accountsLoading && !forceDisableAccountButtons) {
       setForceDisableAccountButtons(true);
+    } else if (!accountsLoading && forceDisableAccountButtons) {
+      setForceDisableAccountButtons(false);
     }
-  }, [accountsLoading, !forceDisableAccountButtons]);
+  }, [accountsLoading, forceDisableAccountButtons]);
 
   // useEffect(() => {
   //   if (serversState.successMessage) {
@@ -236,91 +238,42 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     ? AlertTriangle :
     account ? UserIcon : LogIn;
 
+    const avatarSize = 22;
   return (
     <>
-      {circular && avatarUrl && avatarUrl != ''
-        ?
-        <Anchor
-          my='auto'
-          px={0}
-          // mr={-10}
-          transform={[{ translateX: 5 }]}
-          ml='$1'
-          onPress={() => setOpen((x) => !x)}>
-          <ZStack w={48} h={48}>
-            <XStack w={48} h={48}
-              o={serversDiffer || browsingOnDiffers ? 0.6 : 1}
-              ml={-5}
-              mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
+      <Button
+        my='auto'
+        size={size}
+        {...themedButtonBackground(navColor, navTextColor)}
+        // backgroundColor={navColor}
+        h='auto'
+        icon={serversDiffer || browsingOnDiffers ? AlertTriangle : undefined}
+        borderBottomLeftRadius={0} borderBottomRightRadius={0}
+        px='$2'
+        onPress={() => setOpen((x) => !x)}
+      >
+        {/* <XStack w='100%'> */}
+          {(avatarUrl && avatarUrl != '') ?
+
+            <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
               <Image
                 pos="absolute"
-                width={48}
-                // opacity={0.25}
-                height={48}
-                borderRadius={24}
-                // mr={-5}
+                width={avatarSize}
+                height={avatarSize}
+                borderRadius={avatarSize/2}
                 resizeMode="cover"
                 als="flex-start"
-                source={{ uri: avatarUrl, width: 48, height: 48 }}
-              // blurRadius={1.5}
-              // borderRadius={5}
+                source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
               />
             </XStack>
-            {serversDiffer || browsingOnDiffers
-              ? <XStack pointerEvents='none' transform={[{ translateX: -15 }, { translateY: 25 }]}>
-                <AlertTriangle color={primaryTextColor} />
-              </XStack>
-              : undefined}
-          </ZStack>
-        </Anchor>
-        : <Button
-          my='auto'
-          size={size}
-          icon={
-            circular
-              ? userIcon
-              : open
-                ? XIcon
-                : serversDiffer || browsingOnDiffers
-                  ? AlertTriangle
-                  : avatarUrl && avatarUrl != ''
-                    ? undefined
-                    : ChevronDown
-          }
-          circular={circular}
-          // color={serversDiffer || browsingOnDiffers ? warningAnchorColor : undefined}
-          onPress={() => setOpen((x) => !x)}
+            : undefined}
+          <YStack f={1}>
+            <Paragraph size='$1' color={navTextColor} o={account ? 1 : 0.5} whiteSpace='nowrap' textOverflow='ellipses'>{account?.user?.username ?? 'anonymous'}</Paragraph>
+          </YStack>
+          <AtSign size='$1' color={navTextColor} />
 
-        >
-          {circular ? undefined :
-            <>
-              {(avatarUrl && avatarUrl != '') ?
-
-                <XStack w={26} h={26}
-                  ml={-5}
-                  mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
-                  <Image
-                    pos="absolute"
-                    width={26}
-                    // opacity={0.25}
-                    height={26}
-                    borderRadius={13}
-                    resizeMode="cover"
-                    als="flex-start"
-                    source={{ uri: avatarUrl, width: 26, height: 26 }}
-                  // blurRadius={1.5}
-                  // borderRadius={5}
-                  />
-                </XStack>
-                : undefined}
-              <YStack>
-                {server ? <Heading transform={[{ translateY: server ? 2 : 0 }]} size='$1'>{server.host}/</Heading> : undefined}
-                {account ? <Heading transform={[{ translateY: -2 }]} size='$7' space='$0'>{account.user.username}</Heading> : undefined}
-              </YStack>
-            </>
-          }
-        </Button>
-      }
+        {/* </XStack> */}
+      </Button>
       <Sheet
         modal
         open={open}

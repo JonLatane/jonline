@@ -73,7 +73,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   >
     <AnimatePresence>
       {show ? <>
-        <Button key='pinned-server-toggle' py='$1' h='auto' onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))}>
+        <Button key='pinned-server-toggle' py='$1' h='auto' borderRadius={0} onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))}>
           <XStack mr='auto'>
             <Paragraph my='auto' size='$1'>
               From {shortServerName} and {pinnedServerCount} of {totalServerCount} other {totalServerCount === 1 ? 'server' : 'servers'}
@@ -192,7 +192,7 @@ export function PinnableServer({ server, pinnedServer }: PinnableServerProps) {
             <Paragraph f={1} size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipse" color={pinned ? navTextColor : undefined} o={pinnedAccount ? 1 : 0.5}>
               {pinnedAccount
                 ? pinnedAccount?.user.username
-                : 'anonymous (signed out)'}
+                : 'anonymous'}
             </Paragraph>
             <AtSign size='$1' color={pinned ? navTextColor : undefined} />
           </XStack>

@@ -68,14 +68,13 @@ export function TabsNavigation({
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
-  const shrinkHomeButton = !mediaQuery.gtMd && (
+  const shrinkHomeButton = false;/*!mediaQuery.gtMd && (
     selectedGroup != undefined ||
     appSubsection == AppSubsection.FOLLOW_REQUESTS ||
     (app.inlineFeatureNavigation === true && !mediaQuery.gtSm)
-  );
+  );*/
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
   const showHomeIcon = serverNameEmoji == undefined && !canUseLogo && shrinkHomeButton;
-  const renderHomeButtonChildren = !shrinkHomeButton || serverNameEmoji || canUseLogo;
   const recentGroupIds = useRootSelector((state: RootState) => server
     ? state.app.serverRecentGroups?.[serverID(server)] ?? []
     : []);
@@ -104,27 +103,30 @@ export function TabsNavigation({
         <YStack backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
           <StickyBox style={{ zIndex: 10, width: '100%' }} className='blur'>
             <YStack backgroundColor={backgroundColor} opacity={0.92}>
-              <XStack space="$1" marginVertical={5}>
-                <XStack w={5} />
-                <Button //size="$4"
-                  id="home-button"
-                  py={0}
-                  px={
-                    shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
-                      !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
-                  height={48}
-                  width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
+              <XStack space="$1" my='$1' ml='$1'>
+                {/* <XStack w={5} /> */}
+                <YStack>
+                  <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} />
+                  <Button //size="$4"
+                    id="home-button"
+                    py={0}
+                    px={
+                      shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
+                        !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
+                    height='auto'
+                    borderTopLeftRadius={0} borderTopRightRadius={0}
+                    width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
 
-                  overflow='hidden'
-                  icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
-                  {...homeProps}
-                >
-                  {renderHomeButtonChildren
-                    ? <ServerNameAndLogo shrinkToSquare={shrinkHomeButton}
+                    overflow='hidden'
+                    icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
+
+                    {...homeProps}
+                  >
+                    <ServerNameAndLogo shrinkToSquare={shrinkHomeButton}
                       fallbackToHomeIcon
                       server={primaryServer} />
-                    : undefined}
-                </Button>
+                  </Button>
+                </YStack>
                 {!scrollGroupsSheet
                   ? <XStack space='$2' ml='$1' my='auto' id='main-groups-button'>
                     <GroupsSheet key='main' selectedGroup={selectedGroup}
@@ -147,7 +149,7 @@ export function TabsNavigation({
                   <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
                 </ScrollView>
                 <XStack f={1} />
-                <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} />
+                {/* <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} /> */}
                 <XStack w={5} />
               </XStack>
 
