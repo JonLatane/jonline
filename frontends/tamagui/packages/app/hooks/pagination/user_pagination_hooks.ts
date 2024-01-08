@@ -24,7 +24,7 @@ export function useUsersPage(
   const state = useAppSelector(state => state.users);
   const {users, hadUndefinedServers} = getUsersPage(state, listingType, page, servers);
   useEffect(() => {
-    if (hadUndefinedServers && !loadingUsers) {
+    if (listingType === UserListingType.EVERYONE && hadUndefinedServers && !loadingUsers) {
       console.log("Loading users...");
       setLoadingUsers(true);
       reloadUsers();

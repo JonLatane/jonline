@@ -28,6 +28,7 @@ export type TabsNavigationProps = {
   withServerPinning?: boolean;
 };
 
+export const tabNavBaseHeight = 63;
 
 export function TabsNavigation({
   children,

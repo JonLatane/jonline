@@ -68,7 +68,7 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
     JSON.stringify(latestServer?.serverConfiguration) !== JSON.stringify(serverConfiguration)
   )) {
     console.log("getServerClient: upserting server", updatedServer);
-    store.dispatch(upsertServer(updatedServer));
+    setTimeout(() => store.dispatch(upsertServer(updatedServer)), 1);
   };
   args?.onServerConfigured?.(updatedServer);
 

@@ -39,13 +39,16 @@ export function useServerEventPages(
   const results: FederatedEvent[] = getEventPages(eventsState, listingType, timeFilter, throughPage, servers);
 
   const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0, servers);
+  const someUnloadedServers = someUnloaded(eventsState.pagesStatus, servers);
+  console.log('useServerEventPages', firstPageLoaded, someUnloadedServers);
+  // debugger;
   useEffect(() => {
-    if (!loading && someUnloaded(eventsState.pagesStatus, servers)) {
+    if (!loading && (someUnloadedServers || !firstPageLoaded)) {
       setLoadingEvents(true);
       console.log("Loading events...");
       reload();
     }
-  }, [loading, eventsState.pagesStatus, servers.map(s => s.server?.host).join(',')]);
+  }, [loading, eventsState.pagesStatus, servers.map(s => s.server?.host).join(','), firstPageLoaded, someUnloadedServers]);
   const hasMorePages = getHasMoreEventPages(eventsState, listingType, timeFilter, throughPage, servers);
 
   function reload() {

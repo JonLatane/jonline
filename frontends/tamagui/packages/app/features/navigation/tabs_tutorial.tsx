@@ -114,7 +114,7 @@ export function TabsTutorial({ }) {
 
   const isInDarkMode = darkModeAuto ? doesPlatformPreferDarkMode() : darkMode;
   return <AnimatePresence>
-    {showHelp
+    {showHelp && false
       ? <ZStack w='100%' h={height} animation='standard' {...standardAnimation} mt='$3' pt='$2'>
         <XStack w='100%' ai='center' space='$2' animation='standard' o={hidingStarted ? 0 : showPhase1 ? 1 : 0}>
           <YStack space='$1' ai='center' jc='center' ac='center' ml={homeButtonWidth + ((groupsButtonWidth - 20) / 2) - 5} >

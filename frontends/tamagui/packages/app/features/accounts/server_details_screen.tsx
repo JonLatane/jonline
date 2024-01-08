@@ -14,7 +14,7 @@ import { MediaRef } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
 import { AppSection } from '../navigation/features_navigation';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { TabsNavigation } from '../navigation/tabs_navigation';
+import { TabsNavigation, tabNavBaseHeight } from '../navigation/tabs_navigation';
 import { RecommendedServer } from './recommended_server';
 import ServerCard from './server_card';
 import { SingleMediaChooser } from './single_media_chooser';
@@ -264,7 +264,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
   return (
     <TabsNavigation appSection={AppSection.INFO} onlyShowServer={server}>
-      <StickyBox offsetTop={56} className='blur' style={{ width: '100%', zIndex: 10 }}>
+      <StickyBox offsetTop={tabNavBaseHeight} className='blur' style={{ width: '100%', zIndex: 10 }}>
         <XStack w='100%'>
           {sectionButton('about', 'About', <Info color={section === 'about' ? navAnchorColor : undefined} />)}
           {sectionButton('theme', 'Theme', <Palette color={section === 'theme' ? navAnchorColor : undefined} />)}

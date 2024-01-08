@@ -14,7 +14,7 @@ import { standardHorizontalAnimation } from '../../../ui/src/animations';
 import { supportDateInput, toProtoISOString } from '../event/create_event_sheet';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
-import { TabsNavigation } from '../navigation/tabs_navigation';
+import { TabsNavigation, tabNavBaseHeight } from '../navigation/tabs_navigation';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { StickyCreateButton } from './sticky_create_button';
@@ -122,7 +122,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       withServerPinning
     >
       <NavigationContextConsumer>
-        {(navContext) => <StickyBox key='filters' offsetTop={56 + (navContext?.pinnedServersHeight ?? 0)} className='blur' style={{ width: '100%', zIndex: 10 }}>
+        {(navContext) => <StickyBox key='filters' offsetTop={tabNavBaseHeight + (navContext?.pinnedServersHeight ?? 0)} className='blur' style={{ width: '100%', zIndex: 10 }}>
           <YStack w='100%' px='$2' key='filter-toolbar'>
 
             <XStack w='100%'>
