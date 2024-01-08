@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, 
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { useAppDispatch, useEventPages, usePaginatedRendering, usePostPages } from 'app/hooks';
 import { FederatedGroup, RootState, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
-import { setDocumentTitle } from 'app/utils';
+import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 import { useLink } from 'solito/link';
@@ -96,8 +96,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 </XStack>
               </Button>
               {/* <XStack f={1} /> */}
-              <Button ml='auto' transparent backgroundColor={navColor}
-                hoverStyle={{ backgroundColor: navColor }}
+              <Button ml='auto' transparent {...themedButtonBackground(navColor)}
                 {...eventsLink}>
                 {/* <ChevronRight color={navTextColor} /> */}
                 <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
