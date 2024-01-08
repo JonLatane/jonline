@@ -23,16 +23,24 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
   const selectedAccountId = selectedAccount ? accountID(selectedAccount) : currentAccountId;
   const selected = selectedAccountId == accountID(account);
 
+  const currentServer = currentAccountOrServer.server;
+  const isCurrentServer = currentServer &&
+    serverID(currentServer) == serverID(account.server);
   // const primaryColorInt = account.server.serverConfiguration?.serverInfo?.colors?.primary;
   // const navColorInt = account.server.serverConfiguration?.serverInfo?.colors?.navigation;
   // const primaryColor = `#${(primaryColorInt)?.toString(16).slice(-6) || '424242'}`;
-  const profileLink = useLink({ href: `/${account.user.username}` });
+
+  const profileLink = useLink({
+    href: isCurrentServer
+      ? `/${account.user.username}`
+      : `/${account.user.username}@${account.server.host}`
+  });
   const profileLinkProps = {
     ...profileLink,
     onPress: (e) => {
-      if (account.needsReauthentication) {
+      // if (account.needsReauthentication) {
         e.stopPropagation();
-      }
+      // }
       profileLink.onPress?.(e);
       onProfileOpen?.();
     }
@@ -51,9 +59,6 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
   // const primaryAnchorColor = !darkMode ? primaryColorMeta.darkColor : primaryColorMeta.lightColor;
   // const navAnchorColor = !darkMode ? navColorMeta.darkColor : navColorMeta.lightColor;
 
-  const currentServer = currentAccountOrServer.server;
-  const isCurrentServer = currentServer &&
-    serverID(currentServer) == serverID(account.server);
 
   function doSelectAccount() {
     if (account.needsReauthentication && onReauthenticate) {

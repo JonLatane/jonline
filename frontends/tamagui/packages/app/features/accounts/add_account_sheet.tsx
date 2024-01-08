@@ -92,6 +92,8 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
     })).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
+      } else {
+        setForceDisableAccountButtons(false);
       }
     });
   }
@@ -105,6 +107,8 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
     })).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
+      } else {
+        setForceDisableAccountButtons(false);
       }
     });
   }
@@ -124,21 +128,21 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
       setAddingAccount(true);
     }
   });
-  if (accountsState.successMessage) {
-    setTimeout(() => {
-      // setOpen(false);
-      setTimeout(() => {
-        dispatch(clearAccountAlerts());
-        // setNewAccountUser('');
-        // setNewAccountPass('');
-        // setForceDisableAccountButtons(false);
-        // setLoginMethod(undefined);
-        // setReauthenticating(false);
-      }, 1000);
-    }, 1500);
-  } else if (accountsState.errorMessage && forceDisableAccountButtons) {
-    setForceDisableAccountButtons(false);
-  }
+  // if (accountsState.successMessage) {
+  //   setTimeout(() => {
+  //     // setOpen(false);
+  //     setTimeout(() => {
+  //       dispatch(clearAccountAlerts());
+  //       // setNewAccountUser('');
+  //       // setNewAccountPass('');
+  //       // setForceDisableAccountButtons(false);
+  //       // setLoginMethod(undefined);
+  //       // setReauthenticating(false);
+  //     }, 1000);
+  //   }, 1500);
+  // } else if (accountsState.errorMessage && forceDisableAccountButtons) {
+  //   setForceDisableAccountButtons(false);
+  // }
   // console.log('rerender')
   const onPress = () => setOpen((x) => !x);
   return (
@@ -308,10 +312,13 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                 : accountsOnServer.length > 0 ? <>
                   {/* <Heading size="$7" paddingVertical='$2'>Choose Account</Heading> */}
                   {accountsOnServer.map((account) =>
-                    <AccountCard account={account} key={accountID(account)} totalAccounts={accountsOnServer.length}
-                      selectedAccount={selectedAccount}
-                      onPress={onAccountSelected ? () => onAccountSelected(account) : undefined}
-                      onReauthenticate={reauthenticateAccount} />)}
+                    <YStack key={accountID(account)} mb='$2'>
+                      <AccountCard account={account}
+                        totalAccounts={accountsOnServer.length}
+                        selectedAccount={selectedAccount}
+                        onPress={onAccountSelected ? () => onAccountSelected(account) : undefined}
+                        onReauthenticate={reauthenticateAccount} />
+                    </YStack>)}
                 </>
                   : undefined}
             </YStack>

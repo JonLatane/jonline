@@ -87,7 +87,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
         <AnimatePresence>
-          {(eventsLoaded && postsLoaded) || allEvents.length > 0
+          {(eventsLoaded || postsLoaded) || allEvents.length > 0
             ? <XStack key='latest-events-header' w='100%' px='$3'>
               <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
                 <Heading size='$6'>Upcoming Events</Heading>
@@ -108,37 +108,39 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               {/* <XStack my='auto'><DarkModeToggle /></XStack> */}
             </XStack>
             : undefined}
-          {showEventsOnLatest && ((eventsLoaded && postsLoaded) || allEvents.length > 0) ?
-            <YStack key='latest-events'
-              w='100%'
-              // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
-              // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
-              animation='standard'
-              {...standardAnimation}
-            >
-              {allEvents.length == 0
-                ? eventsLoaded
-                  ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                    <Heading size='$5' mb='$3'>No events found.</Heading>
-                    <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                  </YStack>
-                  : undefined
-                : <ScrollView horizontal w='100%'>
-                  <XStack w={eventCardWidth} space='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
-                    {paginatedEvents.map((event) =>
-                      <XStack key={`event-preview-${event.id}-${event.instances[0]!.id}`} pb='$5' animation='standard' {...standardHorizontalAnimation}>
-                        <EventCard event={event} isPreview horizontal xs />
-                      </XStack>)}
-                    <Button my='auto' p='$5' mx='$3' h={200} {...eventsLink}>
-                      <YStack ai='center' py='$3' jc='center'>
-                        <Heading size='$4'>More</Heading>
-                        <Heading size='$5'>Events</Heading>
-                        <ChevronRight />
-                      </YStack>
-                    </Button>
-                  </XStack>
-                </ScrollView>}
-            </YStack>
+          {showEventsOnLatest ?
+            ((eventsLoaded && postsLoaded) || allEvents.length > 0) ?
+              <YStack key='latest-events'
+                w='100%'
+                // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
+                // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
+                animation='standard'
+                {...standardAnimation}
+              >
+                {allEvents.length == 0
+                  ? eventsLoaded
+                    ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                      <Heading size='$5' mb='$3'>No events found.</Heading>
+                      <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                    </YStack>
+                    : undefined
+                  : <ScrollView horizontal w='100%'>
+                    <XStack w={eventCardWidth} space='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
+                      {paginatedEvents.map((event) =>
+                        <XStack key={`event-preview-${event.id}-${event.instances[0]!.id}`} pb='$5' animation='standard' {...standardHorizontalAnimation}>
+                          <EventCard event={event} isPreview horizontal xs />
+                        </XStack>)}
+                      <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
+                        <YStack ai='center' py='$3' jc='center'>
+                          <Heading size='$4'>More</Heading>
+                          <Heading size='$5'>Events</Heading>
+                          <ChevronRight />
+                        </YStack>
+                      </Button>
+                    </XStack>
+                  </ScrollView>}
+              </YStack>
+              : <Spinner color={navColor} />
             : undefined}
         </AnimatePresence>
 

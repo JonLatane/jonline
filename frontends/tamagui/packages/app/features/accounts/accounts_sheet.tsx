@@ -4,7 +4,7 @@ import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useAccount, useAppDispatch, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineAccount, JonlineServer, RootState, accountID, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { Platform, TextInput } from 'react-native';
@@ -115,16 +115,43 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
   const recommendedServerHosts = recommendedServerHostsUnfiltered
     .filter(host => !currentServerHosts.includes(host));
   const [authError, setAuthError] = useState(undefined as string | undefined);
+
+  async function onAccountAdded() {
+    setAddingAccount(false);
+
+    setNewAccountUser('');
+    setNewAccountPass('');
+    setForceDisableAccountButtons(false);
+    setLoginMethod(undefined);
+    setReauthenticating(false);
+
+    setTimeout(() => setOpen(false), 600);
+
+    const accountEntities = store.getState().accounts.entities;
+    const account = store.getState().accounts.ids.map((id) => accountEntities[id])
+      .find(a => a && a.user.username === newAccountUser && a.server.host === server?.host);
+
+    if (account) {
+      // if (onAccountSelected) {
+      //   onAccountSelected(account);
+      // }
+    } else {
+      console.warn("Account not found after adding it. This is a bug.");
+    }
+  }
+
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
       ...primaryServer!,
       username: newAccountUser,
       password: newAccountPass,
-    })).then(r => {
-      console.log('login success', r)
-    }).catch(e => {
-      console.log('login error', e)
+    })).then(action => {
+      if (actionSucceeded(action)) {
+        onAccountAdded();
+      } else {
+        setForceDisableAccountButtons(false);
+      }
     });
   }
   function createServerAccount() {
@@ -133,7 +160,13 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
       ...primaryServer!,
       username: newAccountUser,
       password: newAccountPass,
-    }));
+    })).then(action => {
+      if (actionSucceeded(action)) {
+        onAccountAdded();
+      } else {
+        setForceDisableAccountButtons(false);
+      }
+    });
   }
 
   const accountsLoading = accountsState.status == 'loading';
@@ -149,34 +182,34 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
     }
   }, [accountsLoading, !forceDisableAccountButtons]);
 
-  useEffect(() => {
-    if (serversState.successMessage) {
-      setTimeout(() => {
-        setNewServerHost('');
-        setNewServerSecure(true);
-        dispatch(clearServerAlerts());
-        setAddingServer(false);
-      }, 1000);
-    }
-  }, [serversState.successMessage]);
+  // useEffect(() => {
+  //   if (serversState.successMessage) {
+  //     setTimeout(() => {
+  //       setNewServerHost('');
+  //       setNewServerSecure(true);
+  //       dispatch(clearServerAlerts());
+  //       setAddingServer(false);
+  //     }, 1000);
+  //   }
+  // }, [serversState.successMessage]);
 
-  useEffect(() => {
-    if (accountsState.successMessage) {
-      setTimeout(() => {
-        setAddingAccount(false);
-        setOpen(false);
-        setTimeout(() => {
-          dispatch(clearAccountAlerts());
-          setNewAccountUser('');
-          setNewAccountPass('');
-          setForceDisableAccountButtons(false);
-          setLoginMethod(undefined);
-        }, 1000);
-      }, 1500);
-    } else if (accountsState.errorMessage && forceDisableAccountButtons) {
-      setForceDisableAccountButtons(false);
-    }
-  }, [accountsState.successMessage, accountsState.errorMessage, forceDisableAccountButtons]);
+  // useEffect(() => {
+  //   if (accountsState.successMessage) {
+  //     setTimeout(() => {
+  //       setAddingAccount(false);
+  //       setOpen(false);
+  //       setTimeout(() => {
+  //         dispatch(clearAccountAlerts());
+  //         setNewAccountUser('');
+  //         setNewAccountPass('');
+  //         setForceDisableAccountButtons(false);
+  //         setLoginMethod(undefined);
+  //       }, 1000);
+  //     }, 1500);
+  //   } else if (accountsState.errorMessage && forceDisableAccountButtons) {
+  //     setForceDisableAccountButtons(false);
+  //   }
+  // }, [accountsState.successMessage, accountsState.errorMessage, forceDisableAccountButtons]);
 
   useEffect(() => {
     if (!allowServerSelection && browsingServers) {
@@ -312,9 +345,9 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
             <Button size='$3' circular p={0}
               onPress={() => dispatch(setBrowsingServers(!browsingServers))}
               animation='standard'
-              // opacity={allowServerSelection || servers.length > 1 ? 1 : 0}
-              // disabled={!(allowServerSelection || servers.length > 1)} 
-              >
+            // opacity={allowServerSelection || servers.length > 1 ? 1 : 0}
+            // disabled={!(allowServerSelection || servers.length > 1)} 
+            >
               <ZStack w='$2' h='$2'>
                 <XStack m='auto' animation='standard' o={!browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
                   <ChevronUp size='$1' />
@@ -566,7 +599,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 : undefined}
               {/* {!browsingServers ? <YStack h="$2" /> : undefined} */}
               <YStack space="$2" mt='$2'>
-                <XStack>
+                <XStack mb='$2'>
                   <Heading f={1}>
                     Accounts
                   </Heading>
@@ -703,19 +736,23 @@ to evaluate support options.
                 ? <>
                   {accountsOnPrimaryServer.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added on {primaryServer?.host}.</Heading> : undefined}
                   {accountsOnPrimaryServer.map((account) =>
-                    <AccountCard key={accountID(account)}
-                      account={account}
-                      onReauthenticate={reauthenticate}
-                      onProfileOpen={() => setOpen(false)}
-                      totalAccounts={accountsOnPrimaryServer.length} />)}
+                    <YStack key={accountID(account)} mb='$2'>
+                      <AccountCard
+                        account={account}
+                        onReauthenticate={reauthenticate}
+                        onProfileOpen={() => setOpen(false)}
+                        totalAccounts={accountsOnPrimaryServer.length} />
+                    </YStack>)}
                   {accountsElsewhere.length > 0 && !onlyShowServer
                     ? <>
-                      <Heading>Accounts Elsewhere</Heading>
+                      <Heading mr='$3' pr='$3'>Accounts Elsewhere</Heading>
                       {accountsElsewhere.map((account) =>
-                        <AccountCard key={accountID(account)}
-                          account={account}
-                          onReauthenticate={reauthenticate}
-                          totalAccounts={accountsOnPrimaryServer.length} />)}
+                        <YStack key={accountID(account)} mb='$2'>
+                          <AccountCard key={accountID(account)}
+                            account={account}
+                            onReauthenticate={reauthenticate}
+                            totalAccounts={accountsOnPrimaryServer.length} />
+                        </YStack>)}
                     </>
                     : undefined
                   }
@@ -723,10 +760,12 @@ to evaluate support options.
                 : <>
                   {displayedAccounts.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading> : undefined}
                   {displayedAccounts.map((account) =>
-                    <AccountCard key={accountID(account)}
-                      account={account}
-                      onReauthenticate={reauthenticate}
-                      totalAccounts={displayedAccounts.length} />)}
+                    <YStack key={accountID(account)} mb='$2'>
+                      <AccountCard key={accountID(account)}
+                        account={account}
+                        onReauthenticate={reauthenticate}
+                        totalAccounts={displayedAccounts.length} />
+                    </YStack>)}
                 </>}
             </YStack>
           </Sheet.ScrollView>
