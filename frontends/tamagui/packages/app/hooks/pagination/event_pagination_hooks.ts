@@ -40,7 +40,7 @@ export function useServerEventPages(
 
   const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0, servers);
   const someUnloadedServers = someUnloaded(eventsState.pagesStatus, servers);
-  console.log('useServerEventPages', firstPageLoaded, someUnloadedServers);
+  // console.log('useServerEventPages', firstPageLoaded, someUnloadedServers);
   // debugger;
   useEffect(() => {
     if (!loading && (someUnloadedServers || !firstPageLoaded)) {

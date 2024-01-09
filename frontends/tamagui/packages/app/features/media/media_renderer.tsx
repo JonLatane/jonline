@@ -14,7 +14,7 @@ interface Props {
   forceImage?: boolean;
 }
 
-export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly = false, serverOverride, forceImage }) => {
+export const MediaRenderer: React.FC<Props> = ({ media, failQuietly = false, serverOverride, forceImage }) => {
   const { dispatch, accountOrServer } = useProvidedDispatch(serverOverride);
   const server = accountOrServer.server;
   const { navAnchorColor } = getServerTheme(server);
@@ -22,14 +22,6 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly
   if (!server) return <></>;
 
   const ReactPlayerShim = ReactPlayer as any;
-
-  const reduxMedia = useRootSelector((state: RootState) => selectMediaById(state.media, sourceMedia.id));
-  useEffect(() => {
-    if (reduxMedia?.contentType.length ?? 0 == 0) {
-      dispatch(loadMedia({ ...sourceMedia, ...accountOrServer }));
-    }
-  }, [reduxMedia]);
-  const media = reduxMedia ?? sourceMedia;
 
   const mediaUrl = useMediaUrl(media.id, { server });
   // console.log(`mediaUrl for ${server.host} is ${mediaUrl}`)
@@ -41,10 +33,6 @@ export const MediaRenderer: React.FC<Props> = ({ media: sourceMedia, failQuietly
   switch (type) {
     case 'image':
       return <img style={{ height: '95%', width: '95%', objectFit: 'contain' }} src={mediaUrl} />;
-    // return <Image source={{ uri: mediaUrl }}
-    //   resizeMode='contain'
-    //   height='95%'
-    //   width='95%' />;
     case 'video':
       return <YStack w='100%' ac='center' jc='center' h='100%'>
         <ReactPlayerShim width='100%' style={{ maxHeight: mediaQuery.gtXs ? '500px' : '300px' }}

@@ -129,22 +129,21 @@ export function TabsNavigation({
                   </Button>
                 </YStack>
                 {!scrollGroupsSheet
-                  ? <XStack space='$2' ml='$1' my='auto' id='main-groups-button'>
+                  ? <XStack space='$2' ml='$1' mr={-3} my='auto' id='main-groups-button'>
                     <GroupsSheet key='main' selectedGroup={selectedGroup}
                       groupPageForwarder={groupPageForwarder} />
+                    
                   </XStack>
                   : undefined}
                 <ScrollView horizontal>
                   {!scrollGroupsSheet
-                    ? <>
-                      <XStack w={2} />
-                    </>
+                    ? <></>
                     : <>
-                      <XStack w={1} />
-                      <XStack className='main-groups-button'>
+                      {/* <XStack w={1} /> */}
+                      <XStack ml='$1' className='main-groups-button'>
                         <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
                       </XStack>
-                      <XStack w={3} />
+                      {/* <XStack w={0} /> */}
                     </>
                   }
                   <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
