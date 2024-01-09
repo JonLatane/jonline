@@ -101,10 +101,10 @@ export function TabsNavigation({
     <NavigationContextProvider value={navigationContext}>
       <GroupContextProvider value={selectedGroup}>
 
-        <YStack backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
+        <YStack w='100%' backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
           <StickyBox style={{ zIndex: 10, width: '100%' }} className='blur'>
             <YStack backgroundColor={backgroundColor} opacity={0.92} w='100%'>
-              <XStack space="$1" my='$1' ml='$1' w='100%'>
+              <XStack space="$1" my='$1' pl='$1' w='100%'>
                 {/* <XStack w={5} /> */}
                 <YStack>
                   <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} />
