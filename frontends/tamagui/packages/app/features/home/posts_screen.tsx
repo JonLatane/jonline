@@ -73,8 +73,9 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
             </YStack>
             : <YStack w='100%'>
               {paginatedPosts.map((post) => {
-                return <XStack w='100%' animation='standard' {...standardAnimation}>
-                  <PostCard key={`post-${federatedId(post)}`} post={post} isPreview />
+                return <XStack w='100%' key={`post-${federatedId(post)}`}
+                  animation='standard' {...standardAnimation}>
+                  <PostCard post={post} isPreview />
                 </XStack>;
               })}
               <PaginationIndicator {...pagination} />

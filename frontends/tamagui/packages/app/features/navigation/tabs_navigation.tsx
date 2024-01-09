@@ -103,8 +103,8 @@ export function TabsNavigation({
 
         <YStack backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
           <StickyBox style={{ zIndex: 10, width: '100%' }} className='blur'>
-            <YStack backgroundColor={backgroundColor} opacity={0.92}>
-              <XStack space="$1" my='$1' ml='$1'>
+            <YStack backgroundColor={backgroundColor} opacity={0.92} w='100%'>
+              <XStack space="$1" my='$1' ml='$1' w='100%'>
                 {/* <XStack w={5} /> */}
                 <YStack>
                   <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} />
@@ -154,11 +154,11 @@ export function TabsNavigation({
                 <XStack w={5} />
               </XStack>
 
-              <YStack backgroundColor='$background'>
+              <YStack w='100%' backgroundColor='$background'>
                 <TabsTutorial />
               </YStack>
 
-              <XStack id='nav-pinned-server-selector'>
+              <XStack w='100%' id='nav-pinned-server-selector'>
                 <PinnedServerSelector show={withServerPinning && !selectedGroup} affectsNavigation />
               </XStack>
             </YStack>
