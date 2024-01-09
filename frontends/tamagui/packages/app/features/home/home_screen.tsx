@@ -156,7 +156,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               : <YStack f={1} px='$3' w='100%' key={`post-list`}>
                 <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
                 {paginatedPosts.map((post) => {
-                  return <PostCard key={`post-preview-${federatedId(post)}`} post={post} isPreview />;
+                  return <XStack w='100%' key={`post-${federatedId(post)}`}
+                    animation='standard' {...standardAnimation}>
+                    <PostCard post={post} isPreview />
+                  </XStack>;
                 })}
                 <PaginationIndicator {...postPagination} />
               </YStack>

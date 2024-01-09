@@ -1,5 +1,5 @@
 import { PostListingType } from '@jonline/api';
-import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { Heading, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
 import { useCurrentAndPinnedServers, usePaginatedRendering } from 'app/hooks';
 import { useGroupPostPages, usePostPages, useServerPostPages } from 'app/hooks/pagination/post_pagination_hooks';
 import { RootState, federatedId, useRootSelector, useServerTheme } from 'app/store';
@@ -73,7 +73,9 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
             </YStack>
             : <YStack w='100%'>
               {paginatedPosts.map((post) => {
-                return <PostCard key={`post-${federatedId(post)}`} post={post} isPreview />;
+                return <XStack w='100%' animation='standard' {...standardAnimation}>
+                  <PostCard key={`post-${federatedId(post)}`} post={post} isPreview />
+                </XStack>;
               })}
               <PaginationIndicator {...pagination} />
             </YStack>
