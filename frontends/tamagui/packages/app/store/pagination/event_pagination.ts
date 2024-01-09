@@ -5,7 +5,7 @@ import { RootState } from "../store";
 import { AccountOrServer } from "../types";
 
 
-export function getEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number, servers: AccountOrServer[]): FederatedEvent[] {
+export function getEventsPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number, servers: AccountOrServer[]): FederatedEvent[] {
   const result: FederatedEvent[] = [];
   for (let page = 0; page <= throughPage; page++) {
     const pagePosts = getEventsPage(events, listingType, timeFilter, page, servers);
@@ -27,12 +27,19 @@ function getEventsPage(events: EventsState, listingType: EventListingType, timeF
 }
 
 export function getHasEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): boolean {
-  return !servers.some(server => {
-    const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
-    return ((serverEventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] === undefined;
-  });
+  return !servers.some(isMissingServerPage(events, listingType, timeFilter, page));
 }
 
+export function getServersMissingEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): AccountOrServer[] {
+  return servers.filter(isMissingServerPage(events, listingType, timeFilter, page));
+}
+
+function isMissingServerPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number) {
+  return (server: AccountOrServer) => {
+    const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
+    return ((serverEventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] === undefined;
+  }
+}
 export function getHasMoreEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, currentPage: number, servers: AccountOrServer[]): boolean {
   return servers.some(server => server.server && ((events.eventInstancePages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
 

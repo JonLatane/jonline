@@ -46,13 +46,10 @@ const initialState: AccountsState = {
 
 export const accountsSlice = createSlice({
   name: "accounts",
-  initialState: initialState,//{ ...initialState, ...JSON.parse(localStorage.getItem("accounts")) },
+  initialState: initialState,
   reducers: {
     upsertAccount: (state, action: PayloadAction<JonlineAccount>) => {
       accountsAdapter.upsertOne(state, action.payload);
-      // if (state.currentAccountId === accountID(action.payload)) {
-      //   state.account = action.payload;
-      // }
     },
     removeAccount: (state, action: PayloadAction<string>) => {
       if (state.currentAccountId === action.payload) {

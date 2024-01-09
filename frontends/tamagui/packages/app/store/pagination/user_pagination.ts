@@ -1,5 +1,4 @@
 import { User, UserListingType } from "@jonline/api";
-import { useAccountOrServer } from "app/hooks";
 import { federatedEntities, getFederated } from "../federation";
 import { FederatedUser, UsersState, selectUserById } from "../modules";
 import { AccountOrServer } from "../types";

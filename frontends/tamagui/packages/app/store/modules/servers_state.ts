@@ -110,14 +110,21 @@ function initializeWithServer(initialServer: JonlineServer) {
       const federatedServers: FederatedServer[] = server?.serverConfiguration?.federationInfo?.servers?.length ?? 0 > 0
         ? server!.serverConfiguration!.federationInfo!.servers
         : (server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? []).map(host => ({ host, configuredByDefault: true, pinnedByDefault: true }));
-      federatedServers.forEach(({ host, configuredByDefault, pinnedByDefault }) => {
+
+      // Configure federated servers in order with a 100ms delay between each.
+      for (const { host, configuredByDefault, pinnedByDefault } of federatedServers) {
         const recommendedServer = { host: host, secure: true };
         const pinnedServer = { serverId: serverID(recommendedServer), pinned: true };
         if (configuredByDefault) {
-          getServerClient(recommendedServer)
-            .then(() => pinnedByDefault && store.dispatch(pinServer(pinnedServer)));
+          await getServerClient(recommendedServer)
+            .then(async () => {
+              if (pinnedByDefault) {
+                store.dispatch(pinServer(pinnedServer));
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              }
+            });
         }
-      });
+      };
     }
   });
 }
@@ -133,7 +140,16 @@ export const serversSlice = createSlice({
   name: "servers",
   initialState: initialState,
   reducers: {
-    upsertServer: serversAdapter.upsertOne,
+    upsertServer: (state, action: PayloadAction<JonlineServer>) => {
+      const isAdd = !serversAdapter.getSelectors().selectById(state, serverID(action.payload));
+      serversAdapter.upsertOne(state, action);
+      if (isAdd) {
+        setTimeout(() => store.dispatch(pinServer({
+          serverId: serverID(action.payload),
+          pinned: true
+        })), 1);
+      }
+    },
     removeServer: (state, action: PayloadAction<JonlineServer>) => {
       if (state.currentServerId == serverID(action.payload)) {
         state.currentServerId = serversAdapter.getSelectors().selectAll(state)

@@ -1,6 +1,7 @@
 import { PostListingType } from "@jonline/api";
+import { debounce, useDebounce } from "@jonline/ui";
 import { useCredentialDispatch } from "app/hooks";
-import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostPages, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
+import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostsPages, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
 import { useCurrentAndPinnedServers, useFederatedDispatch } from '../account_and_server_hooks';
@@ -31,29 +32,31 @@ export function useServerPostPages(
   const postsState = useRootSelector((state: RootState) => state.posts);
   const [loading, setLoadingPosts] = useState(false);
 
-  const results: FederatedPost[] = getPostPages(postsState, listingType, throughPage, servers);
-
-  useEffect(() => {
-    // console.log('usePostPages', servers.map(s => s.server?.host).join(','), someUnloaded(postsState.pagesStatus, servers));
-    if (!loading && someUnloaded(postsState.pagesStatus, servers)) {
-      setLoadingPosts(true);
-      console.log("Loading posts...");
-      setTimeout(reload, 1);
-    }
-  }, [loading, postsState.pagesStatus, servers.map(s => s.server?.host).join(',')]);
-
+  const results: FederatedPost[] = getPostsPages(postsState, listingType, throughPage, servers);
   const firstPageLoaded = getHasPostsPage(postsState, listingType, 0, servers);
   const hasMorePages = getHasMorePostPages(postsState, listingType, throughPage, servers);
+  const serversAllDefined = !servers.some(s => !s.server);
 
   const reload = () => {
-    console.log('Reloading posts for servers', servers.map(s => s.server?.host));
-    Promise.all(servers.map(server =>
+    setLoadingPosts(true);
+    const serversToUpdate = getServersMissingPostsPage(postsState, listingType, 0, servers);
+    console.log('Reloading posts for servers', serversToUpdate.map(s => s.server?.host));
+    Promise.all(serversToUpdate.map(server =>
       dispatch(loadPostsPage({ ...server, listingType })))
     ).then((results) => {
       console.log("Loaded posts", results);
       finishPagination(setLoadingPosts);
     });
   }
+  const debounceReload = useDebounce(reload, 1000, { leading: true });
+
+  useEffect(() => {
+    if (!loading && serversAllDefined && someUnloaded(postsState.pagesStatus, servers)) {
+      setLoadingPosts(true);
+      console.log("Loading posts...");
+      setTimeout(debounceReload, 1);
+    }
+  }, [serversAllDefined, loading, postsState.pagesStatus, servers.map(s => s.server?.host).join(',')]);
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }
@@ -77,25 +80,26 @@ export function useGroupPostPages(
   const state = useRootSelector((state: RootState) => state);
   const [loading, setLoadingPosts] = useState(false);
 
+  const reload = () => {
+    setLoadingPosts(true);
+    if (group) dispatch(loadGroupPostsPage({ ...accountOrServer, groupId: group.id })).then(onPageLoaded(setLoadingPosts));
+  }
+  const debounceReload = useDebounce(reload, 1000, { leading: true });
 
-  const results: FederatedPost[] = getGroupPostPages(state, group, throughPage);
-
-  const firstPageLoaded = getHasGroupPostsPage(state.groups, group, 0);
   useEffect(() => {
     if (!firstPageLoaded && !loading) {
       if (!accountOrServer.server) return;
 
       console.log("Loading group posts...");
       setLoadingPosts(true);
-      reload();
+      setTimeout(debounceReload, 1);
     }
   });
 
-  const hasMorePages = getHasMoreGroupPostPages(state.groups, group, throughPage);
 
-  const reload = () => {
-    dispatch(loadGroupPostsPage({ ...accountOrServer, groupId: group.id })).then(onPageLoaded(setLoadingPosts));
-  }
+  const results: FederatedPost[] = getGroupPostPages(state, group, throughPage);
+  const firstPageLoaded = getHasGroupPostsPage(state.groups, group, 0);
+  const hasMorePages = getHasMoreGroupPostPages(state.groups, group, throughPage);
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }

@@ -643,7 +643,7 @@ export const EventCard: React.FC<Props> = ({
               <YStack w='100%'>
                 <XStack ai='center' w='100%'>
                   <YStack key='primary-header' f={1} pt='$4' pb={0}>
-                    <YStack key='header-links' w='100%' px='$4'>
+                    <YStack key='header-links' w='100%' pl='$4' pr={isPreview && showServerInfo ? 0 : '$4'}>
                       {headerLinks}
                     </YStack>
                   </YStack>

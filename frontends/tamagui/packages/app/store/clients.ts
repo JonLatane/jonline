@@ -26,6 +26,11 @@ export type JonlineClientCreationArgs = {
 
 // Creates a client and upserts the server into the store.
 export async function getServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<JonlineClient> {
+  if (!server) {
+    console.error("Server is undefined");
+    debugger;
+  }
+
   const serverId = serverID(server);
   // TODO: Why does this fail miserable if using port 443?
   const ports = [27707, 443];
@@ -78,7 +83,7 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
 async function resolveHostAndCreateClient(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClient | undefined> {
   // Resolve the actual backend server from its backend_host endpoint
   const backendHost = await window.fetch(
-    `${server.secure ? 'https' : 'http'}://${server.host}/backend_host`
+    `${server?.secure ? 'https' : 'http'}://${server?.host}/backend_host`
   ).then(async (r) => {
     const domain = await r.text();
     if (domain == '') return undefined;

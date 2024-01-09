@@ -4,8 +4,6 @@ import { FederatedGroup, FederatedPost, GroupsState, PostsState, selectPostById 
 import { RootState } from "../store";
 import { AccountOrServer } from "../types";
 
-
-
 /**
  * Pagination state building block, accessed via <code>number</code> rather than <code>string</code> keys.
  * I.E: An array of the form: <code> [["postId1", "postId2"], ["postId3"]]</code> (with "implicit" pagesize 2), just as a `Dictionary`
@@ -14,7 +12,7 @@ import { AccountOrServer } from "../types";
  * We trust that the server will return the same consistent pagination data, and if not, "refresh the page to see the updated version"
  * is a reasonable fallback.
  */
-export function getPostPages(posts: PostsState, listingType: PostListingType, throughPage: number, servers: AccountOrServer[]): FederatedPost[] {
+export function getPostsPages(posts: PostsState, listingType: PostListingType, throughPage: number, servers: AccountOrServer[]): FederatedPost[] {
   const result: FederatedPost[] = [];
   for (let page = 0; page <= throughPage; page++) {
     const pagePosts = getPostsPage(posts, listingType, page, servers);
@@ -35,11 +33,20 @@ function getPostsPage(posts: PostsState, listingType: PostListingType, page: num
 }
 
 export function getHasPostsPage(posts: PostsState, listingType: PostListingType, page: number, servers: AccountOrServer[]): boolean {
-  return !servers.some(server => {
+  return !servers.some(isMissingServerPage(posts, listingType, page));
+}
+
+export function getServersMissingPostsPage(posts: PostsState, listingType: PostListingType, page: number, servers: AccountOrServer[]): AccountOrServer[] {
+  return servers.filter(isMissingServerPage(posts, listingType, page));
+}
+
+function isMissingServerPage(posts: PostsState, listingType: PostListingType, page: number) {
+  return (server: AccountOrServer) => {
     const serverPostPages = getFederated(posts.postPages, server.server);
     return (serverPostPages[listingType] ?? {})[page] === undefined;
-  });
+  }
 }
+
 export function getHasMorePostPages(posts: PostsState, listingType: PostListingType, currentPage: number, servers: AccountOrServer[]): boolean {
   return servers.some(server => server.server && ((posts.postPages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
 }

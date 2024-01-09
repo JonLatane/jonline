@@ -1,5 +1,6 @@
 import { GroupListingType } from "@jonline/api";
-import { FederatedGroup, RootState, getGroupPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, someUnloaded, useRootSelector } from "app/store";
+import { debounce, useDebounce } from "@jonline/ui";
+import { FederatedGroup, RootState, getServersMissingGroupsPage, getGroupsPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { useCredentialDispatch, useCurrentAndPinnedServers } from "../account_and_server_hooks";
 import { finishPagination } from './post_pagination_hooks';
@@ -12,21 +13,25 @@ export function useGroupPages(listingType: GroupListingType, throughPage: number
   const groupsState = useRootSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
-  const groups: FederatedGroup[] = getGroupPages(groupsState, listingType, throughPage, servers);
+  const groups: FederatedGroup[] = getGroupsPages(groupsState, listingType, throughPage, servers);
 
+  const debounceReload = useDebounce(reload, 1000, {leading: true});
   useEffect(() => {
     if (!loadingGroups && !params?.disableLoading && someUnloaded(groupsState.pagesStatus, servers)) {
       setLoadingGroups(true);
-      reloadGroups();
+      // reload();
+      setTimeout(debounceReload, 1);
     }
     // else if (loadingGroups && !['unloaded', 'loading'].includes(groupsState.pagesStatus)) {
     //   setLoadingGroups(false);
     // }
   }, [loadingGroups, groupsState.pagesStatus, servers.map(s => s.server?.host).join(',')]);
 
-  function reloadGroups() {
-    console.log('Reloading groups for servers', servers.map(s => s.server?.host));
-    Promise.all(servers.map(server =>
+  function reload() {
+    setLoadingGroups(true);
+    const serversToUpdate = getServersMissingGroupsPage(groupsState, listingType, 0, servers);
+    console.log('Reloading groups for servers', serversToUpdate.map(s => s.server?.host));
+    Promise.all(serversToUpdate.map(server =>
       dispatch(loadGroupsPage({ ...server, listingType })))
     ).then((results) => {
       console.log("Loaded groups", results);
@@ -41,5 +46,5 @@ export function useGroupPages(listingType: GroupListingType, throughPage: number
   //   dispatch(loadGroupsPage({ ...accountOrServer, listingType })).then(onPageLoaded(setLoadingGroups, params?.onLoaded));
   // }
 
-  return { groups, loadingGroups, reloadGroups, hasMorePages, firstPageLoaded };
+  return { groups, loadingGroups, reloadGroups: reload, hasMorePages, firstPageLoaded };
 }
