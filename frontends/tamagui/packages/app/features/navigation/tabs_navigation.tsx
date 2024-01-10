@@ -139,7 +139,7 @@ export function TabsNavigation({
                     </YStack>
                   </Button>
                 </YStack>
-                {selectedGroup && selectedGroup?.serverHost !== currentServer?.host
+                {showServerInfo
                   ? <XStack my='auto'><ChevronRight color={primaryTextColor} /></XStack>
                   : undefined}
                 {!scrollGroupsSheet
