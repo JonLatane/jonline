@@ -1,15 +1,15 @@
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useTheme } from "@jonline/ui";
+import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useTheme } from "@jonline/ui";
 import { AtSign, ChevronRight, SeparatorHorizontal } from '@tamagui/lucide-icons';
-import { useAppDispatch, useAppSelector, useLocalConfiguration, useServer } from "app/hooks";
+import { useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl, useServer } from "app/hooks";
 
-import { FederatedPagesStatus, JonlineServer, PinnedServer, getServerTheme, pinAccount, pinServer, unpinAccount, selectAccountById, selectAllServers, serverID, setShowPinnedServers, setViewingRecommendedServers, JonlineAccount } from "app/store";
+import { useNavigationContext } from "app/contexts";
+import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setShowPinnedServers, setViewingRecommendedServers, unpinAccount } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { accountID } from '../../store/modules/accounts_state';
+import { AddAccountSheet } from "../accounts/add_account_sheet";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
-import { useNavigationContext } from "app/contexts";
-import { AddAccountSheet } from "../accounts/add_account_sheet";
-import { accountID } from '../../store/modules/accounts_state';
 
 
 export type PinnedServerSelectorProps = {
@@ -72,83 +72,83 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
     backgroundColor={transparent ? undefined : '$backgroundHover'}
   >
     {/* <AnimatePresence> */}
-      {show ? <>
-        <Button key='pinned-server-toggle' py='$1' h='auto' borderRadius={0} onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))}>
-          <XStack mr='auto'>
-            <Paragraph my='auto' size='$1'>
-              From {shortServerName} and {pinnedServerCount} of {totalServerCount} other {totalServerCount === 1 ? 'server' : 'servers'}
-            </Paragraph>
-            <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
-              <ChevronRight size='$1' />
-            </XStack>
+    {show ? <>
+      <Button key='pinned-server-toggle' py='$1' h='auto' borderRadius={0} onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))}>
+        <XStack mr='auto'>
+          <Paragraph my='auto' size='$1'>
+            From {shortServerName} and {pinnedServerCount} of {totalServerCount} other {totalServerCount === 1 ? 'server' : 'servers'}
+          </Paragraph>
+          <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
+            <ChevronRight size='$1' />
           </XStack>
-        </Button>
-        {showPinnedServers
-          ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
-            <ScrollView key='pinned-server-scroller' w='100%' horizontal>
-              <XStack m='$3' ai='center' space='$2' key='available-servers'>
-                <AnimatePresence>
-                  {availableServers.map(server => {
-                    let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
-                    return <XStack key={serverID(server)} animation='standard' {...standardHorizontalAnimation} mr='$2'>
-                      <PinnableServer {...{ server, pinnedServer }} />
-                    </XStack>;
-                  })}
+        </XStack>
+      </Button>
+      {showPinnedServers
+        ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
+          <ScrollView key='pinned-server-scroller' w='100%' horizontal>
+            <XStack m='$3' ai='center' space='$2' key='available-servers'>
+              <AnimatePresence>
+                {availableServers.map(server => {
+                  let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
+                  return <XStack key={serverID(server)} animation='standard' {...standardHorizontalAnimation} mr='$2'>
+                    <PinnableServer {...{ server, pinnedServer }} />
+                  </XStack>;
+                })}
 
-                  {recommendedServerHosts.length > 0
-                    ? <XStack key='recommended-servers-button' animation='standard' {...standardAnimation}>
-                      <Button h='auto' py='$1' mr='$2' size='$2'
-                        onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
-                        <XStack>
-                          <YStack my='auto' ai='center'>
-                            <Heading size='$1'>
-                              Recommended
-                            </Heading>
-                            {recommendedServerHosts.length > 0
-                              ? <Heading size='$1'>({recommendedServerHosts.length})</Heading>
-                              : undefined}
-                          </YStack>
-                          <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
-                            <ChevronRight size='$1' />
-                          </XStack>
-                        </XStack>
-                      </Button>
-                    </XStack>
-                    : undefined}
-
-                  {viewingRecommendedServers ?
-                    <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
-                      {recommendedServerHosts.map((host, index) => {
-                        const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
-                        // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
-                        return <>
-                          {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
-                            ? <XStack key='separator' my='auto'>
-                              <Tooltip>
-                                <Tooltip.Trigger>
-                                  <SeparatorHorizontal size='$5' />
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>
-                                  <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
-                                </Tooltip.Content>
-                              </Tooltip>
-                            </XStack>
+                {recommendedServerHosts.length > 0
+                  ? <XStack key='recommended-servers-button' animation='standard' {...standardAnimation}>
+                    <Button h='auto' py='$1' mr='$2' size='$2'
+                      onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
+                      <XStack>
+                        <YStack my='auto' ai='center'>
+                          <Heading size='$1'>
+                            Recommended
+                          </Heading>
+                          {recommendedServerHosts.length > 0
+                            ? <Heading size='$1'>({recommendedServerHosts.length})</Heading>
                             : undefined}
-                          <XStack my='auto' key={`recommended-server-${host}`}>
-                            <RecommendedServer host={host} tiny />
+                        </YStack>
+                        <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
+                          <ChevronRight size='$1' />
+                        </XStack>
+                      </XStack>
+                    </Button>
+                  </XStack>
+                  : undefined}
+
+                {viewingRecommendedServers ?
+                  <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
+                    {recommendedServerHosts.map((host, index) => {
+                      const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
+                      // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
+                      return <>
+                        {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
+                          ? <XStack key='separator' my='auto'>
+                            <Tooltip>
+                              <Tooltip.Trigger>
+                                <SeparatorHorizontal size='$5' />
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
+                              </Tooltip.Content>
+                            </Tooltip>
                           </XStack>
-                        </>;
-                      })}
-                    </XStack>
-                    : recommendedServerHosts.length > 0
-                      ? <XStack key='recommendedServerHosts-spacer' w='$10' />
-                      : undefined}
-                </AnimatePresence>
-              </XStack>
-            </ScrollView>
-          </YStack>
-          : undefined}
-      </> : undefined}
+                          : undefined}
+                        <XStack my='auto' key={`recommended-server-${host}`}>
+                          <RecommendedServer host={host} tiny />
+                        </XStack>
+                      </>;
+                    })}
+                  </XStack>
+                  : recommendedServerHosts.length > 0
+                    ? <XStack key='recommendedServerHosts-spacer' w='$10' />
+                    : undefined}
+              </AnimatePresence>
+            </XStack>
+          </ScrollView>
+        </YStack>
+        : undefined}
+    </> : undefined}
     {/* </AnimatePresence> */}
   </YStack >;
 }
@@ -163,6 +163,7 @@ export function PinnableServer({ server, pinnedServer }: PinnableServerProps) {
   const pinned = !!pinnedServer?.pinned;
   const theme = useTheme();
   const dispatch = useAppDispatch();
+  const account = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
   const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = getServerTheme(server, theme);
   const onPress = () => {
     const updatedValue: PinnedServer = pinnedServer
@@ -179,6 +180,9 @@ export function PinnableServer({ server, pinnedServer }: PinnableServerProps) {
       dispatch(pinAccount(account));
     }
   };
+  const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
+  const avatarSize = 20;
+
   return <YStack maw={170}>
     <AddAccountSheet server={server}
       selectedAccount={pinnedAccount}
@@ -189,6 +193,21 @@ export function PinnableServer({ server, pinnedServer }: PinnableServerProps) {
           o={pinned ? 1 : 0.5}
           {...(pinned ? themedButtonBackground(navColor, navTextColor) : {})}>
           <XStack ai='center' w='100%' space='$2'>
+
+            {(avatarUrl && avatarUrl != '') ?
+
+              <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
+                <Image
+                  pos="absolute"
+                  width={avatarSize}
+                  height={avatarSize}
+                  borderRadius={avatarSize / 2}
+                  resizeMode="cover"
+                  als="flex-start"
+                  source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
+                />
+              </XStack>
+              : undefined}
             <Paragraph f={1} size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipse" color={pinned ? navTextColor : undefined} o={pinnedAccount ? 1 : 0.5}>
               {pinnedAccount
                 ? pinnedAccount?.user.username

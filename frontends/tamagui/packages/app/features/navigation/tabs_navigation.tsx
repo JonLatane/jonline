@@ -1,9 +1,9 @@
 import { Group, WebUserInterface } from "@jonline/api";
 import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
-import { Home as HomeIcon } from '@tamagui/lucide-icons';
+import { ChevronRight, Home as HomeIcon } from '@tamagui/lucide-icons';
 import { GroupContextProvider, NavigationContextProvider, NavigationContextType, useNavigationContext, useOrCreateNavigationContext } from 'app/contexts';
 import { useAppDispatch, useLocalConfiguration, useServer } from "app/hooks";
-import { FederatedGroup, JonlineServer, RootState, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
+import { Federated, FederatedEntity, FederatedGroup, JonlineServer, RootState, colorMeta, federatedId, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
@@ -26,6 +26,7 @@ export type TabsNavigationProps = {
   groupPageForwarder?: (groupIdentifier: string) => string;
   groupPageExiter?: () => void;
   withServerPinning?: boolean;
+  primaryEntity?: FederatedEntity<any>;
 };
 
 export const tabNavBaseHeight = 64;
@@ -40,11 +41,12 @@ export function TabsNavigation({
   groupPageForwarder,
   groupPageExiter,
   withServerPinning,
+  primaryEntity
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
-  const server = useServer();// useRootSelector((state: RootState) => state.servers.server);
-  const primaryServer = onlyShowServer || server;
-  const webUI = server?.serverConfiguration?.serverInfo?.webUserInterface;
+  const currentServer = useServer();
+  const primaryServer = onlyShowServer || currentServer;
+  const webUI = currentServer?.serverConfiguration?.serverInfo?.webUserInterface;
   const homeProps = customHomeAction ? { onPress: customHomeAction } : useLink({
     href:
       selectedGroup && appSection == AppSection.POSTS ? `/posts` :
@@ -59,7 +61,9 @@ export function TabsNavigation({
   const app = useRootSelector((state: RootState) => state.app);
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
-  const backgroundColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}FF`;
+  const primaryColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}`;
+  console.log('primaryColor', primaryColor);
+  const primaryTextColor = colorMeta(primaryColor).textColor;
 
   const navigationContext: NavigationContextType = useOrCreateNavigationContext();
 
@@ -69,31 +73,25 @@ export function TabsNavigation({
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
-  const shrinkHomeButton = false;/*!mediaQuery.gtMd && (
-    selectedGroup != undefined ||
-    appSubsection == AppSubsection.FOLLOW_REQUESTS ||
-    (app.inlineFeatureNavigation === true && !mediaQuery.gtSm)
-  );*/
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
-  const showHomeIcon = serverNameEmoji == undefined && !canUseLogo && shrinkHomeButton;
-  const recentGroupIds = useRootSelector((state: RootState) => server
-    ? state.app.serverRecentGroups?.[serverID(server)] ?? []
-    : []);
+  const showHomeIcon = serverNameEmoji == undefined && !canUseLogo;
+  const recentGroupIds = useRootSelector((state: RootState) => state.app.recentGroups ?? []);
   const { inlineNavigation: inlineFeatureNavigation } = useInlineFeatureNavigation();
   const scrollGroupsSheet = !inlineFeatureNavigation
     || !mediaQuery.gtXs;
 
   useEffect(() => {
-    if (selectedGroup && server && recentGroupIds[0] != selectedGroup.id) {
-      dispatch(markGroupVisit({ group: selectedGroup, server }));
+    if (selectedGroup && currentServer && recentGroupIds[0] != federatedId(selectedGroup)) {
+      dispatch(markGroupVisit({ group: selectedGroup, server: currentServer }));
     }
   }, [selectedGroup?.id]);
 
   const useSquareLogo = canUseLogo && logo?.squareMediaId != undefined;
-  const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrinkHomeButton;
-  const hasEmoji = serverNameEmoji && serverNameEmoji !== '';
 
-  const circularAccountsSheet = !mediaQuery.gtSm;
+  const showServerInfo = (primaryEntity && primaryEntity.serverHost !== currentServer?.host) ||
+    (selectedGroup && selectedGroup.serverHost !== currentServer?.host);
+  const shrinkHomeButton = !!selectedGroup || showServerInfo;
+  //const shrinkHomeButton = !!selectedGroup?.serverHost && selectedGroup?.serverHost !== server?.host;
 
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
@@ -101,38 +99,56 @@ export function TabsNavigation({
     <NavigationContextProvider value={navigationContext}>
       <GroupContextProvider value={selectedGroup}>
 
-        <YStack w='100%' backgroundColor='$backgroundFocus' jc="center" ac='center' ai="center" minHeight={window.innerHeight}>
+        <YStack jc="center" ac='center' ai="center"
+          w='100%'
+          minHeight={window.innerHeight}
+        >
           <StickyBox style={{ zIndex: 10, width: '100%' }} className='blur'>
-            <YStack backgroundColor={backgroundColor} opacity={0.92} w='100%'>
+            <YStack backgroundColor={primaryColor} opacity={0.92} w='100%'>
               <XStack space="$1" my='$1' pl='$1' w='100%'>
                 {/* <XStack w={5} /> */}
-                <YStack>
-                  <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} />
+                <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
+                  <AccountsSheet size='$4' onlyShowServer={onlyShowServer} selectedGroup={selectedGroup} />
                   <Button //size="$4"
                     id="home-button"
                     py={0}
-                    px={
-                      shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
-                        !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
+                    px={0}
+                    // px={
+                    //   shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
+                    //     !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
                     height='auto'
                     borderTopLeftRadius={0} borderTopRightRadius={0}
-                    width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
+                    // width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
 
                     overflow='hidden'
                     icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
 
                     {...homeProps}
                   >
-                    <ServerNameAndLogo shrinkToSquare={shrinkHomeButton}
-                      fallbackToHomeIcon
-                      server={primaryServer} />
+                    <YStack
+                      my={shrinkHomeButton ? 'auto' : undefined}
+                      h={shrinkHomeButton ? '$3' : undefined}
+                      w={shrinkHomeButton ? '100%' : undefined}
+                      ac={shrinkHomeButton ? 'center' : undefined}
+                      jc={shrinkHomeButton ? 'center' : undefined}
+                    >
+                      <ServerNameAndLogo
+                        shrinkToSquare={shrinkHomeButton}
+                        fallbackToHomeIcon
+                        server={primaryServer} />
+                    </YStack>
                   </Button>
                 </YStack>
+                {selectedGroup && selectedGroup?.serverHost !== currentServer?.host
+                  ? <XStack my='auto'><ChevronRight color={primaryTextColor} /></XStack>
+                  : undefined}
                 {!scrollGroupsSheet
                   ? <XStack space='$2' ml='$1' mr={-3} my='auto' id='main-groups-button'>
-                    <GroupsSheet key='main' selectedGroup={selectedGroup}
-                      groupPageForwarder={groupPageForwarder} />
-                    
+                    <GroupsSheet key='main'
+                      selectedGroup={selectedGroup}
+                      groupPageForwarder={groupPageForwarder}
+                      primaryEntity={primaryEntity} />
+
                   </XStack>
                   : undefined}
                 <ScrollView horizontal>
@@ -140,8 +156,11 @@ export function TabsNavigation({
                     ? <></>
                     : <>
                       {/* <XStack w={1} /> */}
-                      <XStack ml='$1' className='main-groups-button'>
-                        <GroupsSheet key='main' selectedGroup={selectedGroup} groupPageForwarder={groupPageForwarder} />
+                      <XStack ml='$1' my='auto' className='main-groups-button'>
+                        <GroupsSheet key='main'
+                          selectedGroup={selectedGroup}
+                          groupPageForwarder={groupPageForwarder}
+                          primaryEntity={primaryEntity} />
                       </XStack>
                       {/* <XStack w={0} /> */}
                     </>

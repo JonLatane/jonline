@@ -125,7 +125,9 @@ export function EventDetailsScreen() {
   }, [subjectPost?.id, group?.id, server ? serverID(server) : undefined])
 
   return (
-    <TabsNavigation appSection={AppSection.EVENT} selectedGroup={group}>
+    <TabsNavigation appSection={AppSection.EVENT} selectedGroup={group}
+      primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
+    >
       {!subjectEvent || !subjectPost
         ? failedToLoadEvent
           ? <>

@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 import { Group } from "@jonline/api";
 import { serverID } from './servers_state';
+import { federateId } from "../federation";
 
 export type LocalAppConfiguration = {
   showIntro: boolean;
@@ -20,7 +21,8 @@ export type LocalAppConfiguration = {
   discussionRefreshIntervalSeconds: number;
   showUserIds: boolean;
   showEventsOnLatest: boolean;
-  serverRecentGroups: { [serverId: string]: string[] };
+  // serverRecentGroups: { [serverId: string]: string[] };
+  recentGroups: string[];
   // Here, undefined means "auto" (i.e. based on screen/window width)
   inlineFeatureNavigation: boolean | undefined;
   shrinkFeatureNavigation: boolean;
@@ -43,7 +45,8 @@ const initialState: LocalAppConfiguration = {
   discussionRefreshIntervalSeconds: 6,
   showUserIds: false,
   showEventsOnLatest: true,
-  serverRecentGroups: {},
+  // serverRecentGroups: {},
+  recentGroups: [],
   inlineFeatureNavigation: undefined,
   shrinkFeatureNavigation: false,
   browseRsvpsFromPreviews: true,
@@ -96,17 +99,11 @@ export const localAppSlice = createSlice({
       state.showEventsOnLatest = action.payload;
     },
     markGroupVisit: (state, action: PayloadAction<{ server: JonlineServer, group: Group }>) => {
-      // state.showEventsOnLatest = action.payload;
-      const serverId = serverID(action.payload.server);
-      if (!state.serverRecentGroups) {
-        state.serverRecentGroups = {};
+      if (!state.recentGroups) {
+        state.recentGroups = [];
       }
-      const currentValue = state.serverRecentGroups[serverId] ?? [];
-
-      state.serverRecentGroups[serverId] = [
-        action.payload.group.id,
-        ...currentValue.filter((g) => g != action.payload.group.id)
-      ];
+      const groupId = federateId(action.payload.group.id, action.payload.server);
+      state.recentGroups = [groupId, ...state.recentGroups.filter((g) => g !== groupId)]
     },
     setInlineFeatureNavigation: (state, action: PayloadAction<boolean | undefined>) => {
       state.inlineFeatureNavigation = action.payload;

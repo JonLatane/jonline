@@ -1,15 +1,17 @@
 import { GroupListingType, Permission } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, Theme, XStack, YStack } from '@jonline/ui';
-import { Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
-import { useCredentialDispatch, useGroupPages, useLocalConfiguration } from 'app/hooks';
-import { FederatedGroup, RootState, federatedId, serverID, useRootSelector, useServerTheme } from 'app/store';
-import { hasPermission } from 'app/utils';
+import { Button, Heading, Input, Paragraph, Sheet, Image, Theme, XStack, YStack, useTheme } from '@jonline/ui';
+import { AtSign, Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
+import { useAppSelector, useCredentialDispatch, useFederatedDispatch, useGroupPages, useLocalConfiguration, useMediaUrl, useServer } from 'app/hooks';
+import { FederatedEntity, FederatedGroup, JonlineAccount, RootState, accountID, federatedId, getServerTheme, pinAccount, selectGroupById, serverID, unpinAccount, useRootSelector, useServerTheme, selectAllGroups, selectAllServers, optServerID, selectAccountById } from 'app/store';
+import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { PinnedServerSelector } from '../navigation/pinned_server_selector';
 import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
 import { GroupDetailsSheet } from './group_details_sheet';
+import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
+import { AddAccountSheet } from '../accounts/add_account_sheet';
 
 export type GroupsSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -31,6 +33,7 @@ export type GroupsSheetProps = {
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
   groupNamePrefix?: string;
+  primaryEntity?: FederatedEntity<any>;
 }
 export function GroupsSheet({
   selectedGroup,
@@ -48,6 +51,7 @@ export function GroupsSheet({
   hideAdditionalGroups,
   hideLeaveButtons,
   groupNamePrefix,
+  primaryEntity
 }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -55,12 +59,28 @@ export function GroupsSheet({
 
   const [position, setPosition] = useState(0);
   const [searchText, setSearchText] = useState('');
-  const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { account, server } = accountOrServer;
+  const { dispatch, accountOrServer } = useFederatedDispatch(selectedGroup);
+  const { account: groupAccount, server: groupServer } = accountOrServer;
+  const currentServer = useServer();
   const [hasRenderedSheet, setHasRenderedSheet] = useState(false);
 
+  const primaryEntityServer = useAppSelector(state => primaryEntity
+    ? selectAllServers(state.servers).find(s => s.host === primaryEntity.serverHost)
+    : undefined);
+  const primaryEntityAccountId = useAppSelector(state => state.accounts.pinnedServers
+    .find(a => a.serverId === optServerID(primaryEntityServer))?.accountId);
+  const primaryEntityAccount = useAppSelector(state => primaryEntityAccountId
+    ? selectAccountById(state.accounts, primaryEntityAccountId)
+    : undefined);
 
-  const { navAnchorColor } = useServerTheme();
+  const account = primaryEntityAccount ?? groupAccount;
+  const server = primaryEntityServer ?? groupServer;
+
+  const showServerInfo = (primaryEntity && primaryEntity.serverHost !== currentServer?.host) ||
+    (selectedGroup && selectedGroup.serverHost !== currentServer?.host);
+  const circular = !selectedGroup && !noGroupSelectedText && !showServerInfo;
+
+  const { primaryColor, primaryTextColor } = getServerTheme(server, useTheme());
   const searchInputRef = React.createRef<TextInput>();
 
   const groupsState = useRootSelector((state: RootState) => state.groups);
@@ -73,11 +93,7 @@ export function GroupsSheet({
 
   const { groups: allGroups } = useGroupPages(GroupListingType.ALL_GROUPS, 0, { disableLoading: extraListItemChrome !== undefined });
 
-  const recentGroupIds = useRootSelector((state: RootState) => server
-    ? state.app.serverRecentGroups?.[serverID(server)] ?? []
-    : []);
-
-
+  const recentGroupIds = useRootSelector((state: RootState) => state.app.recentGroups ?? []);
 
   const matchedGroups: FederatedGroup[] = allGroups.filter(g =>
     g.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -92,7 +108,6 @@ export function GroupsSheet({
       g.name.toLowerCase().includes(searchText.toLowerCase()) ||
       g.description.toLowerCase().includes(searchText.toLowerCase())),
   ];
-
 
   const recentGroups = recentGroupIds
     .map(id => allGroups.find(g => g.id === id))
@@ -109,31 +124,87 @@ export function GroupsSheet({
 
   const infoMarginLeft = -34;
   const infoPaddingRight = 39;
+  const onPress = () => setOpen((x) => !x);
+
+  const toggleAccountSelect = (a: JonlineAccount) => {
+    if (accountID(a) === accountID(account)) {
+      dispatch(unpinAccount(a));
+    } else {
+      dispatch(pinAccount(a));
+    }
+  };
+  const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
+  const avatarSize = 20;
 
   return (
     <>
-      <Button
-        icon={selectedGroup ? undefined : Boxes} circular={!selectedGroup && !noGroupSelectedText}
-        paddingRight={selectedGroup && !hideInfoButtons ? infoPaddingRight : undefined}
-        paddingLeft={selectedGroup && !hideInfoButtons ? '$2' : undefined}
-        disabled={disabled}
-        my='auto'
-        o={disabled ? 0.5 : 1}
-        onPress={() => setOpen((x) => !x)}
-        w={noGroupSelectedText ? '100%' : undefined}>
-        {selectedGroup || noGroupSelectedText
-          ? <YStack>
-            {selectedGroup && groupNamePrefix
-              ? <Paragraph size="$1" lineHeight={14}>
-                {groupNamePrefix}
-              </Paragraph>
-              : undefined}
-            <Paragraph size="$2" lineHeight={14}>
-              {selectedGroup ? selectedGroup.name : noGroupSelectedText}
-            </Paragraph>
-          </YStack>
-          : undefined}
-      </Button>
+      {<YStack>
+        {showServerInfo
+          ? <AddAccountSheet server={primaryEntityServer ?? server}
+            selectedAccount={primaryEntityAccount ?? accountOrServer.account}
+            onAccountSelected={toggleAccountSelect}
+            button={(onPress) =>
+              <Button onPress={onPress} animation='standard' h='auto' px='$2'
+                borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
+                o={account ? 1 : 0.5}
+                {...(account ? themedButtonBackground(primaryColor, primaryTextColor) : {})}>
+                <XStack ai='center' w='100%' space='$2'>
+
+                  {(avatarUrl && avatarUrl != '') ?
+
+                    <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
+                      <Image
+                        pos="absolute"
+                        width={avatarSize}
+                        height={avatarSize}
+                        borderRadius={avatarSize / 2}
+                        resizeMode="cover"
+                        als="flex-start"
+                        source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
+                      />
+                    </XStack>
+                    : undefined}
+                  <Paragraph f={1} size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipse"
+                    color={account ? primaryTextColor : undefined} o={account ? 1 : 0.5}>
+                    {account
+                      ? account?.user.username
+                      : 'anonymous'}
+                  </Paragraph>
+                  <AtSign size='$1' color={account ? primaryTextColor : undefined} />
+                </XStack>
+              </Button>} /> : undefined}
+        <Button
+          icon={selectedGroup ? undefined : Boxes} circular={circular}
+          paddingRight={selectedGroup && !hideInfoButtons ? infoPaddingRight : undefined}
+          paddingLeft={selectedGroup && !hideInfoButtons ? '$2' : undefined}
+          disabled={disabled}
+          my='auto'
+          h={circular ? undefined : 'auto'}
+          mih='$3'
+          o={disabled ? 0.5 : 1}
+          onPress={onPress}
+          borderTopLeftRadius={showServerInfo ? 0 : undefined} borderTopRightRadius={showServerInfo ? 0 : undefined}
+          w={noGroupSelectedText ? '100%' : undefined}>
+          {selectedGroup || noGroupSelectedText || showServerInfo
+            ? <YStack>
+              {showServerInfo
+                ? <XStack o={0.5} ml={-12}>
+                  <ServerNameAndLogo server={primaryEntityServer ?? server} />
+                </XStack>
+                : undefined}
+              {selectedGroup && groupNamePrefix
+                ? <Paragraph size="$1" lineHeight={14}>
+                  {groupNamePrefix}
+                </Paragraph>
+                : undefined}
+              <Heading size="$7" lineHeight={14} fontSize='$3'>
+                {selectedGroup ? selectedGroup.name : noGroupSelectedText}
+              </Heading>
+
+            </YStack>
+            : undefined}
+        </Button>
+      </YStack>}
       {delayRenderingSheet && !hasRenderedSheet && !open
         ? undefined
         : <Sheet
@@ -196,8 +267,8 @@ export function GroupsSheet({
                     <YStack>
                       {topGroups.map((group, index) => {
                         return <GroupButton
-                        key={`groupButton-${federatedId(group)}`}
-                        group={group}
+                          key={`groupButton-${federatedId(group)}`}
+                          group={group}
                           groupPageForwarder={groupPageForwarder}
                           onGroupSelected={onGroupSelected}
                           selected={group.id == selectedGroup?.id}
@@ -248,7 +319,7 @@ export function GroupsSheet({
                       <YStack>
                         {sortedGroups.map((group, index) => {
                           return <GroupButton
-                          key={`groupButton-${federatedId(group)}`}
+                            key={`groupButton-${federatedId(group)}`}
                             group={group}
                             groupPageForwarder={groupPageForwarder}
                             onGroupSelected={onGroupSelected}
@@ -278,12 +349,14 @@ export function GroupsSheet({
       {selectedGroup && !hideInfoButtons
         ? <>
           <Theme inverse>
-            <Button icon={Info} opacity={0.7} size="$2" circular marginVertical='auto'
-              ml={infoMarginLeft}
-              onPress={() => {
-                setInfoGroupId(federatedId(selectedGroup));
-                setInfoOpen((x) => !x)
-              }} />
+            <XStack opacity={0.7} marginVertical='auto'>
+              <Button icon={Info} size="$2" circular mt={showServerInfo ? '$4' : undefined}
+                ml={infoMarginLeft}
+                onPress={() => {
+                  setInfoGroupId(federatedId(selectedGroup));
+                  setInfoOpen((x) => !x)
+                }} />
+            </XStack>
           </Theme>
         </>
         : undefined}

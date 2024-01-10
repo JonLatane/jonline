@@ -16,15 +16,16 @@ import { GroupPostManager } from '../groups/group_post_manager';
 import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
 import { PostMediaRenderer } from "./post_media_renderer";
-import { AccountOrServerContext, AccountOrServerContextProvider, useAccountOrServerContext } from "app/contexts";
+import { AccountOrServerContext, AccountOrServerContextProvider, useAccountOrServerContext, useGroupContext } from "app/contexts";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
+import { federatedEntity } from '../../store/federation';
 
 interface PostCardProps {
   // Note: Post may not be a FederatedPost if the Post is a reply. This could be better thought out...
   // it might be better to make a "ReplyCard" type.
   post: Post;
   isPreview?: boolean;
-  groupContext?: Group;
+  // groupContext?: Group;
   replyPostIdPath?: string[];
   collapseReplies?: boolean;
   toggleCollapseReplies?: () => void;
@@ -43,7 +44,7 @@ export const postBackgroundSize = (media: TamaguiMediaState) =>
 export const PostCard: React.FC<PostCardProps> = ({
   post,
   isPreview,
-  groupContext,
+  // groupContext,
   replyPostIdPath,
   toggleCollapseReplies,
   onLoadReplies,
@@ -62,6 +63,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const showServerInfo = ('serverHost' in post) && (!isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1));
   // console.log('PostCard', post.id, serverHost, accountOrServer?.server?.host);
   const mediaQuery = useMedia();
+  const groupContext = useGroupContext();
 
 
   const currentUser = useAccount()?.user;
@@ -130,9 +132,12 @@ export const PostCard: React.FC<PostCardProps> = ({
   const detailsLinkId = showServerInfo
     ? federateId(post.id, accountOrServer.server)
     : post.id;
+  const detailsGroupId = showServerInfo && groupContext
+    ? federateId(groupContext.shortname, accountOrServer.server)
+    : undefined;
   const detailsLink = useLink({
     href: groupContext
-      ? `/g/${groupContext.shortname}/p/${detailsLinkId}`
+      ? `/g/${detailsGroupId}/p/${detailsLinkId}`
       : `/post/${detailsLinkId}`,
   });
   const showDetailsShadow = isPreview && post.content && post.content.length > 700;
@@ -429,7 +434,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                       </XStack>
                       {isPrimaryServer && !post?.replyToPostId
                         ? <XStack maw='100%' mr={0} my='auto' ml='auto'>
-                          <GroupPostManager post={post} isVisible={isVisible} />
+                          <GroupPostManager post={federatedEntity(post, server)} isVisible={isVisible} />
                         </XStack>
                         : undefined}
 

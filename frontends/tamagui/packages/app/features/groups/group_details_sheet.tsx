@@ -247,7 +247,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
           <Button size='$3' backgroundColor={showSettings ? navColor : undefined}
             hoverStyle={{ backgroundColor: showSettings ? navColor : undefined }}
             onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
-            <Cog color={showSettings ? navTextColor : textColor} />
+            <Cog color={showSettings ? navTextColor : undefined} />
           </Button>
         </XStack>
 
@@ -316,16 +316,6 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
               : undefined}
           </XStack>
 
-          {/* <AnimatePresence> */}
-          <YStack mx='$3'>
-            {editing && !previewingEdits && showMedia
-              ? <SingleMediaChooser key='create-group-avatar-chooser'
-                disabled={!showMedia}
-                selectedMedia={avatar} setSelectedMedia={setEditedAvatar} />
-              : undefined}
-          </YStack>
-          {/* </AnimatePresence> */}
-
           <XStack>
             <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
             <XStack f={1} />
@@ -333,62 +323,76 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
               {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
             </Heading>
           </XStack>
-
-          <AnimatePresence>
-            {showSettings
-              ? <YStack key='edit-group-settings'
-                animation='standard'
-                mt='$2'
-                p='$2'
-                backgroundColor='$backgroundHover'
-                borderRadius='$2'
-                // touch={showSettings}
-
-                {...standardAnimation}
-              >
-                <XStack mx='auto'>
-                  <VisibilityPicker
-                    label='Group Visibility'
-                    visibility={visibility}
-                    disabled={disableInputs}
-                    onChange={setEditedVisibility}
-                    visibilityDescription={v => groupVisibilityDescription(v, server)} />
-                </XStack>
-                <ToggleRow name='Require Membership Moderation'
-                  value={pending(defaultMembershipModeration)}
-                  setter={(v) => setEditedDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                  disabled={disableInputs} />
-                <ToggleRow name='Require Post Moderation'
-                  description='Hide all Posts shared to this Group until approved by a moderator.'
-                  value={pending(defaultPostModeration)}
-                  setter={(v) => setEditedDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                  disabled={disableInputs} />
-                <ToggleRow name='Require Event Moderation'
-                  description='Hide all Events shared to this Group until approved by a moderator.'
-                  value={pending(defaultEventModeration)}
-                  setter={(v) => setEditedDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                  disabled={disableInputs} />
-
-                <PermissionsEditor label='Default Member Permissions'
-                  {...membershipPermissionsEditorProps} />
-                <PermissionsEditor label='Non-Member Permissions'
-                  {...nonMemberPermissionsEditorProps} />
-              </YStack>
-              : undefined}
-          </AnimatePresence>
         </YStack>
-        {editing && !previewingEdits
-          ? <TextArea f={1} pt='$2' mx='$3' value={editedDescription}
-            disabled={savingEdits} opacity={savingEdits || editedDescription == '' ? 0.5 : 1}
-            h={(editedDescription?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
-            onChangeText={setEditedDescription}
-            placeholder={`Description (optional). Markdown is supported.`} />
-          : <Sheet.ScrollView p="$4" space>
+        <Sheet.ScrollView>
+          <YStack space="$0" px='$4' maw={800} als='center' width='100%'>
+            {/* <AnimatePresence> */}
+            <YStack mx='$3'>
+              {editing && !previewingEdits && showMedia
+                ? <SingleMediaChooser key='create-group-avatar-chooser'
+                  disabled={!showMedia}
+                  selectedMedia={avatar} setSelectedMedia={setEditedAvatar} />
+                : undefined}
+            </YStack>
+            {/* </AnimatePresence> */}
+
+
+            <AnimatePresence>
+              {showSettings
+                ? <YStack key='edit-group-settings'
+                  animation='standard'
+                  mt='$2'
+                  p='$2'
+                  backgroundColor='$backgroundHover'
+                  borderRadius='$2'
+                  // touch={showSettings}
+
+                  {...standardAnimation}
+                >
+                  <XStack mx='auto'>
+                    <VisibilityPicker
+                      label='Group Visibility'
+                      visibility={visibility}
+                      disabled={disableInputs}
+                      onChange={setEditedVisibility}
+                      visibilityDescription={v => groupVisibilityDescription(v, server)} />
+                  </XStack>
+                  <ToggleRow name='Require Membership Moderation'
+                    value={pending(defaultMembershipModeration)}
+                    setter={(v) => setEditedDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                    disabled={disableInputs} />
+                  <ToggleRow name='Require Post Moderation'
+                    description='Hide all Posts shared to this Group until approved by a moderator.'
+                    value={pending(defaultPostModeration)}
+                    setter={(v) => setEditedDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                    disabled={disableInputs} />
+                  <ToggleRow name='Require Event Moderation'
+                    description='Hide all Events shared to this Group until approved by a moderator.'
+                    value={pending(defaultEventModeration)}
+                    setter={(v) => setEditedDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                    disabled={disableInputs} />
+
+                  <PermissionsEditor label='Default Member Permissions'
+                    {...membershipPermissionsEditorProps} />
+                  <PermissionsEditor label='Non-Member Permissions'
+                    {...nonMemberPermissionsEditorProps} />
+                </YStack>
+                : undefined}
+            </AnimatePresence>
+          </YStack>
+          {editing && !previewingEdits
+            ? <TextArea f={1} pt='$2' mx='$3' value={editedDescription}
+              disabled={savingEdits} opacity={savingEdits || editedDescription == '' ? 0.5 : 1}
+              h={(editedDescription?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
+              onChangeText={setEditedDescription}
+              placeholder={`Description (optional). Markdown is supported.`} />
+            : //<Sheet.ScrollView p="$4" space>
             <YStack maw={600} als='center' width='100%'>
               <TamaguiMarkdown text={description} />
             </YStack>
-          </Sheet.ScrollView>
-        }
+            //</Sheet.ScrollView>
+          }
+        </Sheet.ScrollView>
         <SaveButtonGroup entityType='Group'
           entityName={infoRenderingGroup?.name}
           doUpdate={() => doUpdateGroup()}

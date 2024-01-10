@@ -4,7 +4,7 @@ import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useAccount, useAppDispatch, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { Platform, TextInput } from 'react-native';
@@ -21,16 +21,16 @@ import ServerCard from './server_card';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
-  circular?: boolean;
   // Indicate to the AccountsSheet that we're
   // viewing server configuration for a server,
   // and should only show accounts for that server.
   onlyShowServer?: JonlineServer;
+  selectedGroup?: FederatedGroup;
 }
 const doesPlatformPreferDarkMode = () =>
   window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }: AccountsSheetProps) {
+export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: AccountsSheetProps) {
   const mediaQuery = useMedia();
   const [open, setOpen] = useState(false);
   const { allowServerSelection: allowServerSelectionSetting, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalConfiguration();
@@ -234,11 +234,20 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
 
   const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
 
-  const userIcon = serversDiffer || browsingOnDiffers
-    ? AlertTriangle :
-    account ? UserIcon : LogIn;
+  // const userIcon = serversDiffer || browsingOnDiffers
+  //   ? AlertTriangle :
+  //   account ? UserIcon : LogIn;
 
-    const avatarSize = 22;
+  const currentServer = server;
+  const avatarSize = 22;
+  const alertTriangle = () => <Tooltip>
+    <Tooltip.Trigger>
+      <AlertTriangle />
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      <Paragraph size='$1'>You are seeing data as though you were on {server?.host}, although you're on {browsingOn}.</Paragraph>
+    </Tooltip.Content>
+  </Tooltip>;
   return (
     <>
       <Button
@@ -247,30 +256,33 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
         {...themedButtonBackground(navColor, navTextColor)}
         // backgroundColor={navColor}
         h='auto'
-        icon={serversDiffer || browsingOnDiffers ? AlertTriangle : undefined}
+        icon={serversDiffer || browsingOnDiffers ? alertTriangle() : undefined}
         borderBottomLeftRadius={0} borderBottomRightRadius={0}
         px='$2'
         onPress={() => setOpen((x) => !x)}
       >
-        {/* <XStack w='100%'> */}
-          {(avatarUrl && avatarUrl != '') ?
-
-            <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
-              <Image
-                pos="absolute"
-                width={avatarSize}
-                height={avatarSize}
-                borderRadius={avatarSize/2}
-                resizeMode="cover"
-                als="flex-start"
-                source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
-              />
-            </XStack>
-            : undefined}
-          <YStack f={1}>
-            <Paragraph size='$1' color={navTextColor} o={account ? 1 : 0.5} whiteSpace='nowrap' textOverflow='ellipses'>{account?.user?.username ?? 'anonymous'}</Paragraph>
-          </YStack>
+        {(avatarUrl && avatarUrl != '') ?
+          <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
+            <Image
+              pos="absolute"
+              width={avatarSize}
+              height={avatarSize}
+              borderRadius={avatarSize / 2}
+              resizeMode="cover"
+              als="flex-start"
+              source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
+            />
+          </XStack>
+          : undefined}
+        <YStack f={1}>
+          <Paragraph size='$1' color={navTextColor} o={account ? 1 : 0.5}
+            whiteSpace='nowrap' overflow='hidden' textOverflow='ellipses'>
+            {account?.user?.username ?? 'anonymous'}
+          </Paragraph>
+        </YStack>
+        {selectedGroup ? undefined :
           <AtSign size='$1' color={navTextColor} />
+        }
 
         {/* </XStack> */}
       </Button>
@@ -530,7 +542,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
               {serversDiffer
                 ? <>
                   <XStack>
-                    <XStack my='auto'><AlertTriangle /></XStack>
+                    <XStack my='auto'>{alertTriangle()}</XStack>
                     <YStack my='auto' f={1}>
                       {/* <Heading whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>
                         {primaryServer?.serverConfiguration?.serverInfo?.name}
@@ -544,7 +556,7 @@ export function AccountsSheet({ size = '$5', circular = false, onlyShowServer }:
                 : undefined}
               {browsingOnDiffers
                 ? <><XStack mx='auto' space='$2'>
-                  <XStack my='auto'><AlertTriangle /></XStack>
+                  <XStack my='auto'>{alertTriangle()}</XStack>
                   <Heading size='$3' my='auto' als='center' textAlign='center'>
                     Browsing via {browsingOn}
                   </Heading>

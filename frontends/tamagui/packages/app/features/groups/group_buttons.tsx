@@ -55,111 +55,129 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
     : group.name;
   const fullAvatarHeight = 48;
 
-  return <YStack>
-    <XStack>
-      <Button
-        f={1}
-        h='auto'
-        px='$2'
-        // bordered={false}
-        // href={`/g/${group.shortname}`}
-        transparent={!selected}
-        // backgroundColor={selected ? navColor : undefined}
-        {...themedButtonBackground(selected ? navColor : undefined, undefined, (disabled && !extraListItemChrome) ? 0.5 : 1)}
-        // size="$8"
-        // disabled={appSection == AppSection.HOME}
-        disabled={disabled}
-        {...link}
-      >
-        <XStack w='100%' ai='center'>
-          <YStack w='100%' f={1} my='auto'>
-            <XStack>
-              <Paragraph f={1}
-                my='auto'
-                size="$5"
-                color={selected ? navTextColor : undefined}
-                whiteSpace='nowrap'
-                overflow='hidden'
-                numberOfLines={1}
-                ta='left'
-              >
-                {displayedGroupName}
-              </Paragraph>
-            </XStack>
-            <Paragraph
-              size="$2"
-              color={selected ? navTextColor : undefined}
-              whiteSpace='nowrap'
-              overflow='hidden'
-              numberOfLines={1}
-              ta='left'
-              o={0.8}
-            >
-              {group.description}
-            </Paragraph>
-          </YStack>
+  return <XStack w='100%'>
+    <YStack f={1} borderRadius='$5' borderWidth='$1' borderColor={primaryColor} mb='$2'
+      backgroundColor={selected ? navColor : undefined}
+    >
+      <XStack>
+        <Button
+          f={1}
+          h='auto'
+          px='$2'
+          // bordered={false}
+          // href={`/g/${group.shortname}`}
+          transparent={!selected}
 
-          {hasAvatarUrl
-            ? <Image
-              // mb='$3'
-              // ml='$2'
-              mx='$2'
-              // mr={-10}
-              my='auto'
-              width={fullAvatarHeight}
-              height={fullAvatarHeight}
-              resizeMode="contain"
-              als="center"
-              source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
-              borderRadius={10} />
-            : groupNameEmoji
-              ? <Heading size='$10' my='auto' mx='$2' whiteSpace="nowrap">
-                {groupNameEmoji}
-              </Heading>
-              : undefined}
-          {/* {showServerInfo && (hasAvatarUrl || groupNameEmoji)
+          // transparent={}
+
+          // backgroundColor={selected ? navColor : undefined}
+          {...themedButtonBackground(selected ? navColor : undefined, undefined, (disabled && !extraListItemChrome) ? 0.5 : 1)}
+          // size="$8"
+          // disabled={appSection == AppSection.HOME}
+          disabled={disabled}
+          pt='$2'
+          {...link}
+        >
+          <YStack w='100%'>
+            <XStack w='100%' ai='center'>
+              <YStack w='100%' f={1} my='auto'>
+
+                <XStack>
+                  <Paragraph f={1}
+                    my='auto'
+                    size="$5"
+                    color={selected ? navTextColor : undefined}
+                    whiteSpace='nowrap'
+                    overflow='hidden'
+                    numberOfLines={1}
+                    ta='left'
+                  >
+                    {displayedGroupName}
+                  </Paragraph>
+                </XStack>
+                <Paragraph
+                  size="$2"
+                  color={selected ? navTextColor : undefined}
+                  whiteSpace='nowrap'
+                  overflow='hidden'
+                  numberOfLines={1}
+                  ta='left'
+                  o={0.8}
+                >
+                  {group.description}
+                </Paragraph>
+              </YStack>
+
+              <YStack>
+                {showServerInfo
+                  ? <ServerNameAndLogo textColor={selected ? navTextColor : undefined} server={server} fallbackToHomeIcon />
+                  : undefined}
+                <XStack ml='auto'>
+                  {hasAvatarUrl
+                    ? <Image
+                      // mb='$3'
+                      // ml='$2'
+                      mx='$2'
+                      // mr={-10}
+                      my='auto'
+                      width={fullAvatarHeight}
+                      height={fullAvatarHeight}
+                      resizeMode="contain"
+                      als="center"
+                      source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
+                      borderRadius={10} />
+                    : groupNameEmoji
+                      ? <Heading size='$10' my='auto' mx='$2' whiteSpace="nowrap">
+                        {groupNameEmoji}
+                      </Heading>
+                      : undefined}
+                  {/* {showServerInfo && (hasAvatarUrl || groupNameEmoji)
             ? <Heading size='$7' id='server-icon-separator' mr='$2'>@</Heading>
             : undefined} */}
-          {showServerInfo
+                  {/* {showServerInfo
             ? <XStack my='auto' w={'$4'} h={'$4'} jc='center'>
               <ServerNameAndLogo server={server} shrinkToSquare />
             </XStack>
-            : undefined}
-          <XStack o={0.6} my='auto'>
-            <XStack my='auto'>
-              <Users2 size='$1' color={selected ? navTextColor : undefined} />
-            </XStack>
-            <Text mx='$1' my='auto' fontFamily='$body' fontSize='$1'
-              color={selected ? navTextColor : undefined}
-              whiteSpace='nowrap'
-              overflow='hidden'
-              numberOfLines={1}
-              ta='left'>
-              {group.memberCount}
-            </Text>
+            : undefined} */}
+                  <XStack o={0.6} my='auto'>
+                    <XStack my='auto'>
+                      <Users2 size='$1' color={selected ? navTextColor : undefined} />
+                    </XStack>
+                    <Text mx='$1' my='auto' fontFamily='$body' fontSize='$1'
+                      color={selected ? navTextColor : undefined}
+                      whiteSpace='nowrap'
+                      overflow='hidden'
+                      numberOfLines={1}
+                      ta='left'>
+                      {group.memberCount}
+                    </Text>
 
 
-            {/* <MessageSquare /> {group.postCount}
+                    {/* <MessageSquare /> {group.postCount}
                   <Calendar /> {group.eventCount} */}
-          </XStack>
-        </XStack>
-      </Button>
-      {hideInfoButton ? undefined :
-        <Button
-          size='$2'
-          my='auto'
-          // ml='$2'
-          circular
-          icon={Info} onPress={() => onShowInfo()} />}
-    </XStack>
-    <XStack flexWrap='wrap' w='100%'>
-      <GroupJoinLeaveButton group={group} hideLeaveButton={hideLeaveButton} />
-      {extraListItemChrome?.(group)}
-    </XStack>
-    {accountOrServer.account || extraListItemChrome
+                  </XStack>
+                </XStack>
+              </YStack>
+            </XStack>
+          </YStack>
+        </Button>
+      </XStack>
+      <XStack flexWrap='wrap' w='100%'>
+        <GroupJoinLeaveButton group={group} hideLeaveButton={hideLeaveButton} />
+        {extraListItemChrome?.(group)}
+      </XStack>
+      {/* {accountOrServer.account || extraListItemChrome
       ? <Separator mt='$1' />
-      : undefined}
-  </YStack>;
+      : undefined} */}
+    </YStack>
+    {hideInfoButton ? undefined :
+      <Button
+        size='$2'
+        my='auto'
+        ml='$2'
+        circular
+        icon={Info} onPress={() => onShowInfo()} />}
+  </XStack>;
 }
 
 export type GroupJoinLeaveButtonProps = {
@@ -195,7 +213,7 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
         disabled={isLocked} opacity={isLocked ? 0.5 : 1}
         onPress={onJoinPressed}>
         <YStack jc='center' ac='center'>
-          <Heading jc='center' ta='center' size='$2' color={!joined && !membershipRequested ? primaryTextColor : textColor}>
+          <Heading jc='center' ta='center' size='$2' color={!joined && !membershipRequested ? primaryTextColor : undefined}>
             {!joined && !membershipRequested ? requiresPermissionToJoin ? 'Join Request' : 'Join'
               : joined ? 'Leave' : 'Cancel Request'}
           </Heading>

@@ -1,5 +1,5 @@
-import { useCredentialDispatch, useFederatedAccountOrServer, useLocalConfiguration, useServer } from 'app/hooks';
-import { FederatedGroup, RootState, createGroupPost, deleteGroupPost, getServerTheme, loadPostGroupPosts, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
+import { useCredentialDispatch, useFederatedAccountOrServer, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
+import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, getServerTheme, loadPostGroupPosts, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { Group, GroupPost, Permission, Post, PostContext } from "@jonline/api";
@@ -14,19 +14,16 @@ import { AuthorInfo } from "../post/author_info";
 import { GroupsSheet } from './groups_sheet';
 
 interface Props {
-  post: Post;
+  post: FederatedPost;
   createViewHref?: (group: Group) => string;
   isVisible?: boolean;
 }
 
-export function useMostRecentGroup(groups: Group[]) {
-  const server = useServer();
-  const recentGroupIds = server
-    ? useLocalConfiguration().serverRecentGroups[serverID(server)] ?? []
-    : [];
+export function useMostRecentGroup(groups: FederatedGroup[]) {
+  const recentGroupIds = useLocalConfiguration().recentGroups ?? [];
 
   for (const groupId of recentGroupIds) {
-    const group = groups.find(g => g.id == groupId);
+    const group = groups.find(g => federatedId(g) === groupId);
     if (group) return group;
   }
 
@@ -34,14 +31,10 @@ export function useMostRecentGroup(groups: Group[]) {
 }
 
 export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisible = true }) => {
-  // const disabled = false;
-  function onValueSelected(v: string) {
-    // const selectedVisibility = parseInt(v) as Visibility;
-    // onChange(selectedVisibility)
-  }
-  const { navColor, navTextColor, primaryAnchorColor } = useServerTheme();
+  const { dispatch, accountOrServer } = useFederatedDispatch(post);
+  const { server } = accountOrServer;
+  const { navColor, navTextColor, primaryAnchorColor } = getServerTheme(server, useTheme());
   const title = `Share ${post.context == PostContext.EVENT ? 'Event' : 'Post'}`;
-  const { dispatch, accountOrServer } = useCredentialDispatch();
   const selectedGroup = useGroupContext();
   const [loading, setLoading] = useState(false);
   const groupPostData = useRootSelector((state: RootState) => state.groups.postIdGroupPosts[post.id]);
@@ -97,7 +90,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
           selectedGroup={selectedGroup ?? singleSharedGroup}
           // onGroupSelected={() => { }}
           disabled={groupsUnavailable}
-          topGroupIds={groupPostData?.map(gp => gp.groupId) ?? []}
+          topGroupIds={groupPostData?.map(gp => federateId(gp.groupId, server)) ?? []}
           extraListItemChrome={(group) => {
             const groupPost = groupPostData?.find(gp => gp.groupId == group.id);
 

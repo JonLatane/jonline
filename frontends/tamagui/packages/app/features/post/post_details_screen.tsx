@@ -83,7 +83,9 @@ export function PostDetailsScreen() {
   }, [serverName, subjectPost, failedToLoadPost, shortname, group?.name]);
 
   return (
-    <TabsNavigation appSection={AppSection.POST} selectedGroup={group}>
+    <TabsNavigation appSection={AppSection.POST} selectedGroup={group}
+      primaryEntity={subjectPost ?? {serverHost: serverHost ?? currentServer?.host}}
+    >
       {!subjectPost
         ? failedToLoadPost
           ? <>
