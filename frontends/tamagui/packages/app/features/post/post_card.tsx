@@ -294,9 +294,16 @@ export const PostCard: React.FC<PostCardProps> = ({
           {!post.replyToPostId && (post.link != '' || post.title != '')
             ? <Card.Header>
               <XStack ai='center'>
-                <Anchor f={1} textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}), ...postLink, }} target={postHasWebLink ? '_blank' : undefined}>
+                <Anchor f={1} textDecorationLine='none'
+                  {...{ ...(isPreview ? detailsLink : {}), ...postLink, }}
+                  target={postHasWebLink ? '_blank' : undefined}>
                   <YStack w='100%'>
-                    <Heading size="$7" marginRight='auto' color={post.link && post.link?.startsWith('http') ? navAnchorColor : undefined}>{post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}</Heading>
+                    <Heading size="$7" marginRight='auto'
+                      color={post.link && post.link?.startsWith('http')
+                        ? navAnchorColor
+                        : undefined}>
+                      {post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}
+                    </Heading>
                   </YStack>
                 </Anchor>
 

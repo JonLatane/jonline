@@ -1,4 +1,4 @@
-import { Anchor, Button, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
+import { Anchor, Button, ColorTokens, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
 import { AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
@@ -240,9 +240,9 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
 
   const currentServer = server;
   const avatarSize = 22;
-  const alertTriangle = () => <Tooltip>
+  const alertTriangle = ({ color }: { color?: string | ColorTokens } = {}) => <Tooltip>
     <Tooltip.Trigger>
-      <AlertTriangle />
+      <AlertTriangle color={color} />
     </Tooltip.Trigger>
     <Tooltip.Content>
       <Paragraph size='$1'>You are seeing data as though you were on {server?.host}, although you're on {browsingOn}.</Paragraph>
@@ -256,7 +256,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
         {...themedButtonBackground(navColor, navTextColor)}
         // backgroundColor={navColor}
         h='auto'
-        icon={serversDiffer || browsingOnDiffers ? alertTriangle() : undefined}
+        icon={serversDiffer || browsingOnDiffers ? alertTriangle({color: navTextColor}) : undefined}
         borderBottomLeftRadius={0} borderBottomRightRadius={0}
         px='$2'
         onPress={() => setOpen((x) => !x)}

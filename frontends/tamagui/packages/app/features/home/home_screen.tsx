@@ -1,8 +1,8 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { useAppDispatch, useEventPages, usePaginatedRendering, usePostPages } from 'app/hooks';
-import { FederatedGroup, RootState, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
+import { useAppDispatch, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
+import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
@@ -30,8 +30,14 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const showEventsOnLatest = app.showEventsOnLatest ?? true;
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
+  const currentServer = useServer();
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-  const eventsLink = useLink({ href: selectedGroup ? `/g/${selectedGroup.shortname}/events` : '/events' });
+  const groupLinkId = !!selectedGroup
+    ? (currentServer?.host === selectedGroup?.serverHost
+      ? selectedGroup.shortname
+      : federateId(selectedGroup.shortname, selectedGroup.serverHost))
+    : undefined;
+  const eventsLink = useLink({ href: selectedGroup ? `/g/${groupLinkId}/events` : '/events' });
 
   const dimensions = useWindowDimensions();
 
